@@ -1,17 +1,57 @@
+// export interface IOptions {
+//   page?: number;
+//   limit?: number;
+//   skip?: number;
+//   sortBy?: string;
+//   sortOrder?: string;
+// }
+
+// interface IPaginationResult {
+//   page: number;
+//   limit: number;
+//   skip: number;
+//   sortBy: string;
+//   sortOrder: string;
+// }
+
+// const paginationHelper = (options: IOptions): IPaginationResult => {
+//   const page = Number(options.page) || 1;
+//   const limit = Number(options.limit) || 10;
+//   const skip = (page - 1) * limit;
+//   const sortBy = options.sortBy || 'createdAt';
+//   const sortOrder = options.sortOrder || 'desc';
+//   return {
+//     page,
+//     limit,
+//     skip,
+//     sortBy,
+//     sortOrder,
+//   };
+// };
+
+// export default paginationHelper;
+
+
 export interface IOptions {
   page?: number;
   limit?: number;
-  skip?: number;
   sortBy?: string;
-  sortOrder?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
-interface IPaginationResult {
+export interface IPaginationResult {
   page: number;
   limit: number;
   skip: number;
   sortBy: string;
-  sortOrder: string;
+  sortOrder: 'asc' | 'desc';
+}
+
+export interface IMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 const paginationHelper = (options: IOptions): IPaginationResult => {
@@ -19,14 +59,20 @@ const paginationHelper = (options: IOptions): IPaginationResult => {
   const limit = Number(options.limit) || 10;
   const skip = (page - 1) * limit;
   const sortBy = options.sortBy || 'createdAt';
-  const sortOrder = options.sortOrder || 'desc';
-  return {
-    page,
-    limit,
-    skip,
-    sortBy,
-    sortOrder,
-  };
+  const sortOrder = (options.sortOrder as 'asc' | 'desc') || 'desc';
+
+  return { page, limit, skip, sortBy, sortOrder };
 };
+
+export const buildMeta = (
+  total: number,
+  page: number,
+  limit: number,
+): IMeta => ({
+  page,
+  limit,
+  total,
+  totalPages: Math.ceil(total / limit),
+});
 
 export default paginationHelper;

@@ -1,0 +1,15 @@
+// prisma/schema.prisma
+// Main schema file - Prisma reads this single file.
+// Each model is logically separated by clear section comments.
+// To keep each "table" in its own file, use prismaSchemaFolder feature (Prisma 5.15+).
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}

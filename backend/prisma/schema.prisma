@@ -1,15 +1,13 @@
-// prisma/schema.prisma
-// Main schema file - Prisma reads this single file.
-// Each model is logically separated by clear section comments.
-// To keep each "table" in its own file, use prismaSchemaFolder feature (Prisma 5.15+).
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["prismaSchemaFolder"]
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL")
+  provider = "postgresql"
 }

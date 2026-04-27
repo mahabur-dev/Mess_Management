@@ -5,14 +5,14 @@ import {
   MessFilterDto,
   UpdateMessDto,
 } from './dto/mess.dto';
-import type { MessWhereInput, MessMemberWhereInput } from '@prisma/client';
-import { PrismaService } from 'prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class MessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ─────────────────────────────────────────
   // Create mess (Manager creates own mess)
@@ -53,7 +53,7 @@ export class MessService {
       paginationOptions as any,
     );
 
-    const where: MessWhereInput = {};
+    const where: Prisma.MessWhereInput = {};
 
     if (query.searchTerm) {
       where.OR = [
@@ -233,7 +233,7 @@ export class MessService {
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
 
-    const where: MessMemberWhereInput = { messId };
+    const where: Prisma.MessMemberWhereInput = { messId };
 
     if (query.searchTerm) {
       where.user = {

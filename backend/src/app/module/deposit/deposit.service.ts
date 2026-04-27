@@ -4,14 +4,14 @@ import {
   DepositFilterDto,
   UpdateDepositDto,
 } from './dto/deposit.dto';
-import type { DepositWhereInput } from '@prisma/client';
-import { PrismaService } from 'prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class DepositService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ─────────────────────────────────────────
   // Verify mess access helper
@@ -66,7 +66,7 @@ export class DepositService {
       paginationOptions as any,
     );
 
-    const where: DepositWhereInput = {};
+    const where: Prisma.DepositWhereInput = {};
     if (query.messId) where.messId = query.messId;
     if (query.userId) where.userId = query.userId;
     if (query.startDate || query.endDate) {
@@ -119,7 +119,7 @@ export class DepositService {
       paginationOptions as any,
     );
 
-    const where: DepositWhereInput = { messId };
+    const where: Prisma.DepositWhereInput = { messId };
     if (query.userId) where.userId = query.userId;
     if (query.startDate || query.endDate) {
       where.date = {

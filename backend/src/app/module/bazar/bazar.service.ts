@@ -1,17 +1,18 @@
 import { HttpException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import {
   BazarFilterDto,
   CreateBazarDto,
   UpdateBazarDto,
 } from './dto/bazar.dto';
-import { PrismaService } from 'prisma/prisma.service';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
-import type { BazarWhereInput, BazarUpdateInput } from '@prisma/client'
+import { prisma } from '../../lib/prisma';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class BazarService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ─────────────────────────────────────────
   // Helper: verify mess membership / ownership
@@ -82,7 +83,7 @@ export class BazarService {
       paginationOptions as any,
     );
 
-    const where: BazarWhereInput = {};
+    const where: Prisma.BazarWhereInput = {};
 
     if (query.searchTerm) {
       where.name = { contains: query.searchTerm, mode: 'insensitive' };
@@ -133,7 +134,7 @@ export class BazarService {
       paginationOptions as any,
     );
 
-    const where: BazarWhereInput = { messId };
+    const where: Prisma.BazarWhereInput = { messId };
 
     if (query.searchTerm) {
       where.name = { contains: query.searchTerm, mode: 'insensitive' };
@@ -211,7 +212,7 @@ export class BazarService {
 
     // If items updated, recalculate total
     let totalPrice = bazar.totalPrice;
-    let itemsUpdate: BazarUpdateInput['items'] = undefined;
+    let itemsUpdate: Prisma.BazarUpdateInput['items'] = undefined;
 
     if (dto.items) {
       totalPrice = dto.items.reduce((sum, item) => sum + item.price, 0) as any;

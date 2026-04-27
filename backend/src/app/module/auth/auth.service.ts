@@ -149,9 +149,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../../prisma/prisma.service';
 import config from '../../config';
-import sendMailer from '../../helpers/send-mailer.helper';
 import {
   ChangePasswordDto,
   ForgotPasswordDto,
@@ -160,13 +158,15 @@ import {
   ResetPasswordDto,
   VerifyOtpDto,
 } from './dto/auth.dto';
+import sendMailer from 'src/app/helpers/sendMailer';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   // ─────────────────────────────────────────
   // Register

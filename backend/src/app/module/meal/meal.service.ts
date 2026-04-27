@@ -1,13 +1,13 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { CreateMealDto, MealFilterDto, UpdateMealDto } from './dto/meal.dto';
-import type { MealWhereInput } from '@prisma/client';
-import { PrismaService } from 'prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class MealService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ─────────────────────────────────────────
   // Verify mess access helper
@@ -61,7 +61,7 @@ export class MealService {
       paginationOptions as any,
     );
 
-    const where: MealWhereInput = {};
+    const where: Prisma.MealWhereInput = {};
     if (query.messId) where.messId = query.messId;
     if (query.userId) where.userId = query.userId;
     if (query.startDate || query.endDate) {
@@ -107,7 +107,7 @@ export class MealService {
       paginationOptions as any,
     );
 
-    const where: MealWhereInput = { messId };
+    const where: Prisma.MealWhereInput = { messId };
     if (query.userId) where.userId = query.userId;
     if (query.startDate || query.endDate) {
       where.date = {
@@ -214,7 +214,7 @@ export class MealService {
   ) {
     await this.verifyMessAccess(messId, userId, role);
 
-    const dateFilter: MealWhereInput['date'] = {};
+    const dateFilter: { gte?: Date, lte?: Date } = {};
     if (startDate) dateFilter.gte = new Date(startDate);
     if (endDate) dateFilter.lte = new Date(endDate);
 
@@ -250,7 +250,7 @@ export class MealService {
         return {
           user: member.user,
           totalMeals: result._sum.mealCount ?? 0,
-          totalDeposit: depositTotal._sum.amount ?? 0,
+          totalDeposit: depositTotal._sum?.amount ?? 0,
         };
       }),
     );
@@ -264,7 +264,7 @@ export class MealService {
       _sum: { totalPrice: true },
     });
 
-    const totalBazarCost = Number(bazarTotal._sum.totalPrice ?? 0);
+    const totalBazarCost = Number(bazarTotal._sum?.totalPrice ?? 0);
     const totalMeals = summary.reduce(
       (sum, s) => sum + Number(s.totalMeals),
       0,

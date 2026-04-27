@@ -4,15 +4,15 @@ import {
   UpdateUserStatusDto,
   UserFilterDto,
 } from './dto/user.dto';
-import type { UserWhereInput } from '@prisma/client';
-import { PrismaService } from 'prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { deleteFromCloudinary, uploadToCloudinary } from 'src/app/helpers/fileUploder';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ─────────────────────────────────────────
   // Get all users (Admin only)
@@ -21,7 +21,7 @@ export class UserService {
     const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
     const { page, limit, skip, sortBy, sortOrder } = paginationHelper(paginationOptions as any);
 
-    const where: UserWhereInput = {};
+    const where: Prisma.UserWhereInput = {};
 
     if (query.searchTerm) {
       where.OR = [

@@ -8,10 +8,7 @@ import {
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Request, Response } from 'express';
-import {
-  PrismaClientKnownRequestError,
-  PrismaClientValidationError,
-} from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
 import { ValidationError } from 'class-validator';
 import config from '../config';
 
@@ -43,7 +40,7 @@ const handleClassValidatorErrors = (errors: ValidationError[]) => {
 };
 
 const handlePrismaKnownError = (
-  err: PrismaClientKnownRequestError,
+  err: Prisma.PrismaClientKnownRequestError,
 ): { statusCode: number; message: string; errorSources: TErrorSource[] } => {
   switch (err.code) {
     case 'P2002': {
@@ -88,7 +85,7 @@ const handlePrismaKnownError = (
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(private readonly httpAdapterHost: HttpAdapterHost) { }
 
   catch(err: unknown, host: ArgumentsHost): void {
     const { httpAdapter } = this.httpAdapterHost;
@@ -142,15 +139,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // 3. Prisma Known Request Error (P2002, P2025, P2003, etc.)
-    else if (err instanceof PrismaClientKnownRequestError) {
+    else if (err instanceof Prisma.PrismaClientKnownRequestError) {
       ({ statusCode, message, errorSources } = handlePrismaKnownError(err));
     }
 
     // 4. Prisma Validation Error
-    else if (err instanceof PrismaClientValidationError) {
+    else if (err instanceof Prisma.PrismaClientValidationError) {
       statusCode = HttpStatus.BAD_REQUEST;
       message = 'Invalid data provided to database';
-      errorSources = [{ path: '', message: err.message }];
+      errorSources = [{ path: '', message: (err as any).message }];
     }
 
     // 5. Generic JS Error

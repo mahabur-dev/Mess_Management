@@ -1,6 +1,126 @@
+// import {
+//   Body,
+//   Controller,
+//   HttpCode,
+//   HttpStatus,
+//   Post,
+//   Req,
+//   Res,
+//   UseGuards,
+// } from '@nestjs/common';
+// import { AuthService } from './auth.service';
+// import {
+//   ChangePasswordDto,
+//   CreateAuthDto,
+//   ForgotPasswordDto,
+//   LoginAuthDto,
+//   ResetPasswordDto,
+//   VerifyEmailDto,
+// } from './dto/create-auth.dto';
+// import type { Request, Response } from 'express';
+// import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
+// import AuthGuard from 'src/app/middlewares/auth.guard';
+
+// @Controller('auth')
+// export class AuthController {
+//   constructor(private readonly authService: AuthService) {}
+
+//   @Post('register')
+//   @HttpCode(HttpStatus.CREATED)
+//   async register(@Body() CreateAuthDto: CreateAuthDto) {
+//     const result = await this.authService.register(CreateAuthDto);
+
+//     return {
+//       message: 'User registered successfully',
+//       data: result,
+//     };
+//   }
+
+//   @Post('login')
+//   @HttpCode(HttpStatus.OK)
+//   async login(
+//     @Body() createAuthDto: LoginAuthDto,
+//     @Res({ passthrough: true }) res: Response,
+//   ) {
+//     const result = await this.authService.login(createAuthDto, res);
+
+//     return {
+//       message: 'User logged in successfully',
+//       data: result,
+//     };
+//   }
+
+//   @Post('forgot-password')
+//   @ApiOperation({ summary: 'Send password reset OTP to email' })
+//   @ApiBody({ type: ForgotPasswordDto })
+//   @HttpCode(HttpStatus.OK)
+//   async forgotPassword(@Body() createAuthDto: ForgotPasswordDto) {
+//     const result = await this.authService.forgotPassword(createAuthDto.email);
+
+//     return {
+//       message: 'Email sent successfully',
+//       data: result,
+//     };
+//   }
+
+//   @Post('verify')
+//   @ApiOperation({ summary: 'Verify OTP sent to email' })
+//   @ApiBody({ type: VerifyEmailDto })
+//   @HttpCode(HttpStatus.OK)
+//   async verifyEmail(@Body() createAuthDto: VerifyEmailDto) {
+//     const result = await this.authService.verifyEmail(
+//       createAuthDto.email,
+//       createAuthDto.otp,
+//     );
+//     return {
+//       message: 'Email verified successfully',
+//       data: result,
+//     };
+//   }
+
+//   @Post('reset-password')
+//   @ApiOperation({ summary: 'Reset password after OTP verification' })
+//   @ApiBody({ type: ResetPasswordDto })
+//   @HttpCode(HttpStatus.OK)
+//   async resetPasswordChange(@Body() CreateAuthDto: ResetPasswordDto) {
+//     const result = await this.authService.resetPasswordChange(
+//       CreateAuthDto.email,
+//       CreateAuthDto.newPassword,
+//     );
+//     return {
+//       message: 'Password changed successfully',
+//       data: result,
+//     };
+//   }
+
+//   @Post('change-password')
+//   @UseGuards(AuthGuard('user', 'admin'))
+//   @ApiBearerAuth('access-token')
+//   @ApiOperation({ summary: 'Change password for logged in user' })
+//   @ApiBody({ type: ChangePasswordDto })
+//   @HttpCode(HttpStatus.OK)
+//   async changePassword(
+//     @Body() CreateAuthDto: ChangePasswordDto,
+//     @Req() req: Request,
+//   ) {
+//     console.log(req.user!.id);
+//     const result = await this.authService.changePassword(
+//       req.user!.id,
+//       CreateAuthDto.oldPassword,
+//       CreateAuthDto.newPassword,
+//     );
+//     return {
+//       message: 'Password changed successfully',
+//       data: result,
+//     };
+//   }
+// }
+
+
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -8,110 +128,98 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
-  CreateAuthDto,
   ForgotPasswordDto,
-  LoginAuthDto,
+  LoginDto,
+  RegisterDto,
   ResetPasswordDto,
-  VerifyEmailDto,
-} from './dto/create-auth.dto';
-import type { Request, Response } from 'express';
-import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
-import AuthGuard from 'src/app/middlewares/auth.guard';
+  VerifyOtpDto,
+} from './dto/auth.dto';
+import AuthGuard from '../../middlewares/auth.guard';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @ApiOperation({ summary: 'Register a new user (admin/manager/member)' })
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() CreateAuthDto: CreateAuthDto) {
-    const result = await this.authService.register(CreateAuthDto);
-
-    return {
-      message: 'User registered successfully',
-      data: result,
-    };
+  async register(@Body() dto: RegisterDto) {
+    const data = await this.authService.register(dto);
+    return { message: 'User registered successfully', data };
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Login and receive access token' })
   @HttpCode(HttpStatus.OK)
   async login(
-    @Body() createAuthDto: LoginAuthDto,
+    @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.login(createAuthDto, res);
+    const data = await this.authService.login(dto, res);
+    return { message: 'Logged in successfully', data };
+  }
 
-    return {
-      message: 'User logged in successfully',
-      data: result,
-    };
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout and clear refresh token cookie' })
+  @HttpCode(HttpStatus.OK)
+  async logout(@Res({ passthrough: true }) res: Response) {
+    const data = await this.authService.logout(res);
+    return { message: 'Logged out successfully', data };
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get my profile' })
+  async getMe(@Req() req: Request) {
+    const data = await this.authService.getMe(req.user!.id);
+    return { message: 'Profile fetched successfully', data };
   }
 
   @Post('forgot-password')
-  @ApiOperation({ summary: 'Send password reset OTP to email' })
-  @ApiBody({ type: ForgotPasswordDto })
+  @ApiOperation({ summary: 'Send OTP to email for password reset' })
   @HttpCode(HttpStatus.OK)
-  async forgotPassword(@Body() createAuthDto: ForgotPasswordDto) {
-    const result = await this.authService.forgotPassword(createAuthDto.email);
-
-    return {
-      message: 'Email sent successfully',
-      data: result,
-    };
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const data = await this.authService.forgotPassword(dto);
+    return { message: 'OTP sent to email', data };
   }
 
-  @Post('verify')
+  @Post('verify-otp')
   @ApiOperation({ summary: 'Verify OTP sent to email' })
-  @ApiBody({ type: VerifyEmailDto })
   @HttpCode(HttpStatus.OK)
-  async verifyEmail(@Body() createAuthDto: VerifyEmailDto) {
-    const result = await this.authService.verifyEmail(
-      createAuthDto.email,
-      createAuthDto.otp,
-    );
-    return {
-      message: 'Email verified successfully',
-      data: result,
-    };
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
+    const data = await this.authService.verifyOtp(dto);
+    return { message: 'OTP verified successfully', data };
   }
 
   @Post('reset-password')
   @ApiOperation({ summary: 'Reset password after OTP verification' })
-  @ApiBody({ type: ResetPasswordDto })
   @HttpCode(HttpStatus.OK)
-  async resetPasswordChange(@Body() CreateAuthDto: ResetPasswordDto) {
-    const result = await this.authService.resetPasswordChange(
-      CreateAuthDto.email,
-      CreateAuthDto.newPassword,
-    );
-    return {
-      message: 'Password changed successfully',
-      data: result,
-    };
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const data = await this.authService.resetPassword(dto);
+    return { message: 'Password reset successfully', data };
   }
 
   @Post('change-password')
-  @UseGuards(AuthGuard('user', 'admin'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Change password for logged in user' })
-  @ApiBody({ type: ChangePasswordDto })
+  @ApiOperation({ summary: 'Change password (authenticated)' })
   @HttpCode(HttpStatus.OK)
   async changePassword(
-    @Body() CreateAuthDto: ChangePasswordDto,
+    @Body() dto: ChangePasswordDto,
     @Req() req: Request,
   ) {
-    console.log(req.user!.id);
-    const result = await this.authService.changePassword(
-      req.user!.id,
-      CreateAuthDto.oldPassword,
-      CreateAuthDto.newPassword,
-    );
-    return {
-      message: 'Password changed successfully',
-      data: result,
-    };
+    const data = await this.authService.changePassword(req.user!.id, dto);
+    return { message: 'Password changed successfully', data };
   }
 }

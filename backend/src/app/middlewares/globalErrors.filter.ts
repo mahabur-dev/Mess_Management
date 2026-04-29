@@ -8,36 +8,10 @@ import {
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Request, Response } from 'express';
-import { Error as MongooseError } from 'mongoose';
-import { MongoError } from 'mongodb';
-
+import { Prisma } from '@prisma/client';
 import { ValidationError } from 'class-validator';
-import { handleClassValidatorErrors } from '../errors/classValidatorErrors';
-import { handleHttpException } from '../errors/httpException';
-import { MulterError } from 'multer';
-import { handleMulterError } from '../errors/multerError';
-import {
-  handleCloudinaryError,
-  isCloudinaryError,
-} from '../errors/cloudinaryError';
-import { ZodError } from 'zod';
-import { handleZodError } from '../errors/zodError';
-import { handleMongooseValidationError } from '../errors/mongooseValidationError';
-import { handleCastError } from '../errors/castError';
-import { handleDuplicateKeyError } from '../errors/duplicateKeyError';
-import {
-  JsonWebTokenError,
-  NotBeforeError,
-  TokenExpiredError,
-} from '@nestjs/jwt';
-import { handleJwtError } from '../errors/jwtError';
-import { handleSyntaxError } from '../errors/syntaxError';
-import { handleProgrammerError } from '../errors/programmerError';
-import { AxiosError } from 'axios';
-import { handleAxiosError } from '../errors/axiosError';
 import config from '../config';
 
-// Types
 export interface TErrorSource {
   path: string | number;
   message: string;
@@ -51,13 +25,69 @@ export interface TErrorResponse {
   stack?: string | null;
 }
 
+const handleClassValidatorErrors = (errors: ValidationError[]) => {
+  const errorSources: TErrorSource[] = errors.flatMap((err) =>
+    Object.values(err.constraints || {}).map((msg) => ({
+      path: err.property,
+      message: msg,
+    })),
+  );
+  return {
+    statusCode: HttpStatus.BAD_REQUEST,
+    message: 'Validation failed',
+    errorSources,
+  };
+};
+
+const handlePrismaKnownError = (
+  err: Prisma.PrismaClientKnownRequestError,
+): { statusCode: number; message: string; errorSources: TErrorSource[] } => {
+  switch (err.code) {
+    case 'P2002': {
+      const field = (err.meta?.target as string[])?.join(', ') || 'field';
+      return {
+        statusCode: HttpStatus.CONFLICT,
+        message: `Duplicate value: ${field} already exists`,
+        errorSources: [{ path: field, message: `${field} must be unique` }],
+      };
+    }
+    case 'P2025': {
+      return {
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Record not found',
+        errorSources: [{ path: '', message: err.message }],
+      };
+    }
+    case 'P2003': {
+      return {
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Related record not found',
+        errorSources: [{ path: '', message: err.message }],
+      };
+    }
+    case 'P2014': {
+      return {
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Relation violation',
+        errorSources: [{ path: '', message: err.message }],
+      };
+    }
+    default:
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Database error',
+        errorSources: [{ path: '', message: err.message }],
+      };
+  }
+};
+
 @Catch()
-export class GlobalExceptionFilter<T> implements ExceptionFilter {
+export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(private readonly httpAdapterHost: HttpAdapterHost) { }
 
-  catch(err: T, host: ArgumentsHost): void {
+  catch(err: unknown, host: ArgumentsHost): void {
     const { httpAdapter } = this.httpAdapterHost;
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
@@ -70,105 +100,57 @@ export class GlobalExceptionFilter<T> implements ExceptionFilter {
     );
 
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Something went worng!';
+    let message = 'Something went wrong!';
     let errorSources: TErrorSource[] = [
       { path: '', message: 'Something went wrong' },
     ];
 
-    // 1️ Raw class-validator ValidationError[]
+    // 1. Raw class-validator ValidationError[]
     if (
       Array.isArray(err) &&
       err.length > 0 &&
       err[0] instanceof ValidationError
     ) {
-      statusCode = HttpStatus.BAD_REQUEST;
-      ({ message, errorSources } = handleClassValidatorErrors(
+      ({ statusCode, message, errorSources } = handleClassValidatorErrors(
         err as ValidationError[],
       ));
     }
 
-    // 2  NestJS HttpException
+    // 2. NestJS HttpException (may wrap class-validator errors)
     else if (err instanceof HttpException) {
       const res = err.getResponse() as any;
       if (
         typeof res === 'object' &&
         Array.isArray(res.message) &&
-        res.message[0] instanceof ValidationError
+        typeof res.message[0] === 'string'
       ) {
         statusCode = err.getStatus();
-        ({ message, errorSources } = handleClassValidatorErrors(
-          res.message as ValidationError[],
-        ));
+        message = 'Validation failed';
+        errorSources = res.message.map((msg: string) => ({
+          path: '',
+          message: msg,
+        }));
       } else {
-        ({ statusCode, message, errorSources } = handleHttpException(err));
+        statusCode = err.getStatus();
+        message =
+          typeof res === 'string' ? res : (res?.message ?? 'Request failed');
+        errorSources = [{ path: '', message }];
       }
     }
 
-    // 3  Multer Error
-    else if (err instanceof MulterError) {
-      ({ statusCode, message, errorSources } = handleMulterError(err));
+    // 3. Prisma Known Request Error (P2002, P2025, P2003, etc.)
+    else if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      ({ statusCode, message, errorSources } = handlePrismaKnownError(err));
     }
 
-    // 4  Cloudinary Error
-    else if (isCloudinaryError(err)) {
-      ({ statusCode, message, errorSources } = handleCloudinaryError(err));
+    // 4. Prisma Validation Error
+    else if (err instanceof Prisma.PrismaClientValidationError) {
+      statusCode = HttpStatus.BAD_REQUEST;
+      message = 'Invalid data provided to database';
+      errorSources = [{ path: '', message: (err as any).message }];
     }
 
-    // 5  ZodError
-    else if (err instanceof ZodError) {
-      ({ statusCode, message, errorSources } = handleZodError(err));
-    }
-
-    // 6 Mongoose ValidationError
-    else if (
-      err instanceof Error &&
-      err.name === 'ValidationError' &&
-      'errors' in err
-    ) {
-      ({ statusCode, message, errorSources } = handleMongooseValidationError(
-        err as unknown as MongooseError.ValidationError,
-      ));
-    }
-
-    // 7  Mongoose CastError
-    else if (err instanceof MongooseError.CastError) {
-      ({ statusCode, message, errorSources } = handleCastError(err));
-    }
-
-    // 8  MongoDB Duplicate Key
-    else if (err instanceof MongoError && (err as any).code === 11000) {
-      ({ statusCode, message, errorSources } = handleDuplicateKeyError(
-        err as any,
-      ));
-    }
-
-    // 9 JWT Errors
-    else if (
-      err instanceof TokenExpiredError ||
-      err instanceof NotBeforeError ||
-      err instanceof JsonWebTokenError
-    ) {
-      ({ statusCode, message, errorSources } = handleJwtError(err));
-    }
-
-    // 1️0  SyntaxError (bad JSON body)
-    else if (err instanceof SyntaxError && 'body' in err) {
-      ({ statusCode, message, errorSources } = handleSyntaxError(err));
-    }
-
-    // 11  TypeError / RangeError
-    else if (err instanceof TypeError || err instanceof RangeError) {
-      ({ statusCode, message, errorSources } = handleProgrammerError(err));
-    }
-
-    // 12  Axios Error (external API call)
-    else if (err instanceof AxiosError || (err as any)?.isAxiosError === true) {
-      ({ statusCode, message, errorSources } = handleAxiosError(
-        err as AxiosError,
-      ));
-    }
-
-    // 13  Generic JS Error
+    // 5. Generic JS Error
     else if (err instanceof Error) {
       message = err.message;
       errorSources = [{ path: '', message: err.message }];

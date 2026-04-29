@@ -1,42 +1,31 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import config from './app/config';
-import { PaymentModule } from './app/module/payment/payment.module';
-import { WebhookModule } from './app/module/webhook/webhook.module';
-import { ControllerModule } from './app/module/controller/controller.module';
-import { ExtraModule } from './app/module/extra/extra.module';
-import { FaqModule } from './app/module/faq/faq.module';
-import { ServiceModule } from './app/module/service/service.module';
+import { UserModule } from './app/module/user/user.module';
+import { MealModule } from './app/module/meal/meal.module';
+import { MessModule } from './app/module/mess/mess.module';
+import { DepositModule } from './app/module/deposit/deposit.module';
+import { BazarModule } from './app/module/bazar/bazar.module';
+import { PrismaModule } from 'prisma/prisma.module';
 import { AuthModule } from './app/module/auth/auth.module';
-import { TwilioModule } from './app/module/twilio/twilio.module';
 
-// const databaseImports = config.isMongoEnabled
-//   ? [
-//       MongooseModule.forRoot(config.mongoUri as string,),
-//       UserModule,
-//       AuthModule,
-//       ContactModule,
-//     ]
-//   : [];
+// ✅ Import Prisma Module
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRoot(config.mongoUri as string),
-    PaymentModule,
-    WebhookModule,
+    PrismaModule,
+    UserModule,
+    MealModule,
+    MessModule,
+    DepositModule,
+    BazarModule,
     AuthModule,
-    ControllerModule,
-    ExtraModule,
-    FaqModule,
-    ServiceModule,
-    TwilioModule,
   ],
 
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

@@ -1,128 +1,177 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument } from './entities/user.entity';
-import { Model } from 'mongoose';
-import { fileUpload } from 'src/app/helpers/fileUploder';
-import { IFilterParams } from 'src/app/helpers/pick';
-import paginationHelper, { IOptions } from 'src/app/helpers/pagenation';
-import buildWhereConditions from 'src/app/helpers/buildWhereConditions';
-
-const userSearchAbleFields = [
-  'fullName',
-  'email',
-  'role',
-  'gender',
-  'phoneNumber',
-  'country',
-  'city',
-  'address',
-  'status',
-];
+import {
+  UpdateUserDto,
+  UpdateUserStatusDto,
+  UserFilterDto,
+} from './dto/user.dto';
+import { Prisma } from '@prisma/client';
+import pick from 'src/app/helpers/pick';
+import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
+import { deleteFromCloudinary, uploadToCloudinary } from 'src/app/helpers/fileUploder';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) { }
 
-  async createUser(createUserDto: CreateUserDto, file?: Express.Multer.File) {
-    const user = await this.userModel.findOne({ email: createUserDto.email });
-    if (user) {
-      throw new HttpException('User already exists', 400);
+  // ─────────────────────────────────────────
+  // Get all users (Admin only)
+  // ─────────────────────────────────────────
+  async findAll(query: UserFilterDto) {
+    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
+    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(paginationOptions as any);
+
+    const where: Prisma.UserWhereInput = {};
+
+    if (query.searchTerm) {
+      where.OR = [
+        { name: { contains: query.searchTerm, mode: 'insensitive' } },
+        { email: { contains: query.searchTerm, mode: 'insensitive' } },
+      ];
     }
-    if (file) {
-      const uploadedFile = await fileUpload.uploadToCloudinary(file);
-      createUserDto.profilePicture = uploadedFile.url;
-    }
-    const createdUser = await this.userModel.create(createUserDto);
-    return createdUser;
-  }
 
-  async getAllUser(params: IFilterParams, options: IOptions) {
-    const { limit, page, skip, sortBy, sortOrder } = paginationHelper(options);
-    const whereConditions = buildWhereConditions(params, userSearchAbleFields);
+    if (query.role) where.role = query.role;
 
-    const total = await this.userModel.countDocuments(whereConditions);
-    const users = await this.userModel
-      .find(whereConditions)
-      .skip(skip)
-      .limit(limit)
-      .sort({ [sortBy]: sortOrder } as any);
+    const [total, users] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          profileImage: true,
+          mobileNumber: true,
+          city: true,
+          state: true,
+          country: true,
+          postcode: true,
+          isActive: true,
+          isVerified: true,
+          createdAt: true,
+        },
+      }),
+    ]);
 
     return {
-      meta: {
-        page,
-        limit,
-        total,
-      },
       data: users,
+      meta: buildMeta(total, page, limit),
     };
   }
 
-  async getSingleUser(id: string) {
-    const user = await this.userModel.findById(id);
-    if (!user) {
-      throw new HttpException('User not found', 404);
-    }
+  // ─────────────────────────────────────────
+  // Get single user by ID
+  // ─────────────────────────────────────────
+  async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        profileImage: true,
+        mobileNumber: true,
+        city: true,
+        state: true,
+        country: true,
+        postcode: true,
+        isActive: true,
+        isVerified: true,
+        createdAt: true,
+        messMembers: {
+          select: {
+            joinedAt: true,
+            mess: {
+              select: { id: true, messName: true, messLocation: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) throw new HttpException('User not found', 404);
     return user;
   }
 
-  async updateUser(
-    id: string,
-    updateUserDto: UpdateUserDto,
+  // ─────────────────────────────────────────
+  // Update own profile
+  // ─────────────────────────────────────────
+  async updateProfile(
+    userId: string,
+    dto: UpdateUserDto,
     file?: Express.Multer.File,
   ) {
-    const user = await this.userModel.findById(id);
-    if (!user) {
-      throw new HttpException('User not found', 404);
-    }
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new HttpException('User not found', 404);
+
+    let profileImage = user.profileImage;
+    let publicId = user.publicId;
+
     if (file) {
-      const uploadedFile = await fileUpload.uploadToCloudinary(file);
-      updateUserDto.profilePicture = uploadedFile.url;
-    }
-    const updatedUser = await this.userModel.findByIdAndUpdate(
-      id,
-      updateUserDto,
-      { new: true },
-    );
-    return updatedUser;
-  }
+      // Delete old image from Cloudinary
+      if (user.publicId) await deleteFromCloudinary(user.publicId);
 
-  async deleteUser(id: string) {
-    const user = await this.userModel.findById(id);
-    if (!user) {
-      throw new HttpException('User not found', 404);
+      const uploaded = await uploadToCloudinary(file, 'mess_management/profiles');
+      profileImage = uploaded.url;
+      publicId = uploaded.public_id;
     }
-    const result = await this.userModel.findByIdAndDelete(id);
-    return result;
-  }
 
-  async getProfile(id: string) {
-    const result = await this.userModel.findById(id);
-    if (!result) {
-      throw new HttpException('User not found', 404);
-    }
-    return result;
-  }
-
-  async updateMyProfile(
-    id: string,
-    updateUserDto: UpdateUserDto,
-    file?: Express.Multer.File,
-  ) {
-    const user = await this.userModel.findById(id);
-    if (!user) {
-      throw new HttpException('User not found', 404);
-    }
-    if (file) {
-      const uploadedFile = await fileUpload.uploadToCloudinary(file);
-      updateUserDto.profilePicture = uploadedFile.url;
-    }
-    const result = await this.userModel.findByIdAndUpdate(id, updateUserDto, {
-      new: true,
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...dto,
+        profileImage,
+        publicId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        profileImage: true,
+        mobileNumber: true,
+        city: true,
+        state: true,
+        country: true,
+        postcode: true,
+        createdAt: true,
+      },
     });
-    return result;
+
+    return updated;
+  }
+
+  // ─────────────────────────────────────────
+  // Admin: update user status (activate/deactivate)
+  // ─────────────────────────────────────────
+  async updateStatus(id: string, dto: UpdateUserStatusDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new HttpException('User not found', 404);
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { isActive: dto.isActive },
+      select: { id: true, name: true, email: true, isActive: true },
+    });
+
+    return updated;
+  }
+
+  // ─────────────────────────────────────────
+  // Admin: delete user
+  // ─────────────────────────────────────────
+  async remove(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new HttpException('User not found', 404);
+
+    if (user.publicId) await deleteFromCloudinary(user.publicId);
+
+    await this.prisma.user.delete({ where: { id } });
+    return { message: 'User deleted successfully' };
   }
 }

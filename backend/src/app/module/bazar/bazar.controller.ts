@@ -13,7 +13,11 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { BazarService } from './bazar.service';
-import { BazarFilterDto, CreateBazarDto, UpdateBazarDto } from './dto/bazar.dto';
+import {
+  BazarFilterDto,
+  CreateBazarDto,
+  UpdateBazarDto,
+} from './dto/bazar.dto';
 import AuthGuard from '../../middlewares/auth.guard';
 
 @ApiTags('Bazar')
@@ -28,7 +32,9 @@ export class BazarController {
   @ApiOperation({ summary: 'Create a bazar entry (all roles)' })
   async create(@Req() req: Request, @Body() dto: CreateBazarDto) {
     const data = await this.bazarService.create(
-      req.user!.id, req.user!.role, dto,
+      req.user!.id,
+      req.user!.role,
+      dto,
     );
     return { message: 'Bazar entry created successfully', data };
   }
@@ -39,7 +45,11 @@ export class BazarController {
   @ApiOperation({ summary: '[ADMIN] Get all bazar entries with filters' })
   async findAll(@Query() query: BazarFilterDto) {
     const result = await this.bazarService.findAll(query);
-    return { message: 'Bazar entries fetched', meta: result.meta, data: result.data };
+    return {
+      message: 'Bazar entries fetched',
+      meta: result.meta,
+      data: result.data,
+    };
   }
 
   // Get bazars by mess ID
@@ -52,9 +62,16 @@ export class BazarController {
     @Query() query: BazarFilterDto,
   ) {
     const result = await this.bazarService.findByMess(
-      messId, req.user!.id, req.user!.role, query,
+      messId,
+      req.user!.id,
+      req.user!.role,
+      query,
     );
-    return { message: 'Bazar entries fetched', meta: result.meta, data: result.data };
+    return {
+      message: 'Bazar entries fetched',
+      meta: result.meta,
+      data: result.data,
+    };
   }
 
   // Get single bazar entry
@@ -63,7 +80,9 @@ export class BazarController {
   @ApiOperation({ summary: 'Get a bazar entry by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.bazarService.findOne(
-      id, req.user!.id, req.user!.role,
+      id,
+      req.user!.id,
+      req.user!.role,
     );
     return { message: 'Bazar entry fetched', data };
   }
@@ -78,7 +97,10 @@ export class BazarController {
     @Body() dto: UpdateBazarDto,
   ) {
     const data = await this.bazarService.update(
-      id, req.user!.id, req.user!.role, dto,
+      id,
+      req.user!.id,
+      req.user!.role,
+      dto,
     );
     return { message: 'Bazar entry updated successfully', data };
   }
@@ -89,7 +111,9 @@ export class BazarController {
   @ApiOperation({ summary: 'Delete a bazar entry' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.bazarService.remove(
-      id, req.user!.id, req.user!.role,
+      id,
+      req.user!.id,
+      req.user!.role,
     );
     return { message: 'Bazar entry deleted successfully', data };
   }

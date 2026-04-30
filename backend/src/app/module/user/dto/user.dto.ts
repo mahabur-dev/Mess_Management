@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
-import { Role } from '@prisma/client';
+import { GlobalRole } from '@prisma/client';
 import { Transform } from 'class-transformer';
 
 export class UpdateUserDto {
@@ -12,27 +12,7 @@ export class UpdateUserDto {
   @ApiPropertyOptional({ example: '01711234567' })
   @IsOptional()
   @IsString()
-  mobileNumber?: string;
-
-  @ApiPropertyOptional({ example: 'Dhaka' })
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @ApiPropertyOptional({ example: 'Dhaka Division' })
-  @IsOptional()
-  @IsString()
-  state?: string;
-
-  @ApiPropertyOptional({ example: 'Bangladesh' })
-  @IsOptional()
-  @IsString()
-  country?: string;
-
-  @ApiPropertyOptional({ example: '1230' })
-  @IsOptional()
-  @IsString()
-  postcode?: string;
+  phone?: string;
 }
 
 export class UserFilterDto {
@@ -41,10 +21,10 @@ export class UserFilterDto {
   @IsString()
   searchTerm?: string;
 
-  @ApiPropertyOptional({ enum: Role })
+  @ApiPropertyOptional({ enum: GlobalRole })
   @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
+  @IsEnum(GlobalRole)
+  role?: GlobalRole;
 
   @ApiPropertyOptional({ example: '1' })
   @IsOptional()
@@ -56,7 +36,7 @@ export class UserFilterDto {
   @Transform(({ value }) => value?.toString())
   limit?: string;
 
-  @ApiPropertyOptional({ example: 'createdAt' })
+  @ApiPropertyOptional({ example: 'created_at' })
   @IsOptional()
   @IsString()
   sortBy?: string;

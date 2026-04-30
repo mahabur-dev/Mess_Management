@@ -10,7 +10,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Request } from 'express';
 import { MealService } from './meal.service';
 import { CreateMealDto, MealFilterDto, UpdateMealDto } from './dto/meal.dto';
@@ -27,7 +32,9 @@ export class MealController {
   @ApiOperation({ summary: 'Add a meal entry (all roles)' })
   async create(@Req() req: Request, @Body() dto: CreateMealDto) {
     const data = await this.mealService.create(
-      req.user!.id, req.user!.role, dto,
+      req.user!.id,
+      req.user!.role,
+      dto,
     );
     return { message: 'Meal entry added successfully', data };
   }
@@ -54,7 +61,10 @@ export class MealController {
     @Query() query: MealFilterDto,
   ) {
     const result = await this.mealService.findByMess(
-      messId, req.user!.id, req.user!.role, query,
+      messId,
+      req.user!.id,
+      req.user!.role,
+      query,
     );
     return {
       message: 'Meal entries fetched',
@@ -67,7 +77,8 @@ export class MealController {
   @Get('mess/:messId/summary')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({
-    summary: 'Get meal cost summary for a mess (meal rate, each member cost & balance)',
+    summary:
+      'Get meal cost summary for a mess (meal rate, each member cost & balance)',
   })
   @ApiQuery({ name: 'startDate', required: false, example: '2025-04-01' })
   @ApiQuery({ name: 'endDate', required: false, example: '2025-04-30' })
@@ -78,7 +89,11 @@ export class MealController {
     @Query('endDate') endDate?: string,
   ) {
     const data = await this.mealService.getMealSummaryByMess(
-      messId, req.user!.id, req.user!.role, startDate, endDate,
+      messId,
+      req.user!.id,
+      req.user!.role,
+      startDate,
+      endDate,
     );
     return { message: 'Meal summary fetched', data };
   }
@@ -88,7 +103,9 @@ export class MealController {
   @ApiOperation({ summary: 'Get a meal entry by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.mealService.findOne(
-      id, req.user!.id, req.user!.role,
+      id,
+      req.user!.id,
+      req.user!.role,
     );
     return { message: 'Meal entry fetched', data };
   }
@@ -102,7 +119,10 @@ export class MealController {
     @Body() dto: UpdateMealDto,
   ) {
     const data = await this.mealService.update(
-      id, req.user!.id, req.user!.role, dto,
+      id,
+      req.user!.id,
+      req.user!.role,
+      dto,
     );
     return { message: 'Meal entry updated successfully', data };
   }
@@ -112,7 +132,9 @@ export class MealController {
   @ApiOperation({ summary: 'Delete a meal entry' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.mealService.remove(
-      id, req.user!.id, req.user!.role,
+      id,
+      req.user!.id,
+      req.user!.role,
     );
     return { message: 'Meal entry deleted successfully', data };
   }

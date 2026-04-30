@@ -7,15 +7,18 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { Role } from '@prisma/client';
+import { GlobalRole } from '@prisma/client';
 
+// ─────────────────────────────────────────
+// Register
+// ─────────────────────────────────────────
 export class RegisterDto {
-  @ApiProperty({ example: 'Rahim Uddin' })
+  @ApiProperty({ example: 'Rakib Khan' })
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: 'rahim@example.com' })
+  @ApiProperty({ example: 'rakib@example.com' })
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   email: string;
@@ -25,19 +28,22 @@ export class RegisterDto {
   @MinLength(6, { message: 'Password must be at least 6 characters' })
   password: string;
 
-  @ApiPropertyOptional({ enum: Role, default: Role.MEMBER })
+  @ApiPropertyOptional({ enum: GlobalRole, default: GlobalRole.MEMBER })
   @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
+  @IsEnum(GlobalRole)
+  role?: GlobalRole;
 
   @ApiPropertyOptional({ example: '01711234567' })
   @IsOptional()
   @IsString()
-  mobileNumber?: string;
+  phone?: string;
 }
 
+// ─────────────────────────────────────────
+// Login
+// ─────────────────────────────────────────
 export class LoginDto {
-  @ApiProperty({ example: 'rahim@example.com' })
+  @ApiProperty({ example: 'rakib@example.com' })
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   email: string;
@@ -48,15 +54,21 @@ export class LoginDto {
   password: string;
 }
 
+// ─────────────────────────────────────────
+// Forgot Password
+// ─────────────────────────────────────────
 export class ForgotPasswordDto {
-  @ApiProperty({ example: 'rahim@example.com' })
+  @ApiProperty({ example: 'rakib@example.com' })
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   email: string;
 }
 
+// ─────────────────────────────────────────
+// Verify OTP
+// ─────────────────────────────────────────
 export class VerifyOtpDto {
-  @ApiProperty({ example: 'rahim@example.com' })
+  @ApiProperty({ example: 'rakib@example.com' })
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   email: string;
@@ -67,8 +79,11 @@ export class VerifyOtpDto {
   otp: string;
 }
 
+// ─────────────────────────────────────────
+// Reset Password
+// ─────────────────────────────────────────
 export class ResetPasswordDto {
-  @ApiProperty({ example: 'rahim@example.com' })
+  @ApiProperty({ example: 'rakib@example.com' })
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   email: string;
@@ -79,14 +94,17 @@ export class ResetPasswordDto {
   newPassword: string;
 }
 
+// ─────────────────────────────────────────
+// Change Password
+// ─────────────────────────────────────────
 export class ChangePasswordDto {
   @ApiProperty({ example: 'oldSecret123' })
   @IsString()
-  @MinLength(6)
+  @MinLength(6, { message: 'Password must be at least 6 characters' })
   oldPassword: string;
 
   @ApiProperty({ example: 'newSecret123' })
   @IsString()
-  @MinLength(6)
+  @MinLength(6, { message: 'Password must be at least 6 characters' })
   newPassword: string;
 }

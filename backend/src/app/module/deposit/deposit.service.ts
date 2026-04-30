@@ -4,18 +4,15 @@ import {
   DepositFilterDto,
   UpdateDepositDto,
 } from './dto/deposit.dto';
-import { Prisma } from '@prisma/client';
+import { PaymentMethod, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class DepositService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  // ─────────────────────────────────────────
-  // Verify mess access helper
-  // ─────────────────────────────────────────
   private async verifyMessAccess(
     messId: string,
     userId: string,
@@ -25,109 +22,48 @@ export class DepositService {
     if (!mess) throw new HttpException('Mess not found', 404);
 
     if (role === 'ADMIN') return;
-    if (role === 'MANAGER' && mess.managerId === userId) return;
+    if (role === 'MANAGER' && mess.created_by === userId) return;
 
-    const membership = await this.prisma.messMember.findUnique({
-      where: { messId_userId: { messId, userId } },
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-    if (!membership)
-      throw new HttpException('Forbidden: You are not a member of this mess', 403);
+    if (!membership?.is_active) {
+      throw new HttpException(
+        'Forbidden: You are not a member of this mess',
+        403,
+      );
+    }
   }
 
-  // ─────────────────────────────────────────
-  // Create deposit (Member adds own deposit)
-  // ─────────────────────────────────────────
   async create(userId: string, role: string, dto: CreateDepositDto) {
     await this.verifyMessAccess(dto.messId, userId, role);
 
-    const deposit = await this.prisma.deposit.create({
+    return this.prisma.deposit.create({
       data: {
-        messId: dto.messId,
-        userId,
+        mess_id: dto.messId,
+        member_id: userId,
         amount: dto.amount,
-        date: dto.date ? new Date(dto.date) : new Date(),
+        method: PaymentMethod.CASH,
         note: dto.note,
       },
       include: {
-        user: { select: { id: true, name: true } },
-        mess: { select: { id: true, messName: true } },
+        member: { select: { id: true, name: true } },
+        mess: { select: { id: true, name: true } },
       },
     });
-
-    return deposit;
   }
 
-  // ─────────────────────────────────────────
-  // Get all deposits (Admin)
-  // ─────────────────────────────────────────
   async findAll(query: DepositFilterDto) {
-    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
-    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(
-      paginationOptions as any,
-    );
-
-    const where: Prisma.DepositWhereInput = {};
-    if (query.messId) where.messId = query.messId;
-    if (query.userId) where.userId = query.userId;
-    if (query.startDate || query.endDate) {
-      where.date = {
-        ...(query.startDate && { gte: new Date(query.startDate) }),
-        ...(query.endDate && { lte: new Date(query.endDate) }),
-      };
-    }
-
-    const [total, deposits] = await Promise.all([
-      this.prisma.deposit.count({ where }),
-      this.prisma.deposit.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          user: { select: { id: true, name: true } },
-          mess: { select: { id: true, messName: true } },
-        },
-      }),
+    const paginationOptions = pick(query, [
+      'page',
+      'limit',
+      'sortBy',
+      'sortOrder',
     ]);
+    const { page, limit, skip, sortBy, sortOrder } =
+      paginationHelper(paginationOptions);
 
-    // Aggregate total deposit amount
-    const totalAmount = await this.prisma.deposit.aggregate({
-      where,
-      _sum: { amount: true },
-    });
-
-    return {
-      data: deposits,
-      meta: buildMeta(total, page, limit),
-      totalAmount: totalAmount._sum.amount ?? 0,
-    };
-  }
-
-  // ─────────────────────────────────────────
-  // Get deposits by mess ID
-  // ─────────────────────────────────────────
-  async findByMess(
-    messId: string,
-    userId: string,
-    role: string,
-    query: DepositFilterDto,
-  ) {
-    await this.verifyMessAccess(messId, userId, role);
-
-    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
-    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(
-      paginationOptions as any,
-    );
-
-    const where: Prisma.DepositWhereInput = { messId };
-    if (query.userId) where.userId = query.userId;
-    if (query.startDate || query.endDate) {
-      where.date = {
-        ...(query.startDate && { gte: new Date(query.startDate) }),
-        ...(query.endDate && { lte: new Date(query.endDate) }),
-      };
-    }
-
+    const where = this.buildWhere(query);
     const [total, deposits, totalAmount] = await Promise.all([
       this.prisma.deposit.count({ where }),
       this.prisma.deposit.findMany({
@@ -136,7 +72,8 @@ export class DepositService {
         take: limit,
         orderBy: { [sortBy]: sortOrder },
         include: {
-          user: { select: { id: true, name: true, profileImage: true } },
+          member: { select: { id: true, name: true } },
+          mess: { select: { id: true, name: true } },
         },
       }),
       this.prisma.deposit.aggregate({ where, _sum: { amount: true } }),
@@ -149,71 +86,94 @@ export class DepositService {
     };
   }
 
-  // ─────────────────────────────────────────
-  // Get single deposit
-  // ─────────────────────────────────────────
+  async findByMess(
+    messId: string,
+    userId: string,
+    role: string,
+    query: DepositFilterDto,
+  ) {
+    await this.verifyMessAccess(messId, userId, role);
+
+    return this.findAll({ ...query, messId });
+  }
+
   async findOne(id: string, userId: string, role: string) {
     const deposit = await this.prisma.deposit.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, name: true } },
-        mess: { select: { id: true, messName: true } },
+        member: { select: { id: true, name: true } },
+        mess: { select: { id: true, name: true } },
       },
     });
 
     if (!deposit) throw new HttpException('Deposit not found', 404);
-    await this.verifyMessAccess(deposit.messId, userId, role);
+    await this.verifyMessAccess(deposit.mess_id, userId, role);
     return deposit;
   }
 
-  // ─────────────────────────────────────────
-  // Update deposit (own or manager/admin)
-  // ─────────────────────────────────────────
-  async update(id: string, userId: string, role: string, dto: UpdateDepositDto) {
+  async update(
+    id: string,
+    userId: string,
+    role: string,
+    dto: UpdateDepositDto,
+  ) {
     const deposit = await this.prisma.deposit.findUnique({ where: { id } });
     if (!deposit) throw new HttpException('Deposit not found', 404);
 
-    if (role === 'MEMBER' && deposit.userId !== userId) {
+    if (role === 'MEMBER' && deposit.member_id !== userId) {
       throw new HttpException('Forbidden: Not your deposit', 403);
     }
 
     if (role === 'MANAGER') {
-      const mess = await this.prisma.mess.findUnique({ where: { id: deposit.messId } });
-      if (mess?.managerId !== userId)
+      const mess = await this.prisma.mess.findUnique({
+        where: { id: deposit.mess_id },
+      });
+      if (mess?.created_by !== userId) {
         throw new HttpException('Forbidden: Not your mess', 403);
+      }
     }
 
-    const updated = await this.prisma.deposit.update({
+    return this.prisma.deposit.update({
       where: { id },
       data: {
         amount: dto.amount,
-        date: dto.date ? new Date(dto.date) : undefined,
         note: dto.note,
       },
-      include: { user: { select: { id: true, name: true } } },
+      include: { member: { select: { id: true, name: true } } },
     });
-
-    return updated;
   }
 
-  // ─────────────────────────────────────────
-  // Delete deposit
-  // ─────────────────────────────────────────
   async remove(id: string, userId: string, role: string) {
     const deposit = await this.prisma.deposit.findUnique({ where: { id } });
     if (!deposit) throw new HttpException('Deposit not found', 404);
 
-    if (role === 'MEMBER' && deposit.userId !== userId) {
+    if (role === 'MEMBER' && deposit.member_id !== userId) {
       throw new HttpException('Forbidden: Not your deposit', 403);
     }
 
     if (role === 'MANAGER') {
-      const mess = await this.prisma.mess.findUnique({ where: { id: deposit.messId } });
-      if (mess?.managerId !== userId)
+      const mess = await this.prisma.mess.findUnique({
+        where: { id: deposit.mess_id },
+      });
+      if (mess?.created_by !== userId) {
         throw new HttpException('Forbidden: Not your mess', 403);
+      }
     }
 
     await this.prisma.deposit.delete({ where: { id } });
     return { message: 'Deposit deleted successfully' };
+  }
+
+  private buildWhere(query: DepositFilterDto): Prisma.DepositWhereInput {
+    const where: Prisma.DepositWhereInput = {};
+    if (query.messId) where.mess_id = query.messId;
+    if (query.userId) where.member_id = query.userId;
+    if (query.startDate || query.endDate) {
+      where.created_at = {
+        ...(query.startDate && { gte: new Date(query.startDate) }),
+        ...(query.endDate && { lte: new Date(query.endDate) }),
+      };
+    }
+    return where;
   }
 }

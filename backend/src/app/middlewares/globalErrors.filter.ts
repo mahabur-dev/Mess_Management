@@ -85,7 +85,7 @@ const handlePrismaKnownError = (
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) { }
+  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
 
   catch(err: unknown, host: ArgumentsHost): void {
     const { httpAdapter } = this.httpAdapterHost;
@@ -147,7 +147,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     else if (err instanceof Prisma.PrismaClientValidationError) {
       statusCode = HttpStatus.BAD_REQUEST;
       message = 'Invalid data provided to database';
-      errorSources = [{ path: '', message: (err as any).message }];
+      errorSources = [{ path: '', message: err.message }];
     }
 
     // 5. Generic JS Error

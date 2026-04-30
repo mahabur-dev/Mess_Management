@@ -1,0 +1,22 @@
+// ============================================================
+// prisma/schema/meal-attendance.prisma
+// Table: meal_attendances
+// ============================================================
+
+model MealAttendance {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meal_id    String           @db.Uuid
+  member_id  String           @db.Uuid
+  guests     Int              @default(0)
+  status     AttendanceStatus @default(ON)
+  updated_at DateTime         @updatedAt @db.Timestamptz
+
+  // ─── Relations ─────────────────────────────────────────
+  meal   Meal @relation(fields: [meal_id], references: [id], onDelete: Cascade)
+  member User @relation("AttendanceMember", fields: [member_id], references: [id], onDelete: Cascade)
+
+  @@unique([meal_id, member_id])
+  @@index([meal_id])
+  @@index([member_id])
+  @@map("meal_attendances")
+}

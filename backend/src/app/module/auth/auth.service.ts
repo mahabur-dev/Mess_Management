@@ -1,155 +1,10 @@
-// import { HttpException, Injectable } from '@nestjs/common';
-// import { CreateAuthDto } from './dto/create-auth.dto';
-// import { User, UserDocument } from '../user/entities/user.entity';
-// import { InjectModel } from '@nestjs/mongoose';
-// import { Model } from 'mongoose';
-// import { Response } from 'express';
-// import * as bcrypt from 'bcrypt';
-// import * as jwt from '@nestjs/jwt';
-// import config from '../../config';
-// import sendMailer from 'src/app/helpers/sendMailer';
-
-// @Injectable()
-// export class AuthService {
-//   constructor(
-//     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-//     private readonly jwtService: jwt.JwtService,
-//   ) {}
-
-//   async register(CreateAuthDto: CreateAuthDto) {
-//     const user = await this.userModel.findOne({ email: CreateAuthDto.email });
-//     if (user) {
-//       throw new HttpException('User already exists', 400);
-//     }
-//     const newUser = await this.userModel.create(CreateAuthDto);
-//     return newUser;
-//   }
-
-//   async login(loginDto: { email: string; password: string }, res: Response) {
-//     const user = await this.userModel
-//       .findOne({ email: loginDto.email })
-//       .select('+password');
-//     if (!user) {
-//       throw new HttpException('User not found', 404);
-//     }
-
-//     const isPasswordMatch = await bcrypt.compare(
-//       loginDto.password,
-//       user.password,
-//     );
-//     if (!isPasswordMatch) {
-//       throw new HttpException('Incorrect password', 401);
-//     }
-
-//     const accessToken = this.jwtService.sign(
-//       { id: user._id, email: user.email, role: user.role },
-//       {
-//         secret: config.jwt.accessTokenSecret,
-//         expiresIn: config.jwt.accessTokenExpires as any,
-//       } as jwt.JwtSignOptions,
-//     );
-//     const refreshToken = this.jwtService.sign(
-//       { id: user._id, email: user.email, role: user.role },
-//       {
-//         secret: config.jwt.refreshTokenSecret,
-//         expiresIn: config.jwt.refreshTokenExpires as any,
-//       } as jwt.JwtSignOptions,
-//     );
-//     res.cookie('refreshToken', refreshToken, {
-//       httpOnly: true,
-//       secure: true,
-//       sameSite: 'strict',
-//     });
-
-//     return { accessToken, user };
-//   }
-
-//   async forgotPassword(email: string) {
-//     const user = await this.userModel.findOne({ email });
-//     if (!user) throw new HttpException('Email not found', 404);
-
-//     const generateOtpNumber = Math.floor(100000 + Math.random() * 900000);
-
-//     user.otp = generateOtpNumber.toString();
-//     user.otpExpiry = new Date(Date.now() + 60 * 60 * 1000);
-//     await user.save();
-
-//     const html = `
-//     <div style="font-family: Arial; text-align: center;">
-//       <h2 style="color:#4f46e5;">Password Reset OTP</h2>
-//       <p>Your OTP code is:</p>
-//       <h1 style="letter-spacing:4px;">${generateOtpNumber}</h1>
-//       <p>This code will expire in 1 hour.</p>
-//     </div>
-//   `;
-
-//     await sendMailer(user.email, 'Reset Password OTP', html);
-
-//     return { message: 'Check your email for OTP' };
-//   }
-
-//   async verifyEmail(email: string, otp: string) {
-//     const user = await this.userModel.findOne({ email });
-//     if (!user) throw new HttpException('Invalid link', 400);
-
-//     if (user.otp !== otp) throw new HttpException('Invalid OTP', 400);
-//     if (!user.otpExpiry) throw new HttpException('Invalid OTP', 400);
-//     const todayDate = new Date();
-//     if (user.otpExpiry < todayDate) throw new HttpException('OTP expired', 400);
-
-//     user.otp = undefined as any;
-//     user.otpExpiry = undefined as any;
-
-//     user.verifiedForget = true;
-//     await user.save();
-//     if (!user.verifiedForget) throw new HttpException('Invalid link', 400);
-
-//     return { message: 'OTP verified successfully' };
-//   }
-
-//   async resetPasswordChange(email: string, newPassword: string) {
-//     const user = await this.userModel.findOne({ email });
-//     if (!user) throw new HttpException('Invalid link', 400);
-
-//     if (!user.verifiedForget) throw new HttpException('Invalid link', 400);
-
-//     user.password = newPassword;
-//     user.verifiedForget = false;
-//     await user.save();
-
-//     return { message: 'Password reset successfully' };
-//   }
-
-//   async changePassword(
-//     userId: string,
-//     oldPassword: string,
-//     newPassword: string,
-//   ) {
-//     const user = await this.userModel.findById(userId).select('+password');
-//     if (!user) throw new HttpException('User not found', 404);
-//     const isMatch = await bcrypt.compare(oldPassword, user.password);
-
-//     if (!isMatch) throw new HttpException('Invalid old password', 400);
-
-//     if (oldPassword === newPassword)
-//       throw new HttpException(
-//         'New password cannot be same as old password',
-//         400,
-//       );
-
-//     user.password = newPassword;
-//     await user.save();
-
-//     return { message: 'Password changed successfully' };
-//   }
-// }
-
-
 import { HttpException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
+import { PrismaService } from 'prisma/prisma.service';
 import config from '../../config';
+import sendMailer from 'src/app/helpers/sendMailer';
 import {
   ChangePasswordDto,
   ForgotPasswordDto,
@@ -158,15 +13,47 @@ import {
   ResetPasswordDto,
   VerifyOtpDto,
 } from './dto/auth.dto';
-import sendMailer from 'src/app/helpers/sendMailer';
-import { PrismaService } from 'prisma/prisma.service';
+
+// ─── Prisma select: safe user (no password_hash, no otp) ─────────────────────
+const SAFE_USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  avatar_url: true,
+  role: true,
+  is_active: true,
+  created_at: true,
+  updated_at: true,
+} as const;
+
+// ─── Prisma select: my profile with mess memberships ─────────────────────────
+const MY_PROFILE_SELECT = {
+  ...SAFE_USER_SELECT,
+  memberships: {
+    where: { is_active: true },
+    select: {
+      role: true,
+      joined_at: true,
+      mess: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          meal_rate: true,
+          currency: true,
+        },
+      },
+    },
+  },
+} as const;
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   // ─────────────────────────────────────────
   // Register
@@ -177,24 +64,20 @@ export class AuthService {
     });
     if (exists) throw new HttpException('Email already registered', 400);
 
-    const hashedPassword = await bcrypt.hash(dto.password, config.bcryptSaltRounds);
+    const password_hash = await bcrypt.hash(
+      dto.password,
+      config.bcryptSaltRounds,
+    );
 
     const user = await this.prisma.user.create({
       data: {
         name: dto.name,
         email: dto.email,
-        password: hashedPassword,
+        password_hash,
         role: dto.role,
-        mobileNumber: dto.mobileNumber,
+        phone: dto.phone,
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        mobileNumber: true,
-        createdAt: true,
-      },
+      select: SAFE_USER_SELECT,
     });
 
     return user;
@@ -206,11 +89,15 @@ export class AuthService {
   async login(dto: LoginDto, res: Response) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
+      select: {
+        ...SAFE_USER_SELECT,
+        password_hash: true,
+      },
     });
     if (!user) throw new HttpException('Invalid email or password', 401);
-    if (!user.isActive) throw new HttpException('Account is deactivated', 403);
+    if (!user.is_active) throw new HttpException('Account is deactivated', 403);
 
-    const isMatch = await bcrypt.compare(dto.password, user.password);
+    const isMatch = await bcrypt.compare(dto.password, user.password_hash);
     if (!isMatch) throw new HttpException('Invalid email or password', 401);
 
     const payload = { id: user.id, email: user.email, role: user.role };
@@ -231,12 +118,24 @@ export class AuthService {
       sameSite: 'strict',
     });
 
-    const { password: _, ...safeUser } = user;
-    return { accessToken, user: safeUser };
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        avatar_url: user.avatar_url,
+        role: user.role,
+        is_active: user.is_active,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      },
+    };
   }
 
   // ─────────────────────────────────────────
-  // Forgot Password
+  // Forgot Password — send OTP
   // ─────────────────────────────────────────
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({
@@ -245,16 +144,16 @@ export class AuthService {
     if (!user) throw new HttpException('Email not found', 404);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const otp_expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { otp, otpExpiry },
+      data: { otp, otp_expiry },
     });
 
     const html = `
       <div style="font-family: Arial; text-align: center; max-width:500px; margin:auto;">
-        <h2 style="color:#4f46e5;">Mess Management - Password Reset</h2>
+        <h2 style="color:#4f46e5;">Mess Management — Password Reset</h2>
         <p>Your OTP code is:</p>
         <h1 style="letter-spacing:8px; color:#4f46e5;">${otp}</h1>
         <p>This code will expire in <strong>1 hour</strong>.</p>
@@ -262,7 +161,7 @@ export class AuthService {
       </div>
     `;
 
-    await sendMailer(user.email, 'Password Reset OTP - Mess Management', html);
+    await sendMailer(user.email, 'Password Reset OTP — Mess Management', html);
     return { message: 'OTP sent to your email' };
   }
 
@@ -276,13 +175,13 @@ export class AuthService {
     if (!user || user.otp !== dto.otp) {
       throw new HttpException('Invalid OTP', 400);
     }
-    if (!user.otpExpiry || user.otpExpiry < new Date()) {
+    if (!user.otp_expiry || user.otp_expiry < new Date()) {
       throw new HttpException('OTP has expired', 400);
     }
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { otp: null, otpExpiry: null, isVerified: true },
+      data: { otp: null, otp_expiry: null, is_verified: true },
     });
 
     return { message: 'OTP verified successfully' };
@@ -296,13 +195,17 @@ export class AuthService {
       where: { email: dto.email },
     });
     if (!user) throw new HttpException('User not found', 404);
-    if (!user.isVerified) throw new HttpException('Please verify OTP first', 400);
+    if (!user.is_verified)
+      throw new HttpException('Please verify OTP first', 400);
 
-    const hashedPassword = await bcrypt.hash(dto.newPassword, config.bcryptSaltRounds);
+    const password_hash = await bcrypt.hash(
+      dto.newPassword,
+      config.bcryptSaltRounds,
+    );
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword },
+      data: { password_hash, is_verified: false },
     });
 
     return { message: 'Password reset successfully' };
@@ -315,21 +218,24 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new HttpException('User not found', 404);
 
-    const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
+    const isMatch = await bcrypt.compare(dto.oldPassword, user.password_hash);
     if (!isMatch) throw new HttpException('Old password is incorrect', 400);
 
     if (dto.oldPassword === dto.newPassword) {
       throw new HttpException(
-        'New password cannot be same as old password',
+        'New password cannot be the same as old password',
         400,
       );
     }
 
-    const hashedPassword = await bcrypt.hash(dto.newPassword, config.bcryptSaltRounds);
+    const password_hash = await bcrypt.hash(
+      dto.newPassword,
+      config.bcryptSaltRounds,
+    );
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { password: hashedPassword },
+      data: { password_hash },
     });
 
     return { message: 'Password changed successfully' };
@@ -338,7 +244,7 @@ export class AuthService {
   // ─────────────────────────────────────────
   // Logout
   // ─────────────────────────────────────────
-  async logout(res: Response) {
+  logout(res: Response) {
     res.clearCookie('refreshToken');
     return { message: 'Logged out successfully' };
   }
@@ -349,32 +255,7 @@ export class AuthService {
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        profileImage: true,
-        mobileNumber: true,
-        city: true,
-        state: true,
-        country: true,
-        postcode: true,
-        isActive: true,
-        isVerified: true,
-        createdAt: true,
-        messMembers: {
-          select: {
-            mess: {
-              select: {
-                id: true,
-                messName: true,
-                messLocation: true,
-              },
-            },
-          },
-        },
-      },
+      select: MY_PROFILE_SELECT,
     });
     if (!user) throw new HttpException('User not found', 404);
     return user;

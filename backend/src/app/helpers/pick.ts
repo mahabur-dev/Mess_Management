@@ -16,7 +16,6 @@
 
 // export default pick;
 
-
 export interface IFilterParams {
   searchTerm?: string;
   [key: string]: any;

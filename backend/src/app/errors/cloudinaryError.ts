@@ -1,5 +1,4 @@
-import { TErrorSource } from "../middlewares/globalErrors.filter";
-
+import { TErrorSource } from '../middlewares/globalErrors.filter';
 
 export interface CloudinaryError {
   http_code?: number;

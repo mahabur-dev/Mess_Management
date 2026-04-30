@@ -16,7 +16,10 @@ export class CreateMealDto {
   @IsNotEmpty()
   messId: string;
 
-  @ApiProperty({ example: 2, description: 'Number of meals (supports 0.5 for half meal)' })
+  @ApiProperty({
+    example: 2,
+    description: 'Number of meals (supports 0.5 for half meal)',
+  })
   @IsNumber()
   @Min(0)
   @Max(5)

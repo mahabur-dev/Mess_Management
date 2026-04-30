@@ -31,7 +31,9 @@ export class DepositController {
   @ApiOperation({ summary: 'Add a deposit (all roles)' })
   async create(@Req() req: Request, @Body() dto: CreateDepositDto) {
     const data = await this.depositService.create(
-      req.user!.id, req.user!.role, dto,
+      req.user!.id,
+      req.user!.role,
+      dto,
     );
     return { message: 'Deposit added successfully', data };
   }
@@ -58,7 +60,10 @@ export class DepositController {
     @Query() query: DepositFilterDto,
   ) {
     const result = await this.depositService.findByMess(
-      messId, req.user!.id, req.user!.role, query,
+      messId,
+      req.user!.id,
+      req.user!.role,
+      query,
     );
     return {
       message: 'Deposits fetched successfully',
@@ -73,7 +78,9 @@ export class DepositController {
   @ApiOperation({ summary: 'Get a deposit by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.depositService.findOne(
-      id, req.user!.id, req.user!.role,
+      id,
+      req.user!.id,
+      req.user!.role,
     );
     return { message: 'Deposit fetched successfully', data };
   }
@@ -87,7 +94,10 @@ export class DepositController {
     @Body() dto: UpdateDepositDto,
   ) {
     const data = await this.depositService.update(
-      id, req.user!.id, req.user!.role, dto,
+      id,
+      req.user!.id,
+      req.user!.role,
+      dto,
     );
     return { message: 'Deposit updated successfully', data };
   }
@@ -97,7 +107,9 @@ export class DepositController {
   @ApiOperation({ summary: 'Delete a deposit' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.depositService.remove(
-      id, req.user!.id, req.user!.role,
+      id,
+      req.user!.id,
+      req.user!.role,
     );
     return { message: 'Deposit deleted successfully', data };
   }

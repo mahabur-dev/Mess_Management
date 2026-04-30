@@ -72,7 +72,6 @@
 //   uploadConfig,
 // };
 
-
 import { memoryStorage } from 'multer';
 import streamifier from 'streamifier';
 import { v2 as cloudinary } from 'cloudinary';
@@ -109,8 +108,12 @@ export const uploadToCloudinary = async (
         transformation: { width: 500, height: 500, crop: 'limit' },
       },
       (error, result) => {
-        if (error) return reject(error);
-        if (!result) return reject(new Error('Upload failed - no result returned'));
+        if (error) {
+          reject(new Error(error.message || 'Cloudinary upload failed'));
+          return;
+        }
+        if (!result)
+          return reject(new Error('Upload failed - no result returned'));
         resolve({ url: result.secure_url, public_id: result.public_id });
       },
     );

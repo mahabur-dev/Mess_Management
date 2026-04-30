@@ -88,12 +88,18 @@ export class BazarFilterDto {
   @IsString()
   userId?: string;
 
-  @ApiPropertyOptional({ example: '2025-04-01', description: 'Start date filter' })
+  @ApiPropertyOptional({
+    example: '2025-04-01',
+    description: 'Start date filter',
+  })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiPropertyOptional({ example: '2025-04-30', description: 'End date filter' })
+  @ApiPropertyOptional({
+    example: '2025-04-30',
+    description: 'End date filter',
+  })
   @IsOptional()
   @IsDateString()
   endDate?: string;

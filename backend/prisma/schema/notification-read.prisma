@@ -1,0 +1,19 @@
+// ============================================================
+// prisma/schema/notification-read.prisma
+// Table: notification_reads
+// ============================================================
+
+model NotificationRead {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  notification_id String   @db.Uuid
+  user_id         String   @db.Uuid
+  read_at         DateTime @default(now()) @db.Timestamptz
+
+  // ─── Relations ─────────────────────────────────────────
+  notification Notification @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([notification_id, user_id])
+  @@index([user_id])
+  @@map("notification_reads")
+}

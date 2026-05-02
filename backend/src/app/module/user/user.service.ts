@@ -7,19 +7,25 @@ import {
 import { Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
-import { deleteFromCloudinary, uploadToCloudinary } from 'src/app/helpers/fileUploder';
+import { uploadToCloudinary } from 'src/app/helpers/fileUploder';
 import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // ─────────────────────────────────────────
   // Get all users (Admin only)
   // ─────────────────────────────────────────
   async findAll(query: UserFilterDto) {
-    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
-    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(paginationOptions as any);
+    const paginationOptions = pick(query, [
+      'page',
+      'limit',
+      'sortBy',
+      'sortOrder',
+    ]);
+    const { page, limit, skip, sortBy, sortOrder } =
+      paginationHelper(paginationOptions);
 
     const where: Prisma.UserWhereInput = {};
 
@@ -44,15 +50,11 @@ export class UserService {
           name: true,
           email: true,
           role: true,
-          profileImage: true,
-          mobileNumber: true,
-          city: true,
-          state: true,
-          country: true,
-          postcode: true,
-          isActive: true,
-          isVerified: true,
-          createdAt: true,
+          phone: true,
+          avatar_url: true,
+          is_active: true,
+          is_verified: true,
+          created_at: true,
         },
       }),
     ]);
@@ -74,20 +76,16 @@ export class UserService {
         name: true,
         email: true,
         role: true,
-        profileImage: true,
-        mobileNumber: true,
-        city: true,
-        state: true,
-        country: true,
-        postcode: true,
-        isActive: true,
-        isVerified: true,
-        createdAt: true,
-        messMembers: {
+        phone: true,
+        avatar_url: true,
+        is_active: true,
+        is_verified: true,
+        created_at: true,
+        memberships: {
           select: {
-            joinedAt: true,
+            joined_at: true,
             mess: {
-              select: { id: true, messName: true, messLocation: true },
+              select: { id: true, name: true, address: true },
             },
           },
         },
@@ -109,37 +107,31 @@ export class UserService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new HttpException('User not found', 404);
 
-    let profileImage = user.profileImage;
-    let publicId = user.publicId;
+    let avatar_url = user.avatar_url;
 
     if (file) {
-      // Delete old image from Cloudinary
-      if (user.publicId) await deleteFromCloudinary(user.publicId);
-
-      const uploaded = await uploadToCloudinary(file, 'mess_management/profiles');
-      profileImage = uploaded.url;
-      publicId = uploaded.public_id;
+      const uploaded = await uploadToCloudinary(
+        file,
+        'mess_management/profiles',
+      );
+      avatar_url = uploaded.url;
     }
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        ...dto,
-        profileImage,
-        publicId,
+        name: dto.name,
+        phone: dto.phone,
+        avatar_url,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
-        profileImage: true,
-        mobileNumber: true,
-        city: true,
-        state: true,
-        country: true,
-        postcode: true,
-        createdAt: true,
+        phone: true,
+        avatar_url: true,
+        created_at: true,
       },
     });
 
@@ -155,8 +147,8 @@ export class UserService {
 
     const updated = await this.prisma.user.update({
       where: { id },
-      data: { isActive: dto.isActive },
-      select: { id: true, name: true, email: true, isActive: true },
+      data: { is_active: dto.isActive },
+      select: { id: true, name: true, email: true, is_active: true },
     });
 
     return updated;
@@ -168,8 +160,6 @@ export class UserService {
   async remove(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new HttpException('User not found', 404);
-
-    if (user.publicId) await deleteFromCloudinary(user.publicId);
 
     await this.prisma.user.delete({ where: { id } });
     return { message: 'User deleted successfully' };

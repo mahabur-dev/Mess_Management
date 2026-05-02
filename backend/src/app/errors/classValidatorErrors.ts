@@ -1,7 +1,6 @@
 import { ValidationError } from 'class-validator';
 import { TErrorSource } from '../middlewares/globalErrors.filter';
 
-
 export function handleClassValidatorErrors(errors: ValidationError[]): {
   message: string;
   errorSources: TErrorSource[];

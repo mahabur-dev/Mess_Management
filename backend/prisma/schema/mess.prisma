@@ -1,40 +1,29 @@
+// ============================================================
 // prisma/schema/mess.prisma
-// ────────────────────────────────────────────
-// Messes table
-// ────────────────────────────────────────────
+// Table: messes
+// ============================================================
 
 model Mess {
-  id             String   @id @default(cuid())
-  messName       String
-  messLocation   String
-  managerId      String
-  managerPhone   String
-  managerEmail   String
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  address     String?  @db.Text
+  meal_rate   Decimal  @db.Decimal(10, 2)
+  currency    String   @default("BDT") @db.VarChar(10)
+  created_by  String   @db.Uuid
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz
 
-  // Relations
-  manager   User         @relation("MessManager", fields: [managerId], references: [id], onDelete: Restrict)
-  members   MessMember[]
-  bazars    Bazar[]
-  deposits  Deposit[]
-  meals     Meal[]
-  notifications Notification[]
+  // ─── Relations ─────────────────────────────────────────
+  creator        User             @relation("MessCreator", fields: [created_by], references: [id])
+  memberships    MessMembership[]
+  meals          Meal[]
+  expenses       Expense[]
+  deposits       Deposit[]
+  monthly_bills  MonthlyBill[]
+  shopping_lists ShoppingList[]
+  notifications  Notification[]
+  audit_logs     AuditLog[]
 
   @@map("messes")
-}
-
-// Join table: tracks which users are members of which mess
-model MessMember {
-  id        String   @id @default(cuid())
-  messId    String
-  userId    String
-  joinedAt  DateTime @default(now())
-
-  mess  Mess @relation(fields: [messId], references: [id], onDelete: Cascade)
-  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([messId, userId])
-  @@map("mess_members")
 }

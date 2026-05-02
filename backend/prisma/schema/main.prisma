@@ -1,8 +1,85 @@
+// ============================================================
+// prisma/schema/main.prisma
+// Generator · Datasource · All Enums
+// Prisma 7.x — prismaSchemaFolder is stable, no previewFeatures needed
+// ============================================================
+
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["prismaSchemaFolder"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+}
+
+// ─── User ──────────────────────────────────────────────────
+enum GlobalRole {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+// ─── MessMembership ────────────────────────────────────────
+enum MembershipRole {
+  MANAGER
+  MEMBER
+}
+
+// ─── Meal ──────────────────────────────────────────────────
+enum MealName {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+enum MealStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+// ─── MealAttendance ────────────────────────────────────────
+enum AttendanceStatus {
+  ON
+  OFF
+}
+
+// ─── Expense ───────────────────────────────────────────────
+enum ExpenseCategory {
+  GROCERY
+  UTILITY
+  RENT
+  OTHER
+}
+
+// ─── Deposit ───────────────────────────────────────────────
+enum PaymentMethod {
+  CASH
+  BKASH
+  NAGAD
+  BANK
+}
+
+// ─── MonthlyBill ───────────────────────────────────────────
+enum BillStatus {
+  PENDING
+  PAID
+  PARTIAL
+}
+
+// ─── ShoppingList ──────────────────────────────────────────
+enum ShoppingListStatus {
+  OPEN
+  PURCHASED
+  CANCELLED
+}
+
+// ─── Notification ──────────────────────────────────────────
+enum NotificationType {
+  MEAL_UPDATE
+  EXPENSE_ADDED
+  DEPOSIT_CONFIRMED
+  BILL_GENERATED
+  ANNOUNCEMENT
+  SHOPPING_UPDATE
 }

@@ -12,7 +12,21 @@ import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class MessService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
+
+  private readonly messSelect = {
+    id: true,
+    name: true,
+    description: true,
+    address: true,
+    meal_rate: true,
+    currency: true,
+    created_by: true,
+    is_active: true,
+    created_at: true,
+    creator: { select: { id: true, name: true, email: true } },
+    _count: { select: { memberships: true, deposits: true, meals: true } },
+  } as const;
 
   // ─────────────────────────────────────────
   // Create mess (Manager creates own mess)
@@ -26,17 +40,18 @@ export class MessService {
 
     const mess = await this.prisma.mess.create({
       data: {
-        messName: dto.messName,
-        messLocation: dto.messLocation,
-        managerId,
-        managerPhone: dto.managerPhone,
-        managerEmail: dto.managerEmail,
-      },
-      include: {
-        manager: {
-          select: { id: true, name: true, email: true },
+        name: dto.messName,
+        address: dto.messLocation,
+        created_by: managerId,
+        meal_rate: 0,
+        memberships: {
+          create: {
+            user_id: managerId,
+            role: 'MANAGER',
+          },
         },
       },
+      select: this.messSelect,
     });
 
     return mess;
@@ -47,19 +62,25 @@ export class MessService {
   // ─────────────────────────────────────────
   async findAll(query: MessFilterDto) {
     const paginationOptions = pick(query, [
-      'page', 'limit', 'sortBy', 'sortOrder',
+      'page',
+      'limit',
+      'sortBy',
+      'sortOrder',
     ]);
-    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(
-      paginationOptions as any,
-    );
+    const { page, limit, skip, sortBy, sortOrder } =
+      paginationHelper(paginationOptions);
 
     const where: Prisma.MessWhereInput = {};
 
     if (query.searchTerm) {
       where.OR = [
-        { messName: { contains: query.searchTerm, mode: 'insensitive' } },
-        { messLocation: { contains: query.searchTerm, mode: 'insensitive' } },
-        { managerEmail: { contains: query.searchTerm, mode: 'insensitive' } },
+        { name: { contains: query.searchTerm, mode: 'insensitive' } },
+        { address: { contains: query.searchTerm, mode: 'insensitive' } },
+        {
+          creator: {
+            email: { contains: query.searchTerm, mode: 'insensitive' },
+          },
+        },
       ];
     }
 
@@ -70,10 +91,7 @@ export class MessService {
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        include: {
-          manager: { select: { id: true, name: true, email: true } },
-          _count: { select: { members: true } },
-        },
+        select: this.messSelect,
       }),
     ]);
 
@@ -88,20 +106,24 @@ export class MessService {
   // ─────────────────────────────────────────
   async findMyMess(managerId: string) {
     const mess = await this.prisma.mess.findFirst({
-      where: { managerId },
+      where: { created_by: managerId },
       include: {
-        manager: { select: { id: true, name: true, email: true } },
-        members: {
+        creator: { select: { id: true, name: true, email: true } },
+        memberships: {
+          where: { is_active: true },
           include: {
             user: {
               select: {
-                id: true, name: true, email: true,
-                profileImage: true, mobileNumber: true,
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+                phone: true,
               },
             },
           },
         },
-        _count: { select: { members: true, bazars: true, deposits: true } },
+        _count: { select: { memberships: true, deposits: true, meals: true } },
       },
     });
 
@@ -116,18 +138,22 @@ export class MessService {
     const mess = await this.prisma.mess.findUnique({
       where: { id },
       include: {
-        manager: { select: { id: true, name: true, email: true } },
-        members: {
+        creator: { select: { id: true, name: true, email: true } },
+        memberships: {
+          where: { is_active: true },
           include: {
             user: {
               select: {
-                id: true, name: true, email: true,
-                profileImage: true, mobileNumber: true,
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+                phone: true,
               },
             },
           },
         },
-        _count: { select: { members: true } },
+        _count: { select: { memberships: true } },
       },
     });
 
@@ -147,16 +173,17 @@ export class MessService {
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
 
-    if (requesterRole === 'MANAGER' && mess.managerId !== requesterId) {
+    if (requesterRole === 'MANAGER' && mess.created_by !== requesterId) {
       throw new HttpException('Forbidden: Not your mess', 403);
     }
 
     const updated = await this.prisma.mess.update({
       where: { id: messId },
-      data: dto,
-      include: {
-        manager: { select: { id: true, name: true, email: true } },
+      data: {
+        name: dto.messName,
+        address: dto.messLocation,
       },
+      select: this.messSelect,
     });
 
     return updated;
@@ -179,19 +206,21 @@ export class MessService {
   async addMember(messId: string, managerId: string, dto: AddMemberDto) {
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
-    if (mess.managerId !== managerId)
+    if (mess.created_by !== managerId)
       throw new HttpException('Forbidden: Not your mess', 403);
 
-    const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+    });
     if (!user) throw new HttpException('User not found', 404);
 
-    const existing = await this.prisma.messMember.findUnique({
-      where: { messId_userId: { messId, userId: dto.userId } },
+    const existing = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: dto.userId } },
     });
     if (existing) throw new HttpException('User is already a member', 400);
 
-    const member = await this.prisma.messMember.create({
-      data: { messId, userId: dto.userId },
+    const member = await this.prisma.messMembership.create({
+      data: { mess_id: messId, user_id: dto.userId },
       include: {
         user: { select: { id: true, name: true, email: true } },
       },
@@ -206,16 +235,18 @@ export class MessService {
   async removeMember(messId: string, userId: string, managerId: string) {
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
-    if (mess.managerId !== managerId)
+    if (mess.created_by !== managerId)
       throw new HttpException('Forbidden: Not your mess', 403);
 
-    const member = await this.prisma.messMember.findUnique({
-      where: { messId_userId: { messId, userId } },
+    const member = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-    if (!member) throw new HttpException('User is not a member of this mess', 404);
+    if (!member)
+      throw new HttpException('User is not a member of this mess', 404);
 
-    await this.prisma.messMember.delete({
-      where: { messId_userId: { messId, userId } },
+    await this.prisma.messMembership.update({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+      data: { is_active: false, left_at: new Date() },
     });
 
     return { message: 'Member removed successfully' };
@@ -225,15 +256,22 @@ export class MessService {
   // Get members of a mess
   // ─────────────────────────────────────────
   async getMembers(messId: string, query: MessFilterDto) {
-    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
-    const { page, limit, skip, sortOrder } = paginationHelper(
-      paginationOptions as any,
-    );
+    const paginationOptions = pick(query, [
+      'page',
+      'limit',
+      'sortBy',
+      'sortOrder',
+    ]);
+    const { page, limit, skip, sortOrder } =
+      paginationHelper(paginationOptions);
 
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
 
-    const where: Prisma.MessMemberWhereInput = { messId };
+    const where: Prisma.MessMembershipWhereInput = {
+      mess_id: messId,
+      is_active: true,
+    };
 
     if (query.searchTerm) {
       where.user = {
@@ -245,17 +283,21 @@ export class MessService {
     }
 
     const [total, members] = await Promise.all([
-      this.prisma.messMember.count({ where }),
-      this.prisma.messMember.findMany({
+      this.prisma.messMembership.count({ where }),
+      this.prisma.messMembership.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { joinedAt: sortOrder },
+        orderBy: { joined_at: sortOrder },
         include: {
           user: {
             select: {
-              id: true, name: true, email: true,
-              profileImage: true, mobileNumber: true, role: true,
+              id: true,
+              name: true,
+              email: true,
+              avatar_url: true,
+              phone: true,
+              role: true,
             },
           },
         },

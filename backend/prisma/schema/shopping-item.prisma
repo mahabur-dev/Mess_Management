@@ -1,0 +1,24 @@
+// ============================================================
+// prisma/schema/shopping-item.prisma
+// Table: shopping_items
+// ============================================================
+
+model ShoppingItem {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  list_id         String   @db.Uuid
+  name            String   @db.VarChar(150)
+  quantity        Decimal  @db.Decimal(10, 3)
+  unit            String?  @db.VarChar(30)
+  estimated_price Decimal? @db.Decimal(10, 2)
+  actual_price    Decimal? @db.Decimal(10, 2)
+  purchased_by    String?  @db.Uuid
+  is_purchased    Boolean  @default(false)
+  note            String?  @db.Text
+
+  // ─── Relations ─────────────────────────────────────────
+  list      ShoppingList @relation(fields: [list_id], references: [id], onDelete: Cascade)
+  purchaser User?        @relation("ItemPurchaser", fields: [purchased_by], references: [id])
+
+  @@index([list_id])
+  @@map("shopping_items")
+}

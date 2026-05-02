@@ -42,7 +42,11 @@ export class MessController {
   @ApiOperation({ summary: '[ADMIN] Get all messes with pagination' })
   async findAll(@Query() query: MessFilterDto) {
     const result = await this.messService.findAll(query);
-    return { message: 'Messes fetched successfully', meta: result.meta, data: result.data };
+    return {
+      message: 'Messes fetched successfully',
+      meta: result.meta,
+      data: result.data,
+    };
   }
 
   // Manager: get own mess
@@ -73,7 +77,10 @@ export class MessController {
     @Body() dto: UpdateMessDto,
   ) {
     const data = await this.messService.update(
-      id, req.user!.id, req.user!.role, dto,
+      id,
+      req.user!.id,
+      req.user!.role,
+      dto,
     );
     return { message: 'Mess updated successfully', data };
   }
@@ -109,7 +116,11 @@ export class MessController {
     @Param('userId') userId: string,
     @Req() req: Request,
   ) {
-    const data = await this.messService.removeMember(messId, userId, req.user!.id);
+    const data = await this.messService.removeMember(
+      messId,
+      userId,
+      req.user!.id,
+    );
     return { message: 'Member removed successfully', data };
   }
 
@@ -119,6 +130,10 @@ export class MessController {
   @ApiOperation({ summary: 'Get members of a mess' })
   async getMembers(@Param('id') id: string, @Query() query: MessFilterDto) {
     const result = await this.messService.getMembers(id, query);
-    return { message: 'Members fetched successfully', meta: result.meta, data: result.data };
+    return {
+      message: 'Members fetched successfully',
+      meta: result.meta,
+      data: result.data,
+    };
   }
 }

@@ -1,7 +1,6 @@
 import { MulterError } from 'multer';
 import { TErrorSource } from '../middlewares/globalErrors.filter';
 
-
 const MULTER_ERROR_MESSAGES: Record<string, string> = {
   LIMIT_PART_COUNT: 'Too many parts in the request',
   LIMIT_FILE_SIZE: 'File is too large. Please upload a smaller file',

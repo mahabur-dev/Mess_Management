@@ -39,7 +39,8 @@ export default function AuthGuard(...roles: string[]): Type<CanActivate> {
       const request = context.switchToHttp().getRequest<Request>();
       const token = request.headers.authorization?.split(' ')[1];
 
-      if (!token) throw new HttpException('Unauthorized: No token provided', 401);
+      if (!token)
+        throw new HttpException('Unauthorized: No token provided', 401);
 
       let decoded: JwtPayload;
       try {

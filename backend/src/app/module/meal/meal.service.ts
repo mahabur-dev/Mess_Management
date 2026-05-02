@@ -1,17 +1,14 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { CreateMealDto, MealFilterDto, UpdateMealDto } from './dto/meal.dto';
-import { Prisma } from '@prisma/client';
+import { MealName, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class MealService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  // ─────────────────────────────────────────
-  // Verify mess access helper
-  // ─────────────────────────────────────────
   private async verifyMessAccess(
     messId: string,
     userId: string,
@@ -21,79 +18,68 @@ export class MealService {
     if (!mess) throw new HttpException('Mess not found', 404);
 
     if (role === 'ADMIN') return;
-    if (role === 'MANAGER' && mess.managerId === userId) return;
+    if (role === 'MANAGER' && mess.created_by === userId) return;
 
-    const membership = await this.prisma.messMember.findUnique({
-      where: { messId_userId: { messId, userId } },
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-    if (!membership)
-      throw new HttpException('Forbidden: You are not a member of this mess', 403);
+    if (!membership?.is_active) {
+      throw new HttpException(
+        'Forbidden: You are not a member of this mess',
+        403,
+      );
+    }
   }
 
-  // ─────────────────────────────────────────
-  // Add meal entry
-  // ─────────────────────────────────────────
   async create(userId: string, role: string, dto: CreateMealDto) {
     await this.verifyMessAccess(dto.messId, userId, role);
 
-    const meal = await this.prisma.meal.create({
+    return this.prisma.meal.create({
       data: {
-        messId: dto.messId,
-        userId,
-        mealCount: dto.mealCount,
-        date: dto.date ? new Date(dto.date) : new Date(),
+        mess_id: dto.messId,
+        created_by: userId,
+        name: MealName.LUNCH,
+        scheduled_date: dto.date ? new Date(dto.date) : new Date(),
       },
       include: {
-        user: { select: { id: true, name: true } },
-        mess: { select: { id: true, messName: true } },
+        creator: { select: { id: true, name: true } },
+        mess: { select: { id: true, name: true } },
       },
     });
-
-    return meal;
   }
 
-  // ─────────────────────────────────────────
-  // Get all meals (Admin)
-  // ─────────────────────────────────────────
   async findAll(query: MealFilterDto) {
-    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
-    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(
-      paginationOptions as any,
-    );
+    const paginationOptions = pick(query, [
+      'page',
+      'limit',
+      'sortBy',
+      'sortOrder',
+    ]);
+    const { page, limit, skip, sortBy, sortOrder } =
+      paginationHelper(paginationOptions);
 
-    const where: Prisma.MealWhereInput = {};
-    if (query.messId) where.messId = query.messId;
-    if (query.userId) where.userId = query.userId;
-    if (query.startDate || query.endDate) {
-      where.date = {
-        ...(query.startDate && { gte: new Date(query.startDate) }),
-        ...(query.endDate && { lte: new Date(query.endDate) }),
-      };
-    }
-
-    const [total, meals, totalMeals] = await Promise.all([
+    const where = this.buildWhere(query);
+    const [total, meals] = await Promise.all([
       this.prisma.meal.count({ where }),
       this.prisma.meal.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         orderBy: { [sortBy]: sortOrder },
         include: {
-          user: { select: { id: true, name: true } },
-          mess: { select: { id: true, messName: true } },
+          creator: { select: { id: true, name: true } },
+          mess: { select: { id: true, name: true } },
         },
       }),
-      this.prisma.meal.aggregate({ where, _sum: { mealCount: true } }),
     ]);
 
     return {
       data: meals,
       meta: buildMeta(total, page, limit),
-      totalMealCount: totalMeals._sum.mealCount ?? 0,
+      totalMealCount: total,
     };
   }
 
-  // ─────────────────────────────────────────
-  // Get meals by mess ID
-  // ─────────────────────────────────────────
   async findByMess(
     messId: string,
     userId: string,
@@ -101,110 +87,70 @@ export class MealService {
     query: MealFilterDto,
   ) {
     await this.verifyMessAccess(messId, userId, role);
-
-    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
-    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(
-      paginationOptions as any,
-    );
-
-    const where: Prisma.MealWhereInput = { messId };
-    if (query.userId) where.userId = query.userId;
-    if (query.startDate || query.endDate) {
-      where.date = {
-        ...(query.startDate && { gte: new Date(query.startDate) }),
-        ...(query.endDate && { lte: new Date(query.endDate) }),
-      };
-    }
-
-    const [total, meals, totalMeals] = await Promise.all([
-      this.prisma.meal.count({ where }),
-      this.prisma.meal.findMany({
-        where, skip, take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          user: { select: { id: true, name: true, profileImage: true } },
-        },
-      }),
-      this.prisma.meal.aggregate({ where, _sum: { mealCount: true } }),
-    ]);
-
-    return {
-      data: meals,
-      meta: buildMeta(total, page, limit),
-      totalMealCount: totalMeals._sum.mealCount ?? 0,
-    };
+    return this.findAll({ ...query, messId });
   }
 
-  // ─────────────────────────────────────────
-  // Get single meal
-  // ─────────────────────────────────────────
   async findOne(id: string, userId: string, role: string) {
     const meal = await this.prisma.meal.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, name: true } },
-        mess: { select: { id: true, messName: true } },
+        creator: { select: { id: true, name: true } },
+        mess: { select: { id: true, name: true } },
       },
     });
 
     if (!meal) throw new HttpException('Meal entry not found', 404);
-    await this.verifyMessAccess(meal.messId, userId, role);
+    await this.verifyMessAccess(meal.mess_id, userId, role);
     return meal;
   }
 
-  // ─────────────────────────────────────────
-  // Update meal (own or manager/admin)
-  // ─────────────────────────────────────────
   async update(id: string, userId: string, role: string, dto: UpdateMealDto) {
     const meal = await this.prisma.meal.findUnique({ where: { id } });
     if (!meal) throw new HttpException('Meal entry not found', 404);
 
-    if (role === 'MEMBER' && meal.userId !== userId) {
+    if (role === 'MEMBER' && meal.created_by !== userId) {
       throw new HttpException('Forbidden: Not your meal entry', 403);
     }
 
     if (role === 'MANAGER') {
-      const mess = await this.prisma.mess.findUnique({ where: { id: meal.messId } });
-      if (mess?.managerId !== userId)
+      const mess = await this.prisma.mess.findUnique({
+        where: { id: meal.mess_id },
+      });
+      if (mess?.created_by !== userId) {
         throw new HttpException('Forbidden: Not your mess', 403);
+      }
     }
 
-    const updated = await this.prisma.meal.update({
+    return this.prisma.meal.update({
       where: { id },
       data: {
-        mealCount: dto.mealCount,
-        date: dto.date ? new Date(dto.date) : undefined,
+        scheduled_date: dto.date ? new Date(dto.date) : undefined,
       },
-      include: { user: { select: { id: true, name: true } } },
+      include: { creator: { select: { id: true, name: true } } },
     });
-
-    return updated;
   }
 
-  // ─────────────────────────────────────────
-  // Delete meal
-  // ─────────────────────────────────────────
   async remove(id: string, userId: string, role: string) {
     const meal = await this.prisma.meal.findUnique({ where: { id } });
     if (!meal) throw new HttpException('Meal entry not found', 404);
 
-    if (role === 'MEMBER' && meal.userId !== userId) {
+    if (role === 'MEMBER' && meal.created_by !== userId) {
       throw new HttpException('Forbidden: Not your meal entry', 403);
     }
 
     if (role === 'MANAGER') {
-      const mess = await this.prisma.mess.findUnique({ where: { id: meal.messId } });
-      if (mess?.managerId !== userId)
+      const mess = await this.prisma.mess.findUnique({
+        where: { id: meal.mess_id },
+      });
+      if (mess?.created_by !== userId) {
         throw new HttpException('Forbidden: Not your mess', 403);
+      }
     }
 
     await this.prisma.meal.delete({ where: { id } });
     return { message: 'Meal entry deleted successfully' };
   }
 
-  // ─────────────────────────────────────────
-  // Get meal summary per user in a mess (for meal-rate calculation)
-  // ─────────────────────────────────────────
   async getMealSummaryByMess(
     messId: string,
     userId: string,
@@ -214,57 +160,58 @@ export class MealService {
   ) {
     await this.verifyMessAccess(messId, userId, role);
 
-    const dateFilter: { gte?: Date, lte?: Date } = {};
+    const dateFilter: { gte?: Date; lte?: Date } = {};
     if (startDate) dateFilter.gte = new Date(startDate);
     if (endDate) dateFilter.lte = new Date(endDate);
 
-    const members = await this.prisma.messMember.findMany({
-      where: { messId },
+    const members = await this.prisma.messMembership.findMany({
+      where: { mess_id: messId, is_active: true },
       include: {
-        user: {
-          select: { id: true, name: true, profileImage: true },
-        },
+        user: { select: { id: true, name: true, avatar_url: true } },
       },
     });
 
     const summary = await Promise.all(
       members.map(async (member) => {
-        const result = await this.prisma.meal.aggregate({
-          where: {
-            messId,
-            userId: member.userId,
-            ...(Object.keys(dateFilter).length ? { date: dateFilter } : {}),
-          },
-          _sum: { mealCount: true },
-        });
-
-        const depositTotal = await this.prisma.deposit.aggregate({
-          where: {
-            messId,
-            userId: member.userId,
-            ...(Object.keys(dateFilter).length ? { date: dateFilter } : {}),
-          },
-          _sum: { amount: true },
-        });
+        const [mealCount, depositTotal] = await Promise.all([
+          this.prisma.meal.count({
+            where: {
+              mess_id: messId,
+              created_by: member.user_id,
+              ...(Object.keys(dateFilter).length
+                ? { scheduled_date: dateFilter }
+                : {}),
+            },
+          }),
+          this.prisma.deposit.aggregate({
+            where: {
+              mess_id: messId,
+              member_id: member.user_id,
+              ...(Object.keys(dateFilter).length
+                ? { created_at: dateFilter }
+                : {}),
+            },
+            _sum: { amount: true },
+          }),
+        ]);
 
         return {
           user: member.user,
-          totalMeals: result._sum.mealCount ?? 0,
-          totalDeposit: depositTotal._sum?.amount ?? 0,
+          totalMeals: mealCount,
+          totalDeposit: depositTotal._sum.amount ?? 0,
         };
       }),
     );
 
-    // Total bazar cost for the mess in this period
-    const bazarTotal = await this.prisma.bazar.aggregate({
+    const expenseTotal = await this.prisma.expense.aggregate({
       where: {
-        messId,
-        ...(Object.keys(dateFilter).length ? { date: dateFilter } : {}),
+        mess_id: messId,
+        ...(Object.keys(dateFilter).length ? { expense_date: dateFilter } : {}),
       },
-      _sum: { totalPrice: true },
+      _sum: { amount: true },
     });
 
-    const totalBazarCost = Number(bazarTotal._sum?.totalPrice ?? 0);
+    const totalBazarCost = Number(expenseTotal._sum.amount ?? 0);
     const totalMeals = summary.reduce(
       (sum, s) => sum + Number(s.totalMeals),
       0,
@@ -281,5 +228,18 @@ export class MealService {
       totalMeals,
       mealRate: parseFloat(mealRate.toFixed(2)),
     };
+  }
+
+  private buildWhere(query: MealFilterDto): Prisma.MealWhereInput {
+    const where: Prisma.MealWhereInput = {};
+    if (query.messId) where.mess_id = query.messId;
+    if (query.userId) where.created_by = query.userId;
+    if (query.startDate || query.endDate) {
+      where.scheduled_date = {
+        ...(query.startDate && { gte: new Date(query.startDate) }),
+        ...(query.endDate && { lte: new Date(query.endDate) }),
+      };
+    }
+    return where;
   }
 }

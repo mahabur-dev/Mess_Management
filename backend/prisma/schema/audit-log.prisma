@@ -1,0 +1,24 @@
+// ============================================================
+// prisma/schema/audit-log.prisma
+// Table: audit_logs
+// ============================================================
+
+model AuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id     String   @db.Uuid
+  actor_id    String   @db.Uuid
+  action      String   @db.VarChar(100)
+  entity_type String   @db.VarChar(50)
+  entity_id   String   @db.Uuid
+  diff        Json?    @db.JsonB
+  ip_address  String?  @db.VarChar(45)
+  created_at  DateTime @default(now()) @db.Timestamptz
+
+  // ─── Relations ─────────────────────────────────────────
+  mess  Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  actor User @relation("AuditActor", fields: [actor_id], references: [id])
+
+  @@index([mess_id, created_at(sort: Desc)])
+  @@index([entity_type, entity_id])
+  @@map("audit_logs")
+}

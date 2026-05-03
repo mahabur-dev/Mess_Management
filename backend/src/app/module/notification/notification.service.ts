@@ -42,7 +42,7 @@ export class NotificationService {
         type: dto.type as NotificationType,
         title: dto.title,
         body: dto.body,
-        metadata: dto.metadata ?? Prisma.JsonNull,
+        // metadata: dto.metadata ?? Prisma.JsonNull,
       },
       select: this.notificationSelect,
     });

@@ -1,0 +1,28 @@
+<svg width="100%" viewBox="0 0 680 340" role="img" xmlns="http://www.w3.org/2000/svg" style="">
+  <title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Mess Management M Logo</title>
+  <desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Layered M character logo in purple and navy</desc>
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#7854f7"/>
+      <stop offset="100%" style="stop-color:#10175e"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a88dfa"/>
+      <stop offset="100%" style="stop-color:#534AB7"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ddd8fd"/>
+      <stop offset="100%" style="stop-color:#a88dfa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer M — full M character shape with two legs -->
+  <polygon points="&#10;    190,280&#10;    190,60&#10;    220,60&#10;    340,190&#10;    460,60&#10;    490,60&#10;    490,280&#10;    455,280&#10;    455,115&#10;    340,240&#10;    225,115&#10;    225,280&#10;  " fill="url(#g1)" style="stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Mid M layer — slightly inset -->
+  <polygon points="&#10;    210,270&#10;    210,75&#10;    232,75&#10;    340,205&#10;    448,75&#10;    470,75&#10;    470,270&#10;    440,270&#10;    440,118&#10;    340,248&#10;    240,118&#10;    240,270&#10;  " fill="url(#g2)" style="stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Inner M layer — most inset -->
+  <polygon points="&#10;    230,260&#10;    230,92&#10;    246,92&#10;    340,218&#10;    434,92&#10;    450,92&#10;    450,260&#10;    424,260&#10;    424,122&#10;    340,254&#10;    256,122&#10;    256,260&#10;  " fill="url(#g3)" style="stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+</svg>

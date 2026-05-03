@@ -61,19 +61,25 @@ export class MonthlyBillService {
       }),
       this.prisma.mealAttendance.findMany({
         where: {
+          // meal: {
+          //   mess_id: dto.messId,
+          //   date: { gte: month, lt: nextMonth },
+          // },
           meal: {
             mess_id: dto.messId,
-            date: { gte: month, lt: nextMonth },
+            scheduled_date: { gte: month, lt: nextMonth },
           },
           status: 'ON',
         },
-        select: { user_id: true },
+        // select: { user_id: true },
+        select: { member_id: true },
       }),
     ]);
 
     const mealCountByUser: Record<string, number> = {};
     for (const att of mealAttendances) {
-      mealCountByUser[att.user_id] = (mealCountByUser[att.user_id] ?? 0) + 1;
+      // mealCountByUser[att.user_id] = (mealCountByUser[att.user_id] ?? 0) + 1;
+      mealCountByUser[att.member_id] = (mealCountByUser[att.member_id] ?? 0) + 1;
     }
 
     const totalMeals = mealAttendances.length;

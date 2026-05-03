@@ -50,7 +50,7 @@ export function CarouselSection({ title, items, onItemClick }: CarouselSectionPr
       <h2 className="text-2xl font-bold text-foreground">{title}</h2>
 
       <Card
-        className="relative w-full h-96 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 border-border overflow-hidden cursor-pointer group"
+        className="relative w-full h-96 bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 border-border overflow-hidden cursor-pointer group"
         onClick={() => onItemClick?.(currentItem)}
       >
         {/* Content */}
@@ -96,7 +96,7 @@ export function CarouselSection({ title, items, onItemClick }: CarouselSectionPr
                 setIsAutoPlay(false)
               }}
               className={`w-2 h-2 rounded-full transition-all ${
-                index === currentIndex ? 'bg-white w-8' : 'bg-white/50'
+                index === currentIndex ? 'bg-white w-8' : 'bg-white/80'
               }`}
             />
           ))}

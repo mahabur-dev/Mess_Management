@@ -27,7 +27,26 @@ const dashboardData = [
 ]
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
+  console.log('DashboardPage - Auth State:', { user, isLoading }) // Debug log
+
+  // Wait for auth to load
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    )
+  }
+
+  // Redirect if no user
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Not authenticated. Redirecting...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-screen">

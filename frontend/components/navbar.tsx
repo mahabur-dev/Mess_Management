@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import Image from 'next/image'
+
 
 export function Navbar() {
   const router = useRouter()
@@ -21,6 +23,17 @@ export function Navbar() {
             </div>
             <span className="font-bold text-lg text-foreground hidden sm:inline">Mess</span>
           </Link>
+          {/* <Link href="/" className="flex items-center gap-2">
+            <Image 
+              src="/logo.png" 
+              alt="Mess Logo" 
+              width={40} 
+              height={40}
+              className="rounded-lg"
+            /> */}
+            {/* <Image src="/mess_logo_m_character.svg" alt="Mess" width={50} height={50} className="object-contain font-bold" /> */}
+            {/* <span className="font-bold text-lg text-foreground hidden sm:inline">Mess</span>
+          </Link> */}
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
@@ -43,7 +56,7 @@ export function Navbar() {
             </Button>
             <Button
               onClick={() => router.push('/register')}
-              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground"
+              className="bg-gradient-to-r from-primary to-accent hover:from-primary/40 hover:to-accent/40 text-primary-foreground"
             >
               Get Started
             </Button>

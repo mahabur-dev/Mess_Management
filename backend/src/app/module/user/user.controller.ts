@@ -49,7 +49,7 @@ export class UserController {
 
   // Get own profile (any authenticated user)
   @Get('profile')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get own profile' })
   async getProfile(@Req() req: Request) {
     const data = await this.userService.findOne(req.user!.id);
@@ -67,7 +67,7 @@ export class UserController {
 
   // Update own profile (with optional image)
   @Patch('profile')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Update own profile (with optional profile image)' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('profileImage', uploadConfig))

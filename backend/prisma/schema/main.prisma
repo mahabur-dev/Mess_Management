@@ -24,6 +24,7 @@ enum GlobalRole {
 enum MembershipRole {
   MANAGER
   MEMBER
+  ORGANIZER
 }
 
 // ─── Meal ──────────────────────────────────────────────────

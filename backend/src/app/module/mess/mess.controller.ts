@@ -31,8 +31,8 @@ export class MessController {
 
   // Manager creates a mess
   @Post()
-  @UseGuards(AuthGuard('MANAGER', 'ADMIN'))
-  @ApiOperation({ summary: '[MANAGER] Create a new mess' })
+  @UseGuards(AuthGuard('ORGANIZER', 'ADMIN'))
+  @ApiOperation({ summary: '[ORGANIZER] Create a new mess' })
   async create(@Req() req: Request, @Body() dto: CreateMessDto) {
     const data = await this.messService.create(req.user!.id, dto);
     return { message: 'Mess created successfully', data };
@@ -51,10 +51,10 @@ export class MessController {
     };
   }
 
-  // Manager: get own mess
+  // Organizer: get own mess
   @Get('my-mess')
-  @UseGuards(AuthGuard('MANAGER'))
-  @ApiOperation({ summary: '[MANAGER] Get own mess details' })
+  @UseGuards(AuthGuard('ORGANIZER'))
+  @ApiOperation({ summary: '[ORGANIZER] Get own mess details' })
   async findMyMess(@Req() req: Request) {
     const data = await this.messService.findMyMess(req.user!.id);
     return { message: 'Mess fetched successfully', data };
@@ -62,7 +62,7 @@ export class MessController {
 
   // Get single mess by ID (Admin or member)
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get a mess by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.messService.findOne(id);
@@ -103,8 +103,9 @@ export class MessController {
   async addMember(
     @Param('id') id: string,
     @Req() req: Request,
+    @Body() dto: AddMemberDto,
   ) {
-    const data = await this.messService.addMember(id, req.user!.id);
+    const data = await this.messService.addMember(id, req.user!.id, dto.userId);
     return { message: 'Member added successfully', data };
   }
 
@@ -119,7 +120,8 @@ export class MessController {
   ) {
     const data = await this.messService.removeMember(
       messId,
-      userId
+      userId,
+      req.user!.id,
     );
     return { message: 'Member removed successfully', data };
   }
@@ -147,7 +149,7 @@ export class MessController {
     @Param('role') role:  MembershipRole,
     @Req() req: Request,
   ) {
-    const data = await this.messService.assignManager(messId, userId, role);
+    const data = await this.messService.assignManager(messId, userId, role, req.user!.id);
     return { message: 'Manager role assigned successfully', data };
   };
 }

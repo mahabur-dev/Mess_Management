@@ -50,7 +50,7 @@ export function CarouselSection({ title, items, onItemClick }: CarouselSectionPr
       <h2 className="text-2xl font-bold text-foreground">{title}</h2>
 
       <Card
-        className="relative w-full h-96 bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 border-border overflow-hidden cursor-pointer group"
+        className="relative w-full h-96 bg-[#9788b1] from-primary/20 via-accent/20 to-secondary/20 border-border overflow-hidden cursor-pointer group"
         onClick={() => onItemClick?.(currentItem)}
       >
         {/* Content */}

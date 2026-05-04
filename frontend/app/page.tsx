@@ -96,7 +96,7 @@ export default function HomePage() {
                 <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
                   <Link href="/register">Get Started Free</Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="border-accent text-accent hover:bg-accent/10">
+                <Button asChild size="lg" variant="outline" className="border-accent text-accent hover:bg-[#0f172a]">
                   <Link href="#features">Learn More</Link>
                 </Button>
               </div>
@@ -120,7 +120,7 @@ export default function HomePage() {
 
             {/* Image showcase - Cards */}
             <div className="space-y-4">
-              <Card className="bg-gradient-to-br from-primary/20 to-accent/20 border-border p-6 rounded-xl">
+              <Card className="bg-[#6970FF] from-primary/20 to-accent/20 border-border p-6 rounded-xl">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="p-3 rounded-lg bg-primary/20">
                     <Users size={24} className="text-primary" />
@@ -130,23 +130,23 @@ export default function HomePage() {
                     <p className="text-2xl font-bold text-accent">500+</p>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Manage your mess community efficiently</p>
+                <p className="text-sm text-muted-foreground text-white/80">Manage your mess community efficiently</p>
               </Card>
 
-              <Card className="bg-gradient-to-br from-secondary/20 to-accent/20 border-border p-6 rounded-xl">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 rounded-lg bg-secondary/20">
-                    <Utensils size={24} className="text-secondary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Users</h3>
-                    <p className="text-2xl font-bold text-secondary">10K+</p>
-                  </div>
+            <Card className="bg-[#FF6978] border-border p-6 rounded-xl text-white">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 rounded-lg bg-white/20">
+                  <Utensils size={24} className="text-white" />
                 </div>
-                <p className="text-sm text-muted-foreground">Join thousands of happy users</p>
-              </Card>
+                <div>
+                  <h3 className="font-semibold">Users</h3>
+                  <p className="text-2xl font-bold">10K+</p>
+                </div>
+              </div>
+              <p className="text-sm text-white/80">Join thousands of happy users</p>
+            </Card>
 
-              <Card className="bg-gradient-to-br from-accent/20 to-primary/20 border-border p-6 rounded-xl">
+              <Card className="bg-[#FFB669] from-accent/20 to-primary/20 border-border p-6 rounded-xl">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="p-3 rounded-lg bg-accent/20">
                     <TrendingUp size={24} className="text-accent" />
@@ -156,7 +156,7 @@ export default function HomePage() {
                     <p className="text-2xl font-bold text-foreground">↗ 45%</p>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Month over month increase</p>
+                <p className="text-sm text-black-100">Month over month increase</p>
               </Card>
             </div>
           </div>

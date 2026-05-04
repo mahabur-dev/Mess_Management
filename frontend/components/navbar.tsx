@@ -50,7 +50,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               onClick={() => router.push('/login')}
-              className="text-foreground hover:bg-accent/10"
+              className="text-foreground hover:bg-[#250a70] hover:text-white hover:cursor-auto"
             >
               Login
             </Button>

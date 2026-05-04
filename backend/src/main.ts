@@ -37,10 +37,10 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost));
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Arronwh API')
-    .setDescription('Arronwh API Documentation')
+    .setTitle('Mess Management API')
+    .setDescription('Mess Management API Documentation')
     .setVersion('1.0')
-    .addTag('Arronwh')
+    .addTag('Mess Management')
     .addBearerAuth(
       {
         type: 'http',

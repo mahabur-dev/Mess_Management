@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDecimal, IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateMessDto {
@@ -15,13 +15,25 @@ export class CreateMessDto {
 
   @ApiProperty({ example: '01711234567' })
   @IsString()
-  @IsNotEmpty()
-  managerPhone: string;
+  @IsOptional()
+  description: string;
 
   @ApiProperty({ example: 'manager@example.com' })
-  @IsEmail()
+  @IsString()
+  @IsOptional() 
+  currency:string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
+
+  @ApiProperty({ example: '120.50' })
   @IsNotEmpty()
-  managerEmail: string;
+  @Transform(({ value }) => value.toString())
+  @IsDecimal()
+  meal_rate: string;
+
 }
 
 export class UpdateMessDto {

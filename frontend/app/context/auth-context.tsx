@@ -4,9 +4,10 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { useRouter } from 'next/navigation'
 
 export enum UserRole {
-  USER = 'USER',
   MANAGER = 'MANAGER',
   ADMIN = 'ADMIN',
+  ORGANIZER = 'ORGANIZER',
+  MEMBER = 'MEMBER',
 }
 
 export interface User {
@@ -23,7 +24,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, name: string) => Promise<void>
+  register: (name: string, email: string, phone: string, password: string, role: string) => Promise<void>
   logout: () => void
 }
 
@@ -43,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
       headers: { Authorization: `Bearer ${savedToken}` },
     })
       .then(res => res.json())
@@ -75,13 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const register = useCallback(async (email: string, password: string, name: string) => {
+  const register = useCallback(async (name: string, email: string, phone: string, password: string, role: string) => {
     setIsLoading(true)
     try {
+      console.log('Registering user with:', { name, email, phone, password, role })
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, phone, role }),
       })
 
       if (!response.ok) throw new Error('Registration failed')

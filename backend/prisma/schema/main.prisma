@@ -17,6 +17,7 @@ enum GlobalRole {
   ADMIN
   MANAGER
   MEMBER
+  ORGANIZER
 }
 
 // ─── MessMembership ────────────────────────────────────────

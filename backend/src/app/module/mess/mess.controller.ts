@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -20,6 +21,7 @@ import {
   UpdateMessDto,
 } from './dto/mess.dto';
 import AuthGuard from '../../middlewares/auth.guard';
+import { MembershipRole } from '@prisma/client';
 
 @ApiTags('Messes')
 @ApiBearerAuth('access-token')
@@ -96,21 +98,20 @@ export class MessController {
 
   // Manager: add member
   @Post(':id/members')
-  @UseGuards(AuthGuard('MANAGER'))
-  @ApiOperation({ summary: '[MANAGER] Add a member to the mess' })
+  @UseGuards(AuthGuard('ORGANIZER'))
+  @ApiOperation({ summary: 'ORGANIZER Add a member to the mess' })
   async addMember(
     @Param('id') id: string,
     @Req() req: Request,
-    @Body() dto: AddMemberDto,
   ) {
-    const data = await this.messService.addMember(id, req.user!.id, dto);
+    const data = await this.messService.addMember(id, req.user!.id);
     return { message: 'Member added successfully', data };
   }
 
   // Manager: remove member
   @Delete(':id/members/:userId')
-  @UseGuards(AuthGuard('MANAGER'))
-  @ApiOperation({ summary: '[MANAGER] Remove a member from the mess' })
+  @UseGuards(AuthGuard('ORGANIZER'))
+  @ApiOperation({ summary: 'ORGANIZER Remove a member from the mess' })
   async removeMember(
     @Param('id') messId: string,
     @Param('userId') userId: string,
@@ -118,15 +119,14 @@ export class MessController {
   ) {
     const data = await this.messService.removeMember(
       messId,
-      userId,
-      req.user!.id,
+      userId
     );
     return { message: 'Member removed successfully', data };
   }
 
   // Get members of a mess
   @Get(':id/members')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get members of a mess' })
   async getMembers(@Param('id') id: string, @Query() query: MessFilterDto) {
     const result = await this.messService.getMembers(id, query);
@@ -136,4 +136,18 @@ export class MessController {
       data: result.data,
     };
   }
+
+  //assign manager role to a mess
+  @Put(':id/members/:userId')
+  @UseGuards(AuthGuard('ORGANIZER'))
+  @ApiOperation({ summary: 'ORGANIZER Assign manager role to a member' })
+  async assignManager(
+    @Param('id') messId: string,
+    @Param('userId') userId: string,
+    @Param('role') role:  MembershipRole,
+    @Req() req: Request,
+  ) {
+    const data = await this.messService.assignManager(messId, userId, role);
+    return { message: 'Manager role assigned successfully', data };
+  };
 }

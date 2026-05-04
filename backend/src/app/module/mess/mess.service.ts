@@ -5,7 +5,7 @@ import {
   MessFilterDto,
   UpdateMessDto,
 } from './dto/mess.dto';
-import { Prisma } from '@prisma/client';
+import { GlobalRole, MembershipRole, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'prisma/prisma.service';
@@ -203,24 +203,28 @@ export class MessService {
   // ─────────────────────────────────────────
   // Add member to mess (Manager)
   // ─────────────────────────────────────────
-  async addMember(messId: string, managerId: string, dto: AddMemberDto) {
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+  async addMember(userId: string, messId: string) {
+    
+    console.log('Adding member', { userId, messId });
+    const mess = await this.prisma.user.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
-    if (mess.created_by !== managerId)
-      throw new HttpException('Forbidden: Not your mess', 403);
+
+    if(mess.id !== messId && mess.role !== 'ORGANIZER') {
+     throw new HttpException('Forbidden: Not your mess', 403);
+    }
 
     const user = await this.prisma.user.findUnique({
-      where: { id: dto.userId },
+      where: { id: userId },
     });
     if (!user) throw new HttpException('User not found', 404);
 
     const existing = await this.prisma.messMembership.findUnique({
-      where: { mess_id_user_id: { mess_id: messId, user_id: dto.userId } },
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
     if (existing) throw new HttpException('User is already a member', 400);
 
     const member = await this.prisma.messMembership.create({
-      data: { mess_id: messId, user_id: dto.userId },
+      data: { mess_id: messId, user_id: userId },
       include: {
         user: { select: { id: true, name: true, email: true } },
       },
@@ -232,11 +236,13 @@ export class MessService {
   // ─────────────────────────────────────────
   // Remove member from mess (Manager)
   // ─────────────────────────────────────────
-  async removeMember(messId: string, userId: string, managerId: string) {
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    if (!mess) throw new HttpException('Mess not found', 404);
-    if (mess.created_by !== managerId)
+  async removeMember(messId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: messId } });
+    if (!user) throw new HttpException('Mess not found', 404);
+
+    if(user.id !== messId && user.role !== 'ORGANIZER') {
       throw new HttpException('Forbidden: Not your mess', 403);
+    }
 
     const member = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
@@ -251,6 +257,26 @@ export class MessService {
 
     return { message: 'Member removed successfully' };
   }
+
+  async assignManager(organizerId: string, userId: string, role: MembershipRole) {
+
+    // Make sure the organizer owns this mess
+    const organizer = await this.prisma.user.findUnique({ where: { id: organizerId } })
+
+    if (!organizer || organizer.role !== 'ORGANIZER' || organizer.id !== organizerId) throw new HttpException('Forbidden', 403)
+
+    // Update MessMembership role
+    await this.prisma.messMembership.update({
+      where: { mess_id_user_id: { mess_id: organizer.id, user_id: userId } },
+      data: { role: MembershipRole.MANAGER }
+    })
+
+    // Also update GlobalRole on User table
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: GlobalRole.MANAGER }
+    })
+}
 
   // ─────────────────────────────────────────
   // Get members of a mess

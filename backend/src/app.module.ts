@@ -23,6 +23,7 @@ import { AuthModule } from './app/module/auth/auth.module';
     DepositModule,
     BazarModule,
     AuthModule,
+    MessModule,
   ],
 
   controllers: [AppController],

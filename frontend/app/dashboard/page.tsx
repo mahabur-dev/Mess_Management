@@ -208,7 +208,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {user?.role === UserRole.USER && (
+            {user?.role === UserRole.MEMBER && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="p-6 border-border bg-gradient-to-br from-primary/5 to-secondary/5">
                   <h3 className="font-semibold text-foreground mb-4">Mark Attendance</h3>

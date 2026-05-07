@@ -6,11 +6,13 @@ const sendMailer = async (email: string, subject?: string, html?: string) => {
     host: config.email.host,
     port: Number(config.email.port),
     secure: false,
+    family: 4,
     auth: {
       user: config.email.address,
       pass: config.email.pass,
     },
-  });
+  } as any);
+
   const info = await transporter.sendMail({
     from: `"your company name" ${config.email.from}`,
     to: email,

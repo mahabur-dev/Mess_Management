@@ -12,9 +12,8 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "src/*": [
-        "./src/*"
-      ]
+      "src/*": ["./src/*"],
+      "prisma/*": ["./prisma/*"]
     },
     "incremental": true,
     "skipLibCheck": true,
@@ -24,7 +23,6 @@
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    // "ignoreDeprecations": "6.0"
+    "resolveJsonModule": true
   }
 }

@@ -59,13 +59,22 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  await app.listen(process.env.PORT ?? 3000, () => {
-    console.log(
-      `Server is running on http://localhost:${process.env.PORT ?? 3000}`,
-    );
-    console.log(
-      `Swagger: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
-    );
-  });
+//   await app.listen(process.env.PORT ?? 3000, () => {
+//     console.log(
+//       `Server is running on http://localhost:${process.env.PORT ?? 3000}`,
+//     );
+//     console.log(
+//       `Swagger: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
+//     );
+//   });
+// }
+await app.listen(process.env.PORT ?? 5001, '0.0.0.0', () => {
+  console.log(
+    `Server is running on http://localhost:${process.env.PORT ?? 5001}`,
+  );
+  console.log(
+    `Swagger: http://localhost:${process.env.PORT ?? 5001}/api/docs`,
+  );
+});
 }
 bootstrap().catch(console.error);

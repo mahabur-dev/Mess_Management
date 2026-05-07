@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/context/auth-context'
 import { Eye, EyeOff } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,20 +27,6 @@ export default function LoginPage() {
       setError('Invalid email or password')
     }
   }
-
-  const inputStyle = (field: string) => ({
-    width: '100%',
-    padding: field === 'password' ? '11px 42px 11px 14px' : '11px 14px',
-    background: '#fff',
-    border: focusedField === field ? '1.5px solid #7854f7' : '1.5px solid #e5e7eb',
-    borderRadius: '10px',
-    color: '#111827',
-    fontSize: '14px',
-    outline: 'none',
-    boxSizing: 'border-box' as const,
-    transition: 'all 0.2s',
-    boxShadow: focusedField === field ? '0 0 0 3px rgba(120,84,247,0.1)' : '0 1px 2px rgba(0,0,0,0.05)',
-  })
 
   return (
     <div style={{
@@ -117,12 +105,12 @@ export default function LoginPage() {
               }}>
                 Email Address
               </label>
-              <input
+              <Input
+              className='h-12'
                 id="email" type="email" placeholder="you@example.com"
                 value={email} onChange={e => setEmail(e.target.value)} required
                 onFocus={() => setFocusedField('email')}
                 onBlur={() => setFocusedField(null)}
-                style={inputStyle('email')}
               />
             </div>
 
@@ -131,19 +119,18 @@ export default function LoginPage() {
                 <label htmlFor="password" style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>
                   Password
                 </label>
-                <Link href="/forgot-password" style={{ fontSize: '13px', color: '#7854f7', textDecoration: 'none', fontWeight: 500 }}>
+                <Link href="/forget_password" style={{ fontSize: '13px', color: '#7854f7', textDecoration: 'none', fontWeight: 500 }}>
                   Forgot password?
                 </Link>
               </div>
               <div style={{ position: 'relative' }}>
-                <input
-                  id="password"
+                <Input
+                className='h-12'
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password} onChange={e => setPassword(e.target.value)} required
                   onFocus={() => setFocusedField('password')}
                   onBlur={() => setFocusedField(null)}
-                  style={inputStyle('password')}
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
                   position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
@@ -195,15 +182,12 @@ export default function LoginPage() {
           overflow: 'hidden',
         }}>
           {/* Photo */}
-          <img
+          <Image
             src='/Variety-fruits-vegetables(3).jpg'
             alt="Healthy food"
-            style={{
-              width: '100%', height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              display: 'block',
-            }}
+            width={100}
+            height={100}
+          className='w-full h-full object-cover'
           />
           {/* Gradient overlay matching brand colors */}
           <div style={{

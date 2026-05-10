@@ -48,6 +48,7 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log('Login request received with DTO:', dto);
     const data = await this.authService.login(dto, res);
     return { message: 'Logged in successfully', data };
   }

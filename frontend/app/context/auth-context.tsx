@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-
+  console.log(process.env.NEXT_PUBLIC_API_URL)
   // ✅ Restore user on page refresh — OUTSIDE login, at component level
   useEffect(() => {
     const savedToken = localStorage.getItem('authToken')

@@ -322,13 +322,14 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
+import { useAuth, UserRole } from '@/app/context/auth-context'
 import { apiClient, ApiError, type Mess, type CreateMessDto } from '@/lib/api-client'
 
 // ─── Form state ───────────────────────────────────────────────────────────────
 const emptyForm: CreateMessDto = {
-  name: '',
+  messName: '',
   description: '',
-  address: '',
+  messLocation: '',
   meal_rate: '',
   currency: 'BDT',
 }
@@ -391,6 +392,19 @@ export default function MessManagementPage() {
 
   // Delete state (tracks which id is being deleted)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [viewModalOpen, setViewModalOpen] = useState(false)
+  const [viewLoading, setViewLoading] = useState(false)
+  const [selectedMess, setSelectedMess] = useState<Mess | null>(null)
+  const { user } = useAuth()
+
+  const canEdit =
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.MANAGER ||
+    user?.role === UserRole.ORGANIZER
+  const canDelete =
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.MANAGER ||
+    user?.role === UserRole.ORGANIZER
 
   // ─── Fetch all messes ───────────────────────────────────────────────────────
   const fetchMesses = useCallback(async () => {
@@ -398,7 +412,8 @@ export default function MessManagementPage() {
     setFetchError(null)
     try {
       const res = await apiClient.getMesses()
-      setMesses(res.data)
+      const data = res.data
+      setMesses(Array.isArray(data) ? data : data ? [data] : [])
     } catch (err) {
       const message =
         err instanceof ApiError ? err.message : 'Failed to load messes. Please try again.'
@@ -424,14 +439,32 @@ export default function MessManagementPage() {
   const openEdit = (mess: Mess) => {
     setEditingId(mess.id)
     setForm({
-      name: mess.name,
+      messName: mess.name,
       description: mess.description ?? '',
-      address: mess.address ?? '',
+      messLocation: mess.address ?? '',
       meal_rate: mess.meal_rate,
       currency: mess.currency.toUpperCase(),
     })
     setFormError(null)
     setModalOpen(true)
+  }
+
+  const handleView = async (id: string) => {
+    setViewLoading(true)
+    setSelectedMess(null)
+    setViewModalOpen(true)
+
+    try {
+      const res = await apiClient.getMess(id)
+      setSelectedMess(res.data)
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to load mess details. Please try again.'
+      setFormError(message)
+      setViewModalOpen(false)
+    } finally {
+      setViewLoading(false)
+    }
   }
 
   // ─── Delete a mess ─────────────────────────────────────────────────────────
@@ -440,7 +473,10 @@ export default function MessManagementPage() {
     setDeletingId(id)
     try {
       await apiClient.deleteMess(id)
-      setMesses((prev) => prev.filter((m) => m.id !== id))
+      setMesses((prev) => {
+        const list = Array.isArray(prev) ? prev : []
+        return list.filter((m) => m.id !== id)
+      })
     } catch (err) {
       const message =
         err instanceof ApiError ? err.message : 'Failed to delete mess. Please try again.'
@@ -452,7 +488,7 @@ export default function MessManagementPage() {
 
   // ─── Submit create / update ────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!form.name.trim()) {
+    if (!form.messName.trim()) {
       setFormError('Mess name is required.')
       return
     }
@@ -466,24 +502,28 @@ export default function MessManagementPage() {
 
     // Build payload — strip empty optional strings so backend gets undefined
     const payload: CreateMessDto = {
-      name: form.name.trim(),
+      messName: form.messName.trim(),
+      messLocation: form.messLocation.trim(),
       meal_rate: parseFloat(form.meal_rate).toFixed(2),
       currency: form.currency,
       ...(form.description?.trim() && { description: form.description.trim() }),
-      ...(form.address?.trim() && { address: form.address.trim() }),
     }
 
     try {
       if (editingId) {
         // ── UPDATE ──────────────────────────────────────────────────────────
         const res = await apiClient.updateMess(editingId, payload)
-        setMesses((prev) =>
-          prev.map((m) => (m.id === editingId ? res.data : m))
-        )
+        setMesses((prev) => {
+          const list = Array.isArray(prev) ? prev : []
+          return list.map((m) => (m.id === editingId ? res.data : m))
+        })
       } else {
         // ── CREATE ──────────────────────────────────────────────────────────
         const res = await apiClient.createMess(payload)
-        setMesses((prev) => [res.data, ...prev])
+        setMesses((prev) => {
+          const list = Array.isArray(prev) ? prev : []
+          return [res.data, ...list]
+        })
       }
       setModalOpen(false)
     } catch (err) {
@@ -536,60 +576,64 @@ export default function MessManagementPage() {
 
           {/* Mess cards */}
           {!loading && messes.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {messes.map((mess) => (
-                <Card key={mess.id} className="border-border overflow-hidden">
-                  {/* Card top */}
-                  <div className="p-5 bg-gradient-to-br from-green-500/10 to-accent/10">
+                <Card 
+                  key={mess.id} 
+                  className="border-0 overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                >
+                  {/* Card header with brand accent */}
+                  <div className="p-6 bg-gradient-to-r from-purple-600 to-purple-700">
                     <span
-                      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full mb-3 ${
+                      className={`inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full mb-3 ${
                         mess.is_active
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-red-100 text-red-700'
                       }`}
                     >
                       <CircleDot size={10} />
                       {mess.is_active ? 'Active' : 'Inactive'}
                     </span>
-                    <h3 className="text-base font-semibold text-foreground mb-1">
+                    <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">
                       {mess.name}
                     </h3>
                     {mess.description && (
-                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                      <p className="text-sm text-purple-100 line-clamp-2">
                         {mess.description}
                       </p>
                     )}
                   </div>
 
                   {/* Card body */}
-                  <div className="px-5 py-4 space-y-2">
+                  <div className="px-6 py-5 space-y-3">
                     {mess.address && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin size={14} className="opacity-60 shrink-0" />
-                        <span className="truncate">{mess.address}</span>
+                      <div className="flex items-start gap-3 pb-3 border-b border-slate-700">
+                        <MapPin size={16} className="text-purple-400 shrink-0 mt-0.5" />
+                        <span className="text-sm text-slate-300 truncate">{mess.address}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Tag size={14} className="opacity-60 shrink-0" />
-                      <span>
+                    <div className="flex items-center gap-3">
+                      <Tag size={16} className="text-purple-400 shrink-0" />
+                      <span className="text-sm text-slate-400">
                         Meal rate:{' '}
-                        <strong className="text-foreground">
-                          {mess.currency.toUpperCase()}{' '}
-                          {parseFloat(mess.meal_rate).toFixed(2)}
-                        </strong>
+                        <span className="font-bold text-white">
+                          {mess.currency.toUpperCase()} {parseFloat(mess.meal_rate).toFixed(2)}
+                        </span>
                       </span>
                     </div>
-                    {/* Member / deposit / meal counts if available */}
+                    
+                    {/* Stats */}
                     {mess._count && (
-                      <div className="flex gap-3 pt-1">
+                      <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-700">
                         {[
-                          { label: 'Members', value: mess._count.memberships },
-                          { label: 'Deposits', value: mess._count.deposits },
-                          { label: 'Meals', value: mess._count.meals },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="text-center">
-                            <p className="text-xs font-semibold text-foreground">{value}</p>
-                            <p className="text-[10px] text-muted-foreground">{label}</p>
+                          { label: 'Members', value: mess._count.memberships, icon: '👥' },
+                          { label: 'Deposits', value: mess._count.deposits, icon: '💰' },
+                          { label: 'Meals', value: mess._count.meals, icon: '🍽️' },
+                        ].map(({ label, value, icon }) => (
+                          <div key={label} className="text-center p-2 bg-slate-700/50 rounded-lg">
+                            <p className="text-lg font-bold text-white mb-1">{icon}</p>
+                            <p className="text-lg font-bold text-white">{value}</p>
+                            <p className="text-[10px] text-slate-400">{label}</p>
                           </div>
                         ))}
                       </div>
@@ -597,36 +641,41 @@ export default function MessManagementPage() {
                   </div>
 
                   {/* Card footer */}
-                  <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
+                  <div className="px-6 py-4 border-t border-slate-700 flex gap-2">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="flex items-center gap-1 text-xs"
+                      className="flex-1 flex items-center justify-center gap-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                      onClick={() => handleView(mess.id)}
                     >
-                      <Eye size={13} /> View
+                      <Eye size={14} /> View
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1 text-xs"
-                      onClick={() => openEdit(mess)}
-                    >
-                      <Pencil size={13} /> Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={deletingId === mess.id}
-                      className="flex items-center gap-1 text-xs text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
-                      onClick={() => handleDelete(mess.id)}
-                    >
-                      {deletingId === mess.id ? (
-                        <Loader2 size={13} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={13} />
-                      )}
-                      Delete
-                    </Button>
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1 flex items-center justify-center gap-1 text-xs text-purple-400 hover:text-white hover:bg-purple-600/50 transition-colors"
+                        onClick={() => openEdit(mess)}
+                      >
+                        <Pencil size={14} /> Edit
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={deletingId === mess.id}
+                        className="flex-1 flex items-center justify-center gap-1 text-xs text-red-400 hover:text-white hover:bg-red-600/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => handleDelete(mess.id)}
+                      >
+                        {deletingId === mess.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={14} />
+                        )}
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </Card>
               ))}
@@ -634,6 +683,74 @@ export default function MessManagementPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={viewModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedMess(null)
+          setViewModalOpen(false)
+        }
+      }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Mess details</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {viewLoading ? (
+              <div className="space-y-3">
+                <div className="h-5 w-32 rounded-full bg-muted" />
+                <div className="h-4 w-full rounded bg-muted" />
+                <div className="h-4 w-3/4 rounded bg-muted" />
+              </div>
+            ) : selectedMess ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Name</p>
+                  <p className="text-sm text-muted-foreground">{selectedMess.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Address</p>
+                  <p className="text-sm text-muted-foreground">{selectedMess.address || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Description</p>
+                  <p className="text-sm text-muted-foreground">{selectedMess.description || 'No description'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Meal rate</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedMess.currency.toUpperCase()} {parseFloat(selectedMess.meal_rate).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Status</p>
+                    <p className="text-sm text-muted-foreground">{selectedMess.is_active ? 'Active' : 'Inactive'}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Members</p>
+                  <p className="text-sm text-muted-foreground">{selectedMess._count?.memberships ?? 0}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Unable to load mess details.</p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedMess(null)
+                setViewModalOpen(false)
+              }}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Add / Edit Modal ──────────────────────────────────────────────── */}
       <Dialog open={modalOpen} onOpenChange={(open) => !submitting && setModalOpen(open)}>
@@ -653,8 +770,8 @@ export default function MessManagementPage() {
               <Input
                 placeholder="e.g. Green House Mess"
                 maxLength={100}
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                value={form.messName}
+                onChange={(e) => setForm({ ...form, messName: e.target.value })}
                 disabled={submitting}
               />
             </div>
@@ -673,8 +790,8 @@ export default function MessManagementPage() {
               <label className="text-sm font-medium text-muted-foreground">Address</label>
               <Input
                 placeholder="Full address"
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                value={form.messLocation}
+                onChange={(e) => setForm({ ...form, messLocation: e.target.value })}
                 disabled={submitting}
               />
             </div>

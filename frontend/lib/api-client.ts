@@ -155,9 +155,9 @@ export interface Mess {
 }
 
 export interface CreateMessDto {
-  name: string
+  messName: string
   description?: string
-  address?: string
+  messLocation?: string
   meal_rate: string
   currency: string
 }
@@ -206,11 +206,13 @@ class ApiClient {
     }
 
     if (token) {
-      headers.Authorization = `Bearer ${token}`
+      ;(headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
     }
 
     const response = await fetch(url, { ...options, headers })
     const json = await response.json()
+
+    console.log(json)
 
     // Your backend returns { success, statusCode, message, data } on both success and error
     if (!response.ok || !json.success) {
@@ -240,8 +242,10 @@ class ApiClient {
   }
 
   // ─── Messes ────────────────────────────────────────────────────────────────
-  async getMesses(): Promise<BackendResponse<Mess[]>> {
-    return this.request<Mess[]>('/messes', { method: 'GET' })
+
+  //own messes
+  async getMesses(): Promise<BackendResponse<Mess | Mess[]>> {
+    return this.request<Mess | Mess[]>('/messes/my-mess', { method: 'GET' })
   }
 
   async getMess(id: string): Promise<BackendResponse<Mess>> {

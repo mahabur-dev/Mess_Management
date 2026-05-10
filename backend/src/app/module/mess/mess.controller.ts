@@ -71,8 +71,8 @@ export class MessController {
 
   // Update mess
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
-  @ApiOperation({ summary: '[MANAGER/ADMIN] Update mess details' })
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @ApiOperation({ summary: '[ORGANIZER/MANAGER/ADMIN] Update mess details' })
   async update(
     @Param('id') id: string,
     @Req() req: Request,
@@ -87,12 +87,12 @@ export class MessController {
     return { message: 'Mess updated successfully', data };
   }
 
-  // Admin: delete mess
+  // Delete mess
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN'))
-  @ApiOperation({ summary: '[ADMIN] Delete a mess' })
-  async remove(@Param('id') id: string) {
-    const data = await this.messService.remove(id);
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @ApiOperation({ summary: '[ORGANIZER/MANAGER/ADMIN] Delete a mess' })
+  async remove(@Param('id') id: string, @Req() req: Request) {
+    const data = await this.messService.remove(id, req.user!.id, req.user!.role);
     return { message: 'Mess deleted successfully', data };
   }
 

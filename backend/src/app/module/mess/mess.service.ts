@@ -106,7 +106,7 @@ export class MessService {
   // Get my mess (Organizer gets own mess details)
   // ─────────────────────────────────────────
   async findMyMess(organizerId: string) {
-    const mess = await this.prisma.mess.findFirst({
+    const mess = await this.prisma.mess.findMany({
       where: { created_by: organizerId },
       include: {
         creator: { select: { id: true, name: true, email: true } },
@@ -128,7 +128,7 @@ export class MessService {
       },
     });
 
-    if (!mess) throw new HttpException('You have not created a mess yet', 404);
+    if (!mess || mess.length === 0) throw new HttpException('You have not created a mess yet', 404);
     return mess;
   }
 
@@ -174,7 +174,10 @@ export class MessService {
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
 
-    if (requesterRole === 'MANAGER' && mess.created_by !== requesterId) {
+    if (
+      (requesterRole === 'MANAGER' || requesterRole === 'ORGANIZER') &&
+      mess.created_by !== requesterId
+    ) {
       throw new HttpException('Forbidden: Not your mess', 403);
     }
 
@@ -191,11 +194,26 @@ export class MessService {
   }
 
   // ─────────────────────────────────────────
-  // Delete mess (Admin only)
+  // Delete mess
   // ─────────────────────────────────────────
-  async remove(messId: string) {
+  async remove(messId: string, requesterId: string, requesterRole: string) {
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
+
+    if (requesterRole === 'ADMIN') {
+      // Admin can delete any mess
+    } else if (
+      (requesterRole === 'MANAGER' || requesterRole === 'ORGANIZER') &&
+      mess.created_by !== requesterId
+    ) {
+      throw new HttpException('Forbidden: Not your mess', 403);
+    } else if (
+      requesterRole !== 'MANAGER' &&
+      requesterRole !== 'ORGANIZER' &&
+      requesterRole !== 'ADMIN'
+    ) {
+      throw new HttpException('Forbidden', 403);
+    }
 
     await this.prisma.mess.delete({ where: { id: messId } });
     return { message: 'Mess deleted successfully' };

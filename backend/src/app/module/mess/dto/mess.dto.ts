@@ -4,13 +4,13 @@ import { Transform } from 'class-transformer';
 
 export class CreateMessDto {
   @ApiProperty({ example: 'Green House Mess' })
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   messName: string;
 
   @ApiProperty({ example: 'Narayanganj, Dhaka' })
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   messLocation: string;
 
   @ApiProperty({ example: '01711234567' })

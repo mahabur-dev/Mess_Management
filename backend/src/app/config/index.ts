@@ -7,6 +7,7 @@ export default {
   port: process.env.PORT || 5001,
   env: process.env.NODE_ENV || 'development',
   bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS) || 12,
+  resend_apiKey: process.env.RESEND_API_KEY as string,
 
   database: {
     url: process.env.DATABASE_URL,

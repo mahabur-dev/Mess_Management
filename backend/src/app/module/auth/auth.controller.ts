@@ -34,7 +34,6 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new user (admin / manager / member / organizer)' })
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterDto) {
-    console.log('Received registration data:', dto);
     const data = await this.authService.register(dto);
     return { message: 'User registered successfully', data };
   }

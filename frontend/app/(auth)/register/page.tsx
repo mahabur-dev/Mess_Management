@@ -257,8 +257,8 @@ export function RegisterModal({
                     <Building2 size={21} color="#fff" />
                   </div>
                   <div>
-                    <p style={{ color: '#111827', fontWeight: 700, fontSize: '15px', marginBottom: '2px' }}>Register a Mess</p>
-                    <p style={{ color: '#6b7280', fontSize: '12px' }}>Create & manage your own mess community</p>
+                    <p style={{ color: '#111827', fontWeight: 700, fontSize: '15px', marginBottom: '2px' }}>Register as Organizer</p>
+                    <p style={{ color: '#6b7280', fontSize: '12px' }}>Create & manage your own community</p>
                   </div>
                 </div>
                 <ChevronRight size={17} color="#9ca3af" style={{ flexShrink: 0 }} />
@@ -339,9 +339,9 @@ export function RegisterModal({
               )}
 
               <form onSubmit={handleMessSubmit}>
-                <InputField label="Mess Name" id="name" name="name" placeholder="John Doe" value={messForm.name} onChange={handleMessChange} />
-                <InputField label="Email Address" id="email" name="email" type="email" placeholder="you@example.com" value={messForm.email} onChange={handleMessChange} />
-                <InputField label="Phone Number" id="phone" name="phone" type="tel" placeholder="01700-000000" value={messForm.phone} onChange={handleMessChange} />
+                <InputField label="Organizer Name" id="name" name="name" placeholder="John Doe" value={messForm.name} onChange={handleMessChange} />
+                <InputField label="Organizer Email" id="email" name="email" type="email" placeholder="you@example.com" value={messForm.email} onChange={handleMessChange} />
+                <InputField label="Organizer Phone Number" id="phone" name="phone" type="tel" placeholder="01700-000000" value={messForm.phone} onChange={handleMessChange} />
                 <InputField label="Password" id="password" name="password" type="password" placeholder="••••••••" value={messForm.password} onChange={handleMessChange} />
                 <InputField label="Confirm Password" id="confirmPassword" name="confirmPassword" type="password" placeholder="••••••••" value={messForm.confirmPassword} onChange={handleMessChange} />
 
@@ -353,7 +353,7 @@ export function RegisterModal({
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   boxShadow: '0 4px 16px rgba(120,84,247,0.4)', transition: 'opacity 0.2s',
                 }}>
-                  {isLoading ? 'Creating...' : 'Create Mess Account'}
+                  {isLoading ? 'Creating...' : 'Create Organizer Account'}
                 </button>
               </form>
 

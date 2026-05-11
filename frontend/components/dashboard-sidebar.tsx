@@ -22,6 +22,7 @@ import { useState } from 'react'
 const sidebarItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   {label: 'Mess Management', href: '/dashboard/mess_management', icon: Home },
+  {label: 'Member Management', href: '/dashboard/member_management', icon: Users },
   { label: 'Meals', href: '/dashboard/meals', icon: UtensilsCrossed },
   { label: 'Finance', href: '/dashboard/finance', icon: TrendingUp },
   { label: 'Shopping', href: '/dashboard/shopping', icon: ShoppingCart },

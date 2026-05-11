@@ -86,8 +86,17 @@ export class MessFilterDto {
 }
 
 export class AddMemberDto {
-  @ApiProperty({ example: 'clxyz123456' })
+ @ApiProperty({example: "admin@gmail.com"})
+ @IsEmail()
+ email:string
+
+  @ApiProperty({ example: 'clabc123456' })
   @IsString()
   @IsNotEmpty()
-  userId: string;
+  messId: string;
+
+  @ApiProperty({ example: 'MANAGER' })
+  @IsString()
+  @IsNotEmpty()
+  role: 'MANAGER' | 'MEMBER';
 }

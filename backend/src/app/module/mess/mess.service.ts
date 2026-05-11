@@ -9,6 +9,7 @@ import { GlobalRole, MembershipRole, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'prisma/prisma.service';
+import { RouterModule } from '@nestjs/core';
 
 @Injectable()
 export class MessService {
@@ -222,9 +223,8 @@ export class MessService {
   // ─────────────────────────────────────────
   // Add member to mess (Organizer)
   // ─────────────────────────────────────────
-  async addMember(messId: string, organizerId: string, userId: string) {
+  async addMember(messId: string, organizerId: string, email: string, role: MembershipRole) {
     
-    console.log('Adding member', { userId, messId });
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
 
@@ -233,17 +233,17 @@ export class MessService {
     }
 
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { email: email },
     });
     if (!user) throw new HttpException('User not found', 404);
 
     const existing = await this.prisma.messMembership.findUnique({
-      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+      where: { mess_id_user_id: { mess_id: messId, user_id: user.id } },
     });
     if (existing) throw new HttpException('User is already a member', 400);
 
     const member = await this.prisma.messMembership.create({
-      data: { mess_id: messId, user_id: userId },
+      data: { mess_id: messId, user_id: user.id, role: role, created_by: organizerId },
       include: {
         user: { select: { id: true, name: true, email: true } },
       },

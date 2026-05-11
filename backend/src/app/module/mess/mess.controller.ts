@@ -101,11 +101,11 @@ export class MessController {
   @UseGuards(AuthGuard('ORGANIZER'))
   @ApiOperation({ summary: 'ORGANIZER Add a member to the mess' })
   async addMember(
-    @Param('id') id: string,
+    // @Param('id') id: string,
     @Req() req: Request,
     @Body() dto: AddMemberDto,
   ) {
-    const data = await this.messService.addMember(id, req.user!.id, dto.userId);
+    const data = await this.messService.addMember(dto.messId, req.user!.id, dto.email, dto.role);
     return { message: 'Member added successfully', data };
   }
 

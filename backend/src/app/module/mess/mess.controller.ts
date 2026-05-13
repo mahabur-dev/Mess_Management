@@ -18,10 +18,10 @@ import {
   AddMemberDto,
   CreateMessDto,
   MessFilterDto,
+  UpdateMemberRoleDto,
   UpdateMessDto,
 } from './dto/mess.dto';
 import AuthGuard from '../../middlewares/auth.guard';
-import { MembershipRole } from '@prisma/client';
 
 @ApiTags('Messes')
 @ApiBearerAuth('access-token')
@@ -147,14 +147,14 @@ export class MessController {
   //assign manager role to a mess
   @Put(':id/members/:userId')
   @UseGuards(AuthGuard('ORGANIZER'))
-  @ApiOperation({ summary: 'ORGANIZER Assign manager role to a member' })
-  async assignManager(
+  @ApiOperation({ summary: 'ORGANIZER Change a member role' })
+  async updateMemberRole(
     @Param('id') messId: string,
     @Param('userId') userId: string,
-    @Param('role') role: MembershipRole,
+    @Body() dto: UpdateMemberRoleDto,
     @Req() req: Request,
   ) {
-    const data = await this.messService.assignManager(messId, userId, role, req.user!.id);
-    return { message: 'Manager role assigned successfully', data };
+    const data = await this.messService.assignManager(messId, userId, dto.role, req.user!.id);
+    return { message: 'Member role updated successfully', data };
   };
 }

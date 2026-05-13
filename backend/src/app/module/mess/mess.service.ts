@@ -1,15 +1,13 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import {
-  AddMemberDto,
   CreateMessDto,
   MessFilterDto,
   UpdateMessDto,
 } from './dto/mess.dto';
-import { GlobalRole, MembershipRole, Prisma } from '@prisma/client';
+import { MembershipRole, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'prisma/prisma.service';
-import { RouterModule } from '@nestjs/core';
 
 @Injectable()
 export class MessService {
@@ -293,15 +291,13 @@ export class MessService {
 
     if(!memberShip) throw new HttpException('User is not a member of this mess', 404)
 
-    await this.prisma.messMembership.update({
+    return this.prisma.messMembership.update({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
-      data: { role : GlobalRole.MANAGER }
-    })
-
-    // Also update GlobalRole on User table
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { role: GlobalRole.MANAGER }
+      data: { role },
+      include: {
+        user: { select: { id: true, name: true, email: true, avatar_url: true, phone: true, role: true } },
+        mess: { select: { id: true, name: true } },
+      },
     })
 }
 

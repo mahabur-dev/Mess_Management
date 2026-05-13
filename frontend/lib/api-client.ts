@@ -261,13 +261,13 @@ class ApiClient {
   async addMember(messId: string, data: { email: string; role: 'MANAGER' | 'MEMBER' }) {
     return this.request(`/messes/${messId}/members`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, messId }),
     })
   }
 
   async updateMemberRole(messId: string, memberId: string, role: 'MANAGER' | 'MEMBER') {
     return this.request(`/messes/${messId}/members/${memberId}`, {
-      method: 'PATCH',
+      method: 'PUT',
       body: JSON.stringify({ role }),
     })
   }

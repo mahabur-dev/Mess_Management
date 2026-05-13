@@ -24,5 +24,14 @@
     "strictPropertyInitialization": false,
     "esModuleInterop": true,
     "resolveJsonModule": true
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*.spec.ts",
+    "**/*.e2e-spec.ts",
+    "prisma/generated"   // if you generate prisma client here
+  ],
+
 }

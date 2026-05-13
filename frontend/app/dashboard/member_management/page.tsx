@@ -43,7 +43,7 @@ interface MembersSectionProps {
 
 interface MemberCardProps {
   member: Member;
-  onEditRole: (member: Member, newRole: MembershipRole) => void;
+  onEditRole: (member: Member) => void;
   onRemove: (member: Member) => void;
   removingId: string | null;
 }
@@ -111,7 +111,7 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
   const handleSave = async () => {
     setLoading(true);
     try {
-      await onSave(member.id, role, member.mess_id);
+      await onSave(member.user_id, role, member.mess_id);
       onClose();
     } finally {
       setLoading(false);
@@ -119,7 +119,6 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
   };
 
   return (
-    // ... (your modal JSX remains the same - only handleSave was fixed)
     <div
       style={{
         position: 'fixed',
@@ -134,8 +133,127 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Rest of your EditRoleModal JSX (unchanged) */}
-      {/* ... */}
+      <div style={{
+        width: '100%',
+        maxWidth: '420px',
+        background: 'linear-gradient(135deg, #0d1b2e 0%, #162035 60%, #1a2640 100%)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '16px',
+        overflow: 'hidden',
+      }}>
+        <div style={{ padding: '18px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>Mess Management</p>
+            <h2 style={{ fontSize: '17px', fontWeight: 600, color: '#fff' }}>Change Member Role</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'rgba(255,255,255,0.6)',
+            }}
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        <div style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+                fontWeight: 700,
+                background: `${avatarColor(member.user_id)}22`,
+                border: `1px solid ${avatarColor(member.user_id)}`,
+                color: avatarColor(member.user_id),
+              }}
+            >
+              {getInitials(member.user.name)}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ color: '#fff', fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.user.name}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.user.email}</p>
+            </div>
+          </div>
+
+          <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>
+            Role
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
+            {(['MEMBER', 'MANAGER'] as MembershipRole[]).map((r) => {
+              const cfg = ROLE_CONFIG[r];
+              const selected = role === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRole(r)}
+                  style={{
+                    background: selected ? cfg.color : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${selected ? cfg.textColor + '55' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: '10px',
+                    padding: '12px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ color: selected ? cfg.textColor : 'rgba(255,255,255,0.35)' }}>{cfg.icon}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: selected ? cfg.textColor : 'rgba(255,255,255,0.5)' }}>{cfg.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '11px', color: 'rgba(255,255,255,0.6)' }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading}
+              style={{
+                flex: 2,
+                background: loading ? 'rgba(99,102,241,0.5)' : '#6366f1',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '11px',
+                color: '#fff',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+            >
+              {loading && <Loader2 size={15} className="animate-spin" />}
+              {loading ? 'Saving...' : 'Save Role'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -196,7 +314,7 @@ function MemberCard({ member, onEditRole, onRemove, removingId }: MemberCardProp
         {/* Buttons */}
         <div className="grid grid-cols-2 gap-3 mt-auto">
           <button
-            onClick={() => onEditRole(member, member.role)}
+            onClick={() => onEditRole(member)}
             className="py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-indigo-500/50 text-indigo-300 
                        rounded-xl font-semibold text-sm transition-all active:scale-95"
           >
@@ -444,134 +562,6 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
   )
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────
-// export default function MembersSection({ organizerId }: MembersSectionProps) {
-//   const [members, setMembers] = useState<Member[]>([]);
-//   const [showAddModal, setShowAddModal] = useState(false);
-//   const [editingMember, setEditingMember] = useState<Member | null>(null);
-//   const [removingId, setRemovingId] = useState<string | null>(null);
-//   const [search, setSearch] = useState('');
-//   const [filterRole, setFilterRole] = useState<MembershipRole | 'ALL'>('ALL');
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState<string | null>(null);
-//   const [meta, setMeta] = useState<any>(null);
-//   const [page, setPage] = useState(1);
-//   const [searchTerm, setSearchTerm] = useState('');
-
-//   useEffect(() => {
-//     loadMembers();
-//   }, [page, searchTerm]);
-
-//   async function loadMembers() {
-//     try {
-//       setLoading(true);
-//       setError(null);
-
-//       const response = await apiClient.getAllMembers({
-//         page,
-//         limit: 20,
-//         searchTerm: searchTerm.trim() || undefined,
-//       });
-
-//       const membersData = Array.isArray(response.data) ? response.data : [];
-//       setMembers(membersData);
-//       setMeta(response.meta || null);
-//     } catch (err) {
-//       const errorMsg = err instanceof ApiError ? err.message : 'Failed to load members';
-//       setError(errorMsg);
-//       console.error(err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   async function handleAddMember(data: { email: string; role: MembershipRole; messId: string }) {
-//     try {
-//       await apiClient.addMember(data.messId, { email: data.email, role: data.role });
-//       await loadMembers();
-//     } catch (err) {
-//       const errorMsg = err instanceof ApiError ? err.message : 'Failed to add member';
-//       setError(errorMsg);
-//       throw err;
-//     }
-//   }
-
-//   async function handleEditRole(memberId: string, role: MembershipRole, messId: string) {
-//     try {
-//       setError(null);
-//       await apiClient.updateMemberRole(messId, memberId, role);
-
-//       setMembers((prev) =>
-//         prev.map((m) => (m.id === memberId ? { ...m, role } : m))
-//       );
-//     } catch (err) {
-//       const errorMsg = err instanceof ApiError ? err.message : 'Failed to update role';
-//       setError(errorMsg);
-//       throw err;
-//     }
-//   }
-
-//   async function handleRemove(member: Member) {
-//     if (!member.mess_id) return;
-//     setRemovingId(member.id);
-//     try {
-//       setError(null);
-//       await apiClient.removeMember(member.mess_id, member.id);
-//       setMembers((prev) => prev.filter((m) => m.id !== member.id));
-//     } catch (err) {
-//       const errorMsg = err instanceof ApiError ? err.message : 'Failed to remove member';
-//       setError(errorMsg);
-//     } finally {
-//       setRemovingId(null);
-//     }
-//   }
-
-//   const filtered = members.filter((m) => {
-//     const matchSearch =
-//       m.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-//       m.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
-//       m.mess?.name?.toLowerCase().includes(search.toLowerCase());
-
-//     const matchRole = filterRole === 'ALL' || m.role === filterRole;
-//     return matchSearch && matchRole;
-//   });
-
-//   const activeCount = members.filter((m) => m.is_active).length;
-
-//   return (
-//     // Your full JSX (with small fixes in onEditRole calls)
-//     <>
-//       <div className="p-4 sm:p-6 lg:p-8">
-//         {/* ... your header, search, filters ... */}
-
-//        {/* Responsive Grid */}
-//       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-//         {filtered.map((member) => (
-//           <MemberCard
-//             key={member.id}
-//             member={member}
-//             onEditRole={(mem, newRole) => handleEditRole(mem.id, newRole, mem.mess_id)}
-//             onRemove={handleRemove}
-//             removingId={removingId}
-//           />
-//         ))}
-//       </div>
-
-//         {/* Modals */}
-//         {showAddModal && <AddMemberModal onClose={() => setShowAddModal(false)} onAdd={handleAddMember} />}
-
-//         {editingMember && (
-//           <EditRoleModal
-//             member={editingMember}
-//             onClose={() => setEditingMember(null)}
-//             onSave={handleEditRole}
-//           />
-//         )}
-//       </div>
-//     </>
-//   );
-// }
-
 
 export default function MembersSection({ organizerId }: MembersSectionProps) {
   const [members, setMembers] = useState<Member[]>([]);
@@ -629,7 +619,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
       await apiClient.updateMemberRole(messId, memberId, role);
       
       setMembers(prev => 
-        prev.map(m => m.id === memberId ? { ...m, role } : m)
+        prev.map(m => m.user_id === memberId ? { ...m, role } : m)
       );
       setEditingMember(null);
     } catch (err) {
@@ -644,7 +634,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
     
     setRemovingId(member.id);
     try {
-      await apiClient.removeMember(member.mess_id, member.id);
+      await apiClient.removeMember(member.mess_id, member.user_id);
       setMembers(prev => prev.filter(m => m.id !== member.id));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to remove member');

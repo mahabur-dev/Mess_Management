@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsDecimal, IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDecimal, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { MembershipRole } from '@prisma/client';
 
 export class CreateMessDto {
   @ApiProperty({ example: 'Green House Mess' })
@@ -95,8 +96,15 @@ export class AddMemberDto {
   @IsNotEmpty()
   messId: string;
 
-  @ApiProperty({ example: 'MANAGER' })
-  @IsString()
+  @ApiProperty({ example: 'MANAGER', enum: MembershipRole })
+  @IsEnum(MembershipRole)
   @IsNotEmpty()
-  role: 'MANAGER' | 'MEMBER';
+  role: MembershipRole;
+}
+
+export class UpdateMemberRoleDto {
+  @ApiProperty({ example: 'MANAGER', enum: MembershipRole })
+  @IsEnum(MembershipRole)
+  @IsNotEmpty()
+  role: MembershipRole;
 }

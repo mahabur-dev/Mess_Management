@@ -305,61 +305,60 @@ export class MessService {
     })
 }
 
-  // ─────────────────────────────────────────
-  // Get members of a mess
-  // ─────────────────────────────────────────
-  async getMembers(messId: string, query: MessFilterDto) {
-    const paginationOptions = pick(query, [
-      'page',
-      'limit',
-      'sortBy',
-      'sortOrder',
-    ]);
-    const { page, limit, skip, sortOrder } =
-      paginationHelper(paginationOptions);
+  async getAllMembers(organizerId: string, query: MessFilterDto) {
+  const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
+  const { page, limit, skip, sortOrder = 'desc' } = paginationHelper(paginationOptions);
 
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    if (!mess) throw new HttpException('Mess not found', 404);
-
-    const where: Prisma.MessMembershipWhereInput = {
-      mess_id: messId,
+  const where: Prisma.MessMembershipWhereInput = {
+    mess: {
+      created_by: organizerId,   // Only messes owned by this organizer
       is_active: true,
-    };
+    },
+    is_active: true,
+  };
 
-    if (query.searchTerm) {
-      where.user = {
-        OR: [
-          { name: { contains: query.searchTerm, mode: 'insensitive' } },
-          { email: { contains: query.searchTerm, mode: 'insensitive' } },
-        ],
-      };
-    }
-
-    const [total, members] = await Promise.all([
-      this.prisma.messMembership.count({ where }),
-      this.prisma.messMembership.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { joined_at: sortOrder },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar_url: true,
-              phone: true,
-              role: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    return {
-      data: members,
-      meta: buildMeta(total, page, limit),
+  // Search across user fields
+  if (query.searchTerm) {
+    where.user = {
+      OR: [
+        { name: { contains: query.searchTerm, mode: 'insensitive' } },
+        { email: { contains: query.searchTerm, mode: 'insensitive' } },
+        { phone: { contains: query.searchTerm, mode: 'insensitive' } },
+      ],
     };
   }
+
+  const [total, members] = await Promise.all([
+    this.prisma.messMembership.count({ where }),
+    this.prisma.messMembership.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { joined_at: sortOrder as 'asc' | 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar_url: true,
+            phone: true,
+            role: true,
+          },
+        },
+        mess: {   // Very important: show which mess they belong to
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    data: members,
+    meta: buildMeta(total, page, limit),
+  };
+}
 }

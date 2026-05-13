@@ -27,7 +27,7 @@ import { MembershipRole } from '@prisma/client';
 @ApiBearerAuth('access-token')
 @Controller('messes')
 export class MessController {
-  constructor(private readonly messService: MessService) {}
+  constructor(private readonly messService: MessService) { }
 
   // Manager creates a mess
   @Post()
@@ -60,6 +60,24 @@ export class MessController {
     return { message: 'Mess fetched successfully', data };
   }
 
+  // Get members of a organizer
+  // Get ALL members across all messes owned by the organizer
+  @Get('members')
+  @UseGuards(AuthGuard('ORGANIZER'))
+  @ApiOperation({ summary: 'Get all members from all my messes' })
+  async getAllMyMembers(
+    @Query() query: MessFilterDto,
+    @Req() req: any,           // or use @CurrentUser()
+  ) {
+    const organizerId = req.user.id;
+    const result = await this.messService.getAllMembers(organizerId, query);
+
+    return {
+      message: 'All members fetched successfully',
+      meta: result.meta,
+      data: result.data,
+    };
+  }
   // Get single mess by ID (Admin or member)
   @Get(':id')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
@@ -126,19 +144,6 @@ export class MessController {
     return { message: 'Member removed successfully', data };
   }
 
-  // Get members of a mess
-  @Get(':id/members')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
-  @ApiOperation({ summary: 'Get members of a mess' })
-  async getMembers(@Param('id') id: string, @Query() query: MessFilterDto) {
-    const result = await this.messService.getMembers(id, query);
-    return {
-      message: 'Members fetched successfully',
-      meta: result.meta,
-      data: result.data,
-    };
-  }
-
   //assign manager role to a mess
   @Put(':id/members/:userId')
   @UseGuards(AuthGuard('ORGANIZER'))
@@ -146,7 +151,7 @@ export class MessController {
   async assignManager(
     @Param('id') messId: string,
     @Param('userId') userId: string,
-    @Param('role') role:  MembershipRole,
+    @Param('role') role: MembershipRole,
     @Req() req: Request,
   ) {
     const data = await this.messService.assignManager(messId, userId, role, req.user!.id);

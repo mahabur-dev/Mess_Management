@@ -18,6 +18,11 @@ export class CreateExpenseDto {
   @IsNotEmpty()
   messId: string;
 
+  @ApiPropertyOptional({ example: 'uuid-buyer-id' })
+  @IsOptional()
+  @IsString()
+  buyerId?: string;
+
   @ApiProperty({ enum: ExpenseCategory, example: ExpenseCategory.GROCERY })
   @IsEnum(ExpenseCategory)
   category: ExpenseCategory;
@@ -26,6 +31,22 @@ export class CreateExpenseDto {
   @IsNumber()
   @Min(0.01)
   amount: number;
+
+  @ApiPropertyOptional({ example: 'Rice' })
+  @IsOptional()
+  @IsString()
+  itemName?: string;
+
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  quantity?: number;
+
+  @ApiPropertyOptional({ example: 'kg' })
+  @IsOptional()
+  @IsString()
+  unit?: string;
 
   @ApiProperty({ example: '2025-04-26', description: 'Date of expense' })
   @IsDateString()
@@ -48,11 +69,32 @@ export class UpdateExpenseDto {
   @IsEnum(ExpenseCategory)
   category?: ExpenseCategory;
 
+  @ApiPropertyOptional({ example: 'uuid-buyer-id' })
+  @IsOptional()
+  @IsString()
+  buyerId?: string;
+
   @ApiPropertyOptional({ example: 1500 })
   @IsOptional()
   @IsNumber()
   @Min(0.01)
   amount?: number;
+
+  @ApiPropertyOptional({ example: 'Rice' })
+  @IsOptional()
+  @IsString()
+  itemName?: string;
+
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  quantity?: number;
+
+  @ApiPropertyOptional({ example: 'kg' })
+  @IsOptional()
+  @IsString()
+  unit?: string;
 
   @ApiPropertyOptional({ example: '2025-04-28' })
   @IsOptional()

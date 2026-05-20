@@ -4,41 +4,39 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Deep Navy & Violet Theme */
-  /* Primary: Deep Navy (#0F172A), Accent: Violet (#7C3AED), Light: Lilac (#A78BFA), Lightest: Lavender (#E9D5FF) */
-  --background: #ffffff;
-  --foreground: #0F172A;
-  --card: #f8f9fa;
-  --card-foreground: #0F172A;
+  --background: #f8fbff;
+  --foreground: #0a1433;
+  --card: #ffffff;
+  --card-foreground: #0a1433;
   --popover: #ffffff;
-  --popover-foreground: #0F172A;
-  --primary: #0F172A;
+  --popover-foreground: #0a1433;
+  --primary: #3558f6;
   --primary-foreground: #ffffff;
-  --secondary: #7C3AED;
+  --secondary: #6f3df4;
   --secondary-foreground: #ffffff;
-  --muted: #e5e7eb;
-  --muted-foreground: #6b7280;
-  --accent: #7C3AED;
+  --muted: #edf2fa;
+  --muted-foreground: #667085;
+  --accent: #6f3df4;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #f3f4f6;
-  --ring: #7C3AED;
-  --chart-1: #7C3AED;
-  --chart-2: #A78BFA;
-  --chart-3: #0F172A;
-  --chart-4: #EC4899;
-  --chart-5: #06B6D4;
-  --radius: 0.625rem;
-  --sidebar: #0F172A;
+  --border: #e6ebf4;
+  --input: #f6f8fc;
+  --ring: #6f3df4;
+  --chart-1: #6f3df4;
+  --chart-2: #2787f5;
+  --chart-3: #ffb21a;
+  --chart-4: #31c77f;
+  --chart-5: #ff4f8a;
+  --radius: 0.5rem;
+  --sidebar: #15115d;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #7C3AED;
+  --sidebar-primary: #6f3df4;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #A78BFA;
+  --sidebar-accent: #2a237f;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #7C3AED;
+  --sidebar-border: rgba(255,255,255,0.12);
+  --sidebar-ring: #8e6cff;
 }
 
 .dark {
@@ -123,5 +121,27 @@
   }
   body {
     @apply bg-background text-foreground;
+    background:
+      radial-gradient(circle at 8% 18%, rgba(111, 61, 244, 0.09), transparent 28rem),
+      radial-gradient(circle at 90% 10%, rgba(39, 135, 245, 0.08), transparent 26rem),
+      var(--background);
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply border border-border bg-white/90 shadow-[0_18px_50px_rgba(22,34,73,0.08)];
+  }
+
+  .app-card {
+    @apply rounded-lg border border-border bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)];
+  }
+
+  .gradient-button {
+    @apply bg-gradient-to-r from-[#2f5bf6] to-[#7037ea] text-white shadow-[0_10px_22px_rgba(80,70,230,0.22)] hover:opacity-95;
+  }
+
+  .soft-input {
+    @apply h-11 rounded-lg border border-border bg-white px-3 text-sm outline-none transition focus:border-[#6f3df4] focus:ring-2 focus:ring-[#6f3df4]/15;
   }
 }

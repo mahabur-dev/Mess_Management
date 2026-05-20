@@ -28,7 +28,7 @@ export class BazarController {
 
   // Create bazar entry
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Create a bazar entry (all roles)' })
   async create(@Req() req: Request, @Body() dto: CreateBazarDto) {
     const data = await this.bazarService.create(
@@ -54,7 +54,7 @@ export class BazarController {
 
   // Get bazars by mess ID
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get bazar entries for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -76,7 +76,7 @@ export class BazarController {
 
   // Get single bazar entry
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get a bazar entry by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.bazarService.findOne(
@@ -89,7 +89,7 @@ export class BazarController {
 
   // Update bazar entry
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Update a bazar entry' })
   async update(
     @Param('id') id: string,
@@ -107,7 +107,7 @@ export class BazarController {
 
   // Delete bazar entry
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Delete a bazar entry' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.bazarService.remove(

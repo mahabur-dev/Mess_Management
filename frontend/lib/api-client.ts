@@ -1,62 +1,14 @@
-// API Client for connecting to NestJS backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
 
-// ─── Response shape from your NestJS backend ─────────────────────────────────
 export interface BackendResponse<T> {
   statusCode: number
   success: boolean
   message: string
-  meta: null | { total: number; page: number; limit: number }
+  meta?: { total: number; page: number; limit: number; totalPages?: number } | null
   data: T
 }
 
-// ─── Mess types matching your Prisma schema ───────────────────────────────────
-export interface MessCreator {
-  id: string
-  name: string
-  email: string
-}
-
-export interface MessCount {
-  memberships: number
-  deposits: number
-  meals: number
-}
-
-export interface Mess {
-  id: string
-  name: string
-  description: string | null
-  address: string | null
-  meal_rate: string
-  currency: string
-  created_by: string
-  is_active: boolean
-  created_at: string
-  creator?: MessCreator
-  _count?: MessCount
-}
-
-export interface CreateMessDto {
-  messName: string
-  description?: string
-  messLocation?: string
-  meal_rate: string
-  currency: string
-}
-
-export interface UpdateMessDto extends Partial<CreateMessDto> {
-  is_active?: boolean
-}
-
-// ─── Generic API response wrapper ────────────────────────────────────────────
-export interface ApiResponse<T> {
-  data: T
-  message?: string
-  statusCode: number
-}
-
-// ─── Error class for API errors ───────────────────────────────────────────────
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
@@ -68,212 +20,353 @@ export class ApiError extends Error {
   }
 }
 
-class ApiClient {
-  private baseUrl: string
+export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER' | 'ORGANIZER'
+export type MembershipRole = 'MANAGER' | 'MEMBER'
+export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
+export type AttendanceStatus = 'ON' | 'OFF'
+export type ExpenseCategory =
+  | 'GROCERY'
+  | 'UTILITY'
+  | 'RENT'
+  | 'FOOD'
+  | 'GAS'
+  | 'ELECTRICITY'
+  | 'WIFI'
+  | 'CLEANER'
+  | 'MAINTENANCE'
+  | 'OTHER'
+export type PaymentMethod = 'CASH' | 'BKASH' | 'NAGAD' | 'ROCKET' | 'BANK'
+export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type BillStatus = 'PENDING' | 'PAID' | 'PARTIAL'
+export type NoticeType = 'MEAL' | 'PAYMENT' | 'EMERGENCY' | 'MEETING' | 'RULE_UPDATE' | 'GENERAL'
+export type ComplaintCategory =
+  | 'MEAL_CORRECTION'
+  | 'PAYMENT_CORRECTION'
+  | 'LEAVE_REQUEST'
+  | 'ROOM_ISSUE'
+  | 'FOOD_ISSUE'
+  | 'MAINTENANCE_ISSUE'
+  | 'OTHER'
+export type ComplaintStatus = 'PENDING' | 'PROCESSING' | 'SOLVED' | 'REJECTED'
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl
-  }
-
-  // private async request<T>(
-  //   endpoint: string,
-  //   options: RequestInit = {}
-  // ): Promise<BackendResponse<T>> {
-  //   const url = `${this.baseUrl}${endpoint}`
-  //   const token =
-  //     typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
-
-  //   const headers: HeadersInit = {
-  //     'Content-Type': 'application/json',
-  //     ...options.headers,
-  //   }
-
-  //   if (token) {
-  //     ;(headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
-  //   }
-
-  //   const response = await fetch(url, { ...options, headers })
-  //   const json = await response.json()
-
-  //   console.log(json)
-
-  //   // Your backend returns { success, statusCode, message, data } on both success and error
-  //   if (!response.ok || !json.success) {
-  //     throw new ApiError(
-  //       json.statusCode ?? response.status,
-  //       json.message ?? response.statusText,
-  //       json.errorSources
-  //     )
-  //   }
-
-  //   return json as BackendResponse<T>
-  // }
-
-  // ─── Auth ──────────────────────────────────────────────────────────────────
-  
-  private async request<T>(
-  endpoint: string,
-  options: RequestInit & { params?: Record<string, any> } = {}
-): Promise<BackendResponse<T>> {
-  let url = `${this.baseUrl}${endpoint}`;
-
-  // ─── Handle Query Parameters ─────────────────────────────────────
-  if (options.params) {
-    const filteredParams = Object.entries(options.params).reduce<Record<string, string>>(
-      (acc, [key, value]) => {
-        if (value !== undefined && value !== null) {
-          acc[key] = String(value);
-        }
-        return acc;
-      },
-      {}
-    );
-
-    const queryString = new URLSearchParams(filteredParams).toString();
-    if (queryString) {
-      url += `?${queryString}`;
-    }
-  }
-
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
-
-  if (token) {
-    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-  }
-
-  const fetchOptions: RequestInit = {
-    ...options,
-    headers,
-  };
-
-  // Remove non-fetch properties
-  delete (fetchOptions as any).params;
-
-  const response = await fetch(url, fetchOptions);
-  const json = await response.json();
-
-  if (!response.ok || !json.success) {
-    throw new ApiError(
-      json.statusCode ?? response.status,
-      json.message ?? 'Something went wrong',
-      json.errorSources
-    );
-  }
-
-  return json as BackendResponse<T>;
+export interface User {
+  id: string
+  name: string
+  email: string
+  phone?: string | null
+  role: GlobalRole
+  avatar_url?: string | null
+  memberships?: MessMembership[]
 }
-  async login(email: string, password: string) {
-    return this.request('/auth/login', {
+
+export interface Mess {
+  id: string
+  name: string
+  description?: string | null
+  address?: string | null
+  meal_rate: string
+  currency: string
+  created_by: string
+  is_active: boolean
+  total_seats?: number | null
+  monthly_rent?: string | null
+  electricity_bill?: string | null
+  gas_bill?: string | null
+  wifi_bill?: string | null
+  cleaner_bill?: string | null
+  extra_cost?: string | null
+  payment_deadline_day?: number
+  meal_off_deadline?: string | null
+  settings_completed?: boolean
+  created_at: string
+  _count?: { memberships?: number; deposits?: number; meals?: number }
+}
+
+export interface MessMembership {
+  id: string
+  mess_id: string
+  user_id: string
+  role: MembershipRole
+  joined_at: string
+  is_active: boolean
+  room_no?: string | null
+  seat_no?: string | null
+  monthly_rent?: string | null
+  deposit_amount?: string | null
+  due_balance?: string | null
+  user?: User
+  mess?: Mess
+}
+
+export interface MessDashboard {
+  todayTotalMeals: number
+  currentMonthTotalBazar: number
+  currentMealRate: number
+  totalDue: number
+  paidAmount: number
+  activeMembers: number
+  pendingPayments: number
+  openComplaints: number
+  notices: Array<{ id: string; title: string; type: NoticeType; is_pinned: boolean; created_at: string }>
+}
+
+export interface AdminDashboard {
+  users: number
+  pendingRequests: number
+  approvedRequests: number
+  messes: number
+  pendingComplaints: number
+  pendingPayments: number
+}
+
+export interface MonthlyBill {
+  id: string
+  month: string
+  total_meals: number
+  food_bill: string
+  seat_rent: string
+  utility_share: string
+  paid_amount: string
+  final_due: string
+  balance: string
+  status: BillStatus
+  member?: User
+  mess?: Mess
+}
+
+export interface Payment {
+  id: string
+  amount: string
+  method: PaymentMethod
+  status: PaymentStatus
+  transaction_id?: string | null
+  created_at: string
+  member?: User
+  mess?: Mess
+}
+
+export interface Notice {
+  id: string
+  type: NoticeType
+  title: string
+  body: string
+  is_pinned: boolean
+  created_at: string
+  creator?: User
+  mess?: Mess
+}
+
+export interface Complaint {
+  id: string
+  category: ComplaintCategory
+  title: string
+  description: string
+  status: ComplaintStatus
+  response?: string | null
+  created_at: string
+  member?: User
+  mess?: Mess
+}
+
+type QueryParams = Record<string, string | number | boolean | undefined | null>
+
+class ApiClient {
+  constructor(private baseUrl: string) {}
+
+  private getToken() {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('authToken')
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit & { params?: QueryParams } = {}
+  ): Promise<BackendResponse<T>> {
+    let url = `${this.baseUrl}${endpoint}`
+    if (options.params) {
+      const params = new URLSearchParams()
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') params.set(key, String(value))
+      })
+      const query = params.toString()
+      if (query) url += `?${query}`
+    }
+
+    const token = this.getToken()
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    }
+    if (token) ;(headers as Record<string, string>).Authorization = `Bearer ${token}`
+
+    const fetchOptions: RequestInit = { ...options, headers }
+    delete (fetchOptions as RequestInit & { params?: QueryParams }).params
+
+    const response = await fetch(url, fetchOptions)
+    const json = await response.json().catch(() => ({}))
+    if (!response.ok || json.success === false) {
+      throw new ApiError(
+        json.statusCode ?? response.status,
+        json.message ?? response.statusText ?? 'Something went wrong',
+        json.errorSources
+      )
+    }
+    return json as BackendResponse<T>
+  }
+
+  login(email: string, password: string) {
+    return this.request<{ accessToken: string; user: User }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
   }
 
-  async register(email: string, password: string, name: string) {
-    return this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, name }),
-    })
+  register(data: { name: string; email: string; phone?: string; password: string; role?: GlobalRole }) {
+    return this.request<User>('/auth/register', { method: 'POST', body: JSON.stringify(data) })
   }
 
-  // ─── Messes ────────────────────────────────────────────────────────────────
-
-  //own messes
-  async getMesses(): Promise<BackendResponse<Mess | Mess[]>> {
-    return this.request<Mess | Mess[]>('/messes/my-mess', { method: 'GET' })
+  getProfile() {
+    return this.request<User>('/users/profile')
   }
 
-  async getMess(id: string): Promise<BackendResponse<Mess>> {
-    return this.request<Mess>(`/messes/${id}`, { method: 'GET' })
+  getUsers(params?: QueryParams) {
+    return this.request<User[]>('/users', { params })
   }
 
-  async createMess(data: CreateMessDto): Promise<BackendResponse<Mess>> {
-    return this.request<Mess>('/messes', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+  getMesses() {
+    return this.request<Mess[]>('/messes/my-mess')
   }
 
-  async updateMess(id: string, data: UpdateMessDto): Promise<BackendResponse<Mess>> {
-    return this.request<Mess>(`/messes/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    })
+  getAllMesses(params?: QueryParams) {
+    return this.request<Mess[]>('/messes', { params })
   }
 
-  async deleteMess(id: string): Promise<BackendResponse<null>> {
-    return this.request<null>(`/messes/${id}`, { method: 'DELETE' })
+  getMess(id: string) {
+    return this.request<Mess>(`/messes/${id}`)
   }
 
-  // ─── Meals ─────────────────────────────────────────────────────────────────
-  async getMeals() {
-    return this.request('/meals', { method: 'GET' })
+  createMess(data: { messName: string; messLocation: string; description?: string; meal_rate?: string; currency?: string }) {
+    return this.request<Mess>('/messes', { method: 'POST', body: JSON.stringify({ meal_rate: '0', currency: 'BDT', ...data }) })
   }
 
-  async createMeal(data: unknown) {
-    return this.request('/meals', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+  updateMess(id: string, data: { messName?: string; messLocation?: string; description?: string }) {
+    return this.request<Mess>(`/messes/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
-  // ─── Users ─────────────────────────────────────────────────────────────────
-  async getUsers() {
-    return this.request('/users', { method: 'GET' })
+  deleteMess(id: string) {
+    return this.request(`/messes/${id}`, { method: 'DELETE' })
   }
 
-  // ─── Finance ───────────────────────────────────────────────────────────────
-  async getFinance() {
-    return this.request('/finance', { method: 'GET' })
+  requestMessRegistration(data: { messName: string; address: string; totalSeats?: number; monthlyRent?: number; description?: string }) {
+    return this.request('/messes/registration-requests', { method: 'POST', body: JSON.stringify(data) })
   }
 
-  // ─── Shopping ──────────────────────────────────────────────────────────────
-  async getShopping() {
-    return this.request('/shopping', { method: 'GET' })
+  getMessRequests(params?: QueryParams) {
+    return this.request('/messes/registration-requests', { params })
   }
 
-  // ─── Attendance ────────────────────────────────────────────────────────────
-  async getAttendance() {
-    return this.request('/attendance', { method: 'GET' })
+  reviewMessRequest(id: string, data: { status: 'APPROVED' | 'REJECTED'; reviewNote?: string }) {
+    return this.request(`/messes/registration-requests/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
-  // ─── Members ───────────────────────────────────────────────────────────────
-// apiClient.ts  (or wherever your service is)
-  async getAllMembers(queryParams?: { 
-    page?: number; 
-    limit?: number; 
-    searchTerm?: string;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-  }) {
-    return this.request('/messes/members', { 
-      method: 'GET',
-      params: queryParams   // for pagination & search support
-    });
+  updateMessSetup(id: string, data: Record<string, unknown>) {
+    return this.request<Mess>(`/messes/${id}/setup`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
-  async addMember(messId: string, data: { email: string; role: 'MANAGER' | 'MEMBER' }) {
-    return this.request(`/messes/${messId}/members`, {
-      method: 'POST',
-      body: JSON.stringify({ ...data, messId }),
-    })
+  getAllMembers(params?: QueryParams) {
+    return this.request<MessMembership[]>('/messes/members', { params })
   }
 
-  async updateMemberRole(messId: string, memberId: string, role: 'MANAGER' | 'MEMBER') {
-    return this.request(`/messes/${messId}/members/${memberId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ role }),
-    })
+  addMember(messId: string, data: { email: string; role: MembershipRole; roomNo?: string; seatNo?: string; monthlyRent?: number; depositAmount?: number }) {
+    return this.request<MessMembership>(`/messes/${messId}/members`, { method: 'POST', body: JSON.stringify({ ...data, messId }) })
   }
 
-  async removeMember(messId: string, memberId: string) {
+  updateMember(messId: string, memberId: string, data: Partial<{ role: MembershipRole; isActive: boolean; roomNo: string; seatNo: string; monthlyRent: number; depositAmount: number }>) {
+    return this.request<MessMembership>(`/messes/${messId}/members/${memberId}`, { method: 'PUT', body: JSON.stringify(data) })
+  }
+
+  removeMember(messId: string, memberId: string) {
     return this.request(`/messes/${messId}/members/${memberId}`, { method: 'DELETE' })
+  }
+
+  getMessDashboard(messId: string, month?: string) {
+    return this.request<MessDashboard>(`/dashboard/mess/${messId}`, { params: { month } })
+  }
+
+  getAdminDashboard() {
+    return this.request<AdminDashboard>('/dashboard/admin')
+  }
+
+  createMeal(data: { messId: string; memberId?: string; mealName: MealName; status: AttendanceStatus; guests?: number; date?: string; mealCount?: number }) {
+    return this.request('/meal', { method: 'POST', body: JSON.stringify({ mealCount: data.status === 'ON' ? 1 : 0, ...data }) })
+  }
+
+  getMealsByMess(messId: string, params?: QueryParams) {
+    return this.request(`/meal/mess/${messId}`, { params })
+  }
+
+  getMealSummary(messId: string, params?: QueryParams) {
+    return this.request(`/meal/mess/${messId}/summary`, { params })
+  }
+
+  getExpensesByMess(messId: string, params?: QueryParams) {
+    return this.request('/expense/mess/' + messId, { params })
+  }
+
+  createExpense(data: Record<string, unknown>) {
+    return this.request('/expense', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  generateMonthlyBill(data: { messId: string; month: string }) {
+    return this.request<MonthlyBill[]>('/monthly-bill/generate', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  getBillsByMess(messId: string, params?: QueryParams) {
+    return this.request<MonthlyBill[]>(`/monthly-bill/mess/${messId}`, { params })
+  }
+
+  getMyBills(params?: QueryParams) {
+    return this.request<MonthlyBill[]>('/monthly-bill/my', { params })
+  }
+
+  submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string }) {
+    return this.request<Payment>('/payments', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  getPaymentsByMess(messId: string, params?: QueryParams) {
+    return this.request<Payment[]>(`/payments/mess/${messId}`, { params })
+  }
+
+  getMyPayments(params?: QueryParams) {
+    return this.request<Payment[]>('/payments/my', { params })
+  }
+
+  reviewPayment(id: string, data: { status: 'APPROVED' | 'REJECTED'; note?: string }) {
+    return this.request<Payment>(`/payments/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) })
+  }
+
+  getNoticesByMess(messId: string, params?: QueryParams) {
+    return this.request<Notice[]>(`/notices/mess/${messId}`, { params })
+  }
+
+  createNotice(data: { messId: string; type: NoticeType; title: string; body: string; isPinned?: boolean }) {
+    return this.request<Notice>('/notices', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  getComplaintsByMess(messId: string, params?: QueryParams) {
+    return this.request<Complaint[]>(`/complaints/mess/${messId}`, { params })
+  }
+
+  getMyComplaints(params?: QueryParams) {
+    return this.request<Complaint[]>('/complaints/my', { params })
+  }
+
+  createComplaint(data: { messId: string; category: ComplaintCategory; title: string; description: string }) {
+    return this.request<Complaint>('/complaints', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  updateComplaintStatus(id: string, data: { status: ComplaintStatus; response?: string }) {
+    return this.request<Complaint>(`/complaints/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 }
 

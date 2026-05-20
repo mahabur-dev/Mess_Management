@@ -8,12 +8,16 @@ import { MealModule } from './app/module/meal/meal.module';
 import { MessModule } from './app/module/mess/mess.module';
 import { DepositModule } from './app/module/deposit/deposit.module';
 import { BazarModule } from './app/module/bazar/bazar.module';
-import { PrismaModule } from 'prisma/prisma.module';
+import { PrismaModule } from 'src/prisma/prisma.module';
 import { AuthModule } from './app/module/auth/auth.module';
 import { NotificationModule } from './app/module/notification/notification.module';
 import { MonthlyBillModule } from './app/module/monthly-bill/monthly-bill.module';
 import { ExpenseModule } from './app/module/expense/expense.module';
 import { ShoppingModule } from './app/module/shopping/shopping.module';
+import { PaymentModule } from './app/module/payment/payment.module';
+import { NoticeModule } from './app/module/notice/notice.module';
+import { ComplaintModule } from './app/module/complaint/complaint.module';
+import { DashboardModule } from './app/module/dashboard/dashboard.module';
 
 // ✅ Import Prisma Module
 
@@ -30,7 +34,11 @@ import { ShoppingModule } from './app/module/shopping/shopping.module';
     NotificationModule ,
     MonthlyBillModule,
     ExpenseModule,
-    ShoppingModule
+    ShoppingModule,
+    PaymentModule,
+    NoticeModule,
+    ComplaintModule,
+    DashboardModule
   ],
 
   controllers: [AppController],

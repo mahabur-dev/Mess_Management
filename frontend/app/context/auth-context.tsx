@@ -1,7 +1,9 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiClient, type GlobalRole } from '@/lib/api-client'
+import type { MessMembership } from '@/lib/api-client'
 
 export enum UserRole {
   MANAGER = 'MANAGER',
@@ -14,8 +16,10 @@ export interface User {
   id: string
   email: string
   name: string
-  role: UserRole
-  avatar?: string
+  role: UserRole | GlobalRole
+  avatar_url?: string | null
+  phone?: string | null
+  memberships?: MessMembership[]
 }
 
 interface AuthContextType {
@@ -35,8 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  console.log(process.env.NEXT_PUBLIC_API_URL)
-  // ✅ Restore user on page refresh — OUTSIDE login, at component level
+
   useEffect(() => {
     const savedToken = localStorage.getItem('authToken')
     if (!savedToken) {
@@ -44,13 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
-      headers: { Authorization: `Bearer ${savedToken}` },
-    })
-      .then(res => res.json())
-      .then(json => {
+    apiClient
+      .getProfile()
+      .then((response) => {
         setToken(savedToken)
-        setUser(json.data)
+        setUser(response.data as User)
       })
       .catch(() => localStorage.removeItem('authToken'))
       .finally(() => setIsLoading(false))
@@ -59,44 +60,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!response.ok) throw new Error('Login failed')
-
-      const data = await response.json()
-      setToken(data.data.accessToken)
-      setUser(data.data.user)
-      localStorage.setItem('authToken', data.data.accessToken)
+      const response = await apiClient.login(email, password)
+      setToken(response.data.accessToken)
+      setUser(response.data.user as User)
+      localStorage.setItem('authToken', response.data.accessToken)
     } finally {
       setIsLoading(false)
     }
   }, [])
 
-  const register = useCallback(async (name: string, email: string, phone: string, password: string, role: string) => {
-    setIsLoading(true)
-    try {
-      console.log('Registering user with:', { name, email, phone, password, role })
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, phone, role }),
-      })
-
-      if (!response.ok) throw new Error('Registration failed')
-
-      const data = await response.json()
-      setToken(data.data.accessToken)
-      setUser(data.data.user)
-      localStorage.setItem('authToken', data.data.accessToken)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
+  const register = useCallback(
+    async (name: string, email: string, phone: string, password: string, role: string) => {
+      setIsLoading(true)
+      try {
+        await apiClient.register({ name, email, phone, password, role: role as GlobalRole })
+        await login(email, password)
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [login]
+  )
 
   const logout = useCallback(() => {
     setUser(null)
@@ -114,8 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider')
   return context
 }

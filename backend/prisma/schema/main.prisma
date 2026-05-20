@@ -20,6 +20,12 @@ enum GlobalRole {
   ORGANIZER
 }
 
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ─── MessMembership ────────────────────────────────────────
 enum MembershipRole {
   MANAGER
@@ -37,6 +43,7 @@ enum MealStatus {
   PENDING
   CONFIRMED
   CANCELLED
+  LOCKED
 }
 
 // ─── MealAttendance ────────────────────────────────────────
@@ -50,6 +57,12 @@ enum ExpenseCategory {
   GROCERY
   UTILITY
   RENT
+  FOOD
+  GAS
+  ELECTRICITY
+  WIFI
+  CLEANER
+  MAINTENANCE
   OTHER
 }
 
@@ -58,7 +71,14 @@ enum PaymentMethod {
   CASH
   BKASH
   NAGAD
+  ROCKET
   BANK
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // ─── MonthlyBill ───────────────────────────────────────────
@@ -83,4 +103,34 @@ enum NotificationType {
   BILL_GENERATED
   ANNOUNCEMENT
   SHOPPING_UPDATE
+  PAYMENT_NOTICE
+  EMERGENCY
+  MEETING
+  RULE_UPDATE
+}
+
+enum NoticeType {
+  MEAL
+  PAYMENT
+  EMERGENCY
+  MEETING
+  RULE_UPDATE
+  GENERAL
+}
+
+enum ComplaintCategory {
+  MEAL_CORRECTION
+  PAYMENT_CORRECTION
+  LEAVE_REQUEST
+  ROOM_ISSUE
+  FOOD_ISSUE
+  MAINTENANCE_ISSUE
+  OTHER
+}
+
+enum ComplaintStatus {
+  PENDING
+  PROCESSING
+  SOLVED
+  REJECTED
 }

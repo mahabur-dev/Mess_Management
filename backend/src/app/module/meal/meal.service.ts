@@ -1,9 +1,9 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { CreateMealDto, MealFilterDto, UpdateMealDto } from './dto/meal.dto';
-import { MealName, Prisma } from '@prisma/client';
+import { AttendanceStatus, MealName, MembershipRole, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MealService {
@@ -34,16 +34,47 @@ export class MealService {
   async create(userId: string, role: string, dto: CreateMealDto) {
     await this.verifyMessAccess(dto.messId, userId, role);
 
-    return this.prisma.meal.create({
+    const date = dto.date ? new Date(dto.date) : new Date();
+    const mealName = dto.mealName ?? MealName.LUNCH;
+    const meal = await this.prisma.meal.findFirst({
+      where: { mess_id: dto.messId, name: mealName, scheduled_date: date },
+    });
+
+    const savedMeal = meal ?? await this.prisma.meal.create({
       data: {
         mess_id: dto.messId,
         created_by: userId,
-        name: MealName.LUNCH,
-        scheduled_date: dto.date ? new Date(dto.date) : new Date(),
+        name: mealName,
+        scheduled_date: date,
+        status: 'CONFIRMED',
+      },
+    });
+
+    if (savedMeal.is_locked && role === 'MEMBER') {
+      throw new HttpException('Meal is locked after deadline', 400);
+    }
+
+    const targetMemberId = role === 'MEMBER' ? userId : (dto.memberId ?? userId);
+    return this.prisma.mealAttendance.upsert({
+      where: { meal_id_member_id: { meal_id: savedMeal.id, member_id: targetMemberId } },
+      update: {
+        status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+        guests: dto.guests ?? 0,
+      },
+      create: {
+        meal_id: savedMeal.id,
+        member_id: targetMemberId,
+        status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+        guests: dto.guests ?? 0,
       },
       include: {
-        creator: { select: { id: true, name: true } },
-        mess: { select: { id: true, name: true } },
+        meal: {
+          include: {
+            creator: { select: { id: true, name: true } },
+            mess: { select: { id: true, name: true } },
+          },
+        },
+        member: { select: { id: true, name: true, email: true } },
       },
     });
   }
@@ -69,6 +100,9 @@ export class MealService {
         include: {
           creator: { select: { id: true, name: true } },
           mess: { select: { id: true, name: true } },
+          attendances: {
+            include: { member: { select: { id: true, name: true, email: true } } },
+          },
         },
       }),
     ]);
@@ -96,6 +130,9 @@ export class MealService {
       include: {
         creator: { select: { id: true, name: true } },
         mess: { select: { id: true, name: true } },
+        attendances: {
+          include: { member: { select: { id: true, name: true, email: true } } },
+        },
       },
     });
 
@@ -112,22 +149,39 @@ export class MealService {
       throw new HttpException('Forbidden: Not your meal entry', 403);
     }
 
-    if (role === 'MANAGER') {
-      const mess = await this.prisma.mess.findUnique({
-        where: { id: meal.mess_id },
-      });
-      if (mess?.created_by !== userId) {
-        throw new HttpException('Forbidden: Not your mess', 403);
-      }
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: meal.mess_id, user_id: userId } },
+    });
+    if (role === 'MANAGER' && membership?.role !== MembershipRole.MANAGER) {
+      const mess = await this.prisma.mess.findUnique({ where: { id: meal.mess_id } });
+      if (mess?.created_by !== userId) throw new HttpException('Forbidden: Not your mess', 403);
     }
 
-    return this.prisma.meal.update({
+    const updatedMeal = await this.prisma.meal.update({
       where: { id },
       data: {
         scheduled_date: dto.date ? new Date(dto.date) : undefined,
+        status: dto.mealStatus,
+        is_locked: dto.mealStatus === 'LOCKED' ? true : undefined,
       },
       include: { creator: { select: { id: true, name: true } } },
     });
+    if (dto.status || dto.guests !== undefined || dto.mealCount !== undefined) {
+      await this.prisma.mealAttendance.upsert({
+        where: { meal_id_member_id: { meal_id: id, member_id: userId } },
+        update: {
+          status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : undefined),
+          guests: dto.guests,
+        },
+        create: {
+          meal_id: id,
+          member_id: userId,
+          status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+          guests: dto.guests ?? 0,
+        },
+      });
+    }
+    return updatedMeal;
   }
 
   async remove(id: string, userId: string, role: string) {
@@ -174,13 +228,16 @@ export class MealService {
     const summary = await Promise.all(
       members.map(async (member) => {
         const [mealCount, depositTotal] = await Promise.all([
-          this.prisma.meal.count({
+          this.prisma.mealAttendance.count({
             where: {
-              mess_id: messId,
-              created_by: member.user_id,
-              ...(Object.keys(dateFilter).length
-                ? { scheduled_date: dateFilter }
-                : {}),
+              member_id: member.user_id,
+              status: 'ON',
+              meal: {
+                mess_id: messId,
+                ...(Object.keys(dateFilter).length
+                  ? { scheduled_date: dateFilter }
+                  : {}),
+              },
             },
           }),
           this.prisma.deposit.aggregate({
@@ -212,10 +269,7 @@ export class MealService {
     });
 
     const totalBazarCost = Number(expenseTotal._sum.amount ?? 0);
-    const totalMeals = summary.reduce(
-      (sum, s) => sum + Number(s.totalMeals),
-      0,
-    );
+    const totalMeals = summary.reduce((sum, s) => sum + Number(s.totalMeals), 0);
     const mealRate = totalMeals > 0 ? totalBazarCost / totalMeals : 0;
 
     return {

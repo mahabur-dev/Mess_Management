@@ -1,0 +1,21 @@
+model Complaint {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id     String              @db.Uuid
+  member_id   String              @db.Uuid
+  category    ComplaintCategory
+  title       String              @db.VarChar(200)
+  description String              @db.Text
+  status      ComplaintStatus     @default(PENDING)
+  response    String?             @db.Text
+  updated_by  String?             @db.Uuid
+  created_at  DateTime            @default(now()) @db.Timestamptz
+  updated_at  DateTime            @updatedAt @db.Timestamptz
+
+  mess          Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  member        User @relation("ComplaintCreator", fields: [member_id], references: [id])
+  statusUpdater User? @relation("ComplaintStatusUpdater", fields: [updated_by], references: [id])
+
+  @@index([mess_id, status])
+  @@index([member_id, created_at(sort: Desc)])
+  @@map("complaints")
+}

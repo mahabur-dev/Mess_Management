@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
+  IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -9,12 +11,18 @@ import {
   Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { AttendanceStatus, MealName, MealStatus } from '@prisma/client';
 
 export class CreateMealDto {
   @ApiProperty({ example: 'clxyz123456', description: 'Mess ID' })
   @IsString()
   @IsNotEmpty()
   messId: string;
+
+  @ApiPropertyOptional({ example: 'uuid-member-id', description: 'Manager/Admin can set meal for another member' })
+  @IsOptional()
+  @IsString()
+  memberId?: string;
 
   @ApiProperty({
     example: 2,
@@ -24,6 +32,24 @@ export class CreateMealDto {
   @Min(0)
   @Max(5)
   mealCount: number;
+
+  @ApiPropertyOptional({ enum: MealName, example: MealName.DINNER })
+  @IsOptional()
+  @IsEnum(MealName)
+  mealName?: MealName;
+
+  @ApiPropertyOptional({ enum: AttendanceStatus, example: AttendanceStatus.ON })
+  @IsOptional()
+  @IsEnum(AttendanceStatus)
+  status?: AttendanceStatus;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  @Max(20)
+  guests?: number;
 
   @ApiPropertyOptional({ example: '2025-04-26' })
   @IsOptional()
@@ -43,6 +69,24 @@ export class UpdateMealDto {
   @IsOptional()
   @IsDateString()
   date?: string;
+
+  @ApiPropertyOptional({ enum: AttendanceStatus })
+  @IsOptional()
+  @IsEnum(AttendanceStatus)
+  status?: AttendanceStatus;
+
+  @ApiPropertyOptional({ enum: MealStatus })
+  @IsOptional()
+  @IsEnum(MealStatus)
+  mealStatus?: MealStatus;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  @Max(20)
+  guests?: number;
 }
 
 export class MealFilterDto {

@@ -7,7 +7,7 @@ import {
 import { ExpenseCategory, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ExpenseService {
@@ -19,6 +19,10 @@ export class ExpenseService {
     amount: true,
     description: true,
     receipt_url: true,
+    buyer_id: true,
+    item_name: true,
+    quantity: true,
+    unit: true,
     expense_date: true,
     created_at: true,
     mess: { select: { id: true, name: true } },
@@ -36,6 +40,10 @@ export class ExpenseService {
     if (!mess) throw new HttpException('Mess not found', 404);
 
     if (role === 'MANAGER' && mess.created_by === userId) return;
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+    if (membership?.is_active && membership.role === 'MANAGER') return;
 
     throw new HttpException('Forbidden: Only managers can manage expenses', 403);
   }
@@ -52,6 +60,10 @@ export class ExpenseService {
         expense_date: new Date(dto.expenseDate),
         description: dto.description,
         receipt_url: dto.receiptUrl,
+        buyer_id: dto.buyerId,
+        item_name: dto.itemName,
+        quantity: dto.quantity,
+        unit: dto.unit,
       },
       select: this.expenseSelect,
     });
@@ -147,6 +159,10 @@ export class ExpenseService {
         expense_date: dto.expenseDate ? new Date(dto.expenseDate) : undefined,
         description: dto.description,
         receipt_url: dto.receiptUrl,
+        buyer_id: dto.buyerId,
+        item_name: dto.itemName,
+        quantity: dto.quantity,
+        unit: dto.unit,
       },
       select: this.expenseSelect,
     });

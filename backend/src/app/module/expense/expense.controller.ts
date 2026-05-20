@@ -27,7 +27,7 @@ export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Create an expense (Manager/Admin)' })
   async create(@Req() req: Request, @Body() dto: CreateExpenseDto) {
     const data = await this.expenseService.create(
@@ -52,7 +52,7 @@ export class ExpenseController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get expenses for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -74,7 +74,7 @@ export class ExpenseController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get an expense by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.expenseService.findOne(
@@ -86,7 +86,7 @@ export class ExpenseController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Update an expense (Manager/Admin)' })
   async update(
     @Param('id') id: string,
@@ -103,7 +103,7 @@ export class ExpenseController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Delete an expense (Manager/Admin)' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.expenseService.remove(

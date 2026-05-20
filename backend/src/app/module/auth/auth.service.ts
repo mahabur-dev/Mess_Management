@@ -2,7 +2,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import config from '../../config';
 import sendMailer from 'src/app/helpers/sendMailer';
 import {
@@ -74,7 +74,7 @@ export class AuthService {
         name: dto.name,
         email: dto.email,
         password_hash,
-        role: dto.role,
+        role: 'MEMBER',
         phone: dto.phone,
       },
       select: SAFE_USER_SELECT,

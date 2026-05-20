@@ -1,13 +1,17 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import {
+  CompleteMessSetupDto,
   CreateMessDto,
   MessFilterDto,
+  RequestMessRegistrationDto,
+  ReviewMessRequestDto,
+  UpdateMemberDto,
   UpdateMessDto,
 } from './dto/mess.dto';
-import { MembershipRole, Prisma } from '@prisma/client';
+import { MembershipRole, Prisma, RequestStatus } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MessService {
@@ -20,12 +24,163 @@ export class MessService {
     address: true,
     meal_rate: true,
     currency: true,
+    total_seats: true,
+    monthly_rent: true,
+    electricity_bill: true,
+    gas_bill: true,
+    wifi_bill: true,
+    cleaner_bill: true,
+    extra_cost: true,
+    meal_types: true,
+    meal_rate_method: true,
+    bazar_rules: true,
+    payment_deadline_day: true,
+    meal_off_deadline: true,
+    settings_completed: true,
     created_by: true,
     is_active: true,
+    approved_at: true,
     created_at: true,
     creator: { select: { id: true, name: true, email: true } },
     _count: { select: { memberships: true, deposits: true, meals: true } },
   } as const;
+
+  private async verifyManagerAccess(messId: string, userId: string, role: string) {
+    if (role === 'ADMIN') return;
+    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+    if (!mess) throw new HttpException('Mess not found', 404);
+    if (mess.created_by === userId) return;
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+    if (membership?.is_active && membership.role === MembershipRole.MANAGER) return;
+    throw new HttpException('Forbidden: Only mess managers can perform this action', 403);
+  }
+
+  async requestRegistration(userId: string, dto: RequestMessRegistrationDto) {
+    console.log('Checking for existing pending requests for user:', userId);
+    const pending = await this.prisma.messRequest.findFirst({
+      where: { requester_id: userId, status: RequestStatus.PENDING },
+    });
+    if (pending) throw new HttpException('You already have a pending mess registration request', 400);
+
+    return this.prisma.messRequest.create({
+      data: {
+        requester_id: userId,
+        mess_name: dto.messName,
+        address: dto.address,
+        total_seats: dto.totalSeats,
+        monthly_rent: dto.monthlyRent,
+        description: dto.description,
+      },
+      include: { requester: { select: { id: true, name: true, email: true, phone: true } } },
+    });
+  }
+
+  async findRequests(query: MessFilterDto & { status?: RequestStatus }) {
+    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
+    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(paginationOptions);
+    const where: Prisma.MessRequestWhereInput = {};
+    if (query.status) where.status = query.status;
+    if (query.searchTerm) {
+      where.OR = [
+        { mess_name: { contains: query.searchTerm, mode: 'insensitive' } },
+        { address: { contains: query.searchTerm, mode: 'insensitive' } },
+        { requester: { email: { contains: query.searchTerm, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, requests] = await Promise.all([
+      this.prisma.messRequest.count({ where }),
+      this.prisma.messRequest.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          requester: { select: { id: true, name: true, email: true, phone: true } },
+          reviewer: { select: { id: true, name: true, email: true } },
+          mess: { select: { id: true, name: true, is_active: true } },
+        },
+      }),
+    ]);
+
+    return { data: requests, meta: buildMeta(total, page, limit) };
+  }
+
+  async findMyRequests(userId: string, query: MessFilterDto) {
+    const result = await this.findRequests(query);
+    return {
+      ...result,
+      data: result.data.filter((request) => request.requester_id === userId),
+    };
+  }
+
+  async reviewRequest(requestId: string, adminId: string, dto: ReviewMessRequestDto) {
+    const request = await this.prisma.messRequest.findUnique({ where: { id: requestId } });
+    if (!request) throw new HttpException('Mess registration request not found', 404);
+    if (request.status !== RequestStatus.PENDING) {
+      throw new HttpException('This request has already been reviewed', 400);
+    }
+
+    if (dto.status === RequestStatus.REJECTED) {
+      return this.prisma.messRequest.update({
+        where: { id: requestId },
+        data: {
+          status: RequestStatus.REJECTED,
+          review_note: dto.reviewNote,
+          reviewed_by: adminId,
+          reviewed_at: new Date(),
+        },
+        include: { requester: { select: { id: true, name: true, email: true } } },
+      });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const mess = await tx.mess.create({
+        data: {
+          name: request.mess_name,
+          address: request.address,
+          description: request.description,
+          total_seats: request.total_seats,
+          monthly_rent: request.monthly_rent,
+          created_by: request.requester_id,
+          meal_rate: 0,
+          currency: 'BDT',
+          approved_at: new Date(),
+          memberships: {
+            create: {
+              user_id: request.requester_id,
+              role: MembershipRole.MANAGER,
+              created_by: adminId,
+              monthly_rent: request.monthly_rent,
+            },
+          },
+        },
+      });
+
+      await tx.user.update({
+        where: { id: request.requester_id },
+        data: { role: 'MANAGER' },
+      });
+
+      return tx.messRequest.update({
+        where: { id: requestId },
+        data: {
+          status: RequestStatus.APPROVED,
+          mess_id: mess.id,
+          review_note: dto.reviewNote,
+          reviewed_by: adminId,
+          reviewed_at: new Date(),
+        },
+        include: {
+          requester: { select: { id: true, name: true, email: true, role: true } },
+          reviewer: { select: { id: true, name: true, email: true } },
+          mess: { select: this.messSelect },
+        },
+      });
+    });
+  }
 
   // ─────────────────────────────────────────
   // Create mess (Manager creates own mess)
@@ -41,15 +196,17 @@ export class MessService {
       data: {
         name: dto.messName,
         address: dto.messLocation,
+        description: dto.description,
         created_by: organizerId,
         meal_rate: dto.meal_rate,
         currency: dto.currency,
-        // memberships: {
-        //   create: {
-        //     user_id: organizerId ,
-        //     role: 'ORGANIZER',
-        //   },
-        // },
+        memberships: {
+          create: {
+            user_id: organizerId,
+            role: MembershipRole.MANAGER,
+            created_by: organizerId,
+          },
+        },
       },
       select: this.messSelect,
     });
@@ -185,6 +342,7 @@ export class MessService {
       data: {
         name: dto.messName,
         address: dto.messLocation,
+        description: dto.description,
       },
       select: this.messSelect,
     });
@@ -221,14 +379,33 @@ export class MessService {
   // ─────────────────────────────────────────
   // Add member to mess (Organizer)
   // ─────────────────────────────────────────
-  async addMember(messId: string, organizerId: string, email: string, role: MembershipRole) {
-    
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    if (!mess) throw new HttpException('Mess not found', 404);
+  async completeSetup(messId: string, userId: string, role: string, dto: CompleteMessSetupDto) {
+    await this.verifyManagerAccess(messId, userId, role);
+    return this.prisma.mess.update({
+      where: { id: messId },
+      data: {
+        name: dto.messName,
+        address: dto.address,
+        total_seats: dto.totalSeats,
+        monthly_rent: dto.monthlyRent,
+        electricity_bill: dto.electricityBill,
+        gas_bill: dto.gasBill,
+        wifi_bill: dto.wifiBill,
+        cleaner_bill: dto.cleanerBill,
+        extra_cost: dto.extraCost,
+        meal_types: dto.mealTypes ?? undefined,
+        meal_rate_method: dto.mealRateMethod,
+        bazar_rules: dto.bazarRules,
+        payment_deadline_day: dto.paymentDeadlineDay,
+        meal_off_deadline: dto.mealOffDeadline,
+        settings_completed: true,
+      },
+      select: this.messSelect,
+    });
+  }
 
-    if(mess.id !== messId && mess.created_by !== organizerId) {
-     throw new HttpException('Forbidden: Not your mess', 403);
-    }
+  async addMember(messId: string, organizerId: string, email: string, role: MembershipRole, dto?: Partial<UpdateMemberDto>) {
+    await this.verifyManagerAccess(messId, organizerId, 'MANAGER');
 
     const user = await this.prisma.user.findUnique({
       where: { email: email },
@@ -241,7 +418,16 @@ export class MessService {
     if (existing) throw new HttpException('User is already a member', 400);
 
     const member = await this.prisma.messMembership.create({
-      data: { mess_id: messId, user_id: user.id, role: role, created_by: organizerId },
+      data: {
+        mess_id: messId,
+        user_id: user.id,
+        role: role,
+        created_by: organizerId,
+        room_no: dto?.roomNo,
+        seat_no: dto?.seatNo,
+        monthly_rent: dto?.monthlyRent,
+        deposit_amount: dto?.depositAmount,
+      },
       include: {
         user: { select: { id: true, name: true, email: true } },
       },
@@ -254,12 +440,7 @@ export class MessService {
   // Remove member from mess (Manager)
   // ─────────────────────────────────────────
   async removeMember(messId: string, userId: string, organizerId: string) {
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    if (!mess) throw new HttpException('Mess not found', 404);
-
-    if(mess.id !== messId && mess.created_by !== organizerId) {
-      throw new HttpException('Forbidden: Not your mess', 403);
-    }
+    await this.verifyManagerAccess(messId, organizerId, 'MANAGER');
 
     const member = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
@@ -273,6 +454,31 @@ export class MessService {
     });
 
     return { message: 'Member removed successfully' };
+  }
+
+  async updateMember(messId: string, userId: string, managerId: string, managerRole: string, dto: UpdateMemberDto) {
+    await this.verifyManagerAccess(messId, managerId, managerRole);
+    const member = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+    if (!member) throw new HttpException('User is not a member of this mess', 404);
+
+    return this.prisma.messMembership.update({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+      data: {
+        role: dto.role,
+        is_active: dto.isActive,
+        left_at: dto.isActive === false ? new Date() : dto.isActive === true ? null : undefined,
+        room_no: dto.roomNo,
+        seat_no: dto.seatNo,
+        monthly_rent: dto.monthlyRent,
+        deposit_amount: dto.depositAmount,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true, avatar_url: true, phone: true, role: true } },
+        mess: { select: { id: true, name: true } },
+      },
+    });
   }
 
   async assignManager(messId: string, userId: string, role: MembershipRole, organizerId: string) {

@@ -12,6 +12,20 @@ model Mess {
   currency    String   @default("BDT") @db.VarChar(10)
   created_by  String   @db.Uuid
   is_active   Boolean  @default(true)
+  total_seats  Int?
+  monthly_rent Decimal? @db.Decimal(12, 2)
+  electricity_bill Decimal? @db.Decimal(12, 2)
+  gas_bill Decimal? @db.Decimal(12, 2)
+  wifi_bill Decimal? @db.Decimal(12, 2)
+  cleaner_bill Decimal? @db.Decimal(12, 2)
+  extra_cost Decimal? @db.Decimal(12, 2)
+  meal_types Json? @db.JsonB
+  meal_rate_method String @default("EXPENSE_DIVIDED_BY_MEAL_COUNT") @db.VarChar(80)
+  bazar_rules String? @db.Text
+  payment_deadline_day Int @default(10)
+  meal_off_deadline String? @default("22:00") @db.VarChar(5)
+  settings_completed Boolean @default(false)
+  approved_at DateTime? @db.Timestamptz
   created_at  DateTime @default(now()) @db.Timestamptz
 
   // ─── Relations ─────────────────────────────────────────
@@ -24,6 +38,10 @@ model Mess {
   shopping_lists ShoppingList[]
   notifications  Notification[]
   audit_logs     AuditLog[]
+  requests       MessRequest[]
+  payments       Payment[]
+  notices        Notice[]
+  complaints     Complaint[]
 
   @@map("messes")
 }

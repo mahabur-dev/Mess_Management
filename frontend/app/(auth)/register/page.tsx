@@ -1,491 +1,238 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useAuth } from '@/app/context/auth-context'
-import { ArrowLeft, Building2, User, X, ChevronRight, Eye, EyeOff } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Phone, ShieldCheck, UserRound } from 'lucide-react'
 
-type Step = 'choose' | 'mess' | 'member'
-
-function InputField({
-  label, id, name, type = 'text', placeholder, value, onChange,
+function RegisterField({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
 }: {
-  label: string; id: string; name: string; type?: string
-  placeholder: string; value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  label: string
+  type?: string
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  autoComplete?: string
 }) {
-  const [show, setShow] = useState(false)
-  const [focused, setFocused] = useState(false)
+  const [visible, setVisible] = useState(false)
   const isPassword = type === 'password'
 
   return (
-    <div style={{ marginBottom: '16px' }}>
-      <label htmlFor={id} style={{
-        display: 'block', fontSize: '14px', fontWeight: 500,
-        color: '#374151', marginBottom: '6px',
-      }}>
-        {label}
-      </label>
-      <div style={{ position: 'relative' }}>
+    <label className="block">
+      <span className="mb-2 block text-sm font-black text-[#101a3d]">{label}</span>
+      <span className="relative block">
         <input
-          id={id} name={name}
-          type={isPassword ? (show ? 'text' : 'password') : type}
-          placeholder={placeholder} value={value} onChange={onChange} required
-          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-          style={{
-            width: '100%',
-            padding: isPassword ? '11px 42px 11px 14px' : '11px 14px',
-            background: '#fff',
-            border: focused ? '1.5px solid #7854f7' : '1.5px solid #e5e7eb',
-            borderRadius: '10px', color: '#111827', fontSize: '14px',
-            outline: 'none', boxSizing: 'border-box' as const, transition: 'all 0.2s',
-            boxShadow: focused ? '0 0 0 3px rgba(120,84,247,0.1)' : '0 1px 2px rgba(0,0,0,0.05)',
-          }}
+          type={isPassword ? (visible ? 'text' : 'password') : type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          required
+          className="h-12 w-full rounded-xl border-2 border-[#e3e8f2] bg-white px-4 pr-11 text-[15px] font-semibold text-[#0a1433] shadow-[0_6px_18px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-[#9aa4b8] focus:border-[#6f3df4] focus:ring-4 focus:ring-[#6f3df4]/12"
         />
         {isPassword && (
-          <button type="button" onClick={() => setShow(!show)} style={{
-            position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: '#9ca3af', display: 'flex', alignItems: 'center', padding: 0,
-          }}>
-            {show ? <EyeOff size={16} /> : <Eye size={16} />}
+          <button
+            type="button"
+            onClick={() => setVisible((current) => !current)}
+            className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#7a8499] transition hover:bg-[#f3f0ff] hover:text-[#6f3df4]"
+            aria-label="Toggle password visibility"
+          >
+            {visible ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
         )}
-      </div>
-    </div>
-  )
-}
-
-export function RegisterModal({
-  open, onClose,
-}: { open: boolean; onClose: () => void }) {
-  const { register, isLoading } = useAuth()
-  const [step, setStep] = useState<Step>('choose')
-  const [error, setError] = useState('')
-  const router = useRouter()
-
-  const [messForm, setMessForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' })
-  const [memberForm, setMemberForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' })
-
-  const handleMessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; setMessForm(p => ({ ...p, [name]: value }))
-  }
-  const handleMemberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; setMemberForm(p => ({ ...p, [name]: value }))
-  }
-
-  const handleMessSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError('')
-    if (messForm.password !== messForm.confirmPassword) return setError('Passwords do not match')
-    try { await register(messForm.name, messForm.email, messForm.phone, messForm.password, "ORGANIZER"); router.push('/login') }
-    catch { setError('Registration failed. Please try again.') }
-  }
-
-  const handleMemberSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError('')
-    if (memberForm.password !== memberForm.confirmPassword) return setError('Passwords do not match')
-    try { await register(memberForm.name, memberForm.email, memberForm.phone, memberForm.password, "MEMBER"); router.push('/login') }
-    catch { setError('Registration failed. Please try again.') }
-  }
-
-  const close = () => {
-    onClose()
-    setStep('choose')
-    setError('')
-    router.push('/')
-  }
-  const goBack = () => { setStep('choose'); setError('') }
-
-  if (!open) return null
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 200,
-      background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #f0f9ff 100%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '24px', animation: 'fadeIn 0.2s ease',
-      overflowY: 'auto',
-    }}>
-      {/* Background blobs */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute', top: '-80px', right: '-80px',
-          width: '400px', height: '400px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(120,84,247,0.08) 0%, transparent 70%)',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: '-80px', left: '-80px',
-          width: '400px', height: '400px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(168,141,250,0.06) 0%, transparent 70%)',
-        }} />
-      </div>
-
-      {/* Two-column wrapper */}
-      <div className="register-wrapper" style={{
-        position: 'relative', zIndex: 1,
-        display: 'flex', alignItems: 'stretch',
-        width: '100%', maxWidth: '900px',
-        borderRadius: '24px',
-        boxShadow: '0 24px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
-        overflow: 'hidden',
-        animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)',
-        maxHeight: '92vh',
-      }}>
-
-        {/* LEFT — Image Panel */}
-        <div className="reg-image-panel" style={{
-          flex: 1,
-          position: 'relative',
-          minHeight: '560px',
-          overflow: 'hidden',
-          display: 'flex',
-        }}>
-          <img
-            src='/Variety-fruits-vegetables(3).jpg'
-            alt="Healthy food"
-            style={{
-              width: '100%', height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              display: 'block',
-            }}
-          />
-          {/* Gradient overlay matching brand colors */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(160deg, rgba(16,23,94,0.72) 0%, rgba(120,84,247,0.55) 100%)',
-          }} />
-          {/* Text overlay */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', flexDirection: 'column',
-            justifyContent: 'flex-end',
-            padding: '36px',
-          }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(12px)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255,255,255,0.2)',
-              padding: '20px 24px',
-            }}>
-              <p style={{
-                color: '#fff', fontSize: '18px', fontWeight: 700,
-                marginBottom: '6px', lineHeight: 1.3,
-              }}>
-                Join Our Community
-              </p>
-              <p style={{
-                color: 'rgba(255,255,255,0.8)', fontSize: '13px', lineHeight: 1.5,
-              }}>
-                Create your account and start managing your mess with ease today.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT — Form Card */}
-        <div className="reg-form-card" style={{
-          flex: '0 0 420px',
-          background: '#fff',
-          padding: '32px',
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          position: 'relative',
-        }}>
-          {/* Close */}
-          <button onClick={close} style={{
-            position: 'absolute', top: '16px', right: '16px',
-            background: '#f3f4f6', border: 'none', borderRadius: '8px',
-            width: '30px', height: '30px', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: '#6b7280', transition: 'background 0.15s',
-          }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#e5e7eb'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#f3f4f6'}
-          >
-            <X size={15} />
-          </button>
-
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-            <div style={{
-              width: '38px', height: '38px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #7854f7, #10175e)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 16px rgba(120,84,247,0.4)',
-            }}>
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: '20px' }}>M</span>
-            </div>
-            <span style={{ color: '#111827', fontWeight: 700, fontSize: '16px' }}>Mess Management</span>
-          </div>
-
-          {/* CHOOSE */}
-          {step === 'choose' && (
-            <div>
-              <h2 style={{ color: '#111827', fontSize: '22px', fontWeight: 700, marginBottom: '6px' }}>Create your account</h2>
-              <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
-                Choose how you want to join the platform
-              </p>
-
-              <button onClick={() => setStep('mess')} style={{
-                width: '100%', background: '#fafafa',
-                border: '1.5px solid #e5e7eb', borderRadius: '14px',
-                padding: '16px 18px', cursor: 'pointer', textAlign: 'left',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                marginBottom: '10px', transition: 'all 0.2s',
-              }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.border = '1.5px solid #7854f7';
-                  (e.currentTarget as HTMLElement).style.background = '#f9f7ff'
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.border = '1.5px solid #e5e7eb';
-                  (e.currentTarget as HTMLElement).style.background = '#fafafa'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{
-                    width: '46px', height: '46px', borderRadius: '12px', flexShrink: 0,
-                    background: 'linear-gradient(135deg, #7854f7, #534AB7)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(120,84,247,0.35)',
-                  }}>
-                    <Building2 size={21} color="#fff" />
-                  </div>
-                  <div>
-                    <p style={{ color: '#111827', fontWeight: 700, fontSize: '15px', marginBottom: '2px' }}>Register as Organizer</p>
-                    <p style={{ color: '#6b7280', fontSize: '12px' }}>Create & manage your own community</p>
-                  </div>
-                </div>
-                <ChevronRight size={17} color="#9ca3af" style={{ flexShrink: 0 }} />
-              </button>
-
-              <button onClick={() => setStep('member')} style={{
-                width: '100%', background: '#fafafa',
-                border: '1.5px solid #e5e7eb', borderRadius: '14px',
-                padding: '16px 18px', cursor: 'pointer', textAlign: 'left',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                marginBottom: '24px', transition: 'all 0.2s',
-              }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.border = '1.5px solid #7854f7';
-                  (e.currentTarget as HTMLElement).style.background = '#f9f7ff'
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.border = '1.5px solid #e5e7eb';
-                  (e.currentTarget as HTMLElement).style.background = '#fafafa'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{
-                    width: '46px', height: '46px', borderRadius: '12px', flexShrink: 0,
-                    background: 'linear-gradient(135deg, #a88dfa, #7854f7)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(168,141,250,0.35)',
-                  }}>
-                    <User size={21} color="#fff" />
-                  </div>
-                  <div>
-                    <p style={{ color: '#111827', fontWeight: 700, fontSize: '15px', marginBottom: '2px' }}>Register as Member</p>
-                    <p style={{ color: '#6b7280', fontSize: '12px' }}>Join an existing mess community</p>
-                  </div>
-                </div>
-                <ChevronRight size={17} color="#9ca3af" style={{ flexShrink: 0 }} />
-              </button>
-
-              <div style={{ textAlign: 'center', borderTop: '1px solid #f3f4f6', paddingTop: '20px' }}>
-                <p style={{ color: '#6b7280', fontSize: '14px' }}>
-                  Already have an account?{' '}
-                  <Link href="/login" style={{ color: '#7854f7', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* MESS FORM */}
-          {step === 'mess' && (
-            <div>
-              <button onClick={goBack} style={{
-                display: 'flex', alignItems: 'center', gap: '5px',
-                color: '#6b7280', background: 'none', border: 'none',
-                cursor: 'pointer', marginBottom: '20px', fontSize: '13px', padding: 0,
-              }}>
-                <ArrowLeft size={13} /> Back
-              </button>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '22px' }}>
-                <div style={{
-                  width: '42px', height: '42px', borderRadius: '11px', flexShrink: 0,
-                  background: 'linear-gradient(135deg, #7854f7, #534AB7)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(120,84,247,0.35)',
-                }}>
-                  <Building2 size={20} color="#fff" />
-                </div>
-                <div>
-                  <h2 style={{ color: '#111827', fontSize: '19px', fontWeight: 700, marginBottom: '2px' }}>Register a Mess</h2>
-                  <p style={{ color: '#6b7280', fontSize: '12px' }}>Set up your mess management account</p>
-                </div>
-              </div>
-
-              {error && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px' }}>
-                  <p style={{ color: '#dc2626', fontSize: '13px' }}>{error}</p>
-                </div>
-              )}
-
-              <form onSubmit={handleMessSubmit}>
-                <InputField label="Organizer Name" id="name" name="name" placeholder="John Doe" value={messForm.name} onChange={handleMessChange} />
-                <InputField label="Organizer Email" id="email" name="email" type="email" placeholder="you@example.com" value={messForm.email} onChange={handleMessChange} />
-                <InputField label="Organizer Phone Number" id="phone" name="phone" type="tel" placeholder="01700-000000" value={messForm.phone} onChange={handleMessChange} />
-                <InputField label="Password" id="password" name="password" type="password" placeholder="••••••••" value={messForm.password} onChange={handleMessChange} />
-                <InputField label="Confirm Password" id="confirmPassword" name="confirmPassword" type="password" placeholder="••••••••" value={messForm.confirmPassword} onChange={handleMessChange} />
-
-                <button type="submit" disabled={isLoading} style={{
-                  width: '100%', padding: '12px',
-                  background: isLoading ? '#c4b5fd' : 'linear-gradient(135deg, #7854f7, #534AB7)',
-                  border: 'none', borderRadius: '10px', color: '#fff',
-                  fontWeight: 700, fontSize: '15px',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 4px 16px rgba(120,84,247,0.4)', transition: 'opacity 0.2s',
-                }}>
-                  {isLoading ? 'Creating...' : 'Create Organizer Account'}
-                </button>
-              </form>
-
-              <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px', marginTop: '16px' }}>
-                Already have an account?{' '}
-                <Link href="/login" style={{ color: '#7854f7', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
-              </p>
-            </div>
-          )}
-
-          {/* MEMBER FORM */}
-          {step === 'member' && (
-            <div>
-              <button onClick={goBack} style={{
-                display: 'flex', alignItems: 'center', gap: '5px',
-                color: '#6b7280', background: 'none', border: 'none',
-                cursor: 'pointer', marginBottom: '20px', fontSize: '13px', padding: 0,
-              }}>
-                <ArrowLeft size={13} /> Back
-              </button>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '22px' }}>
-                <div style={{
-                  width: '42px', height: '42px', borderRadius: '11px', flexShrink: 0,
-                  background: 'linear-gradient(135deg, #a88dfa, #7854f7)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(168,141,250,0.35)',
-                }}>
-                  <User size={20} color="#fff" />
-                </div>
-                <div>
-                  <h2 style={{ color: '#111827', fontSize: '19px', fontWeight: 700, marginBottom: '2px' }}>Register as Member</h2>
-                  <p style={{ color: '#6b7280', fontSize: '12px' }}>Join an existing mess community</p>
-                </div>
-              </div>
-
-              {error && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px' }}>
-                  <p style={{ color: '#dc2626', fontSize: '13px' }}>{error}</p>
-                </div>
-              )}
-
-              <form onSubmit={handleMemberSubmit}>
-                <InputField label="Full Name" id="mname" name="name" placeholder="John Doe" value={memberForm.name} onChange={handleMemberChange} />
-                <InputField label="Email Address" id="memail" name="email" type="email" placeholder="you@example.com" value={memberForm.email} onChange={handleMemberChange} />
-                <InputField label="Phone Number" id="mphone" name="phone" type="tel" placeholder="01700-000000" value={memberForm.phone} onChange={handleMemberChange} />
-                <InputField label="Password" id="mpassword" name="password" type="password" placeholder="••••••••" value={memberForm.password} onChange={handleMemberChange} />
-                <InputField label="Confirm Password" id="mconfirm" name="confirmPassword" type="password" placeholder="••••••••" value={memberForm.confirmPassword} onChange={handleMemberChange} />
-
-                <button type="submit" disabled={isLoading} style={{
-                  width: '100%', padding: '12px',
-                  background: isLoading ? '#c4b5fd' : 'linear-gradient(135deg, #a88dfa, #7854f7)',
-                  border: 'none', borderRadius: '10px', color: '#fff',
-                  fontWeight: 700, fontSize: '15px',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 4px 16px rgba(168,141,250,0.4)', transition: 'opacity 0.2s',
-                }}>
-                  {isLoading ? 'Creating...' : 'Create Member Account'}
-                </button>
-              </form>
-
-              <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px', marginTop: '16px' }}>
-                Already have an account?{' '}
-                <Link href="/login" style={{ color: '#7854f7', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(24px) scale(0.97) }
-          to { opacity: 1; transform: translateY(0) scale(1) }
-        }
-        input::placeholder { color: #9ca3af !important; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: rgba(120,84,247,0.25); border-radius: 4px; }
-
-        /* ── Responsive ── */
-        @media (max-width: 700px) {
-          .register-wrapper {
-            flex-direction: column !important;
-            max-width: 100% !important;
-            border-radius: 20px !important;
-            max-height: none !important;
-          }
-          .reg-image-panel {
-            flex: none !important;
-            width: 100% !important;
-            min-height: 180px !important;
-            max-height: 200px !important;
-            order: 1;
-          }
-          .reg-form-card {
-            flex: none !important;
-            width: 100% !important;
-            padding: 28px 20px !important;
-            order: 2;
-            justify-content: flex-start !important;
-            max-height: none !important;
-            overflow-y: visible !important;
-          }
-        }
-
-        @media (min-width: 701px) and (max-width: 900px) {
-          .reg-form-card {
-            flex: 0 0 340px !important;
-            padding: 28px 24px !important;
-          }
-        }
-      `}</style>
-    </div>
+      </span>
+    </label>
   )
 }
 
 export default function RegisterPage() {
-  const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const router = useRouter()
+  const { register, isLoading } = useAuth()
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  })
+  const [error, setError] = useState('')
 
-  useEffect(() => { setMounted(true); setOpen(true) }, [])
+  const update = (key: keyof typeof form, value: string) => {
+    setForm((current) => ({ ...current, [key]: value }))
+  }
 
-  if (!mounted) return null
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setError('')
+
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      return
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    try {
+      await register(form.name, form.email, form.phone, form.password, 'MEMBER')
+      router.push('/dashboard')
+    } catch {
+      setError('Registration failed. Please check your information and try again.')
+    }
+  }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #f0f9ff 100%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <RegisterModal open={open} onClose={() => setOpen(false)} />
-    </div>
+    <main className="flex min-h-screen items-center justify-center bg-[#f4f7fb] p-4 sm:p-6">
+      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-[0_30px_90px_rgba(25,31,76,0.16)] lg:min-h-[680px] lg:grid-cols-[450px_1fr]">
+        <section className="order-2 flex flex-col justify-center p-6 sm:p-9 lg:order-1 lg:p-12">
+          <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#6f3df4] to-[#2f5bf6] text-sm font-black text-white">
+              M
+            </span>
+            <span className="text-2xl font-black text-[#0a1433]">Mess.</span>
+          </Link>
+
+          <div className="mb-8">
+            <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#efe9ff] text-[#6f3df4] shadow-[0_12px_28px_rgba(111,61,244,0.16)]">
+              <UserRound size={27} />
+            </span>
+            <h1 className="text-3xl font-black tracking-tight text-[#0a1433] sm:text-4xl">Register as Member</h1>
+            <p className="mt-3 max-w-sm text-sm font-bold leading-6 text-[#667085]">
+              Sign up as a normal member. Manager access comes after mess request approval.
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <RegisterField
+              label="Full Name"
+              value={form.name}
+              onChange={(value) => update('name', value)}
+              placeholder="Your name"
+              autoComplete="name"
+            />
+            <RegisterField
+              label="Email Address"
+              type="email"
+              value={form.email}
+              onChange={(value) => update('email', value)}
+              placeholder="contact@mr.com"
+              autoComplete="email"
+            />
+            <RegisterField
+              label="Phone Number"
+              type="tel"
+              value={form.phone}
+              onChange={(value) => update('phone', value)}
+              placeholder="01700-000000"
+              autoComplete="tel"
+            />
+            <RegisterField
+              label="Password"
+              type="password"
+              value={form.password}
+              onChange={(value) => update('password', value)}
+              placeholder="Minimum 6 characters"
+              autoComplete="new-password"
+            />
+            <RegisterField
+              label="Confirm Password"
+              type="password"
+              value={form.confirmPassword}
+              onChange={(value) => update('confirmPassword', value)}
+              placeholder="Confirm password"
+              autoComplete="new-password"
+            />
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group mt-2 flex h-13 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#315bf6] to-[#713cf2] px-5 text-base font-black text-white shadow-[0_16px_32px_rgba(80,70,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_rgba(80,70,230,0.34)] disabled:translate-y-0 disabled:opacity-65"
+            >
+              {isLoading ? 'Creating Account...' : 'Create Member Account'}
+              {!isLoading && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
+            </button>
+          </form>
+
+          <div className="mt-6 grid gap-3 rounded-2xl border border-[#e7ebf3] bg-[#fbfcff] p-4">
+            <div className="flex items-start gap-3">
+              <ShieldCheck size={18} className="mt-0.5 text-[#22b66f]" />
+              <p className="text-xs font-bold leading-5 text-[#667085]">
+                Every account is created as a member. You can request mess manager access after login.
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-6 text-center text-sm font-bold text-[#667085]">
+            Already have an account?{' '}
+            <Link href="/login" className="font-black text-[#6f3df4] hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </section>
+
+        <section className="order-1 min-h-[260px] overflow-hidden lg:order-2 lg:min-h-full">
+          <div className="relative h-full min-h-[260px] lg:min-h-full">
+            <Image
+              src="/Variety-fruits-vegetables(3).jpg"
+              alt="Fresh vegetables and food"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#17106b]/82 via-[#6f3df4]/64 to-[#2f5bf6]/74" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.24),transparent_26rem)]" />
+
+            <div className="relative flex h-full min-h-[260px] flex-col justify-between p-7 text-white sm:p-10 lg:min-h-full">
+              <Link href="/" className="hidden items-center gap-3 lg:flex">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-sm font-black text-[#6f3df4]">M</span>
+                <span className="text-2xl font-black">Mess.</span>
+              </Link>
+
+              <div className="max-w-xl">
+                <span className="mb-6 inline-flex rounded-full bg-white/14 px-4 py-2 text-xs font-black text-white backdrop-blur">
+                  Member Registration
+                </span>
+                <h2 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+                  Create account first. Manage mess after approval.
+                </h2>
+                <p className="mt-6 max-w-lg text-sm font-bold leading-7 text-white/86 sm:text-base">
+                  Every user starts as a member. To become a mess manager, submit a mess registration request from the dashboard and wait for super admin approval.
+                </p>
+              </div>
+
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/18 bg-white/12 p-4 backdrop-blur-xl">
+                  <CheckCircle2 size={20} className="mb-3" />
+                  <p className="text-sm font-black">Member-first flow</p>
+                  <p className="mt-1 text-xs font-semibold text-white/76">Clean approval system for managers.</p>
+                </div>
+                <div className="rounded-2xl border border-white/18 bg-white/12 p-4 backdrop-blur-xl">
+                  <Phone size={20} className="mb-3" />
+                  <p className="text-sm font-black">Mobile friendly</p>
+                  <p className="mt-1 text-xs font-semibold text-white/76">Big controls for everyday mess users.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
   )
 }

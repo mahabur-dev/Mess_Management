@@ -1,0 +1,17 @@
+model Notice {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id    String     @db.Uuid
+  created_by String     @db.Uuid
+  type       NoticeType  @default(GENERAL)
+  title      String     @db.VarChar(200)
+  body       String     @db.Text
+  is_pinned  Boolean    @default(false)
+  created_at DateTime   @default(now()) @db.Timestamptz
+  updated_at DateTime   @updatedAt @db.Timestamptz
+
+  mess    Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  creator User @relation("NoticeCreator", fields: [created_by], references: [id])
+
+  @@index([mess_id, created_at(sort: Desc)])
+  @@map("notices")
+}

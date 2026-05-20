@@ -1,0 +1,24 @@
+model MessRequest {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requester_id String      @db.Uuid
+  mess_id     String?      @db.Uuid
+  mess_name   String       @db.VarChar(100)
+  address     String?      @db.Text
+  total_seats Int?
+  monthly_rent Decimal?    @db.Decimal(12, 2)
+  description String?      @db.Text
+  status      RequestStatus @default(PENDING)
+  review_note String?      @db.Text
+  reviewed_by String?      @db.Uuid
+  reviewed_at DateTime?    @db.Timestamptz
+  created_at  DateTime     @default(now()) @db.Timestamptz
+  updated_at  DateTime     @updatedAt @db.Timestamptz
+
+  requester User @relation("MessRequestRequester", fields: [requester_id], references: [id], onDelete: Cascade)
+  reviewer  User? @relation("MessRequestReviewer", fields: [reviewed_by], references: [id])
+  mess      Mess? @relation(fields: [mess_id], references: [id], onDelete: SetNull)
+
+  @@index([status, created_at])
+  @@index([requester_id])
+  @@map("mess_requests")
+}

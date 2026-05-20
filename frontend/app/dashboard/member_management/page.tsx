@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader2, User, X, ChevronDown, Trash2, Shield, UserMinus } from 'lucide-react';
+import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog } from 'lucide-react';
 import { apiClient, ApiError } from '@/lib/api-client';
 
 // ─── Types & Interfaces ─────────────────────────────────────────────────────
@@ -64,14 +64,14 @@ const ROLE_CONFIG: Record<MembershipRole, { label: string; icon: React.ReactNode
   MANAGER: {
     label: 'Manager',
     icon: <Shield size={11} />,
-    color: '#6366f122',
-    textColor: '#a5b4fc',
+    color: '#6d28d922',
+    textColor: '#6d28d9',
   },
   MEMBER: {
     label: 'Member',
     icon: <User size={11} />,
-    color: 'rgba(255,255,255,0.07)',
-    textColor: 'rgba(255,255,255,0.85)',
+    color: '#0f766e1a',
+    textColor: '#0f766e',
   },
 };
 
@@ -120,80 +120,45 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        background: 'rgba(0,0,0,0.65)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div style={{
-        width: '100%',
-        maxWidth: '420px',
-        background: 'linear-gradient(135deg, #0d1b2e 0%, #162035 60%, #1a2640 100%)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '16px',
-        overflow: 'hidden',
-      }}>
-        <div style={{ padding: '18px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="relative w-full max-w-[440px] overflow-hidden rounded-[24px] border border-[#6d3df4]/20 bg-white shadow-[0_28px_80px_rgba(18,10,51,0.35)]">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#26106f] via-[#6d3df4] to-[#f43f8f]" />
+        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#6d3df4]/12 blur-2xl" />
+
+        <div className="relative flex items-center justify-between border-b border-[#6d3df4]/10 px-5 py-5 sm:px-6">
           <div>
-            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>Mess Management</p>
-            <h2 style={{ fontSize: '17px', fontWeight: 600, color: '#fff' }}>Change Member Role</h2>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#6d3df4]">Mess Management</p>
+            <h2 className="mt-1 text-xl font-black text-[#171044]">Change Member Role</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'rgba(255,255,255,0.6)',
-            }}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#6d3df4]/15 bg-[#f5f2ff] text-[#4c2cc5] transition hover:border-[#6d3df4]/35 hover:bg-[#ebe4ff]"
           >
-            <X size={15} />
+            <X size={18} />
           </button>
         </div>
 
-        <div style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+        <div className="relative p-5 sm:p-6">
+          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[#6d3df4]/10 bg-[#f7f5ff] p-3">
             <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-                fontWeight: 700,
-                background: `${avatarColor(member.user_id)}22`,
-                border: `1px solid ${avatarColor(member.user_id)}`,
-                color: avatarColor(member.user_id),
-              }}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-black"
+              style={{ backgroundColor: `${avatarColor(member.user_id)}18`, borderColor: `${avatarColor(member.user_id)}55`, color: avatarColor(member.user_id) }}
             >
               {getInitials(member.user.name)}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <h3 style={{ color: '#fff', fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.user.name}</h3>
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.user.email}</p>
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-black text-[#171044]">{member.user.name}</h3>
+              <p className="truncate text-sm font-semibold text-slate-500">{member.user.email}</p>
             </div>
           </div>
 
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>
+          <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#7c70a8]">
             Role
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
+          <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(['MEMBER', 'MANAGER'] as MembershipRole[]).map((r) => {
               const cfg = ROLE_CONFIG[r];
               const selected = role === r;
@@ -202,31 +167,25 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
                   key={r}
                   type="button"
                   onClick={() => setRole(r)}
-                  style={{
-                    background: selected ? cfg.color : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${selected ? cfg.textColor + '55' : 'rgba(255,255,255,0.1)'}`,
-                    borderRadius: '10px',
-                    padding: '12px 8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    cursor: 'pointer',
-                  }}
+                  className={`flex min-h-[54px] items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                    selected
+                      ? 'border-[#6d3df4]/40 bg-[#f3efff] text-[#4c2cc5] shadow-[0_12px_28px_rgba(109,61,244,0.16)]'
+                      : 'border-slate-200 bg-white text-slate-500 hover:border-[#6d3df4]/25 hover:bg-[#faf8ff]'
+                  }`}
                 >
-                  <span style={{ color: selected ? cfg.textColor : 'rgba(255,255,255,0.35)' }}>{cfg.icon}</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: selected ? cfg.textColor : 'rgba(255,255,255,0.5)' }}>{cfg.label}</span>
+                  <span style={{ color: selected ? cfg.textColor : undefined }}>{cfg.icon}</span>
+                  <span>{cfg.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '11px', color: 'rgba(255,255,255,0.6)' }}
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
             >
               Cancel
             </button>
@@ -234,19 +193,7 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
               type="button"
               onClick={handleSave}
               disabled={loading}
-              style={{
-                flex: 2,
-                background: loading ? 'rgba(99,102,241,0.5)' : '#6366f1',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '11px',
-                color: '#fff',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-              }}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#4c2cc5] to-[#6d3df4] px-4 font-black text-white shadow-[0_16px_35px_rgba(109,61,244,0.30)] transition hover:shadow-[0_20px_42px_rgba(109,61,244,0.42)] disabled:opacity-70"
             >
               {loading && <Loader2 size={15} className="animate-spin" />}
               {loading ? 'Saving...' : 'Save Role'}
@@ -265,69 +212,74 @@ function MemberCard({ member, onEditRole, onRemove, removingId }: MemberCardProp
   const avatarBg = avatarColor(member.user_id);
 
   return (
-    <div className="w-full max-w-[350px] h-[240px] bg-[#0f172a] border border-slate-700/50 rounded-2xl overflow-hidden 
-                    hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 group">
-      
-      {/* Top Accent */}
-      <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+    <div className="group relative w-full overflow-hidden rounded-[22px] border border-[#6d3df4]/15 bg-white shadow-[0_18px_45px_rgba(31,22,91,0.10)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6d3df4]/45 hover:shadow-[0_24px_60px_rgba(109,61,244,0.22)]">
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#26106f] via-[#6d3df4] to-[#f43f8f]" />
+      <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#6d3df4]/10 blur-2xl transition group-hover:bg-[#6d3df4]/20" />
+      <div className="absolute -bottom-14 -left-12 h-28 w-28 rounded-full bg-[#0f766e]/10 blur-2xl" />
 
-      <div className="p-5 flex flex-col h-full">
-        {/* Avatar + Info */}
-        <div className="flex gap-4">
-          <div 
-            className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-bold border-2 flex-shrink-0"
-            style={{ backgroundColor: `${avatarBg}22`, borderColor: avatarBg, color: avatarBg }}
+      <div className="relative flex min-h-[260px] flex-col p-4 sm:p-5">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border text-xl font-black shadow-inner sm:h-16 sm:w-16 sm:text-2xl"
+            style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}
           >
             {getInitials(member.user.name)}
           </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start">
-              <h3 className="text-lg font-semibold text-white truncate">
-                {member.user.name}
-              </h3>
-              <span className="px-3 py-1 text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full">
-                ACTIVE
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-black text-[#171044] sm:text-lg">
+                  {member.user.name}
+                </h3>
+                <p className="mt-1 flex items-center gap-1.5 truncate text-xs font-semibold text-slate-500 sm:text-sm">
+                  <Mail size={14} className="shrink-0 text-[#6d3df4]" />
+                  {member.user.email}
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full border border-emerald-500/20 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-600">
+                Active
               </span>
             </div>
 
-            <p className="text-slate-400 text-sm mt-1 truncate">
-              {member.user.email}
-            </p>
-            <p className="text-indigo-400 text-sm font-medium mt-0.5">
+            <p className="mt-2 truncate text-sm font-bold text-[#6d3df4]">
               {member.mess.name}
             </p>
           </div>
         </div>
 
-        {/* Role */}
-        <div className="mt-4 inline-flex items-center gap-2 bg-slate-800 border border-slate-700 px-4 py-2 rounded-full w-fit">
-          {cfg.icon}
-          <span className="text-sm font-semibold text-slate-200">{cfg.label}</span>
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div
+            className="flex items-center gap-2 rounded-2xl border px-3 py-3"
+            style={{ backgroundColor: cfg.color, borderColor: `${cfg.textColor}33`, color: cfg.textColor }}
+          >
+            {cfg.icon}
+            <span className="text-sm font-black">{cfg.label}</span>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-2xl border border-[#6d3df4]/15 bg-[#f5f2ff] px-3 py-3 text-[#4c2cc5]">
+            <CalendarDays size={14} />
+            <span className="truncate text-xs font-bold">Joined {formatDate(member.joined_at)}</span>
+          </div>
         </div>
 
-        {/* Joined Date */}
-        <div className="text-xs text-slate-500 mt-auto text-right mb-4">
-          Joined {formatDate(member.joined_at)}
-        </div>
-
-        {/* Buttons */}
-        <div className="grid grid-cols-2 gap-3 mt-auto">
+        <div className="mt-auto grid grid-cols-2 gap-3 pt-5">
           <button
             onClick={() => onEditRole(member)}
-            className="py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-indigo-500/50 text-indigo-300 
-                       rounded-xl font-semibold text-sm transition-all active:scale-95"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[#6d3df4]/30 bg-[#f3efff] px-3 text-sm font-black text-[#4c2cc5] transition hover:border-[#6d3df4]/60 hover:bg-[#e8ddff] active:scale-[0.98]"
           >
-            Change Role
+            <UserCog size={16} />
+            <span className="truncate">Change Role</span>
           </button>
 
           <button
             onClick={() => onRemove(member)}
             disabled={isRemoving}
-            className="py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-rose-500/50 text-rose-300 
-                       rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-50"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-rose-500/25 bg-rose-50 px-3 text-sm font-black text-rose-600 transition hover:border-rose-500/45 hover:bg-rose-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isRemoving ? 'Removing...' : 'Remove'}
+            {isRemoving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            <span className="truncate">{isRemoving ? 'Removing' : 'Remove'}</span>
           </button>
         </div>
       </div>
@@ -382,57 +334,33 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
     }
   }
 
-  return (   // ← Make sure this return is present
+  return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        background: 'rgba(0,0,0,0.65)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div style={{
-        width: '100%',
-        maxWidth: '420px',
-        background: 'linear-gradient(135deg, #0d1b2e 0%, #162035 60%, #1a2640 100%)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '16px',
-        overflow: 'hidden',
-      }}>
+      <div className="relative max-h-[calc(100vh-32px)] w-full max-w-[460px] overflow-hidden rounded-[24px] border border-[#6d3df4]/20 bg-white shadow-[0_28px_80px_rgba(18,10,51,0.35)]">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#26106f] via-[#6d3df4] to-[#f43f8f]" />
+        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#6d3df4]/12 blur-2xl" />
         {/* Header */}
-        <div style={{ padding: '18px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="relative flex items-center justify-between border-b border-[#6d3df4]/10 px-5 py-5 sm:px-6">
           <div>
-            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>Mess Management</p>
-            <h2 style={{ fontSize: '17px', fontWeight: 600, color: '#fff' }}>Add New Member</h2>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#6d3df4]">Mess Management</p>
+            <h2 className="mt-1 text-xl font-black text-[#171044]">Add New Member</h2>
           </div>
-          <button 
-            onClick={onClose} 
-            style={{ 
-              background: 'rgba(255,255,255,0.06)', 
-              border: '1px solid rgba(255,255,255,0.1)', 
-              borderRadius: '8px', 
-              width: '32px', 
-              height: '32px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              color: 'rgba(255,255,255,0.6)' 
-            }}
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#6d3df4]/15 bg-[#f5f2ff] text-[#4c2cc5] transition hover:border-[#6d3df4]/35 hover:bg-[#ebe4ff]"
           >
-            <X size={15} />
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: '20px' }}>
+        <form onSubmit={handleSubmit} className="relative max-h-[calc(100vh-120px)] overflow-y-auto p-5 sm:p-6">
           {/* Email Input */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>
+          <div className="mb-4">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#7c70a8]">
               User Email
             </label>
             <input
@@ -440,36 +368,19 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="member@example.com"
-              style={{ 
-                width: '100%', 
-                background: 'rgba(255,255,255,0.05)', 
-                border: '1px solid rgba(255,255,255,0.12)', 
-                borderRadius: '10px', 
-                padding: '11px 14px', 
-                fontSize: '14px', 
-                color: '#fff' 
-              }}
+              className="h-12 w-full rounded-2xl border border-[#6d3df4]/15 bg-[#fbfaff] px-4 text-sm font-semibold text-[#171044] outline-none placeholder:text-[#9189af] focus:border-[#6d3df4]/60 focus:ring-4 focus:ring-[#6d3df4]/10"
             />
           </div>
 
           {/* Mess Selection */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>
+          <div className="mb-4">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#7c70a8]">
               Select Mess
             </label>
             <select
               value={selectedMess}
               onChange={(e) => setSelectedMess(e.target.value)}
-              style={{
-                width: '100%', 
-                background: '#1a2640', 
-                color: '#fff',
-                border: '1px solid rgba(255,255,255,0.2)', 
-                borderRadius: '10px',
-                padding: '11px 14px', 
-                fontSize: '14px', 
-                outline: 'none',
-              }}
+              className="h-12 w-full rounded-2xl border border-[#6d3df4]/15 bg-[#fbfaff] px-4 text-sm font-black text-[#171044] outline-none focus:border-[#6d3df4]/60 focus:ring-4 focus:ring-[#6d3df4]/10"
             >
               <option value="">Select Mess</option>
               {messes.map((mess) => (
@@ -481,11 +392,11 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
           </div>
 
           {/* Role Selection */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>
+          <div className="mb-5">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#7c70a8]">
               Role
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {(['MEMBER', 'MANAGER'] as MembershipRole[]).map((r) => {
                 const cfg = ROLE_CONFIG[r]
                 const selected = role === r
@@ -494,20 +405,14 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
                     key={r}
                     type="button"
                     onClick={() => setRole(r)}
-                    style={{
-                      background: selected ? cfg.color : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${selected ? cfg.textColor + '55' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '10px',
-                      padding: '10px 6px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '5px',
-                      cursor: 'pointer',
-                    }}
+                    className={`flex min-h-[58px] flex-col items-center justify-center gap-1.5 rounded-2xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                      selected
+                        ? 'border-[#6d3df4]/40 bg-[#f3efff] text-[#4c2cc5] shadow-[0_12px_28px_rgba(109,61,244,0.16)]'
+                        : 'border-slate-200 bg-white text-slate-500 hover:border-[#6d3df4]/25 hover:bg-[#faf8ff]'
+                    }`}
                   >
-                    <span style={{ color: selected ? cfg.textColor : 'rgba(255,255,255,0.35)' }}>{cfg.icon}</span>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: selected ? cfg.textColor : 'rgba(255,255,255,0.4)' }}>{cfg.label}</span>
+                    <span style={{ color: selected ? cfg.textColor : undefined }}>{cfg.icon}</span>
+                    <span>{cfg.label}</span>
                   </button>
                 )
               })}
@@ -515,42 +420,24 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
           </div>
 
           {error && (
-            <div style={{ 
-              background: 'rgba(239,68,68,0.1)', 
-              border: '1px solid rgba(239,68,68,0.25)', 
-              borderRadius: '8px', 
-              padding: '10px 12px', 
-              marginBottom: '16px', 
-              color: '#f87171' 
-            }}>
+            <div className="mb-4 rounded-2xl border border-red-500/25 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
               {error}
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              type="button" 
-              onClick={onClose} 
-              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '11px', color: 'rgba(255,255,255,0.6)' }}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
-              disabled={loading} 
-              style={{ 
-                flex: 2, 
-                background: loading ? 'rgba(99,102,241,0.5)' : '#6366f1', 
-                border: 'none', 
-                borderRadius: '10px', 
-                padding: '11px', 
-                color: '#fff', 
-                fontWeight: 600, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                gap: '8px' 
-              }}
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#4c2cc5] to-[#6d3df4] px-4 font-black text-white shadow-[0_16px_35px_rgba(109,61,244,0.30)] transition hover:shadow-[0_20px_42px_rgba(109,61,244,0.42)] disabled:opacity-70"
             >
               {loading ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
               {loading ? 'Adding...' : 'Add Member'}
@@ -654,30 +541,30 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
   });
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-[#f7f8fc] px-4 py-5 sm:px-6 lg:px-8">
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl mb-6 flex justify-between items-center">
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-red-500/25 bg-red-50 p-4 text-red-600">
           <span>{error}</span>
           <button onClick={() => setError(null)} className="text-xl">✕</button>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div className="relative mb-8 max-w-md">
-          <Search className="absolute left-4 top-3.5 text-slate-400" size={30} />
+      <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="relative w-full md:max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c70a8]" size={22} />
           <input
             type="text"
             placeholder="Search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 pl-12 py-3 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="h-[52px] w-full rounded-2xl border border-[#6d3df4]/10 bg-white py-3 pl-12 pr-4 text-[#171044] shadow-[0_12px_35px_rgba(31,22,91,0.08)] outline-none placeholder:text-[#9189af] focus:border-[#6d3df4]/60 focus:ring-4 focus:ring-[#6d3df4]/10"
           />
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 px-5 py-3 rounded-xl font-semibold text-white transition-all active:scale-95"
+          className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#4c2cc5] to-[#6d3df4] px-5 py-3 font-black text-white shadow-[0_16px_35px_rgba(109,61,244,0.30)] transition-all hover:shadow-[0_20px_42px_rgba(109,61,244,0.42)] active:scale-[0.98] md:w-auto"
         >
           <Plus size={20} />
           Add Member
@@ -685,7 +572,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
       </div>
 
       {/* Responsive Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {filtered.map((member) => (
           <MemberCard
             key={member.id}

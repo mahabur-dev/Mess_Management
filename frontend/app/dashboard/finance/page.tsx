@@ -1,145 +1,124 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, TrendingUp, DollarSign, PieChart } from 'lucide-react'
-import { ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, Tooltip } from 'recharts'
+import { Card } from '@/components/ui/card'
+import { useAuth } from '@/app/context/auth-context'
+import { apiClient, type ExpenseCategory, type Mess, type MonthlyBill } from '@/lib/api-client'
+import { ClipboardList, Plus, ReceiptText, WalletCards } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-const expenseData = [
-  { name: 'Groceries', value: 4500 },
-  { name: 'Utilities', value: 1200 },
-  { name: 'Maintenance', value: 800 },
-  { name: 'Other', value: 500 },
-]
-
-const COLORS = ['var(--primary)', 'var(--accent)', 'var(--secondary)', 'var(--chart-5)']
-
-const recentTransactions = [
-  { id: 1, description: 'Grocery Purchase', amount: -450, type: 'expense', date: '2024-05-03' },
-  { id: 2, description: 'Member Payment', amount: 5000, type: 'income', date: '2024-05-02' },
-  { id: 3, description: 'Electricity Bill', amount: -300, type: 'expense', date: '2024-05-01' },
-  { id: 4, description: 'Member Payment', amount: 5000, type: 'income', date: '2024-04-30' },
-  { id: 5, description: 'Water Supply', amount: -150, type: 'expense', date: '2024-04-29' },
-]
+const categories: ExpenseCategory[] = ['FOOD', 'GAS', 'ELECTRICITY', 'WIFI', 'CLEANER', 'MAINTENANCE', 'OTHER']
 
 export default function FinancePage() {
+  const { user } = useAuth()
+  const [messes, setMesses] = useState<Mess[]>([])
+  const [bills, setBills] = useState<MonthlyBill[]>([])
+  const [expense, setExpense] = useState({ itemName: '', quantity: '', amount: '', category: 'FOOD' as ExpenseCategory, expenseDate: new Date().toISOString().slice(0, 10) })
+  const [message, setMessage] = useState('')
+  const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+
+  async function load() {
+    const messRes = await apiClient.getMesses().catch(() => null)
+    const list = Array.isArray(messRes?.data)
+      ? messRes.data
+      : messRes?.data
+        ? [messRes.data]
+        : ((user?.memberships?.map((item) => item.mess).filter(Boolean) ?? []) as Mess[])
+    setMesses(list)
+    if (list[0]) {
+      const billRes = isManager ? await apiClient.getBillsByMess(list[0].id).catch(() => null) : await apiClient.getMyBills().catch(() => null)
+      setBills(Array.isArray(billRes?.data) ? billRes.data : [])
+    }
+  }
+
+  useEffect(() => {
+    load()
+  }, [user?.role])
+
+  async function addExpense() {
+    if (!activeMess || !expense.amount) return
+    await apiClient.createExpense({
+      messId: activeMess.id,
+      category: expense.category,
+      amount: Number(expense.amount),
+      itemName: expense.itemName,
+      quantity: expense.quantity ? Number(expense.quantity) : undefined,
+      expenseDate: expense.expenseDate,
+    })
+    setExpense({ itemName: '', quantity: '', amount: '', category: 'FOOD', expenseDate: new Date().toISOString().slice(0, 10) })
+    setMessage('Expense added successfully.')
+  }
+
+  async function generateBill() {
+    if (!activeMess) return
+    await apiClient.generateMonthlyBill({ messId: activeMess.id, month: new Date().toISOString().slice(0, 8) + '01' })
+    setMessage('Monthly bills generated successfully.')
+    await load()
+  }
+
+  const totalDue = bills.reduce((sum, bill) => sum + Number(bill.final_due ?? 0), 0)
+  const paid = bills.reduce((sum, bill) => sum + Number(bill.paid_amount ?? 0), 0)
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <DashboardHeader
-        title="Finance"
-        description="Track expenses, income, and manage financial reports"
-      />
+    <div className="min-h-screen">
+      <DashboardHeader title={isManager ? 'Bazar / Expenses & Monthly Bills' : 'My Bill'} description="Auto calculation from food, rent, utility and payment data" />
+      <div className="p-4 sm:p-6 lg:p-8">
+        {message && <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">{message}</div>}
+        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          <Card className="app-card p-5">
+            <WalletCards className="mb-4 text-[#6f3df4]" />
+            <p className="text-sm font-bold text-muted-foreground">Final Due</p>
+            <p className="mt-2 text-2xl font-black">৳ {totalDue.toLocaleString()}</p>
+          </Card>
+          <Card className="app-card p-5">
+            <ReceiptText className="mb-4 text-[#22b66f]" />
+            <p className="text-sm font-bold text-muted-foreground">Paid Amount</p>
+            <p className="mt-2 text-2xl font-black">৳ {paid.toLocaleString()}</p>
+          </Card>
+          <Card className="app-card p-5">
+            <ClipboardList className="mb-4 text-[#f59e0b]" />
+            <p className="text-sm font-bold text-muted-foreground">Bills</p>
+            <p className="mt-2 text-2xl font-black">{bills.length}</p>
+          </Card>
+        </div>
 
-      <div className="flex-1 overflow-auto">
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card className="p-6 border-border bg-gradient-to-br from-accent/10 to-primary/10">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Total Income</p>
-                  <p className="text-3xl font-bold text-foreground">₹50,000</p>
+        <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
+          {isManager && (
+            <Card className="app-card h-fit p-5">
+              <h2 className="mb-4 text-lg font-black">Add Bazar / Expense</h2>
+              <div className="space-y-4">
+                <input className="soft-input w-full" placeholder="Item name" value={expense.itemName} onChange={(e) => setExpense((f) => ({ ...f, itemName: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-3">
+                  <input className="soft-input w-full" type="number" placeholder="Quantity" value={expense.quantity} onChange={(e) => setExpense((f) => ({ ...f, quantity: e.target.value }))} />
+                  <input className="soft-input w-full" type="number" placeholder="Price" value={expense.amount} onChange={(e) => setExpense((f) => ({ ...f, amount: e.target.value }))} />
                 </div>
-                <div className="p-3 rounded-lg bg-accent/20">
-                  <TrendingUp size={24} className="text-accent" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">This month</p>
-            </Card>
-
-            <Card className="p-6 border-border bg-gradient-to-br from-primary/10 to-secondary/10">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Total Expenses</p>
-                  <p className="text-3xl font-bold text-foreground">₹7,000</p>
-                </div>
-                <div className="p-3 rounded-lg bg-primary/20">
-                  <DollarSign size={24} className="text-primary" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">This month</p>
-            </Card>
-
-            <Card className="p-6 border-border bg-gradient-to-br from-secondary/10 to-accent/10">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Balance</p>
-                  <p className="text-3xl font-bold text-foreground">₹43,000</p>
-                </div>
-                <div className="p-3 rounded-lg bg-secondary/20">
-                  <PieChart size={24} className="text-secondary" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">Available funds</p>
-            </Card>
-          </div>
-
-          {/* Charts & Transactions */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Pie Chart */}
-            <Card className="p-6 border-border lg:col-span-2">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Expense Breakdown</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <RePieChart>
-                  <Pie
-                    data={expenseData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name} - ₹${value}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {expenseData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `₹${value}`} />
-                  <Legend />
-                </RePieChart>
-              </ResponsiveContainer>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="p-6 border-border flex flex-col">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Actions</h3>
-              <div className="space-y-3 flex-1">
-                <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground flex items-center gap-2 justify-center">
-                  <Plus size={18} />
-                  Add Expense
-                </Button>
-                <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent/10">
-                  Add Income
-                </Button>
-                <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent/10">
-                  Generate Report
-                </Button>
+                <select className="soft-input w-full" value={expense.category} onChange={(e) => setExpense((f) => ({ ...f, category: e.target.value as ExpenseCategory }))}>
+                  {categories.map((item) => <option key={item}>{item}</option>)}
+                </select>
+                <input className="soft-input w-full" type="date" value={expense.expenseDate} onChange={(e) => setExpense((f) => ({ ...f, expenseDate: e.target.value }))} />
+                <Button onClick={addExpense} disabled={!activeMess} className="gradient-button w-full rounded-lg font-bold"><Plus size={16} className="mr-2" /> Add Expense</Button>
+                <Button onClick={generateBill} disabled={!activeMess} variant="outline" className="w-full rounded-lg font-bold">Generate Monthly Bill</Button>
               </div>
             </Card>
-          </div>
+          )}
 
-          {/* Recent Transactions */}
-          <Card className="p-6 border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Recent Transactions</h3>
-            <div className="space-y-3">
-              {recentTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-card/50 transition"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{transaction.description}</p>
-                    <p className="text-xs text-muted-foreground">{transaction.date}</p>
+          <Card className={`app-card overflow-hidden ${isManager ? '' : 'xl:col-span-2'}`}>
+            <div className="border-b border-border p-5">
+              <h2 className="text-lg font-black">{isManager ? 'Monthly Bills' : 'My Monthly Bills'}</h2>
+            </div>
+            <div className="divide-y divide-border">
+              {bills.length === 0 && <p className="p-5 text-sm font-semibold text-muted-foreground">No bills generated yet.</p>}
+              {bills.map((bill) => (
+                <div key={bill.id} className="grid gap-3 p-4 md:grid-cols-5 md:items-center">
+                  <div className="md:col-span-2">
+                    <p className="font-black">{bill.member?.name ?? 'My Bill'}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">{new Date(bill.month).toLocaleDateString()}</p>
                   </div>
-                  <div
-                    className={`text-lg font-bold ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {transaction.type === 'income' ? '+' : ''}₹{Math.abs(transaction.amount)}
-                  </div>
+                  <p className="text-sm font-bold">Meals: {bill.total_meals}</p>
+                  <p className="text-sm font-bold">Due: ৳ {Number(bill.final_due).toLocaleString()}</p>
+                  <span className="w-fit rounded-full bg-[#f4f7fb] px-3 py-1 text-xs font-black">{bill.status}</span>
                 </div>
               ))}
             </div>

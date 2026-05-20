@@ -1,155 +1,106 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Clock, Users } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { useAuth } from '@/app/context/auth-context'
+import { apiClient, type AttendanceStatus, type MealName, type Mess } from '@/lib/api-client'
+import { CalendarDays, Lock, UserPlus, UtensilsCrossed } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-const mealsData = [
-  {
-    id: 1,
-    day: 'Monday',
-    breakfast: 'Bread & Butter with Tea',
-    lunch: 'Dal Makhani, Rice, Roti',
-    dinner: 'Chicken Curry, Naan, Salad',
-    attendees: 42,
-  },
-  {
-    id: 2,
-    day: 'Tuesday',
-    breakfast: 'Eggs & Toast with Coffee',
-    lunch: 'Paneer Butter Masala, Basmati Rice',
-    dinner: 'Fish Curry, Bread, Vegetables',
-    attendees: 45,
-  },
-  {
-    id: 3,
-    day: 'Wednesday',
-    breakfast: 'Oatmeal with Fruits',
-    lunch: 'Chole Bhature, Pickle, Yogurt',
-    dinner: 'Biryani, Cucumber Raita',
-    attendees: 48,
-  },
-  {
-    id: 4,
-    day: 'Thursday',
-    breakfast: 'Poha & Jalebi with Tea',
-    lunch: 'Rajma Rice, Salad, Pickle',
-    dinner: 'Tandoori Chicken, Naan, Dal',
-    attendees: 50,
-  },
-  {
-    id: 5,
-    day: 'Friday',
-    breakfast: 'Idli & Sambar with Coffee',
-    lunch: 'Dum Aloo, Paratha, Raita',
-    dinner: 'Mutton Keema, Rice, Salad',
-    attendees: 52,
-  },
-]
+const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
 
 export default function MealsPage() {
+  const { user } = useAuth()
+  const [messes, setMesses] = useState<Mess[]>([])
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [guests, setGuests] = useState<Record<MealName, number>>({ BREAKFAST: 0, LUNCH: 0, DINNER: 0 })
+  const [message, setMessage] = useState('')
+  const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+
+  useEffect(() => {
+    apiClient
+      .getMesses()
+      .then((response) => setMesses(Array.isArray(response.data) ? response.data : response.data ? [response.data] : []))
+      .catch(() => setMesses(((user?.memberships?.map((item) => item.mess).filter(Boolean) ?? []) as Mess[])))
+  }, [user?.role])
+
+  async function setMeal(mealName: MealName, status: AttendanceStatus) {
+    if (!activeMess) return
+    setMessage('')
+    await apiClient.createMeal({
+      messId: activeMess.id,
+      mealName,
+      status,
+      guests: guests[mealName] ?? 0,
+      date,
+    })
+    setMessage(`${mealName.toLowerCase()} turned ${status.toLowerCase()} successfully.`)
+  }
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen">
       <DashboardHeader
-        title="Meals"
-        description="Manage and track meal plans and schedules"
+        title={isManager ? 'Meal Sheet' : 'My Meals'}
+        description="Breakfast, lunch and dinner ON/OFF with guest meal support"
       />
+      <div className="p-4 sm:p-6 lg:p-8">
+        {message && <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">{message}</div>}
 
-      <div className="flex-1 overflow-auto">
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-          {/* Action Button */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Weekly Menu</h2>
-              <p className="text-sm text-muted-foreground mt-1">Plan and manage meals for the week</p>
-            </div>
-            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground flex items-center gap-2">
-              <Plus size={18} />
-              Add Meal
-            </Button>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-black">{activeMess?.name ?? 'No mess selected'}</h2>
+            <p className="text-sm font-semibold text-muted-foreground">Meal off deadline: {activeMess?.meal_off_deadline ?? 'Before 10 PM previous night'}</p>
           </div>
+          <label className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2">
+            <CalendarDays size={17} className="text-[#6f3df4]" />
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-transparent text-sm font-bold outline-none" />
+          </label>
+        </div>
 
-          {/* Meals Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mealsData.map((meal) => (
-              <Card key={meal.id} className="p-6 border-border hover:shadow-lg transition">
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-bold text-foreground">{meal.day}</h3>
-                  <span className="px-3 py-1 bg-accent/10 text-accent text-xs font-semibold rounded-full">
-                    {meal.attendees} joining
-                  </span>
+        <div className="grid gap-4 md:grid-cols-3">
+          {mealNames.map((mealName) => (
+            <Card key={mealName} className="app-card p-5">
+              <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-[#efe9ff] text-[#6f3df4]">
+                <UtensilsCrossed size={22} />
+              </span>
+              <h3 className="text-xl font-black">{mealName}</h3>
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">Select your meal status for {date}</p>
+
+              <div className="mt-5">
+                <label className="mb-2 block text-sm font-bold">Guest meal</label>
+                <div className="flex items-center gap-2">
+                  <UserPlus size={17} className="text-muted-foreground" />
+                  <input
+                    type="number"
+                    min={0}
+                    className="soft-input w-full"
+                    value={guests[mealName]}
+                    onChange={(event) => setGuests((current) => ({ ...current, [mealName]: Number(event.target.value) }))}
+                  />
                 </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">
-                      Breakfast
-                    </p>
-                    <p className="text-sm text-foreground">{meal.breakfast}</p>
-                  </div>
-
-                  <div className="border-t border-border pt-3">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">
-                      Lunch
-                    </p>
-                    <p className="text-sm text-foreground">{meal.lunch}</p>
-                  </div>
-
-                  <div className="border-t border-border pt-3">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">
-                      Dinner
-                    </p>
-                    <p className="text-sm text-foreground">{meal.dinner}</p>
-                  </div>
-                </div>
-
-                <div className="border-t border-border pt-4 mt-4 flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 border-border text-foreground hover:bg-accent/10"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    Details
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {/* Stats */}
-          <Card className="p-6 border-border bg-gradient-to-r from-primary/5 to-accent/5">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Users size={20} className="text-accent" />
-                  <p className="text-sm text-muted-foreground">Total Attendees</p>
-                </div>
-                <p className="text-2xl font-bold text-foreground">237</p>
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock size={20} className="text-secondary" />
-                  <p className="text-sm text-muted-foreground">Avg. per Meal</p>
-                </div>
-                <p className="text-2xl font-bold text-foreground">47.4</p>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <Button disabled={!activeMess} onClick={() => setMeal(mealName, 'ON')} className="bg-[#22b66f] font-bold hover:bg-[#1fa463]">ON</Button>
+                <Button disabled={!activeMess} onClick={() => setMeal(mealName, 'OFF')} variant="outline" className="font-bold text-destructive">OFF</Button>
               </div>
+            </Card>
+          ))}
+        </div>
+
+        {isManager && (
+          <Card className="app-card mt-6 p-5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#fff3df] text-[#f59e0b]"><Lock size={20} /></span>
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-5 h-5 rounded-full bg-primary" />
-                  <p className="text-sm text-muted-foreground">Weeks Planned</p>
-                </div>
-                <p className="text-2xl font-bold text-foreground">12</p>
+                <h3 className="font-black">Manager Controls</h3>
+                <p className="text-sm font-semibold text-muted-foreground">Managers can edit member meals and lock meal sheets from backend meal APIs.</p>
               </div>
             </div>
           </Card>
-        </div>
+        )}
       </div>
     </div>
   )

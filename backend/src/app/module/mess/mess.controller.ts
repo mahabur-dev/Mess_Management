@@ -16,8 +16,12 @@ import { Request } from 'express';
 import { MessService } from './mess.service';
 import {
   AddMemberDto,
+  CompleteMessSetupDto,
   CreateMessDto,
   MessFilterDto,
+  RequestMessRegistrationDto,
+  ReviewMessRequestDto,
+  UpdateMemberDto,
   UpdateMemberRoleDto,
   UpdateMessDto,
 } from './dto/mess.dto';
@@ -28,6 +32,42 @@ import AuthGuard from '../../middlewares/auth.guard';
 @Controller('messes')
 export class MessController {
   constructor(private readonly messService: MessService) { }
+
+  @Post('registration-requests')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Request mess registration for admin review' })
+  async requestRegistration(@Req() req: Request, @Body() dto: RequestMessRegistrationDto) {
+    const data = await this.messService.requestRegistration(req.user!.id, dto);
+    return { message: 'Mess registration request submitted successfully', data };
+  }
+
+  @Get('registration-requests')
+  @UseGuards(AuthGuard('ADMIN'))
+  @ApiOperation({ summary: '[ADMIN] Get mess registration requests' })
+  async findRequests(@Query() query: MessFilterDto) {
+    const result = await this.messService.findRequests(query);
+    return { message: 'Mess registration requests fetched successfully', meta: result.meta, data: result.data };
+  }
+
+  @Get('registration-requests/my')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Get my mess registration requests' })
+  async findMyRequests(@Req() req: Request, @Query() query: MessFilterDto) {
+    const result = await this.messService.findMyRequests(req.user!.id, query);
+    return { message: 'Your mess registration requests fetched successfully', meta: result.meta, data: result.data };
+  }
+
+  @Patch('registration-requests/:requestId/review')
+  @UseGuards(AuthGuard('ADMIN'))
+  @ApiOperation({ summary: '[ADMIN] Approve or reject a mess registration request' })
+  async reviewRequest(
+    @Param('requestId') requestId: string,
+    @Req() req: Request,
+    @Body() dto: ReviewMessRequestDto,
+  ) {
+    const data = await this.messService.reviewRequest(requestId, req.user!.id, dto);
+    return { message: `Mess registration request ${dto.status.toLowerCase()} successfully`, data };
+  }
 
   // Manager creates a mess
   @Post()
@@ -53,8 +93,8 @@ export class MessController {
 
   // Organizer: get own mess
   @Get('my-mess')
-  @UseGuards(AuthGuard('ORGANIZER'))
-  @ApiOperation({ summary: '[ORGANIZER] Get own mess details' })
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
+  @ApiOperation({ summary: '[MANAGER/ORGANIZER] Get own mess details' })
   async findMyMess(@Req() req: Request) {
     const data = await this.messService.findMyMess(req.user!.id);
     return { message: 'Mess fetched successfully', data };
@@ -63,7 +103,7 @@ export class MessController {
   // Get members of a organizer
   // Get ALL members across all messes owned by the organizer
   @Get('members')
-  @UseGuards(AuthGuard('ORGANIZER'))
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
   @ApiOperation({ summary: 'Get all members from all my messes' })
   async getAllMyMembers(
     @Query() query: MessFilterDto,
@@ -105,6 +145,18 @@ export class MessController {
     return { message: 'Mess updated successfully', data };
   }
 
+  @Patch(':id/setup')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @ApiOperation({ summary: '[MANAGER/ADMIN] Complete or update mess setup/settings' })
+  async completeSetup(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Body() dto: CompleteMessSetupDto,
+  ) {
+    const data = await this.messService.completeSetup(id, req.user!.id, req.user!.role, dto);
+    return { message: 'Mess setup saved successfully', data };
+  }
+
   // Delete mess
   @Delete(':id')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
@@ -116,21 +168,21 @@ export class MessController {
 
   // Manager: add member
   @Post(':id/members')
-  @UseGuards(AuthGuard('ORGANIZER'))
-  @ApiOperation({ summary: 'ORGANIZER Add a member to the mess' })
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
+  @ApiOperation({ summary: 'MANAGER Add a member to the mess' })
   async addMember(
     // @Param('id') id: string,
     @Req() req: Request,
     @Body() dto: AddMemberDto,
   ) {
-    const data = await this.messService.addMember(dto.messId, req.user!.id, dto.email, dto.role);
+    const data = await this.messService.addMember(dto.messId, req.user!.id, dto.email, dto.role, dto);
     return { message: 'Member added successfully', data };
   }
 
   // Manager: remove member
   @Delete(':id/members/:userId')
-  @UseGuards(AuthGuard('ORGANIZER'))
-  @ApiOperation({ summary: 'ORGANIZER Remove a member from the mess' })
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
+  @ApiOperation({ summary: 'MANAGER Remove a member from the mess' })
   async removeMember(
     @Param('id') messId: string,
     @Param('userId') userId: string,
@@ -146,15 +198,15 @@ export class MessController {
 
   //assign manager role to a mess
   @Put(':id/members/:userId')
-  @UseGuards(AuthGuard('ORGANIZER'))
-  @ApiOperation({ summary: 'ORGANIZER Change a member role' })
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
+  @ApiOperation({ summary: 'MANAGER Update member details or role' })
   async updateMemberRole(
     @Param('id') messId: string,
     @Param('userId') userId: string,
-    @Body() dto: UpdateMemberRoleDto,
+    @Body() dto: UpdateMemberDto,
     @Req() req: Request,
   ) {
-    const data = await this.messService.assignManager(messId, userId, dto.role, req.user!.id);
-    return { message: 'Member role updated successfully', data };
+    const data = await this.messService.updateMember(messId, userId, req.user!.id, req.user!.role, dto);
+    return { message: 'Member updated successfully', data };
   };
 }

@@ -5,30 +5,60 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/context/auth-context'
 import { Button } from '@/components/ui/button'
 import {
+  BarChart3,
+  Bell,
+  CalendarCheck,
+  ClipboardList,
+  CreditCard,
+  Home,
   LayoutDashboard,
-  UtensilsCrossed,
-  TrendingUp,
-  ShoppingCart,
-  Calendar,
-  Settings,
   LogOut,
   Menu,
-  X,
-  Home,
+  MessageSquareWarning,
+  Settings,
+  ShoppingCart,
+  UtensilsCrossed,
   Users,
+  WalletCards,
+  X,
 } from 'lucide-react'
 import { useState } from 'react'
 
-const sidebarItems = [
+const commonItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  {label: 'Mess Management', href: '/dashboard/mess_management', icon: Home },
-  {label: 'Member Management', href: '/dashboard/member_management', icon: Users },
-  { label: 'Meals', href: '/dashboard/meals', icon: UtensilsCrossed },
-  { label: 'Finance', href: '/dashboard/finance', icon: TrendingUp },
-  { label: 'Shopping', href: '/dashboard/shopping', icon: ShoppingCart },
-  { label: 'Attendance', href: '/dashboard/attendance', icon: Calendar },
-  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+]
 
+const memberItems = [
+  ...commonItems,
+  { label: 'My Meals', href: '/dashboard/meals', icon: UtensilsCrossed },
+  { label: 'My Bill', href: '/dashboard/finance', icon: WalletCards },
+  { label: 'Payment', href: '/dashboard/payments', icon: CreditCard },
+  { label: 'Notices', href: '/dashboard/notices', icon: Bell },
+  { label: 'Complaints', href: '/dashboard/complaints', icon: MessageSquareWarning },
+  { label: 'Profile', href: '/dashboard/settings', icon: Settings },
+]
+
+const managerItems = [
+  ...commonItems,
+  { label: 'Members', href: '/dashboard/member_management', icon: Users },
+  { label: 'Meal Sheet', href: '/dashboard/meals', icon: UtensilsCrossed },
+  { label: 'Bazar/Expenses', href: '/dashboard/finance', icon: WalletCards },
+  { label: 'Monthly Bills', href: '/dashboard/reports', icon: ClipboardList },
+  { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
+  { label: 'Notices', href: '/dashboard/notices', icon: Bell },
+  { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
+  { label: 'Settings', href: '/dashboard/mess_management', icon: Settings },
+]
+
+const adminItems = [
+  ...commonItems,
+  { label: 'Users', href: '/dashboard/users', icon: Users },
+  { label: 'Mess Requests', href: '/dashboard/mess_requests', icon: ClipboardList },
+  { label: 'All Messes', href: '/dashboard/mess_management', icon: Home },
+  { label: 'Payments/Packages', href: '/dashboard/payments', icon: CreditCard },
+  { label: 'Complaints', href: '/dashboard/complaints', icon: MessageSquareWarning },
+  { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
+  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 export function DashboardSidebar() {
@@ -36,93 +66,93 @@ export function DashboardSidebar() {
   const router = useRouter()
   const { logout, user } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
+  const sidebarItems =
+    user?.role === 'ADMIN' ? adminItems : user?.role === 'MANAGER' || user?.role === 'ORGANIZER' ? managerItems : memberItems
 
-  const handleLogout = () => {
-    logout()
-    router.push('/login')
-  }
+  const content = (
+    <aside className="flex h-full w-[248px] flex-col bg-gradient-to-b from-[#16106a] via-[#1e1776] to-[#17105e] text-white shadow-2xl">
+      <div className="flex h-[76px] items-center px-7">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-sm font-black text-[#6539ef]">M</span>
+          <span className="text-xl font-black">Mess.</span>
+        </Link>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-4 py-2">
+        <div className="space-y-1.5">
+          {sidebarItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsOpen(false)}
+                className={`flex h-11 items-center gap-3 rounded-lg px-4 text-sm font-bold transition ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#7442f4] to-[#5e38e8] text-white shadow-lg shadow-violet-950/20'
+                    : 'text-white/82 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Icon size={17} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+
+      <div className="border-t border-white/10 p-5">
+        <div className="mb-4 flex items-center gap-3 rounded-lg bg-white/5 p-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-black text-[#5636e9]">
+            {user?.name?.charAt(0).toUpperCase() || 'M'}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black">{user?.name || 'Mess User'}</p>
+            <p className="truncate text-xs text-white/62">{user?.role || 'Member'}</p>
+          </div>
+        </div>
+        <Button
+          onClick={() => {
+            logout()
+            router.push('/login')
+          }}
+          className="h-10 w-full rounded-lg bg-white/10 text-white hover:bg-white/15"
+        >
+          <LogOut size={16} className="mr-2" />
+          Logout
+        </Button>
+      </div>
+    </aside>
+  )
 
   return (
     <>
-      {/* Mobile Toggle */}
-      <div className="md:hidden fixed top-4 left-4 z-40">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => setIsOpen(!isOpen)}
-          className="bg-card border border-border"
-        >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </Button>
-      </div>
-
-      {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border flex flex-col transition-transform duration-300 z-30 md:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+      <button
+        type="button"
+        className="fixed left-4 top-4 z-40 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white shadow md:hidden"
+        onClick={() => setIsOpen(true)}
+        aria-label="Open menu"
       >
-        {/* Header */}
-        <div className="p-6 border-b border-sidebar-border">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-accent">
-              <span className="text-sidebar-primary-foreground font-bold text-lg">M</span>
-            </div>
-            <span className="font-bold text-lg text-sidebar-foreground hidden sm:inline">Mess</span>
-          </Link>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          <div className="px-4 space-y-2">
-            {sidebarItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                    isActive
-                      ? 'bg-sidebar-primary text-sidebar-primary-foreground font-semibold'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent/20'
-                  }`}
-                >
-                  <Icon size={20} />
-                  <span className="text-sm">{item.label}</span>
-                </Link>
-              )
-            })}
+        <Menu size={20} />
+      </button>
+      <div className="fixed left-0 top-0 z-30 hidden h-screen md:block">{content}</div>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button className="absolute inset-0 bg-black/45" onClick={() => setIsOpen(false)} aria-label="Close menu" />
+          <div className="relative h-full w-[248px]">
+            <button
+              type="button"
+              className="absolute left-[260px] top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#0a1433]"
+              onClick={() => setIsOpen(false)}
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+            {content}
           </div>
-        </nav>
-
-        {/* User Info & Logout */}
-        <div className="p-4 border-t border-sidebar-border space-y-4">
-          <div className="px-4 py-3 bg-sidebar-accent/10 rounded-lg">
-            <p className="text-xs text-sidebar-accent-foreground/70 mb-1">Logged in as</p>
-            <p className="font-semibold text-sidebar-foreground text-sm truncate">{user?.name}</p>
-            <p className="text-xs text-sidebar-accent-foreground/70">{user?.role}</p>
-          </div>
-
-          <Button
-            onClick={handleLogout}
-            className="w-full bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground flex items-center gap-2"
-          >
-            <LogOut size={18} />
-            Logout
-          </Button>
         </div>
-      </aside>
+      )}
     </>
   )
 }

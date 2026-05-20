@@ -28,7 +28,7 @@ export class MealController {
   constructor(private readonly mealService: MealService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Add a meal entry (all roles)' })
   async create(@Req() req: Request, @Body() dto: CreateMealDto) {
     const data = await this.mealService.create(
@@ -53,7 +53,7 @@ export class MealController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get meal entries for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -75,7 +75,7 @@ export class MealController {
   }
 
   @Get('mess/:messId/summary')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({
     summary:
       'Get meal cost summary for a mess (meal rate, each member cost & balance)',
@@ -99,7 +99,7 @@ export class MealController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get a meal entry by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.mealService.findOne(
@@ -111,7 +111,7 @@ export class MealController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Update a meal entry' })
   async update(
     @Param('id') id: string,
@@ -128,7 +128,7 @@ export class MealController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Delete a meal entry' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.mealService.remove(

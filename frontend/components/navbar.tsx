@@ -5,107 +5,81 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import Image from 'next/image'
 
+const links = [
+  { label: 'Home', href: '/' },
+  { label: 'Features', href: '#features' },
+  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'About Us', href: '#about' },
+  { label: 'Contact', href: '#contact' },
+]
 
 export function Navbar() {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent">
-              <span className="text-primary-foreground font-bold text-lg">M</span>
-            </div>
-            <span className="font-bold text-lg text-foreground hidden sm:inline">Mess</span>
-          </Link>
-          {/* <Link href="/" className="flex items-center gap-2">
-            <Image 
-              src="/logo.png" 
-              alt="Mess Logo" 
-              width={40} 
-              height={40}
-              className="rounded-lg"
-            /> */}
-            {/* <Image src="/mess_logo_m_character.svg" alt="Mess" width={50} height={50} className="object-contain font-bold" /> */}
-            {/* <span className="font-bold text-lg text-foreground hidden sm:inline">Mess</span>
-          </Link> */}
+    <nav className="sticky top-0 z-50 border-b border-[#eef2f8] bg-white/95 backdrop-blur-xl">
+      <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-[#6f3df4] to-[#2f5bf6] text-sm font-black text-white shadow-md">
+            M
+          </span>
+          <span className="text-xl font-black tracking-tight text-[#0a1433]">Mess.</span>
+        </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="#about" className="text-sm text-muted-foreground hover:text-foreground transition">
-              About
-            </Link>
-            <Link href="#contact" className="text-sm text-muted-foreground hover:text-foreground transition">
-              Contact
-            </Link>
-          </div>
-
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => router.push('/login')}
-              className="text-foreground hover:bg-[#250a70] hover:text-white hover:cursor-auto"
+        <div className="hidden items-center gap-2 lg:flex">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-lg px-5 py-3 text-sm font-bold text-[#0a1433] transition hover:bg-[#f3f0ff] hover:text-[#5d36e8]"
             >
-              Login
-            </Button>
-            <Button
-              onClick={() => router.push('/register')}
-              className="bg-gradient-to-r from-primary to-accent hover:from-primary/40 hover:to-accent/40 text-primary-foreground"
-            >
-              Get Started
-            </Button>
-          </div>
-
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden p-2 rounded-lg hover:bg-accent/10 transition"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+              {link.label}
+            </Link>
+          ))}
         </div>
 
-        {/* Mobile Navigation */}
-        {isOpen && (
-          <div className="md:hidden pb-4 border-t border-border">
-            <div className="flex flex-col gap-4 pt-4">
-              <Link href="#about" className="text-sm text-muted-foreground hover:text-foreground transition">
-                About
-              </Link>
-              <Link href="#contact" className="text-sm text-muted-foreground hover:text-foreground transition">
-                Contact
-              </Link>
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    router.push('/login')
-                    setIsOpen(false)
-                  }}
-                  className="flex-1 text-foreground"
-                >
-                  Login
-                </Button>
-                <Button
-                  onClick={() => {
-                    router.push('/register')
-                    setIsOpen(false)
-                  }}
-                  className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
-                >
-                  Get Started
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="hidden items-center gap-3 md:flex">
+          <Button variant="ghost" onClick={() => router.push('/login')} className="font-bold text-[#0a1433]">
+            Login
+          </Button>
+          <Button onClick={() => router.push('/register')} className="gradient-button h-11 rounded-lg px-6 font-bold">
+            Get Started
+          </Button>
+        </div>
+
+        <button
+          type="button"
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white lg:hidden"
+          onClick={() => setIsOpen((value) => !value)}
+          aria-label="Toggle navigation"
+        >
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
       </div>
+
+      {isOpen && (
+        <div className="border-t border-border bg-white px-4 py-4 shadow-lg lg:hidden">
+          <div className="grid gap-1">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className="rounded-lg px-4 py-3 text-sm font-bold text-[#0a1433] hover:bg-[#f3f0ff]"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Button variant="outline" onClick={() => router.push('/login')}>Login</Button>
+            <Button className="gradient-button" onClick={() => router.push('/register')}>Get Started</Button>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

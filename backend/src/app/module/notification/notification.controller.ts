@@ -26,7 +26,7 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Create a notification (Manager/Admin)' })
   async create(@Req() req: Request, @Body() dto: CreateNotificationDto) {
     const data = await this.notificationService.create(
@@ -50,7 +50,7 @@ export class NotificationController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get notifications for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -71,7 +71,7 @@ export class NotificationController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get a notification by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.notificationService.findOne(
@@ -83,7 +83,7 @@ export class NotificationController {
   }
 
   @Patch(':id/read')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Mark a notification as read' })
   async markAsRead(@Param('id') id: string, @Req() req: Request) {
     const data = await this.notificationService.markAsRead(
@@ -95,7 +95,7 @@ export class NotificationController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Delete a notification (Manager/Admin)' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.notificationService.remove(

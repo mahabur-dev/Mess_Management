@@ -7,7 +7,7 @@ import {
 import { BillStatus, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MonthlyBillService {
@@ -18,22 +18,33 @@ export class MonthlyBillService {
     month: true,
     total_meals: true,
     meal_charge: true,
+    food_bill: true,
+    seat_rent: true,
+    electricity_bill: true,
+    gas_bill: true,
+    wifi_bill: true,
+    cleaner_bill: true,
+    extra_cost: true,
     utility_share: true,
     deposit_total: true,
+    paid_amount: true,
+    final_due: true,
     balance: true,
     status: true,
+    due_date: true,
     generated_at: true,
     mess: { select: { id: true, name: true } },
     member: { select: { id: true, name: true, email: true } },
   } as const;
 
   async generate(managerId: string, role: string, dto: GenerateBillDto) {
+    const mess = await this.prisma.mess.findUnique({ where: { id: dto.messId } });
+    if (!mess) throw new HttpException('Mess not found', 404);
     if (role !== 'ADMIN') {
-      const mess = await this.prisma.mess.findUnique({
-        where: { id: dto.messId },
+      const membership = await this.prisma.messMembership.findUnique({
+        where: { mess_id_user_id: { mess_id: dto.messId, user_id: managerId } },
       });
-      if (!mess) throw new HttpException('Mess not found', 404);
-      if (mess.created_by !== managerId) {
+      if (mess.created_by !== managerId && !(membership?.is_active && membership.role === 'MANAGER')) {
         throw new HttpException('Forbidden: Not your mess', 403);
       }
     }
@@ -44,7 +55,7 @@ export class MonthlyBillService {
 
     const activeMembers = await this.prisma.messMembership.findMany({
       where: { mess_id: dto.messId, is_active: true },
-      select: { user_id: true },
+      select: { user_id: true, monthly_rent: true },
     });
 
     if (!activeMembers.length) {
@@ -56,6 +67,7 @@ export class MonthlyBillService {
         where: {
           mess_id: dto.messId,
           expense_date: { gte: month, lt: nextMonth },
+          category: { in: ['GROCERY', 'FOOD'] },
         },
         _sum: { amount: true },
       }),
@@ -83,15 +95,23 @@ export class MonthlyBillService {
     }
 
     const totalMeals = mealAttendances.length;
-    const totalExpenseAmount = Number(totalExpenses._sum.amount ?? 0);
-    const perMealRate = totalMeals > 0 ? totalExpenseAmount / totalMeals : 0;
-    const utilityPerMember =
-      totalExpenseAmount / activeMembers.length / activeMembers.length;
+    const totalFoodExpense = Number(totalExpenses._sum.amount ?? 0);
+    const perMealRate = totalMeals > 0 ? totalFoodExpense / totalMeals : 0;
+    const split = (value: unknown) => Number(value ?? 0) / activeMembers.length;
+    const electricityShare = split(mess.electricity_bill);
+    const gasShare = split(mess.gas_bill);
+    const wifiShare = split(mess.wifi_bill);
+    const cleanerShare = split(mess.cleaner_bill);
+    const extraShare = split(mess.extra_cost);
+    const utilityPerMember = electricityShare + gasShare + wifiShare + cleanerShare + extraShare;
+    const dueDate = new Date(month);
+    dueDate.setDate(mess.payment_deadline_day ?? 10);
 
     const bills = await Promise.all(
-      activeMembers.map(async ({ user_id }) => {
+      activeMembers.map(async ({ user_id, monthly_rent }) => {
         const memberMeals = mealCountByUser[user_id] ?? 0;
-        const mealCharge = memberMeals * perMealRate;
+        const foodBill = memberMeals * perMealRate;
+        const seatRent = Number(monthly_rent ?? mess.monthly_rent ?? 0);
 
         const depositAgg = await this.prisma.deposit.aggregate({
           where: {
@@ -103,7 +123,9 @@ export class MonthlyBillService {
         });
 
         const depositTotal = Number(depositAgg._sum.amount ?? 0);
-        const balance = depositTotal - mealCharge - utilityPerMember;
+        const finalDue = foodBill + seatRent + utilityPerMember - depositTotal;
+        const balance = Math.max(finalDue, 0);
+        const billStatus = balance <= 0 ? BillStatus.PAID : depositTotal > 0 ? BillStatus.PARTIAL : BillStatus.PENDING;
 
         return this.prisma.monthlyBill.upsert({
           where: {
@@ -115,21 +137,42 @@ export class MonthlyBillService {
           },
           update: {
             total_meals: memberMeals,
-            meal_charge: mealCharge,
+            meal_charge: foodBill,
+            food_bill: foodBill,
+            seat_rent: seatRent,
+            electricity_bill: electricityShare,
+            gas_bill: gasShare,
+            wifi_bill: wifiShare,
+            cleaner_bill: cleanerShare,
+            extra_cost: extraShare,
             utility_share: utilityPerMember,
             deposit_total: depositTotal,
+            paid_amount: depositTotal,
+            final_due: Math.max(finalDue, 0),
             balance,
+            due_date: dueDate,
+            status: billStatus,
           },
           create: {
             mess_id: dto.messId,
             member_id: user_id,
             month,
             total_meals: memberMeals,
-            meal_charge: mealCharge,
+            meal_charge: foodBill,
+            food_bill: foodBill,
+            seat_rent: seatRent,
+            electricity_bill: electricityShare,
+            gas_bill: gasShare,
+            wifi_bill: wifiShare,
+            cleaner_bill: cleanerShare,
+            extra_cost: extraShare,
             utility_share: utilityPerMember,
             deposit_total: depositTotal,
+            paid_amount: depositTotal,
+            final_due: Math.max(finalDue, 0),
             balance,
-            status: BillStatus.PENDING,
+            due_date: dueDate,
+            status: billStatus,
           },
           select: this.billSelect,
         });

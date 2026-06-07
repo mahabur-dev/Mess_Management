@@ -301,15 +301,15 @@ class ApiClient {
   }
 
   requestMessRegistration(data: { messName: string; address: string; totalSeats?: number; monthlyRent?: number; description?: string }) {
-    return this.request('/messes/registration-requests', { method: 'POST', body: JSON.stringify(data) })
+    return this.request('/mess-requests', { method: 'POST', body: JSON.stringify(data) })
   }
 
   getMessRequests(params?: QueryParams) {
-    return this.request('/messes/registration-requests', { params })
+    return this.request('/mess-requests', { params })
   }
 
   reviewMessRequest(id: string, data: { status: 'APPROVED' | 'REJECTED'; reviewNote?: string }) {
-    return this.request(`/messes/registration-requests/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) })
+    return this.request(`/mess-requests/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
   updateMessSetup(id: string, data: Record<string, unknown>) {

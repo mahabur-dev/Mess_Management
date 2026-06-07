@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, EyeOff, LockKeyhole } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { apiClient } from '@/lib/api-client'
 
 export default function ResetPassword() {
   const router = useRouter()
@@ -42,16 +43,7 @@ export default function ResetPassword() {
 
     setIsSubmitting(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword: password }),
-      })
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Password reset failed')
-      }
+      const result = await apiClient.resetPassword(email, password)
 
       setIsSuccess(true)
       setMessage(result.data?.message || result.message || 'Password reset successfully')

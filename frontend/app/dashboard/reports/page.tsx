@@ -14,7 +14,9 @@ export default function ReportsPage() {
 
   useEffect(() => {
     async function load() {
-      const messRes = await apiClient.getMesses().catch(() => null)
+      const messRes = user?.role === 'ADMIN'
+        ? await apiClient.getAllMesses({ limit: 100 }).catch(() => null)
+        : await apiClient.getMesses().catch(() => null)
       const list = Array.isArray(messRes?.data)
         ? messRes.data
         : messRes?.data

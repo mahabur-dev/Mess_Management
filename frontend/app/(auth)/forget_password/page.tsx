@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Mail } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { apiClient } from '@/lib/api-client'
 
 export default function ForgetPassword() {
   const router = useRouter()
@@ -21,21 +22,12 @@ export default function ForgetPassword() {
     setMessage('')
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to send OTP')
-      }
+      const result = await apiClient.forgotPassword(email.trim().toLowerCase())
 
       const successMessage = result.data?.message || result.message || 'OTP sent to your email'
       setIsSuccess(true)
       setMessage(successMessage)
-      sessionStorage.setItem('resetEmail', email)
+      sessionStorage.setItem('resetEmail', email.trim().toLowerCase())
 
       window.setTimeout(() => {
         router.push('/verify_otp')

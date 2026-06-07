@@ -1,5 +1,5 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
+const REQUEST_TIMEOUT_MS = 60000
 
 export interface BackendResponse<T> {
   statusCode: number
@@ -88,6 +88,7 @@ export interface MessMembership {
   user_id: string
   role: MembershipRole
   joined_at: string
+  left_at?: string | null
   is_active: boolean
   room_no?: string | null
   seat_no?: string | null
@@ -96,6 +97,11 @@ export interface MessMembership {
   due_balance?: string | null
   user?: User
   mess?: Mess
+}
+
+export interface MessMembershipWithDetails extends MessMembership {
+  user: User
+  mess: Mess
 }
 
 export interface MessDashboard {
@@ -197,21 +203,37 @@ class ApiClient {
       'Content-Type': 'application/json',
       ...options.headers,
     }
-    if (token) ;(headers as Record<string, string>).Authorization = `Bearer ${token}`
+    const requestHeaders = headers as Record<string, string>
+    if (token) requestHeaders.Authorization = `Bearer ${token}`
 
-    const fetchOptions: RequestInit = { ...options, headers }
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    const abortRequest = () => controller.abort()
+    options.signal?.addEventListener('abort', abortRequest, { once: true })
+
+    const fetchOptions: RequestInit = { ...options, headers, signal: controller.signal }
     delete (fetchOptions as RequestInit & { params?: QueryParams }).params
 
-    const response = await fetch(url, fetchOptions)
-    const json = await response.json().catch(() => ({}))
-    if (!response.ok || json.success === false) {
-      throw new ApiError(
-        json.statusCode ?? response.status,
-        json.message ?? response.statusText ?? 'Something went wrong',
-        json.errorSources
-      )
+    try {
+      const response = await fetch(url, fetchOptions)
+      const json = await response.json().catch(() => ({}))
+      if (!response.ok || json.success === false) {
+        throw new ApiError(
+          json.statusCode ?? response.status,
+          json.message ?? response.statusText ?? 'Something went wrong',
+          json.errorSources
+        )
+      }
+      return json as BackendResponse<T>
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new ApiError(408, 'Request timed out. Please check that the backend server is running.')
+      }
+      throw error
+    } finally {
+      window.clearTimeout(timeoutId)
+      options.signal?.removeEventListener('abort', abortRequest)
     }
-    return json as BackendResponse<T>
   }
 
   login(email: string, password: string) {
@@ -225,8 +247,29 @@ class ApiClient {
     return this.request<User>('/auth/register', { method: 'POST', body: JSON.stringify(data) })
   }
 
-  getProfile() {
-    return this.request<User>('/users/profile')
+  forgotPassword(email: string) {
+    return this.request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  verifyOtp(email: string, otp: string) {
+    return this.request<{ message: string }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    })
+  }
+
+  resetPassword(email: string, newPassword: string) {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, newPassword }),
+    })
+  }
+
+  getProfile(signal?: AbortSignal) {
+    return this.request<User>('/users/profile', { signal })
   }
 
   getUsers(params?: QueryParams) {
@@ -274,7 +317,7 @@ class ApiClient {
   }
 
   getAllMembers(params?: QueryParams) {
-    return this.request<MessMembership[]>('/messes/members', { params })
+    return this.request<MessMembershipWithDetails[]>('/messes/members', { params })
   }
 
   addMember(messId: string, data: { email: string; role: MembershipRole; roomNo?: string; seatNo?: string; monthlyRent?: number; depositAmount?: number }) {
@@ -283,6 +326,10 @@ class ApiClient {
 
   updateMember(messId: string, memberId: string, data: Partial<{ role: MembershipRole; isActive: boolean; roomNo: string; seatNo: string; monthlyRent: number; depositAmount: number }>) {
     return this.request<MessMembership>(`/messes/${messId}/members/${memberId}`, { method: 'PUT', body: JSON.stringify(data) })
+  }
+
+  updateMemberRole(messId: string, memberId: string, role: MembershipRole) {
+    return this.updateMember(messId, memberId, { role })
   }
 
   removeMember(messId: string, memberId: string) {
@@ -337,6 +384,10 @@ class ApiClient {
     return this.request<Payment[]>(`/payments/mess/${messId}`, { params })
   }
 
+  getAllPayments(params?: QueryParams) {
+    return this.request<Payment[]>('/payments', { params })
+  }
+
   getMyPayments(params?: QueryParams) {
     return this.request<Payment[]>('/payments/my', { params })
   }
@@ -355,6 +406,10 @@ class ApiClient {
 
   getComplaintsByMess(messId: string, params?: QueryParams) {
     return this.request<Complaint[]>(`/complaints/mess/${messId}`, { params })
+  }
+
+  getAllComplaints(params?: QueryParams) {
+    return this.request<Complaint[]>('/complaints', { params })
   }
 
   getMyComplaints(params?: QueryParams) {

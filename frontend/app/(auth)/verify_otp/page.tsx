@@ -10,6 +10,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp'
+import { apiClient } from '@/lib/api-client'
 
 export default function VerifyOtp() {
   const router = useRouter()
@@ -37,16 +38,7 @@ export default function VerifyOtp() {
 
     setIsSubmitting(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
-      })
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'OTP verification failed')
-      }
+      const result = await apiClient.verifyOtp(email, otp)
 
       const successMessage = result.data?.message || result.message || 'OTP verified successfully'
       setIsSuccess(true)
@@ -75,16 +67,7 @@ export default function VerifyOtp() {
 
     setIsResending(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to resend OTP')
-      }
+      const result = await apiClient.forgotPassword(email)
 
       setOtp('')
       setIsSuccess(true)

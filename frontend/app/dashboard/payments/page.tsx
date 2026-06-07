@@ -18,11 +18,18 @@ export default function PaymentsPage() {
   const [method, setMethod] = useState<PaymentMethod>('BKASH')
   const { user } = useAuth()
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
+  const isAdmin = user?.role === 'ADMIN'
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
 
   async function load() {
     setLoading(true)
     try {
+      if (isAdmin) {
+        const paymentRes = await apiClient.getAllPayments().catch(() => null)
+        setPayments(Array.isArray(paymentRes?.data) ? paymentRes.data : [])
+        return
+      }
+
       const messRes = await apiClient.getMesses().catch(() => null)
       const list = Array.isArray(messRes?.data)
         ? messRes.data

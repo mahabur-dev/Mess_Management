@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useAuth } from '@/app/context/auth-context'
 import { ArrowRight, CheckCircle2, Eye, EyeOff, Phone, ShieldCheck, UserRound } from 'lucide-react'
+import { ApiError } from '@/lib/api-client'
 
 function RegisterField({
   label,
@@ -55,7 +56,7 @@ function RegisterField({
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { register, isLoading } = useAuth()
+  const { register, isSubmitting } = useAuth()
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -86,8 +87,8 @@ export default function RegisterPage() {
     try {
       await register(form.name, form.email, form.phone, form.password, 'MEMBER')
       router.push('/dashboard')
-    } catch {
-      setError('Registration failed. Please check your information and try again.')
+    } catch (error) {
+      setError(error instanceof ApiError ? error.message : 'Registration failed. Please try again.')
     }
   }
 
@@ -161,11 +162,11 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="group mt-2 flex h-13 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#315bf6] to-[#713cf2] px-5 text-base font-black text-white shadow-[0_16px_32px_rgba(80,70,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_rgba(80,70,230,0.34)] disabled:translate-y-0 disabled:opacity-65"
             >
-              {isLoading ? 'Creating Account...' : 'Create Member Account'}
-              {!isLoading && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
+              {isSubmitting ? 'Creating Account...' : 'Create Member Account'}
+              {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
             </button>
           </form>
 
@@ -195,6 +196,9 @@ export default function RegisterPage() {
               priority
               sizes="(max-width: 1024px) 100vw, 55vw"
               className="object-cover"
+              quality={75}        // ← add this, default is 75 but be explicit
+              placeholder="blur"  // ← add this for perceived speed
+              blurDataURL="data:image/jpeg;base64,..." // generate with plaiceholder
             />
             <div className="absolute inset-0 bg-gradient-to-br from-[#17106b]/82 via-[#6f3df4]/64 to-[#2f5bf6]/74" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.24),transparent_26rem)]" />

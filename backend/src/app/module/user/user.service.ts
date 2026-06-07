@@ -82,8 +82,15 @@ export class UserService {
         is_verified: true,
         created_at: true,
         memberships: {
+          where: { is_active: true },
           select: {
+            id: true,
+            mess_id: true,
+            user_id: true,
+            role: true,
             joined_at: true,
+            left_at: true,
+            is_active: true,
             mess: {
               select: { id: true, name: true, address: true },
             },

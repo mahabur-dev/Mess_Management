@@ -33,50 +33,14 @@ import AuthGuard from '../../middlewares/auth.guard';
 export class MessController {
   constructor(private readonly messService: MessService) { }
 
-  @Post('registration-requests')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
-  @ApiOperation({ summary: 'Request mess registration for admin review' })
-  async requestRegistration(@Req() req: Request, @Body() dto: RequestMessRegistrationDto) {
-    const data = await this.messService.requestRegistration(req.user!.id, dto);
-    return { message: 'Mess registration request submitted successfully', data };
-  }
-
-  @Get('registration-requests')
-  @UseGuards(AuthGuard('ADMIN'))
-  @ApiOperation({ summary: '[ADMIN] Get mess registration requests' })
-  async findRequests(@Query() query: MessFilterDto) {
-    const result = await this.messService.findRequests(query);
-    return { message: 'Mess registration requests fetched successfully', meta: result.meta, data: result.data };
-  }
-
-  @Get('registration-requests/my')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
-  @ApiOperation({ summary: 'Get my mess registration requests' })
-  async findMyRequests(@Req() req: Request, @Query() query: MessFilterDto) {
-    const result = await this.messService.findMyRequests(req.user!.id, query);
-    return { message: 'Your mess registration requests fetched successfully', meta: result.meta, data: result.data };
-  }
-
-  @Patch('registration-requests/:requestId/review')
-  @UseGuards(AuthGuard('ADMIN'))
-  @ApiOperation({ summary: '[ADMIN] Approve or reject a mess registration request' })
-  async reviewRequest(
-    @Param('requestId') requestId: string,
-    @Req() req: Request,
-    @Body() dto: ReviewMessRequestDto,
-  ) {
-    const data = await this.messService.reviewRequest(requestId, req.user!.id, dto);
-    return { message: `Mess registration request ${dto.status.toLowerCase()} successfully`, data };
-  }
-
   // Manager creates a mess
-  @Post()
-  @UseGuards(AuthGuard('ORGANIZER', 'ADMIN'))
-  @ApiOperation({ summary: '[ORGANIZER] Create a new mess' })
-  async create(@Req() req: Request, @Body() dto: CreateMessDto) {
-    const data = await this.messService.create(req.user!.id, dto);
-    return { message: 'Mess created successfully', data };
-  }
+  // @Post()
+  // @UseGuards(AuthGuard('ORGANIZER', 'ADMIN', 'MANAGER', 'MEMBER'))
+  // @ApiOperation({ summary: '[ORGANIZER] Create a new mess' })
+  // async create(@Req() req: Request, @Body() dto: CreateMessDto) {
+  //   const data = await this.messService.create(req.user!.id, dto);
+  //   return { message: 'Mess created successfully', data };
+  // }
 
   // Admin: get all messes
   @Get()
@@ -93,8 +57,8 @@ export class MessController {
 
   // Organizer: get own mess
   @Get('my-mess')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
-  @ApiOperation({ summary: '[MANAGER/ORGANIZER] Get own mess details' })
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Get messes the current user owns or belongs to' })
   async findMyMess(@Req() req: Request) {
     const data = await this.messService.findMyMess(req.user!.id);
     return { message: 'Mess fetched successfully', data };
@@ -120,7 +84,7 @@ export class MessController {
   }
   // Get single mess by ID (Admin or member)
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
   @ApiOperation({ summary: 'Get a mess by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.messService.findOne(id);
@@ -129,7 +93,7 @@ export class MessController {
 
   // Update mess
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
   @ApiOperation({ summary: '[ORGANIZER/MANAGER/ADMIN] Update mess details' })
   async update(
     @Param('id') id: string,
@@ -181,7 +145,7 @@ export class MessController {
 
   // Manager: remove member
   @Delete(':id/members/:userId')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'ADMIN'))
   @ApiOperation({ summary: 'MANAGER Remove a member from the mess' })
   async removeMember(
     @Param('id') messId: string,

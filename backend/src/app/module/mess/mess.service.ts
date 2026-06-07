@@ -185,34 +185,34 @@ export class MessService {
   // ─────────────────────────────────────────
   // Create mess (Manager creates own mess)
   // ─────────────────────────────────────────
-  async create(organizerId: string, dto: CreateMessDto) {
-    // Verify organizer exists
-    const organizer = await this.prisma.user.findUnique({
-      where: { id: organizerId },
-    });
-    if (!organizer) throw new HttpException('Organizer not found', 404);
+  // async create(organizerId: string, dto: CreateMessDto) {
+  //   // Verify organizer exists
+  //   const organizer = await this.prisma.user.findUnique({
+  //     where: { id: organizerId },
+  //   });
+  //   if (!organizer) throw new HttpException('Organizer not found', 404);
 
-    const mess = await this.prisma.mess.create({
-      data: {
-        name: dto.messName,
-        address: dto.messLocation,
-        description: dto.description,
-        created_by: organizerId,
-        meal_rate: dto.meal_rate,
-        currency: dto.currency,
-        memberships: {
-          create: {
-            user_id: organizerId,
-            role: MembershipRole.MANAGER,
-            created_by: organizerId,
-          },
-        },
-      },
-      select: this.messSelect,
-    });
+  //   const mess = await this.prisma.mess.create({
+  //     data: {
+  //       name: dto.messName,
+  //       address: dto.messLocation,
+  //       description: dto.description,
+  //       created_by: organizerId,
+  //       meal_rate: dto.meal_rate,
+  //       currency: dto.currency,
+  //       memberships: {
+  //         create: {
+  //           user_id: organizerId,
+  //           role: MembershipRole.MANAGER,
+  //           created_by: organizerId,
+  //         },
+  //       },
+  //     },
+  //     select: this.messSelect,
+  //   });
 
-    return mess;
-  }
+  //   return mess;
+  // }
 
   // ─────────────────────────────────────────
   // Get all messes (Admin)
@@ -259,11 +259,17 @@ export class MessService {
   }
 
   // ─────────────────────────────────────────
-  // Get my mess (Organizer gets own mess details)
+  // Get messes the current user owns or belongs to
   // ─────────────────────────────────────────
-  async findMyMess(organizerId: string) {
+  async findMyMess(userId: string) {
     const mess = await this.prisma.mess.findMany({
-      where: { created_by: organizerId },
+      where: {
+        is_active: true,
+        OR: [
+          { created_by: userId },
+          { memberships: { some: { user_id: userId, is_active: true } } },
+        ],
+      },
       include: {
         creator: { select: { id: true, name: true, email: true } },
         memberships: {

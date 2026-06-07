@@ -18,9 +18,16 @@ export default function ComplaintsPage() {
   const [category, setCategory] = useState<ComplaintCategory>('MEAL_CORRECTION')
   const { user } = useAuth()
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
+  const isAdmin = user?.role === 'ADMIN'
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
 
   async function load() {
+    if (isAdmin) {
+      const complaintRes = await apiClient.getAllComplaints().catch(() => null)
+      setComplaints(Array.isArray(complaintRes?.data) ? complaintRes.data : [])
+      return
+    }
+
     const messRes = await apiClient.getMesses().catch(() => null)
     const list = Array.isArray(messRes?.data)
       ? messRes.data

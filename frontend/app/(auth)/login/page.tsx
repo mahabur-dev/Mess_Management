@@ -7,10 +7,11 @@ import { useAuth } from '@/app/context/auth-context'
 import { Eye, EyeOff } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import Image from 'next/image'
+import { ApiError } from '@/lib/api-client'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login, isLoading } = useAuth()
+  const { login, isSubmitting } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -23,8 +24,8 @@ export default function LoginPage() {
     try {
       await login(email, password)
       router.push('/dashboard')
-    } catch {
-      setError('Invalid email or password')
+    } catch (error) {
+      setError(error instanceof ApiError ? error.message : 'Unable to sign in. Please try again.')
     }
   }
 
@@ -143,20 +144,20 @@ export default function LoginPage() {
             </div>
 
             <button
-              type="submit" disabled={isLoading}
+              type="submit" disabled={isSubmitting}
               style={{
                 width: '100%', padding: '13px',
-                background: isLoading ? '#c4b5fd' : 'linear-gradient(135deg, #7854f7, #534AB7)',
+                background: isSubmitting ? '#c4b5fd' : 'linear-gradient(135deg, #7854f7, #534AB7)',
                 border: 'none', borderRadius: '10px', color: '#fff',
                 fontWeight: 700, fontSize: '15px',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 boxShadow: '0 4px 16px rgba(120,84,247,0.4)',
                 transition: 'opacity 0.2s, transform 0.15s',
               }}
-              onMouseEnter={e => { if (!isLoading) (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+              onMouseEnter={e => { if (!isSubmitting) (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 

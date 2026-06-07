@@ -8,8 +8,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { Observable } from 'rxjs';
 import config from '../config';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 export interface JwtPayload {
   id: string;
@@ -31,11 +31,14 @@ declare global {
 export default function AuthGuard(...roles: string[]): Type<CanActivate> {
   @Injectable()
   class AuthGuardImpl implements CanActivate {
-    constructor(readonly jwtService: JwtService) {}
+    constructor(
+      readonly jwtService: JwtService,
+      readonly prisma: PrismaService,
+    ) {}
 
-    canActivate(
+    async canActivate(
       context: ExecutionContext,
-    ): boolean | Promise<boolean> | Observable<boolean> {
+    ): Promise<boolean> {
       const request = context.switchToHttp().getRequest<Request>();
       const token = request.headers.authorization?.split(' ')[1];
 
@@ -53,11 +56,24 @@ export default function AuthGuard(...roles: string[]): Type<CanActivate> {
 
       if (!decoded) throw new HttpException('Unauthorized', 401);
 
-      if (roles.length && !roles.includes(decoded.role)) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, email: true, role: true, is_active: true },
+      });
+
+      if (!user) throw new HttpException('Unauthorized: User not found', 401);
+      if (!user.is_active)
+        throw new HttpException('Forbidden: Account is deactivated', 403);
+
+      if (roles.length && !roles.includes(user.role)) {
         throw new HttpException('Forbidden: Insufficient permissions', 403);
       }
 
-      request.user = decoded;
+      request.user = {
+        ...decoded,
+        email: user.email,
+        role: user.role,
+      };
       return true;
     }
   }

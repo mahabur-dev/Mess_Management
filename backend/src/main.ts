@@ -17,10 +17,36 @@ async function bootstrap() {
   app.use('/api/v1/webhook', express.raw({ type: 'application/json' }));
 
   app.use(cookieParser());
+  // app.enableCors({
+  //   origin: '*',
+  //   credentials: true,
+  // });
+  // app.enableCors({
+  // origin: (origin, callback) => callback(null, true), // allow all but dynamically
+  //   credentials: true,
+  //   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  //   allowedHeaders: ['Content-Type', 'Authorization'],
+  // });
   app.enableCors({
-    origin: '*',
-    credentials: true,
-  });
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    
+    // Allow all GitHub Codespaces preview URLs + localhost
+    if (
+      origin.includes('.app.github.dev') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
 
   app.setGlobalPrefix('api/v1', {
     exclude: [''],

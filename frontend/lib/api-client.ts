@@ -117,6 +117,7 @@ export interface MessDashboard {
   totalMeals:number
   extraExpenses:number
   perExtraExpenses:number
+  totalDepositAmount:number
 }
 
 export interface AdminDashboard {

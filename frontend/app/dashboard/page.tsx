@@ -78,53 +78,6 @@ function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
 }
 
-// function StatCard({
-//   label,
-//   value,
-//   badge,
-//   icon: Icon,
-//   accent,
-//   iconBg,
-//   iconColor,
-// }: {
-//   label: string
-//   value: string | number
-//   badge: string
-//   icon: ElementType
-//   accent: string
-//   iconBg: string
-//   iconColor: string
-// }) {
-//   return (
-//     <Card className="group relative overflow-hidden rounded-2xl border border-violet-100/80 bg-white p-5 shadow-[0_10px_35px_rgba(36,21,120,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-violet-200 hover:shadow-[0_18px_45px_rgba(111,61,244,0.16)]">
-//       <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accent}`} />
-
-//       <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-violet-100/70 blur-2xl transition-all duration-300 group-hover:bg-violet-200" />
-//       <div className="absolute -bottom-10 -left-10 h-24 w-24 rounded-full bg-indigo-100/60 blur-2xl" />
-
-//       <div className="relative flex items-start justify-between gap-4">
-//         <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${iconBg} shadow-sm`}>
-//           <Icon size={23} className={iconColor} strokeWidth={2.4} />
-//         </div>
-
-//         <span className="rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-[11px] font-black text-[#6f3df4]">
-//           {badge}
-//         </span>
-//       </div>
-
-//       <div className="relative mt-5">
-//         <p className="text-[12px] font-black uppercase tracking-wide text-slate-500">
-//           {label}
-//         </p>
-
-//         <p className="mt-2 text-2xl font-black tracking-tight text-[#0a1433]">
-//           {value}
-//         </p>
-//       </div>
-//     </Card>
-//   )
-// }
-
 function StatCard({
   label,
   value,
@@ -337,6 +290,15 @@ export default function DashboardPage() {
         'from-[#ec4899] to-[#f43f7f]',
         'bg-[#fce7f3]',
         'text-[#db2777]',
+      ],
+      [
+        'Total Deposit',
+        money(dashboard?.totalDepositAmount),
+        'Deposit',
+        ReceiptText,
+        'from-[#8b5cf6] to-[#6f3df4]',
+        'bg-[#f3e8ff]',
+        'text-[#7c3aed]',
       ],
       [
         'Due Amount',

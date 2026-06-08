@@ -102,6 +102,7 @@ export class DashboardService {
     monthlyExpenses,
     monthlyExtraExpenses,
     monthlyMealAttendances,
+    totalDeposit,
     billsAgg,
     paidAgg,
     activeMembers,
@@ -144,6 +145,10 @@ export class DashboardService {
       _count: { _all: true },
       _sum: { guests: true },
     }),
+    this.prisma.payment.aggregate({
+      where: {mess_id: messId, status: "APPROVED", created_at:{gte:start, lt:end}},
+      _sum: {amount:true}
+    }),
     this.prisma.monthlyBill.aggregate({
       where: { mess_id: messId, month: start },
       _sum: { final_due: true, paid_amount: true },
@@ -172,6 +177,14 @@ export class DashboardService {
   const extraExpenses = Number(monthlyExtraExpenses._sum.amount ?? 0);
   const perExtraExpenses = activeMembers > 0 ? Number((extraExpenses / activeMembers).toFixed(2)) : 0;
 
+  const totalDepositAmount = Number(totalDeposit._sum.amount ?? 0);
+
+  const totalExpense = extraExpenses + totalBazar;
+
+  const totalDue =
+    totalExpense > totalDepositAmount
+      ? Number((totalExpense - totalDepositAmount).toFixed(2))
+      : 0;
   return {
     todayTotalMeals,
     totalMeals,
@@ -179,7 +192,8 @@ export class DashboardService {
     extraExpenses,
     perExtraExpenses,
     currentMealRate,
-    totalDue: Number(billsAgg._sum.final_due ?? 0),
+    totalDue,
+    totalDepositAmount,
     paidAmount: Number(billsAgg._sum.paid_amount ?? paidAgg._sum.amount ?? 0),
     activeMembers,
     pendingPayments,

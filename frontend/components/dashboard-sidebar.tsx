@@ -70,7 +70,8 @@ export function DashboardSidebar() {
     user?.role === 'ADMIN' ? adminItems : user?.role === 'MANAGER' || user?.role === 'ORGANIZER' ? managerItems : memberItems
 
   const content = (
-    <aside className="flex h-full w-[248px] flex-col bg-gradient-to-b from-[#16106a] via-[#1e1776] to-[#17105e] text-white shadow-2xl">
+    // <aside className="flex h-full w-[248px] flex-col bg-gradient-to-b from-[#16106a] via-[#1e1776] to-[#17105e] text-white shadow-2xl">
+    <aside className="flex h-full w-[248px] flex-col overflow-hidden bg-gradient-to-b from-[#16106a] via-[#1e1776] to-[#17105e] text-white shadow-2xl">
       <div className="flex h-[76px] items-center px-7">
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-sm font-black text-[#6539ef]">M</span>
@@ -78,7 +79,8 @@ export function DashboardSidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-4 py-2">
+      {/* <nav className="flex-1 overflow-y-auto px-4 py-2"> */}
+      <nav className="sidebar-scroll flex-1 overflow-y-auto px-4 py-2 pr-2">
         <div className="space-y-1.5">
           {sidebarItems.map((item) => {
             const Icon = item.icon

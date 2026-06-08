@@ -114,6 +114,10 @@ export interface MessDashboard {
   pendingPayments: number
   openComplaints: number
   notices: Array<{ id: string; title: string; type: NoticeType; is_pinned: boolean; created_at: string }>
+  totalMeals:number
+  extraExpenses:number
+  perExtraExpenses:number
+  totalDepositAmount:number
 }
 
 export interface AdminDashboard {

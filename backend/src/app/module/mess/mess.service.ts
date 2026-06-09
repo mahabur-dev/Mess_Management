@@ -12,10 +12,27 @@ import { MembershipRole, Prisma, RequestStatus } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
 
 @Injectable()
 export class MessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly monthlyBillService: MonthlyBillService,
+  ) { }
+
+  private async recalculateCurrentMonthBillIfPossible(messId: string) {
+    const activeMembers = await this.prisma.messMembership.count({
+      where: {
+        mess_id: messId,
+        is_active: true,
+      },
+    });
+
+    if (!activeMembers) return;
+
+    await this.monthlyBillService.recalculateMonthlyBills(messId, new Date());
+  }
 
   private readonly messSelect = {
     id: true,
@@ -385,29 +402,93 @@ export class MessService {
   // ─────────────────────────────────────────
   // Add member to mess (Organizer)
   // ─────────────────────────────────────────
-  async completeSetup(messId: string, userId: string, role: string, dto: CompleteMessSetupDto) {
+  // ─────────────────────────────────────────
+  // Complete mess setup / Update mess billing settings
+  // ─────────────────────────────────────────
+  // async completeSetup(
+  //   messId: string,
+  //   userId: string,
+  //   role: string,
+  //   dto: CompleteMessSetupDto,
+  // ) {
+  //   await this.verifyManagerAccess(messId, userId, role);
+
+  //   const updatedMess = await this.prisma.mess.update({
+  //     where: {
+  //       id: messId,
+  //     },
+  //     data: {
+  //       name: dto.messName,
+  //       address: dto.address,
+  //       total_seats: dto.totalSeats,
+  //       monthly_rent: dto.monthlyRent,
+  //       electricity_bill: dto.electricityBill,
+  //       gas_bill: dto.gasBill,
+  //       wifi_bill: dto.wifiBill,
+  //       cleaner_bill: dto.cleanerBill,
+  //       extra_cost: dto.extraCost,
+  //       meal_types: dto.mealTypes ?? undefined,
+  //       meal_rate_method: dto.mealRateMethod,
+  //       bazar_rules: dto.bazarRules,
+  //       payment_deadline_day: dto.paymentDeadlineDay,
+  //       meal_off_deadline: dto.mealOffDeadline,
+  //       settings_completed: true,
+  //     },
+  //     select: this.messSelect,
+  //   });
+
+  //   await this.recalculateCurrentMonthBillIfPossible(messId);
+
+  //   return updatedMess;
+  // }
+
+  async completeSetup(
+    messId: string,
+    userId: string,
+    role: string,
+    dto: CompleteMessSetupDto,
+  ) {
     await this.verifyManagerAccess(messId, userId, role);
-    return this.prisma.mess.update({
-      where: { id: messId },
-      data: {
-        name: dto.messName,
-        address: dto.address,
-        total_seats: dto.totalSeats,
-        monthly_rent: dto.monthlyRent,
-        electricity_bill: dto.electricityBill,
-        gas_bill: dto.gasBill,
-        wifi_bill: dto.wifiBill,
-        cleaner_bill: dto.cleanerBill,
-        extra_cost: dto.extraCost,
-        meal_types: dto.mealTypes ?? undefined,
-        meal_rate_method: dto.mealRateMethod,
-        bazar_rules: dto.bazarRules,
-        payment_deadline_day: dto.paymentDeadlineDay,
-        meal_off_deadline: dto.mealOffDeadline,
-        settings_completed: true,
-      },
-      select: this.messSelect,
+
+    const updatedMess = await this.prisma.$transaction(async (tx) => {
+      const mess = await tx.mess.update({
+        where: { id: messId },
+        data: {
+          name: dto.messName,
+          address: dto.address,
+          total_seats: dto.totalSeats,
+          monthly_rent: dto.monthlyRent,
+          electricity_bill: dto.electricityBill,
+          gas_bill: dto.gasBill,
+          wifi_bill: dto.wifiBill,
+          cleaner_bill: dto.cleanerBill,
+          extra_cost: dto.extraCost,
+          meal_types: dto.mealTypes ?? undefined,
+          meal_rate_method: dto.mealRateMethod,
+          bazar_rules: dto.bazarRules,
+          payment_deadline_day: dto.paymentDeadlineDay,
+          meal_off_deadline: dto.mealOffDeadline,
+          settings_completed: true,
+        },
+        select: this.messSelect,
+      });
+
+      await tx.messMembership.updateMany({
+        where: {
+          mess_id: messId,
+          is_active: true,
+        },
+        data: {
+          monthly_rent: dto.monthlyRent,
+        },
+      });
+
+      return mess;
     });
+
+    await this.monthlyBillService.recalculateMonthlyBills(messId, new Date());
+
+    return updatedMess;
   }
 
   async addMember(messId: string, organizerId: string, email: string, role: MembershipRole, dto?: Partial<UpdateMemberDto>) {
@@ -495,13 +576,13 @@ export class MessService {
     if (!organizer) throw new HttpException('Forbidden', 403)
 
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } })
-    if(!mess || mess.created_by !== organizerId) throw new HttpException('Forbidden: Not your mess', 403)
+    if (!mess || mess.created_by !== organizerId) throw new HttpException('Forbidden: Not your mess', 403)
     // Update MessMembership role
     const memberShip = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } }
     })
 
-    if(!memberShip) throw new HttpException('User is not a member of this mess', 404)
+    if (!memberShip) throw new HttpException('User is not a member of this mess', 404)
 
     return this.prisma.messMembership.update({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
@@ -511,62 +592,62 @@ export class MessService {
         mess: { select: { id: true, name: true } },
       },
     })
-}
-
-  async getAllMembers(organizerId: string, query: MessFilterDto) {
-  const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
-  const { page, limit, skip, sortOrder = 'desc' } = paginationHelper(paginationOptions);
-
-  const where: Prisma.MessMembershipWhereInput = {
-    mess: {
-      created_by: organizerId,   // Only messes owned by this organizer
-      is_active: true,
-    },
-    is_active: true,
-  };
-
-  // Search across user fields
-  if (query.searchTerm) {
-    where.user = {
-      OR: [
-        { name: { contains: query.searchTerm, mode: 'insensitive' } },
-        { email: { contains: query.searchTerm, mode: 'insensitive' } },
-        { phone: { contains: query.searchTerm, mode: 'insensitive' } },
-      ],
-    };
   }
 
-  const [total, members] = await Promise.all([
-    this.prisma.messMembership.count({ where }),
-    this.prisma.messMembership.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { joined_at: sortOrder as 'asc' | 'desc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar_url: true,
-            phone: true,
-            role: true,
-          },
-        },
-        mess: {   // Very important: show which mess they belong to
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    }),
-  ]);
+  async getAllMembers(organizerId: string, query: MessFilterDto) {
+    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
+    const { page, limit, skip, sortOrder = 'desc' } = paginationHelper(paginationOptions);
 
-  return {
-    data: members,
-    meta: buildMeta(total, page, limit),
-  };
-}
+    const where: Prisma.MessMembershipWhereInput = {
+      mess: {
+        created_by: organizerId,   // Only messes owned by this organizer
+        is_active: true,
+      },
+      is_active: true,
+    };
+
+    // Search across user fields
+    if (query.searchTerm) {
+      where.user = {
+        OR: [
+          { name: { contains: query.searchTerm, mode: 'insensitive' } },
+          { email: { contains: query.searchTerm, mode: 'insensitive' } },
+          { phone: { contains: query.searchTerm, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    const [total, members] = await Promise.all([
+      this.prisma.messMembership.count({ where }),
+      this.prisma.messMembership.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { joined_at: sortOrder as 'asc' | 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar_url: true,
+              phone: true,
+              role: true,
+            },
+          },
+          mess: {   // Very important: show which mess they belong to
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      data: members,
+      meta: buildMeta(total, page, limit),
+    };
+  }
 }

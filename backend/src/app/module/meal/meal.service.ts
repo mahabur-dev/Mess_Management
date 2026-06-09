@@ -4,10 +4,18 @@ import { AttendanceStatus, MealName, MembershipRole, Prisma } from '@prisma/clie
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
 
 @Injectable()
 export class MealService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly monthlyBillService: MonthlyBillService,
+  ) { }
+
+  private async recalculateMealMonthBill(messId: string, date: Date) {
+    await this.monthlyBillService.recalculateMonthlyBills(messId, date);
+  }
 
   private async verifyMessAccess(
     messId: string,
@@ -55,16 +63,47 @@ export class MealService {
     }
 
     const targetMemberId = role === 'MEMBER' ? userId : (dto.memberId ?? userId);
-    return this.prisma.mealAttendance.upsert({
-      where: { meal_id_member_id: { meal_id: savedMeal.id, member_id: targetMemberId } },
+    // return this.prisma.mealAttendance.upsert({
+    //   where: { meal_id_member_id: { meal_id: savedMeal.id, member_id: targetMemberId } },
+    //   update: {
+    //     status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+    //     guests: dto.guests ?? 0,
+    //   },
+    //   create: {
+    //     meal_id: savedMeal.id,
+    //     member_id: targetMemberId,
+    //     status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+    //     guests: dto.guests ?? 0,
+    //   },
+    //   include: {
+    //     meal: {
+    //       include: {
+    //         creator: { select: { id: true, name: true } },
+    //         mess: { select: { id: true, name: true } },
+    //       },
+    //     },
+    //     member: { select: { id: true, name: true, email: true } },
+    //   },
+    // });
+    const attendance = await this.prisma.mealAttendance.upsert({
+      where: {
+        meal_id_member_id: {
+          meal_id: savedMeal.id,
+          member_id: targetMemberId,
+        },
+      },
       update: {
-        status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+        status:
+          dto.status ??
+          (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
         guests: dto.guests ?? 0,
       },
       create: {
         meal_id: savedMeal.id,
         member_id: targetMemberId,
-        status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+        status:
+          dto.status ??
+          (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
         guests: dto.guests ?? 0,
       },
       include: {
@@ -77,6 +116,11 @@ export class MealService {
         member: { select: { id: true, name: true, email: true } },
       },
     });
+
+    await this.recalculateMealMonthBill(dto.messId, savedMeal.scheduled_date);
+
+    return attendance;
+
   }
 
   async findAll(query: MealFilterDto) {
@@ -157,6 +201,35 @@ export class MealService {
       if (mess?.created_by !== userId) throw new HttpException('Forbidden: Not your mess', 403);
     }
 
+    // const updatedMeal = await this.prisma.meal.update({
+    //   where: { id },
+    //   data: {
+    //     scheduled_date: dto.date ? new Date(dto.date) : undefined,
+    //     status: dto.mealStatus,
+    //     is_locked: dto.mealStatus === 'LOCKED' ? true : undefined,
+    //   },
+    //   include: { creator: { select: { id: true, name: true } } },
+    // });
+    // if (dto.status || dto.guests !== undefined || dto.mealCount !== undefined) {
+    //   await this.prisma.mealAttendance.upsert({
+    //     where: { meal_id_member_id: { meal_id: id, member_id: userId } },
+    //     update: {
+    //       status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : undefined),
+    //       guests: dto.guests,
+    //     },
+    //     create: {
+    //       meal_id: id,
+    //       member_id: userId,
+    //       status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+    //       guests: dto.guests ?? 0,
+    //     },
+    //   });
+    // }
+    // return updatedMeal;
+
+    const oldMessId = meal.mess_id;
+    const oldDate = meal.scheduled_date;
+
     const updatedMeal = await this.prisma.meal.update({
       where: { id },
       data: {
@@ -166,21 +239,38 @@ export class MealService {
       },
       include: { creator: { select: { id: true, name: true } } },
     });
+
     if (dto.status || dto.guests !== undefined || dto.mealCount !== undefined) {
       await this.prisma.mealAttendance.upsert({
-        where: { meal_id_member_id: { meal_id: id, member_id: userId } },
+        where: {
+          meal_id_member_id: {
+            meal_id: id,
+            member_id: userId,
+          },
+        },
         update: {
-          status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : undefined),
+          status:
+            dto.status ??
+            (dto.mealCount === 0 ? AttendanceStatus.OFF : undefined),
           guests: dto.guests,
         },
         create: {
           meal_id: id,
           member_id: userId,
-          status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
+          status:
+            dto.status ??
+            (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
           guests: dto.guests ?? 0,
         },
       });
     }
+
+    await this.recalculateMealMonthBill(oldMessId, oldDate);
+
+    if (dto.date) {
+      await this.recalculateMealMonthBill(updatedMeal.mess_id, updatedMeal.scheduled_date);
+    }
+
     return updatedMeal;
   }
 
@@ -202,6 +292,9 @@ export class MealService {
     }
 
     await this.prisma.meal.delete({ where: { id } });
+
+    await this.recalculateMealMonthBill(meal.mess_id, meal.scheduled_date);
+
     return { message: 'Meal entry deleted successfully' };
   }
 

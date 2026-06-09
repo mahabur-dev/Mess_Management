@@ -8,11 +8,25 @@ import { ExpenseCategory, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
 
 @Injectable()
 export class ExpenseService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly monthlyBillService: MonthlyBillService,
+  ) { }
 
+  private async recalculateExpenseMonthBill(messId: string, date: Date) {
+    await this.monthlyBillService.recalculateMonthlyBills(messId, date);
+  }
+
+  private isSameBillMonth(dateA: Date, dateB: Date) {
+    return (
+      dateA.getFullYear() === dateB.getFullYear() &&
+      dateA.getMonth() === dateB.getMonth()
+    );
+  }
   private readonly expenseSelect = {
     id: true,
     category: true,
@@ -48,10 +62,11 @@ export class ExpenseService {
     throw new HttpException('Forbidden: Only managers can manage expenses', 403);
   }
 
+
   async create(userId: string, role: string, dto: CreateExpenseDto) {
     await this.verifyManagerAccess(dto.messId, userId, role);
 
-    return this.prisma.expense.create({
+    const expense = await this.prisma.expense.create({
       data: {
         mess_id: dto.messId,
         created_by: userId,
@@ -67,6 +82,10 @@ export class ExpenseService {
       },
       select: this.expenseSelect,
     });
+
+    await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
+
+    return expense;
   }
 
   async findAll(query: ExpenseFilterDto) {
@@ -146,12 +165,19 @@ export class ExpenseService {
   }
 
   async update(id: string, userId: string, role: string, dto: UpdateExpenseDto) {
-    const expense = await this.prisma.expense.findUnique({ where: { id } });
-    if (!expense) throw new HttpException('Expense not found', 404);
+    const expense = await this.prisma.expense.findUnique({
+      where: { id },
+    });
+
+    if (!expense) {
+      throw new HttpException('Expense not found', 404);
+    }
 
     await this.verifyManagerAccess(expense.mess_id, userId, role);
 
-    return this.prisma.expense.update({
+    const oldExpenseDate = expense.expense_date;
+
+    const updatedExpense = await this.prisma.expense.update({
       where: { id },
       data: {
         category: dto.category,
@@ -166,15 +192,39 @@ export class ExpenseService {
       },
       select: this.expenseSelect,
     });
+
+    await this.recalculateExpenseMonthBill(expense.mess_id, oldExpenseDate);
+
+    if (!this.isSameBillMonth(oldExpenseDate, updatedExpense.expense_date)) {
+      await this.recalculateExpenseMonthBill(
+        expense.mess_id,
+        updatedExpense.expense_date,
+      );
+    }
+
+    return updatedExpense;
   }
 
   async remove(id: string, userId: string, role: string) {
-    const expense = await this.prisma.expense.findUnique({ where: { id } });
-    if (!expense) throw new HttpException('Expense not found', 404);
+    const expense = await this.prisma.expense.findUnique({
+      where: { id },
+    });
+
+    if (!expense) {
+      throw new HttpException('Expense not found', 404);
+    }
 
     await this.verifyManagerAccess(expense.mess_id, userId, role);
 
-    await this.prisma.expense.delete({ where: { id } });
+    await this.prisma.expense.delete({
+      where: { id },
+    });
+
+    await this.recalculateExpenseMonthBill(
+      expense.mess_id,
+      expense.expense_date,
+    );
+
     return { message: 'Expense deleted successfully' };
   }
 

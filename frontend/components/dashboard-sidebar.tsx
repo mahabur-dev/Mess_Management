@@ -43,7 +43,7 @@ const managerItems = [
   { label: 'Members', href: '/dashboard/member_management', icon: Users },
   { label: 'Meal Sheet', href: '/dashboard/meals', icon: UtensilsCrossed },
   { label: 'Bazar/Expenses', href: '/dashboard/finance', icon: WalletCards },
-  { label: 'Monthly Bills', href: '/dashboard/reports', icon: ClipboardList },
+  { label: 'Monthly Bills', href: '/dashboard/monthly-bills', icon: ClipboardList },
   { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
   { label: 'Notices', href: '/dashboard/notices', icon: Bell },
   { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },

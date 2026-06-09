@@ -4,10 +4,34 @@ import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePaymentDto, PaymentFilterDto, ReviewPaymentDto } from './dto/payment.dto';
+import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
 
 @Injectable()
 export class PaymentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly monthlyBillService: MonthlyBillService,
+  ) { }
+
+  private async getPaymentRecalculateDate(payment: {
+    monthly_bill_id: string | null;
+    created_at: Date;
+  }) {
+    if (payment.monthly_bill_id) {
+      const bill = await this.prisma.monthlyBill.findUnique({
+        where: { id: payment.monthly_bill_id },
+        select: { month: true },
+      });
+
+      if (bill) return bill.month;
+    }
+
+    return payment.created_at;
+  }
+
+  private async recalculatePaymentMonthBill(messId: string, date: Date) {
+    await this.monthlyBillService.recalculateMonthlyBills(messId, date);
+  }
 
   private readonly paymentSelect = {
     id: true,
@@ -89,46 +113,83 @@ export class PaymentService {
     return this.findAll({ ...query, memberId: userId });
   }
 
+  // async review(id: string, userId: string, role: string, dto: ReviewPaymentDto) {
+  //   const payment = await this.prisma.payment.findUnique({ where: { id } });
+  //   if (!payment) throw new HttpException('Payment not found', 404);
+  //   await this.verifyManager(payment.mess_id, userId, role);
+  //   if (payment.status !== PaymentStatus.PENDING) throw new HttpException('Payment has already been reviewed', 400);
+
+  //   return this.prisma.$transaction(async (tx) => {
+  //     const updated = await tx.payment.update({
+  //       where: { id },
+  //       data: {
+  //         status: dto.status,
+  //         note: dto.note ?? payment.note,
+  //         approved_by: userId,
+  //         approved_at: new Date(),
+  //       },
+  //       select: this.paymentSelect,
+  //     });
+
+  //     if (dto.status === PaymentStatus.APPROVED && payment.monthly_bill_id) {
+  //       const approved = await tx.payment.aggregate({
+  //         where: { monthly_bill_id: payment.monthly_bill_id, status: PaymentStatus.APPROVED },
+  //         _sum: { amount: true },
+  //       });
+  //       const bill = await tx.monthlyBill.findUnique({ where: { id: payment.monthly_bill_id } });
+  //       if (bill) {
+  //         const paidAmount = Number(approved._sum.amount ?? 0);
+  //         const finalDue = Math.max(Number(bill.final_due) - paidAmount, 0);
+  //         await tx.monthlyBill.update({
+  //           where: { id: bill.id },
+  //           data: {
+  //             paid_amount: paidAmount,
+  //             balance: finalDue,
+  //             status: finalDue <= 0 ? 'PAID' : paidAmount > 0 ? 'PARTIAL' : 'PENDING',
+  //           },
+  //         });
+  //       }
+  //     }
+
+  //     return updated;
+  //   });
+  // }
   async review(id: string, userId: string, role: string, dto: ReviewPaymentDto) {
-    const payment = await this.prisma.payment.findUnique({ where: { id } });
-    if (!payment) throw new HttpException('Payment not found', 404);
-    await this.verifyManager(payment.mess_id, userId, role);
-    if (payment.status !== PaymentStatus.PENDING) throw new HttpException('Payment has already been reviewed', 400);
-
-    return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.payment.update({
-        where: { id },
-        data: {
-          status: dto.status,
-          note: dto.note ?? payment.note,
-          approved_by: userId,
-          approved_at: new Date(),
-        },
-        select: this.paymentSelect,
-      });
-
-      if (dto.status === PaymentStatus.APPROVED && payment.monthly_bill_id) {
-        const approved = await tx.payment.aggregate({
-          where: { monthly_bill_id: payment.monthly_bill_id, status: PaymentStatus.APPROVED },
-          _sum: { amount: true },
-        });
-        const bill = await tx.monthlyBill.findUnique({ where: { id: payment.monthly_bill_id } });
-        if (bill) {
-          const paidAmount = Number(approved._sum.amount ?? 0);
-          const finalDue = Math.max(Number(bill.final_due) - paidAmount, 0);
-          await tx.monthlyBill.update({
-            where: { id: bill.id },
-            data: {
-              paid_amount: paidAmount,
-              balance: finalDue,
-              status: finalDue <= 0 ? 'PAID' : paidAmount > 0 ? 'PARTIAL' : 'PENDING',
-            },
-          });
-        }
-      }
-
-      return updated;
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
     });
+
+    if (!payment) {
+      throw new HttpException('Payment not found', 404);
+    }
+
+    await this.verifyManager(payment.mess_id, userId, role);
+
+    if (payment.status !== PaymentStatus.PENDING) {
+      throw new HttpException('Payment has already been reviewed', 400);
+    }
+
+    const updatedPayment = await this.prisma.payment.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        note: dto.note ?? payment.note,
+        approved_by: dto.status === PaymentStatus.APPROVED ? userId : null,
+        approved_at: dto.status === PaymentStatus.APPROVED ? new Date() : null,
+      },
+      select: this.paymentSelect,
+    });
+
+    if (dto.status === PaymentStatus.APPROVED) {
+      const recalculateDate = await this.getPaymentRecalculateDate(payment);
+
+      await this.recalculatePaymentMonthBill(
+        payment.mess_id,
+        recalculateDate,
+      );
+    }
+
+    return updatedPayment;
   }
 
   private buildWhere(query: PaymentFilterDto): Prisma.PaymentWhereInput {

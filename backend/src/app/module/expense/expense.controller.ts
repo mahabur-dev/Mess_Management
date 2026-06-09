@@ -27,7 +27,7 @@ export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
   @ApiOperation({ summary: 'Create an expense (Manager/Admin)' })
   async create(@Req() req: Request, @Body() dto: CreateExpenseDto) {
     const data = await this.expenseService.create(

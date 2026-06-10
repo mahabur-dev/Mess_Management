@@ -175,7 +175,7 @@ export class MealService {
         creator: { select: { id: true, name: true } },
         mess: { select: { id: true, name: true } },
         attendances: {
-          include: { member: { select: { id: true, name: true, email: true, guests: true } } },
+          include: { member: { select: { id: true, name: true, email: true } } },
         },
       },
     });

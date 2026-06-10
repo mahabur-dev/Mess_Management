@@ -24,9 +24,9 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen bg-[#f8fbff]">
+    <div className="dashboard-theme flex h-screen">
       <DashboardSidebar />
-      <main className="flex-1 overflow-auto md:ml-[248px]">
+      <main className="dashboard-main flex-1 overflow-auto md:ml-[248px]">
         {children}
       </main>
     </div>

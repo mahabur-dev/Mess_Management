@@ -8,10 +8,9 @@ import { useState } from 'react'
 
 const links = [
   { label: 'Home', href: '/' },
-  { label: 'Features', href: '#features' },
-  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Dashboard', href: '#features' },
   { label: 'Pricing', href: '#pricing' },
-  { label: 'About Us', href: '#about' },
+  { label: 'Why Choose', href: '#about' },
   { label: 'Contact', href: '#contact' },
 ]
 
@@ -20,13 +19,13 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[#eef2f8] bg-white/95 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-[#e4eaf4] bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-[#6f3df4] to-[#2f5bf6] text-sm font-black text-white shadow-md">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#005bbb] text-sm font-black text-white shadow-md">
             M
           </span>
-          <span className="text-xl font-black tracking-tight text-[#0a1433]">Mess.</span>
+          <span className="text-xl font-black tracking-tight text-[#07143d]">MessFlow</span>
         </Link>
 
         <div className="hidden items-center gap-2 lg:flex">
@@ -34,7 +33,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-lg px-5 py-3 text-sm font-bold text-[#0a1433] transition hover:bg-[#f3f0ff] hover:text-[#5d36e8]"
+              className="rounded-lg px-5 py-3 text-sm font-bold text-[#07143d] transition hover:bg-[#e7f1ff] hover:text-[#005bbb]"
             >
               {link.label}
             </Link>
@@ -42,10 +41,10 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" onClick={() => router.push('/login')} className="font-bold text-[#0a1433]">
+          <Button variant="ghost" onClick={() => router.push('/login')} className="font-bold text-[#07143d]">
             Login
           </Button>
-          <Button onClick={() => router.push('/register')} className="gradient-button h-11 rounded-lg px-6 font-bold">
+          <Button onClick={() => router.push('/register')} className="h-11 rounded-lg bg-[#005bbb] px-6 font-bold text-white hover:bg-[#004fa3]">
             Get Started
           </Button>
         </div>
@@ -68,7 +67,7 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg px-4 py-3 text-sm font-bold text-[#0a1433] hover:bg-[#f3f0ff]"
+                className="rounded-lg px-4 py-3 text-sm font-bold text-[#07143d] hover:bg-[#e7f1ff]"
               >
                 {link.label}
               </Link>
@@ -76,7 +75,7 @@ export function Navbar() {
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <Button variant="outline" onClick={() => router.push('/login')}>Login</Button>
-            <Button className="gradient-button" onClick={() => router.push('/register')}>Get Started</Button>
+            <Button className="bg-[#005bbb] text-white hover:bg-[#004fa3]" onClick={() => router.push('/register')}>Get Started</Button>
           </div>
         </div>
       )}

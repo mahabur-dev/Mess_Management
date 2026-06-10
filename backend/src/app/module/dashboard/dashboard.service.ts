@@ -168,6 +168,8 @@ export class DashboardService {
     this.prisma.complaint.count({ where: { mess_id: messId, status: { in: ['PENDING', 'PROCESSING'] } } }),
   ]);
 
+  console.log(todayMeals);
+
   const todayTotalMeals = todayMeals._count._all + Number(todayMeals._sum.guests ?? 0);
   const totalMeals = monthlyMealAttendances._count._all + Number(monthlyMealAttendances._sum.guests ?? 0);
 

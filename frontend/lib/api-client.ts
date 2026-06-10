@@ -203,10 +203,15 @@ class ApiClient {
     }
 
     const token = this.getToken()
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...options.headers,
+    const headers: HeadersInit = {}
+    
+    // Only set Content-Type for non-FormData requests
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json'
     }
+    
+    Object.assign(headers, options.headers)
+    
     const requestHeaders = headers as Record<string, string>
     if (token) requestHeaders.Authorization = `Bearer ${token}`
 
@@ -274,6 +279,20 @@ class ApiClient {
 
   getProfile(signal?: AbortSignal) {
     return this.request<User>('/users/profile', { signal })
+  }
+
+  updateProfile(data: FormData) {
+    return this.request<User>('/users/profile', {
+      method: 'PATCH',
+      body: data,
+    })
+  }
+
+  changePassword(oldPassword: string, newPassword: string) {
+    return this.request<{ message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ oldPassword, newPassword }),
+    })
   }
 
   getUsers(params?: QueryParams) {
@@ -350,6 +369,9 @@ class ApiClient {
 
   createMeal(data: { messId: string; memberId?: string; mealName: MealName; status: AttendanceStatus; guests?: number; date?: string; mealCount?: number }) {
     return this.request('/meal', { method: 'POST', body: JSON.stringify({ mealCount: data.status === 'ON' ? 1 : 0, ...data }) })
+  }
+  getMyMeals(params?: QueryParams) {
+    return this.request('/meal/my', { params })
   }
 
   getMealsByMess(messId: string, params?: QueryParams) {

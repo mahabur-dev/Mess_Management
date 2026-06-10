@@ -16,6 +16,8 @@ async function bootstrap() {
 
   app.use('/api/v1/webhook', express.raw({ type: 'application/json' }));
 
+  app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
   app.use(cookieParser());
   // app.enableCors({
   //   origin: '*',

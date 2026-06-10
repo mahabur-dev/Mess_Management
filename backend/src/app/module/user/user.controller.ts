@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Put,
   Query,
   Req,
   UploadedFile,

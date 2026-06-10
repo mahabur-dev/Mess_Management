@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 interface DashboardHeaderProps {
   title: string
@@ -20,6 +21,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ title, description }: DashboardHeaderProps) {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const [imageError, setImageError] = useState(false)
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-[#f8fbff]/92 backdrop-blur-xl">
@@ -46,9 +48,18 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-10 rounded-lg bg-white px-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#6f3df4] to-[#2f5bf6] text-xs font-black text-white">
-                  {user?.name?.charAt(0).toUpperCase() || 'M'}
-                </span>
+                {user?.avatar_url && !imageError ? (
+                  <img
+                    src={user.avatar_url}
+                    alt={user.name}
+                    className="h-7 w-7 rounded-full object-cover"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#6f3df4] to-[#2f5bf6] text-xs font-black text-white">
+                    {user?.name?.charAt(0).toUpperCase() || 'M'}
+                  </span>
+                )}
                 <span className="hidden max-w-[120px] truncate px-2 text-sm font-bold sm:inline">{user?.name}</span>
                 <ChevronDown size={15} />
               </Button>

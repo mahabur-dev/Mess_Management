@@ -62,9 +62,9 @@ const mealData = [
 
 const pieData = [
   { name: 'Food & Groceries', value: 65, color: '#2f80ed' },
-  { name: 'Utilities', value: 15, color: '#6f3df4' },
-  { name: 'Rent', value: 10, color: '#b642d9' },
-  { name: 'Others', value: 10, color: '#ff4f8a' },
+  { name: 'Utilities', value: 15, color: '#58d68d' },
+  { name: 'Rent', value: 10, color: '#ffb84d' },
+  { name: 'Others', value: 10, color: '#ff4d4f' },
 ]
 
 const quickActions = [
@@ -96,30 +96,46 @@ function StatCard({
   iconColor: string
 }) {
   return (
-    <Card className="group relative overflow-hidden rounded-2xl border border-violet-100/80 bg-white p-4 shadow-[0_10px_35px_rgba(36,21,120,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-violet-200 hover:shadow-[0_18px_45px_rgba(111,61,244,0.16)]">
-      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${accent}`} />
-
-      <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-violet-100/70 blur-2xl transition-all duration-300 group-hover:bg-violet-200" />
-      <div className="absolute -bottom-10 -left-10 h-20 w-20 rounded-full bg-indigo-100/60 blur-2xl" />
-
-      <div className="relative flex items-start justify-between gap-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconBg} shadow-sm`}>
-          <Icon size={20} className={iconColor} strokeWidth={2.4} />
+    <Card className={`dashboard-solid-card group relative min-h-[92px] overflow-hidden rounded-lg border border-white/70 bg-gradient-to-r ${accent} p-4 text-white shadow-[0_18px_34px_rgba(65,103,153,0.16)] transition-all duration-300 hover:-translate-y-1`}>
+      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15 blur-2xl transition group-hover:bg-white/25" />
+      <div className="relative flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-black uppercase tracking-wide text-white">
+            {label}
+          </p>
+          <p className="mt-2 text-2xl font-black leading-none tracking-tight text-white">
+            {value}
+          </p>
         </div>
-
-        <span className="rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5 text-[10px] font-black text-[#6f3df4]">
-          {badge}
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white shadow-[0_8px_18px_rgba(0,0,0,0.08)]">
+          <Icon size={20} strokeWidth={2.4} />
         </span>
       </div>
+    </Card>
+  )
+}
 
-      <div className="relative mt-3">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-          {label}
-        </p>
-
-        <p className="mt-1.5 text-xl font-black tracking-tight text-[#0a1433]">
-          {value}
-        </p>
+function MiniStatCard({
+  label,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  label: string
+  value: string | number
+  icon: ElementType
+  tone: string
+}) {
+  return (
+    <Card className={`dashboard-solid-card min-h-[92px] rounded-lg border border-white/70 ${tone} p-4 text-white shadow-[0_18px_34px_rgba(65,103,153,0.16)]`}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-black uppercase tracking-wide text-white">{label}</p>
+          <p className="mt-2 text-2xl font-black leading-none">{value}</p>
+        </div>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 shadow-[0_8px_18px_rgba(0,0,0,0.08)]">
+          <Icon size={19} />
+        </div>
       </div>
     </Card>
   )
@@ -329,7 +345,7 @@ export default function DashboardPage() {
 
       <div className="p-4 sm:p-6 lg:p-8">
         {!loadingData && !activeMess && user.role !== 'ADMIN' && (
-          <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-violet-100 bg-white p-5 shadow-[0_10px_35px_rgba(36,21,120,0.08)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="app-card mb-6 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-black text-[#0a1433]">No approved mess found</h2>
               <p className="text-sm font-semibold text-muted-foreground">
@@ -346,8 +362,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map(([label, value, badge, Icon, accent, iconBg, iconColor]) => (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {stats.slice(0, 6).map(([label, value, badge, Icon, accent, iconBg, iconColor]) => (
             <StatCard
               key={label}
               label={label}
@@ -361,23 +377,35 @@ export default function DashboardPage() {
           ))}
         </div>
 
+        <div className="mt-5 grid gap-5 sm:grid-cols-3">
+          {stats.slice(6, 9).map(([label, value, , Icon], index) => (
+            <MiniStatCard
+              key={label}
+              label={label}
+              value={value}
+              icon={Icon}
+              tone={['bg-[#ffb84d]', 'bg-[#58d68d]', 'bg-[#ff4d4f]'][index]}
+            />
+          ))}
+        </div>
+
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_.85fr_.7fr]">
-          <Card className="rounded-2xl border border-violet-100 bg-white p-5 shadow-[0_10px_35px_rgba(36,21,120,0.08)]">
-            <h3 className="mb-5 text-sm font-black text-[#0a1433]">Monthly Overview</h3>
+          <Card className="app-card p-5">
+            <h3 className="mb-5 text-sm font-black text-[#172554]">Monthly Overview</h3>
 
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={lineData}>
-                <CartesianGrid stroke="#eef2f8" vertical={false} />
+                <CartesianGrid stroke="#d9e9fb" vertical={false} />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} />
                 <YAxis axisLine={false} tickLine={false} fontSize={11} />
-                <Line type="monotone" dataKey="income" stroke="#31c77f" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="expense" stroke="#ff4f8a" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="income" stroke="#2f80ed" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="expense" stroke="#58d68d" strokeWidth={3} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card className="rounded-2xl border border-violet-100 bg-white p-5 shadow-[0_10px_35px_rgba(36,21,120,0.08)]">
-            <h3 className="mb-5 text-sm font-black text-[#0a1433]">Expense Breakdown</h3>
+          <Card className="app-card p-5">
+            <h3 className="mb-5 text-sm font-black text-[#172554]">Expense Breakdown</h3>
 
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
@@ -405,8 +433,8 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card className="rounded-2xl border border-violet-100 bg-white p-5 shadow-[0_10px_35px_rgba(36,21,120,0.08)]">
-            <h3 className="mb-4 text-sm font-black text-[#0a1433]">Recent Notices</h3>
+          <Card className="app-card p-5">
+            <h3 className="mb-4 text-sm font-black text-[#172554]">Recent Notices</h3>
 
             <div className="space-y-3">
               {(messDashboard?.notices?.length
@@ -430,14 +458,14 @@ export default function DashboardPage() {
               ).map((notice) => (
                 <div
                   key={notice.id}
-                  className="flex items-start gap-3 rounded-xl border border-violet-100 bg-white p-3 transition hover:bg-violet-50/60"
+                  className="flex items-start gap-3 rounded-xl border border-[#d8e6f8] bg-white/70 p-3 transition hover:bg-[#edf5ff]"
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#efe9ff] text-[#6f3df4]">
                     <Bell size={15} />
                   </span>
 
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-[#0a1433]">{notice.title}</p>
+                    <p className="truncate text-sm font-black text-[#172554]">{notice.title}</p>
                     <p className="text-xs font-semibold text-muted-foreground">{notice.type}</p>
                   </div>
                 </div>
@@ -447,35 +475,35 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_.75fr]">
-          <Card className="rounded-2xl border border-violet-100 bg-white p-5 shadow-[0_10px_35px_rgba(36,21,120,0.08)]">
-            <h3 className="mb-4 text-sm font-black text-[#0a1433]">Meal Count This Week</h3>
+          <Card className="app-card p-5">
+            <h3 className="mb-4 text-sm font-black text-[#172554]">Meal Count This Week</h3>
 
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={mealData}>
                 <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} />
                 <YAxis axisLine={false} tickLine={false} fontSize={11} />
-                <Bar dataKey="breakfast" fill="#6f3df4" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="lunch" fill="#2787f5" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="dinner" fill="#ffb21a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="breakfast" fill="#2f80ed" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="lunch" fill="#58d68d" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="dinner" fill="#ffb84d" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card className="rounded-2xl border border-violet-100 bg-white p-5 shadow-[0_10px_35px_rgba(36,21,120,0.08)]">
-            <h3 className="mb-5 text-sm font-black text-[#0a1433]">Quick Actions</h3>
+          <Card className="app-card p-5">
+            <h3 className="mb-5 text-sm font-black text-[#172554]">Quick Actions</h3>
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-2">
               {quickActions.map(([label, Icon, href]) => (
                 <button
                   key={label}
                   onClick={() => router.push(href)}
-                  className="group rounded-xl border border-violet-100 bg-white p-4 text-center shadow-[0_8px_25px_rgba(36,21,120,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#c8befb] hover:bg-[#f7f4ff] hover:shadow-[0_14px_35px_rgba(111,61,244,0.14)]"
+                  className="group rounded-xl border border-[#d8e6f8] bg-white/70 p-4 text-center shadow-[0_8px_25px_rgba(65,103,153,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:bg-[#edf5ff]"
                 >
-                  <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#efe9ff] text-[#6f3df4] transition group-hover:bg-[#6f3df4] group-hover:text-white">
+                  <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] transition group-hover:bg-[#2f80ed] group-hover:text-white">
                     <Icon size={20} />
                   </span>
 
-                  <span className="text-xs font-black text-[#0a1433]">{label}</span>
+                  <span className="text-xs font-black text-[#172554]">{label}</span>
                 </button>
               ))}
             </div>

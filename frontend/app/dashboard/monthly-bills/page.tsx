@@ -178,52 +178,44 @@ export default function MonthlyBillPage() {
         </Card>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="app-card p-5">
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#efe9ff] text-[#6f3df4]">
-              <BadgeDollarSign size={22} />
+          <Card className="dashboard-solid-card solid-red">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Total Due</p>
+                <p className="solid-value mt-2">{money(totalDue)}</p>
+              </div>
+              <span className="solid-icon"><BadgeDollarSign size={22} /></span>
             </div>
-            <p className="text-sm font-bold text-muted-foreground">
-              Total Due
-            </p>
-            <p className="mt-2 text-2xl font-black text-[#0a1433]">
-              {money(totalDue)}
-            </p>
           </Card>
 
-          <Card className="app-card p-5">
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8fff2] text-[#22b66f]">
-              <CreditCard size={22} />
+          <Card className="dashboard-solid-card solid-green">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Paid Amount</p>
+                <p className="solid-value mt-2">{money(paidAmount)}</p>
+              </div>
+              <span className="solid-icon"><CreditCard size={22} /></span>
             </div>
-            <p className="text-sm font-bold text-muted-foreground">
-              Paid Amount
-            </p>
-            <p className="mt-2 text-2xl font-black text-[#0a1433]">
-              {money(paidAmount)}
-            </p>
           </Card>
 
-          <Card className="app-card p-5">
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff3df] text-[#f59e0b]">
-              <UtensilsCrossed size={22} />
+          <Card className="dashboard-solid-card solid-orange">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Total Meals</p>
+                <p className="solid-value mt-2">{totalMeals}</p>
+              </div>
+              <span className="solid-icon"><UtensilsCrossed size={22} /></span>
             </div>
-            <p className="text-sm font-bold text-muted-foreground">
-              Total Meals
-            </p>
-            <p className="mt-2 text-2xl font-black text-[#0a1433]">
-              {totalMeals}
-            </p>
           </Card>
 
-          <Card className="app-card p-5">
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f2ff] text-[#2f80ed]">
-              <ReceiptText size={22} />
+          <Card className="dashboard-solid-card solid-blue">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Food Bill</p>
+                <p className="solid-value mt-2">{money(totalFoodBill)}</p>
+              </div>
+              <span className="solid-icon"><ReceiptText size={22} /></span>
             </div>
-            <p className="text-sm font-bold text-muted-foreground">
-              Food Bill
-            </p>
-            <p className="mt-2 text-2xl font-black text-[#0a1433]">
-              {money(totalFoodBill)}
-            </p>
           </Card>
         </div>
 

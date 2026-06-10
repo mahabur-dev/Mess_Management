@@ -24,30 +24,30 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
   const [imageError, setImageError] = useState(false)
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-[#f8fbff]/92 backdrop-blur-xl">
-      <div className="flex min-h-[76px] flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+    <header className="dashboard-header sticky top-0 z-20">
+      <div className="flex min-h-[72px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="pl-12 md:pl-0">
-          <h1 className="text-2xl font-black tracking-tight text-[#0a1433] sm:text-3xl">{title}</h1>
-          {description && <p className="mt-1 text-sm font-medium text-muted-foreground">{description}</p>}
+          <h1 className="text-2xl font-black tracking-tight text-white sm:text-[28px]">{title}</h1>
+          {description && <p className="mt-1 text-sm font-semibold text-white/70">{description}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" className="hidden h-10 rounded-lg border-border bg-white font-bold sm:flex">
+          <Button variant="outline" className="hidden h-11 rounded-xl border-border bg-white font-bold sm:flex">
             <CalendarDays size={16} className="mr-2 text-[#667085]" />
             May 19, 2026
           </Button>
-          <Button className="gradient-button h-10 rounded-lg font-bold">
+          <Button className="gradient-button h-11 rounded-xl font-bold">
             <Plus size={16} className="mr-2" />
             Quick Add
           </Button>
-          <Button size="icon" variant="outline" className="relative h-10 w-10 rounded-lg bg-white">
+          <Button size="icon" variant="outline" className="relative h-11 w-11 rounded-xl bg-white">
             <Bell size={18} />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff2e55]" />
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-10 rounded-lg bg-white px-2">
+              <Button variant="outline" className="h-11 rounded-xl bg-white px-2">
                 {user?.avatar_url && !imageError ? (
                   <img
                     src={user.avatar_url}

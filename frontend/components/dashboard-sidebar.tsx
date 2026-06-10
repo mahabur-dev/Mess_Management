@@ -70,18 +70,19 @@ export function DashboardSidebar() {
     user?.role === 'ADMIN' ? adminItems : user?.role === 'MANAGER' || user?.role === 'ORGANIZER' ? managerItems : memberItems
 
   const content = (
-    // <aside className="flex h-full w-[248px] flex-col bg-gradient-to-b from-[#16106a] via-[#1e1776] to-[#17105e] text-white shadow-2xl">
-    <aside className="flex h-full w-[248px] flex-col overflow-hidden bg-gradient-to-b from-[#16106a] via-[#1e1776] to-[#17105e] text-white shadow-2xl">
-      <div className="flex h-[76px] items-center px-7">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-sm font-black text-[#6539ef]">M</span>
-          <span className="text-xl font-black">Mess.</span>
+    <aside className="dashboard-sidebar flex h-full w-[248px] flex-col overflow-hidden">
+      <div className="flex h-[92px] items-center px-7">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2f80ed] text-sm font-black text-white shadow-[0_14px_28px_rgba(47,128,237,0.28)]">M</span>
+          <span>
+            <span className="block text-base font-black tracking-tight text-[#172554]">Mess.</span>
+            <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-[#6b7a99]">Dashboard</span>
+          </span>
         </Link>
       </div>
 
-      {/* <nav className="flex-1 overflow-y-auto px-4 py-2"> */}
       <nav className="sidebar-scroll flex-1 overflow-y-auto px-4 py-2 pr-2">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {sidebarItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
@@ -90,10 +91,10 @@ export function DashboardSidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className={`flex h-11 items-center gap-3 rounded-lg px-4 text-sm font-bold transition ${
+                className={`flex h-12 items-center gap-3 rounded-xl px-4 text-sm font-bold transition ${
                   isActive
-                    ? 'bg-gradient-to-r from-[#7442f4] to-[#5e38e8] text-white shadow-lg shadow-violet-950/20'
-                    : 'text-white/82 hover:bg-white/10 hover:text-white'
+                    ? 'bg-[#2f80ed] text-white shadow-[0_15px_30px_rgba(47,128,237,0.28)]'
+                    : 'text-[#53617d] hover:bg-[#edf5ff] hover:text-[#2f80ed]'
                 }`}
               >
                 <Icon size={17} />
@@ -104,14 +105,14 @@ export function DashboardSidebar() {
         </div>
       </nav>
 
-      <div className="border-t border-white/10 p-5">
-        <div className="mb-4 flex items-center gap-3 rounded-lg bg-white/5 p-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-black text-[#5636e9]">
+      <div className="border-t border-[#d8e6f8] p-5">
+        <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#edf5ff] p-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-black text-[#2f80ed] shadow-sm">
             {user?.name?.charAt(0).toUpperCase() || 'M'}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-black">{user?.name || 'Mess User'}</p>
-            <p className="truncate text-xs text-white/62">{user?.role || 'Member'}</p>
+            <p className="truncate text-sm font-black text-[#172554]">{user?.name || 'Mess User'}</p>
+            <p className="truncate text-xs font-semibold text-[#7a8aaa]">{user?.role || 'Member'}</p>
           </div>
         </div>
         <Button
@@ -119,7 +120,7 @@ export function DashboardSidebar() {
             logout()
             router.push('/login')
           }}
-          className="h-10 w-full rounded-lg bg-white/10 text-white hover:bg-white/15"
+          className="h-11 w-full rounded-xl bg-[#2f80ed] text-white hover:bg-[#1f6fd6]"
         >
           <LogOut size={16} className="mr-2" />
           Logout
@@ -132,7 +133,7 @@ export function DashboardSidebar() {
     <>
       <button
         type="button"
-        className="fixed left-4 top-4 z-40 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white shadow md:hidden"
+        className="fixed left-4 top-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-white text-[#172554] shadow md:hidden"
         onClick={() => setIsOpen(true)}
         aria-label="Open menu"
       >

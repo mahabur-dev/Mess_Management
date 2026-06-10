@@ -283,55 +283,55 @@ export default function FinancePage() {
         )}
 
         {/* ── Summary Cards ── */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <Card className="app-card p-4 sm:p-5">
-            <WalletCards className="mb-3 text-[#6f3df4]" />
-            <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground sm:text-xs">
-              Final Due
-            </p>
-            <p className="mt-1.5 text-lg font-black text-[#0a1433] sm:text-2xl">
-              {money(totalDue)}
-            </p>
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <Card className="dashboard-solid-card solid-blue">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Final Due</p>
+                <p className="solid-value mt-2">{money(totalDue)}</p>
+              </div>
+              <span className="solid-icon"><WalletCards size={21} /></span>
+            </div>
           </Card>
 
-          <Card className="app-card p-4 sm:p-5">
-            <ReceiptText className="mb-3 text-[#22b66f]" />
-            <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground sm:text-xs">
-              Paid
-            </p>
-            <p className="mt-1.5 text-lg font-black text-[#0a1433] sm:text-2xl">
-              {money(paid)}
-            </p>
+          <Card className="dashboard-solid-card solid-green">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Paid</p>
+                <p className="solid-value mt-2">{money(paid)}</p>
+              </div>
+              <span className="solid-icon"><ReceiptText size={21} /></span>
+            </div>
           </Card>
 
-          <Card className="app-card p-4 sm:p-5">
-            <ShoppingCart className="mb-3 text-[#f59e0b]" />
-            <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground sm:text-xs">
-              Food Bazar
-            </p>
-            <p className="mt-1.5 text-lg font-black text-[#0a1433] sm:text-2xl">
-              {money(foodExpense)}
-            </p>
+          <Card className="dashboard-solid-card solid-orange">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Food Bazar</p>
+                <p className="solid-value mt-2">{money(foodExpense)}</p>
+              </div>
+              <span className="solid-icon"><ShoppingCart size={21} /></span>
+            </div>
           </Card>
 
-          <Card className="app-card p-4 sm:p-5">
-            <BadgeDollarSign className="mb-3 text-[#ef4444]" />
-            <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground sm:text-xs">
-              Extra
-            </p>
-            <p className="mt-1.5 text-lg font-black text-[#0a1433] sm:text-2xl">
-              {money(extraExpense)}
-            </p>
+          <Card className="dashboard-solid-card solid-red">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Extra</p>
+                <p className="solid-value mt-2">{money(extraExpense)}</p>
+              </div>
+              <span className="solid-icon"><BadgeDollarSign size={21} /></span>
+            </div>
           </Card>
 
-          <Card className="app-card col-span-2 p-4 sm:col-span-2 sm:p-5 xl:col-span-1">
-            <ClipboardList className="mb-3 text-[#2f80ed]" />
-            <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground sm:text-xs">
-              Total Expense
-            </p>
-            <p className="mt-1.5 text-lg font-black text-[#0a1433] sm:text-2xl">
-              {money(totalExpense)}
-            </p>
+          <Card className="dashboard-solid-card solid-cyan">
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div>
+                <p className="solid-label">Total Expense</p>
+                <p className="solid-value mt-2">{money(totalExpense)}</p>
+              </div>
+              <span className="solid-icon"><ClipboardList size={21} /></span>
+            </div>
           </Card>
         </div>
 

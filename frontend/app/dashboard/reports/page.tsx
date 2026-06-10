@@ -32,10 +32,10 @@ export default function ReportsPage() {
   }, [user?.role])
 
   const cards = [
-    ['Daily Meal Report', dashboard?.todayTotalMeals ?? 0, UtensilsCrossed, 'bg-[#efe9ff]', 'text-[#6f3df4]'],
-    ['Monthly Expense Report', `৳ ${Number(dashboard?.currentMonthTotalBazar ?? 0).toLocaleString()}`, WalletCards, 'bg-[#fff3df]', 'text-[#f59e0b]'],
-    ['Member Due Report', `৳ ${Number(dashboard?.totalDue ?? 0).toLocaleString()}`, ClipboardList, 'bg-[#ffe8f0]', 'text-[#f43f7f]'],
-    ['Payment Report', dashboard?.pendingPayments ?? 0, CreditCard, 'bg-[#e8f2ff]', 'text-[#2f80ed]'],
+    ['Daily Meal Report', dashboard?.todayTotalMeals ?? 0, UtensilsCrossed, 'solid-blue'],
+    ['Monthly Expense Report', `৳ ${Number(dashboard?.currentMonthTotalBazar ?? 0).toLocaleString()}`, WalletCards, 'solid-orange'],
+    ['Member Due Report', `৳ ${Number(dashboard?.totalDue ?? 0).toLocaleString()}`, ClipboardList, 'solid-red'],
+    ['Payment Report', dashboard?.pendingPayments ?? 0, CreditCard, 'solid-green'],
   ] as const
 
   return (
@@ -43,13 +43,15 @@ export default function ReportsPage() {
       <DashboardHeader title="Reports" description={mess ? `${mess.name} reporting center` : 'Reports and analytics'} />
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {cards.map(([label, value, Icon, bg, color]) => (
-            <Card key={label} className="app-card p-5">
-              <span className={`mb-4 flex h-11 w-11 items-center justify-center rounded-lg ${bg}`}>
-                <Icon size={21} className={color} />
-              </span>
-              <p className="text-sm font-bold text-muted-foreground">{label}</p>
-              <p className="mt-2 text-2xl font-black">{value}</p>
+          {cards.map(([label, value, Icon, tone]) => (
+            <Card key={label} className={`dashboard-solid-card ${tone}`}>
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div>
+                  <p className="solid-label">{label}</p>
+                  <p className="solid-value mt-2">{value}</p>
+                </div>
+                <span className="solid-icon"><Icon size={21} /></span>
+              </div>
             </Card>
           ))}
         </div>

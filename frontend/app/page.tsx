@@ -1,6 +1,7 @@
 'use client'
 
 import { Navbar } from '@/components/navbar'
+import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import {
   BarChart3,
@@ -14,18 +15,11 @@ import {
   TrendingUp,
   UtensilsCrossed,
   Users,
-  WalletCards,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
   Bar,
   BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -38,32 +32,6 @@ const mealData = [
   { day: 'Thu', breakfast: 75, lunch: 56, dinner: 70 },
   { day: 'Sat', breakfast: 45, lunch: 68, dinner: 100 },
   { day: 'Sun', breakfast: 70, lunch: 38, dinner: 70 },
-]
-
-const lineData = [
-  { day: '01 May', income: 35, expense: 16 },
-  { day: '05 May', income: 59, expense: 30 },
-  { day: '10 May', income: 31, expense: 33 },
-  { day: '15 May', income: 38, expense: 56 },
-  { day: '20 May', income: 50, expense: 22 },
-  { day: '25 May', income: 31, expense: 36 },
-  { day: '30 May', income: 46, expense: 31 },
-]
-
-const pieData = [
-  { name: 'Food', value: 65, color: '#2f80ed' },
-  { name: 'Utilities', value: 15, color: '#6f3df4' },
-  { name: 'Rent', value: 10, color: '#b642d9' },
-  { name: 'Others', value: 10, color: '#ff4f8a' },
-]
-
-const features = [
-  { icon: UtensilsCrossed, title: 'Meal Management', text: 'Plan & track meals easily', color: 'text-[#6f3df4]', bg: 'bg-[#efe9ff]' },
-  { icon: Users, title: 'Member Management', text: 'Add & manage members', color: 'text-[#22b66f]', bg: 'bg-[#e8fff2]' },
-  { icon: WalletCards, title: 'Finance Tracking', text: 'Track income & expenses', color: 'text-[#f59e0b]', bg: 'bg-[#fff3df]' },
-  { icon: ShoppingCart, title: 'Shopping Lists', text: 'Create & manage lists', color: 'text-[#f43f7f]', bg: 'bg-[#ffe8f0]' },
-  { icon: CheckCircle2, title: 'Attendance Tracking', text: 'Track attendance in real-time', color: 'text-[#2f80ed]', bg: 'bg-[#e8f2ff]' },
-  { icon: BarChart3, title: 'Reports & Analytics', text: 'Get insights & reports', color: 'text-[#6f3df4]', bg: 'bg-[#efe9ff]' },
 ]
 
 function MiniSidebar() {
@@ -178,62 +146,270 @@ function ProductPreview() {
   )
 }
 
-function DashboardStrip() {
+function SystemFeaturesSection() {
+  const features = [
+    {
+      icon: UtensilsCrossed,
+      title: 'Meal Operations',
+      text: 'Members can turn meals on or off, add guest meals, and managers can review the full daily meal sheet.',
+      tone: 'bg-[#e7f1ff] text-[#005bbb]',
+    },
+    {
+      icon: Users,
+      title: 'Member & Role Control',
+      text: 'Invite members, assign roles, manage active users, and keep every mess member organized from one place.',
+      tone: 'bg-[#e9fff3] text-[#16a565]',
+    },
+    {
+      icon: ShoppingCart,
+      title: 'Bazar & Expense Tracking',
+      text: 'Record daily bazar items, categorize expenses, and keep food costs transparent for the whole mess.',
+      tone: 'bg-[#fff4df] text-[#d98a00]',
+    },
+    {
+      icon: CreditCard,
+      title: 'Payments & Monthly Bills',
+      text: 'Generate monthly bills from meals, rent, utilities, deposits, and approved payments with less manual work.',
+      tone: 'bg-[#fff0f0] text-[#ff4d4f]',
+    },
+    {
+      icon: Bell,
+      title: 'Notices & Requests',
+      text: 'Publish important notices, manage complaints, and keep approvals clear for managers and members.',
+      tone: 'bg-[#f0edff] text-[#6f3df4]',
+    },
+    {
+      icon: BarChart3,
+      title: 'Reports & Insights',
+      text: 'Understand meals, dues, payments, and mess performance with clean summary dashboards and reports.',
+      tone: 'bg-[#e8fbff] text-[#1492c8]',
+    },
+  ]
+
   return (
-    <section className="border-y border-border bg-white">
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[210px_1fr] lg:px-8">
-        <MiniSidebar />
-        <div className="min-w-0">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-black text-[#0a1433]">Dashboard</h2>
-              <p className="text-sm font-semibold text-muted-foreground">Overview of your mess management system</p>
-            </div>
-            <Button className="gradient-button rounded-lg font-bold">Quick Add</Button>
+    <section id="features" className="bg-white px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#005bbb]">System Features</p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">
+            Professional tools for every mess workflow
+          </h2>
+          <p className="mt-4 text-base font-medium leading-7 text-[#667085]">
+            MessFlow brings daily operations, member coordination, billing, shopping, and reporting into one clear
+            management experience.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {features.map((feature, index) => {
+            const Icon = feature.icon
+            return (
+              <div
+                key={feature.title}
+                className="group relative overflow-hidden rounded-xl border border-[#dbe6f5] bg-white p-6 shadow-[0_16px_45px_rgba(45,88,139,0.08)] transition hover:-translate-y-1 hover:border-[#b7d5ff] hover:shadow-[0_22px_55px_rgba(47,128,237,0.14)]"
+              >
+                <div className="absolute right-5 top-5 text-5xl font-black text-[#eef5ff]">0{index + 1}</div>
+                <span className={`relative flex h-12 w-12 items-center justify-center rounded-xl ${feature.tone}`}>
+                  <Icon size={22} />
+                </span>
+                <h3 className="relative mt-6 text-xl font-black text-[#07143d]">{feature.title}</h3>
+                <p className="relative mt-3 text-sm font-medium leading-7 text-[#667085]">{feature.text}</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TopMessSection() {
+  const messes = [
+    {
+      name: 'Mohakhali Premium Mess',
+      area: 'Mohakhali, Dhaka',
+      members: '42',
+      meals: '286',
+      due: '৳12k',
+      accent: 'from-[#005bbb] to-[#2f80ed]',
+    },
+    {
+      name: 'Banani Smart Residence',
+      area: 'Banani, Dhaka',
+      members: '36',
+      meals: '241',
+      due: '৳8k',
+      accent: 'from-[#16a565] to-[#58d68d]',
+    },
+    {
+      name: 'Dhanmondi Student Home',
+      area: 'Dhanmondi, Dhaka',
+      members: '58',
+      meals: '394',
+      due: '৳19k',
+      accent: 'from-[#ff9f1c] to-[#ffb84d]',
+    },
+  ]
+
+  return (
+    <section className="bg-[#f4f8ff] px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#005bbb]">Top Mess Showcase</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">
+              Demo messes managed beautifully
+            </h2>
           </div>
-          <div className="grid gap-4 lg:grid-cols-[1.4fr_.9fr_.7fr]">
-            <div className="app-card p-5">
-              <h3 className="mb-5 text-sm font-black">Monthly Overview</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={lineData}>
-                  <CartesianGrid stroke="#eef2f8" vertical={false} />
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} />
-                  <YAxis axisLine={false} tickLine={false} fontSize={11} />
-                  <Line type="monotone" dataKey="income" stroke="#31c77f" strokeWidth={3} dot={false} />
-                  <Line type="monotone" dataKey="expense" stroke="#ff4f8a" strokeWidth={3} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+          <p className="max-w-xl text-sm font-medium leading-7 text-[#667085]">
+            A quick preview of how different messes can monitor members, meals, dues, and daily operations with a
+            consistent professional system.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-6 lg:grid-cols-3">
+          {messes.map((mess, index) => (
+            <div
+              key={mess.name}
+              className="relative overflow-hidden rounded-2xl border border-white bg-white p-5 shadow-[0_18px_55px_rgba(45,88,139,0.12)]"
+            >
+              <div className={`absolute inset-x-0 top-0 h-2 bg-gradient-to-r ${mess.accent}`} />
+              <div className="flex items-start justify-between gap-4 pt-3">
+                <div>
+                  <span className="rounded-full bg-[#eef5ff] px-3 py-1 text-xs font-black text-[#005bbb]">
+                    Rank #{index + 1}
+                  </span>
+                  <h3 className="mt-4 text-xl font-black text-[#07143d]">{mess.name}</h3>
+                  <p className="mt-1 text-sm font-semibold text-[#667085]">{mess.area}</p>
+                </div>
+                <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${mess.accent} text-lg font-black text-white`}>
+                  M
+                </span>
+              </div>
+
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                {[
+                  ['Members', mess.members],
+                  ['Meals', mess.meals],
+                  ['Due', mess.due],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-xl bg-[#f4f8ff] p-3 text-center">
+                    <p className="text-xs font-bold text-[#667085]">{label}</p>
+                    <p className="mt-1 text-lg font-black text-[#07143d]">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 flex items-center justify-between rounded-xl border border-[#e4eaf4] px-4 py-3">
+                <span className="text-sm font-bold text-[#667085]">Operational score</span>
+                <span className="text-sm font-black text-[#16a565]">{96 - index * 2}%</span>
+              </div>
             </div>
-            <div className="app-card p-5">
-              <h3 className="mb-5 text-sm font-black">Expense Breakdown</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" innerRadius={58} outerRadius={92} paddingAngle={1}>
-                    {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="app-card p-5">
-              <h3 className="mb-4 text-sm font-black">Upcoming Payments</h3>
-              <div className="space-y-4">
-                {['Rent Payment', 'Electricity Bill', 'Gas Bill'].map((item, index) => (
-                  <div key={item} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#fff3df] text-[#c98013]">
-                        <CreditCard size={16} />
-                      </span>
-                      <div>
-                        <p className="text-sm font-black">{item}</p>
-                        <p className="text-xs text-muted-foreground">Due in {index + 3} days</p>
-                      </div>
-                    </div>
-                    <p className="text-sm font-black">৳{[15000, 3250, 1450][index].toLocaleString()}</p>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function PricingSection() {
+  const plans = [
+    {
+      name: 'Starter',
+      price: '$99',
+      description: 'Perfect for small messes',
+      cta: 'Get Started',
+      tone: 'border-border bg-white',
+      features: ['Up to 50 residents', 'Basic meal planning', 'Billing system', 'Email support'],
+    },
+    {
+      name: 'Professional',
+      price: '$299',
+      description: 'For growing messes',
+      cta: 'Get Started',
+      tone: 'border-[#2f80ed] bg-[#f0f7ff] shadow-[0_18px_45px_rgba(47,128,237,0.16)]',
+      badge: 'Most Popular',
+      features: ['Up to 500 residents', 'Advanced meal planning', 'Full billing suite', 'Priority support', 'Analytics dashboard'],
+    },
+    {
+      name: 'Enterprise',
+      price: 'Custom',
+      description: 'For large operations',
+      cta: 'Contact Us',
+      tone: 'border-border bg-white',
+      features: ['Unlimited residents', 'Custom features', 'Dedicated support', 'API access', 'Custom integrations'],
+    },
+  ]
+
+  return (
+    <section id="pricing" className="bg-white px-4 py-18 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Simple, Transparent Pricing</h2>
+          <p className="mt-3 text-base font-medium text-[#667085]">Plans that scale with your mess</p>
+        </div>
+
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {plans.map((plan) => (
+            <div key={plan.name} className={`relative rounded-xl border p-7 ${plan.tone}`}>
+              {plan.badge && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#d83a00] px-4 py-1 text-xs font-black text-white">
+                  {plan.badge}
+                </span>
+              )}
+              <h3 className="text-2xl font-black text-[#0a1433]">{plan.name}</h3>
+              <p className="mt-2 text-sm font-medium text-[#667085]">{plan.description}</p>
+              <div className="mt-5 flex items-end gap-1">
+                <span className="text-4xl font-black tracking-tight text-[#0a1433]">{plan.price}</span>
+                {plan.price !== 'Custom' && <span className="pb-1 text-sm font-medium text-[#667085]">per month</span>}
+                {plan.price === 'Custom' && <span className="pb-1 text-sm font-medium text-[#667085]">contact us</span>}
+              </div>
+              <Button
+                className={`mt-6 h-11 w-full rounded-lg font-black ${
+                  plan.badge ? 'bg-[#005bbb] text-white hover:bg-[#004fa3]' : 'border border-border bg-white text-[#0a1433] hover:bg-[#f4f8ff]'
+                }`}
+                variant={plan.badge ? 'default' : 'outline'}
+              >
+                {plan.cta}
+              </Button>
+              <div className="mt-6 space-y-3">
+                {plan.features.map((feature) => (
+                  <div key={feature} className="flex items-center gap-2 text-sm font-medium text-[#0a1433]">
+                    <CheckCircle2 size={15} className="text-[#d83a00]" />
+                    {feature}
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function WhyChooseSection() {
+  const stats = [
+    ['100+', 'Messes Trust Us', 'Managing thousands of residents daily'],
+    ['99.9%', 'Uptime', 'Reliable platform you can depend on'],
+    ['24/7', 'Support', 'Expert support whenever you need it'],
+  ]
+
+  return (
+    <section id="about" className="bg-[#dcebff] px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl text-center">
+        <h2 className="text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Why Choose MessFlow?</h2>
+        <p className="mt-4 text-base font-medium text-[#667085]">
+          Designed specifically for mess managers who value efficiency and transparency
+        </p>
+        <div className="mt-14 grid gap-10 md:grid-cols-3">
+          {stats.map(([value, label, text]) => (
+            <div key={label}>
+              <p className="text-4xl font-black text-[#005bbb]">{value}</p>
+              <h3 className="mt-3 text-lg font-black text-[#07143d]">{label}</h3>
+              <p className="mt-3 text-sm font-medium text-[#667085]">{text}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -262,7 +438,7 @@ export default function HomePage() {
                 <Link href="/register">Get Started Free</Link>
               </Button>
               <Button asChild variant="outline" className="h-12 rounded-lg border-[#c8befb] bg-white px-7 font-black text-[#6f3df4]">
-                <Link href="#features">Explore Features <PlayCircle size={18} className="ml-2" /></Link>
+                <Link href="#features">Explore Dashboard <PlayCircle size={18} className="ml-2" /></Link>
               </Button>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -281,42 +457,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="features" className="px-4 pb-8 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-4 rounded-xl border border-border bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)] sm:grid-cols-2 lg:grid-cols-6">
-          {features.map((feature) => {
-            const Icon = feature.icon
-            return (
-              <div key={feature.title} className="flex items-center gap-4 border-border py-2 lg:border-r lg:last:border-r-0">
-                <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${feature.bg}`}>
-                  <Icon size={22} className={feature.color} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-black">{feature.title}</p>
-                  <p className="mt-1 text-xs font-semibold text-muted-foreground">{feature.text}</p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      <DashboardStrip />
-
-      <section id="how-it-works" className="px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-3">
-          {[
-            ['Register', 'Create your account and complete profile.'],
-            ['Request Mess', 'Submit mess registration and wait for approval.'],
-            ['Operate Easily', 'Manage members, meals, bills, payments and notices.'],
-          ].map(([title, text], index) => (
-            <div key={title} className="app-card p-7">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#efe9ff] text-lg font-black text-[#6f3df4]">{index + 1}</span>
-              <h3 className="mt-5 text-xl font-black">{title}</h3>
-              <p className="mt-2 font-semibold leading-7 text-muted-foreground">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <SystemFeaturesSection />
+      <TopMessSection />
+      <PricingSection />
+      <WhyChooseSection />
+      <Footer />
     </main>
   )
 }

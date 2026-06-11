@@ -1,27 +1,28 @@
-FROM node:22.14-alpine
-
+# Multi-stage build for optimal size
+FROM node:22.14-alpine AS deps
 WORKDIR /app
-
-# Install openssl for Prisma
 RUN apk add --no-cache openssl
-
-# Copy package files from backend directory
 COPY package*.json ./
 COPY prisma ./prisma/
+RUN npm ci
 
-# Install dependencies
-RUN npm ci --omit=dev
-
-# Copy source code
+FROM node:22.14-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Generate Prisma client
 RUN npx prisma generate
-
-# Build the app
 RUN npm run build
 
-EXPOSE 5001
+FROM node:22.14-alpine AS runner
+WORKDIR /app
+RUN apk add --no-cache openssl
 
-# Start the app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
+
+RUN npm ci --omit=dev && npm cache clean --force
+
+EXPOSE 5001
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

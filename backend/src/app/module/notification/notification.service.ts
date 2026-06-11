@@ -1,13 +1,21 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { CreateNotificationDto, NotificationFilterDto } from './dto/notification.dto';
+import {
+  CreateNotificationDto,
+  NotificationFilterDto,
+  SavePushSubscriptionDto,
+  SendPushNotificationDto,
+} from './dto/notification.dto';
 import { NotificationType, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import webPush, { type PushSubscription } from 'web-push';
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.configureWebPush();
+  }
 
   private readonly notificationSelect = {
     id: true,
@@ -20,6 +28,95 @@ export class NotificationService {
     sender: { select: { id: true, name: true, email: true } },
     reads: { select: { user_id: true, read_at: true } },
   } as const;
+
+  private configureWebPush() {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    const privateKey = process.env.VAPID_PRIVATE_KEY;
+
+    if (!publicKey || !privateKey) return;
+
+    webPush.setVapidDetails(
+      process.env.VAPID_SUBJECT || 'mailto:support@mess-management.local',
+      publicKey,
+      privateKey,
+    );
+  }
+
+  getPushPublicKey() {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    if (!publicKey) {
+      throw new HttpException('Push notifications are not configured', 503);
+    }
+
+    return { publicKey };
+  }
+
+  async savePushSubscription(
+    userId: string,
+    dto: SavePushSubscriptionDto,
+  ) {
+    await this.ensureUserExists(userId);
+
+    const subscription = await this.prisma.pushNotificationSubscription.upsert({
+      where: { endpoint: dto.endpoint },
+      create: {
+        user_id: userId,
+        endpoint: dto.endpoint,
+        p256dh_key: dto.keys.p256dh,
+        auth_key: dto.keys.auth,
+        user_agent: dto.userAgent,
+      },
+      update: {
+        user_id: userId,
+        p256dh_key: dto.keys.p256dh,
+        auth_key: dto.keys.auth,
+        user_agent: dto.userAgent,
+        is_active: true,
+        last_used_at: new Date(),
+      },
+      select: { id: true, user_id: true, is_active: true, updated_at: true },
+    });
+
+    return {
+      message: 'Push notification subscription saved',
+      subscription,
+    };
+  }
+
+  async removePushSubscription(userId: string, endpoint: string) {
+    await this.prisma.pushNotificationSubscription.updateMany({
+      where: { user_id: userId, endpoint },
+      data: { is_active: false },
+    });
+
+    return { message: 'Push notification subscription removed' };
+  }
+
+  async sendPushToUser(userId: string, dto: SendPushNotificationDto) {
+    await this.ensureUserExists(userId);
+    const result = await this.dispatchPushToUsers([userId], dto);
+
+    return {
+      message: 'Push notification sent to user',
+      ...result,
+    };
+  }
+
+  async sendPushToAll(dto: SendPushNotificationDto) {
+    const users = await this.prisma.user.findMany({
+      where: { is_active: true },
+      select: { id: true },
+    });
+    const result = await this.dispatchPushToUsers(
+      users.map((user) => user.id),
+      dto,
+    );
+
+    return {
+      message: 'Push notification sent to all users',
+      ...result,
+    };
+  }
 
   async create(senderId: string, role: string, dto: CreateNotificationDto) {
     if (role !== 'ADMIN') {
@@ -35,17 +132,34 @@ export class NotificationService {
       }
     }
 
-    return this.prisma.notification.create({
+    const notification = await this.prisma.notification.create({
       data: {
         mess_id: dto.messId,
         sender_id: senderId,
         type: dto.type as NotificationType,
         title: dto.title,
         body: dto.body,
-        // metadata: dto.metadata ?? Prisma.JsonNull,
+        metadata: dto.metadata as Prisma.InputJsonValue | undefined,
       },
       select: this.notificationSelect,
     });
+
+    const targetUserIds = await this.resolveNotificationPushTargets(dto);
+    if (targetUserIds.length > 0) {
+      await this.dispatchPushToUsers(targetUserIds, {
+        title: dto.title,
+        body: dto.body,
+        url: '/dashboard',
+        data: {
+          notificationId: notification.id,
+          messId: dto.messId,
+          type: dto.type,
+          ...(dto.metadata ?? {}),
+        },
+      });
+    }
+
+    return notification;
   }
 
   async findAll(query: NotificationFilterDto) {
@@ -158,5 +272,93 @@ export class NotificationService {
 
     await this.prisma.notification.delete({ where: { id } });
     return { message: 'Notification deleted successfully' };
+  }
+
+  private async ensureUserExists(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) throw new HttpException('User not found', 404);
+  }
+
+  private async resolveNotificationPushTargets(dto: CreateNotificationDto) {
+    if (dto.sendToAll) {
+      const users = await this.prisma.user.findMany({
+        where: { is_active: true },
+        select: { id: true },
+      });
+
+      return users.map((user) => user.id);
+    }
+
+    if (dto.targetUserId) return [dto.targetUserId];
+
+    const memberships = await this.prisma.messMembership.findMany({
+      where: { mess_id: dto.messId, is_active: true },
+      select: { user_id: true },
+    });
+
+    return memberships.map((membership) => membership.user_id);
+  }
+
+  private async dispatchPushToUsers(
+    userIds: string[],
+    dto: SendPushNotificationDto,
+  ) {
+    const uniqueUserIds = [...new Set(userIds)].filter(Boolean);
+    if (uniqueUserIds.length === 0) {
+      return { sent: 0, failed: 0, totalSubscriptions: 0 };
+    }
+
+    const subscriptions =
+      await this.prisma.pushNotificationSubscription.findMany({
+        where: { user_id: { in: uniqueUserIds }, is_active: true },
+      });
+
+    const payload = JSON.stringify({
+      title: dto.title,
+      body: dto.body,
+      url: dto.url || '/dashboard',
+      data: dto.data ?? {},
+    });
+
+    let sent = 0;
+    let failed = 0;
+
+    await Promise.all(
+      subscriptions.map(async (subscription) => {
+        try {
+          await webPush.sendNotification(
+            {
+              endpoint: subscription.endpoint,
+              keys: {
+                p256dh: subscription.p256dh_key,
+                auth: subscription.auth_key,
+              },
+            } satisfies PushSubscription,
+            payload,
+          );
+
+          sent += 1;
+          await this.prisma.pushNotificationSubscription.update({
+            where: { id: subscription.id },
+            data: { last_used_at: new Date() },
+          });
+        } catch (error) {
+          failed += 1;
+          const statusCode = (error as { statusCode?: number }).statusCode;
+          if (statusCode === 404 || statusCode === 410) {
+            await this.prisma.pushNotificationSubscription.update({
+              where: { id: subscription.id },
+              data: { is_active: false },
+            });
+          }
+        }
+      }),
+    );
+
+    return { sent, failed, totalSubscriptions: subscriptions.length };
   }
 }

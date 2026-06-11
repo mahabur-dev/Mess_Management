@@ -16,6 +16,8 @@ import { NotificationService } from './notification.service';
 import {
   CreateNotificationDto,
   NotificationFilterDto,
+  SavePushSubscriptionDto,
+  SendPushNotificationDto,
 } from './dto/notification.dto';
 import AuthGuard from '../../middlewares/auth.guard';
 
@@ -35,6 +37,57 @@ export class NotificationController {
       dto,
     );
     return { message: 'Notification sent successfully', data };
+  }
+
+  @Get('push/public-key')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Get browser push notification public key' })
+  async getPushPublicKey() {
+    const data = this.notificationService.getPushPublicKey();
+    return { message: 'Push public key fetched successfully', data };
+  }
+
+  @Post('push/subscribe')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Save current user browser push subscription' })
+  async savePushSubscription(
+    @Req() req: Request,
+    @Body() dto: SavePushSubscriptionDto,
+  ) {
+    const data = await this.notificationService.savePushSubscription(
+      req.user!.id,
+      dto,
+    );
+    return { message: data.message, data: data.subscription };
+  }
+
+  @Patch('push/unsubscribe')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Disable current user browser push subscription' })
+  async removePushSubscription(
+    @Req() req: Request,
+    @Body('endpoint') endpoint: string,
+  ) {
+    return this.notificationService.removePushSubscription(req.user!.id, endpoint);
+  }
+
+  @Post('push/send/user/:userId')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Send browser push notification to one user' })
+  async sendPushToUser(
+    @Param('userId') userId: string,
+    @Body() dto: SendPushNotificationDto,
+  ) {
+    const data = await this.notificationService.sendPushToUser(userId, dto);
+    return { message: data.message, data };
+  }
+
+  @Post('push/send/all')
+  @UseGuards(AuthGuard('ADMIN', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Send browser push notification to every active user' })
+  async sendPushToAll(@Body() dto: SendPushNotificationDto) {
+    const data = await this.notificationService.sendPushToAll(dto);
+    return { message: data.message, data };
   }
 
   @Get()

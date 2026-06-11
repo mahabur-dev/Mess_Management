@@ -17,7 +17,7 @@ async function bootstrap() {
   app.use('/api/v1/webhook', express.raw({ type: 'application/json' }));
 
   app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+  app.use(express.urlencoded({ limit: '100mb', extended: true }));
   app.use(cookieParser());
   // app.enableCors({
   //   origin: '*',
@@ -30,25 +30,36 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
   //   allowedHeaders: ['Content-Type', 'Authorization'],
   // });
   app.enableCors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, curl)
-    if (!origin) return callback(null, true);
-    
-    // Allow all GitHub Codespaces preview URLs + localhost
-    if (
-      origin.includes('.app.github.dev') ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1')
-    ) {
-      return callback(null, true);
-    }
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, curl)
+      if (!origin) return callback(null, true);
 
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-});
+      const allowedOrigins = [
+        // Local development
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3000',
+
+        // Production frontend
+        'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
+
+        // Add your main Vercel URL too if you have one
+        // 'https://your-app.vercel.app',
+      ];
+
+      // Allow GitHub Codespaces preview URLs (dynamic subdomains)
+      const isCodespace = origin.endsWith('.app.github.dev');
+
+      if (allowedOrigins.includes(origin) || isCodespace) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked: ${origin}`), false);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
   app.setGlobalPrefix('api/v1', {
     exclude: [''],
@@ -87,22 +98,22 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
     swaggerOptions: { persistAuthorization: true },
   });
 
-//   await app.listen(process.env.PORT ?? 3000, () => {
-//     console.log(
-//       `Server is running on http://localhost:${process.env.PORT ?? 3000}`,
-//     );
-//     console.log(
-//       `Swagger: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
-//     );
-//   });
-// }
-await app.listen(process.env.PORT ?? 5001, '0.0.0.0', () => {
-  console.log(
-    `Server is running on http://localhost:${process.env.PORT ?? 5001}`,
-  );
-  console.log(
-    `Swagger: http://localhost:${process.env.PORT ?? 5001}/api/docs`,
-  );
-});
+  //   await app.listen(process.env.PORT ?? 3000, () => {
+  //     console.log(
+  //       `Server is running on http://localhost:${process.env.PORT ?? 3000}`,
+  //     );
+  //     console.log(
+  //       `Swagger: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
+  //     );
+  //   });
+  // }
+  await app.listen(process.env.PORT ?? 5001, '0.0.0.0', () => {
+    console.log(
+      `Server is running on http://localhost:${process.env.PORT ?? 5001}`,
+    );
+    console.log(
+      `Swagger: http://localhost:${process.env.PORT ?? 5001}/api/docs`,
+    );
+  });
 }
 bootstrap().catch(console.error);

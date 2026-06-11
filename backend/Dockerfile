@@ -1,4 +1,3 @@
-# Multi-stage build for optimal size
 FROM node:22.14-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache openssl
@@ -18,11 +17,13 @@ WORKDIR /app
 RUN apk add --no-cache openssl
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules ./node_modules        # ← full node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts  # ← copy config
 
-RUN npm ci --omit=dev && npm cache clean --force
+# Install tsx to run the TS config at migrate time
+RUN npm install -g tsx
 
 EXPOSE 5001
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

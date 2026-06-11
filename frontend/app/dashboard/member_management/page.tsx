@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog } from 'lucide-react';
 import { apiClient, ApiError } from '@/lib/api-client';
+import { DashboardHeader } from '@/components/dashboard-header';
 
 // ─── Types & Interfaces ─────────────────────────────────────────────────────
 type MembershipRole = 'MANAGER' | 'MEMBER';
@@ -541,7 +542,11 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
   });
 
   return (
-    <div className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+  <div className="min-h-screen">
+    {/* ✅ Add this */}
+    <DashboardHeader title="Members" description="Manage your mess members and roles" />
+
+    <div className="px-4 py-5 sm:px-6 lg:px-8">
       {error && (
         <div className="mb-6 flex items-center justify-between rounded-2xl border border-red-500/25 bg-red-50 p-4 text-red-600">
           <span>{error}</span>
@@ -549,13 +554,13 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
         </div>
       )}
 
-      {/* Header */}
+      {/* Search + Add Member row */}
       <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="relative w-full md:max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c70a8]" size={22} />
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search members..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-[52px] w-full rounded-xl border border-[#d8e6f8] bg-white/80 py-3 pl-12 pr-4 text-[#172554] shadow-[0_12px_35px_rgba(65,103,153,0.10)] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
@@ -571,34 +576,89 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
         </button>
       </div>
 
-      {/* Responsive Grid */}
+      {/* Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {filtered.map((member) => (
           <MemberCard
             key={member.id}
             member={member}
-            onEditRole={setEditingMember}        // ← Fixed: Direct state setter
+            onEditRole={setEditingMember}
             onRemove={handleRemove}
             removingId={removingId}
           />
         ))}
       </div>
-
-      {/* Modals */}
-      {showAddModal && (
-        <AddMemberModal
-          onClose={() => setShowAddModal(false)}
-          onAdd={handleAddMember}
-        />
-      )}
-
-      {editingMember && (
-        <EditRoleModal
-          member={editingMember}
-          onClose={() => setEditingMember(null)}
-          onSave={handleEditRole}
-        />
-      )}
     </div>
-  );
+
+    {/* Modals */}
+    {showAddModal && (
+      <AddMemberModal onClose={() => setShowAddModal(false)} onAdd={handleAddMember} />
+    )}
+    {editingMember && (
+      <EditRoleModal member={editingMember} onClose={() => setEditingMember(null)} onSave={handleEditRole} />
+    )}
+  </div>
+)
+  
+  // return (
+  //   <div className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+  //     {error && (
+  //       <div className="mb-6 flex items-center justify-between rounded-2xl border border-red-500/25 bg-red-50 p-4 text-red-600">
+  //         <span>{error}</span>
+  //         <button onClick={() => setError(null)} className="text-xl">✕</button>
+  //       </div>
+  //     )}
+
+  //     {/* Header */}
+  //     <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+  //       <div className="relative w-full md:max-w-md">
+  //         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c70a8]" size={22} />
+  //         <input
+  //           type="text"
+  //           placeholder="Search"
+  //           value={search}
+  //           onChange={(e) => setSearch(e.target.value)}
+  //           className="h-[52px] w-full rounded-xl border border-[#d8e6f8] bg-white/80 py-3 pl-12 pr-4 text-[#172554] shadow-[0_12px_35px_rgba(65,103,153,0.10)] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+  //         />
+  //       </div>
+
+  //       <button
+  //         onClick={() => setShowAddModal(true)}
+  //         className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 py-3 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition-all hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] active:scale-[0.98] md:w-auto"
+  //       >
+  //         <Plus size={20} />
+  //         Add Member
+  //       </button>
+  //     </div>
+
+  //     {/* Responsive Grid */}
+  //     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+  //       {filtered.map((member) => (
+  //         <MemberCard
+  //           key={member.id}
+  //           member={member}
+  //           onEditRole={setEditingMember}        // ← Fixed: Direct state setter
+  //           onRemove={handleRemove}
+  //           removingId={removingId}
+  //         />
+  //       ))}
+  //     </div>
+
+  //     {/* Modals */}
+  //     {showAddModal && (
+  //       <AddMemberModal
+  //         onClose={() => setShowAddModal(false)}
+  //         onAdd={handleAddMember}
+  //       />
+  //     )}
+
+  //     {editingMember && (
+  //       <EditRoleModal
+  //         member={editingMember}
+  //         onClose={() => setEditingMember(null)}
+  //         onSave={handleEditRole}
+  //       />
+  //     )}
+  //   </div>
+  // );
 }

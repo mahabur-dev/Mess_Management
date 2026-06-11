@@ -10,11 +10,14 @@ import {
   CheckCircle2,
   ClipboardList,
   CreditCard,
+  LayoutDashboard,
   PlayCircle,
+  Settings,
   ShoppingCart,
   TrendingUp,
   UtensilsCrossed,
   Users,
+  WalletCards,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -36,34 +39,55 @@ const mealData = [
 
 function MiniSidebar() {
   const items = [
-    ['Dashboard', BarChart3],
-    ['Members', Users],
-    ['Meals', UtensilsCrossed],
-    ['Finance', TrendingUp],
-    ['Shopping', ShoppingCart],
-    ['Attendance', CalendarCheck],
-    ['Notices', Bell],
-    ['Reports', ClipboardList],
+    ['Dashboard', LayoutDashboard, true],
+    ['Members', Users, false],
+    ['Meal Sheet', UtensilsCrossed, false],
+    ['Bazar/Expenses', WalletCards, false],
+    ['Monthly Bills', ClipboardList, false],
+    ['Payments', CreditCard, false],
+    ['Notices', Bell, false],
+    ['Reports', BarChart3, false],
+    ['Settings', Settings, false],
   ] as const
+
   return (
-    <div className="hidden w-[190px] shrink-0 flex-col bg-gradient-to-b from-[#17106b] to-[#21157a] p-5 text-white md:flex">
-      <div className="mb-5 flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded bg-white text-xs font-black text-[#6f3df4]">M</span>
-        <span className="font-black">Mess.</span>
+    <div
+      className="hidden w-[200px] shrink-0 flex-col md:flex"
+      style={{ background: 'linear-gradient(180deg, #0f0c3d 0%, #15115d 40%, #1a1570 100%)' }}
+    >
+      <div className="flex h-[72px] items-center px-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-xs font-black text-[#2f80ed]">M</span>
+          <div>
+            <p className="text-sm font-black text-white">Mess.</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40">Dashboard</p>
+          </div>
+        </div>
       </div>
-      <div className="space-y-1.5">
-        {items.map(([label, Icon], index) => (
-          <div key={label} className={`flex h-9 items-center gap-3 rounded-md px-3 text-xs font-bold ${index === 0 ? 'bg-[#7442f4]' : 'text-white/82'}`}>
-            <Icon size={14} />
-            {label}
+
+      <div className="flex-1 space-y-0.5 px-3 py-1">
+        {items.map(([label, Icon, active]) => (
+          <div
+            key={label}
+            className={`flex h-10 items-center gap-3 rounded-xl px-3 text-xs font-bold transition ${
+              active
+                ? 'bg-[#2f80ed] text-white shadow-[0_8px_20px_rgba(47,128,237,0.38)]'
+                : 'text-white/60'
+            }`}
+          >
+            <Icon size={14} strokeWidth={active ? 2.5 : 2} />
+            <span>{label}</span>
           </div>
         ))}
       </div>
-      <div className="mt-auto flex items-center gap-2 rounded-lg bg-white/7 p-3">
-        <span className="h-8 w-8 rounded-full bg-white/90" />
-        <div>
-          <p className="text-xs font-black">MR It Ltd</p>
-          <p className="text-[10px] text-white/60">Organizer</p>
+
+      <div className="p-3">
+        <div className="flex items-center gap-2 rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2f80ed] text-xs font-black text-white">M</div>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-black text-white">MR It Ltd</p>
+            <p className="text-[10px] text-white/45">Organizer</p>
+          </div>
         </div>
       </div>
     </div>
@@ -71,73 +95,74 @@ function MiniSidebar() {
 }
 
 function ProductPreview() {
+  const statCards = [
+    ['Total Members', '150', Users, 'from-[#2f80ed] to-[#6f3df4]'],
+    ['Meals Today', '95', UtensilsCrossed, 'from-[#22b66f] to-[#14b8a6]'],
+    ['Total Meals', '320', CalendarCheck, 'from-[#6f3df4] to-[#8b5cf6]'],
+    ['Meal Rate', '৳109', TrendingUp, 'from-[#0ea5e9] to-[#2563eb]'],
+    ['Food Expenses', '৳45,680', ShoppingCart, 'from-[#f59e0b] to-[#f97316]'],
+    ['Extra Expenses', '৳1,590', ClipboardList, 'from-[#8b5cf6] to-[#6f3df4]'],
+  ]
+
   return (
-    <div className="glass-panel overflow-hidden rounded-xl">
-      <div className="flex min-h-[510px]">
+    <div className="overflow-hidden rounded-2xl border border-[#d8e6f8] shadow-[0_24px_64px_rgba(47,128,237,0.16)]">
+      <div className="flex" style={{ minHeight: 520 }}>
         <MiniSidebar />
-        <div className="min-w-0 flex-1 bg-white p-5 sm:p-7">
-          <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 bg-[#f0f6ff]">
+          {/* Header */}
+          <div className="flex h-[72px] items-center justify-between px-5" style={{ background: '#BBD4F4' }}>
             <div>
-              <h2 className="text-xl font-black text-[#0a1433] sm:text-2xl">Welcome back, MR It Ltd!</h2>
-              <p className="mt-1 text-xs font-semibold text-[#667085]">Here’s what’s happening with your mess today.</p>
+              <h2 className="text-base font-black text-[#07143d]">Dashboard</h2>
+              <p className="text-[11px] font-semibold text-[#53617d]">Mohakhali best mess overview</p>
             </div>
-            <div className="flex items-center gap-3">
-              <Bell size={18} className="text-[#667085]" />
-              <span className="hidden rounded-lg border border-border px-4 py-2 text-xs font-bold text-[#0a1433] sm:inline">May 19, 2026</span>
-            </div>
-          </div>
-
-          <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {[
-              ['Total Members', '150', '+12%', Users, 'bg-[#efe9ff]', 'text-[#6f3df4]'],
-              ['Meals Today', '95', '+8%', UtensilsCrossed, 'bg-[#e8fff2]', 'text-[#22b66f]'],
-              ['Total Expenses', '৳45,680', '-3%', ClipboardList, 'bg-[#fff1df]', 'text-[#f59e0b]'],
-              ['Attendance Rate', '92%', '+5%', TrendingUp, 'bg-[#efe9ff]', 'text-[#6f3df4]'],
-            ].map(([label, value, change, Icon, bg, color]) => (
-              <div key={label as string} className="app-card p-4">
-                <div className={`mb-4 flex h-9 w-9 items-center justify-center rounded-lg ${bg}`}>
-                  <Icon size={18} className={color as string} />
-                </div>
-                <div className="flex items-end justify-between gap-2">
-                  <div>
-                    <p className="mb-2 text-xs font-bold text-[#667085]">{label as string}</p>
-                    <p className="text-xl font-black text-[#0a1433]">{value as string}</p>
-                  </div>
-                  <span className="text-xs font-black text-[#22b66f]">{change as string}</span>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="hidden items-center gap-1.5 rounded-lg border border-[#d8e6f8] bg-white/80 px-3 py-1.5 sm:flex">
+                <span className="text-[11px] font-bold text-[#6b7a99]">May 19, 2026</span>
               </div>
-            ))}
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#6f3df4] text-white">
+                <Bell size={13} />
+              </div>
+              <div className="flex items-center gap-1.5 rounded-lg border border-[#d8e6f8] bg-white/80 px-2 py-1">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2f80ed] text-[9px] font-black text-white">M</div>
+                <span className="text-[11px] font-bold text-[#07143d]">MR It Ltd</span>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-            <div className="app-card p-5">
-              <h3 className="mb-4 text-sm font-black text-[#0a1433]">Meal Count (This Week)</h3>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={mealData}>
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} />
-                  <YAxis axisLine={false} tickLine={false} fontSize={11} />
-                  <Bar dataKey="breakfast" fill="#6f3df4" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="lunch" fill="#2787f5" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="dinner" fill="#ffb21a" radius={[4, 4, 0, 0]} />
+          {/* Stat cards */}
+          <div className="p-4">
+            <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3">
+              {statCards.map(([label, value, Icon, gradient]) => (
+                <div
+                  key={label as string}
+                  className={`relative overflow-hidden rounded-xl bg-gradient-to-r ${gradient} p-3 text-white`}
+                >
+                  <div className="absolute -right-3 -top-3 h-12 w-12 rounded-full bg-white/15 blur-xl" />
+                  <div className="relative flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-wide text-white/80">{label as string}</p>
+                      <p className="mt-1 text-base font-black leading-none">{value as string}</p>
+                    </div>
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
+                      <Icon size={13} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Chart */}
+            <div className="mt-3 rounded-xl border border-[#d8e6f8] bg-white p-3">
+              <p className="mb-2 text-xs font-black text-[#07143d]">Monthly Overview</p>
+              <ResponsiveContainer width="100%" height={120}>
+                <BarChart data={mealData} barSize={6}>
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={9} />
+                  <YAxis axisLine={false} tickLine={false} fontSize={9} />
+                  <Bar dataKey="breakfast" fill="#2f80ed" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="lunch" fill="#58d68d" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="dinner" fill="#ffb84d" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-            <div className="app-card p-5">
-              <h3 className="mb-4 text-sm font-black text-[#0a1433]">Recent Activities</h3>
-              <div className="space-y-4">
-                {['New member added', 'Meal plan updated', 'Payment received', 'Shopping list updated'].map((item, index) => (
-                  <div key={item} className="flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#f4f7fb] text-[#6f3df4]">
-                        {index + 1}
-                      </span>
-                      <span className="font-bold text-[#0a1433]">{item}</span>
-                    </div>
-                    <span className="text-[#667085]">{index ? `${index * 15} min ago` : '2 min ago'}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-5 text-center text-xs font-black text-[#6f3df4]">View All Activities</p>
             </div>
           </div>
         </div>
@@ -148,72 +173,31 @@ function ProductPreview() {
 
 function SystemFeaturesSection() {
   const features = [
-    {
-      icon: UtensilsCrossed,
-      title: 'Meal Operations',
-      text: 'Members can turn meals on or off, add guest meals, and managers can review the full daily meal sheet.',
-      tone: 'bg-[#e7f1ff] text-[#005bbb]',
-    },
-    {
-      icon: Users,
-      title: 'Member & Role Control',
-      text: 'Invite members, assign roles, manage active users, and keep every mess member organized from one place.',
-      tone: 'bg-[#e9fff3] text-[#16a565]',
-    },
-    {
-      icon: ShoppingCart,
-      title: 'Bazar & Expense Tracking',
-      text: 'Record daily bazar items, categorize expenses, and keep food costs transparent for the whole mess.',
-      tone: 'bg-[#fff4df] text-[#d98a00]',
-    },
-    {
-      icon: CreditCard,
-      title: 'Payments & Monthly Bills',
-      text: 'Generate monthly bills from meals, rent, utilities, deposits, and approved payments with less manual work.',
-      tone: 'bg-[#fff0f0] text-[#ff4d4f]',
-    },
-    {
-      icon: Bell,
-      title: 'Notices & Requests',
-      text: 'Publish important notices, manage complaints, and keep approvals clear for managers and members.',
-      tone: 'bg-[#f0edff] text-[#6f3df4]',
-    },
-    {
-      icon: BarChart3,
-      title: 'Reports & Insights',
-      text: 'Understand meals, dues, payments, and mess performance with clean summary dashboards and reports.',
-      tone: 'bg-[#e8fbff] text-[#1492c8]',
-    },
+    { icon: UtensilsCrossed, title: 'Meal Operations', text: 'Members can toggle meals, add guests, and managers get a full daily meal sheet at a glance.', tone: 'bg-[#e7f1ff] text-[#2f80ed]', num: '01' },
+    { icon: Users, title: 'Member & Role Control', text: 'Invite members, assign roles, and keep every mess member organized from one place.', tone: 'bg-[#e9fff3] text-[#22b66f]', num: '02' },
+    { icon: ShoppingCart, title: 'Bazar & Expense Tracking', text: 'Record daily bazar items, categorize expenses, and keep food costs transparent.', tone: 'bg-[#fff4df] text-[#f59e0b]', num: '03' },
+    { icon: CreditCard, title: 'Payments & Monthly Bills', text: 'Generate monthly bills from meals, rent, utilities, deposits, and approved payments.', tone: 'bg-[#fff0f0] text-[#ef4444]', num: '04' },
+    { icon: Bell, title: 'Notices & Requests', text: 'Publish notices, manage complaints, and keep approvals clear for managers and members.', tone: 'bg-[#f0edff] text-[#6f3df4]', num: '05' },
+    { icon: BarChart3, title: 'Reports & Insights', text: 'Understand meals, dues, payments, and mess performance with clean summary dashboards.', tone: 'bg-[#e8fbff] text-[#0ea5e9]', num: '06' },
   ]
 
   return (
     <section id="features" className="bg-white px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#005bbb]">System Features</p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">
-            Professional tools for every mess workflow
-          </h2>
-          <p className="mt-4 text-base font-medium leading-7 text-[#667085]">
-            MessFlow brings daily operations, member coordination, billing, shopping, and reporting into one clear
-            management experience.
-          </p>
+          <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">System Features</span>
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Professional tools for every mess workflow</h2>
+          <p className="mt-4 text-base font-medium leading-7 text-[#6b7a99]">MessFlow brings daily operations, member coordination, billing, shopping, and reporting into one clear management experience.</p>
         </div>
-
         <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {features.map((feature, index) => {
+          {features.map((feature) => {
             const Icon = feature.icon
             return (
-              <div
-                key={feature.title}
-                className="group relative overflow-hidden rounded-xl border border-[#dbe6f5] bg-white p-6 shadow-[0_16px_45px_rgba(45,88,139,0.08)] transition hover:-translate-y-1 hover:border-[#b7d5ff] hover:shadow-[0_22px_55px_rgba(47,128,237,0.14)]"
-              >
-                <div className="absolute right-5 top-5 text-5xl font-black text-[#eef5ff]">0{index + 1}</div>
-                <span className={`relative flex h-12 w-12 items-center justify-center rounded-xl ${feature.tone}`}>
-                  <Icon size={22} />
-                </span>
-                <h3 className="relative mt-6 text-xl font-black text-[#07143d]">{feature.title}</h3>
-                <p className="relative mt-3 text-sm font-medium leading-7 text-[#667085]">{feature.text}</p>
+              <div key={feature.title} className="group relative overflow-hidden rounded-2xl border border-[#e7f1ff] bg-white p-6 transition hover:-translate-y-1 hover:border-[#BBD4F4] hover:shadow-[0_22px_55px_rgba(47,128,237,0.12)]">
+                <div className="absolute right-5 top-5 text-5xl font-black text-[#f0f6ff]">{feature.num}</div>
+                <span className={`relative flex h-12 w-12 items-center justify-center rounded-xl ${feature.tone}`}><Icon size={22} /></span>
+                <h3 className="relative mt-5 text-lg font-black text-[#07143d]">{feature.title}</h3>
+                <p className="relative mt-2 text-sm font-medium leading-7 text-[#6b7a99]">{feature.text}</p>
               </div>
             )
           })}
@@ -225,84 +209,43 @@ function SystemFeaturesSection() {
 
 function TopMessSection() {
   const messes = [
-    {
-      name: 'Mohakhali Premium Mess',
-      area: 'Mohakhali, Dhaka',
-      members: '42',
-      meals: '286',
-      due: '৳12k',
-      accent: 'from-[#005bbb] to-[#2f80ed]',
-    },
-    {
-      name: 'Banani Smart Residence',
-      area: 'Banani, Dhaka',
-      members: '36',
-      meals: '241',
-      due: '৳8k',
-      accent: 'from-[#16a565] to-[#58d68d]',
-    },
-    {
-      name: 'Dhanmondi Student Home',
-      area: 'Dhanmondi, Dhaka',
-      members: '58',
-      meals: '394',
-      due: '৳19k',
-      accent: 'from-[#ff9f1c] to-[#ffb84d]',
-    },
+    { name: 'Mohakhali Premium Mess', area: 'Mohakhali, Dhaka', members: '42', meals: '286', due: '৳12k', accent: 'from-[#2f80ed] to-[#6f3df4]', score: '96%' },
+    { name: 'Banani Smart Residence', area: 'Banani, Dhaka', members: '36', meals: '241', due: '৳8k', accent: 'from-[#22b66f] to-[#14b8a6]', score: '94%' },
+    { name: 'Dhanmondi Student Home', area: 'Dhanmondi, Dhaka', members: '58', meals: '394', due: '৳19k', accent: 'from-[#f59e0b] to-[#f97316]', score: '92%' },
   ]
-
   return (
-    <section className="bg-[#f4f8ff] px-4 py-20 sm:px-6 lg:px-8">
+    <section className="bg-[#f0f6ff] px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#005bbb]">Top Mess Showcase</p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">
-              Demo messes managed beautifully
-            </h2>
+            <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">Top Mess Showcase</span>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Demo messes managed beautifully</h2>
           </div>
-          <p className="max-w-xl text-sm font-medium leading-7 text-[#667085]">
-            A quick preview of how different messes can monitor members, meals, dues, and daily operations with a
-            consistent professional system.
-          </p>
+          <p className="max-w-sm text-sm font-medium leading-7 text-[#6b7a99]">A quick preview of how different messes monitor members, meals, dues, and daily operations.</p>
         </div>
-
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {messes.map((mess, index) => (
-            <div
-              key={mess.name}
-              className="relative overflow-hidden rounded-2xl border border-white bg-white p-5 shadow-[0_18px_55px_rgba(45,88,139,0.12)]"
-            >
-              <div className={`absolute inset-x-0 top-0 h-2 bg-gradient-to-r ${mess.accent}`} />
+            <div key={mess.name} className="relative overflow-hidden rounded-2xl border border-[#d8e6f8] bg-white p-5 shadow-[0_18px_55px_rgba(47,128,237,0.08)] transition hover:-translate-y-1">
+              <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${mess.accent}`} />
               <div className="flex items-start justify-between gap-4 pt-3">
                 <div>
-                  <span className="rounded-full bg-[#eef5ff] px-3 py-1 text-xs font-black text-[#005bbb]">
-                    Rank #{index + 1}
-                  </span>
-                  <h3 className="mt-4 text-xl font-black text-[#07143d]">{mess.name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-[#667085]">{mess.area}</p>
+                  <span className="rounded-full bg-[#e7f1ff] px-3 py-1 text-xs font-black text-[#2f80ed]">Rank #{index + 1}</span>
+                  <h3 className="mt-4 text-lg font-black text-[#07143d]">{mess.name}</h3>
+                  <p className="mt-1 text-sm font-semibold text-[#6b7a99]">{mess.area}</p>
                 </div>
-                <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${mess.accent} text-lg font-black text-white`}>
-                  M
-                </span>
+                <span className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${mess.accent} text-base font-black text-white`}>M</span>
               </div>
-
-              <div className="mt-6 grid grid-cols-3 gap-3">
-                {[
-                  ['Members', mess.members],
-                  ['Meals', mess.meals],
-                  ['Due', mess.due],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-xl bg-[#f4f8ff] p-3 text-center">
-                    <p className="text-xs font-bold text-[#667085]">{label}</p>
-                    <p className="mt-1 text-lg font-black text-[#07143d]">{value}</p>
+              <div className="mt-5 grid grid-cols-3 gap-3">
+                {[['Members', mess.members], ['Meals', mess.meals], ['Due', mess.due]].map(([label, value]) => (
+                  <div key={label} className="rounded-xl bg-[#f0f6ff] p-3 text-center">
+                    <p className="text-[10px] font-bold text-[#6b7a99]">{label}</p>
+                    <p className="mt-1 text-base font-black text-[#07143d]">{value}</p>
                   </div>
                 ))}
               </div>
-
-              <div className="mt-5 flex items-center justify-between rounded-xl border border-[#e4eaf4] px-4 py-3">
-                <span className="text-sm font-bold text-[#667085]">Operational score</span>
-                <span className="text-sm font-black text-[#16a565]">{96 - index * 2}%</span>
+              <div className="mt-4 flex items-center justify-between rounded-xl border border-[#d8e6f8] px-4 py-3">
+                <span className="text-sm font-bold text-[#6b7a99]">Operational score</span>
+                <span className="text-sm font-black text-[#22b66f]">{mess.score}</span>
               </div>
             </div>
           ))}
@@ -314,68 +257,33 @@ function TopMessSection() {
 
 function PricingSection() {
   const plans = [
-    {
-      name: 'Starter',
-      price: '$99',
-      description: 'Perfect for small messes',
-      cta: 'Get Started',
-      tone: 'border-border bg-white',
-      features: ['Up to 50 residents', 'Basic meal planning', 'Billing system', 'Email support'],
-    },
-    {
-      name: 'Professional',
-      price: '$299',
-      description: 'For growing messes',
-      cta: 'Get Started',
-      tone: 'border-[#2f80ed] bg-[#f0f7ff] shadow-[0_18px_45px_rgba(47,128,237,0.16)]',
-      badge: 'Most Popular',
-      features: ['Up to 500 residents', 'Advanced meal planning', 'Full billing suite', 'Priority support', 'Analytics dashboard'],
-    },
-    {
-      name: 'Enterprise',
-      price: 'Custom',
-      description: 'For large operations',
-      cta: 'Contact Us',
-      tone: 'border-border bg-white',
-      features: ['Unlimited residents', 'Custom features', 'Dedicated support', 'API access', 'Custom integrations'],
-    },
+    { name: 'Starter', price: '$99', description: 'Perfect for small messes', cta: 'Get Started', featured: false, features: ['Up to 50 residents', 'Basic meal planning', 'Billing system', 'Email support'] },
+    { name: 'Professional', price: '$299', description: 'For growing messes', cta: 'Get Started', featured: true, badge: 'Most Popular', features: ['Up to 500 residents', 'Advanced meal planning', 'Full billing suite', 'Priority support', 'Analytics dashboard'] },
+    { name: 'Enterprise', price: 'Custom', description: 'For large operations', cta: 'Contact Us', featured: false, features: ['Unlimited residents', 'Custom features', 'Dedicated support', 'API access', 'Custom integrations'] },
   ]
-
   return (
-    <section id="pricing" className="bg-white px-4 py-18 sm:px-6 lg:px-8">
+    <section id="pricing" className="bg-white px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Simple, Transparent Pricing</h2>
-          <p className="mt-3 text-base font-medium text-[#667085]">Plans that scale with your mess</p>
+          <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">Pricing</span>
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Simple, Transparent Pricing</h2>
+          <p className="mt-3 text-base font-medium text-[#6b7a99]">Plans that scale with your mess</p>
         </div>
-
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {plans.map((plan) => (
-            <div key={plan.name} className={`relative rounded-xl border p-7 ${plan.tone}`}>
-              {plan.badge && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#d83a00] px-4 py-1 text-xs font-black text-white">
-                  {plan.badge}
-                </span>
-              )}
-              <h3 className="text-2xl font-black text-[#0a1433]">{plan.name}</h3>
-              <p className="mt-2 text-sm font-medium text-[#667085]">{plan.description}</p>
+            <div key={plan.name} className={`relative rounded-2xl border p-7 transition ${plan.featured ? 'border-[#2f80ed] bg-gradient-to-b from-[#e7f1ff] to-white shadow-[0_18px_55px_rgba(47,128,237,0.18)]' : 'border-[#d8e6f8] bg-white hover:border-[#BBD4F4] hover:shadow-[0_12px_40px_rgba(47,128,237,0.08)]'}`}>
+              {plan.badge && <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#2f80ed] to-[#6f3df4] px-4 py-1 text-xs font-black text-white">{plan.badge}</span>}
+              <h3 className="text-xl font-black text-[#07143d]">{plan.name}</h3>
+              <p className="mt-1 text-sm font-medium text-[#6b7a99]">{plan.description}</p>
               <div className="mt-5 flex items-end gap-1">
-                <span className="text-4xl font-black tracking-tight text-[#0a1433]">{plan.price}</span>
-                {plan.price !== 'Custom' && <span className="pb-1 text-sm font-medium text-[#667085]">per month</span>}
-                {plan.price === 'Custom' && <span className="pb-1 text-sm font-medium text-[#667085]">contact us</span>}
+                <span className="text-4xl font-black tracking-tight text-[#07143d]">{plan.price}</span>
+                <span className="pb-1 text-sm font-medium text-[#6b7a99]">{plan.price === 'Custom' ? 'contact us' : 'per month'}</span>
               </div>
-              <Button
-                className={`mt-6 h-11 w-full rounded-lg font-black ${
-                  plan.badge ? 'bg-[#005bbb] text-white hover:bg-[#004fa3]' : 'border border-border bg-white text-[#0a1433] hover:bg-[#f4f8ff]'
-                }`}
-                variant={plan.badge ? 'default' : 'outline'}
-              >
-                {plan.cta}
-              </Button>
+              <Button className={`mt-6 h-11 w-full rounded-xl font-black ${plan.featured ? 'bg-gradient-to-r from-[#2f80ed] to-[#6f3df4] text-white hover:opacity-95' : 'border border-[#d8e6f8] bg-white text-[#07143d] hover:bg-[#f0f6ff]'}`} variant={plan.featured ? 'default' : 'outline'}>{plan.cta}</Button>
               <div className="mt-6 space-y-3">
                 {plan.features.map((feature) => (
-                  <div key={feature} className="flex items-center gap-2 text-sm font-medium text-[#0a1433]">
-                    <CheckCircle2 size={15} className="text-[#d83a00]" />
+                  <div key={feature} className="flex items-center gap-2 text-sm font-medium text-[#07143d]">
+                    <CheckCircle2 size={15} className="shrink-0 text-[#2f80ed]" />
                     {feature}
                   </div>
                 ))}
@@ -394,20 +302,18 @@ function WhyChooseSection() {
     ['99.9%', 'Uptime', 'Reliable platform you can depend on'],
     ['24/7', 'Support', 'Expert support whenever you need it'],
   ]
-
   return (
-    <section id="about" className="bg-[#dcebff] px-4 py-20 sm:px-6 lg:px-8">
+    <section id="about" className="bg-[#f0f6ff] px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl text-center">
-        <h2 className="text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Why Choose MessFlow?</h2>
-        <p className="mt-4 text-base font-medium text-[#667085]">
-          Designed specifically for mess managers who value efficiency and transparency
-        </p>
-        <div className="mt-14 grid gap-10 md:grid-cols-3">
+        <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">Why MessFlow</span>
+        <h2 className="mt-4 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Why Choose MessFlow?</h2>
+        <p className="mt-4 text-base font-medium text-[#6b7a99]">Designed specifically for mess managers who value efficiency and transparency</p>
+        <div className="mt-14 grid gap-8 md:grid-cols-3">
           {stats.map(([value, label, text]) => (
-            <div key={label}>
-              <p className="text-4xl font-black text-[#005bbb]">{value}</p>
+            <div key={label} className="rounded-2xl border border-[#d8e6f8] bg-white p-8 shadow-[0_12px_40px_rgba(47,128,237,0.07)]">
+              <p className="text-5xl font-black text-[#2f80ed]">{value}</p>
               <h3 className="mt-3 text-lg font-black text-[#07143d]">{label}</h3>
-              <p className="mt-3 text-sm font-medium text-[#667085]">{text}</p>
+              <p className="mt-2 text-sm font-medium text-[#6b7a99]">{text}</p>
             </div>
           ))}
         </div>
@@ -418,45 +324,44 @@ function WhyChooseSection() {
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#f8fbff] text-[#0a1433]">
+    <main className="min-h-screen bg-white text-[#07143d]">
       <Navbar />
-      <section className="overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[.76fr_1.24fr]">
+      <section className="overflow-hidden bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[.85fr_1.15fr]">
           <div>
-            <div className="mb-8 inline-flex rounded-full bg-[#f0edff] px-4 py-2 text-xs font-black text-[#5d36e8]">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-[#f0f6ff] px-4 py-2 text-xs font-black text-[#2f80ed]">
+              <span className="flex h-2 w-2 rounded-full bg-[#22b66f]" />
               All-in-One Mess Management Solution
             </div>
-            <h1 className="max-w-xl text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl">
-              Manage Your Mess <span className="text-[#6f3df4]">Smartly</span> & Easily
+            <h1 className="max-w-xl text-5xl font-black leading-[1.06] tracking-tight text-[#07143d] sm:text-6xl">
+              Manage Your Mess{' '}
+              <span className="bg-gradient-to-r from-[#2f80ed] to-[#6f3df4] bg-clip-text text-transparent">Smartly</span>{' '}
+              & Easily
             </h1>
-            <p className="mt-7 max-w-xl text-lg font-semibold leading-8 text-[#334155]">
-              A complete platform to manage meals, members, finances, shopping, attendance and everything in one place.
-              Save time, reduce hassle, focus on what matters.
+            <p className="mt-6 max-w-lg text-lg font-medium leading-8 text-[#6b7a99]">
+              A complete platform to manage meals, members, finances, shopping, attendance and everything in one place. Save time, reduce hassle, focus on what matters.
             </p>
-            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-              <Button asChild className="gradient-button h-12 rounded-lg px-7 font-black">
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Button asChild className="h-12 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#6f3df4] px-7 font-black text-white shadow-[0_10px_22px_rgba(47,128,237,0.30)] hover:opacity-95">
                 <Link href="/register">Get Started Free</Link>
               </Button>
-              <Button asChild variant="outline" className="h-12 rounded-lg border-[#c8befb] bg-white px-7 font-black text-[#6f3df4]">
-                <Link href="#features">Explore Dashboard <PlayCircle size={18} className="ml-2" /></Link>
+              <Button asChild variant="outline" className="h-12 rounded-xl border-[#d8e6f8] bg-white px-7 font-black text-[#2f80ed] hover:bg-[#f0f6ff]">
+                <Link href="#features" className="flex items-center gap-2">Explore Dashboard <PlayCircle size={18} /></Link>
               </Button>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <div className="flex -space-x-3">
+              <div className="flex -space-x-2.5">
                 {['A', 'R', 'S', 'M'].map((name, index) => (
-                  <span key={name} className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#efe9ff] text-sm font-black text-[#6f3df4] shadow" style={{ zIndex: 4 - index }}>
-                    {name}
-                  </span>
+                  <span key={name} className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#2f80ed] to-[#6f3df4] text-sm font-black text-white shadow" style={{ zIndex: 4 - index }}>{name}</span>
                 ))}
               </div>
-              <div className="text-[#ffb21a]">★★★★★</div>
-              <p className="text-sm font-bold text-[#334155]">from 2K+ happy users</p>
+              <div className="flex gap-0.5 text-[#ffb84d]">{'★★★★★'}</div>
+              <p className="text-sm font-bold text-[#6b7a99]">from 2K+ happy users</p>
             </div>
           </div>
           <ProductPreview />
         </div>
       </section>
-
       <SystemFeaturesSection />
       <TopMessSection />
       <PricingSection />

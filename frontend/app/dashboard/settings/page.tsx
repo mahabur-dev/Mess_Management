@@ -59,7 +59,7 @@ async function apiDeleteAccount(userId: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { user, setUser } = useAuth()          // make sure your auth context exposes setUser
+  const { user, updateUserLocally } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ── Profile state ──────────────────────────────────────────────────────────
@@ -130,14 +130,11 @@ export default function SettingsPage() {
       const updated = await apiUpdateProfile(formData)
 
       // sync auth context so navbar/header reflects the new name/avatar
-      if (setUser) {
-        setUser((prev: any) => ({
-          ...prev,
-          name: updated.name,
-          phone: updated.phone,
-          avatar_url: updated.avatar_url,
-        }))
-      }
+      updateUserLocally({
+        name: updated.name,
+        phone: updated.phone,
+        avatar_url: updated.avatar_url,
+      })
 
       setProfileData({ name: updated.name, phone: updated.phone ?? '' })
       setProfilePreview(updated.avatar_url || null)

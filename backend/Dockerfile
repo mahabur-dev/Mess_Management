@@ -17,12 +17,11 @@ WORKDIR /app
 RUN apk add --no-cache openssl
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules        # ← full node_modules
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts  # ← copy config
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-# Install tsx to run the TS config at migrate time
 RUN npm install -g tsx
 
 EXPOSE 5001

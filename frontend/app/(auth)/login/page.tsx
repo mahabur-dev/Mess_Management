@@ -1,13 +1,63 @@
 "use client"
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useAuth } from '@/app/context/auth-context'
-import { Eye, EyeOff } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { Eye, EyeOff, ArrowRight, UserRound } from 'lucide-react'
 import Image from 'next/image'
 import { ApiError } from '@/lib/api-client'
+
+function LoginField({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+  showToggle,
+  onToggle,
+  isVisible,
+}: {
+  label: string
+  type?: string
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  autoComplete?: string
+  showToggle?: boolean
+  onToggle?: () => void
+  isVisible?: boolean
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-foreground">
+        {label}
+      </span>
+      <span className="relative block">
+        <input
+          type={showToggle && isVisible !== undefined ? (isVisible ? 'text' : 'password') : type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          required
+          className="soft-input h-12 w-full px-4 pr-11 text-[15px] font-semibold shadow-sm"
+        />
+        {showToggle && onToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-primary"
+            aria-label="Toggle password visibility"
+          >
+            {isVisible ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
+        )}
+      </span>
+    </label>
+  )
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,7 +66,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const [focusedField, setFocusedField] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,238 +79,142 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #f0f9ff 100%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '24px',
-    }}>
-      {/* Background blobs */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute', top: '-80px', right: '-80px',
-          width: '400px', height: '400px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(120,84,247,0.08) 0%, transparent 70%)',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: '-80px', left: '-80px',
-          width: '400px', height: '400px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(168,141,250,0.06) 0%, transparent 70%)',
-        }} />
-      </div>
+    <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
+      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl bg-card shadow-xl lg:min-h-[680px] lg:grid-cols-[450px_1fr] border border-border">
+        {/* Left — Login Form */}
+        <section className="order-2 flex flex-col justify-center p-6 sm:p-9 lg:order-1 lg:p-12">
+          <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">
+              M
+            </span>
+            <span className="text-2xl font-black text-foreground">Mess.</span>
+          </Link>
 
-      {/* Two-column wrapper */}
-      <div className="login-wrapper" style={{
-        position: 'relative', zIndex: 1,
-        display: 'flex', alignItems: 'stretch',
-        width: '100%', maxWidth: '900px',
-        borderRadius: '24px',
-        boxShadow: '0 24px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
-        overflow: 'hidden',
-        animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)',
-      }}>
-
-        {/* LEFT — Login Card */}
-        <div className="login-card" style={{
-          flex: '0 0 420px',
-          background: '#fff',
-          padding: '44px 36px',
-          display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: '48px', height: '48px', borderRadius: '13px',
-              background: 'linear-gradient(135deg, #7854f7, #10175e)',
-              marginBottom: '16px',
-              boxShadow: '0 4px 16px rgba(120,84,247,0.4)',
-            }}>
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: '22px' }}>M</span>
+          <div className="mb-8">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent shadow-lg">
+              <UserRound size={27} />
             </div>
-            <h1 style={{ color: '#111827', fontSize: '24px', fontWeight: 700, marginBottom: '6px' }}>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               Welcome Back
             </h1>
-            <p style={{ color: '#6b7280', fontSize: '14px' }}>
-              Sign in to your mess account
+            <p className="mt-3 max-w-sm text-sm font-medium leading-6 text-muted-foreground">
+              Sign in to manage your mess account
             </p>
           </div>
 
-          {/* Error */}
           {error && (
-            <div style={{
-              background: '#fef2f2', border: '1px solid #fecaca',
-              borderRadius: '10px', padding: '10px 14px', marginBottom: '20px',
-            }}>
-              <p style={{ color: '#dc2626', fontSize: '13px' }}>{error}</p>
+            <div className="mb-5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">
+              {error}
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '16px' }}>
-              <label htmlFor="email" style={{
-                display: 'block', fontSize: '14px', fontWeight: 500,
-                color: '#374151', marginBottom: '6px',
-              }}>
-                Email Address
-              </label>
-              <Input
-              className='h-12'
-                id="email" type="email" placeholder="you@example.com"
-                value={email} onChange={e => setEmail(e.target.value)} required
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
-              />
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <LoginField
+              label="Email Address"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
 
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label htmlFor="password" style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>
-                  Password
-                </label>
-                <Link href="/forget_password" style={{ fontSize: '13px', color: '#7854f7', textDecoration: 'none', fontWeight: 500 }}>
-                  Forgot password?
-                </Link>
-              </div>
-              <div style={{ position: 'relative' }}>
-                <Input
-                className='h-12'
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password} onChange={e => setPassword(e.target.value)} required
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
-                  position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: '#9ca3af', display: 'flex', alignItems: 'center', padding: 0,
-                }}>
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+            <LoginField
+              label="Password"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              showToggle
+              onToggle={() => setShowPassword(!showPassword)}
+              isVisible={showPassword}
+            />
+
+            <div className="flex justify-end">
+              <Link href="/forget_password" className="text-sm font-medium text-primary hover:underline">
+                Forgot password?
+              </Link>
             </div>
 
             <button
-              type="submit" disabled={isSubmitting}
-              style={{
-                width: '100%', padding: '13px',
-                background: isSubmitting ? '#c4b5fd' : 'linear-gradient(135deg, #7854f7, #534AB7)',
-                border: 'none', borderRadius: '10px', color: '#fff',
-                fontWeight: 700, fontSize: '15px',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 16px rgba(120,84,247,0.4)',
-                transition: 'opacity 0.2s, transform 0.15s',
-              }}
-              onMouseEnter={e => { if (!isSubmitting) (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}
+              type="submit"
+              disabled={isSubmitting}
+              className="group mt-2 flex h-13 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-primary via-[#6f3df4] to-secondary px-6 text-base font-semibold text-primary-foreground shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:translate-y-0 disabled:opacity-70"
             >
               {isSubmitting ? 'Signing in...' : 'Sign In'}
+              {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
             </button>
           </form>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '24px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: '#f3f4f6' }} />
-            <span style={{ color: '#9ca3af', fontSize: '13px' }}>or</span>
-            <div style={{ flex: 1, height: '1px', background: '#f3f4f6' }} />
+          <div className="mt-8 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-medium text-muted-foreground">OR</span>
+            <div className="h-px flex-1 bg-border" />
           </div>
 
-          <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '14px' }}>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
-            <Link href="/register" style={{ color: '#7854f7', fontWeight: 600, textDecoration: 'none' }}>
-              Sign up
+            <Link href="/register" className="font-semibold text-primary hover:underline">
+              Create one
             </Link>
           </p>
-        </div>
+        </section>
 
-        {/* RIGHT — Image Panel */}
-        <div className="image-panel" style={{
-          flex: 1,
-          position: 'relative',
-          minHeight: '560px',
-          overflow: 'hidden',
-        }}>
-          {/* Photo */}
-          <Image
-            src='/Variety-fruits-vegetables(3).jpg'
-            alt="Healthy food"
-            width={100}
-            height={100}
-          className='w-full h-full object-cover'
-          />
-          {/* Gradient overlay matching brand colors */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(160deg, rgba(120,84,247,0.55) 0%, rgba(16,23,94,0.72) 100%)',
-          }} />
-          {/* Text overlay */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', flexDirection: 'column',
-            justifyContent: 'flex-end',
-            padding: '36px',
-          }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(12px)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255,255,255,0.2)',
-              padding: '20px 24px',
-            }}>
-              <p style={{
-                color: '#fff', fontSize: '18px', fontWeight: 700,
-                marginBottom: '6px', lineHeight: 1.3,
-              }}>
-                Fresh &amp; Healthy Meals
-              </p>
-              <p style={{
-                color: 'rgba(255,255,255,0.8)', fontSize: '13px', lineHeight: 1.5,
-              }}>
-                Manage your mess, track meals, and enjoy nutritious food every day.
-              </p>
+        {/* Right — Visual Panel */}
+        <section className="order-1 min-h-[260px] overflow-hidden lg:order-2 lg:min-h-full relative">
+          <div className="relative h-full min-h-[260px] lg:min-h-full">
+            <Image
+              src="/Variety-fruits-vegetables(3).jpg"
+              alt="Fresh vegetables and food"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              className="object-cover"
+              quality={80}
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,..."
+            />
+
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#17106b]/80 via-primary/60 to-secondary/70" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.25),transparent_28rem)]" />
+
+            <div className="relative flex h-full min-h-[260px] flex-col justify-between p-7 text-white sm:p-10 lg:min-h-full">
+              <Link href="/" className="hidden items-center gap-3 lg:flex">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-black text-primary">
+                  M
+                </span>
+                <span className="text-2xl font-bold">Mess.</span>
+              </Link>
+
+              <div className="max-w-xl">
+                <span className="mb-6 inline-flex rounded-full bg-white/15 px-5 py-1.5 text-xs font-semibold tracking-wider backdrop-blur-md">
+                  MEMBER LOGIN
+                </span>
+                <h2 className="text-4xl font-bold leading-tight tracking-tighter sm:text-5xl lg:text-6xl">
+                  Access your mess.<br />Track meals. Stay organized.
+                </h2>
+                <p className="mt-6 max-w-lg text-base text-white/90">
+                  Sign in to view your daily menu, manage attendance, and handle mess-related tasks.
+                </p>
+              </div>
+
+              <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur-xl">
+                  <div className="text-xl mb-2">🍽️</div>
+                  <p className="text-sm font-semibold">Daily Meals</p>
+                  <p className="mt-1 text-xs text-white/75">View today&apos;s menu and nutritional info.</p>
+                </div>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur-xl">
+                  <div className="text-xl mb-2">📊</div>
+                  <p className="text-sm font-semibold">Real-time Updates</p>
+                  <p className="mt-1 text-xs text-white/75">Stay informed with live mess activity.</p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-
+        </section>
       </div>
-
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(24px) scale(0.97) }
-          to { opacity: 1; transform: translateY(0) scale(1) }
-        }
-        input::placeholder { color: #9ca3af !important; }
-
-        /* ── Responsive ── */
-        @media (max-width: 700px) {
-          .login-wrapper {
-            flex-direction: column !important;
-            max-width: 100% !important;
-            border-radius: 20px !important;
-          }
-          .login-card {
-            flex: none !important;
-            width: 100% !important;
-            padding: 32px 24px !important;
-            order: 2;
-          }
-          .image-panel {
-            flex: none !important;
-            width: 100% !important;
-            min-height: 200px !important;
-            max-height: 220px !important;
-            order: 1;
-          }
-        }
-
-        @media (min-width: 701px) and (max-width: 900px) {
-          .login-card {
-            flex: 0 0 340px !important;
-            padding: 36px 28px !important;
-          }
-        }
-      `}</style>
-    </div>
+    </main>
   )
 }

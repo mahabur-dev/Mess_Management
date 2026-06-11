@@ -1,3 +1,91 @@
+// 'use client'
+
+// import { useAuth } from '@/app/context/auth-context'
+// import { Bell, CalendarDays, ChevronDown, Plus } from 'lucide-react'
+// import { Button } from '@/components/ui/button'
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuSeparator,
+//   DropdownMenuTrigger,
+// } from '@/components/ui/dropdown-menu'
+// import { useRouter } from 'next/navigation'
+// import { useState } from 'react'
+
+// interface DashboardHeaderProps {
+//   title: string
+//   description?: string
+// }
+
+// export function DashboardHeader({ title, description }: DashboardHeaderProps) {
+//   const { user, logout } = useAuth()
+//   const router = useRouter()
+//   const [imageError, setImageError] = useState(false)
+
+//   return (
+//     // <header className="dashboard-header sticky top-0 z-20">
+//     // <header className="sticky top-0 z-20 backdrop-blur-sm border-b border-border/40">
+//     <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-[#e6ebf4]">
+//       <div className="flex min-h-[72px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+//         <div className="pl-12 md:pl-0">
+//           {/* <h1 className="text-2xl font-black tracking-tight text-red sm:text-[28px]">{title}</h1>
+//           {description && <p className="mt-1 text-sm text-white/70">{description}</p>} */}
+//           <h1 className="text-2xl font-black tracking-tight text-[#07143d] sm:text-[28px]">{title}</h1>
+//           {description && <p className="mt-1 text-sm text-[#667085]">{description}</p>}
+//         </div>
+
+//         <div className="flex flex-wrap items-center gap-3">
+//           <Button variant="outline" className="hidden h-11 rounded-xl border-border bg-white font-bold sm:flex">
+//             <CalendarDays size={16} className="mr-2 text-[#667085]" />
+//             May 19, 2026
+//           </Button>
+//           <Button className="gradient-button h-11 rounded-xl font-bold">
+//             <Plus size={16} className="mr-2" />
+//             Quick Add
+//           </Button>
+//           <Button size="icon" variant="outline" className="relative h-11 w-11 rounded-xl bg-white">
+//             <Bell size={18} />
+//             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff2e55]" />
+//           </Button>
+
+//           <DropdownMenu>
+//             <DropdownMenuTrigger asChild>
+//               <Button variant="outline" className="h-11 rounded-xl bg-white px-2">
+//                 {user?.avatar_url && !imageError ? (
+//                   <img
+//                     src={user.avatar_url}
+//                     alt={user.name}
+//                     className="h-7 w-7 rounded-full object-cover"
+//                     onError={() => setImageError(true)}
+//                   />
+//                 ) : (
+//                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#6f3df4] to-[#2f5bf6] text-xs font-black text-white">
+//                     {user?.name?.charAt(0).toUpperCase() || 'M'}
+//                   </span>
+//                 )}
+//                 <span className="hidden max-w-[120px] truncate px-2 text-sm font-bold sm:inline">{user?.name}</span>
+//                 <ChevronDown size={15} />
+//               </Button>
+//             </DropdownMenuTrigger>
+//             <DropdownMenuContent align="end" className="w-56">
+//               <div className="px-2 py-1.5">
+//                 <p className="text-sm font-bold">{user?.name}</p>
+//                 <p className="text-xs text-muted-foreground">{user?.email}</p>
+//               </div>
+//               <DropdownMenuSeparator />
+//               <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Profile Settings</DropdownMenuItem>
+//               <DropdownMenuSeparator />
+//               <DropdownMenuItem onClick={logout} className="text-destructive">Logout</DropdownMenuItem>
+//             </DropdownMenuContent>
+//           </DropdownMenu>
+//         </div>
+//       </div>
+//     </header>
+//   )
+// }
+
+
 'use client'
 
 import { useAuth } from '@/app/context/auth-context'
@@ -24,15 +112,17 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
   const [imageError, setImageError] = useState(false)
 
   return (
-    <header className="dashboard-header sticky top-0 z-20">
+    // <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-[#e6ebf4]">
+    // ✅ Use this
+    <header className="dashboard-header-clean sticky top-0 z-20">
       <div className="flex min-h-[72px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="pl-12 md:pl-0">
-          <h1 className="text-2xl font-black tracking-tight text-white sm:text-[28px]">{title}</h1>
-          {description && <p className="mt-1 text-sm font-semibold text-white/70">{description}</p>}
+          <h1 className="text-2xl font-black tracking-tight text-[#07143d] sm:text-[28px]">{title}</h1>
+          {description && <p className="mt-1 text-sm text-[#667085]">{description}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" className="hidden h-11 rounded-xl border-border bg-white font-bold sm:flex">
+          <Button variant="outline" className="hidden h-11 rounded-xl border-[#e6ebf4] bg-white/60 font-bold sm:flex">
             <CalendarDays size={16} className="mr-2 text-[#667085]" />
             May 19, 2026
           </Button>
@@ -40,14 +130,14 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
             <Plus size={16} className="mr-2" />
             Quick Add
           </Button>
-          <Button size="icon" variant="outline" className="relative h-11 w-11 rounded-xl bg-white">
-            <Bell size={18} />
+          <Button size="icon" variant="outline" className="relative h-11 w-11 rounded-xl bg-white/60 border-[#e6ebf4]">
+            <Bell size={18} className="text-[#667085]" />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff2e55]" />
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-11 rounded-xl bg-white px-2">
+              <Button variant="outline" className="h-11 rounded-xl bg-white/60 border-[#e6ebf4] px-2">
                 {user?.avatar_url && !imageError ? (
                   <img
                     src={user.avatar_url}
@@ -60,13 +150,13 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
                     {user?.name?.charAt(0).toUpperCase() || 'M'}
                   </span>
                 )}
-                <span className="hidden max-w-[120px] truncate px-2 text-sm font-bold sm:inline">{user?.name}</span>
-                <ChevronDown size={15} />
+                <span className="hidden max-w-[120px] truncate px-2 text-sm font-bold text-[#07143d] sm:inline">{user?.name}</span>
+                <ChevronDown size={15} className="text-[#667085]" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5">
-                <p className="text-sm font-bold">{user?.name}</p>
+                <p className="text-sm font-bold text-[#07143d]">{user?.name}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />

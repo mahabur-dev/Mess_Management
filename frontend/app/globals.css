@@ -35,7 +35,7 @@
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #2a237f;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255,255,255,0.12);
+  --sidebar-border: rgba(255, 255, 255, 0.12);
   --sidebar-ring: #8e6cff;
 }
 
@@ -119,6 +119,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     background:
@@ -129,17 +130,34 @@
 }
 
 @layer components {
-  .glass-panel {
-    @apply border border-border bg-white/90 shadow-[0_18px_50px_rgba(22,34,73,0.08)];
-  }
+  /* .glass-panel {
+    @apply border border-border bg-white/90 shadow-[0_18px_50px_rgba(22, 34, 73, 0.08)];
+  } */
 
-  .app-card {
-    @apply rounded-lg border border-border bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)];
+  /* ✅ Fixed - move shadow out of @apply */
+.glass-panel {
+    @apply border border-border bg-white/90;
+    box-shadow: 0 18px 50px rgba(22, 34, 73, 0.08);
+}
+
+  /* .app-card {
+    @apply rounded-lg border border-border bg-white shadow-[0_10px_28px_rgba(15, 23, 42, 0.07)];
   }
 
   .gradient-button {
-    @apply bg-gradient-to-r from-[#2f5bf6] to-[#7037ea] text-white shadow-[0_10px_22px_rgba(80,70,230,0.22)] hover:opacity-95;
-  }
+    @apply bg-gradient-to-r from-[#2f5bf6] to-[#7037ea] text-white shadow-[0_10px_22px_rgba(80, 70, 230, 0.22)] hover:opacity-95;
+  } */
+
+  /* ✅ After */
+.app-card {
+  @apply rounded-lg border border-border bg-white;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+}
+
+.gradient-button {
+  @apply bg-gradient-to-r from-[#2f5bf6] to-[#7037ea] text-white hover:opacity-95;
+  box-shadow: 0 10px 22px rgba(80, 70, 230, 0.22);
+}
 
   .soft-input {
     @apply h-11 rounded-lg border border-border bg-white px-3 text-sm outline-none transition focus:border-[#6f3df4] focus:ring-2 focus:ring-[#6f3df4]/15;
@@ -171,16 +189,22 @@
     --chart-4: #ff4d4f;
     --chart-5: #6f7cff;
     color: var(--foreground);
-    background:
-      radial-gradient(circle at 16% 8%, rgba(47, 128, 237, 0.16), transparent 18rem),
-      linear-gradient(135deg, #a9ccfb 0%, #dbeaff 38%, #edf6ff 100%);
+    background: #f0f6ff;
+    /* radial-gradient(circle at 16% 8%, rgba(47, 128, 237, 0.16), transparent 18rem),
+      linear-gradient(135deg, #a9ccfb 0%, #dbeaff 38%, #edf6ff 100%); */
+    /* background: #f0f6ff; */
     font-family: var(--font-dashboard-sans), system-ui, sans-serif;
   }
 
-  .dashboard-main {
+  /* .dashboard-main {
     background:
       linear-gradient(180deg, rgba(0, 97, 174, 0.92) 0, rgba(0, 126, 202, 0.86) 96px, transparent 96px),
       transparent;
+  } */
+
+  .dashboard-main {
+    background:
+      linear-gradient(180deg, #BBD4F4 0px, #BBD4F4 72px, #f0f6ff 72px)
   }
 
   .dashboard-sidebar {
@@ -191,9 +215,15 @@
     backdrop-filter: blur(22px);
   }
 
-  .dashboard-header {
+  /* .dashboard-header {
     background: linear-gradient(180deg, rgba(0, 97, 174, 0.94), rgba(0, 126, 202, 0.88));
     box-shadow: 0 18px 42px rgba(47, 128, 237, 0.12);
+  } */
+  .dashboard-header-clean {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #e6ebf4;
+    box-shadow: 0 1px 8px rgba(22, 34, 73, 0.06);
   }
 
   .dashboard-theme .app-card:not(.dashboard-solid-card),
@@ -378,19 +408,15 @@
   }
 
   .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.45),
-      rgba(139, 92, 246, 0.85)
-    );
+    background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0.45),
+        rgba(139, 92, 246, 0.85));
     border-radius: 999px;
   }
 
   .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.7),
-      rgba(167, 139, 250, 1)
-    );
+    background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0.7),
+        rgba(167, 139, 250, 1));
   }
 }

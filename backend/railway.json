@@ -5,6 +5,6 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "node dist/src/main.js"
+    "startCommand": "npm run start:prod"
   }
 }

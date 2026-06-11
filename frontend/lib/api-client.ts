@@ -178,6 +178,15 @@ export interface Complaint {
   mess?: Mess
 }
 
+export interface PushSubscriptionPayload {
+  endpoint: string
+  keys: {
+    p256dh: string
+    auth: string
+  }
+  userAgent?: string
+}
+
 type QueryParams = Record<string, string | number | boolean | undefined | null>
 
 class ApiClient {
@@ -448,6 +457,18 @@ class ApiClient {
 
   updateComplaintStatus(id: string, data: { status: ComplaintStatus; response?: string }) {
     return this.request<Complaint>(`/complaints/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) })
+  }
+
+  getPushPublicKey() {
+    return this.request<{ publicKey: string }>('/notification/push/public-key')
+  }
+
+  savePushSubscription(data: PushSubscriptionPayload) {
+    return this.request('/notification/push/subscribe', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  removePushSubscription(endpoint: string) {
+    return this.request('/notification/push/unsubscribe', { method: 'PATCH', body: JSON.stringify({ endpoint }) })
   }
 }
 

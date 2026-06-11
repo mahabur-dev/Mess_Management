@@ -2,6 +2,7 @@
 
 import { AuthProvider, useAuth } from '@/app/context/auth-context'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
+import { PushNotificationPermissionModal } from '@/components/push-notification-permission-modal'
 import { ReactNode } from 'react'
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
@@ -29,6 +30,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
       <main className="dashboard-main flex-1 overflow-auto md:ml-[248px]">
         {children}
       </main>
+      <PushNotificationPermissionModal />
     </div>
   )
 }

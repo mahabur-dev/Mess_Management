@@ -1,0 +1,22 @@
+// ============================================================
+// prisma/schema/push-notification-subscription.prisma
+// Table: push_notification_subscriptions
+// ============================================================
+
+model PushNotificationSubscription {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String   @db.Uuid
+  endpoint     String   @unique @db.Text
+  p256dh_key   String   @db.Text
+  auth_key     String   @db.Text
+  user_agent   String?  @db.Text
+  is_active    Boolean  @default(true)
+  last_used_at DateTime @default(now()) @db.Timestamptz
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @updatedAt @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_active])
+  @@map("push_notification_subscriptions")
+}

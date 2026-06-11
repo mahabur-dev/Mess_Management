@@ -17,7 +17,6 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push"
-
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -46,7 +45,8 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
     "streamifier": "^0.1.1",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -65,6 +65,7 @@
     "@types/nodemailer": "^7.0.11",
     "@types/pg": "^8.20.0",
     "@types/streamifier": "^0.1.2",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

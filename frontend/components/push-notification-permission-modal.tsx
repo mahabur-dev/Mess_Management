@@ -65,9 +65,9 @@ export function PushNotificationPermissionModal() {
       else setOpen(true)
     }}>
       <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-lg border-border bg-card p-0">
-        <div className="border-b border-border bg-[#07143d] px-5 py-4 text-white">
+        <div className="border-b border-border bg-[#2F80ED] px-5 py-4 text-white">
           <DialogHeader className="space-y-2 text-left">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#7854f7]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
               <Bell className="h-5 w-5" />
             </div>
             <DialogTitle className="text-xl font-bold text-white">
@@ -103,7 +103,7 @@ export function PushNotificationPermissionModal() {
           </Button>
           <Button
             type="button"
-            className="w-full bg-[#005bbb] text-white hover:bg-[#004fa3]"
+            className="w-full bg-[#2F80ED] text-white hover:bg-[#2770d6]"
             onClick={enableNotifications}
             disabled={isSaving}
           >

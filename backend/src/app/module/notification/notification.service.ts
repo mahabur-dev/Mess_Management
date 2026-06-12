@@ -10,6 +10,7 @@ import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import webPush, { type PushSubscription } from 'web-push';
+import config from '../../config';
 
 @Injectable()
 export class NotificationService {
@@ -30,20 +31,20 @@ export class NotificationService {
   } as const;
 
   private configureWebPush() {
-    const publicKey = process.env.VAPID_PUBLIC_KEY;
-    const privateKey = process.env.VAPID_PRIVATE_KEY;
+    const publicKey = config.webPush.vapidPublicKey;
+    const privateKey = config.webPush.vapidPrivateKey;
 
     if (!publicKey || !privateKey) return;
 
     webPush.setVapidDetails(
-      process.env.VAPID_SUBJECT || 'mailto:support@mess-management.local',
+      config.webPush.vapidSubject || 'mailto:support@mess-management.local',
       publicKey,
       privateKey,
     );
   }
 
   getPushPublicKey() {
-    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    const publicKey = config.webPush.vapidPublicKey;
     if (!publicKey) {
       throw new HttpException('Push notifications are not configured', 503);
     }

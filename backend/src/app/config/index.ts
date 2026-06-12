@@ -33,6 +33,11 @@ export default {
     pass: process.env.EMAIL_PASS,
     from: process.env.EMAIL_FROM,
   },
+  webPush: {
+    vapidPublicKey: process.env.VAPID_PUBLIC_KEY as string,
+    vapidPrivateKey: process.env.VAPID_PRIVATE_KEY as string,
+    vapidSubject: process.env.VAPID_SUBJECT as string,
+  },
 
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 };

@@ -9,12 +9,14 @@ import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ExpenseService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly monthlyBillService: MonthlyBillService,
+    private readonly notificationService: NotificationService,
   ) { }
 
   private async recalculateExpenseMonthBill(messId: string, date: Date) {
@@ -84,6 +86,20 @@ export class ExpenseService {
     });
 
     await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
+
+    // Send push notification to all active users
+    await this.notificationService.sendPushToAll({
+      title: `New Expense Added - ${expense.mess.name}`,
+      body: `${expense.item_name || expense.category} - ${expense.amount}`,
+      url: '/dashboard/expenses',
+      data: {
+        messId: expense.mess.id,
+        expenseId: expense.id,
+        type: 'EXPENSE',
+      },
+    }).catch(() => {
+      // Silently fail if push notification fails
+    });
 
     return expense;
   }

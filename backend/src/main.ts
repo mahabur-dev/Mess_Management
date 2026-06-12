@@ -28,8 +28,8 @@ async function bootstrap() {
       const allowedOrigins = [
         // Local development
         'http://localhost:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3000',
+        'http://localhost:5001',
+        'http://localhost:4000',
 
         // Production frontend
         'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',

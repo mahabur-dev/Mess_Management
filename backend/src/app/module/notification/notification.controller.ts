@@ -83,7 +83,7 @@ export class NotificationController {
   }
 
   @Post('push/send/all')
-  @UseGuards(AuthGuard('ADMIN', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'ORGANIZER', 'MANAGER'))
   @ApiOperation({ summary: 'Send browser push notification to every active user' })
   async sendPushToAll(@Body() dto: SendPushNotificationDto) {
     const data = await this.notificationService.sendPushToAll(dto);

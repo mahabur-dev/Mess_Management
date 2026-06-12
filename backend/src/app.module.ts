@@ -38,7 +38,8 @@ import { DashboardModule } from './app/module/dashboard/dashboard.module';
     PaymentModule,
     NoticeModule,
     ComplaintModule,
-    DashboardModule
+    DashboardModule,
+    NotificationModule,
   ],
 
   controllers: [AppController],

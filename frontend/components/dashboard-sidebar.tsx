@@ -146,11 +146,11 @@ export function DashboardSidebar() {
           <div className="relative h-full w-[248px]">
             <button
               type="button"
-              className="absolute left-[260px] top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#0a1433]"
+              className="absolute left-[215px] top-0 flex h-8 w-8 items-center justify-center rounded-full text-white z-50 bg-[#2f80ed] shadow-[0_14px_28px_rgba(47,128,237,0.28)]"
               onClick={() => setIsOpen(false)}
               aria-label="Close menu"
             >
-              <X size={18} />
+              <X size={20} className='text-white font-semibold'/>
             </button>
             {content}
           </div>

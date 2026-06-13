@@ -88,7 +88,7 @@ export default function RegisterPage() {
 
     try {
       await register(form.name, form.email, form.phone, form.password, 'MEMBER')
-      router.push('/dashboard')
+      router.push('/login')
     } catch (error) {
       setError(error instanceof ApiError ? error.message : 'Registration failed. Please try again.')
     }

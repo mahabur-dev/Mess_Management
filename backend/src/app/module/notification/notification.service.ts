@@ -150,7 +150,7 @@ export class NotificationService {
       await this.dispatchPushToUsers(targetUserIds, {
         title: dto.title,
         body: dto.body,
-        url: '/dashboard',
+        url: '/',
         data: {
           notificationId: notification.id,
           messId: dto.messId,
@@ -321,7 +321,7 @@ export class NotificationService {
     const payload = JSON.stringify({
       title: dto.title,
       body: dto.body,
-      url: dto.url || '/dashboard',
+      url: dto.url || '/',
       data: dto.data ?? {},
     });
 

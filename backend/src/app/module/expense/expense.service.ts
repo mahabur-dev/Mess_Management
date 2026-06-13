@@ -91,7 +91,7 @@ export class ExpenseService {
     await this.notificationService.sendPushToAll({
       title: `New Expense Added - ${expense.mess.name}`,
       body: `${expense.item_name || expense.category} - ${expense.amount}`,
-      url: '/dashboard/expenses',
+      url: '/',
       data: {
         messId: expense.mess.id,
         expenseId: expense.id,

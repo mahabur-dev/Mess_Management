@@ -81,11 +81,8 @@ function money(value: number | string | undefined | null) {
 function StatCard({
   label,
   value,
-  badge,
   icon: Icon,
   accent,
-  iconBg,
-  iconColor,
 }: {
   label: string
   value: string | number
@@ -489,25 +486,27 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </Card>
 
-          <Card className="app-card p-5">
-            <h3 className="mb-5 text-sm font-black text-[#172554]">Quick Actions</h3>
+          {user.role !== 'MEMBER' && (
+            <Card className="app-card p-5">
+              <h3 className="mb-5 text-sm font-black text-[#172554]">Quick Actions</h3>
 
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-2">
-              {quickActions.map(([label, Icon, href]) => (
-                <button
-                  key={label}
-                  onClick={() => router.push(href)}
-                  className="group rounded-xl border border-[#d8e6f8] bg-white/70 p-4 text-center shadow-[0_8px_25px_rgba(65,103,153,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:bg-[#edf5ff]"
-                >
-                  <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] transition group-hover:bg-[#2f80ed] group-hover:text-white">
-                    <Icon size={20} />
-                  </span>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-2">
+                {quickActions.map(([label, Icon, href]) => (
+                  <button
+                    key={label}
+                    onClick={() => router.push(href)}
+                    className="group rounded-xl border border-[#d8e6f8] bg-white/70 p-4 text-center shadow-[0_8px_25px_rgba(65,103,153,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:bg-[#edf5ff]"
+                  >
+                    <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] transition group-hover:bg-[#2f80ed] group-hover:text-white">
+                      <Icon size={20} />
+                    </span>
 
-                  <span className="text-xs font-black text-[#172554]">{label}</span>
-                </button>
-              ))}
-            </div>
-          </Card>
+                    <span className="text-xs font-black text-[#172554]">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>

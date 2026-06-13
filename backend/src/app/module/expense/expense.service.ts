@@ -10,6 +10,7 @@ import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
 import { NotificationService } from '../notification/notification.service';
+import { uploadToCloudinary } from 'src/app/helpers/fileUploder';
 
 @Injectable()
 export class ExpenseService {
@@ -65,8 +66,22 @@ export class ExpenseService {
   }
 
 
-  async create(userId: string, role: string, dto: CreateExpenseDto) {
+  async create(
+    userId: string,
+    role: string,
+    dto: CreateExpenseDto,
+    receipt?: Express.Multer.File,
+  ) {
     await this.verifyManagerAccess(dto.messId, userId, role);
+
+    const receiptUrl = receipt
+      ? (
+          await uploadToCloudinary(receipt, 'mess_management/expenses', {
+            allowedTypes: ['image', 'pdf'],
+            maxSizeBytes: 10 * 1024 * 1024,
+          })
+        ).url
+      : dto.receiptUrl;
 
     const expense = await this.prisma.expense.create({
       data: {
@@ -76,7 +91,7 @@ export class ExpenseService {
         amount: dto.amount,
         expense_date: new Date(dto.expenseDate),
         description: dto.description,
-        receipt_url: dto.receiptUrl,
+        receipt_url: receiptUrl,
         buyer_id: dto.buyerId,
         item_name: dto.itemName,
         quantity: dto.quantity,
@@ -180,7 +195,13 @@ export class ExpenseService {
     return expense;
   }
 
-  async update(id: string, userId: string, role: string, dto: UpdateExpenseDto) {
+  async update(
+    id: string,
+    userId: string,
+    role: string,
+    dto: UpdateExpenseDto,
+    receipt?: Express.Multer.File,
+  ) {
     const expense = await this.prisma.expense.findUnique({
       where: { id },
     });
@@ -192,6 +213,14 @@ export class ExpenseService {
     await this.verifyManagerAccess(expense.mess_id, userId, role);
 
     const oldExpenseDate = expense.expense_date;
+    const receiptUrl = receipt
+      ? (
+          await uploadToCloudinary(receipt, 'mess_management/expenses', {
+            allowedTypes: ['image', 'pdf'],
+            maxSizeBytes: 10 * 1024 * 1024,
+          })
+        ).url
+      : dto.receiptUrl;
 
     const updatedExpense = await this.prisma.expense.update({
       where: { id },
@@ -200,7 +229,7 @@ export class ExpenseService {
         amount: dto.amount,
         expense_date: dto.expenseDate ? new Date(dto.expenseDate) : undefined,
         description: dto.description,
-        receipt_url: dto.receiptUrl,
+        receipt_url: receiptUrl,
         buyer_id: dto.buyerId,
         item_name: dto.itemName,
         quantity: dto.quantity,

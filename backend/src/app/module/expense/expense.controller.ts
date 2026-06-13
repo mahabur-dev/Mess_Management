@@ -8,9 +8,18 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Request } from 'express';
 import { ExpenseService } from './expense.service';
 import {
@@ -19,6 +28,7 @@ import {
   UpdateExpenseDto,
 } from './dto/expense.dto';
 import AuthGuard from '../../middlewares/auth.guard';
+import { uploadConfig } from 'src/app/helpers/fileUploder';
 
 @ApiTags('Expense')
 @ApiBearerAuth('access-token')
@@ -28,12 +38,38 @@ export class ExpenseController {
 
   @Post()
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
-  @ApiOperation({ summary: 'Create an expense (Manager/Admin)' })
-  async create(@Req() req: Request, @Body() dto: CreateExpenseDto) {
+  @UseInterceptors(FileInterceptor('receipt', uploadConfig))
+  @ApiOperation({ summary: 'Create an expense with optional receipt image/PDF' })
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['messId', 'category', 'amount', 'expenseDate'],
+      properties: {
+        messId: { type: 'string' },
+        buyerId: { type: 'string' },
+        category: { type: 'string' },
+        amount: { type: 'number' },
+        itemName: { type: 'string' },
+        quantity: { type: 'number' },
+        unit: { type: 'string' },
+        expenseDate: { type: 'string', format: 'date' },
+        description: { type: 'string' },
+        receiptUrl: { type: 'string' },
+        receipt: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  async create(
+    @Req() req: Request,
+    @Body() dto: CreateExpenseDto,
+    @UploadedFile() receipt?: Express.Multer.File,
+  ) {
     const data = await this.expenseService.create(
       req.user!.id,
       req.user!.role,
       dto,
+      receipt,
     );
     return { message: 'Expense created successfully', data };
   }
@@ -87,17 +123,38 @@ export class ExpenseController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
-  @ApiOperation({ summary: 'Update an expense (Manager/Admin)' })
+  @UseInterceptors(FileInterceptor('receipt', uploadConfig))
+  @ApiOperation({ summary: 'Update an expense with optional receipt image/PDF' })
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        buyerId: { type: 'string' },
+        category: { type: 'string' },
+        amount: { type: 'number' },
+        itemName: { type: 'string' },
+        quantity: { type: 'number' },
+        unit: { type: 'string' },
+        expenseDate: { type: 'string', format: 'date' },
+        description: { type: 'string' },
+        receiptUrl: { type: 'string' },
+        receipt: { type: 'string', format: 'binary' },
+      },
+    },
+  })
   async update(
     @Param('id') id: string,
     @Req() req: Request,
     @Body() dto: UpdateExpenseDto,
+    @UploadedFile() receipt?: Express.Multer.File,
   ) {
     const data = await this.expenseService.update(
       id,
       req.user!.id,
       req.user!.role,
       dto,
+      receipt,
     );
     return { message: 'Expense updated successfully', data };
   }

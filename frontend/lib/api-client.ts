@@ -127,6 +127,16 @@ export interface AdminDashboard {
   messes: number
   pendingComplaints: number
   pendingPayments: number
+  recentExpenses?: Array<{
+    id: string
+    item_name?: string | null
+    category: ExpenseCategory
+    amount: string | number
+    receipt_url?: string | null
+    expense_date: string
+    mess?: { id: string; name: string }
+    creator?: { id: string; name: string; email: string }
+  }>
 }
 
 export interface MonthlyBill {
@@ -395,8 +405,11 @@ class ApiClient {
     return this.request('/expense/mess/' + messId, { params })
   }
 
-  createExpense(data: Record<string, unknown>) {
-    return this.request('/expense', { method: 'POST', body: JSON.stringify(data) })
+  createExpense(data: Record<string, unknown> | FormData) {
+    return this.request('/expense', {
+      method: 'POST',
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    })
   }
 
   generateMonthlyBill(data: { messId: string; month: string }) {

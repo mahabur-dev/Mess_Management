@@ -89,6 +89,12 @@ export class UpdateMealDto {
   guests?: number;
 }
 
+export class CloseMealTimeDto {
+  @ApiProperty({ example: '2026-06-15' })
+  @IsDateString()
+  date: string;
+}
+
 export class MealFilterDto {
   @ApiPropertyOptional({ description: 'Filter by mess ID' })
   @IsOptional()

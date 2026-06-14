@@ -1,19 +1,12 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type Mess, type MonthlyBill } from '@/lib/api-client'
 import {
-  BadgeDollarSign,
   CalendarDays,
   ClipboardList,
-  CreditCard,
-  ReceiptText,
-  RefreshCcw,
-  UtensilsCrossed,
-  WalletCards,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -33,7 +26,6 @@ export default function MonthlyBillPage() {
 
   const [messes, setMesses] = useState<Mess[]>([])
   const [bills, setBills] = useState<MonthlyBill[]>([])
-  const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
   const [selectedMonth, setSelectedMonth] = useState(
@@ -80,51 +72,12 @@ export default function MonthlyBillPage() {
     load()
   }, [user?.role])
 
-  async function generateBill() {
-    if (!activeMess) return
-
-    setLoading(true)
-    setMessage('')
-
-    try {
-      await apiClient.generateMonthlyBill({
-        messId: activeMess.id,
-        month: `${selectedMonth}-01`,
-      })
-
-      setMessage('Monthly bills generated successfully.')
-      await load()
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const filteredBills = useMemo(() => {
     return bills.filter((bill) => {
       const billMonth = new Date(bill.month).toISOString().slice(0, 7)
       return billMonth === selectedMonth
     })
   }, [bills, selectedMonth])
-
-  const totalDue = filteredBills.reduce(
-    (sum, bill) => sum + Number(bill.final_due ?? 0),
-    0,
-  )
-
-  const paidAmount = filteredBills.reduce(
-    (sum, bill) => sum + Number(bill.paid_amount ?? 0),
-    0,
-  )
-
-  const totalMeals = filteredBills.reduce(
-    (sum, bill) => sum + Number(bill.total_meals ?? 0),
-    0,
-  )
-
-  const totalFoodBill = filteredBills.reduce(
-    (sum, bill) => sum + Number(bill.food_bill ?? 0),
-    0,
-  )
 
   return (
     <div className="min-h-screen">
@@ -138,87 +91,6 @@ export default function MonthlyBillPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        {message && (
-          <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
-            {message}
-          </div>
-        )}
-
-        <Card className="app-card mb-6 p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-lg font-black text-[#0a1433]">
-                Bill Month
-              </h2>
-              <p className="text-sm font-semibold text-muted-foreground">
-                Select month and generate or view monthly bills.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <input
-                type="month"
-                className="soft-input h-11 rounded-lg px-4 font-bold"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              />
-
-              {isManager && (
-                <Button
-                  onClick={generateBill}
-                  disabled={!activeMess || loading}
-                  className="gradient-button h-11 rounded-lg font-bold"
-                >
-                  <RefreshCcw size={16} className="mr-2" />
-                  {loading ? 'Generating...' : 'Generate Bill'}
-                </Button>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="dashboard-solid-card solid-red">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Total Due</p>
-                <p className="solid-value mt-2">{money(totalDue)}</p>
-              </div>
-              <span className="solid-icon"><BadgeDollarSign size={22} /></span>
-            </div>
-          </Card>
-
-          <Card className="dashboard-solid-card solid-green">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Paid Amount</p>
-                <p className="solid-value mt-2">{money(paidAmount)}</p>
-              </div>
-              <span className="solid-icon"><CreditCard size={22} /></span>
-            </div>
-          </Card>
-
-          <Card className="dashboard-solid-card solid-orange">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Total Meals</p>
-                <p className="solid-value mt-2">{totalMeals}</p>
-              </div>
-              <span className="solid-icon"><UtensilsCrossed size={22} /></span>
-            </div>
-          </Card>
-
-          <Card className="dashboard-solid-card solid-blue">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Food Bill</p>
-                <p className="solid-value mt-2">{money(totalFoodBill)}</p>
-              </div>
-              <span className="solid-icon"><ReceiptText size={22} /></span>
-            </div>
-          </Card>
-        </div>
-
         <Card className="app-card overflow-hidden">
           <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -230,9 +102,18 @@ export default function MonthlyBillPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 rounded-full bg-[#f4f7fb] px-3 py-1.5 text-xs font-black text-[#6f3df4]">
-              <ClipboardList size={14} />
-              {filteredBills.length} Bills
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                type="month"
+                className="soft-input h-11 rounded-lg px-4 font-bold"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              />
+
+              <div className="flex items-center justify-center gap-2 rounded-full bg-[#f4f7fb] px-3 py-1.5 text-xs font-black text-[#6f3df4]">
+                <ClipboardList size={14} />
+                {filteredBills.length} Bills
+              </div>
             </div>
           </div>
 
@@ -338,22 +219,6 @@ export default function MonthlyBillPage() {
           </div>
         </Card>
 
-        <Card className="app-card mt-6 p-5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#efe9ff] text-[#6f3df4]">
-              <WalletCards size={20} />
-            </div>
-
-            <div>
-              <h3 className="font-black text-[#0a1433]">Calculation Note</h3>
-              <p className="mt-1 text-sm font-semibold text-muted-foreground">
-                Bills are calculated from meals, guest meals, food expenses,
-                seat rent, utility share, extra cost, deposit, and approved
-                payments.
-              </p>
-            </div>
-          </div>
-        </Card>
       </div>
     </div>
   )

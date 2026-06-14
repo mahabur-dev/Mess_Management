@@ -1,5 +1,10 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { CreateMealDto, MealFilterDto, UpdateMealDto } from './dto/meal.dto';
+import {
+  CloseMealTimeDto,
+  CreateMealDto,
+  MealFilterDto,
+  UpdateMealDto,
+} from './dto/meal.dto';
 import { AttendanceStatus, MealName, MembershipRole, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
@@ -39,6 +44,46 @@ export class MealService {
     }
   }
 
+  private async verifyMealManagerAccess(
+    messId: string,
+    userId: string,
+    role: string,
+  ): Promise<void> {
+    if (role === 'ADMIN' || role === 'ORGANIZER') return;
+
+    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+    if (!mess) throw new HttpException('Mess not found', 404);
+    if (role === 'MANAGER' && mess.created_by === userId) return;
+
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+
+    if (membership?.is_active && membership.role === MembershipRole.MANAGER) {
+      return;
+    }
+
+    throw new HttpException('Forbidden: Only managers can close meal time', 403);
+  }
+
+  private async canManageMeal(
+    messId: string,
+    userId: string,
+    role: string,
+  ) {
+    if (role === 'ADMIN' || role === 'ORGANIZER') return true;
+
+    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+    if (!mess) throw new HttpException('Mess not found', 404);
+    if (role === 'MANAGER' && mess.created_by === userId) return true;
+
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+
+    return membership?.is_active && membership.role === MembershipRole.MANAGER;
+  }
+
   async create(userId: string, role: string, dto: CreateMealDto) {
     await this.verifyMessAccess(dto.messId, userId, role);
 
@@ -58,7 +103,7 @@ export class MealService {
       },
     });
 
-    if (savedMeal.is_locked && role === 'MEMBER') {
+    if (savedMeal.is_locked && !(await this.canManageMeal(dto.messId, userId, role))) {
       throw new HttpException('Meal is locked after deadline', 400);
     }
 
@@ -189,6 +234,10 @@ export class MealService {
     const meal = await this.prisma.meal.findUnique({ where: { id } });
     if (!meal) throw new HttpException('Meal entry not found', 404);
 
+    if (meal.is_locked && !(await this.canManageMeal(meal.mess_id, userId, role))) {
+      throw new HttpException('Meal is locked after deadline', 400);
+    }
+
     if (role === 'MEMBER' && meal.created_by !== userId) {
       throw new HttpException('Forbidden: Not your meal entry', 403);
     }
@@ -272,6 +321,73 @@ export class MealService {
     }
 
     return updatedMeal;
+  }
+
+  async closeMealTime(
+    messId: string,
+    userId: string,
+    role: string,
+    dto: CloseMealTimeDto,
+  ) {
+    await this.verifyMealManagerAccess(messId, userId, role);
+
+    const date = new Date(dto.date);
+    date.setHours(0, 0, 0, 0);
+
+    const meals = await Promise.all(
+      Object.values(MealName).map(async (mealName) => {
+        const existingMeal = await this.prisma.meal.findFirst({
+          where: {
+            mess_id: messId,
+            name: mealName,
+            scheduled_date: date,
+          },
+        });
+
+        const query = existingMeal
+          ? this.prisma.meal.update({
+              where: { id: existingMeal.id },
+              data: { status: 'LOCKED', is_locked: true },
+              include: {
+                creator: { select: { id: true, name: true } },
+                mess: { select: { id: true, name: true } },
+                attendances: {
+                  include: {
+                    member: { select: { id: true, name: true, email: true } },
+                  },
+                },
+              },
+            })
+          : this.prisma.meal.create({
+              data: {
+                mess_id: messId,
+                created_by: userId,
+                name: mealName,
+                scheduled_date: date,
+                status: 'LOCKED',
+                is_locked: true,
+              },
+              include: {
+                creator: { select: { id: true, name: true } },
+                mess: { select: { id: true, name: true } },
+                attendances: {
+                  include: {
+                    member: { select: { id: true, name: true, email: true } },
+                  },
+                },
+              },
+            });
+
+        return query;
+      }),
+    );
+
+    await this.recalculateMealMonthBill(messId, date);
+
+    return {
+      date,
+      lockedMeals: meals,
+    };
   }
 
   async remove(id: string, userId: string, role: string) {

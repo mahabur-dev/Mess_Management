@@ -389,6 +389,14 @@ class ApiClient {
   createMeal(data: { messId: string; memberId?: string; mealName: MealName; status: AttendanceStatus; guests?: number; date?: string; mealCount?: number }) {
     return this.request('/meal', { method: 'POST', body: JSON.stringify({ mealCount: data.status === 'ON' ? 1 : 0, ...data }) })
   }
+
+  closeMealTime(messId: string, date: string) {
+    return this.request(`/meal/mess/${messId}/close-time`, {
+      method: 'POST',
+      body: JSON.stringify({ date }),
+    })
+  }
+
   getMyMeals(params?: QueryParams) {
     return this.request('/meal/my', { params })
   }

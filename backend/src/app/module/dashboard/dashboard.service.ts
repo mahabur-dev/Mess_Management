@@ -111,14 +111,23 @@ export class DashboardService {
     complaints,
   ] = await Promise.all([
     this.prisma.mealAttendance.aggregate({
-      where: { status: 'ON', meal: { mess_id: messId, scheduled_date: { gte: today, lt: tomorrow } } },
+      where: {
+        status: 'ON',
+        meal: {
+          mess_id: messId,
+          scheduled_date: { gte: today, lt: tomorrow },
+          status: { not: 'CANCELLED' },
+        },
+      },
       _count: { _all: true },
       _sum: { guests: true },
     }),
    this.prisma.expense.aggregate({
       where: {
         mess_id: messId,
-        category: 'FOOD',
+        category: {
+          in: ['FOOD', 'GROCERY']
+        },
         expense_date: {
           gte: start,
           lt: end,
@@ -133,7 +142,7 @@ export class DashboardService {
       where: {
         mess_id: messId,
         category: {
-          not: 'FOOD',
+          notIn: ['FOOD', 'GROCERY'],
         },
         expense_date: { gte: start, lt: end },
       },
@@ -141,7 +150,14 @@ export class DashboardService {
     }),
 
     this.prisma.mealAttendance.aggregate({
-      where: { status: 'ON', meal: { mess_id: messId, scheduled_date: { gte: start, lt: end } } },
+      where: {
+        status: 'ON',
+        meal: {
+          mess_id: messId,
+          scheduled_date: { gte: start, lt: end },
+          status: { not: 'CANCELLED' },
+        },
+      },
       _count: { _all: true },
       _sum: { guests: true },
     }),
@@ -168,8 +184,6 @@ export class DashboardService {
     this.prisma.complaint.count({ where: { mess_id: messId, status: { in: ['PENDING', 'PROCESSING'] } } }),
   ]);
 
-  console.log(todayMeals);
-
   const todayTotalMeals = todayMeals._count._all + Number(todayMeals._sum.guests ?? 0);
   const totalMeals = monthlyMealAttendances._count._all + Number(monthlyMealAttendances._sum.guests ?? 0);
 
@@ -181,12 +195,11 @@ export class DashboardService {
 
   const totalDepositAmount = Number(totalDeposit._sum.amount ?? 0);
 
-  const totalExpense = extraExpenses + totalBazar;
-
-  const totalDue =
-    totalExpense > totalDepositAmount
-      ? Number((totalExpense - totalDepositAmount).toFixed(2))
-      : 0;
+  const billedTotalDue = Number(billsAgg._sum.final_due ?? 0);
+  const estimatedTotalDue = Math.max(totalBazar + extraExpenses - totalDepositAmount, 0);
+  const totalDue = Number(
+    (billedTotalDue > 0 ? billedTotalDue : estimatedTotalDue).toFixed(2),
+  );
   return {
     todayTotalMeals,
     totalMeals,

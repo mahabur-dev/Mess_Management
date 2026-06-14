@@ -3,6 +3,14 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog' // Assuming shadcn/ui Dialog is available
 import { useAuth } from '@/app/context/auth-context'
 import {
   apiClient,
@@ -20,6 +28,8 @@ import {
   Search,
   ShoppingCart,
   WalletCards,
+  Upload,
+  X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -66,7 +76,14 @@ type ExpenseRow = {
   amount: string
   category: ExpenseCategory
   unit: string
+  receipt?: File | null // New: image file per item
 }
+
+type ExpenseListResponse =
+  | ExpenseItem[]
+  | {
+      data?: ExpenseItem[]
+    }
 
 function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
@@ -78,6 +95,22 @@ function formatDate(date: string | Date) {
     month: 'short',
     year: 'numeric',
   })
+}
+
+function getMonthRange(monthValue: string) {
+  const [year, month] = monthValue.split('-').map(Number)
+  const lastDay = new Date(year, month, 0).getDate()
+
+  return {
+    startDate: `${monthValue}-01`,
+    endDate: `${monthValue}-${String(lastDay).padStart(2, '0')}`,
+  }
+}
+
+function normalizeExpenses(payload: ExpenseListResponse | undefined) {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.data)) return payload.data
+  return []
 }
 
 function getCategoryStyle(category: string) {
@@ -111,10 +144,21 @@ export default function FinancePage() {
   const [bills, setBills] = useState<MonthlyBill[]>([])
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
 
+  // Modal state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+
   // ── Multi-item form state ──────────────────────────────
   const [sharedDate, setSharedDate] = useState(new Date().toISOString().slice(0, 10))
   const [expenseItems, setExpenseItems] = useState<ExpenseRow[]>([
-    { id: 1, itemName: '', quantity: '', amount: '', category: 'FOOD', unit: '' },
+    { 
+      id: 1, 
+      itemName: '', 
+      quantity: '', 
+      amount: '', 
+      category: 'FOOD', 
+      unit: '',
+      receipt: null 
+    },
   ])
   const [rowCounter, setRowCounter] = useState(1)
   // ──────────────────────────────────────────────────────
@@ -146,15 +190,23 @@ export default function FinancePage() {
       setMesses(list)
 
       if (list[0]) {
+        const expenseRange = getMonthRange(selectedMonth)
         const [billRes, expenseRes] = await Promise.all([
           isManager
             ? apiClient.getBillsByMess(list[0].id).catch(() => null)
             : apiClient.getMyBills().catch(() => null),
-          apiClient.getExpensesByMess(list[0].id).catch(() => null),
+          apiClient
+            .getExpensesByMess(list[0].id, {
+              ...expenseRange,
+              limit: 1000,
+              sortBy: 'expense_date',
+              sortOrder: 'desc',
+            })
+            .catch(() => null),
         ])
 
         setBills(Array.isArray(billRes?.data) ? billRes.data : [])
-        setExpenses(Array.isArray(expenseRes?.data) ? expenseRes.data : [])
+        setExpenses(normalizeExpenses(expenseRes?.data as ExpenseListResponse | undefined))
       }
     } finally {
       setLoading(false)
@@ -163,7 +215,7 @@ export default function FinancePage() {
 
   useEffect(() => {
     load()
-  }, [user?.role])
+  }, [user, selectedMonth])
 
   // ── Multi-item helpers ─────────────────────────────────
   function addExpenseItem() {
@@ -171,7 +223,15 @@ export default function FinancePage() {
     setRowCounter(id)
     setExpenseItems((prev) => [
       ...prev,
-      { id, itemName: '', quantity: '', amount: '', category: 'FOOD', unit: '' },
+      { 
+        id, 
+        itemName: '', 
+        quantity: '', 
+        amount: '', 
+        category: 'FOOD', 
+        unit: '',
+        receipt: null 
+      },
     ])
   }
 
@@ -179,15 +239,54 @@ export default function FinancePage() {
     setExpenseItems((prev) => prev.filter((i) => i.id !== id))
   }
 
-  function updateExpenseItem(id: number, field: keyof ExpenseRow, value: string) {
+  function updateExpenseItem(id: number, field: keyof Omit<ExpenseRow, 'id' | 'receipt'>, value: string) {
     setExpenseItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, [field]: value } : i)),
     )
   }
 
+  function updateReceipt(id: number, file: File | null) {
+    setExpenseItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, receipt: file } : i)),
+    )
+  }
+
   function resetForm() {
-    setExpenseItems([{ id: 1, itemName: '', quantity: '', amount: '', category: 'FOOD', unit: '' }])
+    setExpenseItems([{
+      id: 1,
+      itemName: '',
+      quantity: '',
+      amount: '',
+      category: 'FOOD',
+      unit: '',
+      receipt: null
+    }])
     setRowCounter(1)
+    setSharedDate(new Date().toISOString().slice(0, 10))
+  }
+
+  function buildExpensePayload(item: ExpenseRow) {
+    const payload = {
+      messId: activeMess?.id,
+      category: item.category,
+      amount: Number(item.amount),
+      itemName: item.itemName,
+      quantity: item.quantity ? Number(item.quantity) : undefined,
+      unit: item.unit || undefined,
+      expenseDate: sharedDate,
+    }
+
+    if (!item.receipt) return payload
+
+    const formData = new FormData()
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        formData.append(key, String(value))
+      }
+    })
+    formData.append('receipt', item.receipt)
+
+    return formData
   }
 
   async function submitAllExpenses() {
@@ -203,17 +302,11 @@ export default function FinancePage() {
     try {
       await Promise.all(
         expenseItems.map((item) =>
-          apiClient.createExpense({
-            messId: activeMess.id,
-            category: item.category,
-            amount: Number(item.amount),
-            itemName: item.itemName,
-            quantity: item.quantity ? Number(item.quantity) : undefined,
-            expenseDate: sharedDate,
-          }),
+          apiClient.createExpense(buildExpensePayload(item)),
         ),
       )
       resetForm()
+      setIsAddModalOpen(false)
       setMessage(`${expenseItems.length} expense(s) added successfully.`)
       await load()
     } finally {
@@ -335,206 +428,206 @@ export default function FinancePage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
-          {/* ── Add Expense Form (Manager only) ── */}
-          {isManager && (
-            <div className="flex justify-center">
-              <Card className="w-full max-w-[560px] overflow-hidden rounded-3xl border border-violet-100 bg-white shadow-[0_18px_50px_rgba(45,27,105,0.10)]">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-[#eef2ff] via-[#f6f2ff] to-[#eef4ff] px-6 py-6 text-center">
-                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-[#4f6df5] to-[#7c3aed] text-white shadow-lg">
-                    <Plus size={24} />
-                  </div>
-                  <h2 className="text-2xl font-black tracking-tight text-[#0a1433]">
-                    Add Bazar / Expense
-                  </h2>
-                  <p className="mt-2 text-sm font-semibold text-slate-600">
-                    Add one or multiple items per submission.
-                  </p>
+        {/* ── Expenses Table Section ── */}
+        <Card className="app-card overflow-hidden">
+          <div className="border-b border-border p-4 sm:p-5">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                <h2 className="text-lg font-black text-[#0a1433]">
+                  All Bazar & Expenses
+                </h2>
+                <p className="text-sm font-semibold text-muted-foreground">
+                  Showing {filteredExpenses.length} expenses for selected month.
+                </p>
                 </div>
 
-                <div className="p-5 sm:p-6">
-                  {/* Shared date — once for all items */}
-                  <div className="mb-5 rounded-2xl bg-[#faf9ff] p-4">
-                    <label className="mb-2 block text-sm font-black text-[#0a1433]">
-                      Expense Date
-                    </label>
-                    <input
-                      className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                      type="date"
-                      value={sharedDate}
-                      onChange={(e) => setSharedDate(e.target.value)}
-                    />
-                  </div>
+                {isManager && (
+                  <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="h-11 rounded-xl bg-gradient-to-r from-[#3b5bdb] via-[#5b4ef5] to-[#7c3aed] text-sm font-black text-white">
+                        <Plus size={17} className="mr-2" />
+                        Add Expenses
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add Bazar / Expenses</DialogTitle>
+                        <DialogDescription>
+                          Add one or multiple items. You can attach receipt images.
+                        </DialogDescription>
+                      </DialogHeader>
 
-                  {/* Dynamic item rows */}
-                  <div className="space-y-3">
-                    {expenseItems.map((item, idx) => (
-                      <div
-                        key={item.id}
-                        className="relative rounded-2xl border border-slate-200 bg-[#faf9ff] p-4"
-                      >
-                        <p className="mb-3 text-xs font-black uppercase tracking-wide text-slate-400">
-                          Item {idx + 1}
-                        </p>
-
-                        {/* Remove button — only when more than 1 row */}
-                        {expenseItems.length > 1 && (
-                          <button
-                            onClick={() => removeExpenseItem(item.id)}
-                            className="absolute right-3 top-3 text-slate-400 transition hover:text-red-500"
-                            title="Remove item"
-                          >
-                            ✕
-                          </button>
-                        )}
-
-                        {/* Item name */}
-                        <div className="mb-3">
-                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                            Item Name
+                      <div className="space-y-6 py-4">
+                        {/* Shared date */}
+                        <div className="rounded-2xl bg-[#faf9ff] p-4">
+                          <label className="mb-2 block text-sm font-black text-[#0a1433]">
+                            Expense Date
                           </label>
                           <input
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition placeholder:text-slate-400 focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                            placeholder="e.g. Rice, Eggs, Gas bill..."
-                            value={item.itemName}
-                            onChange={(e) =>
-                              updateExpenseItem(item.id, 'itemName', e.target.value)
-                            }
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
+                            type="date"
+                            value={sharedDate}
+                            onChange={(e) => setSharedDate(e.target.value)}
                           />
                         </div>
 
-                        {/* Qty / Unit / Price */}
-                        <div className="mb-3 grid grid-cols-3 gap-2">
-                          <div>
-                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                              Quantity
-                            </label>
-                            <input
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-[#0a1433] outline-none transition placeholder:text-slate-400 focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                              type="number"
-                              placeholder="Qty"
-                              min="0"
-                              value={item.quantity}
-                              onChange={(e) =>
-                                updateExpenseItem(item.id, 'quantity', e.target.value)
-                              }
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                              Unit
-                            </label>
-                            <input
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-[#0a1433] outline-none transition placeholder:text-slate-400 focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                              placeholder="kg, pcs..."
-                              value={item.unit}
-                              onChange={(e) =>
-                                updateExpenseItem(item.id, 'unit', e.target.value)
-                              }
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                              Price (৳)
-                            </label>
-                            <input
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-[#0a1433] outline-none transition placeholder:text-slate-400 focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                              type="number"
-                              placeholder="Amount"
-                              min="0"
-                              value={item.amount}
-                              onChange={(e) =>
-                                updateExpenseItem(item.id, 'amount', e.target.value)
-                              }
-                            />
-                          </div>
+                        {/* Dynamic item rows */}
+                        <div className="space-y-4">
+                          {expenseItems.map((item, idx) => (
+                            <div
+                              key={item.id}
+                              className="relative rounded-2xl border border-slate-200 bg-[#faf9ff] p-5"
+                            >
+                              <p className="mb-4 text-xs font-black uppercase tracking-wide text-slate-400">
+                                Item {idx + 1}
+                              </p>
+
+                              {expenseItems.length > 1 && (
+                                <button
+                                  onClick={() => removeExpenseItem(item.id)}
+                                  className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
+                                >
+                                  <X size={18} />
+                                </button>
+                              )}
+
+                              <div className="grid gap-4">
+                                {/* Item Name */}
+                                <div>
+                                  <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                                    Item Name
+                                  </label>
+                                  <input
+                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                                    placeholder="e.g. Rice, Eggs..."
+                                    value={item.itemName}
+                                    onChange={(e) => updateExpenseItem(item.id, 'itemName', e.target.value)}
+                                  />
+                                </div>
+
+                                {/* Qty / Unit / Price */}
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="mb-1.5 block text-sm font-black">Quantity</label>
+                                    <input
+                                      type="number"
+                                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                                      placeholder="Qty"
+                                      value={item.quantity}
+                                      onChange={(e) => updateExpenseItem(item.id, 'quantity', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="mb-1.5 block text-sm font-black">Unit</label>
+                                    <input
+                                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                                      placeholder="kg, pcs"
+                                      value={item.unit}
+                                      onChange={(e) => updateExpenseItem(item.id, 'unit', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="mb-1.5 block text-sm font-black">Price (৳)</label>
+                                    <input
+                                      type="number"
+                                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                                      placeholder="Amount"
+                                      value={item.amount}
+                                      onChange={(e) => updateExpenseItem(item.id, 'amount', e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Category */}
+                                <div>
+                                  <label className="mb-1.5 block text-sm font-black">Category</label>
+                                  <select
+                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                                    value={item.category}
+                                    onChange={(e) =>
+                                      updateExpenseItem(item.id, 'category', e.target.value as ExpenseCategory)
+                                    }
+                                  >
+                                    {categories.map((c) => (
+                                      <option key={c} value={c}>{c}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {/* Receipt Image Upload */}
+                                <div>
+                                  <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                                    Receipt Image/PDF (Optional)
+                                  </label>
+                                  <div className="flex items-center gap-3">
+                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
+                                      <Upload size={18} />
+                                      Upload Receipt
+                                      <input
+                                        type="file"
+                                        accept="image/*,application/pdf,.pdf"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0] || null
+                                          updateReceipt(item.id, file)
+                                        }}
+                                      />
+                                    </label>
+                                    {item.receipt && (
+                                      <div className="flex items-center gap-2 text-sm text-green-600">
+                                        <span>{item.receipt.name}</span>
+                                        <button
+                                          onClick={() => updateReceipt(item.id, null)}
+                                          className="text-red-500 hover:text-red-700"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
 
-                        {/* Category */}
-                        <div>
-                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                            Category
-                          </label>
-                          <select
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                            value={item.category}
-                            onChange={(e) =>
-                              updateExpenseItem(
-                                item.id,
-                                'category',
-                                e.target.value as ExpenseCategory,
-                              )
-                            }
+                        <Button
+                          variant="outline"
+                          onClick={addExpenseItem}
+                          className="w-full h-11 border-dashed"
+                        >
+                          <Plus size={16} className="mr-2" />
+                          Add another item
+                        </Button>
+
+                        <div className="flex gap-3 pt-4">
+                          <Button
+                            onClick={submitAllExpenses}
+                            disabled={loading}
+                            className="flex-1 h-12 bg-gradient-to-r from-[#3b5bdb] to-[#7c3aed]"
                           >
-                            {categories.map((c) => (
-                              <option key={c} value={c}>
-                                {c}
-                              </option>
-                            ))}
-                          </select>
+                            {loading ? 'Saving...' : `Submit ${expenseItems.length} Item(s)`}
+                          </Button>
+                          <Button
+                            onClick={generateBill}
+                            disabled={loading}
+                            variant="outline"
+                            className="flex-1 h-12"
+                          >
+                            <RefreshCcw size={16} className="mr-2" />
+                            Generate Bill
+                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
 
-                  {/* Add more item button */}
-                  <Button
-                    variant="outline"
-                    onClick={addExpenseItem}
-                    className="mt-3 h-11 w-full rounded-xl border border-dashed border-slate-300 text-sm font-black text-slate-600 transition hover:border-[#6f3df4] hover:text-[#fff]"
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add more item
-                  </Button>
-
-                  {/* Submit & Generate buttons */}
-                  <div className="mt-5 grid gap-3">
-                    <Button
-                      onClick={submitAllExpenses}
-                      disabled={!activeMess || loading}
-                      className="h-12 rounded-xl bg-gradient-to-r from-[#3b5bdb] via-[#5b4ef5] to-[#7c3aed] text-sm font-black text-white shadow-[0_10px_30px_rgba(91,78,245,0.30)] transition hover:scale-[1.01] hover:opacity-95"
-                    >
-                      <Plus size={17} className="mr-2" />
-                      {loading
-                        ? 'Saving...'
-                        : `Submit ${expenseItems.length} item${expenseItems.length > 1 ? 's' : ''}`}
-                    </Button>
-
-                    <Button
-                      onClick={generateBill}
-                      disabled={!activeMess || loading}
-                      variant="outline"
-                      className="h-12 rounded-xl border border-slate-200 bg-white text-sm font-black text-[#0a1433] shadow-sm transition"
-                    >
-                      <RefreshCcw size={16} className="mr-2" />
-                      Generate Monthly Bill
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* ── Expenses Table ── */}
-          <Card className="app-card overflow-hidden">
-            <div className="border-b border-border p-4 sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-lg font-black text-[#0a1433]">
-                    All Bazar & Expenses
-                  </h2>
-                  <p className="text-sm font-semibold text-muted-foreground">
-                    Showing {filteredExpenses.length} expenses for selected month.
-                  </p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-3 lg:w-[560px]">
+                <div className="grid gap-3 sm:grid-cols-3 lg:w-[560px] lg:self-end">
                   <div className="relative">
-                    <Search
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       className="soft-input w-full pl-9"
                       placeholder="Search item..."
@@ -568,21 +661,21 @@ export default function FinancePage() {
               </div>
             </div>
 
-            {/* Desktop table */}
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[760px] text-left">
-                <thead className="bg-[#f8f7ff] text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-5 py-4 font-black">Item</th>
-                    <th className="px-5 py-4 font-black">Category</th>
-                    <th className="px-5 py-4 font-black">Quantity</th>
-                    <th className="px-5 py-4 font-black">Date</th>
-                    <th className="px-5 py-4 font-black">Added By</th>
-                    <th className="px-5 py-4 text-right font-black">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {loading && (
+                {/* Desktop table */}
+             <div className="hidden overflow-x-auto md:block">
+               <table className="w-full min-w-[760px] text-left">
+                 <thead className="bg-[#f8f7ff] text-xs uppercase tracking-wide text-slate-500">
+                   <tr>
+                     <th className="px-5 py-4 font-black">Item</th>
+                     <th className="px-5 py-4 font-black">Category</th>
+                     <th className="px-5 py-4 font-black">Quantity</th>
+                     <th className="px-5 py-4 font-black">Date</th>
+                     <th className="px-5 py-4 font-black">Added By</th>
+                     <th className="px-5 py-4 text-right font-black">Amount</th>
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-border">
+                   {loading && (
                     <tr>
                       <td
                         colSpan={6}
@@ -707,6 +800,5 @@ export default function FinancePage() {
           </Card>
         </div>
       </div>
-    </div>
   )
 }

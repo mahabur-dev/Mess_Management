@@ -431,10 +431,42 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="app-card p-5">
-            <h3 className="mb-4 text-sm font-black text-[#172554]">Recent Notices</h3>
+            <h3 className="mb-4 text-sm font-black text-[#172554]">
+              {user.role === 'ADMIN' ? 'Recent Expense Receipts' : 'Recent Notices'}
+            </h3>
 
             <div className="space-y-3">
-              {(messDashboard?.notices?.length
+              {user.role === 'ADMIN' ? (
+                adminDashboard?.recentExpenses?.length ? (
+                  adminDashboard.recentExpenses.map((expense) => (
+                    <a
+                      key={expense.id}
+                      href={expense.receipt_url ?? '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-start gap-3 rounded-xl border border-[#d8e6f8] bg-white/70 p-3 transition hover:bg-[#edf5ff]"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#efe9ff] text-[#6f3df4]">
+                        <ReceiptText size={15} />
+                      </span>
+
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-[#172554]">
+                          {expense.item_name || expense.category}
+                        </p>
+                        <p className="truncate text-xs font-semibold text-muted-foreground">
+                          {expense.mess?.name ?? 'Mess'} - {money(expense.amount)}
+                        </p>
+                      </div>
+                    </a>
+                  ))
+                ) : (
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    No uploaded receipts yet.
+                  </p>
+                )
+              ) : (
+                (messDashboard?.notices?.length
                 ? messDashboard.notices
                 : [
                   {
@@ -466,7 +498,7 @@ export default function DashboardPage() {
                     <p className="text-xs font-semibold text-muted-foreground">{notice.type}</p>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </Card>
         </div>

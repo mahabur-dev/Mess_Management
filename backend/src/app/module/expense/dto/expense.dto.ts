@@ -28,6 +28,9 @@ export class CreateExpenseDto {
   category: ExpenseCategory;
 
   @ApiProperty({ example: 1200.5, description: 'Expense amount' })
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === '' ? undefined : Number(value),
+  )
   @IsNumber()
   @Min(0.01)
   amount: number;
@@ -39,6 +42,9 @@ export class CreateExpenseDto {
 
   @ApiPropertyOptional({ example: 5 })
   @IsOptional()
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === '' ? undefined : Number(value),
+  )
   @IsNumber()
   @Min(0)
   quantity?: number;
@@ -76,6 +82,9 @@ export class UpdateExpenseDto {
 
   @ApiPropertyOptional({ example: 1500 })
   @IsOptional()
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === '' ? undefined : Number(value),
+  )
   @IsNumber()
   @Min(0.01)
   amount?: number;
@@ -87,6 +96,9 @@ export class UpdateExpenseDto {
 
   @ApiPropertyOptional({ example: 5 })
   @IsOptional()
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === '' ? undefined : Number(value),
+  )
   @IsNumber()
   @Min(0)
   quantity?: number;

@@ -205,15 +205,46 @@ export class DashboardService {
 }
 
   async getAdminDashboard() {
-    const [users, pendingRequests, approvedRequests, messes, pendingComplaints, pendingPayments] = await Promise.all([
+    const [
+      users,
+      pendingRequests,
+      approvedRequests,
+      messes,
+      pendingComplaints,
+      pendingPayments,
+      recentExpenses,
+    ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.messRequest.count({ where: { status: 'PENDING' } }),
       this.prisma.messRequest.count({ where: { status: 'APPROVED' } }),
       this.prisma.mess.count(),
       this.prisma.complaint.count({ where: { status: { in: ['PENDING', 'PROCESSING'] } } }),
       this.prisma.payment.count({ where: { status: 'PENDING' } }),
+      this.prisma.expense.findMany({
+        where: { receipt_url: { not: null } },
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          item_name: true,
+          category: true,
+          amount: true,
+          receipt_url: true,
+          expense_date: true,
+          mess: { select: { id: true, name: true } },
+          creator: { select: { id: true, name: true, email: true } },
+        },
+      }),
     ]);
 
-    return { users, pendingRequests, approvedRequests, messes, pendingComplaints, pendingPayments };
+    return {
+      users,
+      pendingRequests,
+      approvedRequests,
+      messes,
+      pendingComplaints,
+      pendingPayments,
+      recentExpenses,
+    };
   }
 }

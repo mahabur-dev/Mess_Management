@@ -78,6 +78,13 @@ import { v2 as cloudinary } from 'cloudinary';
 import { HttpException } from '@nestjs/common';
 import config from '../config';
 
+type AllowedUploadType = 'image' | 'pdf';
+
+type UploadOptions = {
+  allowedTypes?: AllowedUploadType[];
+  maxSizeBytes?: number;
+};
+
 cloudinary.config({
   cloud_name: config.cloudinary.name,
   api_key: config.cloudinary.apiKey,
@@ -91,21 +98,38 @@ export const uploadConfig = {
 export const uploadToCloudinary = async (
   file: Express.Multer.File,
   folder = 'mess_management',
+  options: UploadOptions = {},
 ): Promise<{ url: string; public_id: string }> => {
   if (!file || !file.buffer?.length) {
     throw new HttpException('No valid file provided', 400);
   }
 
-  if (file.mimetype && !file.mimetype.startsWith('image/')) {
-    throw new HttpException('Only image files are allowed', 400);
+  const allowedTypes = options.allowedTypes ?? ['image'];
+  const isImage = file.mimetype?.startsWith('image/');
+  const isPdf = file.mimetype === 'application/pdf';
+  const isAllowed =
+    (allowedTypes.includes('image') && isImage) ||
+    (allowedTypes.includes('pdf') && isPdf);
+
+  if (!isAllowed) {
+    throw new HttpException(
+      `Only ${allowedTypes.join(' or ')} files are allowed`,
+      400,
+    );
+  }
+
+  if (options.maxSizeBytes && file.size > options.maxSizeBytes) {
+    throw new HttpException('File is too large', 400);
   }
 
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
-        resource_type: 'image',
-        transformation: { width: 500, height: 500, crop: 'limit' },
+        resource_type: isPdf ? 'raw' : 'image',
+        ...(isImage && {
+          transformation: { width: 1200, height: 1200, crop: 'limit' },
+        }),
       },
       (error, result) => {
         if (error) {

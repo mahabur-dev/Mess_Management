@@ -16,20 +16,13 @@ import {
   apiClient,
   type ExpenseCategory,
   type Mess,
-  type MonthlyBill,
 } from '@/lib/api-client'
 import {
-  BadgeDollarSign,
   CalendarDays,
-  ClipboardList,
   Edit3,
   MessageSquareWarning,
   Plus,
-  ReceiptText,
-  RefreshCcw,
   Search,
-  ShoppingCart,
-  WalletCards,
   Upload,
   X,
 } from 'lucide-react'
@@ -144,7 +137,6 @@ export default function FinancePage() {
   const { user } = useAuth()
 
   const [messes, setMesses] = useState<Mess[]>([])
-  const [bills, setBills] = useState<MonthlyBill[]>([])
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
 
   // Modal state
@@ -209,21 +201,15 @@ export default function FinancePage() {
 
       if (list[0]) {
         const expenseRange = getMonthRange(selectedMonth)
-        const [billRes, expenseRes] = await Promise.all([
-          canManageMess
-            ? apiClient.getBillsByMess(list[0].id).catch(() => null)
-            : apiClient.getMyBills().catch(() => null),
-          apiClient
-            .getExpensesByMess(list[0].id, {
-              ...expenseRange,
-              limit: 1000,
-              sortBy: 'expense_date',
-              sortOrder: 'desc',
-            })
-            .catch(() => null),
-        ])
+        const expenseRes = await apiClient
+          .getExpensesByMess(list[0].id, {
+            ...expenseRange,
+            limit: 1000,
+            sortBy: 'expense_date',
+            sortOrder: 'desc',
+          })
+          .catch(() => null)
 
-        setBills(Array.isArray(billRes?.data) ? billRes.data : [])
         setExpenses(normalizeExpenses(expenseRes?.data as ExpenseListResponse | undefined))
       }
     } finally {
@@ -395,22 +381,6 @@ export default function FinancePage() {
   }
   // ──────────────────────────────────────────────────────
 
-  async function generateBill() {
-    if (!activeMess) return
-    setLoading(true)
-    setMessage('')
-    try {
-      await apiClient.generateMonthlyBill({
-        messId: activeMess.id,
-        month: `${selectedMonth}-01`,
-      })
-      setMessage('Monthly bills generated successfully.')
-      await load()
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const filteredExpenses = useMemo(() => {
     return expenses.filter((item) => {
       const expenseMonth = new Date(item.expense_date).toISOString().slice(0, 7)
@@ -422,20 +392,6 @@ export default function FinancePage() {
       return matchMonth && matchCategory && matchSearch
     })
   }, [expenses, selectedCategory, selectedMonth, searchText])
-
-  const totalDue = bills.reduce((sum, bill) => sum + Number(bill.final_due ?? 0), 0)
-  const paid = bills.reduce((sum, bill) => sum + Number(bill.paid_amount ?? 0), 0)
-
-  const totalExpense = filteredExpenses.reduce(
-    (sum, item) => sum + Number(item.amount ?? 0),
-    0,
-  )
-  const foodExpense = filteredExpenses
-    .filter((item) => item.category === 'FOOD' || item.category === 'GROCERY')
-    .reduce((sum, item) => sum + Number(item.amount ?? 0), 0)
-  const extraExpense = filteredExpenses
-    .filter((item) => item.category !== 'FOOD' && item.category !== 'GROCERY')
-    .reduce((sum, item) => sum + Number(item.amount ?? 0), 0)
 
   function canEditExpense(item: ExpenseItem) {
     return Boolean(user?.id && item.creator?.id === user.id)
@@ -471,59 +427,6 @@ export default function FinancePage() {
             {message}
           </div>
         )}
-
-        {/* ── Summary Cards ── */}
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Card className="dashboard-solid-card solid-blue">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Final Due</p>
-                <p className="solid-value mt-2">{money(totalDue)}</p>
-              </div>
-              <span className="solid-icon"><WalletCards size={21} /></span>
-            </div>
-          </Card>
-
-          <Card className="dashboard-solid-card solid-green">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Paid</p>
-                <p className="solid-value mt-2">{money(paid)}</p>
-              </div>
-              <span className="solid-icon"><ReceiptText size={21} /></span>
-            </div>
-          </Card>
-
-          <Card className="dashboard-solid-card solid-orange">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Food Bazar</p>
-                <p className="solid-value mt-2">{money(foodExpense)}</p>
-              </div>
-              <span className="solid-icon"><ShoppingCart size={21} /></span>
-            </div>
-          </Card>
-
-          <Card className="dashboard-solid-card solid-red">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Extra</p>
-                <p className="solid-value mt-2">{money(extraExpense)}</p>
-              </div>
-              <span className="solid-icon"><BadgeDollarSign size={21} /></span>
-            </div>
-          </Card>
-
-          <Card className="dashboard-solid-card solid-cyan">
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div>
-                <p className="solid-label">Total Expense</p>
-                <p className="solid-value mt-2">{money(totalExpense)}</p>
-              </div>
-              <span className="solid-icon"><ClipboardList size={21} /></span>
-            </div>
-          </Card>
-        </div>
 
         {/* ── Expenses Table Section ── */}
         <Card className="app-card overflow-hidden">
@@ -736,17 +639,6 @@ export default function FinancePage() {
                                 ? 'Update Expense'
                                 : `Submit ${expenseItems.length} Item(s)`}
                           </Button>
-                          {canManageMess && (
-                            <Button
-                              onClick={generateBill}
-                              disabled={loading}
-                              variant="outline"
-                              className="flex-1 h-12"
-                            >
-                              <RefreshCcw size={16} className="mr-2" />
-                              Generate Bill
-                            </Button>
-                          )}
                         </div>
                       </div>
                     </DialogContent>

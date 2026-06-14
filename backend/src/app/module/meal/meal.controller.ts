@@ -18,7 +18,12 @@ import {
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { MealService } from './meal.service';
-import { CreateMealDto, MealFilterDto, UpdateMealDto } from './dto/meal.dto';
+import {
+  CloseMealTimeDto,
+  CreateMealDto,
+  MealFilterDto,
+  UpdateMealDto,
+} from './dto/meal.dto';
 import AuthGuard from '../../middlewares/auth.guard';
 
 @ApiTags('Meal')
@@ -96,6 +101,23 @@ export class MealController {
       endDate,
     );
     return { message: 'Meal summary fetched', data };
+  }
+
+  @Post('mess/:messId/close-time')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Close member meal add/update time for a date' })
+  async closeMealTime(
+    @Param('messId') messId: string,
+    @Req() req: Request,
+    @Body() dto: CloseMealTimeDto,
+  ) {
+    const data = await this.mealService.closeMealTime(
+      messId,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return { message: 'Meal time closed successfully', data };
   }
 
   @Get(':id')

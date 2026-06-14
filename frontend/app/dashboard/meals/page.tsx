@@ -30,6 +30,8 @@ type MealEntry = {
   id: string
   name: MealName
   scheduled_date: string
+  status?: string
+  is_locked?: boolean
   attendances?: MealAttendance[]
 }
 
@@ -65,11 +67,14 @@ export default function MealsPage() {
   const [sheetError, setSheetError] = useState('')
   // Add state for user's personal meal data
   const [userMeals, setUserMeals] = useState<MealEntry[]>([])
-  const [userMealsLoading, setUserMealsLoading] = useState(false)
+  const [userMealsLoading, setUserMealsLoading] = useState(true)
+  const [mealTimeClosed, setMealTimeClosed] = useState(false)
+  const [closingMealTime, setClosingMealTime] = useState(false)
   
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
   const canViewMemberMealSheet = user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const mealControlsLocked = mealTimeClosed || userMealsLoading
 
   useEffect(() => {
     apiClient
@@ -85,6 +90,8 @@ export default function MealsPage() {
     async function loadUserMeals() {
       if (!activeMess?.id || !user?.id) {
         setUserMeals([])
+        setMealTimeClosed(false)
+        setUserMealsLoading(false)
         return
       }
 
@@ -100,6 +107,7 @@ export default function MealsPage() {
         if (!mounted) return
         
         const meals = Array.isArray(response.data) ? response.data as MealEntry[] : []
+        setMealTimeClosed(meals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
         
         // Filter meals to only include those where current user has attendance
         const userSpecificMeals = meals.filter(meal => 
@@ -157,7 +165,9 @@ export default function MealsPage() {
         const fallbackMembers = ((activeMess as Mess & { memberships?: ActiveMember[] }).memberships ?? [])
           .filter((member) => member.is_active)
         setMembers(apiMembers.length ? apiMembers : fallbackMembers)
-        setTodayMeals(Array.isArray(mealsResponse.data) ? (mealsResponse.data as MealEntry[]) : [])
+        const meals = Array.isArray(mealsResponse.data) ? (mealsResponse.data as MealEntry[]) : []
+        setTodayMeals(meals)
+        setMealTimeClosed(meals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
       } catch (error) {
         if (!mounted) return
         setSheetError(error instanceof Error ? error.message : 'Failed to load member meals')
@@ -216,6 +226,10 @@ export default function MealsPage() {
 
   async function setMeal(mealName: MealName, status: AttendanceStatus) {
     if (!activeMess) return
+    if (mealTimeClosed) {
+      setMessage('Meal time is closed. Please contact your manager.')
+      return
+    }
     setMessage('')
     try {
       await apiClient.createMeal({
@@ -234,6 +248,7 @@ export default function MealsPage() {
         limit: 10 
       })
       const meals = Array.isArray(response.data) ? response.data as MealEntry[] : []
+      setMealTimeClosed(meals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
       const userSpecificMeals = meals.filter(meal => 
         meal.attendances?.some(attendance => attendance.member_id === user?.id)
       )
@@ -241,10 +256,37 @@ export default function MealsPage() {
       
       if (canViewMemberMealSheet) {
         const mealsResponse = await apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 })
-        setTodayMeals(Array.isArray(mealsResponse.data) ? (mealsResponse.data as MealEntry[]) : [])
+        const managerMeals = Array.isArray(mealsResponse.data) ? (mealsResponse.data as MealEntry[]) : []
+        setTodayMeals(managerMeals)
+        setMealTimeClosed(managerMeals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
       }
     } catch (error) {
       setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to update meal'}`)
+    }
+  }
+
+  async function closeMealTime() {
+    if (!activeMess || !isManager) return
+    setClosingMealTime(true)
+    setMessage('')
+
+    try {
+      await apiClient.closeMealTime(activeMess.id, date)
+      setMealTimeClosed(true)
+      setMessage(`Meal time closed for ${date}. Members cannot add or update their own meals now.`)
+
+      const mealsResponse = await apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 })
+      const meals = Array.isArray(mealsResponse.data) ? (mealsResponse.data as MealEntry[]) : []
+      setTodayMeals(meals)
+
+      const userSpecificMeals = meals.filter((meal) =>
+        meal.attendances?.some((attendance) => attendance.member_id === user?.id),
+      )
+      setUserMeals(userSpecificMeals)
+    } catch (error) {
+      setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to close meal time'}`)
+    } finally {
+      setClosingMealTime(false)
     }
   }
 
@@ -262,11 +304,30 @@ export default function MealsPage() {
             <h2 className="text-lg font-black">{activeMess?.name ?? 'No mess selected'}</h2>
             <p className="text-sm font-semibold text-muted-foreground">Meal off deadline: {activeMess?.meal_off_deadline ?? 'Before 10 PM previous night'}</p>
           </div>
-          <label className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2">
-            <CalendarDays size={17} className="text-[#6f3df4]" />
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-transparent text-sm font-bold outline-none" />
-          </label>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {isManager && (
+              <Button
+                disabled={!activeMess || mealTimeClosed || closingMealTime}
+                onClick={closeMealTime}
+                className="h-11 rounded-lg bg-[#f59e0b] px-4 font-black text-white hover:bg-[#d97706] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+              >
+                <Lock size={16} className="mr-2" />
+                {mealTimeClosed ? 'Meal Time Closed' : closingMealTime ? 'Closing...' : 'Close Meal Time'}
+              </Button>
+            )}
+
+            <label className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2">
+              <CalendarDays size={17} className="text-[#6f3df4]" />
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-transparent text-sm font-bold outline-none" />
+            </label>
+          </div>
         </div>
+
+        {mealTimeClosed && (
+          <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+            Meal time is closed for {date}. Members cannot add or update their own meals for this date.
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-3">
           {mealNames.map((mealName) => (
@@ -294,6 +355,7 @@ export default function MealsPage() {
                   <input
                     type="number"
                     min={0}
+                    disabled={mealControlsLocked}
                     className="soft-input w-full"
                     value={guests[mealName]}
                     onChange={(event) => setGuests((current) => ({ ...current, [mealName]: Number(event.target.value) }))}
@@ -303,7 +365,7 @@ export default function MealsPage() {
 
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <Button 
-                  disabled={!activeMess || userMealsLoading} 
+                  disabled={!activeMess || userMealsLoading || mealControlsLocked} 
                   onClick={() => setMeal(mealName, 'ON')} 
                   className="bg-[#22b66f] font-bold hover:bg-[#1fa463]"
                   variant={getUserMealStatus(mealName) === 'ON' ? "default" : "outline"}
@@ -311,7 +373,7 @@ export default function MealsPage() {
                   ON
                 </Button>
                 <Button 
-                  disabled={!activeMess || userMealsLoading} 
+                  disabled={!activeMess || userMealsLoading || mealControlsLocked} 
                   onClick={() => setMeal(mealName, 'OFF')} 
                   variant={getUserMealStatus(mealName) === 'OFF' ? "outline" : "outline"} 
                   className="font-bold text-destructive"

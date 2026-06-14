@@ -25,6 +25,7 @@ import { ExpenseService } from './expense.service';
 import {
   CreateExpenseDto,
   ExpenseFilterDto,
+  RequestPriceReviewDto,
   UpdateExpenseDto,
 } from './dto/expense.dto';
 import AuthGuard from '../../middlewares/auth.guard';
@@ -121,8 +122,25 @@ export class ExpenseController {
     return { message: 'Expense fetched successfully', data };
   }
 
-  @Patch(':id')
+  @Post(':id/request-price-review')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Request price review from the expense creator' })
+  async requestPriceReview(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Body() dto: RequestPriceReviewDto,
+  ) {
+    const data = await this.expenseService.requestPriceReview(
+      id,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return { message: 'Price review request sent successfully', data };
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
   @UseInterceptors(FileInterceptor('receipt', uploadConfig))
   @ApiOperation({ summary: 'Update an expense with optional receipt image/PDF' })
   @ApiConsumes('multipart/form-data', 'application/json')

@@ -412,6 +412,20 @@ class ApiClient {
     })
   }
 
+  updateExpense(id: string, data: Record<string, unknown> | FormData) {
+    return this.request(`/expense/${id}`, {
+      method: 'PATCH',
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    })
+  }
+
+  requestExpensePriceReview(id: string, message: string) {
+    return this.request(`/expense/${id}/request-price-review`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    })
+  }
+
   generateMonthlyBill(data: { messId: string; month: string }) {
     return this.request<MonthlyBill[]>('/monthly-bill/generate', { method: 'POST', body: JSON.stringify(data) })
   }

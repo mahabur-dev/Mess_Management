@@ -2,6 +2,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import {
   CreateExpenseDto,
   ExpenseFilterDto,
+  RequestPriceReviewDto,
   UpdateExpenseDto,
 } from './dto/expense.dto';
 import { ExpenseCategory, Prisma } from '@prisma/client';
@@ -65,6 +66,31 @@ export class ExpenseService {
     throw new HttpException('Forbidden: Only managers can manage expenses', 403);
   }
 
+  private async verifyMessMemberAccess(
+    messId: string,
+    userId: string,
+    role: string,
+  ): Promise<void> {
+    if (role === 'ADMIN') return;
+
+    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+    if (!mess) throw new HttpException('Mess not found', 404);
+    if (mess.created_by === userId) return;
+
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+
+    if (membership?.is_active) return;
+
+    throw new HttpException('Forbidden: Not a member of this mess', 403);
+  }
+
+  private verifyExpenseOwner(expense: { created_by: string }, userId: string) {
+    if (expense.created_by !== userId) {
+      throw new HttpException('Forbidden: You can edit only your own expenses', 403);
+    }
+  }
 
   async create(
     userId: string,
@@ -72,7 +98,7 @@ export class ExpenseService {
     dto: CreateExpenseDto,
     receipt?: Express.Multer.File,
   ) {
-    await this.verifyManagerAccess(dto.messId, userId, role);
+    await this.verifyMessMemberAccess(dto.messId, userId, role);
 
     const receiptUrl = receipt
       ? (
@@ -210,7 +236,8 @@ export class ExpenseService {
       throw new HttpException('Expense not found', 404);
     }
 
-    await this.verifyManagerAccess(expense.mess_id, userId, role);
+    await this.verifyMessMemberAccess(expense.mess_id, userId, role);
+    this.verifyExpenseOwner(expense, userId);
 
     const oldExpenseDate = expense.expense_date;
     const receiptUrl = receipt
@@ -248,6 +275,57 @@ export class ExpenseService {
     }
 
     return updatedExpense;
+  }
+
+  async requestPriceReview(
+    id: string,
+    userId: string,
+    role: string,
+    dto: RequestPriceReviewDto,
+  ) {
+    const expense = await this.prisma.expense.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        mess_id: true,
+        created_by: true,
+        item_name: true,
+        category: true,
+        amount: true,
+        mess: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!expense) {
+      throw new HttpException('Expense not found', 404);
+    }
+
+    await this.verifyManagerAccess(expense.mess_id, userId, role);
+
+    const message = dto.message.trim();
+    const itemLabel = expense.item_name || expense.category;
+
+    const result = await this.notificationService.sendPushToUser(
+      expense.created_by,
+      {
+        title: `Price review requested - ${expense.mess.name}`,
+        body: message,
+        url: '/dashboard/finance',
+        data: {
+          messId: expense.mess.id,
+          expenseId: expense.id,
+          itemName: itemLabel,
+          amount: String(expense.amount),
+          type: 'EXPENSE_PRICE_REVIEW',
+        },
+      },
+    );
+
+    return {
+      expenseId: expense.id,
+      targetUserId: expense.created_by,
+      ...result,
+    };
   }
 
   async remove(id: string, userId: string, role: string) {

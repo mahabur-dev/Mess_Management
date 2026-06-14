@@ -124,6 +124,13 @@ export class UpdateExpenseDto {
   receiptUrl?: string;
 }
 
+export class RequestPriceReviewDto {
+  @ApiProperty({ example: 'Please review the rice price and update the correct amount.' })
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+}
+
 export class ExpenseFilterDto {
   @ApiPropertyOptional({ description: 'Filter by mess ID' })
   @IsOptional()

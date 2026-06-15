@@ -11,6 +11,7 @@ import {
   EyeOff,
   LockKeyhole,
 } from 'lucide-react'
+import { BrandLogo } from '@/components/brand-logo'
 import { ApiError } from '@/lib/api-client'
 
 function LoginField({
@@ -86,18 +87,15 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#eef6ff] px-4 py-6 text-[#172554] sm:px-6 lg:px-8">
       <div className="w-full max-w-md rounded-lg border border-white/80 bg-white/95 p-6 shadow-[0_24px_70px_rgba(30,64,120,0.16)] backdrop-blur sm:p-8">
-            <Link href="/" className="mb-8 flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2563eb] text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,0.25)]">
-                M
-              </span>
-              <span className="text-2xl font-black text-[#172554]">Mess.</span>
+            <Link href="/" className="mb-5 flex items-center">
+              <BrandLogo />
             </Link>
 
             <div className="mb-7">
-              <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
+              {/* <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
                 <LockKeyhole size={25} />
-              </div>
-              <h2 className="text-3xl font-black leading-tight tracking-normal text-[#0f1f4b] sm:text-4xl">
+              </div> */}
+              <h2 className="text-2xl font-black leading-tight tracking-normal text-[#405692] sm:text-2xl">
                 Welcome back
               </h2>
               <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
@@ -146,18 +144,18 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group mt-2 flex h-13 w-full items-center justify-center rounded-lg bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_16px_30px_rgba(37,99,235,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(37,99,235,0.28)] disabled:translate-y-0 disabled:opacity-70"
+                className="group mt-2 mb-2 flex h-13 w-full items-center justify-center rounded-lg bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_16px_30px_rgba(37,99,235,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(37,99,235,0.28)] disabled:translate-y-0 disabled:opacity-70"
               >
                 {isSubmitting ? 'Signing in...' : 'Sign In'}
                 {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
               </button>
             </form>
 
-            <div className="my-7 flex items-center gap-3">
+            {/* <div className="my-7 flex items-center gap-3">
               <div className="h-px flex-1 bg-[#d8e6f8]" />
               <span className="text-xs font-black text-[#8a98b4]">OR</span>
               <div className="h-px flex-1 bg-[#d8e6f8]" />
-            </div>
+            </div> */}
 
             <p className="text-center text-sm font-semibold text-[#667085]">
               Don&apos;t have an account?{' '}

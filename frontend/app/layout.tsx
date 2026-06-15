@@ -29,17 +29,17 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Mess Management Platform',
+  title: 'Mess Management',
   description: 'Manage messes, meals, finances, shopping, and attendance with ease',
   generator: 'v0.app',
   manifest: '/manifest.json',
   icons: {
     icon: [
       {
-        url: '/mess_logo.png',
+        url: '/transparent_logo.png',
       },
     ],
-    apple: '/mess_logo.png',
+    apple: '/transparent_logo.png',
   },
   formatDetection: {
     telephone: true,

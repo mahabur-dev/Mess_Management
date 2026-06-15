@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   UserRound,
 } from 'lucide-react'
+import { BrandLogo } from '@/components/brand-logo'
 import { ApiError } from '@/lib/api-client'
 
 function RegisterField({
@@ -102,18 +103,15 @@ export default function RegisterPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#eef6ff] px-4 py-6 text-[#172554] sm:px-6 lg:px-8">
       <div className="w-full max-w-md rounded-lg border border-white/80 bg-white/95 p-6 shadow-[0_24px_70px_rgba(30,64,120,0.16)] backdrop-blur sm:p-8">
-            <Link href="/" className="mb-7 flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2563eb] text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,0.25)]">
-                M
-              </span>
-              <span className="text-2xl font-black text-[#172554]">Mess.</span>
+            <Link href="/" className="mb-7 flex items-center">
+              <BrandLogo />
             </Link>
 
             <div className="mb-6">
-              <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
+              {/* <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
                 <UserRound size={25} />
-              </div>
-              <h1 className="text-3xl font-black leading-tight tracking-normal text-[#0f1f4b] sm:text-4xl">
+              </div> */}
+              <h1 className="text-xl font-black leading-tight tracking-normal text-[#405692] sm:text-2xl">
                 Create account
               </h1>
               <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
@@ -170,14 +168,14 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="rounded-lg border border-[#d8e6f8] bg-[#f8fbff] p-4">
+              {/* <div className="rounded-lg border border-[#d8e6f8] bg-[#f8fbff] p-4">
                 <div className="flex items-start gap-3">
                   <ShieldCheck size={20} className="mt-0.5 shrink-0 text-[#16a34a]" />
                   <p className="text-sm font-semibold leading-6 text-[#667085]">
                     Every new profile is created as a member. Manager permission is approved from the dashboard.
                   </p>
                 </div>
-              </div>
+              </div> */}
 
               <button
                 type="submit"

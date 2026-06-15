@@ -1,11 +1,16 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useAuth } from '@/app/context/auth-context'
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Phone, ShieldCheck, UserRound } from 'lucide-react'
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react'
 import { ApiError } from '@/lib/api-client'
 
 function RegisterField({
@@ -28,7 +33,7 @@ function RegisterField({
 
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-foreground">
+      <span className="mb-2 block text-sm font-bold text-[#172554]">
         {label}
       </span>
       <span className="relative block">
@@ -39,13 +44,13 @@ function RegisterField({
           placeholder={placeholder}
           autoComplete={autoComplete}
           required
-          className="soft-input h-12 w-full px-4 pr-11 text-[15px] font-semibold shadow-sm"
+          className="h-12 w-full rounded-lg border border-[#d8e6f8] bg-white px-4 pr-11 text-[15px] font-semibold text-[#172554] shadow-[0_8px_22px_rgba(37,64,112,0.07)] outline-none transition placeholder:text-[#8a98b4] focus:border-[#2f80ed] focus:ring-4 focus:ring-[#2f80ed]/12"
         />
         {isPassword && (
           <button
             type="button"
             onClick={() => setVisible((current) => !current)}
-            className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-primary"
+            className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#edf5ff] hover:text-[#2f80ed]"
             aria-label="Toggle password visibility"
           >
             {visible ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -95,159 +100,102 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
-      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl bg-card shadow-xl lg:min-h-[680px] lg:grid-cols-[450px_1fr] border border-border">
-        {/* Left Form Section */}
-        <section className="order-2 flex flex-col justify-center p-6 sm:p-9 lg:order-1 lg:p-12">
-          <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">
-              M
-            </span>
-            <span className="text-2xl font-black text-foreground">Mess.</span>
-          </Link>
+    <main className="flex min-h-screen items-center justify-center bg-[#eef6ff] px-4 py-6 text-[#172554] sm:px-6 lg:px-8">
+      <div className="w-full max-w-md rounded-lg border border-white/80 bg-white/95 p-6 shadow-[0_24px_70px_rgba(30,64,120,0.16)] backdrop-blur sm:p-8">
+            <Link href="/" className="mb-7 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2563eb] text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,0.25)]">
+                M
+              </span>
+              <span className="text-2xl font-black text-[#172554]">Mess.</span>
+            </Link>
 
-          <div className="mb-8">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent shadow-lg">
-              <UserRound size={27} />
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Register as Member
-            </h1>
-            <p className="mt-3 max-w-sm text-sm font-medium leading-6 text-muted-foreground">
-              Sign up as a normal member. Manager access comes after mess request approval.
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <RegisterField
-              label="Full Name"
-              value={form.name}
-              onChange={(value) => update('name', value)}
-              placeholder="Your name"
-              autoComplete="name"
-            />
-            <RegisterField
-              label="Email Address"
-              type="email"
-              value={form.email}
-              onChange={(value) => update('email', value)}
-              placeholder="contact@mr.com"
-              autoComplete="email"
-            />
-            <RegisterField
-              label="Phone Number"
-              type="tel"
-              value={form.phone}
-              onChange={(value) => update('phone', value)}
-              placeholder="01700-000000"
-              autoComplete="tel"
-            />
-            <RegisterField
-              label="Password"
-              type="password"
-              value={form.password}
-              onChange={(value) => update('password', value)}
-              placeholder="Minimum 6 characters"
-              autoComplete="new-password"
-            />
-            <RegisterField
-              label="Confirm Password"
-              type="password"
-              value={form.confirmPassword}
-              onChange={(value) => update('confirmPassword', value)}
-              placeholder="Confirm password"
-              autoComplete="new-password"
-            />
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group mt-2 flex h-13 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-primary via-[#6f3df4] to-secondary px-6 text-base font-semibold text-primary-foreground shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:translate-y-0 disabled:opacity-70"
-            >
-              {isSubmitting ? 'Creating Account...' : 'Create Member Account'}
-              {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
-            </button>
-          </form>
-
-          <div className="mt-8 rounded-2xl border border-border bg-muted/50 p-5">
-            <div className="flex items-start gap-3">
-              <ShieldCheck size={20} className="mt-0.5 text-emerald-500" />
-              <p className="text-sm text-muted-foreground">
-                Every account is created as a member. You can request mess manager access after login.
+            <div className="mb-6">
+              <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
+                <UserRound size={25} />
+              </div>
+              <h1 className="text-3xl font-black leading-tight tracking-normal text-[#0f1f4b] sm:text-4xl">
+                Create account
+              </h1>
+              <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
+                Start as a member and request manager access after login.
               </p>
             </div>
-          </div>
 
-          <p className="mt-8 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link href="/login" className="font-semibold text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </section>
+            {error && (
+              <div className="mb-5 rounded-lg border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-sm font-bold text-[#dc2626]">
+                {error}
+              </div>
+            )}
 
-        {/* Right Visual Section */}
-        <section className="order-1 min-h-[260px] overflow-hidden lg:order-2 lg:min-h-full relative">
-          <div className="relative h-full min-h-[260px] lg:min-h-full">
-            <Image
-              src="/Variety-fruits-vegetables(3).jpg"
-              alt="Fresh vegetables and food"
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 55vw"
-              className="object-cover"
-              quality={80}
-              placeholder="blur"
-              blurDataURL="data:image/jpeg;base64,..."
-              // blurDataURL="..." // Recommended: generate with plaiceholder
-            />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <RegisterField
+                label="Full Name"
+                value={form.name}
+                onChange={(value) => update('name', value)}
+                placeholder="Your name"
+                autoComplete="name"
+              />
+              <RegisterField
+                label="Email Address"
+                type="email"
+                value={form.email}
+                onChange={(value) => update('email', value)}
+                placeholder="contact@example.com"
+                autoComplete="email"
+              />
+              <RegisterField
+                label="Phone Number"
+                type="tel"
+                value={form.phone}
+                onChange={(value) => update('phone', value)}
+                placeholder="01700-000000"
+                autoComplete="tel"
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <RegisterField
+                  label="Password"
+                  type="password"
+                  value={form.password}
+                  onChange={(value) => update('password', value)}
+                  placeholder="Minimum 6 characters"
+                  autoComplete="new-password"
+                />
+                <RegisterField
+                  label="Confirm Password"
+                  type="password"
+                  value={form.confirmPassword}
+                  onChange={(value) => update('confirmPassword', value)}
+                  placeholder="Confirm password"
+                  autoComplete="new-password"
+                />
+              </div>
 
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#17106b]/80 via-primary/60 to-secondary/70" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.25),transparent_28rem)]" />
+              <div className="rounded-lg border border-[#d8e6f8] bg-[#f8fbff] p-4">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck size={20} className="mt-0.5 shrink-0 text-[#16a34a]" />
+                  <p className="text-sm font-semibold leading-6 text-[#667085]">
+                    Every new profile is created as a member. Manager permission is approved from the dashboard.
+                  </p>
+                </div>
+              </div>
 
-            <div className="relative flex h-full min-h-[260px] flex-col justify-between p-7 text-white sm:p-10 lg:min-h-full">
-              <Link href="/" className="hidden items-center gap-3 lg:flex">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-black text-primary">
-                  M
-                </span>
-                <span className="text-2xl font-bold">Mess.</span>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="group flex h-13 w-full items-center justify-center rounded-lg bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_16px_30px_rgba(37,99,235,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(37,99,235,0.28)] disabled:translate-y-0 disabled:opacity-70"
+              >
+                {isSubmitting ? 'Creating account...' : 'Create Member Account'}
+                {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
+              </button>
+            </form>
+
+            <p className="mt-7 text-center text-sm font-semibold text-[#667085]">
+              Already have an account?{' '}
+              <Link href="/login" className="font-black text-[#2563eb] hover:underline">
+                Sign in
               </Link>
-
-              <div className="max-w-xl">
-                <span className="mb-6 inline-flex rounded-full bg-white/15 px-5 py-1.5 text-xs font-semibold tracking-wider backdrop-blur-md">
-                  MEMBER REGISTRATION
-                </span>
-                <h2 className="text-4xl font-bold leading-tight tracking-tighter sm:text-5xl lg:text-6xl">
-                  Create account first.<br />Manage mess after approval.
-                </h2>
-                <p className="mt-6 max-w-lg text-base text-white/90">
-                  Every user starts as a member. To become a mess manager, submit a mess registration request from the dashboard and wait for super admin approval.
-                </p>
-              </div>
-
-              <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur-xl">
-                  <CheckCircle2 size={22} className="mb-3" />
-                  <p className="text-sm font-semibold">Member-first flow</p>
-                  <p className="mt-1 text-xs text-white/75">Clean approval system for managers.</p>
-                </div>
-                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur-xl">
-                  <Phone size={22} className="mb-3" />
-                  <p className="text-sm font-semibold">Mobile friendly</p>
-                  <p className="mt-1 text-xs text-white/75">Big controls for everyday mess users.</p>
-                </div>
-              </div>
-            </div>
+            </p>
           </div>
-        </section>
-      </div>
     </main>
   )
 }

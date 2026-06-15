@@ -199,11 +199,11 @@ export default function DashboardPage() {
       })
       | null
 
-    if (user?.role === 'ADMIN' && adminDashboard) {
+    if (user?.role === 'ADMIN') {
       return [
         [
           'Total Users',
-          adminDashboard.users,
+          adminDashboard?.users ?? 0,
           'Users',
           Users,
           'from-[#2f80ed] to-[#6f3df4]',
@@ -212,7 +212,7 @@ export default function DashboardPage() {
         ],
         [
           'All Messes',
-          adminDashboard.messes,
+          adminDashboard?.messes ?? 0,
           'Messes',
           Home,
           'from-[#22b66f] to-[#14b8a6]',
@@ -221,7 +221,7 @@ export default function DashboardPage() {
         ],
         [
           'Pending Requests',
-          adminDashboard.pendingRequests,
+          adminDashboard?.pendingRequests ?? 0,
           'Requests',
           ClipboardList,
           'from-[#f59e0b] to-[#f97316]',
@@ -230,7 +230,7 @@ export default function DashboardPage() {
         ],
         [
           'Pending Payments',
-          adminDashboard.pendingPayments,
+          adminDashboard?.pendingPayments ?? 0,
           'Payments',
           CreditCard,
           'from-[#f43f7f] to-[#ef4444]',

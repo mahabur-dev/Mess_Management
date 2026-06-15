@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Mail } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { ArrowLeft, ArrowRight, Mail } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 
 export default function ForgetPassword() {
@@ -40,252 +38,69 @@ export default function ForgetPassword() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #f0f9ff 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-    }}>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute',
-          top: '-80px',
-          right: '-80px',
-          width: '400px',
-          height: '400px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(120,84,247,0.08) 0%, transparent 70%)',
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: '-80px',
-          left: '-80px',
-          width: '400px',
-          height: '400px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(168,141,250,0.06) 0%, transparent 70%)',
-        }} />
-      </div>
+    <main className="flex min-h-screen items-center justify-center bg-[#eef6ff] px-4 py-6 text-[#172554] sm:px-6 lg:px-8">
+      <div className="w-full max-w-md rounded-lg border border-white/80 bg-white/95 p-6 shadow-[0_24px_70px_rgba(30,64,120,0.16)] backdrop-blur sm:p-8">
+        <Link href="/login" className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-[#667085] transition hover:text-[#2563eb]">
+          <ArrowLeft size={16} />
+          Back to login
+        </Link>
 
-      <div className="forgot-wrapper" style={{
-        position: 'relative',
-        zIndex: 1,
-        display: 'flex',
-        alignItems: 'stretch',
-        width: '100%',
-        maxWidth: '900px',
-        borderRadius: '24px',
-        boxShadow: '0 24px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
-        overflow: 'hidden',
-        animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)',
-      }}>
-        <div className="forgot-card" style={{
-          flex: '0 0 420px',
-          background: '#fff',
-          padding: '44px 36px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-        }}>
-          <Link href="/login" style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            width: 'fit-content',
-            color: '#6b7280',
-            fontSize: '13px',
-            fontWeight: 500,
-            textDecoration: 'none',
-            marginBottom: '26px',
-          }}>
-            <ArrowLeft size={14} />
-            Back to login
-          </Link>
-
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '48px',
-              height: '48px',
-              borderRadius: '13px',
-              background: 'linear-gradient(135deg, #7854f7, #10175e)',
-              marginBottom: '16px',
-              boxShadow: '0 4px 16px rgba(120,84,247,0.4)',
-            }}>
-              <Mail size={22} color="#fff" />
-            </div>
-            <h1 style={{ color: '#111827', fontSize: '24px', fontWeight: 700, marginBottom: '6px' }}>
-              Forgot Password
-            </h1>
-            <p style={{ color: '#6b7280', fontSize: '14px', lineHeight: 1.5 }}>
-              Enter your email address and we&apos;ll send you a link to reset your password.
-            </p>
+        <div className="mb-7">
+          <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
+            <Mail size={25} />
           </div>
-
-          {message && (
-            <div style={{
-              background: isSuccess ? '#f0fdf4' : '#fef2f2',
-              border: isSuccess ? '1px solid #bbf7d0' : '1px solid #fecaca',
-              borderRadius: '10px',
-              padding: '10px 14px',
-              marginBottom: '20px',
-            }}>
-              <p style={{ color: isSuccess ? '#15803d' : '#dc2626', fontSize: '13px' }}>{message}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '24px' }}>
-              <label htmlFor="email" style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#374151',
-                marginBottom: '6px',
-              }}>
-                Email Address
-              </label>
-              <Input
-                className="h-12"
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                width: '100%',
-                padding: '13px',
-                background: isSubmitting ? '#c4b5fd' : 'linear-gradient(135deg, #7854f7, #534AB7)',
-                border: 'none',
-                borderRadius: '10px',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '15px',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 16px rgba(120,84,247,0.4)',
-                transition: 'opacity 0.2s, transform 0.15s',
-              }}
-              onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.transform = 'translateY(-1px)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
-            >
-              {isSubmitting ? 'Sending OTP...' : 'Send OTP'}
-            </button>
-          </form>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '24px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: '#f3f4f6' }} />
-            <span style={{ color: '#9ca3af', fontSize: '13px' }}>or</span>
-            <div style={{ flex: 1, height: '1px', background: '#f3f4f6' }} />
-          </div>
-
-          <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '14px' }}>
-            Remember your password?{' '}
-            <Link href="/login" style={{ color: '#7854f7', fontWeight: 600, textDecoration: 'none' }}>
-              Sign in
-            </Link>
+          <h1 className="text-3xl font-black leading-tight tracking-normal text-[#0f1f4b] sm:text-4xl">
+            Forgot password
+          </h1>
+          <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
+            Enter your email address and we will send an OTP to reset your password.
           </p>
         </div>
 
-        <div className="forgot-image-panel" style={{
-          flex: 1,
-          position: 'relative',
-          minHeight: '560px',
-          overflow: 'hidden',
-        }}>
-          <Image
-            src="/Variety-fruits-vegetables(3).jpg"
-            alt="Healthy food"
-            width={100}
-            height={100}
-            className="w-full h-full object-cover"
-          />
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(160deg, rgba(120,84,247,0.55) 0%, rgba(16,23,94,0.72) 100%)',
-          }} />
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end',
-            padding: '36px',
-          }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(12px)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255,255,255,0.2)',
-              padding: '20px 24px',
-            }}>
-              <p style={{
-                color: '#fff',
-                fontSize: '18px',
-                fontWeight: 700,
-                marginBottom: '6px',
-                lineHeight: 1.3,
-              }}>
-                Fresh &amp; Healthy Meals
-              </p>
-              <p style={{
-                color: 'rgba(255,255,255,0.8)',
-                fontSize: '13px',
-                lineHeight: 1.5,
-              }}>
-                Get back into your account and keep managing meals without missing a beat.
-              </p>
-            </div>
+        {message && (
+          <div className={`mb-5 rounded-lg border px-4 py-3 text-sm font-bold ${isSuccess ? 'border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]' : 'border-[#fecaca] bg-[#fff1f2] text-[#dc2626]'}`}>
+            {message}
           </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold text-[#172554]">
+              Email Address
+            </span>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-12 w-full rounded-lg border border-[#d8e6f8] bg-white px-4 text-[15px] font-semibold text-[#172554] shadow-[0_8px_22px_rgba(37,64,112,0.07)] outline-none transition placeholder:text-[#8a98b4] focus:border-[#2f80ed] focus:ring-4 focus:ring-[#2f80ed]/12"
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="group flex h-13 w-full items-center justify-center rounded-lg bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_16px_30px_rgba(37,99,235,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(37,99,235,0.28)] disabled:translate-y-0 disabled:opacity-70"
+          >
+            {isSubmitting ? 'Sending OTP...' : 'Send OTP'}
+            {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
+          </button>
+        </form>
+
+        <div className="my-7 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[#d8e6f8]" />
+          <span className="text-xs font-black text-[#8a98b4]">OR</span>
+          <div className="h-px flex-1 bg-[#d8e6f8]" />
         </div>
+
+        <p className="text-center text-sm font-semibold text-[#667085]">
+          Remember your password?{' '}
+          <Link href="/login" className="font-black text-[#2563eb] hover:underline">
+            Sign in
+          </Link>
+        </p>
       </div>
-
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(24px) scale(0.97) }
-          to { opacity: 1; transform: translateY(0) scale(1) }
-        }
-        input::placeholder { color: #9ca3af !important; }
-
-        @media (max-width: 700px) {
-          .forgot-wrapper {
-            flex-direction: column !important;
-            max-width: 100% !important;
-            border-radius: 20px !important;
-          }
-          .forgot-card {
-            flex: none !important;
-            width: 100% !important;
-            padding: 32px 24px !important;
-            order: 2;
-          }
-          .forgot-image-panel {
-            flex: none !important;
-            width: 100% !important;
-            min-height: 200px !important;
-            max-height: 220px !important;
-            order: 1;
-          }
-        }
-
-        @media (min-width: 701px) and (max-width: 900px) {
-          .forgot-card {
-            flex: 0 0 340px !important;
-            padding: 36px 28px !important;
-          }
-        }
-      `}</style>
-    </div>
+    </main>
   )
 }

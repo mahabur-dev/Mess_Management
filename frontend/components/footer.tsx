@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BrandLogo } from '@/components/brand-logo'
 
 export function Footer() {
   return (
@@ -7,10 +8,7 @@ export function Footer() {
         <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
             <div className="mb-4 flex items-center gap-2">
-              <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#005bbb]">
-                <span className="font-bold text-white">M</span>
-              </div>
-              <span className="font-bold text-[#07143d]">MessFlow</span>
+              <BrandLogo imageClassName="h-8 w-auto" />
             </div>
             <p className="text-sm text-[#667085]">Simplifying mess management</p>
           </div>
@@ -79,8 +77,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-[#e4eaf4] pt-8 sm:flex-row">
-          <p className="text-sm text-[#667085]">© 2024 MessFlow. All rights reserved.</p>
+        {/* <div className="flex flex-col items-center justify-between gap-4 border-t border-[#e4eaf4] pt-8 sm:flex-row">
+          <p className="text-sm text-[#667085]">© 2024 Mess Management. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="#" className="text-sm text-[#667085] transition hover:text-[#005bbb]">
               Privacy
@@ -91,8 +89,8 @@ export function Footer() {
             <Link href="#" className="text-sm text-[#667085] transition hover:text-[#005bbb]">
               Cookies
             </Link>
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
       </div>
     </footer>
   )

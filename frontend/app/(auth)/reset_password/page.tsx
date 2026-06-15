@@ -109,10 +109,10 @@ export default function ResetPassword() {
         </Link>
 
         <div className="mb-7">
-          <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
+          {/* <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
             <LockKeyhole size={25} />
-          </div>
-          <h1 className="text-3xl font-black leading-tight tracking-normal text-[#0f1f4b] sm:text-4xl">
+          </div> */}
+          <h1 className="text-xl font-black leading-tight tracking-normal text-[#405692] sm:text-2xl">
             Reset password
           </h1>
           <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
@@ -148,18 +148,18 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="group flex h-13 w-full items-center justify-center rounded-lg bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_16px_30px_rgba(37,99,235,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(37,99,235,0.28)] disabled:translate-y-0 disabled:opacity-70"
+            className="group flex h-13 w-full mb-5 items-center justify-center rounded-lg bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_16px_30px_rgba(37,99,235,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(37,99,235,0.28)] disabled:translate-y-0 disabled:opacity-70"
           >
             {isSubmitting ? 'Resetting...' : 'Reset Password'}
             {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
           </button>
         </form>
 
-        <div className="my-7 flex items-center gap-3">
+        {/* <div className="my-7 flex items-center gap-3">
           <div className="h-px flex-1 bg-[#d8e6f8]" />
           <span className="text-xs font-black text-[#8a98b4]">OR</span>
           <div className="h-px flex-1 bg-[#d8e6f8]" />
-        </div>
+        </div> */}
 
         <p className="text-center text-sm font-semibold text-[#667085]">
           Remember your password?{' '}

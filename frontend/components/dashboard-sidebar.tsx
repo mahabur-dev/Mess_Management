@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/context/auth-context'
+import { BrandLogo } from '@/components/brand-logo'
 import { Button } from '@/components/ui/button'
 import {
   BarChart3,
@@ -73,11 +74,11 @@ export function DashboardSidebar() {
     <aside className="dashboard-sidebar flex h-full w-[248px] flex-col overflow-hidden">
       <div className="flex h-[92px] items-center px-7">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2f80ed] text-sm font-black text-white shadow-[0_14px_28px_rgba(47,128,237,0.28)]">M</span>
-          <span>
-            <span className="block text-base font-black tracking-tight text-[#172554]">Mess.</span>
-            <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-[#6b7a99]">Dashboard</span>
-          </span>
+          <BrandLogo
+            className="flex-col items-start gap-1"
+            imageClassName="h-8 w-auto"
+            subtitle="Dashboard"
+          />
         </Link>
       </div>
 

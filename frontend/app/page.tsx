@@ -2,6 +2,7 @@
 
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
+import { BrandLogo } from '@/components/brand-logo'
 import { Button } from '@/components/ui/button'
 import {
   BarChart3,
@@ -57,11 +58,12 @@ function MiniSidebar() {
     >
       <div className="flex h-[72px] items-center px-5">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-xs font-black text-[#2f80ed]">M</span>
-          <div>
-            <p className="text-sm font-black text-white">Mess.</p>
-            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40">Dashboard</p>
-          </div>
+          <BrandLogo
+            className="flex-col items-start gap-1"
+            imageClassName="h-20 max-w-[260px]"
+            subtitle="Dashboard"
+            subtitleClassName="text-[9px] tracking-[0.16em] text-white/40"
+          />
         </div>
       </div>
 
@@ -187,7 +189,7 @@ function SystemFeaturesSection() {
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">System Features</span>
           <h2 className="mt-4 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Professional tools for every mess workflow</h2>
-          <p className="mt-4 text-base font-medium leading-7 text-[#6b7a99]">MessFlow brings daily operations, member coordination, billing, shopping, and reporting into one clear management experience.</p>
+          <p className="mt-4 text-base font-medium leading-7 text-[#6b7a99]">Mess Management brings daily operations, member coordination, billing, shopping, and reporting into one clear management experience.</p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {features.map((feature) => {
@@ -305,8 +307,8 @@ function WhyChooseSection() {
   return (
     <section id="about" className="bg-[#f0f6ff] px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl text-center">
-        <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">Why MessFlow</span>
-        <h2 className="mt-4 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Why Choose MessFlow?</h2>
+        <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">Why Mess Management</span>
+        <h2 className="mt-4 text-3xl font-black tracking-tight text-[#07143d] sm:text-4xl">Why Choose Mess Management?</h2>
         <p className="mt-4 text-base font-medium text-[#6b7a99]">Designed specifically for mess managers who value efficiency and transparency</p>
         <div className="mt-14 grid gap-8 md:grid-cols-3">
           {stats.map(([value, label, text]) => (

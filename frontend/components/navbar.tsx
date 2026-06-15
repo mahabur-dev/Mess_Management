@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { BrandLogo } from '@/components/brand-logo'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
@@ -22,10 +23,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-[#e4eaf4] bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#005bbb] text-sm font-black text-white shadow-md">
-            M
-          </span>
-          <span className="text-xl font-black tracking-tight text-[#07143d]">MessFlow</span>
+          <BrandLogo imageClassName="h-9 w-auto" />
         </Link>
 
         <div className="hidden items-center gap-2 lg:flex">

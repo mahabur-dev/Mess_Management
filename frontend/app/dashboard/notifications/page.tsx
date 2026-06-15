@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AppNotification } from '@/lib/api-client'
-import { Bell, CheckCircle2 } from 'lucide-react'
+import { Bell, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export default function NotificationsPage() {
@@ -27,6 +27,15 @@ export default function NotificationsPage() {
     void loadNotifications()
   }, [])
 
+  const deleteNotification = async (notification: AppNotification) => {
+    setNotifications((current) => current.filter((item) => item.id !== notification.id))
+    window.dispatchEvent(new Event('notifications:changed'))
+    await apiClient.deleteNotification(notification.id).catch(() => {
+      void loadNotifications()
+      window.dispatchEvent(new Event('notifications:changed'))
+    })
+  }
+
   const markAsRead = async (notification: AppNotification) => {
     const alreadyRead = notification.reads?.some((read) => read.user_id === user?.id)
     if (alreadyRead) return
@@ -44,9 +53,11 @@ export default function NotificationsPage() {
           : item,
       ),
     )
+    window.dispatchEvent(new Event('notifications:changed'))
 
     await apiClient.markNotificationAsRead(notification.id).catch(() => {
       void loadNotifications()
+      window.dispatchEvent(new Event('notifications:changed'))
     })
   }
 
@@ -74,7 +85,8 @@ export default function NotificationsPage() {
                 return (
                   <div
                     key={notification.id}
-                    className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between ${isRead ? 'bg-white/50' : 'bg-[#edf5ff]/70'}`}
+                    onClick={() => void markAsRead(notification)}
+                    className={`flex cursor-pointer flex-col gap-4 p-5 transition hover:bg-[#EDF5FF] sm:flex-row sm:items-start sm:justify-between ${isRead ? 'bg-white/50' : 'bg-[#edf5ff]/70'}`}
                   >
                     <div className="flex min-w-0 gap-4">
                       <span className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isRead ? 'bg-[#f1f5f9] text-[#64748b]' : 'bg-[#e7f1ff] text-[#2f80ed]'}`}>
@@ -101,16 +113,18 @@ export default function NotificationsPage() {
                       </div>
                     </div>
 
-                    {!isRead && (
-                      <Button
-                        type="button"
-                        onClick={() => void markAsRead(notification)}
-                        className="h-10 shrink-0 rounded-lg bg-[#2563EB] px-4 text-xs font-black text-white hover:bg-[#ffedfa]"
-                      >
-                        <CheckCircle2 size={15} className="mr-2" />
-                        Mark Read
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        void deleteNotification(notification)
+                      }}
+                      aria-label="Delete notification"
+                      title="Delete"
+                      className="h-10 w-10 shrink-0 rounded-lg border border-[#fecaca] bg-white p-0 text-[#dc2626] transition hover:bg-[#fff1f2]"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
                 )
               })}

@@ -122,6 +122,16 @@ export class ComplaintService {
     });
   }
 
+  async remove(id: string, userId: string, role: string) {
+    const complaint = await this.prisma.complaint.findUnique({ where: { id } });
+    if (!complaint) throw new HttpException('Complaint not found', 404);
+
+    await this.verifyManager(complaint.mess_id, userId, role);
+    await this.prisma.complaint.delete({ where: { id } });
+
+    return { message: 'Complaint deleted successfully' };
+  }
+
   private buildWhere(query: ComplaintFilterDto): Prisma.ComplaintWhereInput {
     const where: Prisma.ComplaintWhereInput = {};
     if (query.messId) where.mess_id = query.messId;

@@ -11,20 +11,37 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { apiClient, type AppNotification } from '@/lib/api-client'
 
 interface DashboardHeaderProps {
   title: string
   description?: string
+  selectedMonth?: string
+  onMonthChange?: (month: string) => void
 }
 
-export function DashboardHeader({ title, description }: DashboardHeaderProps) {
+function formatMonthLabel(month?: string) {
+  const date = month ? new Date(`${month}-01T00:00:00`) : new Date()
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
+
+function getCurrentMonthValue() {
+  const date = new Date()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${date.getFullYear()}-${month}`
+}
+
+export function DashboardHeader({ title, description, selectedMonth, onMonthChange }: DashboardHeaderProps) {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [imageError, setImageError] = useState(false)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const monthInputRef = useRef<HTMLInputElement>(null)
 
   const loadNotifications = async () => {
     try {
@@ -43,8 +60,13 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
   useEffect(() => {
     void loadNotifications()
     const handleFocus = () => void loadNotifications()
+    const handleNotificationsChanged = () => void loadNotifications()
     window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
+    window.addEventListener('notifications:changed', handleNotificationsChanged)
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('notifications:changed', handleNotificationsChanged)
+    }
   }, [])
 
   const markAsRead = async (notification: AppNotification) => {
@@ -70,6 +92,19 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
     }
   }
 
+  const openMonthPicker = () => {
+    const input = monthInputRef.current as (HTMLInputElement & { showPicker?: () => void }) | null
+    if (!input || !onMonthChange) return
+
+    if (typeof input.showPicker === 'function') {
+      input.showPicker()
+      return
+    }
+
+    input.focus()
+    input.click()
+  }
+
   return (
     // <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-[#e6ebf4]">
     // ✅ Use this
@@ -83,10 +118,22 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            className="hidden h-11 cursor-pointer items-center rounded-xl border border-[#e6ebf4] bg-white/60 px-4 text-sm font-bold text-[#53617d] shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#EDF5FF] hover:shadow-md sm:flex"
+            onClick={openMonthPicker}
+            className="relative hidden h-11 cursor-pointer items-center rounded-xl border border-[#e6ebf4] bg-white/60 px-4 text-sm font-bold text-[#53617d] shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#EDF5FF] hover:shadow-md sm:flex"
           >
             <CalendarDays size={16} className="mr-2 text-[#667085]" />
-            May 19, 2026
+            <span className="min-w-[120px]">{formatMonthLabel(selectedMonth)}</span>
+            {onMonthChange && (
+              <input
+                ref={monthInputRef}
+                type="month"
+                value={selectedMonth ?? getCurrentMonthValue()}
+                onChange={(event) => onMonthChange(event.target.value)}
+                onClick={(event) => event.stopPropagation()}
+                className="absolute left-0 top-full h-0 w-0 opacity-0"
+                aria-label="Select dashboard month"
+              />
+            )}
           </button>
           <button
             type="button"

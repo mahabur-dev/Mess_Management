@@ -175,8 +175,8 @@ export class NotificationController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
-  @ApiOperation({ summary: 'Delete a notification (Manager/Admin)' })
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Delete a notification for current user, or globally for admin' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.notificationService.remove(
       id,

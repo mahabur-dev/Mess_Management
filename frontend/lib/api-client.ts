@@ -506,6 +506,10 @@ class ApiClient {
     return this.request<Complaint>(`/complaints/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
+  deleteComplaint(id: string) {
+    return this.request(`/complaints/${id}`, { method: 'DELETE' })
+  }
+
   getPushPublicKey() {
     return this.request<{ publicKey: string }>('/notification/push/public-key')
   }
@@ -528,6 +532,10 @@ class ApiClient {
 
   markNotificationAsRead(id: string) {
     return this.request(`/notification/${id}/read`, { method: 'PATCH' })
+  }
+
+  deleteNotification(id: string) {
+    return this.request(`/notification/${id}`, { method: 'DELETE' })
   }
 }
 

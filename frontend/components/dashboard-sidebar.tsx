@@ -146,7 +146,7 @@ export function DashboardSidebar() {
           <div className="relative h-full w-[248px]">
             <button
               type="button"
-              className="absolute left-[215px] top-0 flex h-8 w-8 items-center justify-center rounded-full text-white z-50 bg-[#2f80ed] shadow-[0_14px_28px_rgba(47,128,237,0.28)]"
+              className="absolute left-[210px] top-1 flex h-8 w-8 items-center justify-center rounded-full text-white z-50 bg-[#2f80ed] shadow-[0_14px_28px_rgba(47,128,237,0.28)]"
               onClick={() => setIsOpen(false)}
               aria-label="Close menu"
             >

@@ -2,7 +2,7 @@ self.addEventListener('push', (event) => {
   const fallback = {
     title: 'Mess Management',
     body: 'You have a new notification.',
-    url: '/',
+    url: '/dashboard/notifications',
     data: {},
   }
 

@@ -1,13 +1,17 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { NotificationType, NoticeType, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateNoticeDto, NoticeFilterDto, UpdateNoticeDto } from './dto/notice.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class NoticeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   private readonly noticeSelect = {
     id: true,
@@ -46,7 +50,7 @@ export class NoticeService {
 
   async create(userId: string, role: string, dto: CreateNoticeDto) {
     await this.verifyManager(dto.messId, userId, role);
-    return this.prisma.notice.create({
+    const notice = await this.prisma.notice.create({
       data: {
         mess_id: dto.messId,
         created_by: userId,
@@ -57,6 +61,40 @@ export class NoticeService {
       },
       select: this.noticeSelect,
     });
+
+    const targetUserIds = await this.notificationService.resolveMessUserIds(
+      dto.messId,
+    );
+
+    await this.notificationService.createForMess(
+      userId,
+      dto.messId,
+      this.mapNoticeTypeToNotificationType(dto.type),
+      dto.title,
+      dto.body,
+      {
+        source: 'NOTICE',
+        noticeId: notice.id,
+        noticeType: dto.type,
+      },
+      targetUserIds,
+      '/dashboard/notifications',
+    );
+
+    return notice;
+  }
+
+  private mapNoticeTypeToNotificationType(type: NoticeType) {
+    const map: Record<NoticeType, NotificationType> = {
+      MEAL: NotificationType.MEAL_UPDATE,
+      PAYMENT: NotificationType.PAYMENT_NOTICE,
+      EMERGENCY: NotificationType.EMERGENCY,
+      MEETING: NotificationType.MEETING,
+      RULE_UPDATE: NotificationType.RULE_UPDATE,
+      GENERAL: NotificationType.ANNOUNCEMENT,
+    };
+
+    return map[type] ?? NotificationType.ANNOUNCEMENT;
   }
 
   async findAll(query: NoticeFilterDto) {

@@ -188,6 +188,18 @@ export interface Complaint {
   mess?: Mess
 }
 
+export interface AppNotification {
+  id: string
+  type: string
+  title: string
+  body: string
+  metadata?: Record<string, unknown> | null
+  created_at: string
+  mess?: { id: string; name: string }
+  sender?: { id: string; name: string; email: string } | null
+  reads?: Array<{ user_id: string; read_at: string }>
+}
+
 export interface PushSubscriptionPayload {
   endpoint: string
   keys: {
@@ -504,6 +516,18 @@ class ApiClient {
 
   removePushSubscription(endpoint: string) {
     return this.request('/notification/push/unsubscribe', { method: 'PATCH', body: JSON.stringify({ endpoint }) })
+  }
+
+  getMyNotifications(params?: QueryParams) {
+    return this.request<AppNotification[]>('/notification/my', { params })
+  }
+
+  getUnreadNotificationCount() {
+    return this.request<{ count: number }>('/notification/unread-count')
+  }
+
+  markNotificationAsRead(id: string) {
+    return this.request(`/notification/${id}/read`, { method: 'PATCH' })
   }
 }
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import AuthGuard from '../../middlewares/auth.guard';
@@ -49,5 +49,12 @@ export class ComplaintController {
   async updateStatus(@Param('id') id: string, @Req() req: Request, @Body() dto: UpdateComplaintStatusDto) {
     const data = await this.complaintService.updateStatus(id, req.user!.id, req.user!.role, dto);
     return { message: 'Complaint status updated successfully', data };
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Delete a complaint (Admin: all, Manager: own mess)' })
+  async remove(@Param('id') id: string, @Req() req: Request) {
+    return this.complaintService.remove(id, req.user!.id, req.user!.role);
   }
 }

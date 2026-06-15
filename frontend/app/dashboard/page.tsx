@@ -74,6 +74,21 @@ const quickActions = [
   ['Send Notice', Bell, '/dashboard/notices'],
 ] as const
 
+const adminQuickActions = [
+  ['Manage Users', Users, '/dashboard/users'],
+  ['Mess Requests', ClipboardList, '/dashboard/mess_requests'],
+  ['All Messes', Home, '/dashboard/mess_management'],
+  ['Complaints', Bell, '/dashboard/complaints'],
+  ['Payments', CreditCard, '/dashboard/payments'],
+  ['Reports', ReceiptText, '/dashboard/reports'],
+] as const
+
+function currentMonthValue() {
+  const date = new Date()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${date.getFullYear()}-${month}`
+}
+
 function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
 }
@@ -146,8 +161,10 @@ export default function DashboardPage() {
   const [messDashboard, setMessDashboard] = useState<MessDashboard | null>(null)
   const [adminDashboard, setAdminDashboard] = useState<AdminDashboard | null>(null)
   const [loadingData, setLoadingData] = useState(true)
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthValue)
 
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
+  const dashboardQuickActions = user?.role === 'ADMIN' ? adminQuickActions : quickActions
 
   useEffect(() => {
     let mounted = true
@@ -174,7 +191,7 @@ export default function DashboardPage() {
         if (mounted) setMesses(list)
 
         if (list[0]) {
-          const dashboard = await apiClient.getMessDashboard(list[0].id).catch(() => null)
+          const dashboard = await apiClient.getMessDashboard(list[0].id, `${selectedMonth}-01`).catch(() => null)
           if (mounted && dashboard) setMessDashboard(dashboard.data)
         }
       } finally {
@@ -187,7 +204,7 @@ export default function DashboardPage() {
     return () => {
       mounted = false
     }
-  }, [user])
+  }, [selectedMonth, user])
 
   const stats = useMemo(() => {
     const dashboard = messDashboard as
@@ -338,6 +355,8 @@ export default function DashboardPage() {
       <DashboardHeader
         title={user.role === 'ADMIN' ? 'Super Admin Dashboard' : 'Dashboard'}
         description={activeMess ? `${activeMess.name} overview` : `Welcome back, ${user.name}`}
+        selectedMonth={selectedMonth}
+        onMonthChange={setSelectedMonth}
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
@@ -520,10 +539,12 @@ export default function DashboardPage() {
 
           {user.role !== 'MEMBER' && (
             <Card className="app-card p-5">
-              <h3 className="mb-5 text-sm font-black text-[#172554]">Quick Actions</h3>
+              <h3 className="mb-5 text-sm font-black text-[#172554]">
+                {user.role === 'ADMIN' ? 'Full Access' : 'Quick Actions'}
+              </h3>
 
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-2">
-                {quickActions.map(([label, Icon, href]) => (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-2">
+                {dashboardQuickActions.map(([label, Icon, href]) => (
                   <button
                     key={label}
                     onClick={() => router.push(href)}

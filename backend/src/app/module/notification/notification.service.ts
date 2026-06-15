@@ -355,16 +355,33 @@ export class NotificationService {
     });
     if (!notification) throw new HttpException('Notification not found', 404);
 
-    if (role !== 'ADMIN') {
-      const mess = await this.prisma.mess.findUnique({
-        where: { id: notification.mess_id },
-      });
-      if (mess?.created_by !== userId) {
-        throw new HttpException('Forbidden: Not your mess', 403);
-      }
+    if (role === 'ADMIN') {
+      await this.prisma.notification.delete({ where: { id } });
+      return { message: 'Notification deleted successfully' };
     }
 
-    await this.prisma.notification.delete({ where: { id } });
+    await this.findOne(id, userId, role);
+
+    const metadata =
+      notification.metadata &&
+      typeof notification.metadata === 'object' &&
+      !Array.isArray(notification.metadata)
+        ? (notification.metadata as Record<string, unknown>)
+        : {};
+    const hiddenFor = Array.isArray(metadata.hiddenFor)
+      ? metadata.hiddenFor.filter((value): value is string => typeof value === 'string')
+      : [];
+
+    await this.prisma.notification.update({
+      where: { id },
+      data: {
+        metadata: {
+          ...metadata,
+          hiddenFor: [...new Set([...hiddenFor, userId])],
+        } as Prisma.InputJsonValue,
+      },
+    });
+
     return { message: 'Notification deleted successfully' };
   }
 
@@ -471,6 +488,12 @@ export class NotificationService {
     where.mess_id = query.messId
       ? query.messId
       : { in: accessibleMessIds };
+    where.NOT = {
+      metadata: {
+        path: ['hiddenFor'],
+        array_contains: userId,
+      },
+    };
 
     return where;
   }

@@ -13,12 +13,14 @@ import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class MessService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly monthlyBillService: MonthlyBillService,
+    private readonly notificationService: NotificationService,
   ) { }
 
   private async recalculateCurrentMonthBillIfPossible(messId: string) {
@@ -81,7 +83,7 @@ export class MessService {
     });
     if (pending) throw new HttpException('You already have a pending mess registration request', 400);
 
-    return this.prisma.messRequest.create({
+    const request = await this.prisma.messRequest.create({
       data: {
         requester_id: userId,
         mess_name: dto.messName,
@@ -92,6 +94,19 @@ export class MessService {
       },
       include: { requester: { select: { id: true, name: true, email: true, phone: true } } },
     });
+
+    const adminUserIds = await this.notificationService.resolveAdminUserIds();
+    await this.notificationService.sendPushToUsers(adminUserIds, {
+      title: 'New mess registration request',
+      body: `${request.requester.name} requested approval for ${request.mess_name}.`,
+      url: '/dashboard/notifications',
+      data: {
+        source: 'MESS_REQUEST',
+        requestId: request.id,
+      },
+    });
+
+    return request;
   }
 
   async findRequests(query: MessFilterDto & { status?: RequestStatus }) {

@@ -127,6 +127,28 @@
       radial-gradient(circle at 90% 10%, rgba(39, 135, 245, 0.08), transparent 26rem),
       var(--background);
   }
+
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  a[href],
+  summary,
+  select,
+  input[type='checkbox'],
+  input[type='radio'],
+  [data-slot='dropdown-menu-item']:not([data-disabled]),
+  [data-slot='dropdown-menu-trigger'],
+  [data-slot='select-trigger'],
+  [data-slot='tabs-trigger'],
+  [data-slot='dialog-trigger'],
+  [data-slot='popover-trigger'] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'],
+  [data-disabled] {
+    cursor: not-allowed;
+  }
 }
 
 @layer components {

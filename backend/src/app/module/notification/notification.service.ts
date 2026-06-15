@@ -163,6 +163,54 @@ export class NotificationService {
     return notification;
   }
 
+  async createForMess(
+    senderId: string | null,
+    messId: string,
+    type: NotificationType,
+    title: string,
+    body: string,
+    metadata?: Record<string, unknown>,
+    targetUserIds?: string[],
+    url = '/dashboard/notifications',
+  ) {
+    const notification = await this.prisma.notification.create({
+      data: {
+        mess_id: messId,
+        sender_id: senderId,
+        type,
+        title,
+        body,
+        metadata: metadata as Prisma.InputJsonValue | undefined,
+      },
+      select: this.notificationSelect,
+    });
+
+    const resolvedTargets =
+      targetUserIds ?? (await this.resolveMessUserIds(messId));
+
+    await this.dispatchPushToUsers(resolvedTargets, {
+      title,
+      body,
+      url,
+      data: {
+        notificationId: notification.id,
+        messId,
+        type,
+        ...(metadata ?? {}),
+      },
+    });
+
+    return notification;
+  }
+
+  async sendPushToUsers(userIds: string[], dto: SendPushNotificationDto) {
+    const result = await this.dispatchPushToUsers(userIds, dto);
+    return {
+      message: 'Push notification sent to users',
+      ...result,
+    };
+  }
+
   async findAll(query: NotificationFilterDto) {
     const paginationOptions = pick(query, [
       'page',
@@ -192,6 +240,51 @@ export class NotificationService {
       data: notifications,
       meta: buildMeta(total, page, limit),
     };
+  }
+
+  async findMine(userId: string, role: string, query: NotificationFilterDto) {
+    const paginationOptions = pick(query, [
+      'page',
+      'limit',
+      'sortBy',
+      'sortOrder',
+    ]);
+    const { page, limit, skip, sortBy, sortOrder } =
+      paginationHelper(paginationOptions);
+
+    const where = await this.buildAccessibleNotificationWhere(
+      userId,
+      role,
+      query,
+    );
+
+    const [total, notifications] = await Promise.all([
+      this.prisma.notification.count({ where }),
+      this.prisma.notification.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        select: this.notificationSelect,
+      }),
+    ]);
+
+    return {
+      data: notifications,
+      meta: buildMeta(total, page, limit),
+    };
+  }
+
+  async getUnreadCount(userId: string, role: string) {
+    const where = await this.buildAccessibleNotificationWhere(userId, role, {});
+    const count = await this.prisma.notification.count({
+      where: {
+        ...where,
+        reads: { none: { user_id: userId } },
+      },
+    });
+
+    return { count };
   }
 
   async findByMess(
@@ -296,12 +389,90 @@ export class NotificationService {
 
     if (dto.targetUserId) return [dto.targetUserId];
 
-    const memberships = await this.prisma.messMembership.findMany({
-      where: { mess_id: dto.messId, is_active: true },
-      select: { user_id: true },
+    return this.resolveMessUserIds(dto.messId);
+  }
+
+  async resolveMessUserIds(messId: string) {
+    const [mess, memberships] = await Promise.all([
+      this.prisma.mess.findUnique({
+        where: { id: messId },
+        select: { created_by: true },
+      }),
+      this.prisma.messMembership.findMany({
+        where: { mess_id: messId, is_active: true },
+        select: { user_id: true },
+      }),
+    ]);
+
+    return [
+      ...new Set([
+        ...(mess?.created_by ? [mess.created_by] : []),
+        ...memberships.map((membership) => membership.user_id),
+      ]),
+    ];
+  }
+
+  async resolveMessManagerAndAdminUserIds(messId: string) {
+    const [mess, managerMemberships, admins] = await Promise.all([
+      this.prisma.mess.findUnique({
+        where: { id: messId },
+        select: { created_by: true },
+      }),
+      this.prisma.messMembership.findMany({
+        where: { mess_id: messId, is_active: true, role: 'MANAGER' },
+        select: { user_id: true },
+      }),
+      this.prisma.user.findMany({
+        where: { role: 'ADMIN', is_active: true },
+        select: { id: true },
+      }),
+    ]);
+
+    return [
+      ...new Set([
+        ...(mess?.created_by ? [mess.created_by] : []),
+        ...managerMemberships.map((membership) => membership.user_id),
+        ...admins.map((admin) => admin.id),
+      ]),
+    ];
+  }
+
+  async resolveAdminUserIds() {
+    const admins = await this.prisma.user.findMany({
+      where: { role: 'ADMIN', is_active: true },
+      select: { id: true },
     });
 
-    return memberships.map((membership) => membership.user_id);
+    return admins.map((admin) => admin.id);
+  }
+
+  private async buildAccessibleNotificationWhere(
+    userId: string,
+    role: string,
+    query: Pick<NotificationFilterDto, 'messId' | 'type'>,
+  ) {
+    const where: Prisma.NotificationWhereInput = {};
+    if (query.messId) where.mess_id = query.messId;
+    if (query.type) where.type = query.type;
+
+    if (role === 'ADMIN') return where;
+
+    const messes = await this.prisma.mess.findMany({
+      where: {
+        OR: [
+          { created_by: userId },
+          { memberships: { some: { user_id: userId, is_active: true } } },
+        ],
+      },
+      select: { id: true },
+    });
+
+    const accessibleMessIds = messes.map((mess) => mess.id);
+    where.mess_id = query.messId
+      ? query.messId
+      : { in: accessibleMessIds };
+
+    return where;
   }
 
   private async dispatchPushToUsers(

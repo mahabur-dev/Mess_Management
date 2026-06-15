@@ -1,13 +1,17 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ComplaintFilterDto, CreateComplaintDto, UpdateComplaintStatusDto } from './dto/complaint.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ComplaintService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   private readonly complaintSelect = {
     id: true,
@@ -48,7 +52,7 @@ export class ComplaintService {
 
   async create(userId: string, role: string, dto: CreateComplaintDto) {
     await this.verifyMessMember(dto.messId, userId, role);
-    return this.prisma.complaint.create({
+    const complaint = await this.prisma.complaint.create({
       data: {
         mess_id: dto.messId,
         member_id: userId,
@@ -58,6 +62,29 @@ export class ComplaintService {
       },
       select: this.complaintSelect,
     });
+
+    const targetUserIds = (
+      await this.notificationService.resolveMessManagerAndAdminUserIds(
+        dto.messId,
+      )
+    ).filter((targetUserId) => targetUserId !== userId);
+
+    await this.notificationService.createForMess(
+      userId,
+      dto.messId,
+      NotificationType.ANNOUNCEMENT,
+      `New complaint: ${dto.title}`,
+      dto.description,
+      {
+        source: 'COMPLAINT',
+        complaintId: complaint.id,
+        category: dto.category,
+      },
+      targetUserIds,
+      '/dashboard/notifications',
+    );
+
+    return complaint;
   }
 
   async findAll(query: ComplaintFilterDto) {

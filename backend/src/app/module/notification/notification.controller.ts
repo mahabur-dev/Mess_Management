@@ -102,6 +102,33 @@ export class NotificationController {
     };
   }
 
+  @Get('my')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Get notifications visible to current user' })
+  async findMine(@Req() req: Request, @Query() query: NotificationFilterDto) {
+    const result = await this.notificationService.findMine(
+      req.user!.id,
+      req.user!.role,
+      query,
+    );
+    return {
+      message: 'Notifications fetched successfully',
+      meta: result.meta,
+      data: result.data,
+    };
+  }
+
+  @Get('unread-count')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Get current user unread notification count' })
+  async getUnreadCount(@Req() req: Request) {
+    const data = await this.notificationService.getUnreadCount(
+      req.user!.id,
+      req.user!.role,
+    );
+    return { message: 'Unread notification count fetched successfully', data };
+  }
+
   @Get('mess/:messId')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Get notifications for a specific mess' })

@@ -252,19 +252,20 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative max-h-[calc(100vh-32px)] w-full max-w-[460px] overflow-hidden rounded-[24px] border border-[#6d3df4]/20 bg-white shadow-[0_28px_80px_rgba(18,10,51,0.35)]">
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#26106f] via-[#6d3df4] to-[#f43f8f]" />
-        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#6d3df4]/12 blur-2xl" />
+      <div className="relative max-h-[calc(100vh-32px)] w-full max-w-[480px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
+        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/12 blur-2xl" />
+        
         {/* Header */}
-        <div className="relative flex items-center justify-between border-b border-[#6d3df4]/10 px-5 py-5 sm:px-6">
+        <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#6d3df4]">Mess Management</p>
-            <h2 className="mt-1 text-xl font-black text-[#171044]">Add New Member</h2>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Members</p>
+            <h2 className="mt-1 text-xl font-black text-[#172554]">Add New Member</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#6d3df4]/15 bg-[#f5f2ff] text-[#4c2cc5] transition hover:border-[#6d3df4]/35 hover:bg-[#ebe4ff]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"
           >
             <X size={18} />
           </button>
@@ -272,8 +273,8 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
 
         <form onSubmit={handleSubmit} className="relative max-h-[calc(100vh-120px)] overflow-y-auto p-5 sm:p-6">
           {/* Email Input */}
-          <div className="mb-4">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#7c70a8]">
+          <div className="mb-5">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
               User Email
             </label>
             <input
@@ -281,19 +282,19 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="member@example.com"
-              className="h-12 w-full rounded-2xl border border-[#6d3df4]/15 bg-[#fbfaff] px-4 text-sm font-semibold text-[#171044] outline-none placeholder:text-[#9189af] focus:border-[#6d3df4]/60 focus:ring-4 focus:ring-[#6d3df4]/10"
+              className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
             />
           </div>
 
           {/* Mess Selection */}
-          <div className="mb-4">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#7c70a8]">
+          <div className="mb-5">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
               Select Mess
             </label>
             <select
               value={selectedMess}
               onChange={(e) => setSelectedMess(e.target.value)}
-              className="h-12 w-full rounded-2xl border border-[#6d3df4]/15 bg-[#fbfaff] px-4 text-sm font-black text-[#171044] outline-none focus:border-[#6d3df4]/60 focus:ring-4 focus:ring-[#6d3df4]/10"
+              className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
             >
               <option value="">Select Mess</option>
               {messes.map((mess) => (
@@ -306,7 +307,7 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
 
           {/* Role Selection */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#7c70a8]">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
               Role
             </label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -318,10 +319,10 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
                     key={r}
                     type="button"
                     onClick={() => setRole(r)}
-                    className={`flex min-h-[58px] flex-col items-center justify-center gap-1.5 rounded-2xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                    className={`flex min-h-[62px] flex-col items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold transition active:scale-[0.98] ${
                       selected
-                        ? 'border-[#6d3df4]/40 bg-[#f3efff] text-[#4c2cc5] shadow-[0_12px_28px_rgba(109,61,244,0.16)]'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-[#6d3df4]/25 hover:bg-[#faf8ff]'
+                        ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-[0_8px_20px_rgba(47,128,237,0.16)]'
+                        : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'
                     }`}
                   >
                     <span style={{ color: selected ? cfg.textColor : undefined }}>{cfg.icon}</span>
@@ -333,7 +334,7 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-2xl border border-red-500/25 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+            <div className="mb-5 rounded-xl border border-red-200/60 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
               {error}
             </div>
           )}
@@ -343,16 +344,16 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
+              className="h-12 rounded-xl border border-[#d8e6f8] bg-white px-4 font-black text-[#53617d] transition hover:bg-[#edf5ff] disabled:opacity-60"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#4c2cc5] to-[#6d3df4] px-4 font-black text-white shadow-[0_16px_35px_rgba(109,61,244,0.30)] transition hover:shadow-[0_20px_42px_rgba(109,61,244,0.42)] disabled:opacity-70"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70"
             >
-              {loading ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+              {loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
               {loading ? 'Adding...' : 'Add Member'}
             </button>
           </div>

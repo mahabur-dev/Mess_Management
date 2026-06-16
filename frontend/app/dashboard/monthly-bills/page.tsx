@@ -15,6 +15,7 @@ import {
   Users,
   TrendingUp,
   Banknote,
+  RefreshCw,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -29,10 +30,18 @@ function formatMonth(date: string | Date) {
   })
 }
 
+function getTotalCost(bill: MonthlyBill) {
+  return (
+    Number(bill.food_bill || 0) +
+    Number(bill.seat_rent || 0) +
+    Number(bill.utility_share || 0)
+  )
+}
+
 const STATUS_CONFIG = {
   PAID: { label: 'Paid', icon: <CheckCircle2 size={14} />, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200/50' },
   PARTIAL: { label: 'Partial', icon: <AlertTriangle size={14} />, bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200/50' },
-  UNPAID: { label: 'Unpaid', icon: <XCircle size={14} />, bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200/50' },
+  PENDING: { label: 'Pending', icon: <XCircle size={14} />, bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200/50' },
 }
 
 export default function MonthlyBillPage() {
@@ -41,6 +50,7 @@ export default function MonthlyBillPage() {
   const [messes, setMesses] = useState<Mess[]>([])
   const [bills, setBills] = useState<MonthlyBill[]>([])
   const [loading, setLoading] = useState(false)
+  const [generating, setGenerating] = useState(false)
 
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7),
@@ -52,6 +62,13 @@ export default function MonthlyBillPage() {
     user?.role === 'ADMIN' ||
     user?.role === 'MANAGER' ||
     user?.role === 'ORGANIZER'
+
+  const billMonth = `${selectedMonth}-01`
+
+  function normalizeBills(payload: MonthlyBill[] | { data?: MonthlyBill[] } | undefined) {
+    if (Array.isArray(payload)) return payload
+    return Array.isArray(payload?.data) ? payload.data : []
+  }
 
   async function load() {
     if (!user) return
@@ -71,11 +88,17 @@ export default function MonthlyBillPage() {
       setMesses(list)
 
       if (list[0]) {
+        const params = {
+          month: billMonth,
+          limit: 100,
+          sortBy: 'generated_at',
+          sortOrder: 'desc',
+        }
         const billRes = isManager
-          ? await apiClient.getBillsByMess(list[0].id).catch(() => null)
-          : await apiClient.getMyBills().catch(() => null)
+          ? await apiClient.getBillsByMess(list[0].id, params).catch(() => null)
+          : await apiClient.getMyBills(params).catch(() => null)
 
-        setBills(Array.isArray(billRes?.data) ? billRes.data : [])
+        setBills(normalizeBills(billRes?.data))
       }
     } finally {
       setLoading(false)
@@ -84,7 +107,22 @@ export default function MonthlyBillPage() {
 
   useEffect(() => {
     load()
-  }, [user?.role])
+  }, [user?.id, user?.role, selectedMonth])
+
+  async function recalculateBills() {
+    if (!activeMess) return
+
+    setGenerating(true)
+    try {
+      const billRes = await apiClient.generateMonthlyBill({
+        messId: activeMess.id,
+        month: billMonth,
+      })
+      setBills(Array.isArray(billRes.data) ? billRes.data : [])
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   const filteredBills = useMemo(() => {
     return bills.filter((bill) => {
@@ -93,13 +131,12 @@ export default function MonthlyBillPage() {
     })
   }, [bills, selectedMonth])
 
-  // Summary calculations
   const summary = useMemo(() => {
     return {
       totalFood: filteredBills.reduce((s, b) => s + Number(b.food_bill || 0), 0),
       totalRent: filteredBills.reduce((s, b) => s + Number(b.seat_rent || 0), 0),
       totalUtility: filteredBills.reduce((s, b) => s + Number(b.utility_share || 0), 0),
-      totalPaid: filteredBills.reduce((s, b) => s + Number(b.paid_amount || 0), 0),
+      totalCost: filteredBills.reduce((s, b) => s + getTotalCost(b), 0),
       totalDue: filteredBills.reduce((s, b) => s + Number(b.final_due || 0), 0),
     }
   }, [filteredBills])
@@ -132,6 +169,21 @@ export default function MonthlyBillPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {isManager && activeMess && (
+              <button
+                type="button"
+                onClick={recalculateBills}
+                disabled={generating}
+                className="inline-flex h-[45px] items-center gap-2 rounded-xl bg-[#2f80ed] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[#1f6fd8] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {generating ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={16} />
+                )}
+                {generating ? 'Calculating' : 'Recalculate'}
+              </button>
+            )}
             <label className="flex h-[45px] items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb]">
               <CalendarDays size={17} className="text-[#2f80ed]" />
               <input
@@ -175,9 +227,9 @@ export default function MonthlyBillPage() {
             <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-700">
                 <CheckCircle2 size={13} />
-                Paid
+                Total Cost
               </p>
-              <p className="mt-1.5 text-lg font-black text-emerald-700">{money(summary.totalPaid)}</p>
+              <p className="mt-1.5 text-lg font-black text-emerald-700">{money(summary.totalCost)}</p>
             </div>
             <div className="rounded-xl border border-red-200/60 bg-red-50/50 p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-red-600">
@@ -199,8 +251,9 @@ export default function MonthlyBillPage() {
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Meals</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Food</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Rent</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Utility</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-emerald-600">Paid</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Utilities</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Total Cost</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Deposit</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-red-500">Due</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
               </tr>
@@ -209,7 +262,7 @@ export default function MonthlyBillPage() {
             <tbody className="divide-y divide-[#e6ebf4]">
               {loading && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-12 text-center">
+                  <td colSpan={10} className="px-5 py-12 text-center">
                     <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
                       <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
                       Loading monthly bills...
@@ -220,7 +273,7 @@ export default function MonthlyBillPage() {
 
               {!loading && filteredBills.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-12 text-center">
+                  <td colSpan={10} className="px-5 py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <ReceiptText size={40} className="text-[#d8e6f8]" />
                       <p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p>
@@ -231,7 +284,7 @@ export default function MonthlyBillPage() {
 
               {!loading &&
                 filteredBills.map((bill) => {
-                  const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.UNPAID
+                  const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
                   
                   return (
                     <tr key={bill.id} className="transition hover:bg-[#f8faff]">
@@ -261,7 +314,14 @@ export default function MonthlyBillPage() {
 
                       <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.food_bill)}</td>
                       <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.seat_rent)}</td>
-                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.utility_share)}</td>
+                      <td className="px-5 py-4">
+                        <p className="text-sm font-bold text-[#172554]">{money(bill.utility_share)}</p>
+                        <p className="mt-0.5 text-[11px] font-semibold text-[#6b7a99]">
+                          E {money(bill.electricity_bill)} / G {money(bill.gas_bill)} / W {money(bill.wifi_bill)} / C {money(bill.cleaner_bill)} / X {money(bill.extra_cost)}
+                        </p>
+                      </td>
+
+                      <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(getTotalCost(bill))}</td>
 
                       <td className="px-5 py-4 text-sm font-bold text-emerald-600">{money(bill.paid_amount)}</td>
 
@@ -292,7 +352,7 @@ export default function MonthlyBillPage() {
                   <span><span className="text-[#172554]">{filteredBills.length}</span> bills</span>
                 </div>
                 <div className="flex items-center gap-4 text-xs font-bold">
-                  <span className="text-emerald-600">Paid: {money(summary.totalPaid)}</span>
+                  <span className="text-emerald-600">Total Cost: {money(summary.totalCost)}</span>
                   <span className="text-red-500">Due: {money(summary.totalDue)}</span>
                 </div>
               </div>
@@ -314,7 +374,7 @@ export default function MonthlyBillPage() {
             </div>
           )}
           {!loading && filteredBills.map((bill) => {
-            const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.UNPAID
+            const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
             const avatarBg = '#2f80ed'
             const initials = bill.member?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'MB'
             
@@ -344,8 +404,8 @@ export default function MonthlyBillPage() {
                     <p className="mt-0.5 text-sm font-bold text-[#2f80ed]">{bill.total_meals}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Paid</p>
-                    <p className="mt-0.5 text-sm font-bold text-emerald-600">{money(bill.paid_amount)}</p>
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Total Cost</p>
+                    <p className="mt-0.5 text-sm font-bold text-emerald-600">{money(getTotalCost(bill))}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] font-black uppercase text-[#6b7a99]">Due</p>
@@ -362,6 +422,24 @@ export default function MonthlyBillPage() {
                     <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-[#e7f1ff] px-1 text-[10px] font-bold text-[#2f80ed]">{bill.total_meals}</span>
                   </div>
                 </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-[#e6ebf4] p-3 text-xs">
+                  <div>
+                    <p className="font-black uppercase text-[#6b7a99]">Food</p>
+                    <p className="mt-0.5 font-bold text-[#172554]">{money(bill.food_bill)}</p>
+                  </div>
+                  <div>
+                    <p className="font-black uppercase text-[#6b7a99]">Rent</p>
+                    <p className="mt-0.5 font-bold text-[#172554]">{money(bill.seat_rent)}</p>
+                  </div>
+                  <div>
+                    <p className="font-black uppercase text-[#6b7a99]">Utility</p>
+                    <p className="mt-0.5 font-bold text-[#172554]">{money(bill.utility_share)}</p>
+                  </div>
+                  <div>
+                    <p className="font-black uppercase text-[#6b7a99]">Deposit</p>
+                    <p className="mt-0.5 font-bold text-emerald-600">{money(bill.paid_amount)}</p>
+                  </div>
+                </div>
               </div>
             )
           })}
@@ -369,7 +447,7 @@ export default function MonthlyBillPage() {
             <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 py-3">
               <p className="text-xs font-bold text-[#6b7a99]"><span className="text-[#172554]">{filteredBills.length}</span> bills</p>
               <div className="flex gap-3 text-xs font-bold">
-                <span className="text-emerald-600">Paid: {money(summary.totalPaid)}</span>
+                <span className="text-emerald-600">Total Cost: {money(summary.totalCost)}</span>
                 <span className="text-red-500">Due: {money(summary.totalDue)}</span>
               </div>
             </div>

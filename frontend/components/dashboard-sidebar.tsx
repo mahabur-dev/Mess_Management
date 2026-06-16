@@ -101,15 +101,16 @@ export function DashboardSidebar() {
       {/* Logo Area */}
       <div className="flex h-[88px] items-center border-b border-[#e6ebf4] px-5">
         <Link href="/dashboard" className="flex items-center gap-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-base font-black text-white shadow-[0_4px_12px_rgba(47,128,237,0.3)]">
+          {/* <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-base font-black text-white shadow-[0_4px_12px_rgba(47,128,237,0.3)]">
             M
-          </div>
-          {!collapsed && (
+          </div> */}
+          <BrandLogo imageClassName="h-8 w-auto" />
+          {/* {!collapsed && (
             <div className="min-w-0">
               <p className="text-base font-black text-[#172554] tracking-tight leading-none">Mess</p>
               <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#6b7a99]">Dashboard</p>
             </div>
-          )}
+          )} */}
         </Link>
       </div>
 

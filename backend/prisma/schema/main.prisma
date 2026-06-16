@@ -63,6 +63,8 @@ enum ExpenseCategory {
   WIFI
   CLEANER
   MAINTENANCE
+  BUABILL
+  WATER
   OTHER
 }
 

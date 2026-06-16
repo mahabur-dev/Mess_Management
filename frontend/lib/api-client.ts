@@ -34,6 +34,8 @@ export type ExpenseCategory =
   | 'WIFI'
   | 'CLEANER'
   | 'MAINTENANCE'
+  | 'BUABILL'
+  | 'WATER'
   | 'OTHER'
 export type PaymentMethod = 'CASH' | 'BKASH' | 'NAGAD' | 'ROCKET' | 'BANK'
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
@@ -143,13 +145,22 @@ export interface MonthlyBill {
   id: string
   month: string
   total_meals: number
+  meal_charge: string
   food_bill: string
   seat_rent: string
+  electricity_bill: string
+  gas_bill: string
+  wifi_bill: string
+  cleaner_bill: string
+  extra_cost: string
   utility_share: string
+  deposit_total: string
   paid_amount: string
   final_due: string
   balance: string
   status: BillStatus
+  due_date?: string | null
+  generated_at?: string
   member?: User
   mess?: Mess
 }

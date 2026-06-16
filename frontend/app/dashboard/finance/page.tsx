@@ -871,8 +871,8 @@ export default function FinancePage() {
                             }}
                             className={`h-8 rounded-lg text-[11px] font-bold ${
                               canEditExpense(item)
-                                ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#dcebff]'
-                                : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-70'
+                                ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]'
+                                : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-700 opacity-70'
                             }`}
                           >
                             <Edit3 size={13} className="mr-1" />

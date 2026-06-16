@@ -315,7 +315,7 @@ export default function DashboardPage() {
         'text-[#f59e0b]',
       ],
       [
-        'Extra Expenses',
+        'Utility Expenses',
         money(dashboard?.extraExpenses),
         'Extra',
         ReceiptText,
@@ -324,7 +324,7 @@ export default function DashboardPage() {
         'text-[#7c3aed]',
       ],
       [
-        'Per Member Extra Charge',
+        'Per Member Utility Charge',
         money(dashboard?.perMemberExtraCharge ?? dashboard?.perExtraExpenses),
         'Per Member',
         HandCoins,

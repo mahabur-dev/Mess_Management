@@ -249,27 +249,27 @@ export function DashboardHeader({ title, description, selectedMonth, onMonthChan
               <DropdownMenuContent align="end" className="w-[280px] border border-[#e6ebf4] shadow-[0_8px_30px_rgba(65,103,153,0.12)] p-2">
                 <DropdownMenuItem
                   onClick={() => router.push('/dashboard/finance')}
-                  className="cursor-pointer gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-gradient-to-r hover:from-[#2f80ed] hover:to-[#3b8cff] hover:text-white focus:bg-gradient-to-r focus:from-[#2f80ed] focus:to-[#3b8cff] focus:text-white"
+                  className="group cursor-pointer gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-gradient-to-r hover:from-[#2f80ed] hover:to-[#3b8cff] focus:bg-gradient-to-r focus:from-[#2f80ed] focus:to-[#3b8cff]"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-50 to-red-100 group-hover:bg-white/20">
-                    <ShoppingBag size={18} className="text-red-500 group-hover:text-white" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-50 to-red-100 transition group-hover:bg-white/20">
+                    <ShoppingBag size={18} className="text-red-500 transition group-hover:text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#172554] group-hover:text-white">Add Expense</p>
-                    <p className="text-xs font-semibold text-[#6b7a99] group-hover:text-white/80">Record a new expense</p>
+                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-white">Add Expense</p>
+                    <p className="text-xs font-semibold text-[#6b7a99] transition group-hover:text-white/80">Record a new expense</p>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-[#e6ebf4] my-1.5" />
                 <DropdownMenuItem
                   onClick={() => router.push('/dashboard/payments')}
-                  className="cursor-pointer gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-gradient-to-r hover:from-[#2f80ed] hover:to-[#3b8cff] hover:text-white focus:bg-gradient-to-r focus:from-[#2f80ed] focus:to-[#3b8cff] focus:text-white"
+                  className="group cursor-pointer gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-gradient-to-r hover:from-[#2f80ed] hover:to-[#3b8cff] focus:bg-gradient-to-r focus:from-[#2f80ed] focus:to-[#3b8cff]"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-green-100">
-                    <CreditCard size={18} className="text-emerald-600" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-green-100 transition group-hover:bg-white/20">
+                    <CreditCard size={18} className="text-emerald-600 transition group-hover:text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#172554]">Submit Payment</p>
-                    <p className="text-xs font-semibold text-[#6b7a99]">Record a new payment</p>
+                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-white">Submit Payment</p>
+                    <p className="text-xs font-semibold text-[#6b7a99] transition group-hover:text-white/80">Record a new payment</p>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>

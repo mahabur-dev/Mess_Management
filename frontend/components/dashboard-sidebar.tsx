@@ -143,7 +143,7 @@ export function DashboardSidebar() {
       <div className="fixed left-0 top-0 z-30 hidden h-screen md:block">{content}</div>
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <button className="absolute inset-0 bg-black/45" onClick={() => setIsOpen(false)} aria-label="Close menu" />
+          <button className="absolute inset-0 bg-[#2A2A2E]/45" onClick={() => setIsOpen(false)} aria-label="Close menu" />
           <div className="relative h-full w-[248px]">
             <button
               type="button"

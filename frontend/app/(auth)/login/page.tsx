@@ -88,14 +88,14 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-[#eef6ff] px-4 py-6 text-[#172554] sm:px-6 lg:px-8">
       <div className="w-full max-w-md rounded-lg border border-white/80 bg-white/95 p-6 shadow-[0_24px_70px_rgba(30,64,120,0.16)] backdrop-blur sm:p-8">
             <Link href="/" className="mb-5 flex items-center">
-              <BrandLogo />
+              <BrandLogo/>
             </Link>
 
             <div className="mb-7">
               {/* <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
                 <LockKeyhole size={25} />
               </div> */}
-              <h2 className="text-2xl font-black leading-tight tracking-normal text-[#405692] sm:text-2xl">
+              <h2 className="text-xl font-black leading-tight tracking-normal text-[#2A2A2E] sm:text-2xl">
                 Welcome back
               </h2>
               <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">

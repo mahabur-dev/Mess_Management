@@ -16,7 +16,7 @@ export function BrandLogo({ className, imageClassName, subtitle, subtitleClassNa
       <img
         src={LOGO_SRC}
         alt={LOGO_ALT}
-        className={cn('h-15 w-auto shrink-0 object-contain', imageClassName)}
+        className={cn('h-10 w-auto shrink-0 object-contain', imageClassName)}
       />
       {subtitle && (
         <span className={cn('text-[10px] font-bold uppercase tracking-[0.18em] text-[#6b7a99]', subtitleClassName)}>

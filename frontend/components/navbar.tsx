@@ -22,7 +22,7 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-[#e4eaf4] bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 ">
           <BrandLogo imageClassName="h-9 w-auto" />
         </Link>
 
@@ -31,7 +31,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-lg px-5 py-3 text-sm font-bold text-[#07143d] transition hover:bg-[#e7f1ff] hover:text-[#005bbb]"
+              className="rounded-lg px-5 py-3 text-sm font-bold text-[#2A2A2E] transition hover:bg-[#e7f1ff] hover:text-[#005bbb]"
             >
               {link.label}
             </Link>

@@ -54,7 +54,7 @@ export function CarouselSection({ title, items, onItemClick }: CarouselSectionPr
         onClick={() => onItemClick?.(currentItem)}
       >
         {/* Content */}
-        <div className="absolute inset-0 flex flex-col justify-end p-6 bg-gradient-to-t from-black/40 to-transparent">
+        <div className="absolute inset-0 flex flex-col justify-end p-6 bg-gradient-to-t from-[#2A2A2E]/40 to-transparent">
           <h3 className="text-2xl font-bold text-white mb-2">{currentItem.title}</h3>
           <p className="text-white/90 text-sm line-clamp-2">{currentItem.description}</p>
         </div>

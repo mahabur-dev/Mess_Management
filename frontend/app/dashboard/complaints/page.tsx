@@ -5,10 +5,35 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { apiClient, type Complaint, type ComplaintCategory, type Mess } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
-import { CheckCircle2, MessageSquareWarning, Plus, Trash2 } from 'lucide-react'
+import { CheckCircle2, MessageSquareWarning, Plus, Trash2, X, Loader2, AlertCircle, CalendarDays, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const categories: ComplaintCategory[] = ['MEAL_CORRECTION', 'PAYMENT_CORRECTION', 'LEAVE_REQUEST', 'ROOM_ISSUE', 'FOOD_ISSUE', 'MAINTENANCE_ISSUE', 'OTHER']
+
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  MEAL_CORRECTION: { label: 'Meal Correction', color: '#0f766e', bg: '#f0fdfa' },
+  PAYMENT_CORRECTION: { label: 'Payment Correction', color: '#6d28d9', bg: '#f5f3ff' },
+  LEAVE_REQUEST: { label: 'Leave Request', color: '#2563eb', bg: '#eff6ff' },
+  ROOM_ISSUE: { label: 'Room Issue', color: '#d97706', bg: '#fffbeb' },
+  FOOD_ISSUE: { label: 'Food Issue', color: '#dc2626', bg: '#fef2f2' },
+  MAINTENANCE_ISSUE: { label: 'Maintenance', color: '#0891b2', bg: '#ecfeff' },
+  OTHER: { label: 'Other', color: '#6366f1', bg: '#eef2ff' },
+}
+
+const STATUS_CONFIG = {
+  PENDING: { label: 'Pending', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200/50' },
+  SOLVED: { label: 'Solved', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200/50' },
+}
+
+const formatDate = (iso: string) => {
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 export default function ComplaintsPage() {
   const [messes, setMesses] = useState<Mess[]>([])
@@ -21,6 +46,8 @@ export default function ComplaintsPage() {
   const isAdmin = user?.role === 'ADMIN'
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
   const canSubmitComplaint = user?.role === 'MEMBER'
+  const [showModal, setShowModal] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   async function load() {
     if (isAdmin) {
@@ -48,10 +75,16 @@ export default function ComplaintsPage() {
 
   async function submit() {
     if (!activeMess || !title.trim() || !description.trim()) return
-    await apiClient.createComplaint({ messId: activeMess.id, title, description, category })
-    setTitle('')
-    setDescription('')
-    await load()
+    setSubmitting(true)
+    try {
+      await apiClient.createComplaint({ messId: activeMess.id, title, description, category })
+      setTitle('')
+      setDescription('')
+      setShowModal(false)
+      await load()
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   async function solve(id: string) {
@@ -67,62 +100,245 @@ export default function ComplaintsPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader title="Complaints & Requests" description="Meal corrections, payment corrections, leave requests and maintenance issues" />
-      <div className={`grid gap-6 p-4 sm:p-6 lg:p-8 ${canSubmitComplaint ? 'lg:grid-cols-[380px_1fr]' : 'lg:grid-cols-1'}`}>
-        {canSubmitComplaint && (
-          <Card className="app-card h-fit p-5">
-            <h2 className="mb-4 text-lg font-black">Submit Request</h2>
-            <div className="space-y-4">
-              <input className="soft-input w-full" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-              <select className="soft-input w-full" value={category} onChange={(e) => setCategory(e.target.value as ComplaintCategory)}>
-                {categories.map((item) => <option key={item}>{item}</option>)}
-              </select>
-              <textarea className="min-h-28 w-full rounded-lg border border-border bg-white p-3 text-sm outline-none focus:border-[#6f3df4] focus:ring-2 focus:ring-[#6f3df4]/15" placeholder="Describe the issue..." value={description} onChange={(e) => setDescription(e.target.value)} />
-              <Button disabled={!activeMess} onClick={submit} className="gradient-button w-full rounded-lg font-bold">
-                <Plus size={16} className="mr-2" /> Submit
-              </Button>
-            </div>
-          </Card>
-        )}
 
-        <div className="space-y-3">
-          {complaints.length === 0 && <Card className="app-card p-5 text-sm font-semibold text-muted-foreground">No complaints yet.</Card>}
-          {complaints.map((complaint) => (
-            <Card key={complaint.id} className="app-card p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#ffe8f0] text-[#f43f7f]"><MessageSquareWarning size={20} /></span>
-                  <div>
-                    <p className="text-xs font-black text-[#6f3df4]">{complaint.category}</p>
-                    <h3 className="mt-1 text-lg font-black">{complaint.title}</h3>
-                    <p className="mt-1 text-sm font-semibold text-muted-foreground">{complaint.description}</p>
-                    <p className="mt-3 text-xs font-black">Status: {complaint.status}</p>
-                  </div>
-                </div>
-                {isManager && (
-                  <div className="flex shrink-0 items-center gap-2">
-                    {complaint.status !== 'SOLVED' && (
-                      <Button size="sm" onClick={() => solve(complaint.id)} className="bg-[#22b66f] hover:bg-[#1fa463]">
-                        <CheckCircle2 size={15} className="mr-2" /> Solve
-                      </Button>
+      <div className="p-4 sm:p-6 lg:p-8">
+        {/* Header */}
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-red-50 to-rose-100 shadow-sm">
+              <MessageSquareWarning size={24} className="text-red-500" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-[#172554]">{isManager ? 'All Complaints' : 'My Complaints'}</h2>
+              <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{complaints.length} complaint{complaints.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          {canSubmitComplaint && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex h-[45px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
+            >
+              <Plus size={18} />
+              Submit Complaint
+            </button>
+          )}
+        </div>
+
+        {/* Complaints Table - Desktop */}
+        <div className="hidden sm:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Category</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Description</th>
+                <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                {isManager && <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e6ebf4]">
+              {complaints.length === 0 && (
+                <tr>
+                  <td colSpan={isManager ? 5 : 4} className="px-5 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <MessageSquareWarning size={40} className="text-[#d8e6f8]" />
+                      <p className="text-sm font-bold text-[#6b7a99]">No complaints yet.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {complaints.map((complaint) => {
+                const catCfg = CATEGORY_CONFIG[complaint.category] || CATEGORY_CONFIG.OTHER
+                const statusCfg = STATUS_CONFIG[complaint.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
+                return (
+                  <tr key={complaint.id} className="transition hover:bg-[#f8faff] group">
+                    <td className="px-5 py-4">
+                      <span
+                        className="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold"
+                        style={{ backgroundColor: catCfg.bg, color: catCfg.color, borderColor: `${catCfg.color}33` }}
+                      >
+                        {catCfg.label}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-bold text-[#172554]">{complaint.title}</p>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="max-w-xs truncate text-sm font-semibold text-[#6b7a99]">{complaint.description}</p>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex justify-center">
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                          {complaint.status === 'SOLVED' ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />}
+                          {statusCfg.label}
+                        </span>
+                      </div>
+                    </td>
+                    {isManager && (
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-2">
+                          {complaint.status !== 'SOLVED' && (
+                            <button
+                              onClick={() => solve(complaint.id)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-700 transition hover:border-emerald-500/40 hover:bg-emerald-100"
+                            >
+                              <CheckCircle2 size={13} />
+                              Solve
+                            </button>
+                          )}
+                          <button
+                            onClick={() => void remove(complaint.id)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-50 text-red-600 transition hover:border-red-500/40 hover:bg-red-100"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => void remove(complaint.id)}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#fecaca] bg-white text-[#dc2626] transition hover:bg-[#fff1f2]"
-                      aria-label="Delete complaint"
-                      title="Delete"
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Complaints - Mobile Cards */}
+        <div className="space-y-3 sm:hidden">
+          {complaints.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <MessageSquareWarning size={40} className="mb-2 text-[#d8e6f8]" />
+              <p className="text-sm font-bold text-[#6b7a99]">No complaints yet.</p>
+            </div>
+          ) : (
+            complaints.map((complaint) => {
+              const catCfg = CATEGORY_CONFIG[complaint.category] || CATEGORY_CONFIG.OTHER
+              const statusCfg = STATUS_CONFIG[complaint.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
+              return (
+                <div key={complaint.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb]">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <span
+                      className="inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[10px] font-bold"
+                      style={{ backgroundColor: catCfg.bg, color: catCfg.color, borderColor: `${catCfg.color}33` }}
                     >
-                      <Trash2 size={16} />
-                    </button>
+                      {catCfg.label}
+                    </span>
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                      {complaint.status === 'SOLVED' ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
+                      {statusCfg.label}
+                    </span>
                   </div>
-                )}
-              </div>
-            </Card>
-          ))}
+                  <h3 className="text-sm font-bold text-[#172554]">{complaint.title}</h3>
+                  <p className="mt-1 text-xs font-semibold text-[#6b7a99] leading-relaxed">{complaint.description}</p>
+                  {isManager && (
+                    <div className="mt-3 flex gap-2">
+                      {complaint.status !== 'SOLVED' && (
+                        <button
+                          onClick={() => solve(complaint.id)}
+                          className="flex-1 inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-50 text-xs font-bold text-emerald-700 transition hover:border-emerald-500/40 hover:bg-emerald-100"
+                        >
+                          <CheckCircle2 size={13} />
+                          Solve
+                        </button>
+                      )}
+                      <button
+                        onClick={() => void remove(complaint.id)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-50 text-red-600 transition hover:border-red-500/40 hover:bg-red-100"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
         </div>
       </div>
+
+      {/* Submit Complaint Modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
+          onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+        >
+          <div className="relative w-full max-w-[520px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
+            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#f43f8f] to-[#ffb84d]" />
+            <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/12 blur-2xl" />
+
+            <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Complaints</p>
+                <h2 className="mt-1 text-xl font-black text-[#172554]">Submit Complaint</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="relative p-5 sm:p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Title</label>
+                  <input
+                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    placeholder="Enter complaint title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Category</label>
+                  <select
+                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as ComplaintCategory)}
+                  >
+                    {categories.map((item) => {
+                      const cfg = CATEGORY_CONFIG[item]
+                      return <option key={item} value={item}>{cfg.label}</option>
+                    })}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
+                  <textarea
+                    className="min-h-[140px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 py-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    placeholder="Describe the issue..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  disabled={submitting}
+                  className="h-12 rounded-xl border border-[#d8e6f8] bg-white px-4 font-black text-[#53617d] transition hover:bg-[#edf5ff] disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submit}
+                  disabled={submitting || !title.trim() || !description.trim() || !activeMess}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70"
+                >
+                  {submitting ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                  {submitting ? 'Submitting...' : 'Submit Complaint'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

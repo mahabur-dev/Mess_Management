@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, RotateCcw, ShieldCheck } from 'lucide-react'
+import { ArrowRight, RotateCcw, Home } from 'lucide-react'
 import {
   InputOTP,
   InputOTPGroup,
@@ -23,145 +23,123 @@ export default function VerifyOtp() {
     e.preventDefault()
     setMessage('')
     setIsSuccess(false)
-
-    if (otp.length < 6) {
-      setMessage('Please enter the 6-digit verification code.')
-      return
-    }
-
+    if (otp.length < 6) { setMessage('Please enter the 6-digit verification code.'); return }
     const email = sessionStorage.getItem('resetEmail')
-    if (!email) {
-      setMessage('Please request an OTP with your email first.')
-      return
-    }
-
+    if (!email) { setMessage('Please request an OTP with your email first.'); return }
     setIsSubmitting(true)
     try {
       const result = await apiClient.verifyOtp(email, otp)
-
-      const successMessage = result.data?.message || result.message || 'OTP verified successfully'
       setIsSuccess(true)
-      setMessage(successMessage)
+      setMessage(result.data?.message || result.message || 'OTP verified successfully')
       sessionStorage.setItem('otpVerified', 'true')
-
-      window.setTimeout(() => {
-        router.push('/reset_password')
-      }, 800)
+      window.setTimeout(() => router.push('/reset_password'), 800)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'OTP verification failed')
-    } finally {
-      setIsSubmitting(false)
-    }
+    } finally { setIsSubmitting(false) }
   }
 
   const handleResendOtp = async () => {
     const email = sessionStorage.getItem('resetEmail')
-    setMessage('')
-    setIsSuccess(false)
-
-    if (!email) {
-      setMessage('Please request an OTP with your email first.')
-      return
-    }
-
+    setMessage(''); setIsSuccess(false)
+    if (!email) { setMessage('Please request an OTP with your email first.'); return }
     setIsResending(true)
     try {
       const result = await apiClient.forgotPassword(email)
-
-      setOtp('')
-      setIsSuccess(true)
+      setOtp(''); setIsSuccess(true)
       setMessage(result.data?.message || result.message || 'A new OTP has been sent to your email.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to resend OTP')
-    } finally {
-      setIsResending(false)
-    }
+    } finally { setIsResending(false) }
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#eef6ff] px-4 py-6 text-[#172554] sm:px-6 lg:px-8">
-      <div className="w-full max-w-md rounded-lg border border-white/80 bg-white/95 p-6 shadow-[0_24px_70px_rgba(30,64,120,0.16)] backdrop-blur sm:p-8">
-        <Link href="/forget_password" className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-[#667085] transition hover:text-[#2563eb]">
-          <ArrowLeft size={16} />
-          Back to email
-        </Link>
-
-        <div className="mb-7">
-          {/* <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
-            <ShieldCheck size={25} />
-          </div> */}
-          <h1 className="text-xl font-black leading-tight tracking-normal text-[#2A2A2E] sm:text-2xl">
-            Verify OTP
-          </h1>
-          <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
-            Enter the 6-digit code sent to your email address.
-          </p>
-        </div>
-
-        {message && (
-          <div className={`mb-5 rounded-lg border px-4 py-3 text-sm font-bold ${isSuccess ? 'border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]' : 'border-[#fecaca] bg-[#fff1f2] text-[#dc2626]'}`}>
-            {message}
+    <div className="min-h-screen bg-[#fafcff] flex items-center justify-center p-4">
+      <div className="w-full max-w-[420px]">
+        <div className="rounded-xl border border-[#e6ebf4] bg-white p-6 sm:p-8 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          {/* Logo */}
+          <div className="mb-7 text-center">
+            <Link href="/" className="inline-flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-base font-black text-white shadow-[0_4px_12px_rgba(47,128,237,0.3)]">
+                M
+              </div>
+              <div className="text-left">
+                <p className="text-lg font-black text-[#172554] tracking-tight leading-none">Mess</p>
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#6b7a99]">Management</p>
+              </div>
+            </Link>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <label className="block">
-            <span className="mb-3 block text-sm font-bold text-[#172554]">
-              Verification Code
-            </span>
-            <InputOTP
-              maxLength={6}
-              value={otp}
-              onChange={setOtp}
-              containerClassName="justify-center gap-2"
+          {/* Header */}
+          <div className="mb-7">
+            <h1 className="text-xl font-black text-[#172554]">Verify OTP</h1>
+            <p className="mt-1.5 text-sm font-semibold text-[#6b7a99]">
+              Enter the 6-digit code sent to your email address.
+            </p>
+          </div>
+
+          {message && (
+            <div className={`mb-5 rounded-xl border px-4 py-3 text-sm font-bold ${isSuccess ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700' : 'border-red-200/60 bg-red-50 text-red-600'}`}>
+              {message}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="mb-3 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99] text-center">
+                Verification Code
+              </label>
+              <InputOTP maxLength={6} value={otp} onChange={setOtp} containerClassName="justify-center gap-2">
+                <InputOTPGroup className="gap-2">
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <InputOTPSlot
+                      key={index}
+                      index={index}
+                      className="h-12 w-11 rounded-xl border border-[#d8e6f8] bg-white text-base font-black text-[#172554] shadow-sm data-[active=true]:border-[#2f80ed] data-[active=true]:ring-4 data-[active=true]:ring-[#2f80ed]/10"
+                    />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70"
             >
-              <InputOTPGroup className="gap-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <InputOTPSlot
-                    key={index}
-                    index={index}
-                    className="h-11 w-10 rounded-lg border border-[#d8e6f8] bg-white text-base font-black text-[#172554] shadow-[0_8px_22px_rgba(37,64,112,0.07)] data-[active=true]:border-[#2f80ed] data-[active=true]:ring-4 data-[active=true]:ring-[#2f80ed]/12 sm:h-12 sm:w-12"
-                  />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </label>
+              {isSubmitting ? 'Verifying...' : 'Verify Code'}
+              {!isSubmitting && <ArrowRight size={18} />}
+            </button>
+          </form>
 
           <button
-            type="submit"
-            disabled={isSubmitting}
-            className="group flex h-13 mb-5 w-full items-center justify-center rounded-lg bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_16px_30px_rgba(37,99,235,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(37,99,235,0.28)] disabled:translate-y-0 disabled:opacity-70"
+            type="button"
+            disabled={isResending}
+            onClick={() => void handleResendOtp()}
+            className="mt-4 flex h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#f8faff] disabled:opacity-70"
           >
-            {isSubmitting ? 'Verifying...' : 'Verify Code'}
-            {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
+            <RotateCcw size={16} />
+            {isResending ? 'Resending...' : 'Resend OTP'}
           </button>
-        </form>
 
-        {/* <div className="my-7 flex items-center gap-3">
-          <div className="h-px flex-1 bg-[#d8e6f8]" />
-          <span className="text-xs font-black text-[#8a98b4]">OR</span>
-          <div className="h-px flex-1 bg-[#d8e6f8]" />
-        </div> */}
-
-        <button
-          type="button"
-          disabled={isResending}
-          onClick={() => {
-            void handleResendOtp()
-          }}
-          className="flex h-12 w-full mb-5 items-center justify-center gap-2 rounded-lg border border-[#d8e6f8] bg-[#f8fbff] px-4 text-sm font-black text-[#2563eb] transition hover:border-[#2f80ed] hover:bg-[#edf5ff] disabled:opacity-70"
-        >
-          <RotateCcw size={16} />
-          {isResending ? 'Resending...' : 'Resend OTP'}
-        </button>
-
-        <p className="mt-7 text-center text-sm font-semibold text-[#667085]">
-          Remember your password?{' '}
-          <Link href="/login" className="font-black text-[#2563eb] hover:underline">
-            Sign in
-          </Link>
-        </p>
+          {/* Footer Links Inside Card */}
+          <div className="mt-6 space-y-3 text-center">
+            <Link href="/forget_password" className="text-sm font-bold text-[#2f80ed] hover:underline">
+              Back to email
+            </Link>
+            <div>
+              <Link href="/login" className="text-sm font-semibold text-[#6b7a99] hover:text-[#2f80ed]">
+                Remember your password? <span className="font-bold text-[#2f80ed]">Sign in</span>
+              </Link>
+            </div>
+            <div>
+              <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8a9bb5] hover:text-[#2f80ed] transition">
+                <Home size={13} />
+                Back to home
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   )
 }

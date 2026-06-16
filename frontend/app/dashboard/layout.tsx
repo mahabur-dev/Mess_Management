@@ -1,34 +1,40 @@
 'use client'
 
 import { AuthProvider, useAuth } from '@/app/context/auth-context'
+import { SidebarProvider, useSidebar } from '@/app/context/sidebar-context'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { PushNotificationPermissionModal } from '@/components/push-notification-permission-modal'
 import { ReactNode } from 'react'
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
+  const { collapsed } = useSidebar()
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#fafcff' }}>
         <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-border border-t-accent animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="w-12 h-12 rounded-full border-4 border-[#e6ebf4] border-t-[#2f80ed] animate-spin mx-auto mb-4" />
+          <p className="text-sm font-bold text-[#6b7a99]">Loading...</p>
         </div>
       </div>
     )
   }
 
   if (!isAuthenticated) {
-    // Redirect will be handled by middleware
     return null
   }
 
+  const contentMargin = collapsed ? 'lg:ml-[88px]' : 'lg:ml-[296px]'
+
   return (
-    <div className="dashboard-theme flex h-screen">
+    <div className="flex h-screen" style={{ backgroundColor: '#fafcff' }}>
       <DashboardSidebar />
-      <main className="dashboard-main flex-1 overflow-auto md:ml-[248px]">
-        {children}
+      {/* Content - full width on tablet, margin adjusts on large screens when sidebar is fixed */}
+      <main className={`flex-1 overflow-auto transition-all duration-300 ${contentMargin}`}>
+        <div className="min-h-screen p-0">
+          {children}
+        </div>
       </main>
       <PushNotificationPermissionModal />
     </div>
@@ -38,7 +44,9 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      <SidebarProvider>
+        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      </SidebarProvider>
     </AuthProvider>
   )
 }

@@ -6,64 +6,14 @@ import { useState } from 'react'
 import { useAuth } from '@/app/context/auth-context'
 import {
   ArrowRight,
-  BadgeCheck,
   Eye,
   EyeOff,
-  LockKeyhole,
+  Mail,
+  Lock,
+  ShieldCheck,
+  Home,
 } from 'lucide-react'
-import { BrandLogo } from '@/components/brand-logo'
 import { ApiError } from '@/lib/api-client'
-
-function LoginField({
-  label,
-  type = 'text',
-  value,
-  onChange,
-  placeholder,
-  autoComplete,
-  showToggle,
-  onToggle,
-  isVisible,
-}: {
-  label: string
-  type?: string
-  value: string
-  onChange: (value: string) => void
-  placeholder: string
-  autoComplete?: string
-  showToggle?: boolean
-  onToggle?: () => void
-  isVisible?: boolean
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-bold text-[#172554]">
-        {label}
-      </span>
-      <span className="relative block">
-        <input
-          type={showToggle && isVisible !== undefined ? (isVisible ? 'text' : 'password') : type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          required
-          className="h-12 w-full rounded-lg border border-[#d8e6f8] bg-white px-4 pr-11 text-[15px] font-semibold text-[#172554] shadow-[0_8px_22px_rgba(37,64,112,0.07)] outline-none transition placeholder:text-[#8a98b4] focus:border-[#2f80ed] focus:ring-4 focus:ring-[#2f80ed]/12"
-        />
-        {showToggle && onToggle && (
-          <button
-            type="button"
-            onClick={onToggle}
-            className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#edf5ff] hover:text-[#2f80ed]"
-            aria-label="Toggle password visibility"
-          >
-            {isVisible ? <EyeOff size={17} /> : <Eye size={17} />}
-          </button>
-        )}
-      </span>
-    </label>
-  )
-}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -85,85 +35,114 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#eef6ff] px-4 py-6 text-[#172554] sm:px-6 lg:px-8">
-      <div className="w-full max-w-md rounded-lg border border-white/80 bg-white/95 p-6 shadow-[0_24px_70px_rgba(30,64,120,0.16)] backdrop-blur sm:p-8">
-            <Link href="/" className="mb-5 flex items-center">
-              <BrandLogo/>
+    <div className="min-h-screen bg-[#fafcff] flex items-center justify-center p-4">
+      <div className="w-full max-w-[420px]">
+        <div className="rounded-xl border border-[#e6ebf4] bg-white p-6 sm:p-8 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          {/* Logo */}
+          <div className="mb-7 text-center">
+            <Link href="/" className="inline-flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-base font-black text-white shadow-[0_4px_12px_rgba(47,128,237,0.3)]">
+                M
+              </div>
+              <div className="text-left">
+                <p className="text-lg font-black text-[#172554] tracking-tight leading-none">Mess</p>
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#6b7a99]">Management</p>
+              </div>
             </Link>
+          </div>
 
-            <div className="mb-7">
-              {/* <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
-                <LockKeyhole size={25} />
-              </div> */}
-              <h2 className="text-xl font-black leading-tight tracking-normal text-[#2A2A2E] sm:text-2xl">
-                Welcome back
-              </h2>
-              <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
-                Sign in to continue managing your mess account.
-              </p>
+          {/* Header */}
+          <div className="mb-7">
+            <h1 className="text-xl font-black text-[#172554]">Welcome back</h1>
+            <p className="mt-1.5 text-sm font-semibold text-[#6b7a99]">
+              Sign in to continue managing your mess account.
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-5 rounded-xl border border-red-200/60 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  required
+                  className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-11 pr-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                />
+              </div>
             </div>
 
-            {error && (
-              <div className="mb-5 rounded-lg border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-sm font-bold text-[#dc2626]">
-                {error}
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  required
+                  className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 pr-12 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#edf5ff] hover:text-[#2f80ed]"
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
               </div>
-            )}
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <LoginField
-                label="Email Address"
-                type="email"
-                value={email}
-                onChange={setEmail}
-                placeholder="you@example.com"
-                autoComplete="email"
-              />
+            <div className="flex items-center justify-between gap-4">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8a9bb5]">
+                <ShieldCheck size={14} className="text-emerald-500" />
+                Protected access
+              </span>
+              <Link href="/forget_password" className="text-sm font-bold text-[#2f80ed] hover:underline">
+                Forgot password?
+              </Link>
+            </div>
 
-              <LoginField
-                label="Password"
-                type="password"
-                value={password}
-                onChange={setPassword}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                showToggle
-                onToggle={() => setShowPassword(!showPassword)}
-                isVisible={showPassword}
-              />
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70"
+            >
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
+              {!isSubmitting && <ArrowRight size={18} />}
+            </button>
+          </form>
 
-              <div className="flex items-center justify-between gap-4">
-                <span className="inline-flex items-center gap-2 text-xs font-bold text-[#667085]">
-                  <BadgeCheck size={15} className="text-[#16a34a]" />
-                  Protected access
-                </span>
-                <Link href="/forget_password" className="text-sm font-bold text-[#2563eb] hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="group mt-2 mb-2 flex h-13 w-full items-center justify-center rounded-lg bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_16px_30px_rgba(37,99,235,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(37,99,235,0.28)] disabled:translate-y-0 disabled:opacity-70"
-              >
-                {isSubmitting ? 'Signing in...' : 'Sign In'}
-                {!isSubmitting && <ArrowRight size={18} className="ml-2 transition group-hover:translate-x-1" />}
-              </button>
-            </form>
-
-            {/* <div className="my-7 flex items-center gap-3">
-              <div className="h-px flex-1 bg-[#d8e6f8]" />
-              <span className="text-xs font-black text-[#8a98b4]">OR</span>
-              <div className="h-px flex-1 bg-[#d8e6f8]" />
-            </div> */}
-
-            <p className="text-center text-sm font-semibold text-[#667085]">
-              Don&apos;t have an account?{' '}
-              <Link href="/register" className="font-black text-[#2563eb] hover:underline">
+          {/* Footer Links Inside Card */}
+          <div className="mt-6 space-y-3 text-center">
+            <p className="text-sm font-semibold text-[#6b7a99]">
+              Don't have an account?{' '}
+              <Link href="/register" className="font-bold text-[#2f80ed] hover:underline">
                 Create one
               </Link>
             </p>
+            <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8a9bb5] hover:text-[#2f80ed] transition">
+              <Home size={13} />
+              Back to home
+            </Link>
           </div>
-    </main>
+        </div>
+      </div>
+    </div>
   )
 }

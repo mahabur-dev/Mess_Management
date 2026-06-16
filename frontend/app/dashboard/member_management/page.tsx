@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog } from 'lucide-react';
+import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog, ChevronDown, ChevronUp, MoreHorizontal, Phone, Users } from 'lucide-react';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { DashboardHeader } from '@/components/dashboard-header';
 
@@ -42,13 +42,6 @@ interface MembersSectionProps {
   organizerId?: string;
 }
 
-interface MemberCardProps {
-  member: Member;
-  onEditRole: (member: Member) => void;
-  onRemove: (member: Member) => void;
-  removingId: string | null;
-}
-
 interface EditRoleModalProps {
   member: Member;
   onClose: () => void;
@@ -61,18 +54,20 @@ interface AddMemberModalProps {
 }
 
 // ─── ROLE_CONFIG ───────────────────────────────────────────────────────────
-const ROLE_CONFIG: Record<MembershipRole, { label: string; icon: React.ReactNode; color: string; textColor: string }> = {
+const ROLE_CONFIG: Record<MembershipRole, { label: string; icon: React.ReactNode; color: string; textColor: string; bgColor: string }> = {
   MANAGER: {
     label: 'Manager',
-    icon: <Shield size={11} />,
+    icon: <Shield size={12} />,
     color: '#6d28d922',
     textColor: '#6d28d9',
+    bgColor: '#f5f3ff',
   },
   MEMBER: {
     label: 'Member',
-    icon: <User size={11} />,
+    icon: <User size={12} />,
     color: '#0f766e1a',
     textColor: '#0f766e',
+    bgColor: '#f0fdfa',
   },
 };
 
@@ -206,89 +201,6 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
   );
 }
 
-// ─── Member Card ───────────────────────────────────────────────────────────
-function MemberCard({ member, onEditRole, onRemove, removingId }: MemberCardProps) {
-  const cfg = ROLE_CONFIG[member.role];
-  const isRemoving = removingId === member.id;
-  const avatarBg = avatarColor(member.user_id);
-
-  return (
-    <div className="group relative w-full overflow-hidden rounded-lg border border-white/70 bg-white/88 shadow-[0_18px_45px_rgba(65,103,153,0.16)] transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:shadow-[0_24px_60px_rgba(47,128,237,0.20)]">
-      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
-      <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#2f80ed]/10 blur-2xl transition group-hover:bg-[#2f80ed]/18" />
-      <div className="absolute -bottom-14 -left-12 h-28 w-28 rounded-full bg-[#58d68d]/12 blur-2xl" />
-
-      <div className="relative flex min-h-[260px] flex-col p-4 sm:p-5">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border text-xl font-black shadow-inner sm:h-16 sm:w-16 sm:text-2xl"
-            style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}
-          >
-            {getInitials(member.user.name)}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="truncate text-base font-black text-[#172554] sm:text-lg">
-                  {member.user.name}
-                </h3>
-                <p className="mt-1 flex items-center gap-1.5 truncate text-xs font-semibold text-[#6b7a99] sm:text-sm">
-                  <Mail size={14} className="shrink-0 text-[#2f80ed]" />
-                  {member.user.email}
-                </p>
-              </div>
-
-              <span className="shrink-0 rounded-full border border-emerald-500/20 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-600">
-                Active
-              </span>
-            </div>
-
-            <p className="mt-2 truncate text-sm font-bold text-[#2f80ed]">
-              {member.mess.name}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div
-            className="flex items-center gap-2 rounded-2xl border px-3 py-3"
-            style={{ backgroundColor: cfg.color, borderColor: `${cfg.textColor}33`, color: cfg.textColor }}
-          >
-            {cfg.icon}
-            <span className="text-sm font-black">{cfg.label}</span>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-xl border border-[#d8e6f8] bg-[#edf5ff] px-3 py-3 text-[#2f80ed]">
-            <CalendarDays size={14} />
-            <span className="truncate text-xs font-bold">Joined {formatDate(member.joined_at)}</span>
-          </div>
-        </div>
-
-        <div className="mt-auto grid grid-cols-2 gap-3 pt-5">
-          <button
-            onClick={() => onEditRole(member)}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#2f80ed]/25 bg-[#e7f1ff] px-3 text-sm font-black text-[#2f80ed] transition hover:border-[#2f80ed]/50 hover:bg-[#dcebff] active:scale-[0.98]"
-          >
-            <UserCog size={16} />
-            <span className="truncate">Change Role</span>
-          </button>
-
-          <button
-            onClick={() => onRemove(member)}
-            disabled={isRemoving}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#ff4d4f]/25 bg-[#fff0f0] px-3 text-sm font-black text-[#ff4d4f] transition hover:border-[#ff4d4f]/45 hover:bg-[#ffe5e5] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isRemoving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-            <span className="truncate">{isRemoving ? 'Removing' : 'Remove'}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Add Member Modal ──────────────────────────────────────────────────────
 // ─── Add Member Modal ─────────────────────────────────────────────────────────
 function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
   const [email, setEmail] = useState('')
@@ -450,7 +362,298 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
   )
 }
 
+// ─── Mobile Member Row (card-style for small screens) ──────────────────────
+function MobileMemberRow({ 
+  member, 
+  onEditRole, 
+  onRemove, 
+  removingId 
+}: { 
+  member: Member;
+  onEditRole: (member: Member) => void;
+  onRemove: (member: Member) => void;
+  removingId: string | null;
+}) {
+  const cfg = ROLE_CONFIG[member.role];
+  const isRemoving = removingId === member.id;
+  const avatarBg = avatarColor(member.user_id);
+  const [expanded, setExpanded] = useState(false);
 
+  return (
+    <div className="rounded-xl border border-[#e6ebf4] bg-white shadow-sm transition-all hover:border-[#a9ccfb] hover:shadow-md">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-black"
+          style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}
+        >
+          {getInitials(member.user.name)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-sm font-black text-[#172554]">{member.user.name}</h3>
+            <span
+              className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+              style={{ backgroundColor: cfg.bgColor, color: cfg.textColor }}
+            >
+              {cfg.icon}
+              {cfg.label}
+            </span>
+          </div>
+          <p className="truncate text-xs font-semibold text-[#6b7a99]">{member.user.email}</p>
+        </div>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e6ebf4] text-[#6b7a99] transition hover:bg-[#edf5ff] hover:text-[#2f80ed]"
+        >
+          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-[#e6ebf4] px-4 py-3">
+          <div className="mb-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#6b7a99]">
+              <Mail size={13} className="shrink-0 text-[#2f80ed]" />
+              <span className="truncate">{member.user.email}</span>
+            </div>
+            {member.user.phone && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#6b7a99]">
+                <Phone size={13} className="shrink-0 text-[#58d68d]" />
+                <span>{member.user.phone}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#6b7a99]">
+              <CalendarDays size={13} className="shrink-0 text-[#ffb84d]" />
+              <span>Joined {formatDate(member.joined_at)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#6b7a99]">
+              <span className="shrink-0 text-[#2f80ed]">🏠</span>
+              <span className="truncate">{member.mess.name}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Active
+            </span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onEditRole(member)}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#2f80ed]/20 bg-[#e7f1ff] text-xs font-bold text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] active:scale-[0.98]"
+            >
+              <UserCog size={14} />
+              Role
+            </button>
+            <button
+              onClick={() => onRemove(member)}
+              disabled={isRemoving}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#ff4d4f]/20 bg-[#fff0f0] text-xs font-bold text-[#ff4d4f] transition hover:border-[#ff4d4f]/40 hover:bg-[#ffe5e5] active:scale-[0.98] disabled:opacity-60"
+            >
+              {isRemoving ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              {isRemoving ? 'Removing' : 'Remove'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Desktop Table ──────────────────────────────────────────────────────────
+function MembersTable({ 
+  members, 
+  onEditRole, 
+  onRemove, 
+  removingId 
+}: { 
+  members: Member[];
+  onEditRole: (member: Member) => void;
+  onRemove: (member: Member) => void;
+  removingId: string | null;
+}) {
+  const [sortField, setSortField] = useState<'name' | 'role' | 'joined_at'>('joined_at');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const sorted = [...members].sort((a, b) => {
+    let cmp = 0;
+    if (sortField === 'name') cmp = a.user.name.localeCompare(b.user.name);
+    else if (sortField === 'role') cmp = a.role.localeCompare(b.role);
+    else cmp = new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
+  const toggleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const SortIcon = ({ field }: { field: typeof sortField }) => {
+    if (sortField !== field) return null;
+    return sortDir === 'asc' ? <ChevronUp size={14} className="ml-0.5" /> : <ChevronDown size={14} className="ml-0.5" />;
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">
+                <button
+                  onClick={() => toggleSort('name')}
+                  className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
+                >
+                  Member
+                  <SortIcon field="name" />
+                </button>
+              </th>
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] md:table-cell">
+                Email & Phone
+              </th>
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] lg:table-cell">
+                Mess
+              </th>
+              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">
+                <button
+                  onClick={() => toggleSort('role')}
+                  className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
+                >
+                  Role
+                  <SortIcon field="role" />
+                </button>
+              </th>
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
+                <button
+                  onClick={() => toggleSort('joined_at')}
+                  className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
+                >
+                  Joined
+                  <SortIcon field="joined_at" />
+                </button>
+              </th>
+              <th className="hidden whitespace-nowrap px-4 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
+                Status
+              </th>
+              <th className="whitespace-nowrap px-4 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#e6ebf4]">
+            {sorted.map((member) => {
+              const cfg = ROLE_CONFIG[member.role];
+              const isRemoving = removingId === member.id;
+              const avatarBg = avatarColor(member.user_id);
+
+              return (
+                <tr
+                  key={member.id}
+                  className="transition hover:bg-[#f8faff] group"
+                >
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-black"
+                        style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}
+                      >
+                        {getInitials(member.user.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-[#172554]">
+                          {member.user.name}
+                        </p>
+                        <p className="truncate text-xs font-semibold text-[#6b7a99] md:hidden">
+                          {member.user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="hidden px-4 py-3.5 md:table-cell">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-[#6b7a99]">
+                        {member.user.email}
+                      </p>
+                      {member.user.phone && (
+                        <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-[#8a9bb5]">
+                          <Phone size={11} />
+                          {member.user.phone}
+                        </p>
+                      )}
+                    </div>
+                  </td>
+                  <td className="hidden px-4 py-3.5 lg:table-cell">
+                    <span className="inline-flex items-center rounded-lg border border-[#d8e6f8] bg-[#edf5ff] px-2.5 py-1 text-xs font-bold text-[#2f80ed]">
+                      {member.mess.name}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold"
+                      style={{ backgroundColor: cfg.bgColor, color: cfg.textColor }}
+                    >
+                      {cfg.icon}
+                      {cfg.label}
+                    </span>
+                  </td>
+                  <td className="hidden px-4 py-3.5 sm:table-cell">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
+                      <CalendarDays size={13} className="text-[#ffb84d]" />
+                      {formatDate(member.joined_at)}
+                    </span>
+                  </td>
+                  <td className="hidden px-4 py-3.5 sm:table-cell">
+                    <div className="flex justify-center">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/15 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Active
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => onEditRole(member)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#2f80ed]/15 bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] sm:h-9 sm:w-9"
+                        title="Change Role"
+                      >
+                        <UserCog size={15} />
+                      </button>
+                      <button
+                        onClick={() => onRemove(member)}
+                        disabled={isRemoving}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#ff4d4f]/15 bg-[#fff0f0] text-[#ff4d4f] transition hover:border-[#ff4d4f]/40 hover:bg-[#ffe5e5] disabled:opacity-60 sm:h-9 sm:w-9"
+                        title="Remove Member"
+                      >
+                        {isRemoving ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {sorted.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16">
+          <Users size={48} className="mb-3 text-[#d8e6f8]" />
+          <p className="text-sm font-bold text-[#6b7a99]">No members found</p>
+          <p className="mt-1 text-xs font-semibold text-[#8a9bb5]">Try adjusting your search or filter</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 export default function MembersSection({ organizerId }: MembersSectionProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -542,8 +745,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
   });
 
   return (
-  <div className="min-h-screen">
-    {/* ✅ Add this */}
+  <div className="min-h-screen bg-[#fafcff]">
     <DashboardHeader title="Members" description="Manage your mess members and roles" />
 
     <div className="px-4 py-5 sm:px-6 lg:px-8">
@@ -554,40 +756,122 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
         </div>
       )}
 
-      {/* Search + Add Member row */}
+      {/* Search + Filters + Add Member row */}
       <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="relative w-full md:max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c70a8]" size={22} />
-          <input
-            type="text"
-            placeholder="Search members..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-[52px] w-full rounded-xl border border-[#d8e6f8] bg-white/80 py-3 pl-12 pr-4 text-[#172554] shadow-[0_12px_35px_rgba(65,103,153,0.10)] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-          />
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full md:max-w-sm">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c70a8]" size={20} />
+            <input
+              type="text"
+              placeholder="Search by name, email, or mess..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white py-3 pl-11 pr-4 text-sm font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+            />
+          </div>
+
+          {/* Role filter pills (desktop) */}
+          <div className="hidden items-center gap-1.5 sm:flex">
+            {(['ALL', 'MEMBER', 'MANAGER'] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setFilterRole(r)}
+                className={`rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition active:scale-[0.97] ${
+                  filterRole === r
+                    ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-sm'
+                    : 'border-[#e6ebf4] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'
+                }`}
+              >
+                {r === 'ALL' ? 'All' : ROLE_CONFIG[r].label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 py-3 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition-all hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] active:scale-[0.98] md:w-auto"
+          className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 py-3 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition-all hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] active:scale-[0.98] md:w-auto"
         >
           <Plus size={20} />
           Add Member
         </button>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {filtered.map((member) => (
-          <MemberCard
-            key={member.id}
-            member={member}
-            onEditRole={setEditingMember}
-            onRemove={handleRemove}
-            removingId={removingId}
-          />
+      {/* Mobile role filter (scrollable pills) */}
+      <div className="mb-4 flex items-center gap-1.5 overflow-x-auto pb-2 sm:hidden">
+        {(['ALL', 'MEMBER', 'MANAGER'] as const).map((r) => (
+          <button
+            key={r}
+            onClick={() => setFilterRole(r)}
+            className={`shrink-0 rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition active:scale-[0.97] ${
+              filterRole === r
+                ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-sm'
+                : 'border-[#e6ebf4] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'
+            }`}
+          >
+            {r === 'ALL' ? 'All' : ROLE_CONFIG[r].label}
+          </button>
         ))}
       </div>
+
+      {/* Loading state */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={32} className="animate-spin text-[#2f80ed]" />
+        </div>
+      ) : (
+        <>
+          {/* Mobile: Card-style rows */}
+          <div className="space-y-3 sm:hidden">
+            {filtered.map((member) => (
+              <MobileMemberRow
+                key={member.id}
+                member={member}
+                onEditRole={setEditingMember}
+                onRemove={handleRemove}
+                removingId={removingId}
+              />
+            ))}
+            {filtered.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Users size={48} className="mb-3 text-[#d8e6f8]" />
+                <p className="text-sm font-bold text-[#6b7a99]">No members found</p>
+                <p className="mt-1 text-xs font-semibold text-[#8a9bb5]">Try adjusting your search or filter</p>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop: Table */}
+          <div className="hidden sm:block">
+            <MembersTable
+              members={filtered}
+              onEditRole={setEditingMember}
+              onRemove={handleRemove}
+              removingId={removingId}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Member count summary */}
+      {!loading && filtered.length > 0 && (
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-white px-4 py-3 shadow-sm">
+          <p className="text-xs font-bold text-[#6b7a99]">
+            Showing <span className="text-[#172554]">{filtered.length}</span> of{' '}
+            <span className="text-[#172554]">{members.length}</span> members
+          </p>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1 text-xs font-bold text-[#6b7a99]">
+              <span className="h-2 w-2 rounded-full bg-[#0f766e]" />
+              {members.filter(m => m.role === 'MEMBER').length} Members
+            </span>
+            <span className="flex items-center gap-1 text-xs font-bold text-[#6b7a99]">
+              <span className="h-2 w-2 rounded-full bg-[#6d28d9]" />
+              {members.filter(m => m.role === 'MANAGER').length} Managers
+            </span>
+          </div>
+        </div>
+      )}
     </div>
 
     {/* Modals */}
@@ -599,66 +883,4 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
     )}
   </div>
 )
-  
-  // return (
-  //   <div className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
-  //     {error && (
-  //       <div className="mb-6 flex items-center justify-between rounded-2xl border border-red-500/25 bg-red-50 p-4 text-red-600">
-  //         <span>{error}</span>
-  //         <button onClick={() => setError(null)} className="text-xl">✕</button>
-  //       </div>
-  //     )}
-
-  //     {/* Header */}
-  //     <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-  //       <div className="relative w-full md:max-w-md">
-  //         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c70a8]" size={22} />
-  //         <input
-  //           type="text"
-  //           placeholder="Search"
-  //           value={search}
-  //           onChange={(e) => setSearch(e.target.value)}
-  //           className="h-[52px] w-full rounded-xl border border-[#d8e6f8] bg-white/80 py-3 pl-12 pr-4 text-[#172554] shadow-[0_12px_35px_rgba(65,103,153,0.10)] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-  //         />
-  //       </div>
-
-  //       <button
-  //         onClick={() => setShowAddModal(true)}
-  //         className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 py-3 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition-all hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] active:scale-[0.98] md:w-auto"
-  //       >
-  //         <Plus size={20} />
-  //         Add Member
-  //       </button>
-  //     </div>
-
-  //     {/* Responsive Grid */}
-  //     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-  //       {filtered.map((member) => (
-  //         <MemberCard
-  //           key={member.id}
-  //           member={member}
-  //           onEditRole={setEditingMember}        // ← Fixed: Direct state setter
-  //           onRemove={handleRemove}
-  //           removingId={removingId}
-  //         />
-  //       ))}
-  //     </div>
-
-  //     {/* Modals */}
-  //     {showAddModal && (
-  //       <AddMemberModal
-  //         onClose={() => setShowAddModal(false)}
-  //         onAdd={handleAddMember}
-  //       />
-  //     )}
-
-  //     {editingMember && (
-  //       <EditRoleModal
-  //         member={editingMember}
-  //         onClose={() => setEditingMember(null)}
-  //         onSave={handleEditRole}
-  //       />
-  //     )}
-  //   </div>
-  // );
 }

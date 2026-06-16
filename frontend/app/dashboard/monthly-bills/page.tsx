@@ -7,6 +7,14 @@ import { apiClient, type Mess, type MonthlyBill } from '@/lib/api-client'
 import {
   CalendarDays,
   ClipboardList,
+  ReceiptText,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Loader2,
+  Users,
+  TrendingUp,
+  Banknote,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -19,6 +27,12 @@ function formatMonth(date: string | Date) {
     month: 'long',
     year: 'numeric',
   })
+}
+
+const STATUS_CONFIG = {
+  PAID: { label: 'Paid', icon: <CheckCircle2 size={14} />, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200/50' },
+  PARTIAL: { label: 'Partial', icon: <AlertTriangle size={14} />, bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200/50' },
+  UNPAID: { label: 'Unpaid', icon: <XCircle size={14} />, bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200/50' },
 }
 
 export default function MonthlyBillPage() {
@@ -79,8 +93,19 @@ export default function MonthlyBillPage() {
     })
   }, [bills, selectedMonth])
 
+  // Summary calculations
+  const summary = useMemo(() => {
+    return {
+      totalFood: filteredBills.reduce((s, b) => s + Number(b.food_bill || 0), 0),
+      totalRent: filteredBills.reduce((s, b) => s + Number(b.seat_rent || 0), 0),
+      totalUtility: filteredBills.reduce((s, b) => s + Number(b.utility_share || 0), 0),
+      totalPaid: filteredBills.reduce((s, b) => s + Number(b.paid_amount || 0), 0),
+      totalDue: filteredBills.reduce((s, b) => s + Number(b.final_due || 0), 0),
+    }
+  }, [filteredBills])
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader
         title={isManager ? 'Monthly Bills' : 'My Monthly Bill'}
         description={
@@ -91,134 +116,265 @@ export default function MonthlyBillPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        <Card className="app-card overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
+        {/* Header */}
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-green-100 shadow-sm">
+              <ReceiptText size={24} className="text-emerald-600" />
+            </div>
             <div>
-              <h2 className="text-lg font-black text-[#0a1433]">
+              <h2 className="text-lg font-black text-[#172554]">
                 {isManager ? 'All Monthly Bills' : 'My Monthly Bills'}
               </h2>
-              <p className="text-sm font-semibold text-muted-foreground">
+              <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
                 Showing bills for {formatMonth(`${selectedMonth}-01`)}
               </p>
             </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex h-[45px] items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb]">
+              <CalendarDays size={17} className="text-[#2f80ed]" />
               <input
                 type="month"
-                className="soft-input h-11 rounded-lg px-4 font-bold"
+                className="bg-transparent text-sm font-bold text-[#172554] outline-none"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
               />
-
-              <div className="flex items-center justify-center gap-2 rounded-full bg-[#f4f7fb] px-3 py-1.5 text-xs font-black text-[#6f3df4]">
-                <ClipboardList size={14} />
-                {filteredBills.length} Bills
-              </div>
+            </label>
+            <div className="flex h-[45px] items-center gap-2 rounded-xl border border-[#d8e6f8] bg-gradient-to-r from-[#e7f1ff] to-[#f0fdf4] px-4 text-xs font-black text-[#2f80ed] shadow-sm">
+              <ClipboardList size={16} />
+              {filteredBills.length} Bill{filteredBills.length !== 1 ? 's' : ''}
             </div>
           </div>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left">
-              <thead className="bg-[#f8f7ff] text-xs uppercase tracking-wide text-slate-500">
+        {/* Summary Cards */}
+        {filteredBills.length > 0 && (
+          <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <TrendingUp size={13} className="text-[#2f80ed]" />
+                Food
+              </p>
+              <p className="mt-1.5 text-lg font-black text-[#172554]">{money(summary.totalFood)}</p>
+            </div>
+            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <Banknote size={13} className="text-[#f59e0b]" />
+                Rent
+              </p>
+              <p className="mt-1.5 text-lg font-black text-[#172554]">{money(summary.totalRent)}</p>
+            </div>
+            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <Banknote size={13} className="text-[#ec4899]" />
+                Utility
+              </p>
+              <p className="mt-1.5 text-lg font-black text-[#172554]">{money(summary.totalUtility)}</p>
+            </div>
+            <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-4 shadow-sm">
+              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-700">
+                <CheckCircle2 size={13} />
+                Paid
+              </p>
+              <p className="mt-1.5 text-lg font-black text-emerald-700">{money(summary.totalPaid)}</p>
+            </div>
+            <div className="rounded-xl border border-red-200/60 bg-red-50/50 p-4 shadow-sm">
+              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-red-600">
+                <XCircle size={13} />
+                Due
+              </p>
+              <p className="mt-1.5 text-lg font-black text-red-600">{money(summary.totalDue)}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Bills Table - Desktop */}
+        <div className="hidden sm:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Member</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Month</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Meals</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Food</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Rent</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Utility</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-emerald-600">Paid</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-red-500">Due</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-[#e6ebf4]">
+              {loading && (
                 <tr>
-                  <th className="px-5 py-4 font-black">Member</th>
-                  <th className="px-5 py-4 font-black">Month</th>
-                  <th className="px-5 py-4 font-black">Meals</th>
-                  <th className="px-5 py-4 font-black">Food</th>
-                  <th className="px-5 py-4 font-black">Rent</th>
-                  <th className="px-5 py-4 font-black">Utility</th>
-                  <th className="px-5 py-4 font-black">Paid</th>
-                  <th className="px-5 py-4 font-black">Due</th>
-                  <th className="px-5 py-4 font-black">Status</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-border">
-                {loading && (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      className="px-5 py-8 text-center text-sm font-semibold text-muted-foreground"
-                    >
+                  <td colSpan={9} className="px-5 py-12 text-center">
+                    <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
+                      <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
                       Loading monthly bills...
-                    </td>
-                  </tr>
-                )}
+                    </div>
+                  </td>
+                </tr>
+              )}
 
-                {!loading && filteredBills.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      className="px-5 py-8 text-center text-sm font-semibold text-muted-foreground"
-                    >
-                      No bills found for this month.
-                    </td>
-                  </tr>
-                )}
+              {!loading && filteredBills.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="px-5 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <ReceiptText size={40} className="text-[#d8e6f8]" />
+                      <p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
 
-                {!loading &&
-                  filteredBills.map((bill) => (
-                    <tr key={bill.id} className="transition hover:bg-[#faf9ff]">
+              {!loading &&
+                filteredBills.map((bill) => {
+                  const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.UNPAID
+                  
+                  return (
+                    <tr key={bill.id} className="transition hover:bg-[#f8faff]">
                       <td className="px-5 py-4">
-                        <p className="font-black text-[#0a1433]">
+                        <p className="font-bold text-[#172554]">
                           {bill.member?.name ?? 'My Bill'}
                         </p>
-                        <p className="text-xs font-semibold text-muted-foreground">
-                          {bill.member?.email ?? ''}
-                        </p>
+                        {bill.member?.email && (
+                          <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
+                            {bill.member.email}
+                          </p>
+                        )}
                       </td>
 
-                      <td className="px-5 py-4 text-sm font-bold">
-                        <span className="inline-flex items-center gap-2">
-                          <CalendarDays size={15} className="text-[#6f3df4]" />
+                      <td className="px-5 py-4">
+                        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
+                          <CalendarDays size={14} className="text-[#ffb84d]" />
                           {formatMonth(bill.month)}
                         </span>
                       </td>
 
-                      <td className="px-5 py-4 text-sm font-bold">
-                        {bill.total_meals}
+                      <td className="px-5 py-4">
+                        <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#e7f1ff] px-2.5 text-sm font-bold text-[#2f80ed]">
+                          {bill.total_meals}
+                        </span>
                       </td>
 
-                      <td className="px-5 py-4 text-sm font-bold">
-                        {money(bill.food_bill)}
-                      </td>
+                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.food_bill)}</td>
+                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.seat_rent)}</td>
+                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.utility_share)}</td>
 
-                      <td className="px-5 py-4 text-sm font-bold">
-                        {money(bill.seat_rent)}
-                      </td>
+                      <td className="px-5 py-4 text-sm font-bold text-emerald-600">{money(bill.paid_amount)}</td>
 
-                      <td className="px-5 py-4 text-sm font-bold">
-                        {money(bill.utility_share)}
-                      </td>
-
-                      <td className="px-5 py-4 text-sm font-bold text-[#22b66f]">
-                        {money(bill.paid_amount)}
-                      </td>
-
-                      <td className="px-5 py-4 text-sm font-black text-[#ef4444]">
-                        {money(bill.final_due)}
+                      <td className="px-5 py-4">
+                        <span className={`text-sm font-black ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                          {money(bill.final_due)}
+                        </span>
                       </td>
 
                       <td className="px-5 py-4">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-black ${
-                            bill.status === 'PAID'
-                              ? 'bg-green-50 text-green-700'
-                              : bill.status === 'PARTIAL'
-                                ? 'bg-yellow-50 text-yellow-700'
-                                : 'bg-red-50 text-red-700'
-                          }`}
-                        >
-                          {bill.status}
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
+                          {statusConf.icon}
+                          {statusConf.label}
                         </span>
                       </td>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                  )
+                })}
+            </tbody>
+          </table>
 
+          {/* Footer Summary */}
+          {!loading && filteredBills.length > 0 && (
+            <div className="border-t-2 border-[#d8e6f8] bg-[#f8faff] px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#6b7a99]">
+                  <Users size={14} />
+                  <span><span className="text-[#172554]">{filteredBills.length}</span> bills</span>
+                </div>
+                <div className="flex items-center gap-4 text-xs font-bold">
+                  <span className="text-emerald-600">Paid: {money(summary.totalPaid)}</span>
+                  <span className="text-red-500">Due: {money(summary.totalDue)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bills - Mobile Cards */}
+        <div className="space-y-3 sm:hidden">
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-[#2f80ed]" />
+            </div>
+          )}
+          {!loading && filteredBills.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <ReceiptText size={40} className="mb-2 text-[#d8e6f8]" />
+              <p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p>
+            </div>
+          )}
+          {!loading && filteredBills.map((bill) => {
+            const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.UNPAID
+            const avatarBg = '#2f80ed'
+            const initials = bill.member?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'MB'
+            
+            return (
+              <div key={bill.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb]">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black" style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}>
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-[#172554]">{bill.member?.name ?? 'My Bill'}</p>
+                      {bill.member?.email && (
+                        <p className="truncate text-xs font-semibold text-[#6b7a99]">{bill.member.email}</p>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
+                    {statusConf.icon}
+                    {statusConf.label}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 rounded-xl bg-[#f8faff] p-3">
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Meals</p>
+                    <p className="mt-0.5 text-sm font-bold text-[#2f80ed]">{bill.total_meals}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Paid</p>
+                    <p className="mt-0.5 text-sm font-bold text-emerald-600">{money(bill.paid_amount)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Due</p>
+                    <p className={`mt-0.5 text-sm font-black ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-[#6b7a99]">
+                  <div className="flex items-center gap-1.5">
+                    <CalendarDays size={12} className="text-[#ffb84d]" />
+                    <span>{formatMonth(bill.month)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-[#e7f1ff] px-1 text-[10px] font-bold text-[#2f80ed]">{bill.total_meals}</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {!loading && filteredBills.length > 0 && (
+            <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 py-3">
+              <p className="text-xs font-bold text-[#6b7a99]"><span className="text-[#172554]">{filteredBills.length}</span> bills</p>
+              <div className="flex gap-3 text-xs font-bold">
+                <span className="text-emerald-600">Paid: {money(summary.totalPaid)}</span>
+                <span className="text-red-500">Due: {money(summary.totalDue)}</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

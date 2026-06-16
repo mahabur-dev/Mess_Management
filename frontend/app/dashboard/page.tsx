@@ -38,6 +38,7 @@ import {
   UtensilsCrossed,
   Users,
   WalletCards,
+  ArrowUpRight,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type ElementType } from 'react'
 
@@ -108,22 +109,27 @@ function StatCard({
   iconColor: string
 }) {
   return (
-    <Card className={`dashboard-solid-card group relative min-h-[92px] overflow-hidden rounded-lg border border-white/70 bg-gradient-to-r ${accent} p-4 text-white shadow-[0_18px_34px_rgba(65,103,153,0.16)] transition-all duration-300 hover:-translate-y-1`}>
+    <div className={`group relative min-h-[92px] overflow-hidden rounded-xl bg-gradient-to-r ${accent} p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]`}>
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15 blur-2xl transition group-hover:bg-white/25" />
+      <div className="absolute -bottom-8 -left-8 h-20 w-20 rounded-full bg-white/8 blur-xl" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-black uppercase tracking-wide text-white">
+          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-white/80">
             {label}
           </p>
           <p className="mt-2 text-2xl font-black leading-none tracking-tight text-white">
             {value}
           </p>
+          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-white/60">
+            <ArrowUpRight size={11} />
+            <span>Live update</span>
+          </div>
         </div>
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white shadow-[0_8px_18px_rgba(0,0,0,0.08)]">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-[0_8px_18px_rgba(0,0,0,0.08)]">
           <Icon size={20} strokeWidth={2.4} />
         </span>
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -139,17 +145,22 @@ function MiniStatCard({
   tone: string
 }) {
   return (
-    <Card className={`dashboard-solid-card min-h-[92px] rounded-lg border border-white/70 ${tone} p-4 text-white shadow-[0_18px_34px_rgba(65,103,153,0.16)]`}>
-      <div className="flex items-center justify-between gap-4">
+    <div className={`group relative min-h-[92px] overflow-hidden rounded-xl bg-gradient-to-r ${tone} p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]`}>
+      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+      <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-black uppercase tracking-wide text-white">{label}</p>
+          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-white/80">{label}</p>
           <p className="mt-2 text-2xl font-black leading-none">{value}</p>
+          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-white/60">
+            <ArrowUpRight size={11} />
+            <span>Live update</span>
+          </div>
         </div>
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 shadow-[0_8px_18px_rgba(0,0,0,0.08)]">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-[0_8px_18px_rgba(0,0,0,0.08)]">
           <Icon size={19} />
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -232,7 +243,7 @@ export default function DashboardPage() {
           adminDashboard?.messes ?? 0,
           'Messes',
           Home,
-          'from-[#22b66f] to-[#14b8a6]',
+          'from-[#10b981] to-[#34d399]',
           'bg-[#e8fff2]',
           'text-[#22b66f]',
         ],
@@ -272,7 +283,7 @@ export default function DashboardPage() {
         dashboard?.todayTotalMeals ?? 0,
         'Today',
         UtensilsCrossed,
-        'from-[#22b66f] to-[#14b8a6]',
+        'from-[#10b981] to-[#34d399]',
         'bg-[#e8fff2]',
         'text-[#22b66f]',
       ],
@@ -344,14 +355,14 @@ export default function DashboardPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+      <div className="flex min-h-screen items-center justify-center text-sm font-bold text-[#6b7a99]">
         Loading...
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader
         title={user.role === 'ADMIN' ? 'Super Admin Dashboard' : 'Dashboard'}
         description={activeMess ? `${activeMess.name} overview` : `Welcome back, ${user.name}`}
@@ -361,23 +372,31 @@ export default function DashboardPage() {
 
       <div className="p-4 sm:p-6 lg:p-8">
         {!loadingData && !activeMess && user.role !== 'ADMIN' && (
-          <div className="app-card mb-6 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-black text-[#0a1433]">No approved mess found</h2>
-              <p className="text-sm font-semibold text-muted-foreground">
-                Request mess registration or ask your manager to add you.
-              </p>
-            </div>
+          <div className="mb-7 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 shadow-sm">
+                  <Home size={22} className="text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-[#172554]">No approved mess found</h2>
+                  <p className="mt-0.5 text-sm font-semibold text-[#6b7a99]">
+                    Request mess registration or ask your manager to add you.
+                  </p>
+                </div>
+              </div>
 
-            <Button
-              className="rounded-lg bg-gradient-to-r from-[#6f3df4] to-[#2f80ed] font-bold text-white hover:opacity-90"
-              onClick={() => router.push('/dashboard/mess_management')}
-            >
-              Request Mess
-            </Button>
+              <button
+                className="inline-flex h-[45px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
+                onClick={() => router.push('/dashboard/mess_management')}
+              >
+                Request Mess
+              </button>
+            </div>
           </div>
         )}
 
+        {/* Primary Stats Grid */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {stats.slice(0, 6).map(([label, value, badge, Icon, accent, iconBg, iconColor]) => (
             <StatCard
@@ -393,6 +412,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
+        {/* Mini Stats Row */}
         <div className="mt-5 grid gap-5 sm:grid-cols-3">
           {stats.slice(6, 9).map(([label, value, , Icon], index) => (
             <MiniStatCard
@@ -400,27 +420,30 @@ export default function DashboardPage() {
               label={label}
               value={value}
               icon={Icon}
-              tone={['bg-[#ffb84d]', 'bg-[#58d68d]', 'bg-[#ff4d4f]'][index]}
+              tone={['from-[#f59e0b] to-[#f97316]', 'from-[#10b981] to-[#34d399]', 'from-[#ef4444] to-[#f43f5e]'][index]}
             />
           ))}
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_.85fr_.7fr]">
-          <Card className="app-card p-5">
+        {/* Charts Row */}
+        <div className="mt-7 grid gap-6 xl:grid-cols-[1.35fr_.85fr_.7fr]">
+          {/* Line Chart */}
+          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             <h3 className="mb-5 text-sm font-black text-[#172554]">Monthly Overview</h3>
 
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={lineData}>
-                <CartesianGrid stroke="#d9e9fb" vertical={false} />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} />
-                <YAxis axisLine={false} tickLine={false} fontSize={11} />
+                <CartesianGrid stroke="#e6ebf4" vertical={false} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
+                <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
                 <Line type="monotone" dataKey="income" stroke="#2f80ed" strokeWidth={3} dot={false} />
                 <Line type="monotone" dataKey="expense" stroke="#58d68d" strokeWidth={3} dot={false} />
               </LineChart>
             </ResponsiveContainer>
-          </Card>
+          </div>
 
-          <Card className="app-card p-5">
+          {/* Pie Chart */}
+          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             <h3 className="mb-5 text-sm font-black text-[#172554]">Expense Breakdown</h3>
 
             <ResponsiveContainer width="100%" height={250}>
@@ -433,23 +456,24 @@ export default function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
 
-            <div className="grid gap-2">
+            <div className="mt-2 grid gap-2">
               {pieData.map((item) => (
                 <div key={item.name} className="flex items-center justify-between text-xs font-bold">
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 text-[#172554]">
                     <span
                       className="h-2.5 w-2.5 rounded-full"
                       style={{ background: item.color }}
                     />
                     {item.name}
                   </span>
-                  <span className="text-muted-foreground">{item.value}%</span>
+                  <span className="font-semibold text-[#6b7a99]">{item.value}%</span>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
 
-          <Card className="app-card p-5">
+          {/* Recent Notices / Receipts */}
+          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             <h3 className="mb-4 text-sm font-black text-[#172554]">
               {user.role === 'ADMIN' ? 'Recent Expense Receipts' : 'Recent Notices'}
             </h3>
@@ -463,24 +487,24 @@ export default function DashboardPage() {
                       href={expense.receipt_url ?? '#'}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-start gap-3 rounded-xl border border-[#d8e6f8] bg-white/70 p-3 transition hover:bg-[#edf5ff]"
+                      className="flex items-start gap-3 rounded-xl border border-[#e6ebf4] bg-white p-3 transition hover:border-[#a9ccfb] hover:bg-[#f8faff]"
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#efe9ff] text-[#6f3df4]">
-                        <ReceiptText size={15} />
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2f80ed]/10 to-[#8b5cf6]/10 text-[#2f80ed]">
+                        <ReceiptText size={16} />
                       </span>
 
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-[#172554]">
+                        <p className="truncate text-sm font-bold text-[#172554]">
                           {expense.item_name || expense.category}
                         </p>
-                        <p className="truncate text-xs font-semibold text-muted-foreground">
+                        <p className="truncate text-xs font-semibold text-[#6b7a99]">
                           {expense.mess?.name ?? 'Mess'} - {money(expense.amount)}
                         </p>
                       </div>
                     </a>
                   ))
                 ) : (
-                  <p className="text-sm font-semibold text-muted-foreground">
+                  <p className="text-sm font-semibold text-[#6b7a99]">
                     No uploaded receipts yet.
                   </p>
                 )
@@ -506,39 +530,42 @@ export default function DashboardPage() {
               ).map((notice) => (
                 <div
                   key={notice.id}
-                  className="flex items-start gap-3 rounded-xl border border-[#d8e6f8] bg-white/70 p-3 transition hover:bg-[#edf5ff]"
+                  className="flex items-start gap-3 rounded-xl border border-[#e6ebf4] bg-white p-3 transition hover:border-[#a9ccfb] hover:bg-[#f8faff]"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#efe9ff] text-[#6f3df4]">
-                    <Bell size={15} />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-50 to-orange-100 text-amber-600">
+                    <Bell size={16} />
                   </span>
 
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-[#172554]">{notice.title}</p>
-                    <p className="text-xs font-semibold text-muted-foreground">{notice.type}</p>
+                    <p className="truncate text-sm font-bold text-[#172554]">{notice.title}</p>
+                    <p className="text-xs font-semibold text-[#6b7a99]">{notice.type}</p>
                   </div>
                 </div>
               )))}
             </div>
-          </Card>
+          </div>
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_.75fr]">
-          <Card className="app-card p-5">
+        {/* Bottom Row */}
+        <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
+          {/* Meal Bar Chart */}
+          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             <h3 className="mb-4 text-sm font-black text-[#172554]">Meal Count This Week</h3>
 
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={mealData}>
-                <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} />
-                <YAxis axisLine={false} tickLine={false} fontSize={11} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
+                <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
                 <Bar dataKey="breakfast" fill="#2f80ed" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="lunch" fill="#58d68d" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="dinner" fill="#ffb84d" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </Card>
+          </div>
 
+          {/* Quick Actions */}
           {user.role !== 'MEMBER' && (
-            <Card className="app-card p-5">
+            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
               <h3 className="mb-5 text-sm font-black text-[#172554]">
                 {user.role === 'ADMIN' ? 'Full Access' : 'Quick Actions'}
               </h3>
@@ -548,9 +575,9 @@ export default function DashboardPage() {
                   <button
                     key={label}
                     onClick={() => router.push(href)}
-                    className="group rounded-xl border border-[#d8e6f8] bg-white/70 p-4 text-center shadow-[0_8px_25px_rgba(65,103,153,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:bg-[#edf5ff]"
+                    className="group rounded-xl border border-[#e6ebf4] bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md"
                   >
-                    <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] transition group-hover:bg-[#2f80ed] group-hover:text-white">
+                    <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] transition group-hover:bg-gradient-to-br group-hover:from-[#2f80ed] group-hover:to-[#3b8cff] group-hover:text-white">
                       <Icon size={20} />
                     </span>
 
@@ -558,7 +585,7 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </div>
-            </Card>
+            </div>
           )}
         </div>
       </div>

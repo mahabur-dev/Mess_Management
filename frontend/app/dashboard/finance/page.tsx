@@ -25,6 +25,13 @@ import {
   Search,
   Upload,
   X,
+  ShoppingBag,
+  TrendingUp,
+  Filter,
+  Loader2,
+  ReceiptText,
+  Users,
+  Banknote,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -113,23 +120,23 @@ function getCategoryStyle(category: string) {
   switch (category) {
     case 'FOOD':
     case 'GROCERY':
-      return 'bg-green-50 text-green-700 border-green-100'
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200/50'
     case 'GAS':
-      return 'bg-orange-50 text-orange-700 border-orange-100'
+      return 'bg-orange-50 text-orange-700 border-orange-200/50'
     case 'ELECTRICITY':
-      return 'bg-yellow-50 text-yellow-700 border-yellow-100'
+      return 'bg-amber-50 text-amber-700 border-amber-200/50'
     case 'WIFI':
-      return 'bg-blue-50 text-blue-700 border-blue-100'
+      return 'bg-blue-50 text-blue-700 border-blue-200/50'
     case 'CLEANER':
-      return 'bg-purple-50 text-purple-700 border-purple-100'
+      return 'bg-purple-50 text-purple-700 border-purple-200/50'
     case 'MAINTENANCE':
-      return 'bg-pink-50 text-pink-700 border-pink-100'
+      return 'bg-pink-50 text-pink-700 border-pink-200/50'
     case 'RENT':
-      return 'bg-red-50 text-red-700 border-red-100'
+      return 'bg-red-50 text-red-700 border-red-200/50'
     case 'UTILITY':
-      return 'bg-cyan-50 text-cyan-700 border-cyan-100'
+      return 'bg-cyan-50 text-cyan-700 border-cyan-200/50'
     default:
-      return 'bg-slate-50 text-slate-700 border-slate-100'
+      return 'bg-slate-50 text-slate-700 border-slate-200/50'
   }
 }
 
@@ -410,8 +417,17 @@ export default function FinancePage() {
     return isMemberDashboard || canEditExpense(item)
   }
 
+  // Summary calculations
+  const summary = useMemo(() => {
+    return {
+      total: filteredExpenses.reduce((s, item) => s + Number(item.amount || 0), 0),
+      count: filteredExpenses.length,
+      categories: new Set(filteredExpenses.map(e => e.category)).size,
+    }
+  }, [filteredExpenses])
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader
         title={canManageMess ? 'Bazar / Expenses' : 'Expenses'}
         description={
@@ -423,492 +439,427 @@ export default function FinancePage() {
 
       <div className="p-4 sm:p-6 lg:p-8">
         {message && (
-          <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
+          <div className="mb-5 rounded-xl border border-emerald-200/60 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 shadow-sm">
             {message}
           </div>
         )}
 
-        {/* ── Expenses Table Section ── */}
-        <Card className="app-card overflow-hidden">
-          <div className="border-b border-border p-4 sm:p-5">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                <h2 className="text-lg font-black text-[#0a1433]">
-                  All Bazar & Expenses
-                </h2>
-                <p className="text-sm font-semibold text-muted-foreground">
-                  Showing {filteredExpenses.length} expenses for selected month.
-                </p>
-                </div>
+        {/* Header */}
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-rose-50 to-red-100 shadow-sm">
+              <ShoppingBag size={24} className="text-red-500" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-[#172554]">All Bazar & Expenses</h2>
+              <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
+                Showing {filteredExpenses.length} expenses for selected month
+              </p>
+            </div>
+          </div>
+        </div>
 
-                {canAddExpense &&(
-                  <Dialog
-                    open={isAddModalOpen}
-                    onOpenChange={(open) => {
-                      setIsAddModalOpen(open)
-                      if (!open) resetForm()
-                    }}
-                  >
-                    <DialogTrigger asChild>
-                      <Button
-                        className="h-11 rounded-xl bg-gradient-to-r from-[#3b5bdb] via-[#5b4ef5] to-[#7c3aed] text-sm font-black text-white"
-                      >
-                        <Plus size={17} className="mr-2" />
-                        Add Expenses
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {isEditing ? 'Edit Bazar / Expense' : 'Add Bazar / Expenses'}
-                        </DialogTitle>
-                        <DialogDescription>
-                          {isEditing
-                            ? 'Update your own expense. Upload a new receipt only if you want to replace the old one.'
-                            : 'Add one or multiple items. You can attach receipt images.'}
-                        </DialogDescription>
-                      </DialogHeader>
+        {/* Summary Cards */}
+        {filteredExpenses.length > 0 && (
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <ReceiptText size={13} className="text-[#2f80ed]" />
+                Total Items
+              </p>
+              <p className="mt-1.5 text-2xl font-black text-[#172554]">{summary.count}</p>
+            </div>
+            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <Filter size={13} className="text-[#8b5cf6]" />
+                Categories
+              </p>
+              <p className="mt-1.5 text-2xl font-black text-[#172554]">{summary.categories}</p>
+            </div>
+            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm sm:col-span-2">
+              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <TrendingUp size={13} className="text-red-500" />
+                Total Amount
+              </p>
+              <p className="mt-1.5 text-2xl font-black text-red-500">{money(summary.total)}</p>
+            </div>
+          </div>
+        )}
 
-                      <div className="space-y-6 py-4">
-                        {/* Shared date */}
-                        <div className="rounded-2xl bg-[#faf9ff] p-4">
-                          <label className="mb-2 block text-sm font-black text-[#0a1433]">
-                            Expense Date
-                          </label>
-                          <input
-                            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                            type="date"
-                            value={sharedDate}
-                            onChange={(e) => setSharedDate(e.target.value)}
-                          />
-                        </div>
+        {/* Filters */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-xs">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
+              <input
+                className="h-[45px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-4 text-sm font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                placeholder="Search item..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+            </div>
 
-                        {/* Dynamic item rows */}
-                        <div className="space-y-4">
-                          {expenseItems.map((item, idx) => (
-                            <div
-                              key={item.id}
-                              className="relative rounded-2xl border border-slate-200 bg-[#faf9ff] p-5"
-                            >
-                              <p className="mb-4 text-xs font-black uppercase tracking-wide text-slate-400">
-                                Item {idx + 1}
-                              </p>
+            <label className="flex h-[45px] items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb]">
+              <CalendarDays size={17} className="text-[#2f80ed]" />
+              <input
+                className="bg-transparent text-sm font-bold text-[#172554] outline-none"
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              />
+            </label>
 
-                              {!isEditing && expenseItems.length > 1 && (
-                                <button
-                                  onClick={() => removeExpenseItem(item.id)}
-                                  className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
-                                >
-                                  <X size={18} />
-                                </button>
-                              )}
+            <select
+              className="h-[45px] rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-sm outline-none transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              value={selectedCategory}
+              onChange={(e) =>
+                setSelectedCategory(e.target.value as 'ALL' | ExpenseCategory)
+              }
+            >
+              <option value="ALL">All Categories</option>
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
 
-                              <div className="grid gap-4">
-                                {/* Item Name */}
-                                <div>
-                                  <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                                    Item Name
-                                  </label>
-                                  <input
-                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
-                                    placeholder="e.g. Rice, Eggs..."
-                                    value={item.itemName}
-                                    onChange={(e) => updateExpenseItem(item.id, 'itemName', e.target.value)}
-                                  />
-                                </div>
-
-                                {/* Qty / Unit / Price */}
-                                <div className="grid grid-cols-3 gap-3">
-                                  <div>
-                                    <label className="mb-1.5 block text-sm font-black">Quantity</label>
-                                    <input
-                                      type="number"
-                                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                                      placeholder="Qty"
-                                      value={item.quantity}
-                                      onChange={(e) => updateExpenseItem(item.id, 'quantity', e.target.value)}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="mb-1.5 block text-sm font-black">Unit</label>
-                                    <input
-                                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                                      placeholder="kg, pcs"
-                                      value={item.unit}
-                                      onChange={(e) => updateExpenseItem(item.id, 'unit', e.target.value)}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="mb-1.5 block text-sm font-black">Price (৳)</label>
-                                    <input
-                                      type="number"
-                                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                                      placeholder="Amount"
-                                      value={item.amount}
-                                      onChange={(e) => updateExpenseItem(item.id, 'amount', e.target.value)}
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Category */}
-                                <div>
-                                  <label className="mb-1.5 block text-sm font-black">Category</label>
-                                  <select
-                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
-                                    value={item.category}
-                                    onChange={(e) =>
-                                      updateExpenseItem(item.id, 'category', e.target.value as ExpenseCategory)
-                                    }
-                                  >
-                                    {categories.map((c) => (
-                                      <option key={c} value={c}>{c}</option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                                    Description
-                                  </label>
-                                  <textarea
-                                    className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
-                                    placeholder="Add useful note or market detail..."
-                                    value={item.description}
-                                    onChange={(e) => updateExpenseItem(item.id, 'description', e.target.value)}
-                                  />
-                                </div>
-
-                                {/* Receipt Image Upload */}
-                                <div>
-                                  <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                                    Receipt Image/PDF (Optional)
-                                  </label>
-                                  <div className="flex items-center gap-3">
-                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
-                                      <Upload size={18} />
-                                      Upload Receipt
-                                      <input
-                                        type="file"
-                                        accept="image/*,application/pdf,.pdf"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                          const file = e.target.files?.[0] || null
-                                          updateReceipt(item.id, file)
-                                        }}
-                                      />
-                                    </label>
-                                    {item.receipt && (
-                                      <div className="flex items-center gap-2 text-sm text-green-600">
-                                        <span>{item.receipt.name}</span>
-                                        <button
-                                          onClick={() => updateReceipt(item.id, null)}
-                                          className="text-red-500 hover:text-red-700"
-                                        >
-                                          ✕
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {!isEditing && (
-                          <Button
-                            variant="outline"
-                            onClick={addExpenseItem}
-                            className="w-full h-11 border-dashed"
-                          >
-                            <Plus size={16} className="mr-2" />
-                            Add another item
-                          </Button>
-                        )}
-
-                        <div className="flex gap-3 pt-4">
-                          <Button
-                            onClick={submitAllExpenses}
-                            disabled={loading}
-                            className="flex-1 h-12 bg-gradient-to-r from-[#3b5bdb] to-[#7c3aed]"
-                          >
-                            {loading
-                              ? 'Saving...'
-                              : isEditing
-                                ? 'Update Expense'
-                                : `Submit ${expenseItems.length} Item(s)`}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-
-                <Dialog
-                  open={isReviewModalOpen}
-                  onOpenChange={(open) => {
-                    setIsReviewModalOpen(open)
-                    if (!open) {
-                      setReviewExpense(null)
-                      setReviewMessage('')
-                    }
-                  }}
+          {canAddExpense &&(
+            <Dialog
+              open={isAddModalOpen}
+              onOpenChange={(open) => {
+                setIsAddModalOpen(open)
+                if (!open) resetForm()
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
                 >
-                  <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>Request Price Review</DialogTitle>
-                      <DialogDescription>
-                        Send a push notification to the user who added this expense.
-                      </DialogDescription>
-                    </DialogHeader>
+                  <Plus size={18} />
+                  Add Expenses
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {isEditing ? 'Edit Bazar / Expense' : 'Add Bazar / Expenses'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {isEditing
+                      ? 'Update your own expense. Upload a new receipt only if you want to replace the old one.'
+                      : 'Add one or multiple items. You can attach receipt images.'}
+                  </DialogDescription>
+                </DialogHeader>
 
-                    <div className="space-y-4 py-4">
-                      <div className="rounded-2xl bg-[#faf9ff] p-4 text-sm font-bold text-[#0a1433]">
-                        {reviewExpense?.item_name || reviewExpense?.category || 'Expense'} -{' '}
-                        {money(reviewExpense?.amount)}
-                      </div>
-
-                      <div>
-                        <label className="mb-2 block text-sm font-black text-[#0a1433]">
-                          Message
-                        </label>
-                        <textarea
-                          className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                          placeholder="Explain what price or item data should be reviewed..."
-                          value={reviewMessage}
-                          onChange={(event) => setReviewMessage(event.target.value)}
-                        />
-                      </div>
-
-                      <Button
-                        onClick={submitPriceReviewRequest}
-                        disabled={loading || !reviewMessage.trim()}
-                        className="h-12 w-full rounded-xl bg-gradient-to-r from-[#3b5bdb] to-[#7c3aed] font-black text-white"
-                      >
-                        Send Review Request
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-                <div className="grid gap-3 sm:grid-cols-3 lg:w-[560px] lg:self-end">
-                  <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <div className="space-y-6 py-4">
+                  {/* Shared date */}
+                  <div className="rounded-2xl bg-[#faf9ff] p-4">
+                    <label className="mb-2 block text-sm font-black text-[#0a1433]">
+                      Expense Date
+                    </label>
                     <input
-                      className="soft-input w-full pl-9"
-                      placeholder="Search item..."
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.target.value)}
+                      className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
+                      type="date"
+                      value={sharedDate}
+                      onChange={(e) => setSharedDate(e.target.value)}
                     />
                   </div>
 
-                  <input
-                    className="soft-input w-full"
-                    type="month"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                  />
-
-                  <select
-                    className="soft-input w-full"
-                    value={selectedCategory}
-                    onChange={(e) =>
-                      setSelectedCategory(e.target.value as 'ALL' | ExpenseCategory)
-                    }
-                  >
-                    <option value="ALL">ALL</option>
-                    {categories.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-                {/* Desktop table */}
-             <div className="hidden overflow-x-auto md:block">
-               <table className="w-full min-w-[760px] text-left">
-                 <thead className="bg-[#f8f7ff] text-xs uppercase tracking-wide text-slate-500">
-                   <tr>
-                     <th className="px-5 py-4 font-black">Item</th>
-                     <th className="px-5 py-4 font-black">Category</th>
-                     <th className="px-5 py-4 font-black">Quantity</th>
-                     <th className="px-5 py-4 font-black">Date</th>
-                     <th className="px-5 py-4 font-black">Added By</th>
-                     <th className="px-5 py-4 text-right font-black">Amount</th>
-                     <th className="px-5 py-4 text-right font-black">Actions</th>
-                   </tr>
-                 </thead>
-                 <tbody className="divide-y divide-border">
-                   {loading && (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-5 py-8 text-center text-sm font-semibold text-muted-foreground"
+                  {/* Dynamic item rows */}
+                  <div className="space-y-4">
+                    {expenseItems.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className="relative rounded-2xl border border-slate-200 bg-[#faf9ff] p-5"
                       >
-                        Loading expenses...
-                      </td>
-                    </tr>
-                  )}
-                  {!loading && filteredExpenses.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-5 py-8 text-center text-sm font-semibold text-muted-foreground"
-                      >
-                        No expenses found.
-                      </td>
-                    </tr>
-                  )}
-                  {!loading &&
-                    filteredExpenses.map((item) => (
-                      <tr key={item.id} className="transition hover:bg-[#faf9ff]">
-                        <td className="px-5 py-4">
-                          <p className="font-black text-[#0a1433]">
-                            {item.item_name || 'Unnamed Expense'}
-                          </p>
-                          <p className="text-xs font-semibold text-muted-foreground">
-                            {item.description || 'No description'}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span
-                            className={`rounded-full border px-3 py-1 text-xs font-black ${getCategoryStyle(item.category)}`}
+                        <p className="mb-4 text-xs font-black uppercase tracking-wide text-slate-400">
+                          Item {idx + 1}
+                        </p>
+
+                        {!isEditing && expenseItems.length > 1 && (
+                          <button
+                            onClick={() => removeExpenseItem(item.id)}
+                            className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
                           >
-                            {item.category}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-sm font-bold">
-                          {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
-                        </td>
-                        <td className="px-5 py-4 text-sm font-bold">
-                          <span className="inline-flex items-center gap-2">
-                            <CalendarDays size={15} className="text-[#6f3df4]" />
-                            {formatDate(item.expense_date)}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-sm font-bold">
-                          {item.creator?.name ?? 'Unknown'}
-                        </td>
-                        <td className="px-5 py-4 text-right text-sm font-black text-[#ef4444]">
-                          {money(item.amount)}
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex justify-end gap-2">
-                            {shouldShowEditButton(item) && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={!canEditExpense(item)}
-                                title={
-                                  canEditExpense(item)
-                                    ? 'Edit your expense'
-                                    : 'Only the user who added this expense can edit it'
-                                }
-                                onClick={() => {
-                                  if (canEditExpense(item)) openEditExpenseModal(item)
-                                }}
-                                className={`h-9 rounded-lg text-xs font-black ${
-                                  canEditExpense(item)
-                                    ? 'border-[#6f3df4] text-[#4c1d95] hover:bg-[#f3efff]'
-                                    : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-70'
-                                }`}
-                              >
-                                <Edit3 size={14} className="mr-1.5" />
-                                Edit
-                              </Button>
-                            )}
-                            {canRequestExpenseReview(item) && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => openReviewModal(item)}
-                                className="h-9 rounded-lg bg-[#f59e0b] text-xs font-black text-white hover:bg-[#d97706]"
-                              >
-                                <MessageSquareWarning size={14} className="mr-1.5" />
-                                Request Price Review
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+                            <X size={18} />
+                          </button>
+                        )}
 
-            {/* Mobile cards */}
-            <div className="space-y-3 p-4 md:hidden">
+                        <div className="grid gap-4">
+                          {/* Item Name */}
+                          <div>
+                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                              Item Name
+                            </label>
+                            <input
+                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                              placeholder="e.g. Rice, Eggs..."
+                              value={item.itemName}
+                              onChange={(e) => updateExpenseItem(item.id, 'itemName', e.target.value)}
+                            />
+                          </div>
+
+                          {/* Qty / Unit / Price */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <label className="mb-1.5 block text-sm font-black">Quantity</label>
+                              <input
+                                type="number"
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                                placeholder="Qty"
+                                value={item.quantity}
+                                onChange={(e) => updateExpenseItem(item.id, 'quantity', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-black">Unit</label>
+                              <input
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                                placeholder="kg, pcs"
+                                value={item.unit}
+                                onChange={(e) => updateExpenseItem(item.id, 'unit', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-black">Price (৳)</label>
+                              <input
+                                type="number"
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                                placeholder="Amount"
+                                value={item.amount}
+                                onChange={(e) => updateExpenseItem(item.id, 'amount', e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Category */}
+                          <div>
+                            <label className="mb-1.5 block text-sm font-black">Category</label>
+                            <select
+                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                              value={item.category}
+                              onChange={(e) =>
+                                updateExpenseItem(item.id, 'category', e.target.value as ExpenseCategory)
+                              }
+                            >
+                              {categories.map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                              Description
+                            </label>
+                            <textarea
+                              className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
+                              placeholder="Add useful note or market detail..."
+                              value={item.description}
+                              onChange={(e) => updateExpenseItem(item.id, 'description', e.target.value)}
+                            />
+                          </div>
+
+                          {/* Receipt Image Upload */}
+                          <div>
+                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                              Receipt Image/PDF (Optional)
+                            </label>
+                            <div className="flex items-center gap-3">
+                              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
+                                <Upload size={18} />
+                                Upload Receipt
+                                <input
+                                  type="file"
+                                  accept="image/*,application/pdf,.pdf"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null
+                                    updateReceipt(item.id, file)
+                                  }}
+                                />
+                              </label>
+                              {item.receipt && (
+                                <div className="flex items-center gap-2 text-sm text-green-600">
+                                  <span>{item.receipt.name}</span>
+                                  <button
+                                    onClick={() => updateReceipt(item.id, null)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {!isEditing && (
+                    <Button
+                      variant="outline"
+                      onClick={addExpenseItem}
+                      className="w-full h-11 border-dashed"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add another item
+                    </Button>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      onClick={submitAllExpenses}
+                      disabled={loading}
+                      className="flex-1 h-12 bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] font-black"
+                    >
+                      {loading
+                        ? 'Saving...'
+                        : isEditing
+                          ? 'Update Expense'
+                          : `Submit ${expenseItems.length} Item(s)`}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          <Dialog
+            open={isReviewModalOpen}
+            onOpenChange={(open) => {
+              setIsReviewModalOpen(open)
+              if (!open) {
+                setReviewExpense(null)
+                setReviewMessage('')
+              }
+            }}
+          >
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Request Price Review</DialogTitle>
+                <DialogDescription>
+                  Send a push notification to the user who added this expense.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                <div className="rounded-2xl bg-[#faf9ff] p-4 text-sm font-bold text-[#0a1433]">
+                  {reviewExpense?.item_name || reviewExpense?.category || 'Expense'} -{' '}
+                  {money(reviewExpense?.amount)}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-black text-[#0a1433]">
+                    Message
+                  </label>
+                  <textarea
+                    className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
+                    placeholder="Explain what price or item data should be reviewed..."
+                    value={reviewMessage}
+                    onChange={(event) => setReviewMessage(event.target.value)}
+                  />
+                </div>
+
+                <Button
+                  onClick={submitPriceReviewRequest}
+                  disabled={loading || !reviewMessage.trim()}
+                  className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] font-black text-white"
+                >
+                  Send Review Request
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Item</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Category</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Added By</th>
+                <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Amount</th>
+                <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e6ebf4]">
               {loading && (
-                <p className="py-6 text-center text-sm font-semibold text-muted-foreground">
-                  Loading expenses...
-                </p>
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center">
+                    <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
+                      <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
+                      Loading expenses...
+                    </div>
+                  </td>
+                </tr>
               )}
               {!loading && filteredExpenses.length === 0 && (
-                <p className="py-6 text-center text-sm font-semibold text-muted-foreground">
-                  No expenses found.
-                </p>
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <ShoppingBag size={40} className="text-[#d8e6f8]" />
+                      <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
+                    </div>
+                  </td>
+                </tr>
               )}
               {!loading &&
                 filteredExpenses.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-violet-100 bg-white p-4 shadow-[0_8px_25px_rgba(36,21,120,0.06)]"
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-base font-black text-[#0a1433]">
-                          {item.item_name || 'Unnamed Expense'}
+                  <tr key={item.id} className="transition hover:bg-[#f8faff] group">
+                    <td className="px-5 py-4">
+                      <p className="font-bold text-[#172554]">
+                        {item.item_name || 'Unnamed Expense'}
+                      </p>
+                      {item.description && (
+                        <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
+                          {item.description}
                         </p>
-                        <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-                          <CalendarDays size={13} />
-                          {formatDate(item.expense_date)}
-                        </p>
-                      </div>
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
                       <span
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black ${getCategoryStyle(item.category)}`}
+                        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${getCategoryStyle(item.category)}`}
                       >
                         {item.category}
                       </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#f8f7ff] p-3">
-                      <div>
-                        <p className="text-[11px] font-black uppercase text-slate-500">
-                          Quantity
-                        </p>
-                        <p className="mt-1 text-sm font-black text-[#0a1433]">
-                          {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-black uppercase text-slate-500">
-                          Amount
-                        </p>
-                        <p className="mt-1 text-sm font-black text-[#ef4444]">
-                          {money(item.amount)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between text-xs font-bold text-muted-foreground">
-                      <span>Added by</span>
-                      <span className="text-[#0a1433]">
-                        {item.creator?.name ?? 'Unknown'}
+                    </td>
+                    <td className="px-5 py-4 text-sm font-bold text-[#6b7a99]">
+                      {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
+                        <CalendarDays size={14} className="text-[#ffb84d]" />
+                        {formatDate(item.expense_date)}
                       </span>
-                    </div>
-
-                    {(shouldShowEditButton(item) || canRequestExpenseReview(item)) && (
-                      <div className="mt-4 grid gap-2">
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">
+                          {(item.creator?.name?.[0] || '?').toUpperCase()}
+                        </div>
+                        <span className="text-sm font-semibold text-[#6b7a99]">
+                          {item.creator?.name ?? 'Unknown'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-right text-sm font-black text-red-500">
+                      {money(item.amount)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex justify-end gap-2 opacity-0 transition group-hover:opacity-100">
                         {shouldShowEditButton(item) && (
                           <Button
                             type="button"
                             variant="outline"
+                            size="sm"
                             disabled={!canEditExpense(item)}
                             title={
                               canEditExpense(item)
@@ -918,33 +869,163 @@ export default function FinancePage() {
                             onClick={() => {
                               if (canEditExpense(item)) openEditExpenseModal(item)
                             }}
-                            className={`h-10 rounded-xl text-xs font-black ${
+                            className={`h-8 rounded-lg text-[11px] font-bold ${
                               canEditExpense(item)
-                                ? 'border-[#6f3df4] text-[#4c1d95] hover:bg-[#f3efff]'
+                                ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#dcebff]'
                                 : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-70'
                             }`}
                           >
-                            <Edit3 size={14} className="mr-1.5" />
+                            <Edit3 size={13} className="mr-1" />
                             Edit
                           </Button>
                         )}
                         {canRequestExpenseReview(item) && (
                           <Button
                             type="button"
+                            size="sm"
                             onClick={() => openReviewModal(item)}
-                            className="h-10 rounded-xl bg-[#f59e0b] text-xs font-black text-white hover:bg-[#d97706]"
+                            className="h-8 rounded-lg bg-amber-50 text-[11px] font-bold text-amber-700 border border-amber-200/50 hover:bg-amber-100"
                           >
-                            <MessageSquareWarning size={14} className="mr-1.5" />
-                            Request Price Review
+                            <MessageSquareWarning size={13} className="mr-1" />
+                            Review
                           </Button>
                         )}
                       </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+          {/* Footer Summary - Desktop */}
+          {!loading && filteredExpenses.length > 0 && (
+            <div className="border-t-2 border-[#d8e6f8] bg-[#f8faff] px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#6b7a99]">
+                  <Users size={14} />
+                  <span><span className="text-[#172554]">{filteredExpenses.length}</span> items</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-bold">
+                  <Banknote size={14} className="text-red-500" />
+                  <span className="text-red-500">Total: {money(summary.total)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile cards */}
+        <div className="space-y-3 md:hidden">
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-[#2f80ed]" />
+            </div>
+          )}
+          {!loading && filteredExpenses.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <ShoppingBag size={40} className="mb-2 text-[#d8e6f8]" />
+              <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
+            </div>
+          )}
+          {!loading &&
+            filteredExpenses.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb] hover:shadow-md"
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-bold text-[#172554]">
+                      {item.item_name || 'Unnamed Expense'}
+                    </p>
+                    <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
+                      <CalendarDays size={13} className="text-[#ffb84d]" />
+                      {formatDate(item.expense_date)}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getCategoryStyle(item.category)}`}
+                  >
+                    {item.category}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#f8faff] p-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">
+                      Quantity
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-[#172554]">
+                      {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">
+                      Amount
+                    </p>
+                    <p className="mt-1 text-sm font-black text-red-500">
+                      {money(item.amount)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
+                  <span>Added by</span>
+                  <span className="text-[#172554]">
+                    {item.creator?.name ?? 'Unknown'}
+                  </span>
+                </div>
+
+                {(shouldShowEditButton(item) || canRequestExpenseReview(item)) && (
+                  <div className="mt-3 flex gap-2">
+                    {shouldShowEditButton(item) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!canEditExpense(item)}
+                        title={
+                          canEditExpense(item)
+                            ? 'Edit your expense'
+                            : 'Only the user who added this expense can edit it'
+                        }
+                        onClick={() => {
+                          if (canEditExpense(item)) openEditExpenseModal(item)
+                        }}
+                        className={`flex-1 h-9 rounded-xl text-xs font-bold ${
+                          canEditExpense(item)
+                            ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed]'
+                            : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-70'
+                        }`}
+                      >
+                        <Edit3 size={13} className="mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                    {canRequestExpenseReview(item) && (
+                      <Button
+                        type="button"
+                        onClick={() => openReviewModal(item)}
+                        className="flex-1 h-9 rounded-xl bg-amber-50 text-xs font-bold text-amber-700 border border-amber-200/50 hover:bg-amber-100"
+                      >
+                        <MessageSquareWarning size={13} className="mr-1" />
+                        Review
+                      </Button>
                     )}
                   </div>
-                ))}
+                )}
+              </div>
+            ))}
+          {/* Footer Summary - Mobile */}
+          {!loading && filteredExpenses.length > 0 && (
+            <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 py-3">
+              <p className="text-xs font-bold text-[#6b7a99]"><span className="text-[#172554]">{filteredExpenses.length}</span> items</p>
+              <div className="flex items-center gap-1.5 text-xs font-bold">
+                <Banknote size={14} className="text-red-500" />
+                <span className="text-red-500">Total: {money(summary.total)}</span>
+              </div>
             </div>
-          </Card>
+          )}
         </div>
       </div>
+    </div>
   )
 }

@@ -3,7 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Trash2, CheckCircle2 } from 'lucide-react'
+import { Plus, Trash2, CheckCircle2, ShoppingCart, ListChecks, Users, Package, TrendingDown, CircleCheckBig } from 'lucide-react'
 import { useState } from 'react'
 
 const initialItems = [
@@ -32,126 +32,180 @@ export default function ShoppingPage() {
   const progress = Math.round((completedCount / items.length) * 100)
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader
         title="Shopping"
         description="Manage shopping lists and track purchases"
       />
 
-      <div className="flex-1 overflow-auto">
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-          {/* Progress & Action */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/15 to-[#58d68d]/15 shadow-sm">
+              <ShoppingCart size={24} className="text-[#2f80ed]" />
+            </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Shopping List</h2>
-              <p className="text-sm text-muted-foreground mt-1">
+              <h2 className="text-lg font-black text-[#172554]">Shopping List</h2>
+              <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
                 {completedCount} of {items.length} items completed
               </p>
             </div>
-            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground flex items-center gap-2">
-              <Plus size={18} />
-              Add Item
-            </Button>
           </div>
+          <Button className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
+            <Plus size={18} />
+            Add Item
+          </Button>
+        </div>
 
-          {/* Progress Bar */}
-          <Card className="p-6 border-border">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-foreground">Overall Progress</p>
-              <span className="text-2xl font-bold text-accent">{progress}%</span>
+        {/* Progress Card */}
+        <div className="rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#2f80ed]/10 to-[#58d68d]/10">
+                <TrendingDown size={16} className="text-[#2f80ed]" />
+              </div>
+              <p className="text-sm font-bold text-[#172554]">Overall Progress</p>
             </div>
-            <div className="w-full h-3 bg-border rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </Card>
+            <span className="text-2xl font-black text-[#172554]">{progress}%</span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-[#e6ebf4]">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#2f80ed] to-[#58d68d] transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
 
-          {/* Shopping Items */}
-          <div className="space-y-3">
-            {items.map((item) => (
-              <Card
-                key={item.id}
-                className={`p-4 border-border transition ${
-                  item.completed ? 'bg-card/50 opacity-70' : 'hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <button
-                    onClick={() => toggleComplete(item.id)}
-                    className={`flex-shrink-0 mt-1 ${
-                      item.completed ? 'text-accent' : 'text-muted-foreground hover:text-accent'
+        {/* Shopping Items Table */}
+        <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                  <th className="w-12 px-4 py-4"></th>
+                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Item</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Assigned To</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#e6ebf4]">
+                {items.map((item) => (
+                  <tr
+                    key={item.id}
+                    className={`transition hover:bg-[#f8faff] group ${
+                      item.completed ? 'opacity-60' : ''
                     }`}
                   >
-                    <CheckCircle2 size={24} className="transition" />
-                  </button>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                      <p
-                        className={`font-medium ${
+                    <td className="px-4 py-4">
+                      <button
+                        onClick={() => toggleComplete(item.id)}
+                        className={`flex h-7 w-7 items-center justify-center rounded-lg border transition ${
                           item.completed
-                            ? 'line-through text-muted-foreground'
-                            : 'text-foreground'
+                            ? 'border-emerald-500/40 bg-emerald-50 text-emerald-600'
+                            : 'border-[#d8e6f8] text-transparent hover:border-emerald-400/60 hover:bg-emerald-50/50 hover:text-emerald-400'
                         }`}
                       >
+                        <CheckCircle2 size={16} />
+                      </button>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`text-sm font-bold text-[#172554] ${item.completed ? 'line-through text-[#6b7a99]' : ''}`}>
                         {item.name}
-                      </p>
-                      <span className="text-sm px-2 py-1 rounded bg-accent/10 text-accent w-fit">
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex items-center rounded-lg border border-[#d8e6f8] bg-[#edf5ff] px-2.5 py-1 text-xs font-bold text-[#2f80ed]">
+                        <Package size={12} className="mr-1" />
                         {item.quantity} {item.unit}
                       </span>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    </td>
+                    <td className="px-4 py-4">
                       {item.assignedTo ? (
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                            {item.assignedTo[0]}
+                          <div
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed] to-[#58d68d] text-[10px] font-black text-white shadow-sm"
+                          >
+                            {item.assignedTo[0].toUpperCase()}
                           </div>
-                          <span>Assigned to {item.assignedTo}</span>
+                          <span className="text-sm font-semibold text-[#6b7a99]">{item.assignedTo}</span>
                         </div>
                       ) : (
-                        <span className="text-amber-600">Unassigned</span>
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200/60 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                          Unassigned
+                        </span>
                       )}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => deleteItem(item.id)}
-                    className="flex-shrink-0 p-2 text-muted-foreground hover:text-destructive transition"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </Card>
-            ))}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center">
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                          item.completed
+                            ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                        }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${item.completed ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                          {item.completed ? 'Done' : 'Pending'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => deleteItem(item.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#ff4d4f]/15 bg-[#fff0f0] text-[#ff4d4f] opacity-0 transition hover:border-[#ff4d4f]/40 hover:bg-[#ffe5e5] group-hover:opacity-100"
+                          title="Delete item"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          {/* Summary */}
-          <Card className="p-6 border-border bg-gradient-to-r from-primary/5 to-accent/5">
-            <h3 className="font-semibold text-foreground mb-4">Summary</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Total Items</p>
-                <p className="text-2xl font-bold text-foreground">{items.length}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Completed</p>
-                <p className="text-2xl font-bold text-green-600">{completedCount}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Pending</p>
-                <p className="text-2xl font-bold text-amber-600">{items.length - completedCount}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Assigned</p>
-                <p className="text-2xl font-bold text-accent">
-                  {items.filter((i) => i.assignedTo).length}
-                </p>
-              </div>
+          {items.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <ShoppingCart size={48} className="mb-3 text-[#d8e6f8]" />
+              <p className="text-sm font-bold text-[#6b7a99]">No items in the list</p>
+              <p className="mt-1 text-xs font-semibold text-[#8a9bb5]">Click "Add Item" to get started</p>
             </div>
-          </Card>
+          )}
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+              <ShoppingCart size={13} className="text-[#2f80ed]" />
+              Total Items
+            </p>
+            <p className="mt-1.5 text-2xl font-black text-[#172554]">{items.length}</p>
+          </div>
+          <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-4 shadow-sm">
+            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-700">
+              <CircleCheckBig size={13} />
+              Completed
+            </p>
+            <p className="mt-1.5 text-2xl font-black text-emerald-700">{completedCount}</p>
+          </div>
+          <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 shadow-sm">
+            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-amber-700">
+              <ListChecks size={13} />
+              Pending
+            </p>
+            <p className="mt-1.5 text-2xl font-black text-amber-700">{items.length - completedCount}</p>
+          </div>
+          <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+              <Users size={13} className="text-[#58d68d]" />
+              Assigned
+            </p>
+            <p className="mt-1.5 text-2xl font-black text-[#172554]">{items.filter((i) => i.assignedTo).length}</p>
+          </div>
         </div>
       </div>
     </div>

@@ -335,7 +335,7 @@ export default function HomePage() {
               <span className="flex h-2 w-2 rounded-full bg-[#22b66f]" />
               All-in-One Mess Management Solution
             </div>
-            <h1 className="max-w-xl text-5xl font-black leading-[1.06] tracking-tight text-[#07143d] sm:text-6xl">
+            <h1 className="max-w-xl text-5xl font-black leading-[1.06] tracking-tight text-[#2A2A2E] sm:text-6xl">
               Manage Your Mess{' '}
               <span className="bg-gradient-to-r from-[#2f80ed] to-[#6f3df4] bg-clip-text text-transparent">Smartly</span>{' '}
               & Easily

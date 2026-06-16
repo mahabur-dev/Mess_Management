@@ -112,7 +112,7 @@ export default function ResetPassword() {
           {/* <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-lg bg-[#e7f1ff] text-[#2563eb] shadow-[0_12px_24px_rgba(47,128,237,0.12)]">
             <LockKeyhole size={25} />
           </div> */}
-          <h1 className="text-xl font-black leading-tight tracking-normal text-[#405692] sm:text-2xl">
+          <h1 className="text-xl font-black leading-tight tracking-normal text-[#2A2A2E] sm:text-2xl">
             Reset password
           </h1>
           <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">

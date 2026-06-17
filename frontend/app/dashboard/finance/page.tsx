@@ -9,7 +9,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog' // Assuming shadcn/ui Dialog is available
 import { useAuth } from '@/app/context/auth-context'
 import {
@@ -19,7 +18,9 @@ import {
 } from '@/lib/api-client'
 import {
   CalendarDays,
+  ClipboardList,
   Edit3,
+  Eye,
   MessageSquareWarning,
   Plus,
   Search,
@@ -33,6 +34,7 @@ import {
   Users,
   Banknote,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
 const categories: ExpenseCategory[] = [
@@ -45,6 +47,19 @@ const categories: ExpenseCategory[] = [
   'WIFI',
   'CLEANER',
   'MAINTENANCE',
+  'OTHER',
+]
+
+const expenseCategories: ExpenseCategory[] = ['FOOD', 'GROCERY']
+
+const utilityCategories: ExpenseCategory[] = [
+  'GAS',
+  'ELECTRICITY',
+  'WIFI',
+  'CLEANER',
+  'MAINTENANCE',
+  'BUABILL',
+  'WATER',
   'OTHER',
 ]
 
@@ -81,6 +96,8 @@ type ExpenseRow = {
   description: string
   receipt?: File | null // New: image file per item
 }
+
+type ExpenseFormMode = 'expense' | 'utility'
 
 type ExpenseListResponse =
   | ExpenseItem[]
@@ -140,14 +157,20 @@ function getCategoryStyle(category: string) {
   }
 }
 
+function isUtilityCategory(category: ExpenseCategory) {
+  return utilityCategories.includes(category) && !expenseCategories.includes(category)
+}
+
 export default function FinancePage() {
   const { user } = useAuth()
+  const router = useRouter()
 
   const [messes, setMesses] = useState<Mess[]>([])
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
 
   // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [expenseFormMode, setExpenseFormMode] = useState<ExpenseFormMode>('expense')
 
   // ── Multi-item form state ──────────────────────────────
   const [sharedDate, setSharedDate] = useState(new Date().toISOString().slice(0, 10))
@@ -172,8 +195,10 @@ export default function FinancePage() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [editingExpense, setEditingExpense] = useState<ExpenseItem | null>(null)
+  const [viewExpense, setViewExpense] = useState<ExpenseItem | null>(null)
   const [reviewExpense, setReviewExpense] = useState<ExpenseItem | null>(null)
   const [reviewMessage, setReviewMessage] = useState('')
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
 
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
@@ -264,6 +289,7 @@ export default function FinancePage() {
   }
 
   function resetForm() {
+    setExpenseFormMode('expense')
     setExpenseItems([{
       id: 1,
       itemName: '',
@@ -279,14 +305,37 @@ export default function FinancePage() {
     setEditingExpense(null)
   }
 
+  function openExpenseModal() {
+    resetForm()
+    setExpenseFormMode('expense')
+    setIsAddModalOpen(true)
+  }
+
+  function openUtilityModal() {
+    resetForm()
+    setExpenseFormMode('utility')
+    setExpenseItems([{
+      id: 1,
+      itemName: '',
+      quantity: '',
+      amount: '',
+      category: 'GAS',
+      unit: '',
+      description: '',
+      receipt: null,
+    }])
+    setIsAddModalOpen(true)
+  }
+
   function buildExpensePayload(item: ExpenseRow, includeMessId = true) {
+    const isUtilityMode = expenseFormMode === 'utility'
     const payload = {
       ...(includeMessId ? { messId: activeMess?.id } : {}),
       category: item.category,
       amount: Number(item.amount),
-      itemName: item.itemName,
-      quantity: item.quantity ? Number(item.quantity) : undefined,
-      unit: item.unit || undefined,
+      itemName: isUtilityMode ? item.category : item.itemName,
+      quantity: !isUtilityMode && item.quantity ? Number(item.quantity) : undefined,
+      unit: !isUtilityMode ? item.unit || undefined : undefined,
       description: item.description || undefined,
       expenseDate: sharedDate,
     }
@@ -316,6 +365,7 @@ export default function FinancePage() {
     setMessage('')
     try {
       const wasEditing = Boolean(editingExpense)
+      const wasUtility = expenseFormMode === 'utility' && !wasEditing
       const submittedCount = expenseItems.length
       if (editingExpense) {
         const item = expenseItems[0]
@@ -335,6 +385,8 @@ export default function FinancePage() {
       setMessage(
         wasEditing
           ? 'Expense updated successfully.'
+          : wasUtility
+            ? 'Utility added successfully.'
           : `${submittedCount} expense(s) added successfully.`,
       )
       await load()
@@ -344,6 +396,8 @@ export default function FinancePage() {
   }
 
   function openEditExpenseModal(expense: ExpenseItem) {
+    const nextFormMode = isUtilityCategory(expense.category) ? 'utility' : 'expense'
+    setExpenseFormMode(nextFormMode)
     setEditingExpense(expense)
     setSharedDate(new Date(expense.expense_date).toISOString().slice(0, 10))
     setExpenseItems([
@@ -366,6 +420,11 @@ export default function FinancePage() {
     setReviewExpense(expense)
     setReviewMessage('')
     setIsReviewModalOpen(true)
+  }
+
+  function openViewModal(expense: ExpenseItem) {
+    setViewExpense(expense)
+    setIsViewModalOpen(true)
   }
 
   async function submitPriceReviewRequest() {
@@ -413,10 +472,6 @@ export default function FinancePage() {
     )
   }
 
-  function shouldShowEditButton(item: ExpenseItem) {
-    return isMemberDashboard || canEditExpense(item)
-  }
-
   // Summary calculations
   const summary = useMemo(() => {
     return {
@@ -457,6 +512,16 @@ export default function FinancePage() {
               </p>
             </div>
           </div>
+          {isMemberDashboard && (
+            <Button
+              type="button"
+              onClick={() => router.push('/dashboard/monthly-bills')}
+              className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
+            >
+              <ClipboardList size={18} />
+              View Monthly Bill
+            </Button>
+          )}
         </div>
 
         {/* Summary Cards */}
@@ -533,27 +598,126 @@ export default function FinancePage() {
                 if (!open) resetForm()
               }}
             >
-              <DialogTrigger asChild>
+              <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-2">
                 <Button
+                  type="button"
+                  onClick={openUtilityModal}
+                  className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
+                >
+                  <Plus size={18} />
+                  Add Utility
+                </Button>
+                <Button
+                  type="button"
+                  onClick={openExpenseModal}
                   className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
                 >
                   <Plus size={18} />
                   Add Expenses
                 </Button>
-              </DialogTrigger>
+              </div>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
-                    {isEditing ? 'Edit Bazar / Expense' : 'Add Bazar / Expenses'}
+                    {isEditing
+                      ? expenseFormMode === 'utility'
+                        ? 'Edit Utility'
+                        : 'Edit Bazar / Expense'
+                      : expenseFormMode === 'utility'
+                        ? 'Add Utility'
+                        : 'Add Bazar / Expenses'}
                   </DialogTitle>
                   <DialogDescription>
                     {isEditing
-                      ? 'Update your own expense. Upload a new receipt only if you want to replace the old one.'
-                      : 'Add one or multiple items. You can attach receipt images.'}
+                      ? expenseFormMode === 'utility'
+                        ? 'Update utility cost, description, or receipt.'
+                        : 'Update your own expense. Upload a new receipt only if you want to replace the old one.'
+                      : expenseFormMode === 'utility'
+                        ? 'Add utility cost with category, price, and description.'
+                        : 'Add one or multiple items. You can attach receipt images.'}
                   </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
+                  {expenseFormMode === 'utility' && (
+                    <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
+                      <div className="grid gap-4">
+                        <div>
+                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Category</label>
+                          <select
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                            value={expenseItems[0].category}
+                            onChange={(e) =>
+                              updateExpenseItem(1, 'category', e.target.value as ExpenseCategory)
+                            }
+                          >
+                            {utilityCategories.map((category) => (
+                              <option key={category} value={category}>{category}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Price (à§³)</label>
+                          <input
+                            type="number"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                            placeholder="Amount"
+                            value={expenseItems[0].amount}
+                            onChange={(e) => updateExpenseItem(1, 'amount', e.target.value)}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                            Description
+                          </label>
+                          <textarea
+                            className="min-h-28 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
+                            placeholder="Add utility note..."
+                            value={expenseItems[0].description}
+                            onChange={(e) => updateExpenseItem(1, 'description', e.target.value)}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                            Receipt Image/PDF (Optional)
+                          </label>
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
+                              <Upload size={18} />
+                              Upload Receipt
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf,.pdf"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] || null
+                                  updateReceipt(1, file)
+                                }}
+                              />
+                            </label>
+                            {expenseItems[0].receipt && (
+                              <div className="flex items-center gap-2 text-sm text-green-600">
+                                <span className="truncate">{expenseItems[0].receipt.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateReceipt(1, null)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  âœ•
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {expenseFormMode !== 'utility' && (
+                    <>
                   {/* Shared date */}
                   <div className="rounded-2xl bg-[#faf9ff] p-4">
                     <label className="mb-2 block text-sm font-black text-[#0a1433]">
@@ -644,7 +808,7 @@ export default function FinancePage() {
                                 updateExpenseItem(item.id, 'category', e.target.value as ExpenseCategory)
                               }
                             >
-                              {categories.map((c) => (
+                              {(isEditing ? categories : expenseCategories).map((c) => (
                                 <option key={c} value={c}>{c}</option>
                               ))}
                             </select>
@@ -709,6 +873,8 @@ export default function FinancePage() {
                       Add another item
                     </Button>
                   )}
+                    </>
+                  )}
 
                   <div className="flex gap-3 pt-4">
                     <Button
@@ -719,7 +885,11 @@ export default function FinancePage() {
                       {loading
                         ? 'Saving...'
                         : isEditing
-                          ? 'Update Expense'
+                          ? expenseFormMode === 'utility'
+                            ? 'Update Utility'
+                            : 'Update Expense'
+                          : expenseFormMode === 'utility'
+                            ? 'Submit Utility'
                           : `Submit ${expenseItems.length} Item(s)`}
                     </Button>
                   </div>
@@ -772,6 +942,96 @@ export default function FinancePage() {
                   Send Review Request
                 </Button>
               </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={isViewModalOpen}
+            onOpenChange={(open) => {
+              setIsViewModalOpen(open)
+              if (!open) setViewExpense(null)
+            }}
+          >
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Expense Details</DialogTitle>
+                <DialogDescription>
+                  View expense or utility description and receipt information.
+                </DialogDescription>
+              </DialogHeader>
+
+              {viewExpense && (
+                <div className="space-y-4 py-4">
+                  <div className="rounded-2xl bg-[#faf9ff] p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-wide text-[#6b7a99]">
+                          {viewExpense.category}
+                        </p>
+                        <h3 className="mt-1 text-lg font-black text-[#172554]">
+                          {viewExpense.item_name || viewExpense.category || 'Unnamed Expense'}
+                        </h3>
+                        <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
+                          <CalendarDays size={13} className="text-[#ffb84d]" />
+                          {formatDate(viewExpense.expense_date)}
+                        </p>
+                      </div>
+                      <p className="text-xl font-black text-red-500">
+                        {money(viewExpense.amount)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Quantity</p>
+                      <p className="mt-1 text-sm font-bold text-[#172554]">
+                        {viewExpense.quantity ? `${viewExpense.quantity} ${viewExpense.unit ?? ''}` : '-'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Added By</p>
+                      <p className="mt-1 text-sm font-bold text-[#172554]">
+                        {viewExpense.creator?.name ?? 'Unknown'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Description</p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm font-semibold text-[#172554]">
+                      {viewExpense.description || 'No description added.'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Receipt</p>
+                    {viewExpense.receipt_url ? (
+                      <div className="mt-3 space-y-3">
+                        {/\.(png|jpe?g|webp|gif)(\?|$)/i.test(viewExpense.receipt_url) && (
+                          <img
+                            src={viewExpense.receipt_url}
+                            alt={`${viewExpense.item_name || viewExpense.category} receipt`}
+                            className="max-h-80 w-full rounded-xl border border-slate-200 object-contain"
+                          />
+                        )}
+                        <a
+                          href={viewExpense.receipt_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-[#2f80ed]/30 bg-[#e7f1ff] px-4 text-sm font-bold text-[#2f80ed]"
+                        >
+                          View Receipt
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm font-semibold text-[#6b7a99]">
+                        No receipt uploaded.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
         </div>
@@ -854,31 +1114,39 @@ export default function FinancePage() {
                       {money(item.amount)}
                     </td>
                     <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2 opacity-0 transition group-hover:opacity-100">
-                        {shouldShowEditButton(item) && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={!canEditExpense(item)}
-                            title={
-                              canEditExpense(item)
-                                ? 'Edit your expense'
-                                : 'Only the user who added this expense can edit it'
-                            }
-                            onClick={() => {
-                              if (canEditExpense(item)) openEditExpenseModal(item)
-                            }}
-                            className={`h-8 rounded-lg text-[11px] font-bold ${
-                              canEditExpense(item)
-                                ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]'
-                                : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-700 opacity-70'
-                            }`}
-                          >
-                            <Edit3 size={13} className="mr-1" />
-                            Edit
-                          </Button>
-                        )}
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openViewModal(item)}
+                          className="h-8 rounded-lg border-[#2f80ed]/30 bg-[#e7f1ff] text-[11px] font-bold text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]"
+                        >
+                          <Eye size={13} className="mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={!canEditExpense(item)}
+                          title={
+                            canEditExpense(item)
+                              ? 'Edit your expense'
+                              : 'Only the user who added this expense can edit it'
+                          }
+                          onClick={() => {
+                            if (canEditExpense(item)) openEditExpenseModal(item)
+                          }}
+                          className={`h-8 rounded-lg text-[11px] font-bold ${
+                            canEditExpense(item)
+                              ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]'
+                              : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-700 opacity-70'
+                          }`}
+                        >
+                          <Edit3 size={13} className="mr-1" />
+                          Edit
+                        </Button>
                         {canRequestExpenseReview(item) && (
                           <Button
                             type="button"
@@ -975,43 +1243,48 @@ export default function FinancePage() {
                   </span>
                 </div>
 
-                {(shouldShowEditButton(item) || canRequestExpenseReview(item)) && (
-                  <div className="mt-3 flex gap-2">
-                    {shouldShowEditButton(item) && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={!canEditExpense(item)}
-                        title={
-                          canEditExpense(item)
-                            ? 'Edit your expense'
-                            : 'Only the user who added this expense can edit it'
-                        }
-                        onClick={() => {
-                          if (canEditExpense(item)) openEditExpenseModal(item)
-                        }}
-                        className={`flex-1 h-9 rounded-xl text-xs font-bold ${
-                          canEditExpense(item)
-                            ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed]'
-                            : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-70'
-                        }`}
-                      >
-                        <Edit3 size={13} className="mr-1" />
-                        Edit
-                      </Button>
-                    )}
-                    {canRequestExpenseReview(item) && (
-                      <Button
-                        type="button"
-                        onClick={() => openReviewModal(item)}
-                        className="flex-1 h-9 rounded-xl bg-amber-50 text-xs font-bold text-amber-700 border border-amber-200/50 hover:bg-amber-100"
-                      >
-                        <MessageSquareWarning size={13} className="mr-1" />
-                        Review
-                      </Button>
-                    )}
-                  </div>
-                )}
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => openViewModal(item)}
+                    className="flex-1 h-9 rounded-xl border-[#2f80ed]/30 bg-[#e7f1ff] text-xs font-bold text-[#2f80ed]"
+                  >
+                    <Eye size={13} className="mr-1" />
+                    View
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!canEditExpense(item)}
+                    title={
+                      canEditExpense(item)
+                        ? 'Edit your expense'
+                        : 'Only the user who added this expense can edit it'
+                    }
+                    onClick={() => {
+                      if (canEditExpense(item)) openEditExpenseModal(item)
+                    }}
+                    className={`flex-1 h-9 rounded-xl text-xs font-bold ${
+                      canEditExpense(item)
+                        ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed]'
+                        : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-70'
+                    }`}
+                  >
+                    <Edit3 size={13} className="mr-1" />
+                    Edit
+                  </Button>
+                  {canRequestExpenseReview(item) && (
+                    <Button
+                      type="button"
+                      onClick={() => openReviewModal(item)}
+                      className="flex-1 h-9 rounded-xl bg-amber-50 text-xs font-bold text-amber-700 border border-amber-200/50 hover:bg-amber-100"
+                    >
+                      <MessageSquareWarning size={13} className="mr-1" />
+                      Review
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           {/* Footer Summary - Mobile */}

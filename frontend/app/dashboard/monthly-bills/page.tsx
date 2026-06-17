@@ -168,13 +168,13 @@ export default function MonthlyBillPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-none sm:flex sm:items-center">
             {isManager && activeMess && (
               <button
                 type="button"
                 onClick={recalculateBills}
                 disabled={generating}
-                className="inline-flex h-[45px] items-center gap-2 rounded-xl bg-[#2f80ed] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[#1f6fd8] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-[45px] w-full items-center justify-center gap-2 rounded-xl bg-[#2f80ed] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[#1f6fd8] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 {generating ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -184,16 +184,16 @@ export default function MonthlyBillPage() {
                 {generating ? 'Calculating' : 'Recalculate'}
               </button>
             )}
-            <label className="flex h-[45px] items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb]">
+            <label className="flex h-[45px] w-full items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb] sm:w-auto">
               <CalendarDays size={17} className="text-[#2f80ed]" />
               <input
                 type="month"
-                className="bg-transparent text-sm font-bold text-[#172554] outline-none"
+                className="w-full bg-transparent text-sm font-bold text-[#172554] outline-none sm:w-auto"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
               />
             </label>
-            <div className="flex h-[45px] items-center gap-2 rounded-xl border border-[#d8e6f8] bg-gradient-to-r from-[#e7f1ff] to-[#f0fdf4] px-4 text-xs font-black text-[#2f80ed] shadow-sm">
+            <div className="flex h-[45px] w-full items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-gradient-to-r from-[#e7f1ff] to-[#f0fdf4] px-4 text-xs font-black text-[#2f80ed] shadow-sm sm:w-auto">
               <ClipboardList size={16} />
               {filteredBills.length} Bill{filteredBills.length !== 1 ? 's' : ''}
             </div>
@@ -242,106 +242,108 @@ export default function MonthlyBillPage() {
         )}
 
         {/* Bills Table - Desktop */}
-        <div className="hidden sm:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Member</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Month</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Meals</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Food</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Rent</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Utilities</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Total Cost</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Deposit</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-red-500">Due</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-[#e6ebf4]">
-              {loading && (
-                <tr>
-                  <td colSpan={10} className="px-5 py-12 text-center">
-                    <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
-                      <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
-                      Loading monthly bills...
-                    </div>
-                  </td>
+        <div className="hidden overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)] sm:block">
+          <div className="monthly-bills-table-scroll overflow-x-auto pb-2">
+            <table className="w-full min-w-[1120px]">
+              <thead>
+                <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Member</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Month</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Meals</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Food</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Rent</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Utilities</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Total Cost</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Deposit</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-red-500">Due</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
                 </tr>
-              )}
+              </thead>
 
-              {!loading && filteredBills.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-5 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <ReceiptText size={40} className="text-[#d8e6f8]" />
-                      <p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
+              <tbody className="divide-y divide-[#e6ebf4]">
+                {loading && (
+                  <tr>
+                    <td colSpan={10} className="px-5 py-12 text-center">
+                      <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
+                        <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
+                        Loading monthly bills...
+                      </div>
+                    </td>
+                  </tr>
+                )}
 
-              {!loading &&
-                filteredBills.map((bill) => {
-                  const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
-                  
-                  return (
-                    <tr key={bill.id} className="transition hover:bg-[#f8faff]">
-                      <td className="px-5 py-4">
-                        <p className="font-bold text-[#172554]">
-                          {bill.member?.name ?? 'My Bill'}
-                        </p>
-                        {bill.member?.email && (
-                          <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
-                            {bill.member.email}
+                {!loading && filteredBills.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="px-5 py-12 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <ReceiptText size={40} className="text-[#d8e6f8]" />
+                        <p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!loading &&
+                  filteredBills.map((bill) => {
+                    const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
+
+                    return (
+                      <tr key={bill.id} className="transition hover:bg-[#f8faff]">
+                        <td className="px-5 py-4">
+                          <p className="font-bold text-[#172554]">
+                            {bill.member?.name ?? 'My Bill'}
                           </p>
-                        )}
-                      </td>
+                          {bill.member?.email && (
+                            <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
+                              {bill.member.email}
+                            </p>
+                          )}
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
-                          <CalendarDays size={14} className="text-[#ffb84d]" />
-                          {formatMonth(bill.month)}
-                        </span>
-                      </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
+                            <CalendarDays size={14} className="text-[#ffb84d]" />
+                            {formatMonth(bill.month)}
+                          </span>
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#e7f1ff] px-2.5 text-sm font-bold text-[#2f80ed]">
-                          {bill.total_meals}
-                        </span>
-                      </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#e7f1ff] px-2.5 text-sm font-bold text-[#2f80ed]">
+                            {bill.total_meals}
+                          </span>
+                        </td>
 
-                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.food_bill)}</td>
-                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.seat_rent)}</td>
-                      <td className="px-5 py-4">
-                        <p className="text-sm font-bold text-[#172554]">{money(bill.utility_share)}</p>
-                        {/* <p className="mt-0.5 text-[11px] font-semibold text-[#6b7a99]">
-                          E {money(bill.electricity_bill)} / G {money(bill.gas_bill)} / W {money(bill.wifi_bill)} / C {money(bill.cleaner_bill)} / X {money(bill.extra_cost)}
-                        </p> */}
-                      </td>
+                        <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.food_bill)}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.seat_rent)}</td>
+                        <td className="px-5 py-4">
+                          <p className="text-sm font-bold text-[#172554]">{money(bill.utility_share)}</p>
+                          {/* <p className="mt-0.5 text-[11px] font-semibold text-[#6b7a99]">
+                            E {money(bill.electricity_bill)} / G {money(bill.gas_bill)} / W {money(bill.wifi_bill)} / C {money(bill.cleaner_bill)} / X {money(bill.extra_cost)}
+                          </p> */}
+                        </td>
 
-                      <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(getTotalCost(bill))}</td>
+                        <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(getTotalCost(bill))}</td>
 
-                      <td className="px-5 py-4 text-sm font-bold text-emerald-600">{money(bill.paid_amount)}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-emerald-600">{money(bill.paid_amount)}</td>
 
-                      <td className="px-5 py-4">
-                        <span className={`text-sm font-black ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                          {money(bill.final_due)}
-                        </span>
-                      </td>
+                        <td className="px-5 py-4">
+                          <span className={`text-sm font-black ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                            {money(bill.final_due)}
+                          </span>
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
-                          {statusConf.icon}
-                          {statusConf.label}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-            </tbody>
-          </table>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
+                            {statusConf.icon}
+                            {statusConf.label}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            </table>
+          </div>
 
           {/* Footer Summary */}
           {!loading && filteredBills.length > 0 && (
@@ -379,65 +381,65 @@ export default function MonthlyBillPage() {
             const initials = bill.member?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'MB'
             
             return (
-              <div key={bill.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb]">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black" style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}>
-                      {initials}
+              <div key={bill.id} className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-sm transition hover:border-[#a9ccfb]">
+                <div className="border-b border-[#e6ebf4] bg-[#f8faff] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black" style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}>
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-[#172554]">{bill.member?.name ?? 'My Bill'}</p>
+                        {bill.member?.email && (
+                          <p className="truncate text-xs font-semibold text-[#6b7a99]">{bill.member.email}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#172554]">{bill.member?.name ?? 'My Bill'}</p>
-                      {bill.member?.email && (
-                        <p className="truncate text-xs font-semibold text-[#6b7a99]">{bill.member.email}</p>
-                      )}
-                    </div>
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
+                      {statusConf.icon}
+                      {statusConf.label}
+                    </span>
                   </div>
-                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
-                    {statusConf.icon}
-                    {statusConf.label}
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-3 gap-3 rounded-xl bg-[#f8faff] p-3">
-                  <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Meals</p>
-                    <p className="mt-0.5 text-sm font-bold text-[#2f80ed]">{bill.total_meals}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Total Cost</p>
-                    <p className="mt-0.5 text-sm font-bold text-emerald-600">{money(getTotalCost(bill))}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Due</p>
-                    <p className={`mt-0.5 text-sm font-black ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</p>
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-[#6b7a99]">
-                  <div className="flex items-center gap-1.5">
+                  <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
                     <CalendarDays size={12} className="text-[#ffb84d]" />
                     <span>{formatMonth(bill.month)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-[#e7f1ff] px-1 text-[10px] font-bold text-[#2f80ed]">{bill.total_meals}</span>
-                  </div>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-[#e6ebf4] p-3 text-xs">
-                  <div>
-                    <p className="font-black uppercase text-[#6b7a99]">Food</p>
-                    <p className="mt-0.5 font-bold text-[#172554]">{money(bill.food_bill)}</p>
+
+                <div className="p-4">
+                  <div className="mb-3 grid grid-cols-3 gap-2">
+                    <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
+                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Meals</p>
+                      <p className="mt-1 text-sm font-bold text-[#2f80ed]">{bill.total_meals}</p>
+                    </div>
+                    <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
+                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Total</p>
+                      <p className="mt-1 text-sm font-bold text-emerald-600">{money(getTotalCost(bill))}</p>
+                    </div>
+                    <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
+                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Due</p>
+                      <p className={`mt-1 text-sm font-black ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-black uppercase text-[#6b7a99]">Rent</p>
-                    <p className="mt-0.5 font-bold text-[#172554]">{money(bill.seat_rent)}</p>
-                  </div>
-                  <div>
-                    <p className="font-black uppercase text-[#6b7a99]">Utility</p>
-                    <p className="mt-0.5 font-bold text-[#172554]">{money(bill.utility_share)}</p>
-                  </div>
-                  <div>
-                    <p className="font-black uppercase text-[#6b7a99]">Deposit</p>
-                    <p className="mt-0.5 font-bold text-emerald-600">{money(bill.paid_amount)}</p>
+
+                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#e6ebf4] bg-[#f8faff] p-3 text-xs">
+                    <div className="rounded-lg bg-white p-2.5">
+                      <p className="font-black uppercase text-[#6b7a99]">Food</p>
+                      <p className="mt-0.5 font-bold text-[#172554]">{money(bill.food_bill)}</p>
+                    </div>
+                    <div className="rounded-lg bg-white p-2.5">
+                      <p className="font-black uppercase text-[#6b7a99]">Rent</p>
+                      <p className="mt-0.5 font-bold text-[#172554]">{money(bill.seat_rent)}</p>
+                    </div>
+                    <div className="rounded-lg bg-white p-2.5">
+                      <p className="font-black uppercase text-[#6b7a99]">Utility</p>
+                      <p className="mt-0.5 font-bold text-[#172554]">{money(bill.utility_share)}</p>
+                    </div>
+                    <div className="rounded-lg bg-white p-2.5">
+                      <p className="font-black uppercase text-[#6b7a99]">Deposit</p>
+                      <p className="mt-0.5 font-bold text-emerald-600">{money(bill.paid_amount)}</p>
+                    </div>
                   </div>
                 </div>
               </div>

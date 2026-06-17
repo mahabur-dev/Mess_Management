@@ -441,4 +441,29 @@
         rgba(255, 255, 255, 0.7),
         rgba(167, 139, 250, 1));
   }
+
+  .monthly-bills-table-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #a9ccfb #f8faff;
+    scrollbar-gutter: stable;
+  }
+
+  .monthly-bills-table-scroll::-webkit-scrollbar {
+    height: 10px;
+  }
+
+  .monthly-bills-table-scroll::-webkit-scrollbar-track {
+    background: #f8faff;
+    border-top: 1px solid #e6ebf4;
+  }
+
+  .monthly-bills-table-scroll::-webkit-scrollbar-thumb {
+    background: #a9ccfb;
+    border: 2px solid #f8faff;
+    border-radius: 999px;
+  }
+
+  .monthly-bills-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #2f80ed;
+  }
 }

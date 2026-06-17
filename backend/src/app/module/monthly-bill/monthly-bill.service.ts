@@ -52,6 +52,53 @@ export class MonthlyBillService {
     return Number(Number(value ?? 0).toFixed(2));
   }
 
+  private toPositiveNumber(value: unknown): number | null {
+    const amount = Number(value ?? 0);
+    return Number.isFinite(amount) && amount > 0 ? amount : null;
+  }
+
+  private getRoomRentPerMember(
+    rooms: Prisma.JsonValue[],
+    roomNo?: string | null,
+  ): number | null {
+    if (!roomNo) return null;
+
+    const roomConfig = rooms.find((room) => {
+      if (!room || typeof room !== 'object' || Array.isArray(room)) {
+        return false;
+      }
+
+      return (room as Record<string, unknown>)['roomName'] === roomNo;
+    });
+
+    if (!roomConfig || typeof roomConfig !== 'object' || Array.isArray(roomConfig)) {
+      return null;
+    }
+
+    const room = roomConfig as Record<string, unknown>;
+    const roomPrice = this.toPositiveNumber(room['roomPrice']);
+    const totalPerson = this.toPositiveNumber(room['perPerson']);
+
+    if (!roomPrice || !totalPerson) return null;
+
+    return this.toFixedNumber(roomPrice / totalPerson);
+  }
+
+  private calculateSeatRent(
+    rooms: Prisma.JsonValue[],
+    roomNo: string | null | undefined,
+    memberMonthlyRent: unknown,
+    messMonthlyRent: unknown,
+  ): number {
+    const roomRent = this.getRoomRentPerMember(rooms, roomNo);
+    if (roomRent !== null) return roomRent;
+
+    const membershipRent = this.toPositiveNumber(memberMonthlyRent);
+    if (membershipRent !== null) return this.toFixedNumber(membershipRent);
+
+    return this.toFixedNumber(messMonthlyRent);
+  }
+
   private makeAmountMap(
     rows: Array<{ member_id: string; _sum: { amount: unknown } }>,
   ) {
@@ -130,40 +177,10 @@ export class MonthlyBillService {
       throw new HttpException('No active members in this mess', 400);
     }
 
-    // Parse rooms to support room-based rent calculation
     const rooms = Array.isArray(mess.rooms) ? mess.rooms : [];
-
-    const calculateSeatRent = (
-      roomNo: string | null | undefined,
-      monthlyRent: number | null,
-    ): number => {
-      if (!roomNo) {
-        return Number(monthlyRent ?? mess.monthly_rent ?? 0);
-      }
-
-      const roomConfig = rooms.find((r) => {
-        if (!r || typeof r !== 'object' || Array.isArray(r)) return false;
-        return (r as Record<string, unknown>)['roomName'] === roomNo;
-      });
-
-      if (!roomConfig) {
-        return Number(monthlyRent ?? mess.monthly_rent ?? 0);
-      }
-
-      const obj = roomConfig as Record<string, unknown>;
-      const roomPrice = Number(obj['roomPrice'] ?? 0);
-      const totalPerson = Number(obj['perPerson'] ?? 1);
-
-      if (roomPrice <= 0 || totalPerson <= 0) {
-        return Number(monthlyRent ?? mess.monthly_rent ?? 0);
-      }
-
-      return Math.round(roomPrice / totalPerson);
-    };
 
     const [
       foodExpenses,
-      rentExpenses,
       electricityExpenses,
       gasExpenses,
       wifiExpenses,
@@ -183,20 +200,6 @@ export class MonthlyBillService {
           category: {
             in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
           },
-        },
-        _sum: {
-          amount: true,
-        },
-      }),
-
-      this.prisma.expense.aggregate({
-        where: {
-          mess_id: messId,
-          expense_date: {
-            gte: month,
-            lt: nextMonth,
-          },
-          category: ExpenseCategory.RENT,
         },
         _sum: {
           amount: true,
@@ -353,7 +356,6 @@ export class MonthlyBillService {
         ? this.toFixedNumber(Number(value ?? 0) / activeMembers.length)
         : 0;
 
-    const rentExpenseShare = splitByMember(rentExpenses._sum.amount);
     const electricityShare = splitByMember(
       electricityExpenses._sum.amount,
     );
@@ -372,8 +374,12 @@ export class MonthlyBillService {
       const memberMeals = mealCountByUser[user_id] ?? 0;
 
       const foodBill = this.toFixedNumber(memberMeals * perMealRate);
-      const baseSeatRent = calculateSeatRent(room_no, monthly_rent !== null ? Number(monthly_rent) : null);
-      const seatRent = this.toFixedNumber(baseSeatRent + rentExpenseShare);
+      const seatRent = this.calculateSeatRent(
+        rooms,
+        room_no,
+        monthly_rent,
+        mess.monthly_rent,
+      );
 
       const depositTotal = depositByUser[user_id] ?? 0;
       const paidAmount = paymentByUser[user_id] ?? 0;

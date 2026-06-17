@@ -61,11 +61,22 @@ export interface User {
   memberships?: MessMembership[]
 }
 
+export interface MessRoom {
+  roomName: string
+  perPerson?: number | null
+  roomPrice?: number | null
+  occupiedSeats?: number | null
+  availableSeats?: number | null
+  isFull?: boolean | null
+}
+
 export interface Mess {
   id: string
   name: string
   description?: string | null
   address?: string | null
+  mess_category?: string | null
+  rooms?: MessRoom[] | null
   meal_rate: string
   currency: string
   created_by: string
@@ -79,6 +90,7 @@ export interface Mess {
   extra_cost?: string | null
   payment_deadline_day?: number
   meal_off_deadline?: string | null
+  bazar_rules?: string | null
   settings_completed?: boolean
   created_at: string
   _count?: { memberships?: number; deposits?: number; meals?: number }
@@ -353,7 +365,7 @@ class ApiClient {
     return this.request<Mess>(`/messes/${id}`)
   }
 
-  createMess(data: { messName: string; messLocation: string; description?: string; meal_rate?: string; currency?: string }) {
+  createMess(data: { messName: string; messLocation: string; description?: string; meal_rate?: string; currency?: string; messCategory?: string; rooms?: MessRoom[] }) {
     return this.request<Mess>('/messes', { method: 'POST', body: JSON.stringify({ meal_rate: '0', currency: 'BDT', ...data }) })
   }
 
@@ -365,7 +377,7 @@ class ApiClient {
     return this.request(`/messes/${id}`, { method: 'DELETE' })
   }
 
-  requestMessRegistration(data: { messName: string; address: string; totalSeats?: number; monthlyRent?: number; description?: string }) {
+  requestMessRegistration(data: { messName: string; address: string; totalSeats?: number; monthlyRent?: number; description?: string; messCategory?: string; rooms?: MessRoom[] }) {
     return this.request('/mess-requests', { method: 'POST', body: JSON.stringify(data) })
   }
 
@@ -377,7 +389,7 @@ class ApiClient {
     return this.request(`/mess-requests/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
-  updateMessSetup(id: string, data: Record<string, unknown>) {
+  updateMessSetup(id: string, data: { messName?: string; address?: string; totalSeats?: number; monthlyRent?: number; messCategory?: string; rooms?: MessRoom[]; paymentDeadlineDay?: number; mealOffDeadline?: string; bazarRules?: string; mealTypes?: MealName[]; mealRateMethod?: string }) {
     return this.request<Mess>(`/messes/${id}/setup`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
@@ -386,7 +398,7 @@ class ApiClient {
   }
 
   addMember(messId: string, data: { email: string; role: MembershipRole; roomNo?: string; seatNo?: string; monthlyRent?: number; depositAmount?: number }) {
-    return this.request<MessMembership>(`/messes/${messId}/members`, { method: 'POST', body: JSON.stringify({ ...data, messId }) })
+    return this.request<MessMembership>(`/messes/${messId}/members`, { method: 'POST', body: JSON.stringify(data) })
   }
 
   updateMember(messId: string, memberId: string, data: Partial<{ role: MembershipRole; isActive: boolean; roomNo: string; seatNo: string; monthlyRent: number; depositAmount: number }>) {

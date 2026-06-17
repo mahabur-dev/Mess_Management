@@ -1,7 +1,28 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsDecimal, IsEmail, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsArray, IsBoolean, IsDecimal, IsEmail, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { MembershipRole, RequestStatus } from '@prisma/client';
+
+export class MessRoomDto {
+  @ApiPropertyOptional({ example: 'Room A' })
+  @IsOptional()
+  @IsString()
+  roomName?: string;
+
+  @ApiPropertyOptional({ example: 2 })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null || value === undefined ? undefined : Number(value)))
+  @IsNumber()
+  @Min(1)
+  perPerson?: number;
+
+  @ApiPropertyOptional({ example: 12000 })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null || value === undefined ? undefined : Number(value)))
+  @IsNumber()
+  @Min(0)
+  roomPrice?: number;
+}
 
 export class CreateMessDto {
   @ApiProperty({ example: 'Green House Mess' })
@@ -35,6 +56,18 @@ export class CreateMessDto {
   @IsDecimal()
   meal_rate: string;
 
+  @ApiPropertyOptional({ example: 'flat' })
+  @IsOptional()
+  @IsString()
+  messCategory?: string;
+
+  @ApiPropertyOptional({ type: [MessRoomDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MessRoomDto)
+  rooms?: MessRoomDto[];
+
 }
 
 export class RequestMessRegistrationDto {
@@ -66,6 +99,18 @@ export class RequestMessRegistrationDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 'flat' })
+  @IsOptional()
+  @IsString()
+  messCategory?: string;
+
+  @ApiPropertyOptional({ type: [MessRoomDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MessRoomDto)
+  rooms?: MessRoomDto[];
 }
 
 export class ReviewMessRequestDto {
@@ -138,6 +183,18 @@ export class CompleteMessSetupDto {
   @IsNumber()
   @Min(0)
   extraCost?: number;
+
+  @ApiPropertyOptional({ example: 'flat' })
+  @IsOptional()
+  @IsString()
+  messCategory?: string;
+
+  @ApiPropertyOptional({ type: [MessRoomDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MessRoomDto)
+  rooms?: MessRoomDto[];
 
   @ApiPropertyOptional({ example: ['BREAKFAST', 'LUNCH', 'DINNER'] })
   @IsOptional()
@@ -225,11 +282,6 @@ export class AddMemberDto {
  @ApiProperty({example: "admin@gmail.com"})
  @IsEmail()
  email:string
-
-  @ApiProperty({ example: 'clabc123456' })
-  @IsString()
-  @IsNotEmpty()
-  messId: string;
 
   @ApiProperty({ example: 'MANAGER', enum: MembershipRole })
   @IsEnum(MembershipRole)

@@ -41,6 +41,8 @@ export class MessService {
     name: true,
     description: true,
     address: true,
+    mess_category: true,
+    rooms: true,
     meal_rate: true,
     currency: true,
     total_seats: true,
@@ -64,6 +66,44 @@ export class MessService {
     _count: { select: { memberships: true, deposits: true, meals: true } },
   } as const;
 
+  private decorateRoomsWithAvailability<
+    T extends {
+      rooms?: Prisma.JsonValue | null;
+      memberships?: Array<{ room_no?: string | null; is_active?: boolean }> | null;
+    },
+  >(mess: T) {
+    const occupancy = new Map<string, number>();
+
+    for (const membership of mess.memberships ?? []) {
+      if (!membership?.is_active || !membership.room_no) continue;
+      occupancy.set(membership.room_no, (occupancy.get(membership.room_no) ?? 0) + 1);
+    }
+
+    const rooms = Array.isArray(mess.rooms)
+      ? mess.rooms.map((room) => {
+          if (!room || typeof room !== 'object' || Array.isArray(room)) return room;
+
+          const roomData = room as Record<string, unknown>;
+          const roomName = typeof roomData['roomName'] === 'string' ? roomData['roomName'] : '';
+          const totalSeats = Number(roomData['perPerson'] ?? 0);
+          const occupiedSeats = roomName ? occupancy.get(roomName) ?? 0 : 0;
+          const availableSeats = totalSeats > 0 ? Math.max(totalSeats - occupiedSeats, 0) : null;
+
+          return {
+            ...roomData,
+            occupiedSeats,
+            availableSeats,
+            isFull: availableSeats !== null ? availableSeats <= 0 : false,
+          };
+        })
+      : mess.rooms;
+
+    return {
+      ...mess,
+      rooms,
+    };
+  }
+
   private async verifyManagerAccess(messId: string, userId: string, role: string) {
     if (role === 'ADMIN') return;
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
@@ -78,6 +118,10 @@ export class MessService {
 
   async requestRegistration(userId: string, dto: RequestMessRegistrationDto) {
     console.log('Checking for existing pending requests for user:', userId);
+    const requester = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
     const pending = await this.prisma.messRequest.findFirst({
       where: { requester_id: userId, status: RequestStatus.PENDING },
     });
@@ -88,6 +132,8 @@ export class MessService {
         requester_id: userId,
         mess_name: dto.messName,
         address: dto.address,
+        mess_category: dto.messCategory,
+        rooms: dto.rooms as Prisma.InputJsonValue | undefined,
         total_seats: dto.totalSeats,
         monthly_rent: dto.monthlyRent,
         description: dto.description,
@@ -98,7 +144,7 @@ export class MessService {
     const adminUserIds = await this.notificationService.resolveAdminUserIds();
     await this.notificationService.sendPushToUsers(adminUserIds, {
       title: 'New mess registration request',
-      body: `${request.requester.name} requested approval for ${request.mess_name}.`,
+      body: `${requester?.name ?? 'A user'} requested approval for ${request.mess_name}.`,
       url: '/dashboard/notifications',
       data: {
         source: 'MESS_REQUEST',
@@ -174,6 +220,8 @@ export class MessService {
           name: request.mess_name,
           address: request.address,
           description: request.description,
+          mess_category: request.mess_category,
+          rooms: (request.rooms ?? undefined) as Prisma.InputJsonValue | undefined,
           total_seats: request.total_seats,
           monthly_rent: request.monthly_rent,
           created_by: request.requester_id,
@@ -323,7 +371,7 @@ export class MessService {
     });
 
     if (!mess || mess.length === 0) throw new HttpException('You have not created a mess yet', 404);
-    return mess;
+    return mess.map((item) => this.decorateRoomsWithAvailability(item));
   }
 
   // ─────────────────────────────────────────
@@ -353,7 +401,7 @@ export class MessService {
     });
 
     if (!mess) throw new HttpException('Mess not found', 404);
-    return mess;
+    return this.decorateRoomsWithAvailability(mess);
   }
 
   // ─────────────────────────────────────────
@@ -471,6 +519,8 @@ export class MessService {
         data: {
           name: dto.messName,
           address: dto.address,
+          mess_category: dto.messCategory,
+          rooms: dto.rooms as Prisma.InputJsonValue | undefined,
           total_seats: dto.totalSeats,
           monthly_rent: dto.monthlyRent,
           electricity_bill: dto.electricityBill,
@@ -506,18 +556,108 @@ export class MessService {
     return updatedMess;
   }
 
+  private async checkRoomAvailability(messId: string, roomNo: string, rooms: Prisma.JsonValue[]): Promise<void> {
+    const roomConfig = rooms.find((r) => {
+      if (!r || typeof r !== 'object' || Array.isArray(r)) return false;
+      const obj = r as Record<string, unknown>;
+      return obj['roomName'] === roomNo;
+    });
+    if (!roomConfig) return;
+
+    const obj = roomConfig as Record<string, unknown>;
+    const maxPerson = Number(obj['perPerson'] ?? Infinity);
+    if (!maxPerson || maxPerson < 1) return;
+
+    const currentOccupants = await this.prisma.messMembership.count({
+      where: {
+        mess_id: messId,
+        room_no: roomNo,
+        is_active: true,
+      },
+    });
+
+    if (currentOccupants >= maxPerson) {
+      throw new HttpException(
+        `Room ${roomNo} is full (${currentOccupants}/${maxPerson} occupied). No seats available.`,
+        400,
+      );
+    }
+  }
+
+  private async autoCalculateMonthlyRent(messId: string, roomNo: string | undefined | null, rooms: Prisma.JsonValue[]): Promise<number | undefined> {
+    if (!roomNo) return undefined;
+
+    const roomConfig = rooms.find((r) => {
+      if (!r || typeof r !== 'object' || Array.isArray(r)) return false;
+      const obj = r as Record<string, unknown>;
+      return obj['roomName'] === roomNo;
+    });
+    if (!roomConfig) return undefined;
+
+    const obj = roomConfig as Record<string, unknown>;
+    const roomPrice = Number(obj['roomPrice'] ?? 0);
+    const totalPerson = Number(obj['perPerson'] ?? 1);
+
+    if (roomPrice <= 0 || totalPerson <= 0) return undefined;
+
+    return Math.round(roomPrice / totalPerson);
+  }
+
   async addMember(messId: string, organizerId: string, email: string, role: MembershipRole, dto?: Partial<UpdateMemberDto>) {
     await this.verifyManagerAccess(messId, organizerId, 'MANAGER');
+
+    const mess = await this.prisma.mess.findUnique({
+      where: { id: messId },
+      select: { id: true, rooms: true },
+    });
+    if (!mess) throw new HttpException('Mess not found', 404);
 
     const user = await this.prisma.user.findUnique({
       where: { email: email },
     });
     if (!user) throw new HttpException('User not found', 404);
 
+    const activeMembership = await this.prisma.messMembership.findFirst({
+      where: {
+        user_id: user.id,
+        is_active: true,
+      },
+      include: {
+        mess: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+    if (activeMembership) {
+      throw new HttpException(
+        `User is already active in ${activeMembership.mess?.name ?? 'another mess'}`,
+        400,
+      );
+    }
+
     const existing = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: user.id } },
     });
     if (existing) throw new HttpException('User is already a member', 400);
+
+    const rooms = Array.isArray(mess.rooms) ? mess.rooms : [];
+
+    if (dto?.roomNo) {
+      const hasMatchingRoom = rooms.some((room) => {
+        if (!room || typeof room !== 'object' || Array.isArray(room)) return false;
+        return (room as Record<string, unknown>)['roomName'] === dto.roomNo;
+      });
+
+      if (!hasMatchingRoom) {
+        throw new HttpException('Selected room does not belong to this mess', 400);
+      }
+
+      // Check room availability
+      await this.checkRoomAvailability(messId, dto.roomNo, rooms);
+    }
+
+    // Auto-calculate monthly rent from room config
+    const autoRent = await this.autoCalculateMonthlyRent(messId, dto?.roomNo, rooms);
 
     const member = await this.prisma.messMembership.create({
       data: {
@@ -527,7 +667,7 @@ export class MessService {
         created_by: organizerId,
         room_no: dto?.roomNo,
         seat_no: dto?.seatNo,
-        monthly_rent: dto?.monthlyRent,
+        monthly_rent: autoRent ?? dto?.monthlyRent,
         deposit_amount: dto?.depositAmount,
       },
       include: {
@@ -560,10 +700,68 @@ export class MessService {
 
   async updateMember(messId: string, userId: string, managerId: string, managerRole: string, dto: UpdateMemberDto) {
     await this.verifyManagerAccess(messId, managerId, managerRole);
+
+    const mess = await this.prisma.mess.findUnique({
+      where: { id: messId },
+      select: { id: true, rooms: true },
+    });
+    if (!mess) throw new HttpException('Mess not found', 404);
+
     const member = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
     if (!member) throw new HttpException('User is not a member of this mess', 404);
+
+    const rooms = Array.isArray(mess.rooms) ? mess.rooms : [];
+
+    // Handle room change with availability check and swap logic
+    if (dto.roomNo && dto.roomNo !== member.room_no) {
+      // Check if target room exists in mess
+      const hasMatchingRoom = rooms.some((room) => {
+        if (!room || typeof room !== 'object' || Array.isArray(room)) return false;
+        const obj = room as Record<string, unknown>;
+        return obj['roomName'] === dto.roomNo;
+      });
+      if (!hasMatchingRoom) {
+        throw new HttpException('Selected room does not belong to this mess', 400);
+      }
+
+      // Check if the target room has capacity
+      const roomConfig = rooms.find((r) => {
+        if (!r || typeof r !== 'object' || Array.isArray(r)) return false;
+        return (r as Record<string, unknown>)['roomName'] === dto.roomNo;
+      });
+      const maxPerson = Number((roomConfig as Record<string, unknown>)?.['perPerson'] ?? Infinity);
+
+      if (maxPerson >= 1) {
+        const currentOccupants = await this.prisma.messMembership.count({
+          where: {
+            mess_id: messId,
+            room_no: dto.roomNo,
+            is_active: true,
+            user_id: { not: userId }, // exclude current member
+          },
+        });
+
+        if (currentOccupants >= maxPerson) {
+          // Swap logic: if there's exactly 1 occupant & maxPerson is 1, we need to kick them out
+          // For simplicity, if room is full, throw error with suggestion
+          throw new HttpException(
+            `Room "${dto.roomNo}" is full (${currentOccupants}/${maxPerson} occupied). Cannot move member.`,
+            400,
+          );
+        }
+      }
+    }
+
+    // Auto-calculate monthly rent if room is being set/changed
+    let monthlyRent = dto.monthlyRent;
+    if (dto.roomNo && dto.roomNo !== member.room_no) {
+      const autoRent = await this.autoCalculateMonthlyRent(messId, dto.roomNo, rooms);
+      if (autoRent !== undefined) {
+        monthlyRent = autoRent;
+      }
+    }
 
     return this.prisma.messMembership.update({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
@@ -573,7 +771,7 @@ export class MessService {
         left_at: dto.isActive === false ? new Date() : dto.isActive === true ? null : undefined,
         room_no: dto.roomNo,
         seat_no: dto.seatNo,
-        monthly_rent: dto.monthlyRent,
+        monthly_rent: monthlyRent,
         deposit_amount: dto.depositAmount,
       },
       include: {

@@ -4,6 +4,8 @@ model MessRequest {
   mess_id     String?      @db.Uuid
   mess_name   String       @db.VarChar(100)
   address     String?      @db.Text
+  mess_category String?    @db.VarChar(50)
+  rooms       Json?        @db.JsonB
   total_seats Int?
   monthly_rent Decimal?    @db.Decimal(12, 2)
   description String?      @db.Text

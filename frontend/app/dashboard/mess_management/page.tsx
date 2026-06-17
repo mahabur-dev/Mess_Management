@@ -1,24 +1,81 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { useAuth } from '@/app/context/auth-context'
-import { apiClient, type Mess } from '@/lib/api-client'
-import { Building2, CheckCircle2, Loader2, Save, Home, Settings2, MapPin, Users, CalendarDays, Clock, FileText, Send, AlertCircle } from 'lucide-react'
+import { apiClient, type Mess, type MessRoom } from '@/lib/api-client'
+import {
+  AlertCircle,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Home,
+  Loader2,
+  MapPin,
+  Plus,
+  Save,
+  Send,
+  Settings2,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-const setupFields = [
-  ['totalSeats', 'Total seats', 'number'],
-  ['monthlyRent', 'Monthly rent', 'number'],
-  ['electricityBill', 'Electricity bill', 'number'],
-  ['gasBill', 'Gas bill', 'number'],
-  ['wifiBill', 'WiFi bill', 'number'],
-  ['cleanerBill', 'Cleaner bill', 'number'],
-  ['extraCost', 'Extra cost', 'number'],
-  ['paymentDeadlineDay', 'Payment deadline day', 'number'],
-  ['mealOffDeadline', 'Meal off deadline', 'text'],
-] as const
+type RoomDraft = {
+  id: string
+  roomName: string
+  perPerson: string
+  roomPrice: string
+}
+
+type RoomPayload = {
+  roomName: string
+  perPerson?: number
+  roomPrice?: number
+}
+
+type SetupState = {
+  messName: string
+  address: string
+  totalSeats: string
+  monthlyRent: string
+  messCategory: string
+  paymentDeadlineDay: string
+  mealOffDeadline: string
+  bazarRules: string
+  rooms: RoomDraft[]
+}
+
+const createRoomDraft = (room?: Partial<RoomDraft>): RoomDraft => ({
+  id: room?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  roomName: room?.roomName ?? '',
+  perPerson: room?.perPerson ?? '',
+  roomPrice: room?.roomPrice ?? '',
+})
+
+const createEmptySetup = (): SetupState => ({
+  messName: '',
+  address: '',
+  totalSeats: '',
+  monthlyRent: '',
+  messCategory: '',
+  paymentDeadlineDay: '10',
+  mealOffDeadline: '22:00',
+  bazarRules: '',
+  rooms: [createRoomDraft()],
+})
+
+function normalizeRooms(rooms?: MessRoom[] | null): RoomDraft[] {
+  if (!Array.isArray(rooms) || rooms.length === 0) {
+    return [createRoomDraft()]
+  }
+
+  return rooms.map((room) =>
+    createRoomDraft({
+      roomName: room?.roomName ?? '',
+      perPerson: room?.perPerson !== undefined && room?.perPerson !== null ? String(room.perPerson) : '',
+      roomPrice: room?.roomPrice !== undefined && room?.roomPrice !== null ? String(room.roomPrice) : '',
+    }),
+  )
+}
 
 export default function MessManagementPage() {
   const { user } = useAuth()
@@ -26,8 +83,14 @@ export default function MessManagementPage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
-  const [requestForm, setRequestForm] = useState({ messName: '', address: '', totalSeats: '', monthlyRent: '', description: '' })
-  const [setup, setSetup] = useState<Record<string, string>>({})
+  const [requestForm, setRequestForm] = useState({
+    messName: '',
+    address: '',
+    totalSeats: '',
+    monthlyRent: '',
+    description: '',
+  })
+  const [setup, setSetup] = useState<SetupState>(createEmptySetup)
   const [saving, setSaving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const activeMess = messes[0]
@@ -40,21 +103,21 @@ export default function MessManagementPage() {
       const response = isAdmin ? await apiClient.getAllMesses({ limit: 100 }) : await apiClient.getMesses()
       const list = Array.isArray(response.data) ? response.data : response.data ? [response.data] : []
       setMesses(list)
+
       if (list[0]) {
         setSetup({
           messName: list[0].name ?? '',
           address: list[0].address ?? '',
           totalSeats: String(list[0].total_seats ?? ''),
           monthlyRent: String(list[0].monthly_rent ?? ''),
-          electricityBill: String(list[0].electricity_bill ?? ''),
-          gasBill: String(list[0].gas_bill ?? ''),
-          wifiBill: String(list[0].wifi_bill ?? ''),
-          cleanerBill: String(list[0].cleaner_bill ?? ''),
-          extraCost: String(list[0].extra_cost ?? ''),
+          messCategory: list[0].mess_category ?? '',
           paymentDeadlineDay: String(list[0].payment_deadline_day ?? 10),
           mealOffDeadline: list[0].meal_off_deadline ?? '22:00',
-          bazarRules: '',
+          bazarRules: list[0].bazar_rules ?? '',
+          rooms: normalizeRooms(list[0].rooms),
         })
+      } else {
+        setSetup(createEmptySetup())
       }
     } finally {
       setLoading(false)
@@ -89,19 +152,34 @@ export default function MessManagementPage() {
 
   async function saveSetup() {
     if (!activeMess) return
+
     setMessage('')
     setSaving(true)
+
     try {
+      const rooms: RoomPayload[] = setup.rooms
+        .map((room): RoomPayload | null => {
+          const roomName = room.roomName.trim()
+          const perPerson = room.perPerson.trim()
+          const roomPrice = room.roomPrice.trim()
+
+          if (!roomName && !perPerson && !roomPrice) return null
+
+          return {
+            roomName,
+            perPerson: perPerson ? Number(perPerson) : undefined,
+            roomPrice: roomPrice ? Number(roomPrice) : undefined,
+          }
+        })
+        .filter((room): room is RoomPayload => room !== null)
+
       await apiClient.updateMessSetup(activeMess.id, {
         messName: setup.messName,
         address: setup.address,
         totalSeats: setup.totalSeats ? Number(setup.totalSeats) : undefined,
         monthlyRent: setup.monthlyRent ? Number(setup.monthlyRent) : undefined,
-        electricityBill: setup.electricityBill ? Number(setup.electricityBill) : undefined,
-        gasBill: setup.gasBill ? Number(setup.gasBill) : undefined,
-        wifiBill: setup.wifiBill ? Number(setup.wifiBill) : undefined,
-        cleanerBill: setup.cleanerBill ? Number(setup.cleanerBill) : undefined,
-        extraCost: setup.extraCost ? Number(setup.extraCost) : undefined,
+        messCategory: setup.messCategory || undefined,
+        rooms: rooms.length ? rooms : undefined,
         paymentDeadlineDay: setup.paymentDeadlineDay ? Number(setup.paymentDeadlineDay) : undefined,
         mealOffDeadline: setup.mealOffDeadline,
         bazarRules: setup.bazarRules,
@@ -119,6 +197,22 @@ export default function MessManagementPage() {
     }
   }
 
+  function updateRoom(index: number, field: keyof RoomDraft, value: string) {
+    setSetup((current) => ({
+      ...current,
+      rooms: current.rooms.map((room, roomIndex) =>
+        roomIndex === index ? { ...room, [field]: value } : room,
+      ),
+    }))
+  }
+
+  function addRoom() {
+    setSetup((current) => ({
+      ...current,
+      rooms: [...current.rooms, createRoomDraft()],
+    }))
+  }
+
   return (
     <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader
@@ -127,11 +221,13 @@ export default function MessManagementPage() {
       />
       <div className="p-4 sm:p-6 lg:p-8">
         {message && (
-          <div className={`mb-6 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold shadow-sm ${
-            messageType === 'success'
-              ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700'
-              : 'border-red-200/60 bg-red-50 text-red-700'
-          }`}>
+          <div
+            className={`mb-6 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold shadow-sm ${
+              messageType === 'success'
+                ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700'
+                : 'border-red-200/60 bg-red-50 text-red-700'
+            }`}
+          >
             {messageType === 'success' ? <CheckCircle2 size={17} /> : <AlertCircle size={17} />}
             {message}
           </div>
@@ -143,7 +239,6 @@ export default function MessManagementPage() {
             Loading mess data...
           </div>
         ) : isAdmin ? (
-          /* ── Admin: All Messes Grid ── */
           <div>
             <div className="mb-7 flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/15 to-[#8b5cf6]/15 shadow-sm">
@@ -151,7 +246,9 @@ export default function MessManagementPage() {
               </div>
               <div>
                 <h2 className="text-lg font-black text-[#172554]">All Registered Messes</h2>
-                <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{messes.length} mess{messes.length !== 1 ? 'es' : ''} found</p>
+                <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
+                  {messes.length} mess{messes.length !== 1 ? 'es' : ''} found
+                </p>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -178,17 +275,17 @@ export default function MessManagementPage() {
                     <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-[#f8faff] p-3">
                       <div>
                         <p className="text-[10px] font-black uppercase text-[#6b7a99]">Members</p>
-                        <p className="mt-0.5 text-sm font-bold text-[#172554]">
-                          {mess._count?.memberships ?? 0}
-                        </p>
+                        <p className="mt-0.5 text-sm font-bold text-[#172554]">{mess._count?.memberships ?? 0}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-black uppercase text-[#6b7a99]">Status</p>
-                        <span className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          mess.settings_completed
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200/50'
-                        }`}>
+                        <span
+                          className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            mess.settings_completed
+                              ? 'border border-emerald-200/50 bg-emerald-50 text-emerald-700'
+                              : 'border border-amber-200/50 bg-amber-50 text-amber-700'
+                          }`}
+                        >
                           <span className={`h-1.5 w-1.5 rounded-full ${mess.settings_completed ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                           {mess.settings_completed ? 'Complete' : 'Incomplete'}
                         </span>
@@ -200,9 +297,7 @@ export default function MessManagementPage() {
             </div>
           </div>
         ) : isManager && activeMess ? (
-          /* ── Manager: Mess Setup Form ── */
           <div className="grid gap-7 xl:grid-cols-[1fr_380px]">
-            {/* Setup Form */}
             <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
               <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] px-6 py-5">
                 <div className="flex items-center gap-4">
@@ -219,38 +314,145 @@ export default function MessManagementPage() {
               <div className="p-6">
                 <div className="grid gap-5 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Mess Name</label>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Mess Name
+                    </label>
                     <input
                       className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                      value={setup.messName ?? ''}
-                      onChange={(e) => setSetup((s) => ({ ...s, messName: e.target.value }))}
+                      value={setup.messName}
+                      onChange={(e) => setSetup((current) => ({ ...current, messName: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Address</label>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Address
+                    </label>
                     <input
                       className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                      value={setup.address ?? ''}
-                      onChange={(e) => setSetup((s) => ({ ...s, address: e.target.value }))}
+                      value={setup.address}
+                      onChange={(e) => setSetup((current) => ({ ...current, address: e.target.value }))}
                     />
                   </div>
-                  {setupFields.map(([key, label, type]) => (
-                    <div key={key}>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">{label}</label>
-                      <input
-                        className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                        type={type}
-                        value={setup[key] ?? ''}
-                        onChange={(e) => setSetup((s) => ({ ...s, [key]: e.target.value }))}
-                      />
-                    </div>
-                  ))}
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Mess Category
+                    </label>
+                    <input
+                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      placeholder="flat, mess"
+                      value={setup.messCategory}
+                      onChange={(e) => setSetup((current) => ({ ...current, messCategory: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Total Seats
+                    </label>
+                    <input
+                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      type="number"
+                      value={setup.totalSeats}
+                      onChange={(e) => setSetup((current) => ({ ...current, totalSeats: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Monthly Rent
+                    </label>
+                    <input
+                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      type="number"
+                      value={setup.monthlyRent}
+                      onChange={(e) => setSetup((current) => ({ ...current, monthlyRent: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Payment Deadline Day
+                    </label>
+                    <input
+                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      type="number"
+                      value={setup.paymentDeadlineDay}
+                      onChange={(e) => setSetup((current) => ({ ...current, paymentDeadlineDay: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Meal Off Deadline
+                    </label>
+                    <input
+                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      value={setup.mealOffDeadline}
+                      onChange={(e) => setSetup((current) => ({ ...current, mealOffDeadline: e.target.value }))}
+                    />
+                  </div>
                   <div className="md:col-span-2">
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Bazar Rules</label>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Rooms
+                    </label>
+                    <div className="space-y-4">
+                      {setup.rooms.map((room, index) => (
+                        <div key={room.id} className="rounded-xl border border-[#d8e6f8] bg-[#fafcff] p-4">
+                          <div className="mb-3 flex items-center justify-between">
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#172554]">
+                              Room {index + 1}
+                            </p>
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <div>
+                              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                                Room Name
+                              </label>
+                              <input
+                                className="h-[44px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                                value={room.roomName}
+                                onChange={(e) => updateRoom(index, 'roomName', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                                Total Person
+                              </label>
+                              <input
+                                className="h-[44px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                                type="number"
+                                value={room.perPerson}
+                                onChange={(e) => updateRoom(index, 'perPerson', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                                Room Price
+                              </label>
+                              <input
+                                className="h-[44px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                                type="number"
+                                value={room.roomPrice}
+                                onChange={(e) => updateRoom(index, 'roomPrice', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addRoom}
+                      className="mt-4 inline-flex h-[44px] items-center justify-center gap-2 rounded-xl border border-[#cfe0fb] bg-[#f8faff] px-4 text-sm font-black text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-white"
+                    >
+                      <Plus size={16} />
+                      Add More Room
+                    </button>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Bazar Rules
+                    </label>
                     <textarea
                       className="min-h-[120px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 py-3 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                      value={setup.bazarRules ?? ''}
-                      onChange={(e) => setSetup((s) => ({ ...s, bazarRules: e.target.value }))}
+                      value={setup.bazarRules}
+                      onChange={(e) => setSetup((current) => ({ ...current, bazarRules: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -268,7 +470,6 @@ export default function MessManagementPage() {
               </div>
             </div>
 
-            {/* Info Card */}
             <div className="h-fit overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
               <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] px-6 py-5">
                 <div className="flex items-center gap-4">
@@ -295,14 +496,30 @@ export default function MessManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-50 to-blue-100">
+                      <Building2 size={16} className="text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-[#172554]">Mess Category</p>
+                      <p className="text-xs font-semibold text-[#6b7a99]">{activeMess.mess_category || 'Not set'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-50 to-cyan-100">
+                      <Settings2 size={16} className="text-sky-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-[#172554]">Rooms</p>
+                      <p className="text-xs font-semibold text-[#6b7a99]">{activeMess.rooms?.length ?? 0} room sections</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-50 to-orange-100">
                       <CalendarDays size={16} className="text-amber-600" />
                     </div>
                     <div>
                       <p className="text-xs font-bold text-[#172554]">Payment Deadline</p>
-                      <p className="text-xs font-semibold text-[#6b7a99]">
-                        Day {activeMess.payment_deadline_day ?? 10} of each month
-                      </p>
+                      <p className="text-xs font-semibold text-[#6b7a99]">Day {activeMess.payment_deadline_day ?? 10} of each month</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
@@ -311,9 +528,7 @@ export default function MessManagementPage() {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-[#172554]">Meal Off Deadline</p>
-                      <p className="text-xs font-semibold text-[#6b7a99]">
-                        {activeMess.meal_off_deadline ?? '22:00'}
-                      </p>
+                      <p className="text-xs font-semibold text-[#6b7a99]">{activeMess.meal_off_deadline ?? '22:00'}</p>
                     </div>
                   </div>
                 </div>
@@ -321,7 +536,6 @@ export default function MessManagementPage() {
             </div>
           </div>
         ) : (
-          /* ── Regular Member: Request Registration ── */
           <div className="mx-auto max-w-2xl">
             <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
               <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] px-6 py-5">
@@ -342,52 +556,62 @@ export default function MessManagementPage() {
 
                 <div className="space-y-5">
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Mess Name</label>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Mess Name
+                    </label>
                     <input
                       className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                       placeholder="Enter mess name"
                       value={requestForm.messName}
-                      onChange={(e) => setRequestForm((f) => ({ ...f, messName: e.target.value }))}
+                      onChange={(e) => setRequestForm((current) => ({ ...current, messName: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Address</label>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Address
+                    </label>
                     <input
                       className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                       placeholder="Enter mess address"
                       value={requestForm.address}
-                      onChange={(e) => setRequestForm((f) => ({ ...f, address: e.target.value }))}
+                      onChange={(e) => setRequestForm((current) => ({ ...current, address: e.target.value }))}
                     />
                   </div>
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Total Seats</label>
+                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                        Total Seats
+                      </label>
                       <input
                         className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                         type="number"
                         placeholder="e.g. 10"
                         value={requestForm.totalSeats}
-                        onChange={(e) => setRequestForm((f) => ({ ...f, totalSeats: e.target.value }))}
+                        onChange={(e) => setRequestForm((current) => ({ ...current, totalSeats: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Monthly Rent (৳)</label>
+                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                        Monthly Rent (৳)
+                      </label>
                       <input
                         className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                         type="number"
                         placeholder="e.g. 5000"
                         value={requestForm.monthlyRent}
-                        onChange={(e) => setRequestForm((f) => ({ ...f, monthlyRent: e.target.value }))}
+                        onChange={(e) => setRequestForm((current) => ({ ...current, monthlyRent: e.target.value }))}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      Description
+                    </label>
                     <textarea
                       className="min-h-[120px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 py-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                       placeholder="Add any additional details about your mess..."
                       value={requestForm.description}
-                      onChange={(e) => setRequestForm((f) => ({ ...f, description: e.target.value }))}
+                      onChange={(e) => setRequestForm((current) => ({ ...current, description: e.target.value }))}
                     />
                   </div>
                 </div>

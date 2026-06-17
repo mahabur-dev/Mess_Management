@@ -8,6 +8,8 @@ model Mess {
   name        String   @db.VarChar(100)
   description String?  @db.Text
   address     String?  @db.Text
+  mess_category String? @db.VarChar(50)
+  rooms       Json?    @db.JsonB
   meal_rate   Decimal  @db.Decimal(10, 2)
   currency    String   @default("BDT") @db.VarChar(10)
   created_by  String   @db.Uuid

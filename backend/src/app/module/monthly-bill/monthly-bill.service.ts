@@ -122,12 +122,44 @@ export class MonthlyBillService {
       select: {
         user_id: true,
         monthly_rent: true,
+        room_no: true,
       },
     });
 
     if (!activeMembers.length) {
       throw new HttpException('No active members in this mess', 400);
     }
+
+    // Parse rooms to support room-based rent calculation
+    const rooms = Array.isArray(mess.rooms) ? mess.rooms : [];
+
+    const calculateSeatRent = (
+      roomNo: string | null | undefined,
+      monthlyRent: number | null,
+    ): number => {
+      if (!roomNo) {
+        return Number(monthlyRent ?? mess.monthly_rent ?? 0);
+      }
+
+      const roomConfig = rooms.find((r) => {
+        if (!r || typeof r !== 'object' || Array.isArray(r)) return false;
+        return (r as Record<string, unknown>)['roomName'] === roomNo;
+      });
+
+      if (!roomConfig) {
+        return Number(monthlyRent ?? mess.monthly_rent ?? 0);
+      }
+
+      const obj = roomConfig as Record<string, unknown>;
+      const roomPrice = Number(obj['roomPrice'] ?? 0);
+      const totalPerson = Number(obj['perPerson'] ?? 1);
+
+      if (roomPrice <= 0 || totalPerson <= 0) {
+        return Number(monthlyRent ?? mess.monthly_rent ?? 0);
+      }
+
+      return Math.round(roomPrice / totalPerson);
+    };
 
     const [
       foodExpenses,
@@ -336,13 +368,12 @@ export class MonthlyBillService {
     const dueDate = new Date(month);
     dueDate.setDate(mess.payment_deadline_day ?? 10);
 
-    const billQueries = activeMembers.map(({ user_id, monthly_rent }) => {
+    const billQueries = activeMembers.map(({ user_id, monthly_rent, room_no }) => {
       const memberMeals = mealCountByUser[user_id] ?? 0;
 
       const foodBill = this.toFixedNumber(memberMeals * perMealRate);
-      const seatRent = this.toFixedNumber(
-        Number(monthly_rent ?? mess.monthly_rent ?? 0) + rentExpenseShare,
-      );
+      const baseSeatRent = calculateSeatRent(room_no, monthly_rent !== null ? Number(monthly_rent) : null);
+      const seatRent = this.toFixedNumber(baseSeatRent + rentExpenseShare);
 
       const depositTotal = depositByUser[user_id] ?? 0;
       const paidAmount = paymentByUser[user_id] ?? 0;

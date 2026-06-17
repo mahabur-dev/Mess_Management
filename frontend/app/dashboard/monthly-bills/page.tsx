@@ -316,9 +316,9 @@ export default function MonthlyBillPage() {
                       <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.seat_rent)}</td>
                       <td className="px-5 py-4">
                         <p className="text-sm font-bold text-[#172554]">{money(bill.utility_share)}</p>
-                        <p className="mt-0.5 text-[11px] font-semibold text-[#6b7a99]">
+                        {/* <p className="mt-0.5 text-[11px] font-semibold text-[#6b7a99]">
                           E {money(bill.electricity_bill)} / G {money(bill.gas_bill)} / W {money(bill.wifi_bill)} / C {money(bill.cleaner_bill)} / X {money(bill.extra_cost)}
-                        </p>
+                        </p> */}
                       </td>
 
                       <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(getTotalCost(bill))}</td>

@@ -1,16 +1,27 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog, ChevronDown, ChevronUp, MoreHorizontal, Phone, Users } from 'lucide-react';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog, ChevronDown, ChevronUp, MoreHorizontal, Phone, Users, Pencil, Ban, CheckCircle, DoorOpen, DollarSign, Building } from 'lucide-react';
+import { apiClient, ApiError, type Mess as ApiMess } from '@/lib/api-client';
 import { DashboardHeader } from '@/components/dashboard-header';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // ─── Types & Interfaces ─────────────────────────────────────────────────────
 type MembershipRole = 'MANAGER' | 'MEMBER';
 
+interface MessRoom {
+  roomName: string;
+  perPerson?: number | null;
+  roomPrice?: number | null;
+  occupiedSeats?: number | null;
+  availableSeats?: number | null;
+  isFull?: boolean | null;
+}
+
 interface Mess {
   id: string;
   name: string;
+  rooms?: MessRoom[] | null;
 }
 
 export interface Member {
@@ -22,6 +33,9 @@ export interface Member {
   left_at?: string | null;
   is_active: boolean;
   created_by?: string | null;
+  room_no?: string | null;
+  monthly_rent?: string | null;
+  deposit_amount?: string | null;
 
   user: {
     id: string;
@@ -48,9 +62,26 @@ interface EditRoleModalProps {
   onSave: (memberId: string, role: MembershipRole, messId: string) => Promise<void>;
 }
 
-interface AddMemberModalProps {
+interface EditMemberModalProps {
+  member: Member;
+  activeMess: Mess | null;
   onClose: () => void;
-  onAdd: (data: { email: string; role: MembershipRole; messId: string }) => Promise<void>;
+  onSave: (memberId: string, data: EditMemberData) => Promise<void>;
+}
+
+interface EditMemberData {
+  roomNo?: string;
+  monthlyRent?: number;
+  depositAmount?: number;
+  isActive?: boolean;
+  role?: MembershipRole;
+}
+
+interface AddMemberModalProps {
+  activeMess: Mess | null;
+  members: Member[];
+  onClose: () => void;
+  onAdd: (data: { email: string; role: MembershipRole; messId: string; roomNo?: string }) => Promise<void>;
 }
 
 // ─── ROLE_CONFIG ───────────────────────────────────────────────────────────
@@ -201,34 +232,297 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
   );
 }
 
+// ─── Edit Member Modal ─────────────────────────────────────────────────────
+function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModalProps) {
+  const [roomNo, setRoomNo] = useState<string>((member as any).room_no || '');
+  const [monthlyRent, setMonthlyRent] = useState<string>((member as any).monthly_rent || '');
+  const [depositAmount, setDepositAmount] = useState<string>((member as any).deposit_amount || '');
+  const [isActive, setIsActive] = useState<boolean>(member.is_active);
+  const [role, setRole] = useState<MembershipRole>(member.role);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSave = async () => {
+    if (!member.mess_id) return setError('No mess ID found');
+
+    setError('');
+    setLoading(true);
+
+    try {
+      const data: EditMemberData = {};
+      if (roomNo.trim()) data.roomNo = roomNo.trim();
+      if (monthlyRent) data.monthlyRent = Number(monthlyRent);
+      if (depositAmount) data.depositAmount = Number(depositAmount);
+      data.isActive = isActive;
+      data.role = role;
+
+      await onSave(member.user_id, data);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate room occupancy info
+  const roomOccupancy = React.useMemo(() => {
+    const rooms = activeMess?.rooms ?? [];
+    return rooms.reduce<Record<string, { total: number; occupied: number }>>((acc, room) => {
+      if (room.roomName) {
+        acc[room.roomName] = { total: Number(room.perPerson ?? 1), occupied: 0 };
+      }
+      return acc;
+    }, {});
+  }, [activeMess]);
+
+  // Calculate auto-rent for preview
+  const selectedRoomRent = React.useMemo(() => {
+    const rooms = activeMess?.rooms ?? [];
+    const room = rooms.find(r => r.roomName === roomNo);
+    if (!room || !room.roomPrice || !room.perPerson) return null;
+    return Math.round(Number(room.roomPrice) / Number(room.perPerson));
+  }, [roomNo, activeMess]);
+
+  useEffect(() => {
+    if (selectedRoomRent !== null && selectedRoomRent !== Number(monthlyRent)) {
+      setMonthlyRent(String(selectedRoomRent));
+    }
+  }, [selectedRoomRent]);
+
+  const availableRooms = activeMess?.rooms?.map(r => r.roomName) ?? [];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="relative w-full max-w-[520px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
+        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/14 blur-2xl" />
+
+        <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Member Management</p>
+            <h2 className="mt-1 text-xl font-black text-[#172554]">Edit Member</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="relative max-h-[calc(100vh-120px)] overflow-y-auto p-5 sm:p-6">
+          {/* Member Info */}
+          <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] p-3">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-black"
+              style={{ backgroundColor: `${avatarColor(member.user_id)}18`, borderColor: `${avatarColor(member.user_id)}55`, color: avatarColor(member.user_id) }}
+            >
+              {getInitials(member.user.name)}
+            </div>
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-black text-[#172554]">{member.user.name}</h3>
+              <p className="truncate text-sm font-semibold text-[#6b7a99]">{member.user.email}</p>
+            </div>
+          </div>
+
+          {/* Role */}
+          <div className="mb-5">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+              <Shield size={12} className="mr-1 inline" />
+              Role
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {(['MEMBER', 'MANAGER'] as MembershipRole[]).map((r) => {
+                const cfg = ROLE_CONFIG[r];
+                const selected = role === r;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRole(r)}
+                    className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                      selected
+                        ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-[0_8px_20px_rgba(47,128,237,0.16)]'
+                        : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
+                    }`}
+                  >
+                    <span style={{ color: selected ? cfg.textColor : undefined }}>{cfg.icon}</span>
+                    <span>{cfg.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Room Selection */}
+          <div className="mb-5">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+              <DoorOpen size={12} className="mr-1 inline" />
+              Room Assignment
+            </label>
+            <Select value={roomNo} onValueChange={setRoomNo}>
+              <SelectTrigger className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
+                <SelectValue placeholder="Select room (optional)" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
+                {availableRooms.map((room) => (
+                  <SelectItem
+                    key={room}
+                    value={room}
+                    className="rounded-lg px-3 py-2 text-sm font-bold text-[#172554] focus:bg-[#edf5ff] focus:text-[#2f80ed]"
+                  >
+                    {room}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Financial Fields */}
+          <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <DollarSign size={12} className="mr-1 inline" />
+                Monthly Rent
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={monthlyRent}
+                onChange={(e) => setMonthlyRent(e.target.value)}
+                placeholder="0.00"
+                className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <Building size={12} className="mr-1 inline" />
+                Deposit Amount
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                placeholder="0.00"
+                className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              />
+            </div>
+          </div>
+
+          {/* Active Status */}
+          <div className="mb-5">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+              Membership Status
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setIsActive(true)}
+                className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                  isActive
+                    ? 'border-emerald-500/40 bg-emerald-50 text-emerald-600 shadow-[0_8px_20px_rgba(16,185,129,0.16)]'
+                    : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
+                }`}
+              >
+                <CheckCircle size={16} />
+                Active
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsActive(false)}
+                className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                  !isActive
+                    ? 'border-red-500/40 bg-red-50 text-red-600 shadow-[0_8px_20px_rgba(239,68,68,0.16)]'
+                    : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
+                }`}
+              >
+                <Ban size={16} />
+                Inactive
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="mb-5 rounded-xl border border-red-200/60 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="h-12 rounded-xl border border-[#d8e6f8] bg-white px-4 font-black text-[#53617d] transition hover:bg-[#edf5ff] disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70"
+            >
+              {loading && <Loader2 size={15} className="animate-spin" />}
+              {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Add Member Modal ─────────────────────────────────────────────────────────
-function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
+function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalProps) {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<MembershipRole>('MEMBER')
-  const [selectedMess, setSelectedMess] = useState('')
-  const [messes, setMesses] = useState<Mess[]>([])
+  const [selectedRoom, setSelectedRoom] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadMesses()
-  }, [])
+  const availableRooms = React.useMemo(() => {
+    const roomOccupancy = members.reduce<Record<string, number>>((acc, member) => {
+      if (!member.is_active || member.mess_id !== activeMess?.id || !member.room_no) return acc;
+      acc[member.room_no] = (acc[member.room_no] ?? 0) + 1;
+      return acc;
+    }, {});
 
-  async function loadMesses() {
-    try {
-      const res = await apiClient.getMesses()
-      const data = res.data
-      const messList = Array.isArray(data) ? data : data ? [data] : []
-      setMesses(messList)
-    } catch (err) {
-      console.error('Failed to load messes', err)
+    return (activeMess?.rooms ?? [])
+      .map((room) => {
+        const totalSeats = Number(room.perPerson ?? 0);
+        const occupiedSeats = Number(room.occupiedSeats ?? roomOccupancy[room.roomName] ?? 0);
+        const availableSeats =
+          room.availableSeats ?? (totalSeats > 0 ? Math.max(totalSeats - occupiedSeats, 0) : null);
+
+        return {
+          ...room,
+          occupiedSeats,
+          availableSeats,
+          isFull: room.isFull ?? (availableSeats !== null ? availableSeats <= 0 : false),
+        };
+      })
+      .filter((room) => !room.isFull);
+  }, [activeMess, members]);
+
+  useEffect(() => {
+    if (selectedRoom && !availableRooms.some((room) => room.roomName === selectedRoom)) {
+      setSelectedRoom('');
     }
-  }
+  }, [availableRooms, selectedRoom]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) return setError('Email is required')
-    if (!selectedMess) return setError('Please select a mess')
+    if (!activeMess?.id) return setError('No active mess found')
 
     setError('')
     setLoading(true)
@@ -237,7 +531,8 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
       await onAdd({
         email: email.trim(),
         role,
-        messId: selectedMess,
+        messId: activeMess.id,
+        roomNo: selectedRoom || undefined,
       })
       onClose()
     } catch (err: unknown) {
@@ -286,23 +581,46 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
             />
           </div>
 
-          {/* Mess Selection */}
+          {/* Selected Mess */}
           <div className="mb-5">
             <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
-              Select Mess
+              Selected Mess
             </label>
-            <select
-              value={selectedMess}
-              onChange={(e) => setSelectedMess(e.target.value)}
-              className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+            <div className="flex h-[48px] w-full items-center rounded-xl border border-[#d8e6f8] bg-[#f8faff] px-4 text-sm font-bold text-[#172554]">
+              {activeMess?.name || 'No mess available'}
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+              Select Room
+            </label>
+            <Select
+              value={selectedRoom}
+              onValueChange={setSelectedRoom}
+              disabled={availableRooms.length === 0}
             >
-              <option value="">Select Mess</option>
-              {messes.map((mess) => (
-                <option key={mess.id} value={mess.id}>
-                  {mess.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
+                <SelectValue placeholder={availableRooms.length === 0 ? 'No seat-available room' : 'Choose room'} />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
+                {availableRooms.map((room) => (
+                  <SelectItem
+                    key={room.roomName}
+                    value={room.roomName}
+                    className="rounded-lg px-3 py-2 text-sm font-bold text-[#172554] focus:bg-[#edf5ff] focus:text-[#2f80ed]"
+                  >
+                    {room.roomName}
+                    {typeof room.availableSeats === 'number' ? ` (${room.availableSeats} seat left)` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {availableRooms.length === 0 && (
+              <p className="mt-2 text-xs font-semibold text-[#8a9bb5]">
+                All configured rooms are currently full. Add the member without a room or free up a seat first.
+              </p>
+            )}
           </div>
 
           {/* Role Selection */}
@@ -363,14 +681,16 @@ function AddMemberModal({ onClose, onAdd }: AddMemberModalProps) {
   )
 }
 
-// ─── Mobile Member Row (card-style for small screens) ──────────────────────
+  // ─── Mobile Member Row (card-style for small screens) ──────────────────────
 function MobileMemberRow({ 
   member, 
+  onEditMember,
   onEditRole, 
   onRemove, 
   removingId 
 }: { 
   member: Member;
+  onEditMember: (member: Member) => void;
   onEditRole: (member: Member) => void;
   onRemove: (member: Member) => void;
   removingId: string | null;
@@ -442,6 +762,13 @@ function MobileMemberRow({
 
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
+              onClick={() => onEditMember(member)}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#2f80ed]/20 bg-[#e7f1ff] text-xs font-bold text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] active:scale-[0.98]"
+            >
+              <Pencil size={14} />
+              Edit
+            </button>
+            <button
               onClick={() => onEditRole(member)}
               className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#2f80ed]/20 bg-[#e7f1ff] text-xs font-bold text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] active:scale-[0.98]"
             >
@@ -466,11 +793,13 @@ function MobileMemberRow({
 // ─── Desktop Table ──────────────────────────────────────────────────────────
 function MembersTable({ 
   members, 
+  onEditMember,
   onEditRole, 
   onRemove, 
   removingId 
 }: { 
   members: Member[];
+  onEditMember: (member: Member) => void;
   onEditRole: (member: Member) => void;
   onRemove: (member: Member) => void;
   removingId: string | null;
@@ -620,6 +949,13 @@ function MembersTable({
                   <td className="px-4 py-3.5">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
+                        onClick={() => onEditMember(member)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#2f80ed]/15 bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] sm:h-9 sm:w-9"
+                        title="Edit Member"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
                         onClick={() => onEditRole(member)}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#2f80ed]/15 bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] sm:h-9 sm:w-9"
                         title="Change Role"
@@ -657,8 +993,10 @@ function MembersTable({
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function MembersSection({ organizerId }: MembersSectionProps) {
   const [members, setMembers] = useState<Member[]>([]);
+  const [activeMess, setActiveMess] = useState<Mess | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editingMemberEdit, setEditingMemberEdit] = useState<Member | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<MembershipRole | 'ALL'>('ALL');
@@ -670,6 +1008,10 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
   useEffect(() => {
     loadMembers();
   }, [search]);
+
+  useEffect(() => {
+    loadActiveMess();
+  }, []);
 
   async function loadMembers() {
     try {
@@ -690,12 +1032,27 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
     }
   }
 
+  async function loadActiveMess() {
+    try {
+      const response = await apiClient.getMesses();
+      const messData = Array.isArray(response.data) ? response.data[0] : response.data;
+      setActiveMess((messData as ApiMess | undefined) ? {
+        id: messData.id,
+        name: messData.name,
+        rooms: messData.rooms ?? [],
+      } : null);
+    } catch {
+      setActiveMess(null);
+    }
+  }
+
   // Handle Add Member
-  async function handleAddMember(data: { email: string; role: MembershipRole; messId: string }) {
+  async function handleAddMember(data: { email: string; role: MembershipRole; messId: string; roomNo?: string }) {
     try {
       await apiClient.addMember(data.messId, {
         email: data.email,
         role: data.role,
+        roomNo: data.roomNo,
       });
       setShowAddModal(false);
       loadMembers(); // Refresh
@@ -717,6 +1074,37 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
     } catch (err) {
       const errorMsg = err instanceof ApiError ? err.message : 'Failed to update role';
       setError(errorMsg);
+    }
+  }
+
+  // Handle Full Edit Member
+  async function handleEditMember(memberId: string, data: EditMemberData) {
+    if (!activeMess?.id) return;
+
+    try {
+      await apiClient.updateMember(activeMess.id, memberId, {
+        role: data.role,
+        isActive: data.isActive,
+        roomNo: data.roomNo,
+        monthlyRent: data.monthlyRent,
+        depositAmount: data.depositAmount,
+      });
+
+      setMembers(prev =>
+        prev.map(m =>
+          m.user_id === memberId
+            ? {
+                ...m,
+                role: data.role || m.role,
+                is_active: data.isActive ?? m.is_active,
+                ...(data.roomNo ? { room_no: data.roomNo } : {}),
+              }
+            : m
+        )
+      );
+      setEditingMemberEdit(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update member');
     }
   }
 
@@ -791,6 +1179,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
 
         <button
           onClick={() => setShowAddModal(true)}
+          disabled={!activeMess}
           className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 py-3 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition-all hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] active:scale-[0.98] md:w-auto"
         >
           <Plus size={20} />
@@ -828,6 +1217,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
               <MobileMemberRow
                 key={member.id}
                 member={member}
+                onEditMember={setEditingMemberEdit}
                 onEditRole={setEditingMember}
                 onRemove={handleRemove}
                 removingId={removingId}
@@ -846,6 +1236,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
           <div className="hidden sm:block">
             <MembersTable
               members={filtered}
+              onEditMember={setEditingMemberEdit}
               onEditRole={setEditingMember}
               onRemove={handleRemove}
               removingId={removingId}
@@ -877,10 +1268,13 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
 
     {/* Modals */}
     {showAddModal && (
-      <AddMemberModal onClose={() => setShowAddModal(false)} onAdd={handleAddMember} />
+      <AddMemberModal activeMess={activeMess} members={members} onClose={() => setShowAddModal(false)} onAdd={handleAddMember} />
     )}
     {editingMember && (
       <EditRoleModal member={editingMember} onClose={() => setEditingMember(null)} onSave={handleEditRole} />
+    )}
+    {editingMemberEdit && (
+      <EditMemberModal member={editingMemberEdit} activeMess={activeMess} onClose={() => setEditingMemberEdit(null)} onSave={handleEditMember} />
     )}
   </div>
 )

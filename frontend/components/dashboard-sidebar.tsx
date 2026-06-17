@@ -51,7 +51,7 @@ const managerItems = [
   { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
   { label: 'Notices', href: '/dashboard/notices', icon: Bell },
   { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
-  { label: 'Settings', href: '/dashboard/mess_management', icon: Settings },
+  { label: 'Mess Management', href: '/dashboard/mess_management', icon: Settings },
 ]
 
 const adminItems = [

@@ -94,9 +94,9 @@ export default function MonthlyBillPage() {
           sortBy: 'generated_at',
           sortOrder: 'desc',
         }
-        const billRes = isManager
-          ? await apiClient.getBillsByMess(list[0].id, params).catch(() => null)
-          : await apiClient.getMyBills(params).catch(() => null)
+        const billRes = await apiClient
+          .getBillsByMess(list[0].id, params)
+          .catch(() => null)
 
         setBills(normalizeBills(billRes?.data))
       }
@@ -144,7 +144,7 @@ export default function MonthlyBillPage() {
   return (
     <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader
-        title={isManager ? 'Monthly Bills' : 'My Monthly Bill'}
+        title="Monthly Bills"
         description={
           activeMess
             ? `${activeMess.name} bill overview`
@@ -161,7 +161,7 @@ export default function MonthlyBillPage() {
             </div>
             <div>
               <h2 className="text-lg font-black text-[#172554]">
-                {isManager ? 'All Monthly Bills' : 'My Monthly Bills'}
+                All Monthly Bills
               </h2>
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
                 Showing bills for {formatMonth(`${selectedMonth}-01`)}

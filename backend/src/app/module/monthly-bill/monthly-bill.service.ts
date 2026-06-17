@@ -370,7 +370,7 @@ export class MonthlyBillService {
     const dueDate = new Date(month);
     dueDate.setDate(mess.payment_deadline_day ?? 10);
 
-    const billQueries = activeMembers.map(({ user_id, monthly_rent, room_no }) => {
+    const billWrites: Prisma.MonthlyBillUpsertArgs[] = activeMembers.map(({ user_id, monthly_rent, room_no }) => {
       const memberMeals = mealCountByUser[user_id] ?? 0;
 
       const foodBill = this.toFixedNumber(memberMeals * perMealRate);
@@ -418,7 +418,7 @@ export class MonthlyBillService {
         status: billStatus,
       };
 
-      return this.prisma.monthlyBill.upsert({
+      return {
         where: {
           mess_id_member_id_month: {
             mess_id: messId,
@@ -434,10 +434,25 @@ export class MonthlyBillService {
           ...billData,
         },
         select: this.billSelect,
-      });
+      };
     });
 
-    return this.prisma.$transaction(billQueries);
+    return this.prisma.$transaction(
+      async (tx) => {
+        type MonthlyBillResult = Awaited<ReturnType<typeof tx.monthlyBill.upsert>>;
+        const bills: MonthlyBillResult[] = [];
+
+        for (const billWrite of billWrites) {
+          bills.push(await tx.monthlyBill.upsert(billWrite));
+        }
+
+        return bills;
+      },
+      {
+        maxWait: 5_000,
+        timeout: 20_000,
+      },
+    );
   }
 
   async findAll(query: BillFilterDto) {

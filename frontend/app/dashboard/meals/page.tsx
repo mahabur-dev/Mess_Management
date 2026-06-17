@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AttendanceStatus, type MealName, type Mess } from '@/lib/api-client'
-import { CalendarDays, Lock, UserPlus, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, ChefHat, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { CalendarDays, Lock, UserPlus, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, ChefHat, CheckCircle2, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
@@ -104,6 +104,8 @@ export default function MealsPage() {
   const [todayMeals, setTodayMeals] = useState<MealEntry[]>([])
   const [sheetLoading, setSheetLoading] = useState(false)
   const [sheetError, setSheetError] = useState('')
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+  const [managerMealDrafts, setManagerMealDrafts] = useState<Record<string, Record<MealName, number>>>({})
   // Add state for user's personal meal data
   const [userMeals, setUserMeals] = useState<MealEntry[]>([])
   const [userMealsLoading, setUserMealsLoading] = useState(true)
@@ -112,8 +114,29 @@ export default function MealsPage() {
   
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
-  const canViewMemberMealSheet = user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const canViewMemberMealSheet = Boolean(user?.id)
   const mealControlsLocked = mealTimeClosed || userMealsLoading
+
+  function getManagerMealDraftValue(memberId: string, mealName: MealName, fallback: number) {
+    return managerMealDrafts[memberId]?.[mealName] ?? fallback
+  }
+
+  function startEditingMemberMeal(row: MemberMealRow) {
+    setEditingMemberId(row.id)
+    setManagerMealDrafts((current) => ({
+      ...current,
+      [row.id]: { ...row.meals },
+    }))
+  }
+
+  function cancelEditingMemberMeal(memberId: string) {
+    setEditingMemberId(null)
+    setManagerMealDrafts((current) => {
+      const next = { ...current }
+      delete next[memberId]
+      return next
+    })
+  }
 
   useEffect(() => {
     apiClient
@@ -193,13 +216,13 @@ export default function MealsPage() {
       setSheetError('')
       try {
         const [membersResponse, mealsResponse] = await Promise.all([
-          apiClient.getAllMembers({ limit: 100 }),
+          isManager ? apiClient.getAllMembers({ limit: 100 }).catch(() => null) : Promise.resolve(null),
           apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 }),
         ])
 
         if (!mounted) return
 
-        const apiMembers = (Array.isArray(membersResponse.data) ? membersResponse.data : [])
+        const apiMembers = (Array.isArray(membersResponse?.data) ? membersResponse.data : [])
           .filter((member) => member.is_active && member.mess_id === activeMess.id)
         const fallbackMembers = ((activeMess as Mess & { memberships?: ActiveMember[] }).memberships ?? [])
           .filter((member) => member.is_active)
@@ -219,7 +242,7 @@ export default function MealsPage() {
     return () => {
       mounted = false
     }
-  }, [activeMess, activeMess?.id, canViewMemberMealSheet, date])
+  }, [activeMess, activeMess?.id, canViewMemberMealSheet, date, isManager])
 
   // Helper function to get current user's meal status for a specific meal
   const getUserMealStatus = (mealName: MealName): AttendanceStatus => {
@@ -263,6 +286,26 @@ export default function MealsPage() {
     [memberMealRows],
   )
 
+  async function refreshMealsForDate() {
+    if (!activeMess?.id) return
+
+    const response = await apiClient.getMealsByMess(activeMess.id, {
+      startDate: date,
+      endDate: date,
+      limit: 10,
+    })
+    const meals = Array.isArray(response.data) ? response.data as MealEntry[] : []
+
+    setMealTimeClosed(meals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
+    setUserMeals(meals.filter((meal) =>
+      meal.attendances?.some((attendance) => attendance.member_id === user?.id),
+    ))
+
+    if (canViewMemberMealSheet) {
+      setTodayMeals(meals)
+    }
+  }
+
   async function setMeal(mealName: MealName, status: AttendanceStatus) {
     if (!activeMess) return
     if (mealTimeClosed) {
@@ -279,28 +322,49 @@ export default function MealsPage() {
         date,
       })
       setMessage(`${mealName.toLowerCase()} turned ${status.toLowerCase()} successfully.`)
-      
-      // Refresh user's meals after update
-      const response = await apiClient.getMealsByMess(activeMess.id, { 
-        startDate: date, 
-        endDate: date, 
-        limit: 10 
-      })
-      const meals = Array.isArray(response.data) ? response.data as MealEntry[] : []
-      setMealTimeClosed(meals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
-      const userSpecificMeals = meals.filter(meal => 
-        meal.attendances?.some(attendance => attendance.member_id === user?.id)
-      )
-      setUserMeals(userSpecificMeals)
-      
-      if (canViewMemberMealSheet) {
-        const mealsResponse = await apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 })
-        const managerMeals = Array.isArray(mealsResponse.data) ? (mealsResponse.data as MealEntry[]) : []
-        setTodayMeals(managerMeals)
-        setMealTimeClosed(managerMeals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
-      }
+      await refreshMealsForDate()
     } catch (error) {
       setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to update meal'}`)
+    }
+  }
+
+  async function saveMemberMealRow(row: MemberMealRow) {
+    if (!activeMess || !isManager) return
+
+    const drafts = managerMealDrafts[row.id] ?? row.meals
+    setEditingMemberId(row.id)
+    setMessage('')
+
+    try {
+      const changedMeals = mealNames.filter(
+        (mealName) => Math.max(0, Number(drafts[mealName] ?? 0)) !== row.meals[mealName],
+      )
+
+      if (!changedMeals.length) {
+        cancelEditingMemberMeal(row.id)
+        return
+      }
+
+      for (const mealName of changedMeals) {
+        const totalCount = Math.max(0, Number(drafts[mealName] ?? 0))
+
+        await apiClient.createMeal({
+          messId: activeMess.id,
+          memberId: row.id,
+          mealName,
+          status: totalCount > 0 ? 'ON' : 'OFF',
+          guests: totalCount > 0 ? totalCount - 1 : 0,
+          date,
+        })
+      }
+
+      setMessage(`${row.name} meals updated successfully.`)
+      cancelEditingMemberMeal(row.id)
+      await refreshMealsForDate()
+    } catch (error) {
+      setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to update member meal'}`)
+    } finally {
+      setEditingMemberId(null)
     }
   }
 
@@ -469,109 +533,173 @@ export default function MealsPage() {
           })}
         </div>
 
-        {/* Manager Meal Sheet */}
+        {/* Member Meal Sheet */}
         {canViewMemberMealSheet && (
           <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             {/* Header */}
-            <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] p-5">
+            <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Today Meal Sheet</p>
-                  <h3 className="mt-1 text-lg font-black text-[#172554]">All Member Meals</h3>
-                  <p className="mt-1 text-sm font-semibold text-[#6b7a99]">Breakfast, lunch and dinner count for {formatDate(date)}</p>
+                  <h3 className="mt-1 text-base font-black text-[#172554] sm:text-lg">All Member Meals</h3>
+                  <p className="mt-1 text-xs font-semibold text-[#6b7a99] sm:text-sm">Breakfast, lunch and dinner count for {formatDate(date)}</p>
                 </div>
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] sm:h-11 sm:w-11">
                   <Users size={21} />
                 </div>
               </div>
             </div>
 
-            <div className="p-5">
+            <div className="p-4 sm:p-5">
               {/* Total counters */}
-              <div className="mb-5 grid grid-cols-3 gap-3">
+              <div className="mb-4 grid grid-cols-3 gap-2 sm:mb-5 sm:gap-3">
                 {mealNames.map((mealName) => (
-                  <div key={mealName} className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] px-3 py-3 text-center shadow-sm">
-                    <p className="flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                  <div key={mealName} className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] px-2 py-3 text-center shadow-sm sm:px-3">
+                    <p className="flex items-center justify-center gap-1 text-[9px] font-black uppercase tracking-wide text-[#6b7a99] sm:gap-1.5 sm:text-[10px]">
                       <span className="text-[#2f80ed]">{MEAL_ICONS[mealName]}</span>
-                      {mealLabels[mealName]}
+                      <span className="hidden sm:inline">{mealLabels[mealName]}</span>
+                      <span className="sm:hidden">{mealLabels[mealName].slice(0, 1)}</span>
                     </p>
-                    <p className="mt-1.5 text-2xl font-black text-[#172554]">{mealTotals[mealName]}</p>
+                    <p className="mt-1.5 text-xl font-black text-[#172554] sm:text-2xl">{mealTotals[mealName]}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Meal Sheet Table - Desktop */}
-              <div className="hidden sm:block overflow-hidden rounded-xl border border-[#e6ebf4]">
-                <table className="w-full">
+              {/* Meal Sheet Table */}
+              <div className="overflow-x-auto rounded-xl border border-[#e6ebf4] shadow-[inset_12px_0_18px_-18px_rgba(23,37,84,0.45),inset_-12px_0_18px_-18px_rgba(23,37,84,0.45)]">
+                <table className={`w-full border-separate border-spacing-0 ${isManager ? 'min-w-[640px] sm:min-w-[760px]' : 'min-w-[520px] sm:min-w-[620px]'}`}>
                   <thead>
                     <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                      <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Member</th>
+                      <th className="sticky left-0 z-20 w-[138px] whitespace-nowrap border-b border-[#e6ebf4] bg-[#f8faff] px-3 py-3 text-left text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:static sm:w-auto sm:px-4 sm:py-4 sm:text-[11px]">Member</th>
                       {mealNames.map((mealName) => (
-                        <th key={mealName} className="whitespace-nowrap px-4 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">
-                          <span className="inline-flex items-center gap-1">
+                        <th key={mealName} className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">
+                          <span className="inline-flex items-center gap-1 sm:gap-1.5">
                             <span className="text-[#2f80ed]">{MEAL_ICONS[mealName]}</span>
-                            {mealLabels[mealName]}
+                            <span className="hidden sm:inline">{mealLabels[mealName]}</span>
+                            <span className="sm:hidden">{mealLabels[mealName].slice(0, 1)}</span>
                           </span>
                         </th>
                       ))}
-                      <th className="whitespace-nowrap px-4 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Total</th>
+                      <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Total</th>
+                      {isManager && (
+                        <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-right text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Action</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e6ebf4]">
                     {sheetLoading ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-[#6b7a99]">
+                        <td colSpan={isManager ? 6 : 5} className="px-4 py-8 text-center text-sm font-bold text-[#6b7a99]">
                           Loading member meals...
                         </td>
                       </tr>
                     ) : sheetError ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-red-500">
+                        <td colSpan={isManager ? 6 : 5} className="px-4 py-8 text-center text-sm font-bold text-red-500">
                           {sheetError}
                         </td>
                       </tr>
                     ) : memberMealRows.length ? (
                       memberMealRows.map((row) => {
+                        const isEditingRow = isManager && editingMemberId === row.id
                         const total = mealNames.reduce((sum, n) => sum + row.meals[n], 0)
+                        const draftTotal = mealNames.reduce(
+                          (sum, mealName) => sum + getManagerMealDraftValue(row.id, mealName, row.meals[mealName]),
+                          0,
+                        )
                         const bgColor = avatarColor(row.name)
                         
                         return (
                           <tr key={row.id} className="transition hover:bg-[#f8faff]">
-                            <td className="px-4 py-3.5">
-                              <div className="flex items-center gap-3">
+                            <td className="sticky left-0 z-10 border-b border-[#e6ebf4] bg-white px-3 py-3 sm:static sm:border-b-0 sm:px-4 sm:py-3.5">
+                              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                 <div
-                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-black"
+                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-black sm:text-xs"
                                   style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}
                                 >
                                   {getInitials(row.name)}
                                 </div>
-                                <span className="truncate text-sm font-bold text-[#172554]">{row.name}</span>
+                                <span className="min-w-0 max-w-[96px] truncate text-xs font-bold text-[#172554] sm:max-w-none sm:text-sm">{row.name}</span>
                               </div>
                             </td>
                             {mealNames.map((mealName) => (
-                              <td key={mealName} className="px-4 py-3.5 text-center">
-                                <span
-                                  className={`inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-black ${
-                                    row.meals[mealName] > 0
-                                      ? 'bg-[#e7f1ff] text-[#2f80ed]'
-                                      : 'bg-[#f1f3f5] text-[#adb5bd]'
-                                  }`}
-                                >
-                                  {row.meals[mealName]}
-                                </span>
+                              <td key={mealName} className="border-b border-[#e6ebf4] px-3 py-3 text-center sm:border-b-0 sm:px-4 sm:py-3.5">
+                                {isEditingRow ? (
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={20}
+                                    value={getManagerMealDraftValue(row.id, mealName, row.meals[mealName])}
+                                    onChange={(event) =>
+                                      setManagerMealDrafts((current) => ({
+                                        ...current,
+                                        [row.id]: {
+                                          ...(current[row.id] ?? row.meals),
+                                          [mealName]: Number(event.target.value),
+                                        },
+                                      }))
+                                    }
+                                    className="h-9 w-14 rounded-lg border border-[#d8e6f8] bg-white px-2 text-center text-sm font-black text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-2 focus:ring-[#2f80ed]/10 sm:w-20"
+                                  />
+                                ) : (
+                                  <span
+                                    className={`inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-black ${
+                                      row.meals[mealName] > 0
+                                        ? 'bg-[#e7f1ff] text-[#2f80ed]'
+                                        : 'bg-[#f1f3f5] text-[#adb5bd]'
+                                    }`}
+                                  >
+                                    {row.meals[mealName]}
+                                  </span>
+                                )}
                               </td>
                             ))}
-                            <td className="px-4 py-3.5 text-center">
+                            <td className="border-b border-[#e6ebf4] px-3 py-3 text-center sm:border-b-0 sm:px-4 sm:py-3.5">
                               <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed]/10 to-[#58d68d]/10 px-2 text-sm font-black text-[#172554]">
-                                {total}
+                                {isEditingRow ? draftTotal : total}
                               </span>
                             </td>
+                            {isManager && (
+                              <td className="border-b border-[#e6ebf4] px-3 py-3 text-right sm:border-b-0 sm:px-4 sm:py-3.5">
+                                {isEditingRow ? (
+                                  <div className="flex justify-end gap-1.5 sm:gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={() => saveMemberMealRow(row)}
+                                      className="h-8 rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-2.5 text-[11px] font-black text-white sm:px-3"
+                                    >
+                                      Save
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => cancelEditingMemberMeal(row.id)}
+                                      className="h-8 rounded-lg border-[#d8e6f8] px-2.5 text-[11px] font-black text-[#6b7a99] sm:px-3"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                  size="sm"
+                                  onClick={() => startEditingMemberMeal(row)}
+                                  className="h-8 rounded-lg border-[#2f80ed]/30 bg-[#e7f1ff] px-3 text-[11px] font-black text-[#2f80ed]"
+                                >
+                                  Edit
+                                </Button>
+                                )}
+                              </td>
+                            )}
                           </tr>
                         )
                       })
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-[#6b7a99]">
+                        <td colSpan={isManager ? 6 : 5} className="px-4 py-8 text-center text-sm font-bold text-[#6b7a99]">
                           No member meal found for this date.
                         </td>
                       </tr>
@@ -581,95 +709,30 @@ export default function MealsPage() {
                   {memberMealRows.length > 0 && (
                     <tfoot>
                       <tr className="border-t-2 border-[#d8e6f8] bg-[#f8faff]">
-                        <td className="px-4 py-3.5">
-                          <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-[#6b7a99]">
+                        <td className="sticky left-0 z-10 bg-[#f8faff] px-3 py-3 sm:static sm:px-4 sm:py-3.5">
+                          <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99] sm:gap-2 sm:text-xs">
                             <Users size={14} />
-                            {memberMealRows.length} Members
+                            <span>{memberMealRows.length}</span>
+                            <span className="hidden sm:inline">Members</span>
                           </span>
                         </td>
                         {mealNames.map((mealName) => (
-                          <td key={mealName} className="px-4 py-3.5 text-center">
+                          <td key={mealName} className="px-3 py-3 text-center sm:px-4 sm:py-3.5">
                             <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#2f80ed] px-2 text-sm font-black text-white shadow-sm">
                               {mealTotals[mealName]}
                             </span>
                           </td>
                         ))}
-                        <td className="px-4 py-3.5 text-center">
+                        <td className="px-3 py-3 text-center sm:px-4 sm:py-3.5">
                           <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#58d68d] px-2 text-sm font-black text-white shadow-sm">
                             {mealNames.reduce((s, n) => s + mealTotals[n], 0)}
                           </span>
                         </td>
+                        {isManager && <td className="px-3 py-3 sm:px-4 sm:py-3.5" />}
                       </tr>
                     </tfoot>
                   )}
                 </table>
-              </div>
-
-              {/* Meal Sheet - Mobile Cards */}
-              <div className="space-y-3 sm:hidden">
-                {sheetLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 size={24} className="animate-spin text-[#2f80ed]" />
-                  </div>
-                ) : sheetError ? (
-                  <div className="rounded-xl border border-red-200/60 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-                    {sheetError}
-                  </div>
-                ) : memberMealRows.length ? (
-                  memberMealRows.map((row) => {
-                    const total = mealNames.reduce((sum, n) => sum + row.meals[n], 0)
-                    const bgColor = avatarColor(row.name)
-                    
-                    return (
-                      <div key={row.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black"
-                            style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}
-                          >
-                            {getInitials(row.name)}
-                          </div>
-                          <span className="text-sm font-bold text-[#172554]">{row.name}</span>
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                          {mealNames.map((mealName) => (
-                            <div key={mealName} className="text-center rounded-lg bg-[#f8faff] p-2">
-                              <p className="text-[9px] font-black uppercase text-[#6b7a99]">{mealLabels[mealName].slice(0, 4)}</p>
-                              <p className={`mt-1 text-sm font-black ${
-                                row.meals[mealName] > 0 ? 'text-[#2f80ed]' : 'text-[#adb5bd]'
-                              }`}>{row.meals[mealName]}</p>
-                            </div>
-                          ))}
-                          <div className="text-center rounded-lg bg-gradient-to-br from-[#2f80ed]/5 to-[#58d68d]/5 p-2">
-                            <p className="text-[9px] font-black uppercase text-[#6b7a99]">Total</p>
-                            <p className="mt-1 text-sm font-black text-[#172554]">{total}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="rounded-xl border border-[#e6ebf4] bg-white px-4 py-8 text-center text-sm font-bold text-[#6b7a99]">
-                    No member meal found for this date.
-                  </div>
-                )}
-                {/* Mobile Summary */}
-                {memberMealRows.length > 0 && (
-                  <div className="rounded-xl border border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] to-white px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-xs font-bold text-[#6b7a99]">
-                        <Users size={13} />
-                        {memberMealRows.length} Members
-                      </span>
-                      <div className="flex items-center gap-3 text-xs font-bold">
-                        {mealNames.map((mealName) => (
-                          <span key={mealName} className="text-[#2f80ed]">{mealLabels[mealName]}: {mealTotals[mealName]}</span>
-                        ))}
-                        <span className="text-[#172554]">Total: {mealNames.reduce((s, n) => s + mealTotals[n], 0)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>

@@ -34,18 +34,12 @@
 import nodemailer from 'nodemailer';
 import config from '../config';
 
-// ✅ Safe log — never expose pass/user in logs
-console.log('Email configuration:', {
-  host: config.email.host,
-  port: config.email.port,
-});
-
 const sendMailer = async (email: string, subject?: string, html?: string) => {
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',   // ✅ hardcoded to avoid any config issues
-    port: 465,                // ✅ 465 works on Railway (587 is often blocked)
-    secure: true,             // ✅ must be true for port 465
-    family: 4,                // ✅ force IPv4 to avoid ENETUNREACH
+    host: 'smtp.gmail.com',   
+    port: 465,                
+    secure: true,             
+    family: 4,                
     auth: {
       user: config.email.address,
       pass: config.email.pass,
@@ -58,8 +52,6 @@ const sendMailer = async (email: string, subject?: string, html?: string) => {
     subject,
     html,
   });
-
-  console.log('Message sent:', info.messageId);
 };
 
 export default sendMailer;

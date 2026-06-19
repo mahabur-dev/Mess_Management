@@ -2,10 +2,9 @@
 
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AttendanceStatus, type MealName, type Mess } from '@/lib/api-client'
-import { CalendarDays, Lock, UserPlus, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, ChefHat, CheckCircle2, XCircle } from 'lucide-react'
+import { CalendarDays, Clock, UserPlus, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, CheckCircle2, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
@@ -62,6 +61,14 @@ type MemberMealRow = {
   meals: Record<MealName, number>
 }
 
+type DeadlineInfo = {
+  startTime: string
+  endTime: string
+  isWindowOpen: boolean
+  windowStartTime: string
+  windowEndTime: string
+}
+
 function getMealCount(attendance?: MealAttendance) {
   if (!attendance || attendance.status !== 'ON') return 0
   return 1 + Number(attendance.guests ?? 0)
@@ -94,6 +101,16 @@ const formatDate = (iso: string) => {
   })
 }
 
+/**
+ * Format a time string like "22:00" to a readable format like "10:00 PM"
+ */
+const formatTimeReadable = (time: string) => {
+  const [h, m] = time.split(':').map(Number)
+  const period = h >= 12 ? 'PM' : 'AM'
+  const hour = h % 12 || 12
+  return `${hour}:${m.toString().padStart(2, '0')} ${period}`
+}
+
 export default function MealsPage() {
   const { user } = useAuth()
   const [messes, setMesses] = useState<Mess[]>([])
@@ -106,16 +123,20 @@ export default function MealsPage() {
   const [sheetError, setSheetError] = useState('')
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [managerMealDrafts, setManagerMealDrafts] = useState<Record<string, Record<MealName, number>>>({})
-  // Add state for user's personal meal data
   const [userMeals, setUserMeals] = useState<MealEntry[]>([])
   const [userMealsLoading, setUserMealsLoading] = useState(true)
-  const [mealTimeClosed, setMealTimeClosed] = useState(false)
-  const [closingMealTime, setClosingMealTime] = useState(false)
+  const [deadlineInfo, setDeadlineInfo] = useState<DeadlineInfo | null>(null)
+  const [deadlineLoading, setDeadlineLoading] = useState(false)
+  const [settingDeadline, setSettingDeadline] = useState(false)
+  const [showDeadlineSettings, setShowDeadlineSettings] = useState(false)
+  const [deadlineStartTime, setDeadlineStartTime] = useState('22:00')
+  const [deadlineEndTime, setDeadlineEndTime] = useState('11:00')
   
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
   const canViewMemberMealSheet = Boolean(user?.id)
-  const mealControlsLocked = mealTimeClosed || userMealsLoading
+  const isWindowOpen = deadlineInfo?.isWindowOpen ?? false
+  const mealControlsLocked = !isWindowOpen || userMealsLoading
 
   function getManagerMealDraftValue(memberId: string, mealName: MealName, fallback: number) {
     return managerMealDrafts[memberId]?.[mealName] ?? fallback
@@ -145,21 +166,57 @@ export default function MealsPage() {
       .catch(() => setMesses(((user?.memberships?.map((item) => item.mess).filter(Boolean) ?? []) as Mess[])))
   }, [user?.role])
 
-  // Add effect to fetch user's personal meals when date or activeMess changes
+  // Fetch deadline info when mess or date changes
+  useEffect(() => {
+    let mounted = true
+
+    async function loadDeadlineInfo() {
+      if (!activeMess?.id) {
+        setDeadlineInfo(null)
+        return
+      }
+
+      setDeadlineLoading(true)
+      try {
+        const response = await apiClient.getMealDeadlineInfo(activeMess.id, date)
+        if (!mounted) return
+
+        const info = response.data
+        setDeadlineInfo(info)
+        setDeadlineStartTime(info.startTime)
+        setDeadlineEndTime(info.endTime)
+      } catch (error) {
+        if (!mounted) return
+        console.error('Failed to load deadline info:', error)
+        // Default values if API not available
+        setDeadlineInfo({
+          startTime: '22:00',
+          endTime: '11:00',
+          isWindowOpen: true,
+          windowStartTime: '22:00',
+          windowEndTime: '11:00',
+        })
+      } finally {
+        if (mounted) setDeadlineLoading(false)
+      }
+    }
+
+    loadDeadlineInfo()
+    return () => { mounted = false }
+  }, [activeMess?.id, date])
+
   useEffect(() => {
     let mounted = true
 
     async function loadUserMeals() {
       if (!activeMess?.id || !user?.id) {
         setUserMeals([])
-        setMealTimeClosed(false)
         setUserMealsLoading(false)
         return
       }
 
       setUserMealsLoading(true)
       try {
-        // Fetch meals for the specific date and current user's mess
         const response = await apiClient.getMealsByMess(activeMess.id, { 
           startDate: date, 
           endDate: date, 
@@ -169,16 +226,13 @@ export default function MealsPage() {
         if (!mounted) return
         
         const meals = Array.isArray(response.data) ? response.data as MealEntry[] : []
-        setMealTimeClosed(meals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
         
-        // Filter meals to only include those where current user has attendance
         const userSpecificMeals = meals.filter(meal => 
           meal.attendances?.some(attendance => attendance.member_id === user.id)
         )
         
         setUserMeals(userSpecificMeals)
         
-        // Update guests state based on existing meal data
         const updatedGuests = { BREAKFAST: 0, LUNCH: 0, DINNER: 0 }
         userSpecificMeals.forEach(meal => {
           const attendance = meal.attendances?.find(a => a.member_id === user.id)
@@ -229,7 +283,6 @@ export default function MealsPage() {
         setMembers(apiMembers.length ? apiMembers : fallbackMembers)
         const meals = Array.isArray(mealsResponse.data) ? (mealsResponse.data as MealEntry[]) : []
         setTodayMeals(meals)
-        setMealTimeClosed(meals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
       } catch (error) {
         if (!mounted) return
         setSheetError(error instanceof Error ? error.message : 'Failed to load member meals')
@@ -296,7 +349,6 @@ export default function MealsPage() {
     })
     const meals = Array.isArray(response.data) ? response.data as MealEntry[] : []
 
-    setMealTimeClosed(meals.some((meal) => meal.is_locked || meal.status === 'LOCKED'))
     setUserMeals(meals.filter((meal) =>
       meal.attendances?.some((attendance) => attendance.member_id === user?.id),
     ))
@@ -308,8 +360,8 @@ export default function MealsPage() {
 
   async function setMeal(mealName: MealName, status: AttendanceStatus) {
     if (!activeMess) return
-    if (mealTimeClosed) {
-      setMessage('Meal time is closed. Please contact your manager.')
+    if (!isWindowOpen && !isManager) {
+      setMessage('Meal window is closed. The deadline has passed. Only managers can modify meals now.')
       return
     }
     setMessage('')
@@ -368,28 +420,23 @@ export default function MealsPage() {
     }
   }
 
-  async function closeMealTime() {
+  async function saveDeadlineSettings() {
     if (!activeMess || !isManager) return
-    setClosingMealTime(true)
+    setSettingDeadline(true)
     setMessage('')
 
     try {
-      await apiClient.closeMealTime(activeMess.id, date)
-      setMealTimeClosed(true)
-      setMessage(`Meal time closed for ${date}. Members cannot add or update their own meals now.`)
+      const response = await apiClient.setMealDeadline(activeMess.id, deadlineStartTime, deadlineEndTime, date)
+      setMessage(`Meal deadline updated: ${formatTimeReadable(deadlineStartTime)} - ${formatTimeReadable(deadlineEndTime)} (next day)`)
 
-      const mealsResponse = await apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 })
-      const meals = Array.isArray(mealsResponse.data) ? (mealsResponse.data as MealEntry[]) : []
-      setTodayMeals(meals)
-
-      const userSpecificMeals = meals.filter((meal) =>
-        meal.attendances?.some((attendance) => attendance.member_id === user?.id),
-      )
-      setUserMeals(userSpecificMeals)
+      // Refresh deadline info
+      const infoResponse = await apiClient.getMealDeadlineInfo(activeMess.id, date)
+      setDeadlineInfo(infoResponse.data)
+      setShowDeadlineSettings(false)
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to close meal time'}`)
+      setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to update deadline'}`)
     } finally {
-      setClosingMealTime(false)
+      setSettingDeadline(false)
     }
   }
 
@@ -415,21 +462,28 @@ export default function MealsPage() {
             <div>
               <h2 className="text-lg font-black text-[#172554]">{activeMess?.name ?? 'No mess selected'}</h2>
               <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
-                <ChefHat size={13} className="text-[#ffb84d]" />
-                Meal off deadline: {activeMess?.meal_off_deadline ?? 'Before 10 PM previous night'}
+                <Clock size={13} className="text-[#ffb84d]" />
+                {deadlineLoading ? (
+                  'Loading deadline info...'
+                ) : deadlineInfo ? (
+                  <>Meal window: {formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)} (next day)</>
+                ) : (
+                  'Meal deadline system active'
+                )}
               </p>
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {isManager && (
-              <Button
-                disabled={!activeMess || mealTimeClosed || closingMealTime}
-                onClick={closeMealTime}
-                className="h-[45px] rounded-xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-amber-100/70 px-5 font-black text-amber-700 shadow-sm transition hover:from-amber-100 hover:to-amber-200 hover:shadow-md disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-              >
-                <Lock size={16} className="mr-2" />
-                {mealTimeClosed ? 'Meal Time Closed' : closingMealTime ? 'Closing...' : 'Close Meal Time'}
-              </Button>
+              <>
+                <Button
+                  onClick={() => setShowDeadlineSettings(!showDeadlineSettings)}
+                  className="h-[45px] rounded-xl border border-blue-200/50 bg-gradient-to-r from-blue-50 to-blue-100/70 px-5 font-black text-blue-700 shadow-sm transition hover:from-blue-100 hover:to-blue-200 hover:shadow-md"
+                >
+                  <Clock size={16} className="mr-2" />
+                  {showDeadlineSettings ? 'Hide Settings' : 'Set Meal Deadline'}
+                </Button>
+              </>
             )}
 
             <label className="flex h-[45px] items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb]">
@@ -439,9 +493,60 @@ export default function MealsPage() {
           </div>
         </div>
 
-        {mealTimeClosed && (
-          <div className="mb-6 rounded-xl border border-amber-200/60 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700 shadow-sm">
-            ⏰ Meal time is closed for {formatDate(date)}. Members cannot add or update their own meals for this date.
+        {/* Deadline Settings Panel (Manager only) */}
+        {isManager && showDeadlineSettings && (
+          <div className="mb-6 rounded-xl border border-blue-200/60 bg-blue-50 px-5 py-4 shadow-sm">
+            <h3 className="mb-3 text-sm font-black text-[#172554]">Set Meal Deadline Window</h3>
+            <p className="mb-4 text-xs font-semibold text-[#6b7a99]">
+              Members can only add/update their meals during this window. After the deadline, only managers can modify meals.
+              Default: 10:00 PM → 11:00 AM (next day)
+            </p>
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex-1 min-w-[180px]">
+                <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                  Window Opens (start time)
+                </label>
+                <input
+                  type="time"
+                  value={deadlineStartTime}
+                  onChange={(e) => setDeadlineStartTime(e.target.value)}
+                  className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                />
+              </div>
+              <div className="flex-1 min-w-[180px]">
+                <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+                  Window Closes (end time - next day)
+                </label>
+                <input
+                  type="time"
+                  value={deadlineEndTime}
+                  onChange={(e) => setDeadlineEndTime(e.target.value)}
+                  className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                />
+              </div>
+              <Button
+                onClick={saveDeadlineSettings}
+                disabled={settingDeadline}
+                className="h-[42px] rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-sm hover:shadow-md disabled:opacity-60"
+              >
+                {settingDeadline ? 'Saving...' : 'Save Deadline'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Window Status Banner */}
+        {!deadlineLoading && deadlineInfo && (
+          <div className={`mb-6 rounded-xl border px-4 py-3 text-sm font-bold shadow-sm ${
+            isWindowOpen
+              ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700'
+              : 'border-amber-200/60 bg-amber-50 text-amber-700'
+          }`}>
+            {isWindowOpen ? (
+              <>✅ Meal window is OPEN ({formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)}). You can add/update your meals.</>
+            ) : (
+              <>⏰ Meal window is CLOSED (deadline: {formatTimeReadable(deadlineInfo.endTime)}). Only managers can modify meals now. Next window opens at {formatTimeReadable(deadlineInfo.startTime)}.</>
+            )}
           </div>
         )}
 
@@ -747,7 +852,10 @@ export default function MealsPage() {
               </div>
               <div>
                 <h3 className="text-sm font-black text-[#172554]">Manager Controls</h3>
-                <p className="text-xs font-semibold text-[#6b7a99]">Managers can edit member meals and lock meal sheets from backend meal APIs.</p>
+                <p className="text-xs font-semibold text-[#6b7a99]">
+                  Managers can always edit member meals regardless of deadline.
+                  Use the "Set Meal Deadline" button above to configure the meal window.
+                </p>
               </div>
             </div>
           </div>

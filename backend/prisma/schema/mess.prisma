@@ -26,6 +26,8 @@ model Mess {
   bazar_rules String? @db.Text
   payment_deadline_day Int @default(10)
   meal_off_deadline String? @default("22:00") @db.VarChar(5)
+  meal_deadline_start String @default("22:00") @db.VarChar(5)
+  meal_deadline_end String @default("11:00") @db.VarChar(5)
   settings_completed Boolean @default(false)
   approved_at DateTime? @db.Timestamptz
   created_at  DateTime @default(now()) @db.Timestamptz

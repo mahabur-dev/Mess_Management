@@ -89,10 +89,21 @@ export class UpdateMealDto {
   guests?: number;
 }
 
-export class CloseMealTimeDto {
-  @ApiProperty({ example: '2026-06-15' })
+export class SetMealDeadlineDto {
+  @ApiProperty({ example: '22:00', description: 'Deadline start time (HH:mm) - meal time window starts' })
+  @IsString()
+  @IsNotEmpty()
+  startTime: string;
+
+  @ApiProperty({ example: '11:00', description: 'Deadline end time (HH:mm) - meal time window ends, members can no longer add/update' })
+  @IsString()
+  @IsNotEmpty()
+  endTime: string;
+
+  @ApiProperty({ example: '2026-06-15', description: 'Date to apply this deadline (optional, if not provided uses current date)' })
+  @IsOptional()
   @IsDateString()
-  date: string;
+  date?: string;
 }
 
 export class MealFilterDto {

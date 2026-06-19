@@ -1,6 +1,7 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import {
-  CloseMealTimeDto,
+  SetMealDeadlineDto,
   CreateMealDto,
   MealFilterDto,
   UpdateMealDto,
@@ -10,13 +11,198 @@ import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
+import { NotificationService } from '../notification/notification.service';
+
+// ─── Constants ──────────────────────────────────────────────
+const DEFAULT_DEADLINE_START = '22:00'; // 10 PM - meal window opens
+const DEFAULT_DEADLINE_END = '11:00';   // 11 AM next day - meal window closes
+
+/**
+ * Parse "HH:mm" string into total minutes since midnight.
+ */
+function parseTimeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) throw new Error(`Invalid time format: ${time}`);
+  return h * 60 + m;
+}
+
+/**
+ * Check if NOW is within the meal deadline window for a given date.
+ * The window spans from startTime on the previous day to endTime on the target date.
+ *
+ * Example: start=22:00, end=11:00, date=tomorrow
+ *   - Window opens: today at 22:00
+ *   - Window closes: tomorrow at 11:00 (the `date`)
+ */
+function isWithinMealWindow(
+  targetDate: Date,
+  startTime: string,
+  endTime: string,
+  now: Date = new Date(),
+): boolean {
+  const startMinutes = parseTimeToMinutes(startTime);
+  const endMinutes = parseTimeToMinutes(endTime);
+
+  // Build window start: day before target date + startTime
+  const windowStart = new Date(targetDate);
+  windowStart.setDate(windowStart.getDate() - 1);
+  windowStart.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
+
+  // Build window end: target date + endTime
+  const windowEnd = new Date(targetDate);
+  windowEnd.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
+
+  // Handle the case where endTime is <= startTime (e.g. end=11:00, start=22:00)
+  // This means the window crosses midnight
+  if (endMinutes <= startMinutes) {
+    // Window is: targetDate-1 startTime -> targetDate endTime
+    // Already correct above
+  }
+
+  return now >= windowStart && now <= windowEnd;
+}
 
 @Injectable()
 export class MealService {
+  private readonly logger = new Logger(MealService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly monthlyBillService: MonthlyBillService,
-  ) { }
+    private readonly notificationService: NotificationService,
+  ) {}
+
+  // ─── Cron / Scheduled Tasks ────────────────────────────────
+
+  /**
+   * Every minute check if any deadline window is about to close in 15 minutes,
+   * and send push notifications.
+   */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkUpcomingDeadlines() {
+    const now = new Date();
+
+    // Find all active messes with their deadline config
+    const messes = await this.prisma.mess.findMany({
+      where: { is_active: true },
+      select: {
+        id: true,
+        name: true,
+        meal_deadline_start: true,
+        meal_deadline_end: true,
+      },
+    });
+
+    for (const mess of messes) {
+      const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
+      const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
+
+      // Get today and tomorrow dates
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Check if the deadline is ending soon for today (if endTime applies to today)
+      // or for tomorrow (if endTime applies to tomorrow)
+      const todayEnd = new Date(today);
+      todayEnd.setHours(
+        Math.floor(parseTimeToMinutes(endTime) / 60),
+        parseTimeToMinutes(endTime) % 60,
+        0, 0,
+      );
+
+      const tomorrowEnd = new Date(tomorrow);
+      tomorrowEnd.setHours(
+        Math.floor(parseTimeToMinutes(endTime) / 60),
+        parseTimeToMinutes(endTime) % 60,
+        0, 0,
+      );
+
+      // Check 15 min warning for today's deadline
+      if (Math.abs(now.getTime() - todayEnd.getTime() - 15 * 60 * 1000) < 60000) {
+        await this.sendDeadlineWarningNotification(mess.id, mess.name, today, endTime);
+      }
+
+      // Check 15 min warning for tomorrow's deadline (if end is in morning)
+      if (Math.abs(now.getTime() - tomorrowEnd.getTime() - 15 * 60 * 1000) < 60000) {
+        await this.sendDeadlineWarningNotification(mess.id, mess.name, tomorrow, endTime);
+      }
+
+      // Check if the meal window just opened (now is within 1 minute of window start)
+      const windowStartToday = new Date(today);
+      windowStartToday.setDate(windowStartToday.getDate() - 1);
+      windowStartToday.setHours(
+        Math.floor(parseTimeToMinutes(startTime) / 60),
+        parseTimeToMinutes(startTime) % 60,
+        0, 0,
+      );
+
+      if (Math.abs(now.getTime() - windowStartToday.getTime()) < 60000) {
+        await this.sendMealWindowOpenedNotification(mess.id, mess.name, today, startTime, endTime);
+      }
+    }
+  }
+
+  private async sendDeadlineWarningNotification(
+    messId: string,
+    messName: string,
+    date: Date,
+    endTime: string,
+  ) {
+    try {
+      const dateStr = date.toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+      });
+
+      await this.notificationService.createForMess(
+        null,
+        messId,
+        'MEAL_UPDATE',
+        `⏰ Meal deadline closing soon - ${messName}`,
+        `Meal time will close at ${endTime} for ${dateStr}. Please add/update your meals now!`,
+        { type: 'MEAL_DEADLINE_WARNING', date: date.toISOString(), endTime },
+        undefined,
+        '/dashboard/meals',
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send deadline warning for mess ${messId}:`, error);
+    }
+  }
+
+  private async sendMealWindowOpenedNotification(
+    messId: string,
+    messName: string,
+    date: Date,
+    startTime: string,
+    endTime: string,
+  ) {
+    try {
+      const dateStr = date.toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+      });
+
+      await this.notificationService.createForMess(
+        null,
+        messId,
+        'MEAL_UPDATE',
+        `🍽️ Meal time is now open - ${messName}`,
+        `You can now add your meals for ${dateStr}. Deadline: ${endTime}.`,
+        {
+          type: 'MEAL_WINDOW_OPENED',
+          date: date.toISOString(),
+          startTime,
+          endTime,
+        },
+        undefined,
+        '/dashboard/meals',
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send meal window notification for mess ${messId}:`, error);
+    }
+  }
+
+  // ─── Private Helpers ───────────────────────────────────────
 
   private async recalculateMealMonthBill(messId: string, date: Date) {
     await this.monthlyBillService.recalculateMonthlyBills(messId, date);
@@ -44,33 +230,11 @@ export class MealService {
     }
   }
 
-  private async verifyMealManagerAccess(
-    messId: string,
-    userId: string,
-    role: string,
-  ): Promise<void> {
-    if (role === 'ADMIN' || role === 'ORGANIZER') return;
-
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    if (!mess) throw new HttpException('Mess not found', 404);
-    if (role === 'MANAGER' && mess.created_by === userId) return;
-
-    const membership = await this.prisma.messMembership.findUnique({
-      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
-    });
-
-    if (membership?.is_active && membership.role === MembershipRole.MANAGER) {
-      return;
-    }
-
-    throw new HttpException('Forbidden: Only managers can close meal time', 403);
-  }
-
   private async canManageMeal(
     messId: string,
     userId: string,
     role: string,
-  ) {
+  ): Promise<boolean> {
     if (role === 'ADMIN' || role === 'ORGANIZER') return true;
 
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
@@ -81,14 +245,89 @@ export class MealService {
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
 
-    return membership?.is_active && membership.role === MembershipRole.MANAGER;
+    return Boolean(membership?.is_active && membership.role === MembershipRole.MANAGER);
   }
+
+  /**
+   * Check if the current time is within the meal deadline window for the given date.
+   * If the user is a manager/admin, they bypass this check.
+   */
+  private async checkMealDeadline(
+    messId: string,
+    date: Date,
+    userId: string,
+    role: string,
+  ): Promise<void> {
+    // Admins and organizers can always bypass deadline
+    if (role === 'ADMIN' || role === 'ORGANIZER') return;
+
+    const isManager = await this.canManageMeal(messId, userId, role);
+    if (isManager) return; // Managers bypass deadline check
+
+    const mess = await this.prisma.mess.findUnique({
+      where: { id: messId },
+      select: { meal_deadline_start: true, meal_deadline_end: true },
+    });
+    if (!mess) throw new HttpException('Mess not found', 404);
+
+    const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
+    const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
+
+    if (!isWithinMealWindow(date, startTime, endTime)) {
+      throw new HttpException(
+        `Meal deadline has passed. Meal window is ${startTime} - ${endTime} (next day). Only managers can modify meals now.`,
+        400,
+      );
+    }
+  }
+
+  /**
+   * Get the effective deadline times for a mess.
+   */
+  async getMessDeadlineConfig(messId: string) {
+    const mess = await this.prisma.mess.findUnique({
+      where: { id: messId },
+      select: {
+        meal_deadline_start: true,
+        meal_deadline_end: true,
+      },
+    });
+    if (!mess) throw new HttpException('Mess not found', 404);
+
+    return {
+      startTime: mess.meal_deadline_start ?? DEFAULT_DEADLINE_START,
+      endTime: mess.meal_deadline_end ?? DEFAULT_DEADLINE_END,
+    };
+  }
+
+  /**
+   * Check if a specific meal date/time is still within the window for members.
+   */
+  async isMealWindowOpen(messId: string, date: string): Promise<boolean> {
+    const mess = await this.prisma.mess.findUnique({
+      where: { id: messId },
+      select: { meal_deadline_start: true, meal_deadline_end: true },
+    });
+    if (!mess) return false;
+
+    const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
+    const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
+    const targetDate = new Date(date);
+
+    return isWithinMealWindow(targetDate, startTime, endTime);
+  }
+
+  // ─── CRUD Operations ──────────────────────────────────────
 
   async create(userId: string, role: string, dto: CreateMealDto) {
     await this.verifyMessAccess(dto.messId, userId, role);
 
     const date = dto.date ? new Date(dto.date) : new Date();
     const mealName = dto.mealName ?? MealName.LUNCH;
+
+    // Check meal deadline (bypasses for managers/admin)
+    await this.checkMealDeadline(dto.messId, date, userId, role);
+
     const meal = await this.prisma.meal.findFirst({
       where: { mess_id: dto.messId, name: mealName, scheduled_date: date },
     });
@@ -103,33 +342,8 @@ export class MealService {
       },
     });
 
-    if (savedMeal.is_locked && !(await this.canManageMeal(dto.messId, userId, role))) {
-      throw new HttpException('Meal is locked after deadline', 400);
-    }
-
     const targetMemberId = role === 'MEMBER' ? userId : (dto.memberId ?? userId);
-    // return this.prisma.mealAttendance.upsert({
-    //   where: { meal_id_member_id: { meal_id: savedMeal.id, member_id: targetMemberId } },
-    //   update: {
-    //     status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
-    //     guests: dto.guests ?? 0,
-    //   },
-    //   create: {
-    //     meal_id: savedMeal.id,
-    //     member_id: targetMemberId,
-    //     status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
-    //     guests: dto.guests ?? 0,
-    //   },
-    //   include: {
-    //     meal: {
-    //       include: {
-    //         creator: { select: { id: true, name: true } },
-    //         mess: { select: { id: true, name: true } },
-    //       },
-    //     },
-    //     member: { select: { id: true, name: true, email: true } },
-    //   },
-    // });
+
     const attendance = await this.prisma.mealAttendance.upsert({
       where: {
         meal_id_member_id: {
@@ -165,7 +379,6 @@ export class MealService {
     await this.recalculateMealMonthBill(dto.messId, savedMeal.scheduled_date);
 
     return attendance;
-
   }
 
   async findAll(query: MealFilterDto) {
@@ -234,9 +447,9 @@ export class MealService {
     const meal = await this.prisma.meal.findUnique({ where: { id } });
     if (!meal) throw new HttpException('Meal entry not found', 404);
 
-    if (meal.is_locked && !(await this.canManageMeal(meal.mess_id, userId, role))) {
-      throw new HttpException('Meal is locked after deadline', 400);
-    }
+    // Check meal deadline (bypasses for managers/admin)
+    const date = dto.date ? new Date(dto.date) : meal.scheduled_date;
+    await this.checkMealDeadline(meal.mess_id, date, userId, role);
 
     if (role === 'MEMBER' && meal.created_by !== userId) {
       throw new HttpException('Forbidden: Not your meal entry', 403);
@@ -249,32 +462,6 @@ export class MealService {
       const mess = await this.prisma.mess.findUnique({ where: { id: meal.mess_id } });
       if (mess?.created_by !== userId) throw new HttpException('Forbidden: Not your mess', 403);
     }
-
-    // const updatedMeal = await this.prisma.meal.update({
-    //   where: { id },
-    //   data: {
-    //     scheduled_date: dto.date ? new Date(dto.date) : undefined,
-    //     status: dto.mealStatus,
-    //     is_locked: dto.mealStatus === 'LOCKED' ? true : undefined,
-    //   },
-    //   include: { creator: { select: { id: true, name: true } } },
-    // });
-    // if (dto.status || dto.guests !== undefined || dto.mealCount !== undefined) {
-    //   await this.prisma.mealAttendance.upsert({
-    //     where: { meal_id_member_id: { meal_id: id, member_id: userId } },
-    //     update: {
-    //       status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : undefined),
-    //       guests: dto.guests,
-    //     },
-    //     create: {
-    //       meal_id: id,
-    //       member_id: userId,
-    //       status: dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
-    //       guests: dto.guests ?? 0,
-    //     },
-    //   });
-    // }
-    // return updatedMeal;
 
     const oldMessId = meal.mess_id;
     const oldDate = meal.scheduled_date;
@@ -323,70 +510,78 @@ export class MealService {
     return updatedMeal;
   }
 
-  async closeMealTime(
+  /**
+   * Set the meal deadline window for a mess.
+   * This replaces the old "close meal time" functionality.
+   * The deadline is a time window (e.g. 22:00 -> 11:00) during which
+   * members can add/update meals. After the window closes, only managers can modify.
+   */
+  async setMealDeadline(
     messId: string,
     userId: string,
     role: string,
-    dto: CloseMealTimeDto,
+    dto: SetMealDeadlineDto,
   ) {
-    await this.verifyMealManagerAccess(messId, userId, role);
+    // Only managers, admins, and organizers can set meal deadlines
+    const canManage = await this.canManageMeal(messId, userId, role);
+    if (!canManage) {
+      throw new HttpException(
+        'Forbidden: Only managers can set meal deadlines',
+        403,
+      );
+    }
 
-    const date = new Date(dto.date);
-    date.setHours(0, 0, 0, 0);
+    // Validate time format
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(dto.startTime)) {
+      throw new HttpException('startTime must be in HH:mm format (e.g. 22:00)', 400);
+    }
+    if (!timeRegex.test(dto.endTime)) {
+      throw new HttpException('endTime must be in HH:mm format (e.g. 11:00)', 400);
+    }
 
-    const meals = await Promise.all(
-      Object.values(MealName).map(async (mealName) => {
-        const existingMeal = await this.prisma.meal.findFirst({
-          where: {
-            mess_id: messId,
-            name: mealName,
-            scheduled_date: date,
-          },
-        });
-
-        const query = existingMeal
-          ? this.prisma.meal.update({
-              where: { id: existingMeal.id },
-              data: { status: 'LOCKED', is_locked: true },
-              include: {
-                creator: { select: { id: true, name: true } },
-                mess: { select: { id: true, name: true } },
-                attendances: {
-                  include: {
-                    member: { select: { id: true, name: true, email: true } },
-                  },
-                },
-              },
-            })
-          : this.prisma.meal.create({
-              data: {
-                mess_id: messId,
-                created_by: userId,
-                name: mealName,
-                scheduled_date: date,
-                status: 'LOCKED',
-                is_locked: true,
-              },
-              include: {
-                creator: { select: { id: true, name: true } },
-                mess: { select: { id: true, name: true } },
-                attendances: {
-                  include: {
-                    member: { select: { id: true, name: true, email: true } },
-                  },
-                },
-              },
-            });
-
-        return query;
-      }),
-    );
-
-    await this.recalculateMealMonthBill(messId, date);
+    const updatedMess = await this.prisma.mess.update({
+      where: { id: messId },
+      data: {
+        meal_deadline_start: dto.startTime,
+        meal_deadline_end: dto.endTime,
+      },
+      select: {
+        id: true,
+        name: true,
+        meal_deadline_start: true,
+        meal_deadline_end: true,
+      },
+    });
 
     return {
-      date,
-      lockedMeals: meals,
+      message: 'Meal deadline updated successfully',
+      data: {
+        messId: updatedMess.id,
+        messName: updatedMess.name,
+        startTime: updatedMess.meal_deadline_start,
+        endTime: updatedMess.meal_deadline_end,
+      },
+    };
+  }
+
+  /**
+   * Get the current meal deadline configuration for a mess.
+   */
+  async getMealDeadlineInfo(messId: string, date?: string) {
+    const deadlineConfig = await this.getMessDeadlineConfig(messId);
+    const targetDate = date ? new Date(date) : new Date();
+
+    return {
+      startTime: deadlineConfig.startTime,
+      endTime: deadlineConfig.endTime,
+      isWindowOpen: isWithinMealWindow(
+        targetDate,
+        deadlineConfig.startTime,
+        deadlineConfig.endTime,
+      ) ?? false,
+      windowStartTime: deadlineConfig.startTime,
+      windowEndTime: deadlineConfig.endTime,
     };
   }
 

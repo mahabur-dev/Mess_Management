@@ -192,6 +192,7 @@ export class MonthlyBillService {
       mealAttendances,
       depositGroups,
       paymentGroups,
+      personalExpenseGroups,
     ] = await Promise.all([
       this.prisma.expense.aggregate({
         where: {
@@ -338,6 +339,22 @@ export class MonthlyBillService {
           amount: true,
         },
       }),
+
+      // Group personal expenses by member_id so they add to deposit_total
+      this.prisma.expense.groupBy({
+        by: ['created_by'],
+        where: {
+          mess_id: messId,
+          expense_date: {
+            gte: month,
+            lt: nextMonth,
+          },
+          payment_type: ExpensePaymentType.PERSONAL,
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
     ]);
 
     const mealCountByUser: Record<string, number> = {};
@@ -359,6 +376,12 @@ export class MonthlyBillService {
 
     const depositByUser = this.makeAmountMap(depositGroups);
     const paymentByUser = this.makeAmountMap(paymentGroups);
+
+    // Map personal expenses (grouped by created_by) to user deposit totals
+    const personalExpenseByUser = this.makeAmountMap(personalExpenseGroups.map(g => ({
+      member_id: g.created_by,
+      _sum: g._sum,
+    })));
 
     const splitByMember = (value: unknown) =>
       activeMembers.length > 0
@@ -392,8 +415,12 @@ export class MonthlyBillService {
 
       const depositTotal = depositByUser[user_id] ?? 0;
       const paidAmount = paymentByUser[user_id] ?? 0;
+      const personalExpenseTotal = personalExpenseByUser[user_id] ?? 0;
 
-      const totalPaid = this.toFixedNumber(depositTotal + paidAmount);
+      // deposit_total = direct deposits + personal expenses (e.g. personal bazar/utilities)
+      // paid_amount = approved payments
+      const effectiveDepositTotal = this.toFixedNumber(depositTotal + personalExpenseTotal);
+      const totalPaid = this.toFixedNumber(effectiveDepositTotal + paidAmount);
 
       const rawDue =
         foodBill + seatRent + utilityPerMember - totalPaid;

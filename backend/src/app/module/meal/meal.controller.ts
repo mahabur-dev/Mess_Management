@@ -19,7 +19,7 @@ import {
 import { Request } from 'express';
 import { MealService } from './meal.service';
 import {
-  CloseMealTimeDto,
+  SetMealDeadlineDto,
   CreateMealDto,
   MealFilterDto,
   UpdateMealDto,
@@ -103,21 +103,62 @@ export class MealController {
     return { message: 'Meal summary fetched', data };
   }
 
-  @Post('mess/:messId/close-time')
+  /**
+   * Set the meal deadline window for a mess.
+   * This replaces the old "close meal time" functionality.
+   * The deadline is a time window (e.g. 22:00 -> 11:00) during which
+   * members can add/update meals. After the window closes, only managers can modify.
+   */
+  @Post('mess/:messId/deadline')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
-  @ApiOperation({ summary: 'Close member meal add/update time for a date' })
-  async closeMealTime(
+  @ApiOperation({ summary: 'Set meal deadline window (start & end time)' })
+  async setMealDeadline(
     @Param('messId') messId: string,
     @Req() req: Request,
-    @Body() dto: CloseMealTimeDto,
+    @Body() dto: SetMealDeadlineDto,
   ) {
-    const data = await this.mealService.closeMealTime(
+    const data = await this.mealService.setMealDeadline(
       messId,
       req.user!.id,
       req.user!.role,
       dto,
     );
-    return { message: 'Meal time closed successfully', data };
+    return data;
+  }
+
+  /**
+   * Get the current meal deadline info for a mess.
+   */
+  @Get('mess/:messId/deadline')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Get meal deadline info for a mess' })
+  @ApiQuery({ name: 'date', required: false, example: '2026-06-15' })
+  async getMealDeadline(
+    @Param('messId') messId: string,
+    @Req() req: Request,
+    @Query('date') date?: string,
+  ) {
+    const data = await this.mealService.getMealDeadlineInfo(messId, date);
+    return { message: 'Meal deadline info fetched', data };
+  }
+
+  /**
+   * Check if meal window is open for a specific date.
+   */
+  @Get('mess/:messId/window-status')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Check if meal window is open for a date' })
+  @ApiQuery({ name: 'date', required: false, example: '2026-06-15' })
+  async getMealWindowStatus(
+    @Param('messId') messId: string,
+    @Req() req: Request,
+    @Query('date') date?: string,
+  ) {
+    const isOpen = await this.mealService.isMealWindowOpen(
+      messId,
+      date ?? new Date().toISOString().slice(0, 10),
+    );
+    return { message: 'Meal window status fetched', data: { isWindowOpen: isOpen } };
   }
 
   @Get(':id')

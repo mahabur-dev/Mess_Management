@@ -3,20 +3,26 @@
 // Table: expenses
 // ============================================================
 
+enum ExpensePaymentType {
+  FROM_DEPOSIT
+  PERSONAL
+}
+
 model Expense {
-  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  mess_id      String          @db.Uuid
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id      String             @db.Uuid
   category     ExpenseCategory
-  amount       Decimal         @db.Decimal(12, 2)
-  description  String?         @db.Text
-  receipt_url  String?         @db.Text
-  buyer_id     String?         @db.Uuid
-  item_name    String?         @db.VarChar(150)
-  quantity     Decimal?        @db.Decimal(10, 3)
-  unit         String?         @db.VarChar(30)
-  created_by   String          @db.Uuid
-  expense_date DateTime        @db.Date
-  created_at   DateTime        @default(now()) @db.Timestamptz
+  amount       Decimal            @db.Decimal(12, 2)
+  description  String?            @db.Text
+  receipt_url  String?            @db.Text
+  buyer_id     String?            @db.Uuid
+  item_name    String?            @db.VarChar(150)
+  quantity     Decimal?           @db.Decimal(10, 3)
+  unit         String?            @db.VarChar(30)
+  created_by   String             @db.Uuid
+  expense_date DateTime           @db.Date
+  payment_type ExpensePaymentType @default(FROM_DEPOSIT)
+  created_at   DateTime           @default(now()) @db.Timestamptz
 
   // ─── Relations ─────────────────────────────────────────
   mess    Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)

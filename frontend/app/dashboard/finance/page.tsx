@@ -14,6 +14,7 @@ import { useAuth } from '@/app/context/auth-context'
 import {
   apiClient,
   type ExpenseCategory,
+  type ExpensePaymentType,
   type Mess,
 } from '@/lib/api-client'
 import {
@@ -67,6 +68,7 @@ type ExpenseItem = {
   id: string
   category: ExpenseCategory
   amount: string | number
+  payment_type?: string
   description?: string | null
   receipt_url?: string | null
   buyer_id?: string | null
@@ -187,6 +189,7 @@ export default function FinancePage() {
     },
   ])
   const [rowCounter, setRowCounter] = useState(1)
+  const [expensePaymentType, setExpensePaymentType] = useState<ExpensePaymentType>('FROM_DEPOSIT')
   // ──────────────────────────────────────────────────────
 
   const [selectedCategory, setSelectedCategory] = useState<'ALL' | ExpenseCategory>('ALL')
@@ -303,6 +306,7 @@ export default function FinancePage() {
     setRowCounter(1)
     setSharedDate(new Date().toISOString().slice(0, 10))
     setEditingExpense(null)
+    setExpensePaymentType('FROM_DEPOSIT')
   }
 
   function openExpenseModal() {
@@ -329,7 +333,7 @@ export default function FinancePage() {
 
   function buildExpensePayload(item: ExpenseRow, includeMessId = true) {
     const isUtilityMode = expenseFormMode === 'utility'
-    const payload = {
+    const payload: Record<string, unknown> = {
       ...(includeMessId ? { messId: activeMess?.id } : {}),
       category: item.category,
       amount: Number(item.amount),
@@ -338,6 +342,7 @@ export default function FinancePage() {
       unit: !isUtilityMode ? item.unit || undefined : undefined,
       description: item.description || undefined,
       expenseDate: sharedDate,
+      paymentType: expensePaymentType,
     }
 
     if (!item.receipt) return payload
@@ -443,6 +448,21 @@ export default function FinancePage() {
       setMessage('Price review request sent successfully.')
     } finally {
       setLoading(false)
+    }
+  }
+  // ─── Payment Type indicator for display ───────────────
+  function getPaymentTypeStyle(paymentType?: string) {
+    if (paymentType === 'PERSONAL') {
+      return {
+        badge: 'bg-purple-50 text-purple-700 border-purple-200/50',
+        label: 'Personal',
+        icon: '👤',
+      }
+    }
+    return {
+      badge: 'bg-blue-50 text-blue-700 border-blue-200/50',
+      label: 'From Deposit',
+      icon: '🏦',
     }
   }
   // ──────────────────────────────────────────────────────
@@ -639,6 +659,40 @@ export default function FinancePage() {
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
+                  {/* Payment Type Toggle */}
+                  <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
+                    <label className="mb-3 block text-sm font-black text-[#0a1433]">Payment Type</label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setExpensePaymentType('FROM_DEPOSIT')}
+                        className={`flex-1 h-12 rounded-xl border-2 text-sm font-black transition ${
+                          expensePaymentType === 'FROM_DEPOSIT'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-200 bg-white text-slate-500 hover:border-blue-300'
+                        }`}
+                      >
+                        🏦 From Deposit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setExpensePaymentType('PERSONAL')}
+                        className={`flex-1 h-12 rounded-xl border-2 text-sm font-black transition ${
+                          expensePaymentType === 'PERSONAL'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-slate-200 bg-white text-slate-500 hover:border-purple-300'
+                        }`}
+                      >
+                        👤 Personal
+                      </button>
+                    </div>
+                    <p className="mt-2 text-[10px] font-semibold text-[#6b7a99]">
+                      {expensePaymentType === 'FROM_DEPOSIT'
+                        ? 'Amount will be split among all members in monthly bill calculation.'
+                        : 'Amount will be added as your personal deposit contribution. Not split with others.'}
+                    </p>
+                  </div>
+
                   {expenseFormMode === 'utility' && (
                     <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
                       <div className="grid gap-4">
@@ -968,9 +1022,14 @@ export default function FinancePage() {
                         <p className="text-xs font-black uppercase tracking-wide text-[#6b7a99]">
                           {viewExpense.category}
                         </p>
-                        <h3 className="mt-1 text-lg font-black text-[#172554]">
-                          {viewExpense.item_name || viewExpense.category || 'Unnamed Expense'}
-                        </h3>
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          <h3 className="text-lg font-black text-[#172554]">
+                            {viewExpense.item_name || viewExpense.category || 'Unnamed Expense'}
+                          </h3>
+                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPaymentTypeStyle(viewExpense.payment_type).badge}`}>
+                            {getPaymentTypeStyle(viewExpense.payment_type).icon} {getPaymentTypeStyle(viewExpense.payment_type).label}
+                          </span>
+                        </div>
                         <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
                           <CalendarDays size={13} className="text-[#ffb84d]" />
                           {formatDate(viewExpense.expense_date)}

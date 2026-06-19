@@ -4,7 +4,7 @@ import {
   GenerateBillDto,
   UpdateBillStatusDto,
 } from './dto/monthly-bill.dto';
-import { BillStatus, ExpenseCategory, Prisma } from '@prisma/client';
+import { BillStatus, ExpenseCategory, ExpensePaymentType, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -179,6 +179,9 @@ export class MonthlyBillService {
 
     const rooms = Array.isArray(mess.rooms) ? mess.rooms : [];
 
+    // Helper to exclude PERSONAL payment type from all expense queries
+    const excludePersonal = { payment_type: { not: ExpensePaymentType.PERSONAL } };
+
     const [
       foodExpenses,
       electricityExpenses,
@@ -200,6 +203,7 @@ export class MonthlyBillService {
           category: {
             in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
           },
+          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -214,6 +218,7 @@ export class MonthlyBillService {
             lt: nextMonth,
           },
           category: ExpenseCategory.ELECTRICITY,
+          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -228,6 +233,7 @@ export class MonthlyBillService {
             lt: nextMonth,
           },
           category: ExpenseCategory.GAS,
+          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -242,6 +248,7 @@ export class MonthlyBillService {
             lt: nextMonth,
           },
           category: ExpenseCategory.WIFI,
+          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -256,6 +263,7 @@ export class MonthlyBillService {
             lt: nextMonth,
           },
           category: ExpenseCategory.CLEANER,
+          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -278,6 +286,7 @@ export class MonthlyBillService {
               ExpenseCategory.OTHER,
             ],
           },
+          ...excludePersonal,
         },
         _sum: {
           amount: true,

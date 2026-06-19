@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { ExpenseCategory } from '@prisma/client';
+import { ExpenseCategory, ExpensePaymentType } from '@prisma/client';
 
 export class CreateExpenseDto {
   @ApiProperty({ example: 'uuid-mess-id', description: 'Mess ID' })
@@ -67,6 +67,11 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsUrl()
   receiptUrl?: string;
+
+  @ApiPropertyOptional({ enum: ExpensePaymentType, example: ExpensePaymentType.FROM_DEPOSIT, description: 'FROM_DEPOSIT (split among members) or PERSONAL (adds to member deposit)' })
+  @IsOptional()
+  @IsEnum(ExpensePaymentType)
+  paymentType?: ExpensePaymentType;
 }
 
 export class UpdateExpenseDto {
@@ -122,6 +127,11 @@ export class UpdateExpenseDto {
   @IsOptional()
   @IsUrl()
   receiptUrl?: string;
+
+  @ApiPropertyOptional({ enum: ExpensePaymentType, description: 'FROM_DEPOSIT or PERSONAL' })
+  @IsOptional()
+  @IsEnum(ExpensePaymentType)
+  paymentType?: ExpensePaymentType;
 }
 
 export class RequestPriceReviewDto {

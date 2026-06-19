@@ -37,6 +37,7 @@ export type ExpenseCategory =
   | 'BUABILL'
   | 'WATER'
   | 'OTHER'
+export type ExpensePaymentType = 'FROM_DEPOSIT' | 'PERSONAL'
 export type PaymentMethod = 'CASH' | 'BKASH' | 'NAGAD' | 'ROCKET' | 'BANK'
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type BillStatus = 'PENDING' | 'PAID' | 'PARTIAL'
@@ -425,11 +426,19 @@ class ApiClient {
     return this.request('/meal', { method: 'POST', body: JSON.stringify({ mealCount: data.status === 'ON' ? 1 : 0, ...data }) })
   }
 
-  closeMealTime(messId: string, date: string) {
-    return this.request(`/meal/mess/${messId}/close-time`, {
+  setMealDeadline(messId: string, startTime: string, endTime: string, date?: string) {
+    return this.request(`/meal/mess/${messId}/deadline`, {
       method: 'POST',
-      body: JSON.stringify({ date }),
+      body: JSON.stringify({ startTime, endTime, date }),
     })
+  }
+
+  getMealDeadlineInfo(messId: string, date?: string) {
+    return this.request<{ startTime: string; endTime: string; isWindowOpen: boolean; windowStartTime: string; windowEndTime: string }>(`/meal/mess/${messId}/deadline`, { params: { date } })
+  }
+
+  getMealWindowStatus(messId: string, date?: string) {
+    return this.request<{ isWindowOpen: boolean }>(`/meal/mess/${messId}/window-status`, { params: { date } })
   }
 
   getMyMeals(params?: QueryParams) {

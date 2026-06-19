@@ -5,7 +5,7 @@ import {
   RequestPriceReviewDto,
   UpdateExpenseDto,
 } from './dto/expense.dto';
-import { ExpenseCategory, Prisma } from '@prisma/client';
+import { ExpenseCategory, ExpensePaymentType, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -19,7 +19,7 @@ export class ExpenseService {
     private readonly prisma: PrismaService,
     private readonly monthlyBillService: MonthlyBillService,
     private readonly notificationService: NotificationService,
-  ) { }
+  ) {}
 
   private async recalculateExpenseMonthBill(messId: string, date: Date) {
     await this.monthlyBillService.recalculateMonthlyBills(messId, date);
@@ -31,6 +31,31 @@ export class ExpenseService {
       dateA.getMonth() === dateB.getMonth()
     );
   }
+
+  /**
+   * When an expense is marked as PERSONAL, auto-create a deposit entry
+   * for the creator so their personal contribution is tracked in the deposit system.
+   */
+  private async handlePersonalPaymentExpense(
+    messId: string,
+    userId: string,
+    amount: number,
+    expenseId: string,
+    expenseDate: Date,
+  ) {
+    await this.prisma.deposit.create({
+      data: {
+        mess_id: messId,
+        member_id: userId,
+        amount,
+        note: `Personal expense contribution (expense: ${expenseId})`,
+        method: 'CASH',
+        confirmed_by: userId,
+        confirmed_at: new Date(),
+      },
+    });
+  }
+
   private readonly expenseSelect = {
     id: true,
     category: true,
@@ -42,6 +67,7 @@ export class ExpenseService {
     quantity: true,
     unit: true,
     expense_date: true,
+    payment_type: true,
     created_at: true,
     mess: { select: { id: true, name: true } },
     creator: { select: { id: true, name: true, email: true } },
@@ -109,6 +135,8 @@ export class ExpenseService {
         ).url
       : dto.receiptUrl;
 
+    const paymentType = dto.paymentType ?? ExpensePaymentType.FROM_DEPOSIT;
+
     const expense = await this.prisma.expense.create({
       data: {
         mess_id: dto.messId,
@@ -122,16 +150,31 @@ export class ExpenseService {
         item_name: dto.itemName,
         quantity: dto.quantity,
         unit: dto.unit,
+        payment_type: paymentType,
       },
       select: this.expenseSelect,
     });
 
-    await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
+    // Handle personal payment: auto-create deposit entry
+    if (paymentType === ExpensePaymentType.PERSONAL) {
+      await this.handlePersonalPaymentExpense(
+        dto.messId,
+        userId,
+        dto.amount,
+        expense.id,
+        expense.expense_date,
+      );
+    }
+
+    // Only recalculate monthly bills for FROM_DEPOSIT expenses (not personal ones)
+    if (paymentType === ExpensePaymentType.FROM_DEPOSIT) {
+      await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
+    }
 
     // Send push notification to all active users
     await this.notificationService.sendPushToAll({
       title: `New Expense Added - ${expense.mess.name}`,
-      body: `${expense.item_name || expense.category} - ${expense.amount}`,
+      body: `${expense.item_name || expense.category} - ${expense.amount} [${paymentType}]`,
       url: '/',
       data: {
         messId: expense.mess.id,
@@ -249,6 +292,8 @@ export class ExpenseService {
         ).url
       : dto.receiptUrl;
 
+    const paymentType = dto.paymentType as ExpensePaymentType | undefined;
+
     const updatedExpense = await this.prisma.expense.update({
       where: { id },
       data: {
@@ -261,17 +306,23 @@ export class ExpenseService {
         item_name: dto.itemName,
         quantity: dto.quantity,
         unit: dto.unit,
+        payment_type: paymentType,
       },
       select: this.expenseSelect,
     });
 
-    await this.recalculateExpenseMonthBill(expense.mess_id, oldExpenseDate);
+    // Recalculate only if the expense was (or is now) FROM_DEPOSIT
+    const wasFromDeposit = expense.payment_type === ExpensePaymentType.FROM_DEPOSIT;
+    const isNowFromDeposit = paymentType !== ExpensePaymentType.PERSONAL;
 
-    if (!this.isSameBillMonth(oldExpenseDate, updatedExpense.expense_date)) {
-      await this.recalculateExpenseMonthBill(
-        expense.mess_id,
-        updatedExpense.expense_date,
-      );
+    if (wasFromDeposit || isNowFromDeposit) {
+      await this.recalculateExpenseMonthBill(expense.mess_id, oldExpenseDate);
+      if (!this.isSameBillMonth(oldExpenseDate, updatedExpense.expense_date)) {
+        await this.recalculateExpenseMonthBill(
+          expense.mess_id,
+          updatedExpense.expense_date,
+        );
+      }
     }
 
     return updatedExpense;
@@ -343,10 +394,13 @@ export class ExpenseService {
       where: { id },
     });
 
-    await this.recalculateExpenseMonthBill(
-      expense.mess_id,
-      expense.expense_date,
-    );
+    // Recalculate only if it was a FROM_DEPOSIT expense
+    if (expense.payment_type === ExpensePaymentType.FROM_DEPOSIT) {
+      await this.recalculateExpenseMonthBill(
+        expense.mess_id,
+        expense.expense_date,
+      );
+    }
 
     return { message: 'Expense deleted successfully' };
   }

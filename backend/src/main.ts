@@ -30,6 +30,7 @@ async function bootstrap() {
         'http://localhost:3000',
         'http://localhost:5001',
         'http://localhost:4000',
+        'https://www.messzen.com',
 
         // Production frontend
         'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',

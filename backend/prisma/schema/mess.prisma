@@ -46,6 +46,7 @@ model Mess {
   payments       Payment[]
   notices        Notice[]
   complaints     Complaint[]
+  subscription   Subscription?
 
   @@map("messes")
 }

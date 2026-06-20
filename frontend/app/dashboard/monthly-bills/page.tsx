@@ -324,7 +324,7 @@ export default function MonthlyBillPage() {
 
                         <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(getTotalCost(bill))}</td>
 
-                        <td className="px-5 py-4 text-sm font-bold text-emerald-600">{money(bill.paid_amount)}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</td>
 
                         <td className="px-5 py-4">
                           <span className={`text-sm font-black ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -438,7 +438,7 @@ export default function MonthlyBillPage() {
                     </div>
                     <div className="rounded-lg bg-white p-2.5">
                       <p className="font-black uppercase text-[#6b7a99]">Deposit</p>
-                      <p className="mt-0.5 font-bold text-emerald-600">{money(bill.paid_amount)}</p>
+                      <p className="mt-0.5 font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</p>
                     </div>
                   </div>
                 </div>

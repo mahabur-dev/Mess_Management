@@ -19,6 +19,7 @@ import { PaymentModule } from './app/module/payment/payment.module';
 import { NoticeModule } from './app/module/notice/notice.module';
 import { ComplaintModule } from './app/module/complaint/complaint.module';
 import { DashboardModule } from './app/module/dashboard/dashboard.module';
+import { SubscriptionModule } from './app/module/subscription/subscription.module';
 
 // ✅ Import Prisma Module
 
@@ -33,7 +34,7 @@ import { DashboardModule } from './app/module/dashboard/dashboard.module';
     DepositModule,
     BazarModule,
     AuthModule,
-    NotificationModule ,
+    NotificationModule,
     MonthlyBillModule,
     ExpenseModule,
     ShoppingModule,
@@ -41,7 +42,7 @@ import { DashboardModule } from './app/module/dashboard/dashboard.module';
     NoticeModule,
     ComplaintModule,
     DashboardModule,
-    NotificationModule,
+    SubscriptionModule,
   ],
 
   controllers: [AppController],

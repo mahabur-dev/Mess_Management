@@ -569,6 +569,44 @@ class ApiClient {
   deleteNotification(id: string) {
     return this.request(`/notification/${id}`, { method: 'DELETE' })
   }
+
+  // ─── Public Endpoints ────────────────────────────────────
+  getPublicMesses(signal?: AbortSignal) {
+    return fetch(`${API_BASE_URL}/public/messes`, { signal }).then(res => res.json())
+  }
+
+  getPublicPlans(signal?: AbortSignal) {
+    return fetch(`${API_BASE_URL}/public/plans`, { signal }).then(res => res.json())
+  }
+
+  // ─── Subscription Endpoints ──────────────────────────────
+  getSubscriptionPlans() {
+    return this.request<Record<string, { price: number; label: string; days: number; description: string; currency?: string }>>('/subscriptions/plans')
+  }
+
+  getSubscriptions(params?: QueryParams) {
+    return this.request('/subscriptions', { params })
+  }
+
+  getMessSubscription(messId: string) {
+    return this.request(`/subscriptions/mess/${messId}`)
+  }
+
+  createSubscription(data: { messId: string; plan: string }) {
+    return this.request('/subscriptions', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  updateSubscription(id: string, data: { plan?: string; status?: string }) {
+    return this.request(`/subscriptions/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+  }
+
+  initializeTrial(messId: string) {
+    return this.request(`/subscriptions/${messId}/trial`, { method: 'POST' })
+  }
+
+  checkExpiredSubscriptions() {
+    return this.request('/subscriptions/check-expired', { method: 'POST' })
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)

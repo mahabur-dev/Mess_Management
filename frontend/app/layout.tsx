@@ -29,17 +29,17 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Mess Management',
+  title: 'Messzen.com | Oficial site | The best mess management software',
   description: 'Manage messes, meals, finances, shopping, and attendance with ease',
   generator: 'v0.app',
   manifest: '/manifest.json',
   icons: {
     icon: [
       {
-        url: '/transparent_logo.png',
+        url: '/logo1.png',
       },
     ],
-    apple: '/transparent_logo.png',
+    apple: '/logo1.png',
   },
   formatDetection: {
     telephone: true,

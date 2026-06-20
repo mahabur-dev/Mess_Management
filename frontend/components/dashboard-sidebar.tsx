@@ -59,7 +59,7 @@ const adminItems = [
   { label: 'Users', href: '/dashboard/users', icon: Users },
   { label: 'Mess Requests', href: '/dashboard/mess_requests', icon: ClipboardList },
   { label: 'All Messes', href: '/dashboard/mess_management', icon: Home },
-  { label: 'Payments/Packages', href: '/dashboard/payments', icon: CreditCard },
+  // { label: 'Payments/Packages', href: '/dashboard/payments', icon: CreditCard },
   { label: 'Subscriptions', href: '/dashboard/subscriptions', icon: BarChart3 },
   { label: 'Complaints', href: '/dashboard/complaints', icon: MessageSquareWarning },
   { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },

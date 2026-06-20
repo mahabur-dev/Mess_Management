@@ -1,9 +1,59 @@
 import { Injectable } from '@nestjs/common';
+import { SubscriptionPlan } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AppService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly defaultPlanSettings: Record<SubscriptionPlan, {
+    price: number
+    label: string
+    days: number
+    description: string
+    currency: string
+  }> = {
+    TRIAL: {
+      price: 0,
+      label: '7 Days Free',
+      days: 7,
+      description: 'Get started with a free trial. No credit card required.',
+      currency: 'BDT',
+    },
+    MONTHLY: {
+      price: 499,
+      label: '1 Month',
+      days: 30,
+      description: 'Perfect for active messes needing full features monthly.',
+      currency: 'BDT',
+    },
+    YEARLY: {
+      price: 4999,
+      label: '1 Year',
+      days: 365,
+      description: 'Best value for long-term mess management.',
+      currency: 'BDT',
+    },
+  };
+
+  private async ensurePlanSettings() {
+    await Promise.all(
+      Object.entries(this.defaultPlanSettings).map(([plan, defaults]) =>
+        this.prisma.subscriptionPlanSetting.upsert({
+          where: { plan: plan as SubscriptionPlan },
+          create: {
+            plan: plan as SubscriptionPlan,
+            label: defaults.label,
+            price: defaults.price,
+            days: defaults.days,
+            description: defaults.description,
+            currency: defaults.currency,
+          },
+          update: {},
+        }),
+      ),
+    );
+  }
 
   getHello() {
     return {
@@ -70,11 +120,27 @@ export class AppService {
     });
   }
 
-  getSubscriptionPlans() {
-    return {
-      TRIAL: { price: 0, label: '7 Days Free', days: 7, description: 'Get started with a free trial. No credit card required.' },
-      MONTHLY: { price: 499, label: '1 Month', days: 30, description: 'Perfect for active messes needing full features monthly.', currency: '৳' },
-      YEARLY: { price: 4999, label: '1 Year', days: 365, description: 'Best value for long-term mess management.', currency: '৳' },
-    };
+  async getSubscriptionPlans() {
+    await this.ensurePlanSettings();
+    const plans = await this.prisma.subscriptionPlanSetting.findMany({
+      orderBy: { plan: 'asc' },
+    });
+   
+    return plans.reduce<Record<string, {
+      price: number
+      label: string
+      days: number
+      description: string
+      currency: string
+    }>>((acc, plan) => {
+      acc[plan.plan] = {
+        price: Number(plan.price),
+        label: plan.label,
+        days: plan.days,
+        description: plan.description,
+        currency: plan.currency,
+      };
+      return acc;
+    }, {});
   }
 }

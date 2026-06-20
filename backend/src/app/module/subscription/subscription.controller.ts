@@ -1,20 +1,20 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
 import { SubscriptionService } from './subscription.service';
 import {
   CreateSubscriptionDto,
   SubscriptionFilterDto,
+  UpdateSubscriptionPlanDto,
   UpdateSubscriptionDto,
 } from './dto/subscription.dto';
 import AuthGuard from '../../middlewares/auth.guard';
@@ -27,10 +27,10 @@ export class SubscriptionController {
 
   @Get('plans')
   @ApiOperation({ summary: 'Get all subscription plan info with prices' })
-  getPlans() {
+  async getPlans() {
     return {
       message: 'Subscription plans fetched successfully',
-      data: this.subscriptionService.getAllPlanInfo(),
+      data: await this.subscriptionService.getAllPlanInfo(),
     };
   }
 
@@ -76,6 +76,22 @@ export class SubscriptionController {
   async update(@Param('id') id: string, @Body() dto: UpdateSubscriptionDto) {
     const data = await this.subscriptionService.update(id, dto);
     return { message: 'Subscription updated successfully', data };
+  }
+
+  @Patch('plans/:plan')
+  @UseGuards(AuthGuard('ADMIN'))
+  @ApiOperation({ summary: '[ADMIN] Update subscription plan settings' })
+  async updatePlan(@Param('plan') plan: string, @Body() dto: UpdateSubscriptionPlanDto) {
+    const data = await this.subscriptionService.updatePlan(plan as any, dto);
+    return { message: 'Subscription plan updated successfully', data };
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('ADMIN'))
+  @ApiOperation({ summary: '[ADMIN] Delete a subscription' })
+  async remove(@Param('id') id: string) {
+    const data = await this.subscriptionService.remove(id);
+    return { message: 'Subscription deleted successfully', data };
   }
 
   @Post('check-expired')

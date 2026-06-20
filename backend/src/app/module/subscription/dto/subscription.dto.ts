@@ -2,9 +2,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEnum,
+  IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
@@ -62,4 +65,35 @@ export class SubscriptionFilterDto {
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc';
+}
+
+export class UpdateSubscriptionPlanDto {
+  @ApiPropertyOptional({ example: '1 Month' })
+  @IsOptional()
+  @IsString()
+  label?: string;
+
+  @ApiPropertyOptional({ example: 499 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(0)
+  price?: number;
+
+  @ApiPropertyOptional({ example: 30 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(1)
+  days?: number;
+
+  @ApiPropertyOptional({ example: 'Standard monthly subscription for active messes.' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 'BDT' })
+  @IsOptional()
+  @IsString()
+  currency?: string;
 }

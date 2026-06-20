@@ -1,352 +1,1019 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { apiClient, BackendResponse } from '@/lib/api-client'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  Zap,
-  Search,
-  Filter,
-  RefreshCw,
-  AlertTriangle,
-  CreditCard,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { apiClient, type Mess, type SubscriptionPlan, type SubscriptionPlanInfo, type SubscriptionPlanUpdate, type SubscriptionRecord, type SubscriptionStatus } from '@/lib/api-client'
+import {
+  BadgeCheck,
   Building2,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  CreditCard,
+  Edit3,
+  Eye,
+  Filter,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
 } from 'lucide-react'
 
-interface SubscriptionData {
-  id: string
-  mess_id: string
-  plan: 'TRIAL' | 'MONTHLY' | 'YEARLY'
-  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'PENDING'
-  start_date: string
-  end_date: string | null
-  cancelled_at: string | null
-  created_at: string
-  mess: {
-    id: string
-    name: string
-    address: string | null
-    _count: { memberships: number }
-  }
+type SubscriptionFormState = {
+  messId: string
+  plan: SubscriptionPlan
+  status: SubscriptionStatus
 }
 
-const planLabels: Record<string, { label: string; color: string; bg: string; icon: typeof Zap }> = {
-  TRIAL: { label: '7 Days Free', color: '#6b7a99', bg: '#f0f6ff', icon: Clock },
-  MONTHLY: { label: 'Monthly', color: '#2f80ed', bg: '#e7f1ff', icon: Zap },
-  YEARLY: { label: 'Yearly', color: '#f59e0b', bg: '#fffbeb', icon: Sparkles },
+type BannerState = {
+  type: 'success' | 'error'
+  message: string
+} | null
+
+type PlanEditState = {
+  label: string
+  price: string
+  days: string
+  description: string
+  currency: string
 }
 
-const statusColors: Record<string, string> = {
-  ACTIVE: 'text-[#10b981] bg-[#ecfdf5]',
-  EXPIRED: 'text-[#ef4444] bg-[#fef2f2]',
-  CANCELLED: 'text-[#6b7a99] bg-[#f1f5f9]',
-  PENDING: 'text-[#f59e0b] bg-[#fffbeb]',
+const PLAN_ORDER: SubscriptionPlan[] = ['TRIAL', 'MONTHLY', 'YEARLY']
+
+const PLAN_STYLES: Record<SubscriptionPlan, { label: string; bg: string; text: string; icon: typeof Clock3 }> = {
+  TRIAL: { label: 'Trial', bg: 'bg-slate-50', text: 'text-slate-700', icon: Clock3 },
+  MONTHLY: { label: 'Monthly', bg: 'bg-blue-50', text: 'text-blue-700', icon: CreditCard },
+  YEARLY: { label: 'Yearly', bg: 'bg-amber-50', text: 'text-amber-700', icon: Sparkles },
 }
 
-function formatDate(dateStr: string | null) {
-  if (!dateStr) return 'N/A'
-  return new Date(dateStr).toLocaleDateString('en-US', {
+const STATUS_STYLES: Record<SubscriptionStatus, { label: string; bg: string; text: string; border: string }> = {
+  ACTIVE: { label: 'Active', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200/70' },
+  EXPIRED: { label: 'Expired', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200/70' },
+  CANCELLED: { label: 'Cancelled', bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200/70' },
+  PENDING: { label: 'Pending', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200/70' },
+}
+
+function formatDate(value: string | null) {
+  if (!value) return 'N/A'
+  return new Date(value).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   })
 }
 
-function daysRemaining(endDate: string | null) {
+function formatMoney(amount: number, currency = 'BDT') {
+  try {
+    return new Intl.NumberFormat('en-BD', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`
+  }
+}
+
+function getDaysRemaining(endDate: string | null) {
   if (!endDate) return null
-  const diff = new Date(endDate).getTime() - Date.now()
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-  return days
+  return Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+}
+
+function subscriptionLabel(value: SubscriptionRecord) {
+  const plan = PLAN_STYLES[value.plan]
+  return `${plan.label} plan`
+}
+
+function emptyForm(messId = ''): SubscriptionFormState {
+  return {
+    messId,
+    plan: 'MONTHLY',
+    status: 'ACTIVE',
+  }
+}
+
+function emptyPlanEdit(planInfo?: SubscriptionPlanInfo): PlanEditState {
+  return {
+    label: planInfo?.label ?? '',
+    price: planInfo?.price !== undefined ? String(planInfo.price) : '',
+    days: planInfo?.days !== undefined ? String(planInfo.days) : '',
+    description: planInfo?.description ?? '',
+    currency: planInfo?.currency ?? 'BDT',
+  }
 }
 
 export default function SubscriptionsPage() {
-  const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([])
+  const [subscriptions, setSubscriptions] = useState<SubscriptionRecord[]>([])
+  const [subscriptionPlans, setSubscriptionPlans] = useState<Record<string, SubscriptionPlanInfo>>({})
+  const [messes, setMesses] = useState<Mess[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterPlan, setFilterPlan] = useState<string>('')
-  const [filterStatus, setFilterStatus] = useState<string>('')
-  const [checkingExpired, setCheckingExpired] = useState(false)
+  const [query, setQuery] = useState('')
+  const [filterPlan, setFilterPlan] = useState<'' | SubscriptionPlan>('')
+  const [filterStatus, setFilterStatus] = useState<'' | SubscriptionStatus>('')
+  const [banner, setBanner] = useState<BannerState>(null)
+  const [refreshingExpired, setRefreshingExpired] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+  const [activePlansOpen, setActivePlansOpen] = useState(false)
+  const [planEditOpen, setPlanEditOpen] = useState(false)
+  const [planEditSaving, setPlanEditSaving] = useState(false)
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null)
+  const [planEditForm, setPlanEditForm] = useState<PlanEditState>(emptyPlanEdit())
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [mode, setMode] = useState<'create' | 'edit'>('create')
+  const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionRecord | null>(null)
+  const [form, setForm] = useState<SubscriptionFormState>(emptyForm())
 
-  const fetchSubscriptions = useCallback(async () => {
+  const loadData = useCallback(async () => {
+    setLoading(true)
+
     try {
-      setLoading(true)
-      const params: Record<string, string> = {}
-      if (filterPlan) params.plan = filterPlan
-      if (filterStatus) params.status = filterStatus
-      
-      const res = await apiClient.getSubscriptions(params)
-      if (res?.data) {
-        setSubscriptions(res.data as unknown as SubscriptionData[])
-      }
-    } catch (err) {
-      console.error('Failed to fetch subscriptions:', err)
+      const [subscriptionRes, planRes, messRes] = await Promise.all([
+        apiClient.getSubscriptions({ limit: 500, sortBy: 'created_at', sortOrder: 'desc' }).catch(() => null),
+        apiClient.getSubscriptionPlans().catch(() => null),
+        apiClient.getAllMesses({ limit: 500 }).catch(() => null),
+      ])
+
+      const subscriptionList = Array.isArray(subscriptionRes?.data) ? subscriptionRes.data : []
+      const plans = planRes?.data && typeof planRes.data === 'object' ? planRes.data : {}
+      const messList = Array.isArray(messRes?.data) ? messRes.data : []
+
+      setSubscriptions(subscriptionList)
+      setSubscriptionPlans(plans)
+      setMesses(messList)
+    } catch {
+      setSubscriptions([])
+      setSubscriptionPlans({})
+      setMesses([])
     } finally {
       setLoading(false)
     }
-  }, [filterPlan, filterStatus])
+  }, [])
 
   useEffect(() => {
-    fetchSubscriptions()
-  }, [fetchSubscriptions])
+    void loadData()
+  }, [loadData])
 
-  const handleCheckExpired = async () => {
+  const filteredSubscriptions = useMemo(() => {
+    const term = query.trim().toLowerCase()
+    return subscriptions.filter((subscription) => {
+      const matchesPlan = !filterPlan || subscription.plan === filterPlan
+      const matchesStatus = !filterStatus || subscription.status === filterStatus
+      const matchesSearch =
+        !term ||
+        subscription.mess.name.toLowerCase().includes(term) ||
+        (subscription.mess.address ?? '').toLowerCase().includes(term) ||
+        subscription.id.toLowerCase().includes(term)
+
+      return matchesPlan && matchesStatus && matchesSearch
+    })
+  }, [filterPlan, filterStatus, query, subscriptions])
+
+  const stats = useMemo(() => {
+    const expiringSoon = subscriptions.filter((subscription) => {
+      const days = getDaysRemaining(subscription.end_date)
+      return typeof days === 'number' && days >= 0 && days <= 7
+    }).length
+
+    return {
+      total: subscriptions.length,
+      active: subscriptions.filter((subscription) => subscription.status === 'ACTIVE').length,
+      expiringSoon,
+      cancelled: subscriptions.filter((subscription) => subscription.status === 'CANCELLED').length,
+    }
+  }, [subscriptions])
+
+  function openCreateModal() {
+    const firstMess = messes[0]?.id ?? ''
+    setMode('create')
+    setSelectedSubscription(null)
+    setForm(emptyForm(firstMess))
+    setFormOpen(true)
+  }
+
+  function openEditModal(subscription: SubscriptionRecord) {
+    setMode('edit')
+    setSelectedSubscription(subscription)
+    setForm({
+      messId: subscription.mess_id,
+      plan: subscription.plan,
+      status: subscription.status,
+    })
+    setFormOpen(true)
+  }
+
+  function openDetails(subscription: SubscriptionRecord) {
+    setSelectedSubscription(subscription)
+    setDetailsOpen(true)
+  }
+
+  function askDelete(subscription: SubscriptionRecord) {
+    setSelectedSubscription(subscription)
+    setDeleteOpen(true)
+  }
+
+  async function refreshExpired() {
+    setRefreshingExpired(true)
     try {
-      setCheckingExpired(true)
-      await apiClient.checkExpiredSubscriptions()
-      await fetchSubscriptions()
-    } catch (err) {
-      console.error('Failed to check expired:', err)
+      const response = await apiClient.checkExpiredSubscriptions()
+      setBanner({
+        type: 'success',
+        message: `Expired subscriptions checked. ${response.data?.updated ?? 0} record(s) updated.`,
+      })
+      await loadData()
+    } catch {
+      setBanner({
+        type: 'error',
+        message: 'Failed to check expired subscriptions.',
+      })
     } finally {
-      setCheckingExpired(false)
+      setRefreshingExpired(false)
     }
   }
 
-  const handleInitializeTrial = async (messId: string) => {
+  async function saveSubscription() {
+    if (!form.messId) {
+      setBanner({ type: 'error', message: 'Please choose a mess first.' })
+      return
+    }
+
+    setSaving(true)
     try {
-      await apiClient.initializeTrial(messId)
-      await fetchSubscriptions()
-    } catch (err) {
-      console.error('Failed to initialize trial:', err)
+      if (mode === 'create') {
+        if (form.plan === 'TRIAL') {
+          await apiClient.initializeTrial(form.messId)
+        } else {
+          await apiClient.createSubscription({ messId: form.messId, plan: form.plan })
+        }
+        setBanner({ type: 'success', message: 'Subscription created successfully.' })
+      } else if (selectedSubscription) {
+        await apiClient.updateSubscription(selectedSubscription.id, {
+          plan: form.plan,
+          status: form.status,
+        })
+        setBanner({ type: 'success', message: 'Subscription updated successfully.' })
+      }
+
+      setFormOpen(false)
+      setDetailsOpen(false)
+      setSelectedSubscription(null)
+      await loadData()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Something went wrong.'
+      setBanner({ type: 'error', message })
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleUpdatePlan = async (id: string, plan: string) => {
+  async function deleteSubscription() {
+    if (!selectedSubscription) return
+
+    setDeleting(true)
     try {
-      await apiClient.updateSubscription(id, { plan })
-      await fetchSubscriptions()
-    } catch (err) {
-      console.error('Failed to update plan:', err)
+      await apiClient.deleteSubscription(selectedSubscription.id)
+      setBanner({ type: 'success', message: 'Subscription deleted successfully.' })
+      setDeleteOpen(false)
+      setDetailsOpen(false)
+      setSelectedSubscription(null)
+      await loadData()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete subscription.'
+      setBanner({ type: 'error', message })
+    } finally {
+      setDeleting(false)
     }
   }
 
-  const filteredSubscriptions = subscriptions.filter(s => {
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      return s.mess.name.toLowerCase().includes(term) || 
-             (s.mess.address?.toLowerCase().includes(term))
+  const planCards = PLAN_ORDER.map((plan) => {
+    const info = subscriptionPlans[plan]
+    const style = PLAN_STYLES[plan]
+    return {
+      plan,
+      info,
+      style,
     }
-    return true
   })
 
-  const stats = {
-    total: subscriptions.length,
-    active: subscriptions.filter(s => s.status === 'ACTIVE').length,
-    expired: subscriptions.filter(s => s.status === 'EXPIRED').length,
-    trial: subscriptions.filter(s => s.plan === 'TRIAL').length,
+  function openPlanEditor(plan: SubscriptionPlan) {
+    const info = subscriptionPlans[plan]
+    setEditingPlan(plan)
+    setPlanEditForm(emptyPlanEdit(info))
+    setPlanEditOpen(true)
+  }
+
+  async function savePlanEdit() {
+    if (!editingPlan) return
+
+    setPlanEditSaving(true)
+    try {
+      const payload: SubscriptionPlanUpdate = {
+        label: planEditForm.label.trim(),
+        price: planEditForm.price ? Number(planEditForm.price) : undefined,
+        days: planEditForm.days ? Number(planEditForm.days) : undefined,
+        description: planEditForm.description.trim(),
+        currency: planEditForm.currency.trim() || 'BDT',
+      }
+
+      const response = await apiClient.updateSubscriptionPlan(editingPlan, payload)
+      setSubscriptionPlans((current) => ({
+        ...current,
+        [editingPlan]: response.data as SubscriptionPlanInfo,
+      }))
+      await loadData()
+      setBanner({ type: 'success', message: `${PLAN_STYLES[editingPlan].label} plan updated successfully.` })
+      setPlanEditOpen(false)
+      setEditingPlan(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update plan.'
+      setBanner({ type: 'error', message })
+    } finally {
+      setPlanEditSaving(false)
+    }
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-[#172554]">Subscriptions</h1>
-          <p className="mt-1 text-sm font-semibold text-[#6b7a99]">
-            Manage mess subscription plans and billing
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={handleCheckExpired}
-            disabled={checkingExpired}
-            className="h-10 rounded-xl border border-[#e6ebf4] bg-white px-4 text-sm font-bold text-[#53617d] hover:bg-[#f8faff]"
-          >
-            <RefreshCw size={15} className={`mr-1.5 ${checkingExpired ? 'animate-spin' : ''}`} />
-            Check Expired
-          </Button>
-          <Button className="h-10 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-bold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)]">
-            <CreditCard size={15} className="mr-1.5" />
-            Plans Info
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#fafcff]">
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-[#f8faff] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">
+              <BadgeCheck size={12} />
+              Subscription management
+            </div>
+            <h1 className="text-2xl font-black tracking-tight text-[#172554]">Subscriptions</h1>
+            <p className="max-w-2xl text-sm font-semibold text-[#6b7a99]">
+              Create, inspect, update, and remove mess subscriptions from one place.
+            </p>
+          </div>
 
-      {/* Stats Cards */}
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          ['Total', stats.total.toString(), 'from-[#2f80ed] to-[#6f3df4]', Building2],
-          ['Active', stats.active.toString(), 'from-[#10b981] to-[#34d399]', CheckCircle2],
-          ['Expired', stats.expired.toString(), 'from-[#ef4444] to-[#f43f5e]', AlertTriangle],
-          ['Trial', stats.trial.toString(), 'from-[#f59e0b] to-[#f97316]', Clock],
-        ].map(([label, value, gradient, Icon]) => (
-          <div key={label as string} className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#f8faff] to-white border border-[#e6ebf4] p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-[#6b7a99]">{label as string}</p>
-                <p className="mt-1 text-2xl font-black text-[#172554]">{value as string}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setActivePlansOpen((current) => !current)}
+              className={`h-10 rounded-xl border px-4 font-bold transition ${
+                activePlansOpen
+                  ? 'border-[#2f80ed]/25 bg-[#eef5ff] text-[#172554] hover:bg-[#e5f0ff]'
+                  : 'border-[#d8e6f8] bg-white text-[#53617d] hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]'
+              }`}
+            >
+              <Sparkles size={15} className="text-[#2f80ed]" />
+              Active Subscription
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={refreshExpired}
+              disabled={refreshingExpired}
+              className="h-10 rounded-xl border border-[#d8e6f8] bg-white px-4 font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+            >
+              <RefreshCw size={15} className={refreshingExpired ? 'animate-spin' : ''} />
+              Check expired
+            </Button>
+            <Button
+              type="button"
+              onClick={openCreateModal}
+              className="h-10 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-bold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:from-[#1f6de0] hover:to-[#2f80ed] hover:text-white"
+            >
+              <Plus size={15} />
+              New subscription
+            </Button>
+          </div>
+        </div>
+
+        {banner && (
+          <div
+            className={`mb-6 flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm ${
+              banner.type === 'success'
+                ? 'border-emerald-200/70 bg-emerald-50 text-emerald-700'
+                : 'border-red-200/70 bg-red-50 text-red-700'
+            }`}
+          >
+            {banner.type === 'success' ? <CheckCircle2 size={16} /> : <X size={16} />}
+            <span>{banner.message}</span>
+            <button
+              type="button"
+              onClick={() => setBanner(null)}
+              className="ml-auto rounded-lg px-2 py-1 text-xs font-bold"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              label: 'Total',
+              value: stats.total,
+              icon: Building2,
+              gradient: 'from-[#2f80ed] to-[#5b8def]',
+            },
+            {
+              label: 'Active',
+              value: stats.active,
+              icon: CheckCircle2,
+              gradient: 'from-[#10b981] to-[#34d399]',
+            },
+            {
+              label: 'Expiring soon',
+              value: stats.expiringSoon,
+              icon: CalendarDays,
+              gradient: 'from-[#f59e0b] to-[#fb923c]',
+            },
+            {
+              label: 'Cancelled',
+              value: stats.cancelled,
+              icon: X,
+              gradient: 'from-[#ef4444] to-[#f97316]',
+            },
+          ].map((item) => {
+            const Icon = item.icon
+            return (
+              <div key={item.label} className="rounded-2xl border border-[#e6ebf4] bg-white p-4 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.12em] text-[#6b7a99]">{item.label}</p>
+                    <p className="mt-1 text-2xl font-black text-[#172554]">{item.value}</p>
+                  </div>
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-r ${item.gradient} text-white`}>
+                    <Icon size={18} />
+                  </div>
+                </div>
               </div>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r ${gradient} text-white`}>
-                <Icon size={18} />
-              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-[#e6ebf4] bg-white p-4 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_180px_180px]">
+            <div className="relative">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9bb5]" />
+              <input
+                type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by mess name, address, or subscription id"
+                className="h-11 w-full rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#8a9bb5] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              />
+            </div>
+
+            <div className="relative">
+              <Filter size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9bb5]" />
+              <select
+                value={filterPlan}
+                onChange={(event) => setFilterPlan(event.target.value as '' | SubscriptionPlan)}
+                className="h-11 w-full appearance-none rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-4 text-sm font-semibold text-[#53617d] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              >
+                <option value="">All plans</option>
+                <option value="TRIAL">Trial</option>
+                <option value="MONTHLY">Monthly</option>
+                <option value="YEARLY">Yearly</option>
+              </select>
+            </div>
+
+            <div className="relative">
+              <Filter size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9bb5]" />
+              <select
+                value={filterStatus}
+                onChange={(event) => setFilterStatus(event.target.value as '' | SubscriptionStatus)}
+                className="h-11 w-full appearance-none rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-4 text-sm font-semibold text-[#53617d] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              >
+                <option value="">All statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="EXPIRED">Expired</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="PENDING">Pending</option>
+              </select>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9bb5]" />
-          <input
-            type="text"
-            placeholder="Search by mess name or location..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-11 w-full rounded-xl border border-[#e6ebf4] bg-white pl-10 pr-4 text-sm font-semibold text-[#172554] placeholder:text-[#8a9bb5] focus:border-[#2f80ed] focus:outline-none"
-          />
         </div>
-        <select
-          value={filterPlan}
-          onChange={(e) => setFilterPlan(e.target.value)}
-          className="h-11 rounded-xl border border-[#e6ebf4] bg-white px-4 text-sm font-semibold text-[#53617d] focus:border-[#2f80ed] focus:outline-none"
-        >
-          <option value="">All Plans</option>
-          <option value="TRIAL">7 Days Free</option>
-          <option value="MONTHLY">Monthly</option>
-          <option value="YEARLY">Yearly</option>
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="h-11 rounded-xl border border-[#e6ebf4] bg-white px-4 text-sm font-semibold text-[#53617d] focus:border-[#2f80ed] focus:outline-none"
-        >
-          <option value="">All Status</option>
-          <option value="ACTIVE">Active</option>
-          <option value="EXPIRED">Expired</option>
-          <option value="CANCELLED">Cancelled</option>
-          <option value="PENDING">Pending</option>
-        </select>
-      </div>
 
-      {/* Table */}
-      <div className="mt-6 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#e6ebf4] bg-[#fafcff]">
-                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7a99]">Mess</th>
-                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7a99]">Plan</th>
-                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7a99]">Status</th>
-                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7a99]">Members</th>
-                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7a99]">Start Date</th>
-                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7a99]">End Date</th>
-                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7a99]">Days Left</th>
-                <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-[#6b7a99]">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e6ebf4]">
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#e6ebf4] border-t-[#2f80ed]" />
-                      <p className="text-sm font-semibold text-[#6b7a99]">Loading subscriptions...</p>
-                    </div>
-                  </td>
+        <div className="mt-6 overflow-hidden rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Mess</th>
+                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Plan</th>
+                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Members</th>
+                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Start</th>
+                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">End</th>
+                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Days left</th>
+                  <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
                 </tr>
-              ) : filteredSubscriptions.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <CreditCard size={32} className="text-[#d8e6f8]" />
-                      <p className="text-sm font-bold text-[#6b7a99]">No subscriptions found</p>
-                      <p className="text-xs font-semibold text-[#8a9bb5]">Try adjusting your filters</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredSubscriptions.map((sub) => {
-                  const planInfo = planLabels[sub.plan] || planLabels.TRIAL
-                  const PlanIcon = planInfo.icon
-                  const daysLeft = daysRemaining(sub.end_date)
-                  const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0
-                  const isExpired = daysLeft !== null && daysLeft <= 0
+              </thead>
+              <tbody className="divide-y divide-[#e6ebf4]">
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 size={22} className="animate-spin text-[#2f80ed]" />
+                        <p className="text-sm font-semibold text-[#6b7a99]">Loading subscriptions...</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredSubscriptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-16 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <CreditCard size={34} className="text-[#d8e6f8]" />
+                        <p className="text-sm font-bold text-[#6b7a99]">No subscriptions found</p>
+                        <p className="text-xs font-semibold text-[#8a9bb5]">Try changing the filters or create a new one.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredSubscriptions.map((subscription) => {
+                    const planStyle = PLAN_STYLES[subscription.plan]
+                    const statusStyle = STATUS_STYLES[subscription.status]
+                    const daysLeft = getDaysRemaining(subscription.end_date)
+                    const isExpiringSoon = typeof daysLeft === 'number' && daysLeft > 0 && daysLeft <= 7
+                    const isExpired = typeof daysLeft === 'number' && daysLeft <= 0
+                    const memberCount = subscription.mess._count?.memberships ?? 0
+                    const PlanIcon = planStyle.icon
 
-                  return (
-                    <tr key={sub.id} className="transition hover:bg-[#fafcff]">
-                      <td className="px-5 py-4">
-                        <div>
-                          <p className="text-sm font-bold text-[#172554]">{sub.mess.name}</p>
-                          <p className="mt-0.5 text-xs font-semibold text-[#8a9bb5]">{sub.mess.address || 'No address'}</p>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold"
-                          style={{ backgroundColor: planInfo.bg, color: planInfo.color }}
-                        >
-                          <PlanIcon size={13} />
-                          {planInfo.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold ${statusColors[sub.status] || statusColors.PENDING}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${
-                            sub.status === 'ACTIVE' ? 'bg-[#10b981]' :
-                            sub.status === 'EXPIRED' ? 'bg-[#ef4444]' :
-                            sub.status === 'CANCELLED' ? 'bg-[#6b7a99]' : 'bg-[#f59e0b]'
-                          }`} />
-                          {sub.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{sub.mess._count.memberships}</td>
-                      <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(sub.start_date)}</td>
-                      <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(sub.end_date)}</td>
-                      <td className="px-5 py-4">
-                        {daysLeft !== null ? (
-                          <span className={`text-sm font-bold ${
-                            isExpired ? 'text-[#ef4444]' :
-                            isExpiringSoon ? 'text-[#f59e0b]' :
-                            'text-[#10b981]'
-                          }`}>
-                            {isExpired ? 'Expired' : `${daysLeft} days`}
-                          </span>
-                        ) : (
-                          <span className="text-sm font-semibold text-[#8a9bb5]">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {(sub.status === 'EXPIRED' || sub.plan === 'TRIAL') && (
-                            <Button
-                              onClick={() => handleUpdatePlan(sub.id, 'MONTHLY')}
-                              className="h-8 rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3 text-xs font-bold text-white"
-                            >
-                              Upgrade
-                            </Button>
-                          )}
-                          <select
-                            value={sub.plan}
-                            onChange={(e) => handleUpdatePlan(sub.id, e.target.value)}
-                            className="h-8 rounded-lg border border-[#e6ebf4] bg-white px-2 text-xs font-semibold text-[#53617d]"
+                    return (
+                      <tr key={subscription.id} className="transition hover:bg-[#f8faff]">
+                        <td className="px-5 py-4">
+                          <div>
+                            <p className="text-sm font-bold text-[#172554]">{subscription.mess.name}</p>
+                            <p className="mt-0.5 text-xs font-semibold text-[#8a9bb5]">{subscription.mess.address || 'No address set'}</p>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${planStyle.bg} ${planStyle.text}`}
                           >
-                            <option value="TRIAL">Trial</option>
-                            <option value="MONTHLY">Monthly</option>
-                            <option value="YEARLY">Yearly</option>
-                          </select>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+                            <PlanIcon size={13} />
+                            {planStyle.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                subscription.status === 'ACTIVE'
+                                  ? 'bg-emerald-500'
+                                  : subscription.status === 'EXPIRED'
+                                    ? 'bg-red-500'
+                                    : subscription.status === 'CANCELLED'
+                                      ? 'bg-slate-500'
+                                      : 'bg-amber-500'
+                              }`}
+                            />
+                            {statusStyle.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-sm font-bold text-[#172554]">{memberCount}</td>
+                        <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(subscription.start_date)}</td>
+                        <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(subscription.end_date)}</td>
+                        <td className="px-5 py-4">
+                          {daysLeft === null ? (
+                            <span className="text-sm font-semibold text-[#8a9bb5]">N/A</span>
+                          ) : (
+                            <span
+                              className={`text-sm font-bold ${
+                                isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'
+                              }`}
+                            >
+                              {isExpired ? 'Expired' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openDetails(subscription)}
+                              className="h-8 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                            >
+                              <Eye size={13} />
+                              View
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditModal(subscription)}
+                              className="h-8 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                            >
+                              <Edit3 size={13} />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => askDelete(subscription)}
+                              className="h-8 rounded-lg px-3 text-xs font-bold text-white transition hover:bg-red-700 hover:text-white"
+                            >
+                              <Trash2 size={13} />
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      {/* Summary */}
-      <div className="mt-4 text-center">
-        <div className="inline-flex items-center gap-2 rounded-xl border border-[#e6ebf4] bg-[#fafcff] px-4 py-3">
-          <CreditCard size={15} className="text-[#2f80ed]" />
-          <span className="text-xs font-semibold text-[#6b7a99]">
-            Pricing: <strong className="text-[#172554]">7 Days Free</strong> → 
-            <strong className="text-[#2f80ed]"> ৳499/month</strong> → 
-            <strong className="text-[#f59e0b]"> ৳4,999/year</strong> (Save ৳989/year)
-          </span>
+        {activePlansOpen && (
+          <div className="mt-6 rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+            <div className="border-b border-[#e6ebf4] px-5 py-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">Active Subscription</p>
+                  <h2 className="text-lg font-black text-[#172554]">Plan pricing and duration</h2>
+                </div>
+                <p className="text-xs font-semibold text-[#8a9bb5]">Click edit on any plan to change the price or duration.</p>
+              </div>
+            </div>
+            <div className="grid gap-4 p-4 xl:grid-cols-3">
+              {planCards.map(({ plan, info, style }) => {
+                const Icon = style.icon
+                return (
+                  <div
+                    key={plan}
+                    className="rounded-2xl border border-[#e6ebf4] bg-[#fafcff] p-5 text-left transition hover:-translate-y-0.5 hover:border-[#a9ccfb]"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black ${style.bg} ${style.text}`}
+                        >
+                          <Icon size={12} />
+                          {style.label}
+                        </div>
+                        <h3 className="mt-3 text-lg font-black text-[#172554]">{info?.label ?? style.label}</h3>
+                        <p className="mt-1 text-sm font-semibold leading-6 text-[#6b7a99]">
+                          {info?.description ?? 'Subscription plan details are available from the backend plan registry.'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <div className="rounded-xl border border-[#e6ebf4] bg-white px-3 py-2 text-right">
+                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Price</p>
+                        <p className="mt-1 text-lg font-black text-[#172554]">{info ? formatMoney(info.price) : 'N/A'}</p>
+                        <p className="text-xs font-semibold text-[#8a9bb5]">{info ? `${info.days} days` : 'Plan data pending'}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openPlanEditor(plan)}
+                        className="h-9 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                      >
+                        <Edit3 size={13} />
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="border-t border-[#e6ebf4] px-5 py-4 text-xs font-semibold text-[#8a9bb5]">
+              Plans are kept in sync with the backend configuration. If you change the backend plan data, this panel updates automatically after refresh.
+            </div>
+          </div>
+        )}
+
+        <Dialog open={formOpen} onOpenChange={setFormOpen}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-2xl border border-[#d8e6f8] bg-white p-0 shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
+            <div className="border-b border-[#e6ebf4] px-6 py-5">
+              <DialogHeader className="text-left">
+                <DialogTitle className="text-xl font-black text-[#172554]">
+                  {mode === 'create' ? 'Create Subscription' : 'Edit Subscription'}
+                </DialogTitle>
+                <DialogDescription className="text-sm font-semibold text-[#6b7a99]">
+                  {mode === 'create'
+                    ? 'Create a paid subscription or initialize a trial for a mess.'
+                    : 'Update the plan or status for the selected subscription.'}
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            <div className="space-y-5 px-6 py-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Mess</label>
+                  <select
+                    value={form.messId}
+                    onChange={(event) => {
+                      const messId = event.target.value
+                      setForm((current) => ({ ...current, messId }))
+                    }}
+                    disabled={mode === 'edit'}
+                    className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10 disabled:cursor-not-allowed disabled:bg-[#f8faff]"
+                  >
+                    <option value="">Select a mess</option>
+                    {messes.map((mess) => (
+                      <option key={mess.id} value={mess.id}>
+                        {mess.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Plan</label>
+                  <select
+                    value={form.plan}
+                    onChange={(event) => setForm((current) => ({ ...current, plan: event.target.value as SubscriptionPlan }))}
+                    className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                  >
+                    <option value="TRIAL">Trial</option>
+                    <option value="MONTHLY">Monthly</option>
+                    <option value="YEARLY">Yearly</option>
+                  </select>
+                </div>
+              </div>
+
+              {mode === 'edit' && (
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</label>
+                  <select
+                    value={form.status}
+                    onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SubscriptionStatus }))}
+                    className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="EXPIRED">Expired</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-[#e6ebf4] bg-[#f8faff] p-4 text-sm font-semibold text-[#6b7a99]">
+                {form.plan === 'TRIAL' && mode === 'create' ? (
+                  <p>
+                    Trial plans use the backend trial initializer. If a subscription already exists for the mess, the existing one will be kept.
+                  </p>
+                ) : (
+                  <p>
+                    {mode === 'create'
+                      ? 'New subscriptions are created with ACTIVE status by default.'
+                      : 'Status changes are saved immediately when you update the subscription.'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter className="border-t border-[#e6ebf4] bg-[#fafcff] px-6 py-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormOpen(false)}
+                className="h-11 rounded-xl border border-[#d8e6f8] bg-white px-4 font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void saveSubscription()}
+                disabled={saving || !form.messId}
+                className="h-11 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-bold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)]"
+              >
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                {saving ? 'Saving...' : mode === 'create' ? 'Create' : 'Update'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-2xl border border-[#d8e6f8] bg-white p-0 shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
+            <div className="border-b border-[#e6ebf4] px-6 py-5">
+              <DialogHeader className="text-left">
+                <DialogTitle className="text-xl font-black text-[#172554]">Subscription details</DialogTitle>
+                <DialogDescription className="text-sm font-semibold text-[#6b7a99]">
+                  Full subscription record for {selectedSubscription?.mess.name ?? 'the selected mess'}.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {selectedSubscription && (
+              <div className="space-y-5 px-6 py-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-[#e6ebf4] bg-[#f8faff] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Mess</p>
+                    <p className="mt-1 text-base font-black text-[#172554]">{selectedSubscription.mess.name}</p>
+                    <p className="mt-1 text-sm font-semibold text-[#6b7a99]">{selectedSubscription.mess.address || 'No address set'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#e6ebf4] bg-[#f8faff] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Subscription ID</p>
+                    <p className="mt-1 break-all text-sm font-semibold text-[#172554]">{selectedSubscription.id}</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className={`rounded-2xl border p-4 ${PLAN_STYLES[selectedSubscription.plan].bg}`}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Plan</p>
+                    <p className={`mt-1 text-base font-black ${PLAN_STYLES[selectedSubscription.plan].text}`}>{subscriptionLabel(selectedSubscription)}</p>
+                  </div>
+                  <div className={`rounded-2xl border p-4 ${STATUS_STYLES[selectedSubscription.status].bg}`}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</p>
+                    <p className={`mt-1 text-base font-black ${STATUS_STYLES[selectedSubscription.status].text}`}>{STATUS_STYLES[selectedSubscription.status].label}</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#e6ebf4] bg-[#f8faff] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Members</p>
+                    <p className="mt-1 text-base font-black text-[#172554]">{selectedSubscription.mess._count?.memberships ?? 0}</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-[#e6ebf4] bg-white p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Started</p>
+                    <p className="mt-1 text-sm font-semibold text-[#172554]">{formatDate(selectedSubscription.start_date)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#e6ebf4] bg-white p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Ends</p>
+                    <p className="mt-1 text-sm font-semibold text-[#172554]">{formatDate(selectedSubscription.end_date)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#e6ebf4] bg-white p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Cancelled at</p>
+                    <p className="mt-1 text-sm font-semibold text-[#172554]">{formatDate(selectedSubscription.cancelled_at)}</p>
+                  </div>
+                </div>
+
+                <DialogFooter className="border-t border-[#e6ebf4] pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => selectedSubscription && openEditModal(selectedSubscription)}
+                    className="h-11 rounded-xl border border-[#d8e6f8] bg-white px-4 font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                  >
+                    <Edit3 size={15} />
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => selectedSubscription && askDelete(selectedSubscription)}
+                    className="h-11 rounded-xl px-4 font-bold"
+                  >
+                    <Trash2 size={15} />
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={planEditOpen} onOpenChange={setPlanEditOpen}>
+          <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border border-[#d8e6f8] bg-white p-0 shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
+            <div className="border-b border-[#e6ebf4] px-6 py-5">
+              <DialogHeader className="text-left">
+                <DialogTitle className="text-xl font-black text-[#172554]">
+                  Edit {editingPlan ? PLAN_STYLES[editingPlan].label : 'Plan'}
+                </DialogTitle>
+                <DialogDescription className="text-sm font-semibold text-[#6b7a99]">
+                  Update the plan card values. For example, lower Monthly from 499 to 399.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            <div className="space-y-4 px-6 py-6">
+              <div>
+                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Label</label>
+                <input
+                  value={planEditForm.label}
+                  onChange={(event) => setPlanEditForm((current) => ({ ...current, label: event.target.value }))}
+                  className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Price</label>
+                  <input
+                    type="number"
+                    value={planEditForm.price}
+                    onChange={(event) => setPlanEditForm((current) => ({ ...current, price: event.target.value }))}
+                    className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Days</label>
+                  <input
+                    type="number"
+                    value={planEditForm.days}
+                    onChange={(event) => setPlanEditForm((current) => ({ ...current, days: event.target.value }))}
+                    className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Currency</label>
+                <input
+                  value={planEditForm.currency}
+                  onChange={(event) => setPlanEditForm((current) => ({ ...current, currency: event.target.value }))}
+                  className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
+                <textarea
+                  value={planEditForm.description}
+                  onChange={(event) => setPlanEditForm((current) => ({ ...current, description: event.target.value }))}
+                  className="min-h-[120px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 py-3 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="border-t border-[#e6ebf4] bg-[#fafcff] px-6 py-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPlanEditOpen(false)}
+                className="h-11 rounded-xl border border-[#d8e6f8] bg-white px-4 font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void savePlanEdit()}
+                disabled={planEditSaving || !editingPlan}
+                className="h-11 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-bold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)]"
+              >
+                {planEditSaving ? <Loader2 size={15} className="animate-spin" /> : <Edit3 size={15} />}
+                {planEditSaving ? 'Saving...' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogContent className="rounded-2xl border border-[#d8e6f8] bg-white shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-left text-xl font-black text-[#172554]">Delete subscription?</AlertDialogTitle>
+              <AlertDialogDescription className="text-left text-sm font-semibold text-[#6b7a99]">
+                This will permanently remove the subscription for {selectedSubscription?.mess.name ?? 'the selected mess'}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="h-11 rounded-xl border border-[#d8e6f8] bg-white px-4 font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(event) => {
+                  event.preventDefault()
+                  void deleteSubscription()
+                }}
+                className="h-11 rounded-xl bg-red-600 px-4 font-bold text-white hover:bg-red-700"
+              >
+                {deleting ? <Loader2 size={15} className="mr-2 animate-spin" /> : <Trash2 size={15} className="mr-2" />}
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {messes.length > 0 && !loading && subscriptions.length === 0 && (
+          <div className="mt-6 rounded-2xl border border-dashed border-[#cfe0fb] bg-[#f8faff] p-5 text-sm font-semibold text-[#6b7a99]">
+            No subscriptions exist yet. Use <span className="font-black text-[#172554]">New subscription</span> to create one, or initialize a trial for a mess.
+          </div>
+        )}
+
+        {messes.length === 0 && !loading && (
+          <div className="mt-6 rounded-2xl border border-amber-200/70 bg-amber-50 p-5 text-sm font-semibold text-amber-800">
+            No messes are available to assign a subscription to yet. Create or approve a mess first, then come back here to add a subscription.
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-[#8a9bb5]">
+          <span>Loaded {filteredSubscriptions.length} of {subscriptions.length} subscription(s)</span>
+          <span>Backend controls plan pricing and trial duration.</span>
         </div>
       </div>
     </div>

@@ -224,6 +224,43 @@ export interface AppNotification {
   reads?: Array<{ user_id: string; read_at: string }>
 }
 
+export type SubscriptionPlan = 'TRIAL' | 'MONTHLY' | 'YEARLY'
+export type SubscriptionStatus = 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'PENDING'
+
+export interface SubscriptionPlanInfo {
+  price: number
+  label: string
+  days: number
+  description?: string
+  currency?: string
+}
+
+export interface SubscriptionPlanUpdate {
+  label?: string
+  price?: number
+  days?: number
+  description?: string
+  currency?: string
+}
+
+export interface SubscriptionRecord {
+  id: string
+  mess_id: string
+  plan: SubscriptionPlan
+  status: SubscriptionStatus
+  start_date: string
+  end_date: string | null
+  cancelled_at: string | null
+  created_at: string
+  updated_at?: string
+  mess: {
+    id: string
+    name: string
+    address?: string | null
+    _count?: { memberships?: number }
+  }
+}
+
 export interface PushSubscriptionPayload {
   endpoint: string
   keys: {
@@ -581,31 +618,43 @@ class ApiClient {
 
   // ─── Subscription Endpoints ──────────────────────────────
   getSubscriptionPlans() {
-    return this.request<Record<string, { price: number; label: string; days: number; description: string; currency?: string }>>('/subscriptions/plans')
+    return this.request<Record<string, SubscriptionPlanInfo>>('/subscriptions/plans')
   }
 
   getSubscriptions(params?: QueryParams) {
-    return this.request('/subscriptions', { params })
+    return this.request<SubscriptionRecord[]>('/subscriptions', { params })
+  }
+
+  getSubscription(id: string) {
+    return this.request<SubscriptionRecord>(`/subscriptions/${id}`)
   }
 
   getMessSubscription(messId: string) {
-    return this.request(`/subscriptions/mess/${messId}`)
+    return this.request<SubscriptionRecord | { mess_id: string; plan: SubscriptionPlan; status: SubscriptionStatus; start_date: string; end_date: string | null }>(`/subscriptions/mess/${messId}`)
   }
 
-  createSubscription(data: { messId: string; plan: string }) {
-    return this.request('/subscriptions', { method: 'POST', body: JSON.stringify(data) })
+  createSubscription(data: { messId: string; plan: SubscriptionPlan }) {
+    return this.request<SubscriptionRecord>('/subscriptions', { method: 'POST', body: JSON.stringify(data) })
   }
 
-  updateSubscription(id: string, data: { plan?: string; status?: string }) {
-    return this.request(`/subscriptions/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+  updateSubscription(id: string, data: { plan?: SubscriptionPlan; status?: SubscriptionStatus }) {
+    return this.request<SubscriptionRecord>(`/subscriptions/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+  }
+
+  updateSubscriptionPlan(plan: SubscriptionPlan, data: SubscriptionPlanUpdate) {
+    return this.request<SubscriptionPlanInfo>(`/subscriptions/plans/${plan}`, { method: 'PATCH', body: JSON.stringify(data) })
+  }
+
+  deleteSubscription(id: string) {
+    return this.request<SubscriptionRecord>(`/subscriptions/${id}`, { method: 'DELETE' })
   }
 
   initializeTrial(messId: string) {
-    return this.request(`/subscriptions/${messId}/trial`, { method: 'POST' })
+    return this.request<SubscriptionRecord>(`/subscriptions/${messId}/trial`, { method: 'POST' })
   }
 
   checkExpiredSubscriptions() {
-    return this.request('/subscriptions/check-expired', { method: 'POST' })
+    return this.request<{ updated: number }>('/subscriptions/check-expired', { method: 'POST' })
   }
 }
 

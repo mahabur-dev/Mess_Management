@@ -317,8 +317,9 @@ function PricingSection() {
   useEffect(() => {
     async function fetchPlans() {
       try {
-        const res = await apiClient.getPublicPlans()
+        const res = await apiClient.getPublicPlans();
         if (res?.data) setPlans(res.data)
+        console.log(res)
       } catch (err) {
         console.error('Failed to fetch plans:', err)
       } finally {
@@ -334,7 +335,7 @@ function PricingSection() {
     YEARLY: { price: 4999, label: '1 Year', days: 365, description: 'Best value for long-term mess management. Save big!', currency: '৳' },
   }
 
-  const activePlans = plans || defaultPlans
+  const activePlans = plans ?? {}
   const planEntries = Object.entries(activePlans)
 
   const planIcons: Record<string, typeof Zap> = {
@@ -350,11 +351,11 @@ function PricingSection() {
   }
 
   // Calculate savings
-  const monthlyPrice = activePlans.MONTHLY?.price || 499
-  const yearlyPrice = activePlans.YEARLY?.price || 4999
+  const monthlyPrice = Number(activePlans.MONTHLY?.price ?? 0)
+  const yearlyPrice = Number(activePlans.YEARLY?.price ?? 0)
   const yearlyRegular = monthlyPrice * 12
-  const savings = yearlyRegular - yearlyPrice
-  const savingsPercent = Math.round((savings / yearlyRegular) * 100)
+  const savings = Math.max(yearlyRegular - yearlyPrice, 0)
+  const savingsPercent = yearlyRegular > 0 ? Math.round((savings / yearlyRegular) * 100) : 0
 
   return (
     <section id="pricing" className="bg-white px-4 py-20 sm:px-6 lg:px-8">
@@ -373,7 +374,7 @@ function PricingSection() {
               ))}
             </div>
           </div>
-        ) : (
+        ) : planEntries.length > 0 ? (
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {planEntries.map(([key, plan]) => {
               const icons = planIcons
@@ -475,6 +476,13 @@ function PricingSection() {
                 </div>
               )
             })}
+          </div>
+        ) : (
+          <div className="mt-12 rounded-2xl border border-dashed border-[#d8e6f8] bg-[#fafcff] px-6 py-16 text-center">
+            <p className="text-lg font-black text-[#172554]">Pricing data is unavailable</p>
+            <p className="mt-2 text-sm font-semibold text-[#6b7a99]">
+              The backend did not return any subscription plans yet.
+            </p>
           </div>
         )}
 

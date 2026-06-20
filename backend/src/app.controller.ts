@@ -20,8 +20,8 @@ export class AppController {
 
   @Get('public/plans')
   @ApiOperation({ summary: 'Public: Get subscription plans with pricing' })
-  getSubscriptionPlans() {
-    const data = this.appService.getSubscriptionPlans();
+  async getSubscriptionPlans() {
+    const data = await this.appService.getSubscriptionPlans();
     return { message: 'Plans fetched successfully', data };
   }
 }

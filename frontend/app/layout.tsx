@@ -29,7 +29,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Messzen.com | Oficial site | The best mess management software',
+  title: 'Messzen.com | Official site | The best mess management software',
   description: 'Manage messes, meals, finances, shopping, and attendance with ease',
   generator: 'v0.app',
   manifest: '/manifest.json',

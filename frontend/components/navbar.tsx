@@ -12,7 +12,7 @@ const links = [
   { label: 'Dashboard', href: '#features' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'Why Choose', href: '#about' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Contact', href: '/contact' },
 ]
 
 export function Navbar() {
@@ -23,7 +23,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-[#e4eaf4] bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 ">
-          <BrandLogo imageClassName="h-9 w-auto" />
+          <BrandLogo />
         </Link>
 
         <div className="hidden items-center gap-2 lg:flex">
@@ -39,10 +39,10 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" onClick={() => router.push('/login')} className="font-bold text-[#07143d]">
+          <Button onClick={() => router.push('/login')} className="h-10 rounded-lg bg-[#005bbb] px-6 font-bold text-white hover:bg-[#004fa3]">
             Login
           </Button>
-          <Button onClick={() => router.push('/register')} className="h-11 rounded-lg bg-[#005bbb] px-6 font-bold text-white hover:bg-[#004fa3]">
+          <Button onClick={() => router.push('/register')} className="h-10 rounded-lg bg-[#005bbb] px-6 font-bold text-white hover:bg-[#004fa3]">
             Get Started
           </Button>
         </div>

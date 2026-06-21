@@ -37,7 +37,7 @@ import {
   YAxis,
 } from 'recharts'
 import { useEffect, useState } from 'react'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, type PublicMessCard } from '@/lib/api-client'
 
 const mealData = [
   { day: 'Mon', breakfast: 82, lunch: 54, dinner: 70 },
@@ -204,22 +204,22 @@ function SystemFeaturesSection() {
   )
 }
 
-interface PublicMess {
-  id: string
-  name: string
-  address: string | null
-  description: string | null
-  category: string | null
-  totalMembers: number
-  totalSeats: number
-  availableSeats: number
-  totalMeals: number
-  createdAt: string
-  creatorName: string
+function formatDate(value: string | null | undefined) {
+  if (!value) return 'N/A'
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function getDaysRemaining(endDate?: string | null) {
+  if (!endDate) return null
+  return Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 }
 
 function TopMessSection() {
-  const [messes, setMesses] = useState<PublicMess[]>([])
+  const [messes, setMesses] = useState<PublicMessCard[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -245,10 +245,16 @@ function TopMessSection() {
     'from-[#0ea5e9] to-[#2563eb]',
   ]
 
-  const demoMesses = messes.length > 0 ? messes : [
-    { id: '1', name: 'Mohakhali Premium Mess', address: 'Mohakhali, Dhaka', description: null, category: null, totalMembers: 42, totalSeats: 50, availableSeats: 8, totalMeals: 286, createdAt: '', creatorName: 'Admin' },
-    { id: '2', name: 'Banani Smart Residence', address: 'Banani, Dhaka', description: null, category: null, totalMembers: 36, totalSeats: 45, availableSeats: 9, totalMeals: 241, createdAt: '', creatorName: 'Admin' },
-    { id: '3', name: 'Dhanmondi Student Home', address: 'Dhanmondi, Dhaka', description: null, category: null, totalMembers: 58, totalSeats: 70, availableSeats: 12, totalMeals: 394, createdAt: '', creatorName: 'Admin' },
+  const subscriptionStyles = {
+    TRIAL: { label: 'Trial', bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' },
+    MONTHLY: { label: 'Monthly', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+    YEARLY: { label: 'Yearly', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  } as const
+
+  const demoMesses: PublicMessCard[] = messes.length > 0 ? messes : [
+    { id: '1', name: 'Mohakhali Premium Mess', address: 'Mohakhali, Dhaka', description: null, category: null, totalMembers: 42, totalSeats: 50, availableSeats: 8, totalMeals: 286, createdAt: '', creatorName: 'Admin', subscription: null },
+    { id: '2', name: 'Banani Smart Residence', address: 'Banani, Dhaka', description: null, category: null, totalMembers: 36, totalSeats: 45, availableSeats: 9, totalMeals: 241, createdAt: '', creatorName: 'Admin', subscription: null },
+    { id: '3', name: 'Dhanmondi Student Home', address: 'Dhanmondi, Dhaka', description: null, category: null, totalMembers: 58, totalSeats: 70, availableSeats: 12, totalMeals: 394, createdAt: '', creatorName: 'Admin', subscription: null },
   ]
 
   return (
@@ -289,6 +295,57 @@ function TopMessSection() {
                     <p className={`mt-1 text-base font-black ${value === 'Full' ? 'text-[#ef4444]' : 'text-[#172554]'}`}>{value}</p>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#6b7a99]">Subscription</p>
+                  {mess.subscription ? (
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black ${
+                        mess.subscription.status === 'ACTIVE'
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : mess.subscription.status === 'EXPIRED'
+                            ? 'border-red-200 bg-red-50 text-red-700'
+                            : 'border-amber-200 bg-amber-50 text-amber-700'
+                      }`}
+                    >
+                      {mess.subscription.status === 'ACTIVE' ? 'Subscribed' : mess.subscription.status}
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-dashed border-[#d8e6f8] bg-white px-2.5 py-1 text-[10px] font-black text-[#6b7a99]">
+                      Not subscribed
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {mess.subscription ? (
+                    <>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${
+                          subscriptionStyles[mess.subscription.plan].bg
+                        } ${subscriptionStyles[mess.subscription.plan].text} ${subscriptionStyles[mess.subscription.plan].border}`}
+                      >
+                        {subscriptionStyles[mess.subscription.plan].label}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-3 py-1 text-xs font-bold text-[#53617d]">
+                        Start: {formatDate(mess.subscription.startDate)}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-3 py-1 text-xs font-bold text-[#53617d]">
+                        End: {formatDate(mess.subscription.endDate)}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-3 py-1 text-xs font-bold text-[#172554]">
+                        {(() => {
+                          const days = getDaysRemaining(mess.subscription.endDate)
+                          if (days === null) return 'No end date'
+                          if (days <= 0) return 'Expired'
+                          return `${days} day${days === 1 ? '' : 's'} left`
+                        })()}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-semibold text-[#6b7a99]">Monthly and yearly plans are available from the pricing section.</span>
+                  )}
+                </div>
               </div>
               <div className="mt-4 flex items-center justify-between rounded-xl border border-[#e6ebf4] px-4 py-3">
                 <span className="text-sm font-bold text-[#6b7a99]">Managed by</span>
@@ -454,7 +511,7 @@ function PricingSection() {
                     }`}
                     variant={isMonthly ? 'default' : 'outline'}
                   >
-                    <Link href="/register">
+                    <Link href={isTrial ? '/register' : `/contact?source=subscription&plan=${key}`}>
                       {isTrial ? 'Start Free Trial' : isMonthly ? 'Subscribe Now' : 'Get Yearly Plan'}
                     </Link>
                   </Button>
@@ -551,9 +608,9 @@ export default function HomePage() {
               <Button asChild className="h-12 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-7 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)]">
                 <Link href="/register" className="flex items-center gap-2">Get Started Free <ArrowRight size={18} /></Link>
               </Button>
-              <Button asChild variant="outline" className="h-12 rounded-xl border-[#e6ebf4] bg-white px-7 font-black text-[#2f80ed] hover:bg-[#f8faff] hover:border-[#a9ccfb]">
+              {/* <Button asChild variant="outline" className="h-12 rounded-xl border-[#e6ebf4] bg-white px-7 font-black text-[#2f80ed] hover:bg-[#f8faff] hover:border-[#a9ccfb]">
                 <Link href="#features" className="flex items-center gap-2"><PlayCircle size={18} /> Explore Dashboard</Link>
-              </Button>
+              </Button> */}
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <div className="flex -space-x-2.5">

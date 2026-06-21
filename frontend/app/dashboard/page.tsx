@@ -171,6 +171,7 @@ export default function DashboardPage() {
   const [messes, setMesses] = useState<Mess[]>([])
   const [messDashboard, setMessDashboard] = useState<MessDashboard | null>(null)
   const [adminDashboard, setAdminDashboard] = useState<AdminDashboard | null>(null)
+  const [messSubscription, setMessSubscription] = useState<{ plan?: string; status?: string; end_date?: string | null } | null>(null)
   const [loadingData, setLoadingData] = useState(true)
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue)
 
@@ -204,7 +205,15 @@ export default function DashboardPage() {
         if (list[0]) {
           const dashboard = await apiClient.getMessDashboard(list[0].id, `${selectedMonth}-01`).catch(() => null)
           if (mounted && dashboard) setMessDashboard(dashboard.data)
+
+          const subscription = await apiClient.getMessSubscription(list[0].id).catch(() => null)
+          if (mounted && subscription?.data) {
+            setMessSubscription(subscription.data as { plan?: string; status?: string; end_date?: string | null })
+          } else if (mounted) {
+            setMessSubscription(null)
+          }
         }
+        if (!list[0]) setMessSubscription(null)
       } finally {
         if (mounted) setLoadingData(false)
       }

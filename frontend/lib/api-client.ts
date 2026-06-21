@@ -97,6 +97,28 @@ export interface Mess {
   _count?: { memberships?: number; deposits?: number; meals?: number }
 }
 
+export interface PublicMessSubscription {
+  plan: SubscriptionPlan
+  status: SubscriptionStatus
+  startDate: string
+  endDate: string | null
+}
+
+export interface PublicMessCard {
+  id: string
+  name: string
+  address: string | null
+  description: string | null
+  category: string | null
+  totalMembers: number
+  totalSeats: number
+  availableSeats: number
+  totalMeals: number
+  createdAt: string
+  creatorName: string
+  subscription: PublicMessSubscription | null
+}
+
 export interface MessMembership {
   id: string
   mess_id: string
@@ -210,6 +232,26 @@ export interface Complaint {
   created_at: string
   member?: User
   mess?: Mess
+}
+
+export type ContactRequestSource = 'CONTACT' | 'SUBSCRIPTION' | 'UPGRADE'
+export type ContactRequestStatus = 'PENDING' | 'CONTACTED' | 'RESOLVED'
+
+export interface ContactRequest {
+  id: string
+  name: string
+  email: string
+  phone?: string | null
+  description: string
+  source: ContactRequestSource
+  requested_plan?: SubscriptionPlan | null
+  status: ContactRequestStatus
+  admin_note?: string | null
+  reviewed_by?: string | null
+  reviewed_at?: string | null
+  created_at: string
+  updated_at: string
+  reviewer?: { id: string; name: string; email: string } | null
 }
 
 export interface AppNotification {
@@ -579,6 +621,31 @@ class ApiClient {
     return this.request(`/complaints/${id}`, { method: 'DELETE' })
   }
 
+  createContactRequest(data: {
+    name: string
+    email: string
+    phone?: string
+    description: string
+    source?: ContactRequestSource
+    requestedPlan?: SubscriptionPlan
+  }) {
+    return this.request<ContactRequest>('/contact-requests', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  getContactRequests(params?: QueryParams) {
+    return this.request<ContactRequest[]>('/contact-requests', { params })
+  }
+
+  reviewContactRequest(id: string, data: { status: ContactRequestStatus; adminNote?: string }) {
+    return this.request<ContactRequest>(`/contact-requests/${id}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
   getPushPublicKey() {
     return this.request<{ publicKey: string }>('/notification/push/public-key')
   }
@@ -637,7 +704,10 @@ class ApiClient {
     return this.request<SubscriptionRecord>('/subscriptions', { method: 'POST', body: JSON.stringify(data) })
   }
 
-  updateSubscription(id: string, data: { plan?: SubscriptionPlan; status?: SubscriptionStatus }) {
+  updateSubscription(
+    id: string,
+    data: { plan?: SubscriptionPlan; status?: SubscriptionStatus; startDate?: string; endDate?: string; days?: number },
+  ) {
     return this.request<SubscriptionRecord>(`/subscriptions/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 

@@ -20,6 +20,7 @@ import { NoticeModule } from './app/module/notice/notice.module';
 import { ComplaintModule } from './app/module/complaint/complaint.module';
 import { DashboardModule } from './app/module/dashboard/dashboard.module';
 import { SubscriptionModule } from './app/module/subscription/subscription.module';
+import { ContactRequestModule } from './app/module/contact-request/contact-request.module';
 
 // ✅ Import Prisma Module
 
@@ -43,6 +44,7 @@ import { SubscriptionModule } from './app/module/subscription/subscription.modul
     ComplaintModule,
     DashboardModule,
     SubscriptionModule,
+    ContactRequestModule,
   ],
 
   controllers: [AppController],

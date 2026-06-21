@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsDateString,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -33,6 +32,23 @@ export class UpdateSubscriptionDto {
   @IsOptional()
   @IsEnum(SubscriptionStatus)
   status?: SubscriptionStatus;
+
+  @ApiPropertyOptional({ example: '2026-06-21' })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-21' })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @ApiPropertyOptional({ example: 30 })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null || value === undefined ? undefined : Number(value)))
+  @IsInt()
+  @Min(1)
+  days?: number;
 }
 
 export class SubscriptionFilterDto {

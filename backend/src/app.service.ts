@@ -76,6 +76,14 @@ export class AppService {
         total_seats: true,
         rooms: true,
         created_at: true,
+        subscription: {
+          select: {
+            plan: true,
+            status: true,
+            start_date: true,
+            end_date: true,
+          },
+        },
         _count: {
           select: {
             memberships: { where: { is_active: true } },
@@ -116,6 +124,14 @@ export class AppService {
         totalMeals,
         createdAt: mess.created_at,
         creatorName: mess.creator.name,
+        subscription: mess.subscription
+          ? {
+              plan: mess.subscription.plan,
+              status: mess.subscription.status,
+              startDate: mess.subscription.start_date,
+              endDate: mess.subscription.end_date,
+            }
+          : null,
       };
     });
   }

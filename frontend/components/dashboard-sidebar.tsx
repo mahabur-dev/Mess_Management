@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   MessageSquareWarning,
+  Mail,
   Settings,
   ShoppingCart,
   UtensilsCrossed,
@@ -58,6 +59,7 @@ const adminItems = [
   ...commonItems,
   { label: 'Users', href: '/dashboard/users', icon: Users },
   { label: 'Mess Requests', href: '/dashboard/mess_requests', icon: ClipboardList },
+  { label: 'Contact Requests', href: '/dashboard/contact-requests', icon: Mail },
   { label: 'All Messes', href: '/dashboard/mess_management', icon: Home },
   // { label: 'Payments/Packages', href: '/dashboard/payments', icon: CreditCard },
   { label: 'Subscriptions', href: '/dashboard/subscriptions', icon: BarChart3 },
@@ -105,7 +107,7 @@ export function DashboardSidebar() {
           {/* <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-base font-black text-white shadow-[0_4px_12px_rgba(47,128,237,0.3)]">
             M
           </div> */}
-          <BrandLogo imageClassName="h-8 w-auto" />
+          <BrandLogo  />
           {/* {!collapsed && (
             <div className="min-w-0">
               <p className="text-base font-black text-[#172554] tracking-tight leading-none">Mess</p>

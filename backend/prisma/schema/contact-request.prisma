@@ -1,0 +1,21 @@
+model ContactRequest {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String               @db.VarChar(120)
+  email          String               @db.VarChar(120)
+  phone          String?              @db.VarChar(30)
+  description    String               @db.Text
+  source         ContactRequestSource @default(CONTACT)
+  requested_plan SubscriptionPlan?
+  status         ContactRequestStatus @default(PENDING)
+  admin_note     String?              @db.Text
+  reviewed_by    String?              @db.Uuid
+  reviewed_at    DateTime?            @db.Timestamptz
+  created_at     DateTime             @default(now()) @db.Timestamptz
+  updated_at     DateTime             @updatedAt @db.Timestamptz
+
+  reviewer User? @relation("ContactRequestReviewer", fields: [reviewed_by], references: [id], onDelete: SetNull)
+
+  @@index([status, created_at])
+  @@index([email])
+  @@map("contact_requests")
+}

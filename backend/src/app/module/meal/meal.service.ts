@@ -230,6 +230,23 @@ export class MealService {
     }
   }
 
+  private async ensureActiveSubscription(messId: string, role: string): Promise<void> {
+    if (role === 'ADMIN' || role === 'ORGANIZER') return;
+
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { mess_id: messId },
+      select: { status: true, end_date: true },
+    });
+
+    const isActive =
+      subscription?.status === 'ACTIVE' &&
+      (!subscription.end_date || subscription.end_date.getTime() >= Date.now());
+
+    if (!isActive) {
+      throw new HttpException('Subscription expired. Please renew to use meal features.', 403);
+    }
+  }
+
   private async canManageMeal(
     messId: string,
     userId: string,
@@ -321,6 +338,7 @@ export class MealService {
 
   async create(userId: string, role: string, dto: CreateMealDto) {
     await this.verifyMessAccess(dto.messId, userId, role);
+    await this.ensureActiveSubscription(dto.messId, role);
 
     const date = dto.date ? new Date(dto.date) : new Date();
     const mealName = dto.mealName ?? MealName.LUNCH;
@@ -463,6 +481,8 @@ export class MealService {
       if (mess?.created_by !== userId) throw new HttpException('Forbidden: Not your mess', 403);
     }
 
+    await this.ensureActiveSubscription(meal.mess_id, role);
+
     const oldMessId = meal.mess_id;
     const oldDate = meal.scheduled_date;
 
@@ -530,6 +550,7 @@ export class MealService {
         403,
       );
     }
+    await this.ensureActiveSubscription(messId, role);
 
     // Validate time format
     const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -601,6 +622,8 @@ export class MealService {
         throw new HttpException('Forbidden: Not your mess', 403);
       }
     }
+
+    await this.ensureActiveSubscription(meal.mess_id, role);
 
     await this.prisma.meal.delete({ where: { id } });
 

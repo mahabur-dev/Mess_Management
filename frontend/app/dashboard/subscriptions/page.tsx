@@ -33,7 +33,6 @@ import {
   Filter,
   Loader2,
   Plus,
-  RefreshCw,
   Search,
   Sparkles,
   Trash2,
@@ -44,6 +43,9 @@ type SubscriptionFormState = {
   messId: string
   plan: SubscriptionPlan
   status: SubscriptionStatus
+  startDate: string
+  endDate: string
+  days: string
 }
 
 type BannerState = {
@@ -83,6 +85,28 @@ function formatDate(value: string | null) {
   })
 }
 
+function toDateInputValue(value?: string | null) {
+  if (!value) return ''
+  return new Date(value).toISOString().slice(0, 10)
+}
+
+function addDaysToDate(dateValue: string, daysValue: string) {
+  const days = Number(daysValue)
+  if (!dateValue || Number.isNaN(days) || days <= 0) return ''
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime())) return ''
+  date.setDate(date.getDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function diffDays(startValue: string, endValue: string) {
+  const start = new Date(startValue)
+  const end = new Date(endValue)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return ''
+  const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+  return diff > 0 ? String(diff) : ''
+}
+
 function formatMoney(amount: number, currency = 'BDT') {
   try {
     return new Intl.NumberFormat('en-BD', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
@@ -106,6 +130,9 @@ function emptyForm(messId = ''): SubscriptionFormState {
     messId,
     plan: 'MONTHLY',
     status: 'ACTIVE',
+    startDate: '',
+    endDate: '',
+    days: '',
   }
 }
 
@@ -128,7 +155,6 @@ export default function SubscriptionsPage() {
   const [filterPlan, setFilterPlan] = useState<'' | SubscriptionPlan>('')
   const [filterStatus, setFilterStatus] = useState<'' | SubscriptionStatus>('')
   const [banner, setBanner] = useState<BannerState>(null)
-  const [refreshingExpired, setRefreshingExpired] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -213,12 +239,54 @@ export default function SubscriptionsPage() {
   function openEditModal(subscription: SubscriptionRecord) {
     setMode('edit')
     setSelectedSubscription(subscription)
+    const startDate = toDateInputValue(subscription.start_date)
+    const endDate = toDateInputValue(subscription.end_date)
     setForm({
       messId: subscription.mess_id,
       plan: subscription.plan,
       status: subscription.status,
+      startDate,
+      endDate,
+      days: endDate ? diffDays(startDate, endDate) : '',
     })
     setFormOpen(true)
+  }
+
+  function handlePlanChange(plan: SubscriptionPlan) {
+    setForm((current) => {
+      const planInfo = subscriptionPlans[plan]
+      const nextDays = planInfo?.days ? String(planInfo.days) : current.days
+      return {
+        ...current,
+        plan,
+        days: nextDays,
+        endDate: current.startDate && nextDays ? addDaysToDate(current.startDate, nextDays) : current.endDate,
+      }
+    })
+  }
+
+  function handleStartDateChange(startDate: string) {
+    setForm((current) => ({
+      ...current,
+      startDate,
+      endDate: startDate && current.days ? addDaysToDate(startDate, current.days) : current.endDate,
+    }))
+  }
+
+  function handleDaysChange(days: string) {
+    setForm((current) => ({
+      ...current,
+      days,
+      endDate: current.startDate && days ? addDaysToDate(current.startDate, days) : '',
+    }))
+  }
+
+  function handleEndDateChange(endDate: string) {
+    setForm((current) => ({
+      ...current,
+      endDate,
+      days: current.startDate && endDate ? diffDays(current.startDate, endDate) : current.days,
+    }))
   }
 
   function openDetails(subscription: SubscriptionRecord) {
@@ -229,25 +297,6 @@ export default function SubscriptionsPage() {
   function askDelete(subscription: SubscriptionRecord) {
     setSelectedSubscription(subscription)
     setDeleteOpen(true)
-  }
-
-  async function refreshExpired() {
-    setRefreshingExpired(true)
-    try {
-      const response = await apiClient.checkExpiredSubscriptions()
-      setBanner({
-        type: 'success',
-        message: `Expired subscriptions checked. ${response.data?.updated ?? 0} record(s) updated.`,
-      })
-      await loadData()
-    } catch {
-      setBanner({
-        type: 'error',
-        message: 'Failed to check expired subscriptions.',
-      })
-    } finally {
-      setRefreshingExpired(false)
-    }
   }
 
   async function saveSubscription() {
@@ -269,6 +318,9 @@ export default function SubscriptionsPage() {
         await apiClient.updateSubscription(selectedSubscription.id, {
           plan: form.plan,
           status: form.status,
+          startDate: form.startDate || undefined,
+          endDate: form.endDate || undefined,
+          days: form.days ? Number(form.days) : undefined,
         })
         setBanner({ type: 'success', message: 'Subscription updated successfully.' })
       }
@@ -354,7 +406,7 @@ export default function SubscriptionsPage() {
   return (
     <div className="min-h-screen bg-[#fafcff]">
       <div className="p-4 sm:p-6 lg:p-8">
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)] lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-[#f8faff] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">
               <BadgeCheck size={12} />
@@ -362,38 +414,29 @@ export default function SubscriptionsPage() {
             </div>
             <h1 className="text-2xl font-black tracking-tight text-[#172554]">Subscriptions</h1>
             <p className="max-w-2xl text-sm font-semibold text-[#6b7a99]">
-              Create, inspect, update, and remove mess subscriptions from one place.
+              Manage subscribed messes, inspect active plans, and create new subscriptions from one place.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[420px] lg:grid-cols-[1fr_1fr]">
             <Button
               type="button"
               variant="outline"
               onClick={() => setActivePlansOpen((current) => !current)}
-              className={`h-10 rounded-xl border px-4 font-bold transition ${
+              aria-pressed={activePlansOpen}
+              className={`h-11 rounded-xl border px-4 font-bold transition ${
                 activePlansOpen
-                  ? 'border-[#2f80ed]/25 bg-[#eef5ff] text-[#172554] hover:bg-[#e5f0ff]'
-                  : 'border-[#d8e6f8] bg-white text-[#53617d] hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]'
+                  ? 'border-[#2f80ed]/25 bg-[#eef5ff] text-[#172554] '
+                  : 'border-[#d8e6f8] bg-white text-[#172554]'
               }`}
             >
               <Sparkles size={15} className="text-[#2f80ed]" />
-              Active Subscription
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={refreshExpired}
-              disabled={refreshingExpired}
-              className="h-10 rounded-xl border border-[#d8e6f8] bg-white px-4 font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
-            >
-              <RefreshCw size={15} className={refreshingExpired ? 'animate-spin' : ''} />
-              Check expired
+              {activePlansOpen ? 'Hide active subscription' : 'Active subscription'}
             </Button>
             <Button
               type="button"
               onClick={openCreateModal}
-              className="h-10 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-bold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:from-[#1f6de0] hover:to-[#2f80ed] hover:text-white"
+              className="h-11 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-bold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:from-[#1f6de0] hover:to-[#2f80ed] hover:text-white"
             >
               <Plus size={15} />
               New subscription
@@ -510,202 +553,202 @@ export default function SubscriptionsPage() {
         </div>
 
         <div className="mt-6 overflow-hidden rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Mess</th>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Plan</th>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Members</th>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Start</th>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">End</th>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Days left</th>
-                  <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e6ebf4]">
-                {loading ? (
-                  <tr>
-                    <td colSpan={8} className="px-5 py-16 text-center">
-                      <div className="flex flex-col items-center gap-3">
-                        <Loader2 size={22} className="animate-spin text-[#2f80ed]" />
-                        <p className="text-sm font-semibold text-[#6b7a99]">Loading subscriptions...</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : filteredSubscriptions.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-5 py-16 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <CreditCard size={34} className="text-[#d8e6f8]" />
-                        <p className="text-sm font-bold text-[#6b7a99]">No subscriptions found</p>
-                        <p className="text-xs font-semibold text-[#8a9bb5]">Try changing the filters or create a new one.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredSubscriptions.map((subscription) => {
-                    const planStyle = PLAN_STYLES[subscription.plan]
-                    const statusStyle = STATUS_STYLES[subscription.status]
-                    const daysLeft = getDaysRemaining(subscription.end_date)
-                    const isExpiringSoon = typeof daysLeft === 'number' && daysLeft > 0 && daysLeft <= 7
-                    const isExpired = typeof daysLeft === 'number' && daysLeft <= 0
-                    const memberCount = subscription.mess._count?.memberships ?? 0
-                    const PlanIcon = planStyle.icon
-
-                    return (
-                      <tr key={subscription.id} className="transition hover:bg-[#f8faff]">
-                        <td className="px-5 py-4">
-                          <div>
-                            <p className="text-sm font-bold text-[#172554]">{subscription.mess.name}</p>
-                            <p className="mt-0.5 text-xs font-semibold text-[#8a9bb5]">{subscription.mess.address || 'No address set'}</p>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${planStyle.bg} ${planStyle.text}`}
-                          >
-                            <PlanIcon size={13} />
-                            {planStyle.label}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                subscription.status === 'ACTIVE'
-                                  ? 'bg-emerald-500'
-                                  : subscription.status === 'EXPIRED'
-                                    ? 'bg-red-500'
-                                    : subscription.status === 'CANCELLED'
-                                      ? 'bg-slate-500'
-                                      : 'bg-amber-500'
-                              }`}
-                            />
-                            {statusStyle.label}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-sm font-bold text-[#172554]">{memberCount}</td>
-                        <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(subscription.start_date)}</td>
-                        <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(subscription.end_date)}</td>
-                        <td className="px-5 py-4">
-                          {daysLeft === null ? (
-                            <span className="text-sm font-semibold text-[#8a9bb5]">N/A</span>
-                          ) : (
-                            <span
-                              className={`text-sm font-bold ${
-                                isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'
-                              }`}
-                            >
-                              {isExpired ? 'Expired' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openDetails(subscription)}
-                              className="h-8 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
-                            >
-                              <Eye size={13} />
-                              View
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditModal(subscription)}
-                              className="h-8 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
-                            >
-                              <Edit3 size={13} />
-                              Edit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => askDelete(subscription)}
-                              className="h-8 rounded-lg px-3 text-xs font-bold text-white transition hover:bg-red-700 hover:text-white"
-                            >
-                              <Trash2 size={13} />
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {activePlansOpen && (
-          <div className="mt-6 rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-            <div className="border-b border-[#e6ebf4] px-5 py-4">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">Active Subscription</p>
-                  <h2 className="text-lg font-black text-[#172554]">Plan pricing and duration</h2>
-                </div>
-                <p className="text-xs font-semibold text-[#8a9bb5]">Click edit on any plan to change the price or duration.</p>
-              </div>
-            </div>
-            <div className="grid gap-4 p-4 xl:grid-cols-3">
-              {planCards.map(({ plan, info, style }) => {
-                const Icon = style.icon
-                return (
-                  <div
-                    key={plan}
-                    className="rounded-2xl border border-[#e6ebf4] bg-[#fafcff] p-5 text-left transition hover:-translate-y-0.5 hover:border-[#a9ccfb]"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black ${style.bg} ${style.text}`}
-                        >
-                          <Icon size={12} />
-                          {style.label}
-                        </div>
-                        <h3 className="mt-3 text-lg font-black text-[#172554]">{info?.label ?? style.label}</h3>
-                        <p className="mt-1 text-sm font-semibold leading-6 text-[#6b7a99]">
-                          {info?.description ?? 'Subscription plan details are available from the backend plan registry.'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <div className="rounded-xl border border-[#e6ebf4] bg-white px-3 py-2 text-right">
-                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Price</p>
-                        <p className="mt-1 text-lg font-black text-[#172554]">{info ? formatMoney(info.price) : 'N/A'}</p>
-                        <p className="text-xs font-semibold text-[#8a9bb5]">{info ? `${info.days} days` : 'Plan data pending'}</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openPlanEditor(plan)}
-                        className="h-9 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
-                      >
-                        <Edit3 size={13} />
-                        Edit
-                      </Button>
-                    </div>
+          {activePlansOpen ? (
+            <>
+              <div className="border-b border-[#e6ebf4] px-5 py-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">Active Subscription</p>
+                    <h2 className="text-lg font-black text-[#172554]">Plan pricing and duration</h2>
                   </div>
-                )
-              })}
+                  <p className="text-xs font-semibold text-[#8a9bb5]">Click edit on any plan to change the price or duration.</p>
+                </div>
+              </div>
+              <div className="grid gap-4 p-4 xl:grid-cols-3">
+                {planCards.map(({ plan, info, style }) => {
+                  const Icon = style.icon
+                  return (
+                    <div
+                      key={plan}
+                      className="rounded-2xl border border-[#e6ebf4] bg-[#fafcff] p-5 text-left transition hover:-translate-y-0.5 hover:border-[#a9ccfb]"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black ${style.bg} ${style.text}`}
+                          >
+                            <Icon size={12} />
+                            {style.label}
+                          </div>
+                          <h3 className="mt-3 text-lg font-black text-[#172554]">{info?.label ?? style.label}</h3>
+                          <p className="mt-1 text-sm font-semibold leading-6 text-[#6b7a99]">
+                            {info?.description ?? 'Subscription plan details are available from the backend plan registry.'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <div className="rounded-xl border border-[#e6ebf4] bg-white px-3 py-2 text-right">
+                          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Price</p>
+                          <p className="mt-1 text-lg font-black text-[#172554]">{info ? formatMoney(info.price) : 'N/A'}</p>
+                          <p className="text-xs font-semibold text-[#8a9bb5]">{info ? `${info.days} days` : 'Plan data pending'}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openPlanEditor(plan)}
+                          className="h-9 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                        >
+                          <Edit3 size={13} />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="border-t border-[#e6ebf4] px-5 py-4 text-xs font-semibold text-[#8a9bb5]">
+                Plans are kept in sync with the backend configuration. If you change the backend plan data, this panel updates automatically after refresh.
+              </div>
+            </>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Mess</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Plan</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Members</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Start</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">End</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Days left</th>
+                    <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e6ebf4]">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="px-5 py-16 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <Loader2 size={22} className="animate-spin text-[#2f80ed]" />
+                          <p className="text-sm font-semibold text-[#6b7a99]">Loading subscriptions...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredSubscriptions.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-5 py-16 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <CreditCard size={34} className="text-[#d8e6f8]" />
+                          <p className="text-sm font-bold text-[#6b7a99]">No subscriptions found</p>
+                          <p className="text-xs font-semibold text-[#8a9bb5]">Try changing the filters or create a new one.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredSubscriptions.map((subscription) => {
+                      const planStyle = PLAN_STYLES[subscription.plan]
+                      const statusStyle = STATUS_STYLES[subscription.status]
+                      const daysLeft = getDaysRemaining(subscription.end_date)
+                      const isExpiringSoon = typeof daysLeft === 'number' && daysLeft > 0 && daysLeft <= 7
+                      const isExpired = typeof daysLeft === 'number' && daysLeft <= 0
+                      const memberCount = subscription.mess._count?.memberships ?? 0
+                      const PlanIcon = planStyle.icon
+
+                      return (
+                        <tr key={subscription.id} className="transition hover:bg-[#f8faff]">
+                          <td className="px-5 py-4">
+                            <div>
+                              <p className="text-sm font-bold text-[#172554]">{subscription.mess.name}</p>
+                              <p className="mt-0.5 text-xs font-semibold text-[#8a9bb5]">{subscription.mess.address || 'No address set'}</p>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${planStyle.bg} ${planStyle.text}`}
+                            >
+                              <PlanIcon size={13} />
+                              {planStyle.label}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
+                            >
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  subscription.status === 'ACTIVE'
+                                    ? 'bg-emerald-500'
+                                    : subscription.status === 'EXPIRED'
+                                      ? 'bg-red-500'
+                                      : subscription.status === 'CANCELLED'
+                                        ? 'bg-slate-500'
+                                        : 'bg-amber-500'
+                                }`}
+                              />
+                              {statusStyle.label}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-sm font-bold text-[#172554]">{memberCount}</td>
+                          <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(subscription.start_date)}</td>
+                          <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(subscription.end_date)}</td>
+                          <td className="px-5 py-4">
+                            {daysLeft === null ? (
+                              <span className="text-sm font-semibold text-[#8a9bb5]">N/A</span>
+                            ) : (
+                              <span
+                                className={`text-sm font-bold ${
+                                  isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'
+                                }`}
+                              >
+                                {isExpired ? 'Expired' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openDetails(subscription)}
+                                className="h-8 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                              >
+                                <Eye size={13} />
+                                View
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditModal(subscription)}
+                                className="h-8 rounded-lg border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                              >
+                                <Edit3 size={13} />
+                                Edit
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => askDelete(subscription)}
+                                className="h-8 rounded-lg px-3 text-xs font-bold text-white transition hover:bg-red-700 hover:text-white"
+                              >
+                                <Trash2 size={13} />
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
-            <div className="border-t border-[#e6ebf4] px-5 py-4 text-xs font-semibold text-[#8a9bb5]">
-              Plans are kept in sync with the backend configuration. If you change the backend plan data, this panel updates automatically after refresh.
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <Dialog open={formOpen} onOpenChange={setFormOpen}>
           <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-2xl border border-[#d8e6f8] bg-white p-0 shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
@@ -717,7 +760,7 @@ export default function SubscriptionsPage() {
                 <DialogDescription className="text-sm font-semibold text-[#6b7a99]">
                   {mode === 'create'
                     ? 'Create a paid subscription or initialize a trial for a mess.'
-                    : 'Update the plan or status for the selected subscription.'}
+                    : 'Update the plan, status, days, start date, and end date. Changing the plan will auto-sync the duration.'}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -748,7 +791,7 @@ export default function SubscriptionsPage() {
                   <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Plan</label>
                   <select
                     value={form.plan}
-                    onChange={(event) => setForm((current) => ({ ...current, plan: event.target.value as SubscriptionPlan }))}
+                    onChange={(event) => handlePlanChange(event.target.value as SubscriptionPlan)}
                     className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                   >
                     <option value="TRIAL">Trial</option>
@@ -759,18 +802,52 @@ export default function SubscriptionsPage() {
               </div>
 
               {mode === 'edit' && (
-                <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</label>
-                  <select
-                    value={form.status}
-                    onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SubscriptionStatus }))}
-                    className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="PENDING">Pending</option>
-                    <option value="EXPIRED">Expired</option>
-                    <option value="CANCELLED">Cancelled</option>
-                  </select>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</label>
+                    <select
+                      value={form.status}
+                      onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SubscriptionStatus }))}
+                      className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="EXPIRED">Expired</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Days</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={form.days}
+                      onChange={(event) => handleDaysChange(event.target.value)}
+                      className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      placeholder="30"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Start Date</label>
+                    <input
+                      type="date"
+                      value={form.startDate}
+                      onChange={(event) => handleStartDateChange(event.target.value)}
+                      className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">End Date</label>
+                    <input
+                      type="date"
+                      value={form.endDate}
+                      onChange={(event) => handleEndDateChange(event.target.value)}
+                      className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -999,21 +1076,21 @@ export default function SubscriptionsPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {messes.length > 0 && !loading && subscriptions.length === 0 && (
+        {/* {messes.length > 0 && !loading && subscriptions.length === 0 && (
           <div className="mt-6 rounded-2xl border border-dashed border-[#cfe0fb] bg-[#f8faff] p-5 text-sm font-semibold text-[#6b7a99]">
             No subscriptions exist yet. Use <span className="font-black text-[#172554]">New subscription</span> to create one, or initialize a trial for a mess.
           </div>
-        )}
+        )} */}
 
-        {messes.length === 0 && !loading && (
+        {/* {messes.length === 0 && !loading && (
           <div className="mt-6 rounded-2xl border border-amber-200/70 bg-amber-50 p-5 text-sm font-semibold text-amber-800">
             No messes are available to assign a subscription to yet. Create or approve a mess first, then come back here to add a subscription.
           </div>
-        )}
+        )} */}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-[#8a9bb5]">
           <span>Loaded {filteredSubscriptions.length} of {subscriptions.length} subscription(s)</span>
-          <span>Backend controls plan pricing and trial duration.</span>
+          {/* <span>Backend controls plan pricing and trial duration.</span> */}
         </div>
       </div>
     </div>

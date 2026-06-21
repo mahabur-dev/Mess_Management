@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/app/context/auth-context'
 import { Bell, CalendarDays, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,8 @@ interface DashboardHeaderProps {
   description?: string
   selectedMonth?: string
   onMonthChange?: (month: string) => void
+  showUpgradeButton?: boolean
+  upgradeHref?: string
 }
 
 function formatMonthLabel(month?: string) {
@@ -60,7 +63,7 @@ const expenseCategories: ExpenseCategory[] = [
 
 const paymentMethods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
 
-export function DashboardHeader({ title, description, selectedMonth, onMonthChange }: DashboardHeaderProps) {
+export function DashboardHeader({ title, description, selectedMonth, onMonthChange, showUpgradeButton, upgradeHref = '/dashboard/contact?source=UPGRADE&plan=MONTHLY' }: DashboardHeaderProps) {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [imageError, setImageError] = useState(false)
@@ -274,6 +277,17 @@ export function DashboardHeader({ title, description, selectedMonth, onMonthChan
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+
+          {showUpgradeButton && (
+            <Button
+              type="button"
+              onClick={() => router.push(upgradeHref)}
+              className="h-11 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#f97316] px-4 font-black text-white shadow-[0_8px_20px_rgba(245,158,11,0.25)] transition hover:from-[#ed8f07] hover:to-[#ea6b12]"
+            >
+              <Mail size={16} />
+              Upgrade
+            </Button>
           )}
 
           {/* Notifications */}

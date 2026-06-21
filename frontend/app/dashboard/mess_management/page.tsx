@@ -2,7 +2,7 @@
 
 import { DashboardHeader } from '@/components/dashboard-header'
 import { useAuth } from '@/app/context/auth-context'
-import { apiClient, type Mess, type MessRoom } from '@/lib/api-client'
+import { apiClient, type Mess, type MessRoom, type SubscriptionPlan, type SubscriptionStatus } from '@/lib/api-client'
 import {
   AlertCircle,
   Building2,
@@ -44,6 +44,13 @@ type SetupState = {
   rooms: RoomDraft[]
 }
 
+type MessSubscriptionSummary = {
+  plan: SubscriptionPlan
+  status: SubscriptionStatus
+  start_date: string
+  end_date: string | null
+}
+
 const createRoomDraft = (room?: Partial<RoomDraft>): RoomDraft => ({
   id: room?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   roomName: room?.roomName ?? '',
@@ -77,6 +84,27 @@ function normalizeRooms(rooms?: MessRoom[] | null): RoomDraft[] {
   )
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return 'N/A'
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function getDaysRemaining(endDate: string | null | undefined) {
+  if (!endDate) return null
+  return Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+}
+
+function planLabel(plan?: SubscriptionPlan | null) {
+  if (!plan) return 'N/A'
+  if (plan === 'MONTHLY') return 'Monthly'
+  if (plan === 'YEARLY') return 'Yearly'
+  return 'Trial'
+}
+
 export default function MessManagementPage() {
   const { user } = useAuth()
   const [messes, setMesses] = useState<Mess[]>([])
@@ -93,6 +121,7 @@ export default function MessManagementPage() {
   const [setup, setSetup] = useState<SetupState>(createEmptySetup)
   const [saving, setSaving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [subscription, setSubscription] = useState<MessSubscriptionSummary | null>(null)
   const activeMess = messes[0]
   const isAdmin = user?.role === 'ADMIN'
   const isManager = user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
@@ -103,8 +132,22 @@ export default function MessManagementPage() {
       const response = isAdmin ? await apiClient.getAllMesses({ limit: 100 }) : await apiClient.getMesses()
       const list = Array.isArray(response.data) ? response.data : response.data ? [response.data] : []
       setMesses(list)
+      setSubscription(null)
 
       if (list[0]) {
+        if (isManager) {
+          const subscriptionResponse = await apiClient.getMessSubscription(list[0].id).catch(() => null)
+          const data = subscriptionResponse?.data
+          if (data && typeof data === 'object' && 'plan' in data) {
+            setSubscription({
+              plan: data.plan as SubscriptionPlan,
+              status: data.status as SubscriptionStatus,
+              start_date: data.start_date,
+              end_date: data.end_date,
+            })
+          }
+        }
+
         setSetup({
           messName: list[0].name ?? '',
           address: list[0].address ?? '',
@@ -483,11 +526,61 @@ export default function MessManagementPage() {
                 </div>
               </div>
               <div className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-50 to-green-100">
-                      <CheckCircle2 size={16} className="text-emerald-600" />
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-[#cfe0fb] bg-gradient-to-br from-[#f8faff] to-white p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">Subscription</p>
+                          <h3 className="mt-1 text-base font-black text-[#172554]">
+                            {subscription ? planLabel(subscription.plan) : 'Subscription not loaded'}
+                          </h3>
+                        </div>
+                        {subscription && (
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black ${
+                              subscription.status === 'ACTIVE'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : subscription.status === 'EXPIRED'
+                                  ? 'bg-red-50 text-red-700'
+                                  : subscription.status === 'CANCELLED'
+                                    ? 'bg-slate-50 text-slate-700'
+                                    : 'bg-amber-50 text-amber-700'
+                            }`}
+                          >
+                            {subscription.status}
+                          </span>
+                        )}
+                      </div>
+
+                      {subscription ? (
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-lg border border-[#e6ebf4] bg-white p-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Started</p>
+                            <p className="mt-1 text-sm font-bold text-[#172554]">{formatDate(subscription.start_date)}</p>
+                          </div>
+                          <div className="rounded-lg border border-[#e6ebf4] bg-white p-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Ends</p>
+                            <p className="mt-1 text-sm font-bold text-[#172554]">{formatDate(subscription.end_date)}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-xs font-semibold text-[#6b7a99]">No subscription details found for this mess.</p>
+                      )}
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-3 py-1 text-xs font-bold text-[#53617d]">
+                          Days left: {subscription && subscription.end_date ? `${Math.max(getDaysRemaining(subscription.end_date) ?? 0, 0)} days` : 'N/A'}
+                        </span>
+                        <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-3 py-1 text-xs font-bold text-[#53617d]">
+                          Plan: {planLabel(subscription?.plan)}
+                        </span>
+                      </div>
                     </div>
+
+                    <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-50 to-green-100">
+                        <CheckCircle2 size={16} className="text-emerald-600" />
+                      </div>
                     <div>
                       <p className="text-xs font-bold text-[#172554]">Setup Status</p>
                       <p className="text-xs font-semibold text-[#6b7a99]">

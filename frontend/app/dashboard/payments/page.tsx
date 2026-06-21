@@ -38,6 +38,10 @@ function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export default function PaymentsPage() {
   const [messes, setMesses] = useState<Mess[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
@@ -51,6 +55,7 @@ export default function PaymentsPage() {
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [reviewingId, setReviewingId] = useState<string | null>(null)
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   async function load() {
     setLoading(true)
@@ -84,11 +89,15 @@ export default function PaymentsPage() {
   async function submitPayment() {
     if (!activeMess || !amount) return
     setSubmitting(true)
+    setAlert(null)
     try {
       await apiClient.submitPayment({ messId: activeMess.id, amount: Number(amount), method })
       setAmount('')
       setShowModal(false)
+      setAlert({ type: 'success', message: 'Payment submitted successfully.' })
       await load()
+    } catch (error) {
+      setAlert({ type: 'error', message: getErrorMessage(error, 'Failed to submit payment.') })
     } finally {
       setSubmitting(false)
     }
@@ -96,9 +105,13 @@ export default function PaymentsPage() {
 
   async function review(id: string, status: 'APPROVED' | 'REJECTED') {
     setReviewingId(id)
+    setAlert(null)
     try {
       await apiClient.reviewPayment(id, { status })
+      setAlert({ type: 'success', message: `Payment ${status.toLowerCase()} successfully.` })
       await load()
+    } catch (error) {
+      setAlert({ type: 'error', message: getErrorMessage(error, 'Failed to review payment.') })
     } finally {
       setReviewingId(null)
     }
@@ -114,6 +127,18 @@ export default function PaymentsPage() {
       <DashboardHeader title="Payments" description="Approve member payments and track transaction status" />
 
       <div className="p-4 sm:p-6 lg:p-8">
+        {alert && (
+          <div
+            className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${
+              alert.type === 'error'
+                ? 'border border-red-200/70 bg-red-50 text-red-700'
+                : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'
+            }`}
+          >
+            {alert.message}
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">

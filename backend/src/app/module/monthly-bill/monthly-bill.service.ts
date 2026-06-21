@@ -157,7 +157,10 @@ export class MonthlyBillService {
       (!subscription.end_date || subscription.end_date.getTime() >= Date.now());
 
     if (!isActive) {
-      throw new HttpException('Subscription expired. Please renew to use bill features.', 403);
+      throw new HttpException(
+        'Your subscription has expired. Please renew it to continue using bill features.',
+        403,
+      );
     }
   }
 

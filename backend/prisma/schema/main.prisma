@@ -136,3 +136,15 @@ enum ComplaintStatus {
   SOLVED
   REJECTED
 }
+
+enum ContactRequestSource {
+  CONTACT
+  SUBSCRIPTION
+  UPGRADE
+}
+
+enum ContactRequestStatus {
+  PENDING
+  CONTACTED
+  RESOLVED
+}

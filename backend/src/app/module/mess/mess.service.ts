@@ -214,7 +214,7 @@ export class MessService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const mess = await tx.mess.create({
         data: {
           name: request.mess_name,
@@ -244,6 +244,25 @@ export class MessService {
         data: { role: 'MANAGER' },
       });
 
+      const existingSubscription = await tx.subscription.findUnique({
+        where: { mess_id: mess.id },
+      });
+      if (!existingSubscription) {
+        await tx.subscription.create({
+          data: {
+            mess_id: mess.id,
+            plan: 'TRIAL',
+            status: 'ACTIVE',
+            start_date: new Date(),
+            end_date: (() => {
+              const endDate = new Date();
+              endDate.setDate(endDate.getDate() + 7);
+              return endDate;
+            })(),
+          },
+        });
+      }
+
       return tx.messRequest.update({
         where: { id: requestId },
         data: {
@@ -260,6 +279,18 @@ export class MessService {
         },
       });
     });
+
+    void this.notificationService.sendPushToUsers([request.requester_id], {
+      title: 'Your mess is approved',
+      body: 'A 7-day free trial has started. You can upgrade anytime from the dashboard.',
+      url: '/dashboard',
+      data: {
+        source: 'MESS_APPROVAL',
+        requestId,
+      },
+    }).catch(() => undefined);
+
+    return result;
   }
 
   // ─────────────────────────────────────────

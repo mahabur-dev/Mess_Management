@@ -144,8 +144,26 @@ export class MonthlyBillService {
     return mess;
   }
 
+  private async ensureActiveSubscription(messId: string, role: string) {
+    if (role === 'ADMIN') return;
+
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { mess_id: messId },
+      select: { status: true, end_date: true },
+    });
+
+    const isActive =
+      subscription?.status === 'ACTIVE' &&
+      (!subscription.end_date || subscription.end_date.getTime() >= Date.now());
+
+    if (!isActive) {
+      throw new HttpException('Subscription expired. Please renew to use bill features.', 403);
+    }
+  }
+
   async generate(managerId: string, role: string, dto: GenerateBillDto) {
     await this.verifyGeneratePermission(dto.messId, managerId, role);
+    await this.ensureActiveSubscription(dto.messId, role);
 
     return this.recalculateMonthlyBills(dto.messId, dto.month);
   }
@@ -587,6 +605,8 @@ export class MonthlyBillService {
         throw new HttpException('Forbidden: Not your mess', 403);
       }
     }
+
+    await this.ensureActiveSubscription(bill.mess_id, role);
 
     return this.prisma.monthlyBill.update({
       where: { id },

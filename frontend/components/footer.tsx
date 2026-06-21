@@ -8,7 +8,7 @@ export function Footer() {
         <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
             <div className="mb-4 flex items-center gap-2">
-              <BrandLogo imageClassName="h-8 w-auto" />
+              <BrandLogo/>
             </div>
             <p className="text-sm text-[#667085]">Simplifying mess management</p>
           </div>
@@ -69,7 +69,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="#contact" className="text-[#667085] transition hover:text-[#005bbb]">
+                <Link href="/contact" className="text-[#667085] transition hover:text-[#005bbb]">
                   Contact
                 </Link>
               </li>

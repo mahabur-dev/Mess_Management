@@ -72,8 +72,26 @@ export class PaymentService {
     throw new HttpException('Forbidden: Only managers can approve payments', 403);
   }
 
+  private async ensureActiveSubscription(messId: string, role: string) {
+    if (role === 'ADMIN') return;
+
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { mess_id: messId },
+      select: { status: true, end_date: true },
+    });
+
+    const isActive =
+      subscription?.status === 'ACTIVE' &&
+      (!subscription.end_date || subscription.end_date.getTime() >= Date.now());
+
+    if (!isActive) {
+      throw new HttpException('Subscription expired. Please renew to use payment features.', 403);
+    }
+  }
+
   async create(userId: string, role: string, dto: CreatePaymentDto) {
     await this.verifyMessMember(dto.messId, userId, role);
+    await this.ensureActiveSubscription(dto.messId, role);
 
     return this.prisma.payment.create({
       data: {
@@ -164,6 +182,7 @@ export class PaymentService {
     }
 
     await this.verifyManager(payment.mess_id, userId, role);
+    await this.ensureActiveSubscription(payment.mess_id, role);
 
     if (payment.status !== PaymentStatus.PENDING) {
       throw new HttpException('Payment has already been reviewed', 400);

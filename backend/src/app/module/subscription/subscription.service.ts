@@ -18,6 +18,12 @@ type PlanRecord = {
   currency: string;
 };
 
+function addDays(date: Date, days: number) {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
 @Injectable()
 export class SubscriptionService {
   constructor(private readonly prisma: PrismaService) {}
@@ -204,15 +210,24 @@ export class SubscriptionService {
     });
     if (!subscription) throw new HttpException('Subscription not found', 404);
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
+    const startDate = dto.startDate ? new Date(dto.startDate) : subscription.start_date
+    const endDate = dto.endDate ? new Date(dto.endDate) : subscription.end_date ?? null
+
     if (dto.plan) {
       const planInfo = await this.getPlanInfo(dto.plan);
       if (!planInfo) throw new HttpException('Invalid subscription plan', 400);
       updateData.plan = dto.plan;
-      // Extend end date based on new plan
-      const endDate = new Date(subscription.end_date ?? subscription.start_date);
-      endDate.setDate(endDate.getDate() + planInfo.days);
+      updateData.end_date = addDays(startDate, planInfo.days);
+    }
+    if (dto.startDate) {
+      updateData.start_date = startDate;
+    }
+    if (dto.endDate) {
       updateData.end_date = endDate;
+    }
+    if (dto.days !== undefined && dto.days !== null) {
+      updateData.end_date = addDays(startDate, dto.days);
     }
     if (dto.status) {
       updateData.status = dto.status;

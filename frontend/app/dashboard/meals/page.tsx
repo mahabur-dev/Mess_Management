@@ -111,12 +111,17 @@ const formatTimeReadable = (time: string) => {
   return `${hour}:${m.toString().padStart(2, '0')} ${period}`
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export default function MealsPage() {
   const { user } = useAuth()
   const [messes, setMesses] = useState<Mess[]>([])
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [guests, setGuests] = useState<Record<MealName, number>>({ BREAKFAST: 0, LUNCH: 0, DINNER: 0 })
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [members, setMembers] = useState<ActiveMember[]>([])
   const [todayMeals, setTodayMeals] = useState<MealEntry[]>([])
   const [sheetLoading, setSheetLoading] = useState(false)
@@ -361,6 +366,7 @@ export default function MealsPage() {
   async function setMeal(mealName: MealName, status: AttendanceStatus) {
     if (!activeMess) return
     if (!isWindowOpen && !isManager) {
+      setMessageType('error')
       setMessage('Meal window is closed. The deadline has passed. Only managers can modify meals now.')
       return
     }
@@ -373,10 +379,12 @@ export default function MealsPage() {
         guests: guests[mealName] ?? 0,
         date,
       })
+      setMessageType('success')
       setMessage(`${mealName.toLowerCase()} turned ${status.toLowerCase()} successfully.`)
       await refreshMealsForDate()
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to update meal'}`)
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to update meal'))
     }
   }
 
@@ -410,11 +418,13 @@ export default function MealsPage() {
         })
       }
 
+      setMessageType('success')
       setMessage(`${row.name} meals updated successfully.`)
       cancelEditingMemberMeal(row.id)
       await refreshMealsForDate()
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to update member meal'}`)
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to update member meal'))
     } finally {
       setEditingMemberId(null)
     }
@@ -427,6 +437,7 @@ export default function MealsPage() {
 
     try {
       const response = await apiClient.setMealDeadline(activeMess.id, deadlineStartTime, deadlineEndTime, date)
+      setMessageType('success')
       setMessage(`Meal deadline updated: ${formatTimeReadable(deadlineStartTime)} - ${formatTimeReadable(deadlineEndTime)} (next day)`)
 
       // Refresh deadline info
@@ -434,7 +445,8 @@ export default function MealsPage() {
       setDeadlineInfo(infoResponse.data)
       setShowDeadlineSettings(false)
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to update deadline'}`)
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to update deadline'))
     } finally {
       setSettingDeadline(false)
     }
@@ -448,7 +460,13 @@ export default function MealsPage() {
       />
       <div className="p-4 sm:p-6 lg:p-8">
         {message && (
-          <div className="mb-5 rounded-xl border border-emerald-200/60 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 shadow-sm">
+          <div
+            className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${
+              messageType === 'error'
+                ? 'border border-red-200/70 bg-red-50 text-red-700'
+                : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'
+            }`}
+          >
             {message}
           </div>
         )}

@@ -163,6 +163,10 @@ function isUtilityCategory(category: ExpenseCategory) {
   return utilityCategories.includes(category) && !expenseCategories.includes(category)
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export default function FinancePage() {
   const { user } = useAuth()
   const router = useRouter()
@@ -196,6 +200,7 @@ export default function FinancePage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [searchText, setSearchText] = useState('')
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [loading, setLoading] = useState(false)
   const [editingExpense, setEditingExpense] = useState<ExpenseItem | null>(null)
   const [viewExpense, setViewExpense] = useState<ExpenseItem | null>(null)
@@ -362,6 +367,7 @@ export default function FinancePage() {
     if (!activeMess) return
     const invalid = expenseItems.filter((i) => !i.amount)
     if (invalid.length) {
+      setMessageType('error')
       setMessage('Please fill in the price for all items.')
       return
     }
@@ -387,6 +393,7 @@ export default function FinancePage() {
       }
       resetForm()
       setIsAddModalOpen(false)
+      setMessageType('success')
       setMessage(
         wasEditing
           ? 'Expense updated successfully.'
@@ -395,6 +402,9 @@ export default function FinancePage() {
           : `${submittedCount} expense(s) added successfully.`,
       )
       await load()
+    } catch (error) {
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to save expense.'))
     } finally {
       setLoading(false)
     }
@@ -434,6 +444,7 @@ export default function FinancePage() {
 
   async function submitPriceReviewRequest() {
     if (!reviewExpense || !reviewMessage.trim()) {
+      setMessageType('error')
       setMessage('Please write a message for the price review request.')
       return
     }
@@ -445,7 +456,11 @@ export default function FinancePage() {
       setIsReviewModalOpen(false)
       setReviewExpense(null)
       setReviewMessage('')
+      setMessageType('success')
       setMessage('Price review request sent successfully.')
+    } catch (error) {
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to send price review request.'))
     } finally {
       setLoading(false)
     }
@@ -514,7 +529,13 @@ export default function FinancePage() {
 
       <div className="p-4 sm:p-6 lg:p-8">
         {message && (
-          <div className="mb-5 rounded-xl border border-emerald-200/60 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 shadow-sm">
+          <div
+            className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${
+              messageType === 'error'
+                ? 'border border-red-200/70 bg-red-50 text-red-700'
+                : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'
+            }`}
+          >
             {message}
           </div>
         )}

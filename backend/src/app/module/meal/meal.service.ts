@@ -243,7 +243,10 @@ export class MealService {
       (!subscription.end_date || subscription.end_date.getTime() >= Date.now());
 
     if (!isActive) {
-      throw new HttpException('Subscription expired. Please renew to use meal features.', 403);
+      throw new HttpException(
+        'Your subscription has expired. Please renew it to continue using meal features.',
+        403,
+      );
     }
   }
 

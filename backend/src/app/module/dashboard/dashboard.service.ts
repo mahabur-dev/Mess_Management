@@ -37,10 +37,10 @@ export class DashboardService {
     todayMeals,
     monthlyExpenses,
     monthlyExtraExpenses,
+    fromDepositexpenses,
     monthlyMealAttendances,
-    totalDeposit,
+    totalPayment,
     billsAgg,
-    paidAgg,
     activeMembers,
     pendingPayments,
     notices,
@@ -85,6 +85,17 @@ export class DashboardService {
       _sum: { amount: true },
     }),
 
+    this.prisma.expense.aggregate({
+      where: {
+        mess_id: messId,
+        payment_type:{
+          in: ['FROM_DEPOSIT']
+        },
+        expense_date: { gte: start, lt: end },
+      },
+      _sum: { amount: true },
+    }),
+
     this.prisma.mealAttendance.aggregate({
       where: {
         status: 'ON',
@@ -105,10 +116,6 @@ export class DashboardService {
       where: { mess_id: messId, month: start },
       _sum: { final_due: true, paid_amount: true },
     }),
-    this.prisma.payment.aggregate({
-      where: { mess_id: messId, status: 'APPROVED', created_at: { gte: start, lt: end } },
-      _sum: { amount: true },
-    }),
     this.prisma.messMembership.count({ where: { mess_id: messId, is_active: true } }),
     this.prisma.payment.count({ where: { mess_id: messId, status: 'PENDING' } }),
     this.prisma.notice.findMany({
@@ -125,14 +132,18 @@ export class DashboardService {
 
   const totalBazar = Number(monthlyExpenses._sum.amount ?? 0);
   const currentMealRate = totalMeals > 0 ? Number((totalBazar / totalMeals).toFixed(2)) : 0;
+  const fromDepositAmount = Number(fromDepositexpenses._sum.amount ?? 0);
 
   const extraExpenses = Number(monthlyExtraExpenses._sum.amount ?? 0);
   const perExtraExpenses = activeMembers > 0 ? Number((extraExpenses / activeMembers).toFixed(2)) : 0;
 
-  const totalDepositAmount = Number(totalDeposit._sum.amount ?? 0) + totalBazar + extraExpenses;
+  const totalDepositAmount = Number(totalPayment._sum.amount ?? 0) + totalBazar + extraExpenses - fromDepositAmount;
 
   const billedTotalDue = Number(billsAgg._sum.final_due ?? 0);
+  const paidAmount = Number(billsAgg._sum.paid_amount ?? 0);
   const estimatedTotalDue = Math.max(totalBazar + extraExpenses - totalDepositAmount, 0);
+
+  console.log("billedTotalDue:", billedTotalDue, "paidAmount:", paidAmount, "estimatedTotalDue:", estimatedTotalDue);
   const totalDue = Number(
     (billedTotalDue > 0 ? billedTotalDue : estimatedTotalDue).toFixed(2),
   );
@@ -145,7 +156,7 @@ export class DashboardService {
     currentMealRate,
     totalDue,
     totalDepositAmount,
-    paidAmount: Number(billsAgg._sum.paid_amount ?? paidAgg._sum.amount ?? 0),
+    paidAmount: Number(totalPayment._sum.amount ?? 0),
     activeMembers,
     pendingPayments,
     openComplaints: complaints,

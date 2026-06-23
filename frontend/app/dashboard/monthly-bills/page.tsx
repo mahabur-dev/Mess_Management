@@ -99,6 +99,7 @@ export default function MonthlyBillPage() {
           .catch(() => null)
 
         setBills(normalizeBills(billRes?.data))
+        console.log("check 111111 : ", billRes)
       }
     } finally {
       setLoading(false)
@@ -118,6 +119,7 @@ export default function MonthlyBillPage() {
         messId: activeMess.id,
         month: billMonth,
       })
+      console.log(billRes);
       setBills(Array.isArray(billRes.data) ? billRes.data : [])
     } finally {
       setGenerating(false)

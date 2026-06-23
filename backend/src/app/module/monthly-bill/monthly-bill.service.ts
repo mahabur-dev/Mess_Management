@@ -8,6 +8,7 @@ import { BillStatus, ExpenseCategory, ExpensePaymentType, Prisma } from '@prisma
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ExpenseService } from '../expense/expense.service';
 
 @Injectable()
 export class MonthlyBillService {
@@ -38,14 +39,13 @@ export class MonthlyBillService {
   } as const;
 
   private getBillMonthRange(monthInput: string | Date) {
-    const month = new Date(monthInput);
-    month.setDate(1);
-    month.setHours(0, 0, 0, 0);
-
-    const nextMonth = new Date(month);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-    return { month, nextMonth };
+    // Normalize to first day of month consistently in UTC to avoid timezone mismatches
+    const month = new Date(monthInput)
+    const year = month.getFullYear()
+    const monthIndex = month.getMonth()
+    const utcMonth = new Date(Date.UTC(year, monthIndex, 1))
+    const nextMonth = new Date(Date.UTC(year, monthIndex + 1, 1))
+    return { month: utcMonth, nextMonth }
   }
 
   private toFixedNumber(value: unknown) {
@@ -209,7 +209,7 @@ export class MonthlyBillService {
       gasExpenses,
       wifiExpenses,
       cleanerExpenses,
-      extraExpenses,
+      utilityExpenses,
       mealAttendances,
       depositGroups,
       paymentGroups,
@@ -225,7 +225,6 @@ export class MonthlyBillService {
           category: {
             in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
           },
-          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -306,6 +305,10 @@ export class MonthlyBillService {
               ExpenseCategory.BUABILL,
               ExpenseCategory.WATER,
               ExpenseCategory.OTHER,
+              ExpenseCategory.ELECTRICITY,
+              ExpenseCategory.CLEANER,
+              ExpenseCategory.WIFI,
+              ExpenseCategory.GAS
             ],
           },
           ...excludePersonal,
@@ -415,10 +418,9 @@ export class MonthlyBillService {
     const gasShare = splitByMember(gasExpenses._sum.amount);
     const wifiShare = splitByMember(wifiExpenses._sum.amount);
     const cleanerShare = splitByMember(cleanerExpenses._sum.amount);
-    const extraCostShare = splitByMember(extraExpenses._sum.amount);
-    const utilityPerMember = this.toFixedNumber(
-      electricityShare + gasShare + wifiShare + cleanerShare + extraCostShare,
-    );
+    const utilityExpensesAmount = splitByMember(utilityExpenses._sum.amount);
+    const utilityPerMember = this.toFixedNumber(utilityExpensesAmount);
+    console.log("perMember : ", utilityPerMember);
 
     const dueDate = new Date(month);
     dueDate.setDate(mess.payment_deadline_day ?? 10);
@@ -427,6 +429,7 @@ export class MonthlyBillService {
       const memberMeals = mealCountByUser[user_id] ?? 0;
 
       const foodBill = this.toFixedNumber(memberMeals * perMealRate);
+      console.log("food bill : ", foodBill)
       const seatRent = this.calculateSeatRent(
         rooms,
         room_no,
@@ -436,11 +439,9 @@ export class MonthlyBillService {
 
       const depositTotal = depositByUser[user_id] ?? 0;
       const paidAmount = paymentByUser[user_id] ?? 0;
-      const personalExpenseTotal = personalExpenseByUser[user_id] ?? 0;
 
-      // deposit_total = direct deposits + personal expenses (e.g. personal bazar/utilities)
-      // paid_amount = approved payments
-      const effectiveDepositTotal = this.toFixedNumber(depositTotal + personalExpenseTotal);
+      // deposit_total already includes auto-created deposits from PERSONAL expenses
+      const effectiveDepositTotal = this.toFixedNumber(depositTotal);
       const totalPaid = this.toFixedNumber(effectiveDepositTotal + paidAmount);
 
       const rawDue =
@@ -465,7 +466,7 @@ export class MonthlyBillService {
         gas_bill: gasShare,
         wifi_bill: wifiShare,
         cleaner_bill: cleanerShare,
-        extra_cost: extraCostShare,
+        extra_cost: utilityExpensesAmount,
         utility_share: utilityPerMember,
         deposit_total: depositTotal,
         paid_amount: paidAmount,
@@ -561,6 +562,15 @@ export class MonthlyBillService {
       }
     }
 
+    // Auto-recalculate bills when fetching for a specific mess to ensure utility costs are current
+    if (query.month) {
+      // Parse YYYY-MM or YYYY-MM-DD consistently to first day of month in UTC
+      const monthStr = query.month.substring(0, 7)
+      const [year, month] = monthStr.split('-').map(Number)
+      const billMonth = new Date(Date.UTC(year, month - 1, 1))
+      await this.recalculateMonthlyBills(messId, billMonth)
+    }
+
     return this.findAll({ ...query, messId });
   }
 
@@ -623,7 +633,12 @@ export class MonthlyBillService {
     if (query.messId) where.mess_id = query.messId;
     if (query.memberId) where.member_id = query.memberId;
     if (query.status) where.status = query.status;
-    if (query.month) where.month = new Date(query.month);
+    if (query.month) {
+      // Match the UTC normalization used in getBillMonthRange
+      const monthStr = query.month.substring(0, 7)
+      const [year, month] = monthStr.split('-').map(Number)
+      where.month = new Date(Date.UTC(year, month - 1, 1))
+    }
     return where;
   }
 }

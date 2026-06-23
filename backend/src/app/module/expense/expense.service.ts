@@ -158,6 +158,24 @@ export class ExpenseService {
 
     const paymentType = dto.paymentType ?? ExpensePaymentType.FROM_DEPOSIT;
 
+    // Validate deposit balance before creating FROM_DEPOSIT expense
+    if (paymentType === ExpensePaymentType.FROM_DEPOSIT) {
+      const deposit = await this.prisma.deposit.aggregate({
+        where: {
+          mess_id: dto.messId,
+          member_id: userId,
+        },
+        _sum: { amount: true },
+      });
+      const currentBalance = Number(deposit._sum.amount ?? 0);
+      if (currentBalance < dto.amount) {
+        throw new HttpException(
+          `Insufficient deposit balance. Required: ${dto.amount}, Available: ${currentBalance}`,
+          400,
+        );
+      }
+    }
+
     const expense = await this.prisma.expense.create({
       data: {
         mess_id: dto.messId,
@@ -187,10 +205,8 @@ export class ExpenseService {
       );
     }
 
-    // Only recalculate monthly bills for FROM_DEPOSIT expenses (not personal ones)
-    if (paymentType === ExpensePaymentType.FROM_DEPOSIT) {
-      await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
-    }
+    // Recalculate monthly bills for both FROM_DEPOSIT and PERSONAL expenses
+    await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
 
     // Send push notification to all active users
     await this.notificationService.sendPushToAll({
@@ -305,6 +321,10 @@ export class ExpenseService {
     await this.ensureActiveSubscription(expense.mess_id, role);
 
     const oldExpenseDate = expense.expense_date;
+    const oldPaymentType = expense.payment_type;
+    const oldAmount = expense.amount;
+    const oldCreatedBy = expense.created_by;
+
     const receiptUrl = receipt
       ? (
           await uploadToCloudinary(receipt, 'mess_management/expenses', {
@@ -333,18 +353,53 @@ export class ExpenseService {
       select: this.expenseSelect,
     });
 
-    // Recalculate only if the expense was (or is now) FROM_DEPOSIT
-    const wasFromDeposit = expense.payment_type === ExpensePaymentType.FROM_DEPOSIT;
-    const isNowFromDeposit = paymentType !== ExpensePaymentType.PERSONAL;
+    // Handle personal payment deposit changes
+    const wasPersonal = oldPaymentType === ExpensePaymentType.PERSONAL;
+    const isNowPersonal = paymentType === ExpensePaymentType.PERSONAL;
 
-    if (wasFromDeposit || isNowFromDeposit) {
-      await this.recalculateExpenseMonthBill(expense.mess_id, oldExpenseDate);
-      if (!this.isSameBillMonth(oldExpenseDate, updatedExpense.expense_date)) {
-        await this.recalculateExpenseMonthBill(
-          expense.mess_id,
-          updatedExpense.expense_date,
-        );
-      }
+    if (wasPersonal && !isNowPersonal) {
+      // Changed from personal to FROM_DEPOSIT: remove the auto-created deposit
+      await this.prisma.deposit.deleteMany({
+        where: {
+          mess_id: expense.mess_id,
+          member_id: oldCreatedBy,
+          note: { contains: `expense: ${id}` },
+        },
+      });
+    } else if (!wasPersonal && isNowPersonal && dto.amount) {
+      // Changed FROM_DEPOSIT to personal: create deposit
+      await this.handlePersonalPaymentExpense(
+        expense.mess_id,
+        oldCreatedBy,
+        dto.amount,
+        id,
+        updatedExpense.expense_date,
+      );
+    } else if (wasPersonal && isNowPersonal && dto.amount && dto.amount !== Number(oldAmount)) {
+      // Still personal but amount changed: remove old deposit and create new
+      await this.prisma.deposit.deleteMany({
+        where: {
+          mess_id: expense.mess_id,
+          member_id: oldCreatedBy,
+          note: { contains: `expense: ${id}` },
+        },
+      });
+      await this.handlePersonalPaymentExpense(
+        expense.mess_id,
+        oldCreatedBy,
+        dto.amount,
+        id,
+        updatedExpense.expense_date,
+      );
+    }
+
+    // Recalculate monthly bills for any payment type change
+    await this.recalculateExpenseMonthBill(expense.mess_id, oldExpenseDate);
+    if (!this.isSameBillMonth(oldExpenseDate, updatedExpense.expense_date)) {
+      await this.recalculateExpenseMonthBill(
+        expense.mess_id,
+        updatedExpense.expense_date,
+      );
     }
 
     return updatedExpense;
@@ -414,12 +469,25 @@ export class ExpenseService {
     await this.verifyManagerAccess(expense.mess_id, userId, role);
     await this.ensureActiveSubscription(expense.mess_id, role);
 
+    // If personal expense, remove the associated deposit entry first
+    if (expense.payment_type === ExpensePaymentType.PERSONAL) {
+      await this.prisma.deposit.deleteMany({
+        where: {
+          mess_id: expense.mess_id,
+          member_id: expense.created_by,
+          note: { contains: `expense: ${id}` },
+        },
+      });
+    }
+
     await this.prisma.expense.delete({
       where: { id },
     });
 
-    // Recalculate only if it was a FROM_DEPOSIT expense
-    if (expense.payment_type === ExpensePaymentType.FROM_DEPOSIT) {
+    // Recalculate monthly bills for both FROM_DEPOSIT and PERSONAL
+    const shouldRecalculate = expense.payment_type === ExpensePaymentType.FROM_DEPOSIT || expense.payment_type === ExpensePaymentType.PERSONAL;
+
+    if (shouldRecalculate) {
       await this.recalculateExpenseMonthBill(
         expense.mess_id,
         expense.expense_date,

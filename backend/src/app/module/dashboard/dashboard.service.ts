@@ -37,14 +37,15 @@ export class DashboardService {
     todayMeals,
     monthlyExpenses,
     monthlyExtraExpenses,
-    fromDepositexpenses,
+    personalUtilityExpenses,
     monthlyMealAttendances,
     totalPayment,
     billsAgg,
-    activeMembers,
+    activeMembersCount,
     pendingPayments,
     notices,
     complaints,
+    totalRoomRentAgg,
   ] = await Promise.all([
     this.prisma.mealAttendance.aggregate({
       where: {
@@ -89,7 +90,7 @@ export class DashboardService {
       where: {
         mess_id: messId,
         payment_type:{
-          in: ['FROM_DEPOSIT']
+          notIn: ['FROM_DEPOSIT']
         },
         expense_date: { gte: start, lt: end },
       },
@@ -125,6 +126,10 @@ export class DashboardService {
       select: { id: true, title: true, type: true, is_pinned: true, created_at: true },
     }),
     this.prisma.complaint.count({ where: { mess_id: messId, status: { in: ['PENDING', 'PROCESSING'] } } }),
+    this.prisma.messMembership.aggregate({
+      where: { mess_id: messId, is_active: true },
+      _sum: { monthly_rent: true },
+    }),
   ]);
 
   const todayTotalMeals = todayMeals._count._all + Number(todayMeals._sum.guests ?? 0);
@@ -132,21 +137,27 @@ export class DashboardService {
 
   const totalBazar = Number(monthlyExpenses._sum.amount ?? 0);
   const currentMealRate = totalMeals > 0 ? Number((totalBazar / totalMeals).toFixed(2)) : 0;
-  const fromDepositAmount = Number(fromDepositexpenses._sum.amount ?? 0);
+  const personalUtilityExpensesAmount = Number(personalUtilityExpenses._sum.amount ?? 0);
 
   const extraExpenses = Number(monthlyExtraExpenses._sum.amount ?? 0);
-  const perExtraExpenses = activeMembers > 0 ? Number((extraExpenses / activeMembers).toFixed(2)) : 0;
+  const perExtraExpenses = activeMembersCount > 0 ? Number((extraExpenses / activeMembersCount).toFixed(2)) : 0;
 
-  const totalDepositAmount = Number(totalPayment._sum.amount ?? 0) + totalBazar + extraExpenses - fromDepositAmount;
+  const totalRoomRent = Number(totalRoomRentAgg._sum.monthly_rent ?? 0);
+  const totalCost = totalBazar + extraExpenses + totalRoomRent;
+
+  // console.log("totalBazar:", totalBazar, "extraExpenses:", extraExpenses, "totalRoomRent:", totalRoomRent, "totalCost:", totalCost, "personalUtilityExpensesAmount:", personalUtilityExpensesAmount);
+
+  const totalDepositAmount = Number(totalPayment._sum.amount ?? 0) +  personalUtilityExpensesAmount;
 
   const billedTotalDue = Number(billsAgg._sum.final_due ?? 0);
   const paidAmount = Number(billsAgg._sum.paid_amount ?? 0);
-  const estimatedTotalDue = Math.max(totalBazar + extraExpenses - totalDepositAmount, 0);
+  const estimatedTotalDue = Math.max(totalCost - totalDepositAmount, 0);
 
-  console.log("billedTotalDue:", billedTotalDue, "paidAmount:", paidAmount, "estimatedTotalDue:", estimatedTotalDue);
-  const totalDue = Number(
-    (billedTotalDue > 0 ? billedTotalDue : estimatedTotalDue).toFixed(2),
-  );
+  // const totalDue = Number(
+  //   (billedTotalDue > 0 ? billedTotalDue : estimatedTotalDue).toFixed(2),
+  // );
+  const totalDue = Number(totalCost > totalDepositAmount ? (totalCost - totalDepositAmount).toFixed(2) : 0);
+  console.log("totalCost:", totalCost, "totolDeposit : ", totalDepositAmount, "totalDue : ", totalDue);
   return {
     todayTotalMeals,
     totalMeals,
@@ -157,10 +168,12 @@ export class DashboardService {
     totalDue,
     totalDepositAmount,
     paidAmount: Number(totalPayment._sum.amount ?? 0),
-    activeMembers,
+    activeMembers: activeMembersCount,
     pendingPayments,
     openComplaints: complaints,
     notices,
+    totalRoomRent,
+    totalCost,
   };
 }
 

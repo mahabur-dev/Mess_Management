@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import type { CSSProperties } from 'react'
+import { AuthProvider } from './context/auth-context'
 import './globals.css'
 
 export const viewport: Viewport = {
@@ -54,7 +55,9 @@ export default function RootLayout({
       className="bg-background"
     >
       <body className="font-sans antialiased bg-background text-foreground">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         {process.env.NODE_ENV === 'development' && <Analytics />}
       </body>
     </html>

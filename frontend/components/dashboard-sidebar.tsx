@@ -25,6 +25,7 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
+  PanelLeft,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useSidebar } from '@/app/context/sidebar-context'
@@ -102,7 +103,7 @@ export function DashboardSidebar() {
   const content = (
     <aside className={`flex h-full ${sidebarWidth} flex-col overflow-hidden border-r border-[#e6ebf4] bg-white transition-all duration-300`}>
       {/* Logo Area */}
-      <div className="flex h-[88px] items-center border-b border-[#e6ebf4] px-5">
+      <div className="relative flex h-[88px] items-center border-b border-[#e6ebf4] px-5">
         <Link href="/dashboard" className="flex items-center gap-3.5">
           {/* <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-base font-black text-white shadow-[0_4px_12px_rgba(47,128,237,0.3)]">
             M
@@ -115,6 +116,15 @@ export function DashboardSidebar() {
             </div>
           )} */}
         </Link>
+        
+        {/* Collapse button - top right */}
+        {/* <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <PanelLeft size={16} />
+        </button> */}
       </div>
 
       {/* Navigation with custom scrollbar */}
@@ -184,26 +194,6 @@ export function DashboardSidebar() {
           {!collapsed && <span>Logout</span>}
         </button>
 
-        {/* Collapse toggle */}
-        {!collapsed && (
-          <button
-            onClick={() => setCollapsed(true)}
-            className="mt-2 flex h-8 w-full items-center justify-center rounded-lg text-xs font-semibold text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
-            title="Collapse sidebar"
-          >
-            <ChevronLeft size={16} />
-            <span className="ml-1">Collapse</span>
-          </button>
-        )}
-        {collapsed && (
-          <button
-            onClick={() => setCollapsed(false)}
-            className="mt-2 flex h-8 w-full items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
-            title="Expand sidebar"
-          >
-            <ChevronRight size={16} />
-          </button>
-        )}
       </div>
     </aside>
   )

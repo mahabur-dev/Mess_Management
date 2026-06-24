@@ -1,7 +1,8 @@
 'use client'
 
 import { useAuth } from '@/app/context/auth-context'
-import { Bell, CalendarDays, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight } from 'lucide-react'
+import { useSidebar } from '@/app/context/sidebar-context'
+import { Bell, CalendarDays, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight, PanelLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -66,6 +67,7 @@ const paymentMethods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BA
 export function DashboardHeader({ title, description, selectedMonth, onMonthChange, showUpgradeButton, upgradeHref = '/dashboard/contact?source=UPGRADE&plan=MONTHLY' }: DashboardHeaderProps) {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const { collapsed, setCollapsed } = useSidebar()
   const [imageError, setImageError] = useState(false)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -207,10 +209,20 @@ export function DashboardHeader({ title, description, selectedMonth, onMonthChan
 
   return (
     <header className="sticky top-0 z-20 border-b border-[#e6ebf4] bg-white shadow-sm">
-      <div className="flex min-h-[72px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div className="pl-12 lg:pl-0">
-          <h1 className="text-[20px] font-black tracking-tight text-[#172554]">{title}</h1>
-          {description && <p className="mt-1 text-sm font-semibold text-[#6b7a99]">{description}</p>}
+      <div className="flex min-h-[72px] flex-col gap-2 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+        <div className="flex gap-3 pr-3 top-0">
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <PanelLeft size={18} />
+          </button>
+          <div>
+            <h1 className="text-[20px] font-black tracking-tight text-[#172554]">{title}</h1>
+            {description && <p className="mt-1 text-sm font-semibold text-[#6b7a99]">{description}</p>}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

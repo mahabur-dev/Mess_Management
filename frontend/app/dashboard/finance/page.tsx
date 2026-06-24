@@ -199,6 +199,7 @@ export default function FinancePage() {
 
   const [selectedCategory, setSelectedCategory] = useState<'ALL' | ExpenseCategory>('ALL')
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [selectedDay, setSelectedDay] = useState<string>('')
   const [searchText, setSearchText] = useState('')
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
@@ -491,12 +492,14 @@ export default function FinancePage() {
       const expenseMonth = new Date(item.expense_date).toISOString().slice(0, 7)
       const matchMonth = expenseMonth === selectedMonth
       const matchCategory = selectedCategory === 'ALL' || item.category === selectedCategory
+      const expenseDay = new Date(item.expense_date).getDate().toString().padStart(2, '0')
+      const matchDay = !selectedDay || expenseDay === selectedDay
       const searchableText =
         `${item.item_name ?? ''} ${item.description ?? ''} ${item.category}`.toLowerCase()
       const matchSearch = searchableText.includes(searchText.toLowerCase())
-      return matchMonth && matchCategory && matchSearch
+      return matchMonth && matchCategory && matchDay && matchSearch
     })
-  }, [expenses, selectedCategory, selectedMonth, searchText])
+  }, [expenses, selectedCategory, selectedMonth, selectedDay, searchText])
 
   function canEditExpense(item: ExpenseItem) {
     return Boolean(user?.id && item.creator?.id === user.id)
@@ -621,6 +624,19 @@ export default function FinancePage() {
 
             <select
               className="h-[45px] rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-sm outline-none transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              value={selectedDay}
+              onChange={(e) => setSelectedDay(e.target.value)}
+            >
+              <option value="">All Days</option>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                <option key={day} value={String(day).padStart(2, '0')}>
+                  Day {day}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="h-[45px] rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-sm outline-none transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
               value={selectedCategory}
               onChange={(e) =>
                 setSelectedCategory(e.target.value as 'ALL' | ExpenseCategory)
@@ -737,7 +753,7 @@ export default function FinancePage() {
                         </div>
 
                         <div>
-                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Price (à§³)</label>
+                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Price (৳)</label>
                           <input
                             type="number"
                             className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"

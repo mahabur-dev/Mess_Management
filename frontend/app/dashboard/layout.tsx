@@ -43,10 +43,8 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <AuthProvider>
-      <SidebarProvider>
-        <DashboardLayoutContent>{children}</DashboardLayoutContent>
-      </SidebarProvider>
-    </AuthProvider>
+    <SidebarProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </SidebarProvider>
   )
 }

@@ -1,5 +1,7 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/app/context/auth-context'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { BrandLogo } from '@/components/brand-logo'
@@ -584,6 +586,30 @@ function WhyChooseSection() {
 }
 
 export default function HomePage() {
+  const { isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-full border-4 border-[#e6ebf4] border-t-[#2f80ed] animate-spin mx-auto mb-4" />
+          <p className="text-sm font-bold text-[#6b7a99]">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    return null
+  }
+
   return (
     <main className="min-h-screen bg-white text-[#172554]">
       <Navbar />

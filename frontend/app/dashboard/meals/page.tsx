@@ -6,6 +6,7 @@ import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AttendanceStatus, type MealName, type Mess } from '@/lib/api-client'
 import { CalendarDays, Clock, UserPlus, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, CheckCircle2, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
 const mealLabels: Record<MealName, string> = {
@@ -123,6 +124,8 @@ export default function MealsPage() {
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [members, setMembers] = useState<ActiveMember[]>([])
+
+  useAutoDismissMessage(message, messageType, setMessage, setMessageType)
   const [todayMeals, setTodayMeals] = useState<MealEntry[]>([])
   const [sheetLoading, setSheetLoading] = useState(false)
   const [sheetError, setSheetError] = useState('')

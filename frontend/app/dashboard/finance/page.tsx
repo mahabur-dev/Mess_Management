@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
 const categories: ExpenseCategory[] = [
   'GROCERY',
@@ -202,6 +203,9 @@ export default function FinancePage() {
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [loading, setLoading] = useState(false)
+
+  useAutoDismissMessage(message, messageType, setMessage, setMessageType)
+  
   const [editingExpense, setEditingExpense] = useState<ExpenseItem | null>(null)
   const [viewExpense, setViewExpense] = useState<ExpenseItem | null>(null)
   const [reviewExpense, setReviewExpense] = useState<ExpenseItem | null>(null)

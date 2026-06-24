@@ -1,5 +1,6 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class DashboardService {
@@ -41,11 +42,10 @@ export class DashboardService {
     monthlyMealAttendances,
     totalPayment,
     billsAgg,
-    activeMembersCount,
+    activeMembers,
     pendingPayments,
     notices,
     complaints,
-    totalRoomRentAgg,
   ] = await Promise.all([
     this.prisma.mealAttendance.aggregate({
       where: {
@@ -117,7 +117,10 @@ export class DashboardService {
       where: { mess_id: messId, month: start },
       _sum: { final_due: true, paid_amount: true },
     }),
-    this.prisma.messMembership.count({ where: { mess_id: messId, is_active: true } }),
+    this.prisma.messMembership.findMany({
+      where: { mess_id: messId, is_active: true },
+      select: { monthly_rent: true, room_no: true },
+    }),
     this.prisma.payment.count({ where: { mess_id: messId, status: 'PENDING' } }),
     this.prisma.notice.findMany({
       where: { mess_id: messId },
@@ -126,10 +129,6 @@ export class DashboardService {
       select: { id: true, title: true, type: true, is_pinned: true, created_at: true },
     }),
     this.prisma.complaint.count({ where: { mess_id: messId, status: { in: ['PENDING', 'PROCESSING'] } } }),
-    this.prisma.messMembership.aggregate({
-      where: { mess_id: messId, is_active: true },
-      _sum: { monthly_rent: true },
-    }),
   ]);
 
   const todayTotalMeals = todayMeals._count._all + Number(todayMeals._sum.guests ?? 0);
@@ -139,10 +138,18 @@ export class DashboardService {
   const currentMealRate = totalMeals > 0 ? Number((totalBazar / totalMeals).toFixed(2)) : 0;
   const personalUtilityExpensesAmount = Number(personalUtilityExpenses._sum.amount ?? 0);
 
+  const activeMembersCount = activeMembers.length;
   const extraExpenses = Number(monthlyExtraExpenses._sum.amount ?? 0);
   const perExtraExpenses = activeMembersCount > 0 ? Number((extraExpenses / activeMembersCount).toFixed(2)) : 0;
 
-  const totalRoomRent = Number(totalRoomRentAgg._sum.monthly_rent ?? 0);
+  // Calculate total room rent same way as monthly bills
+  const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+  const rooms = Array.isArray(mess?.rooms) ? mess!.rooms : [];
+  
+  const totalRoomRent = activeMembersCount > 0 ? activeMembers.reduce((sum, member) => {
+    const roomRent = this.getRoomRentPerMember(rooms, member.room_no, Number(member.monthly_rent), Number(mess?.monthly_rent));
+    return sum + (roomRent || 0);
+  }, 0) : 0;
   const totalCost = totalBazar + extraExpenses + totalRoomRent;
 
   // console.log("totalBazar:", totalBazar, "extraExpenses:", extraExpenses, "totalRoomRent:", totalRoomRent, "totalCost:", totalCost, "personalUtilityExpensesAmount:", personalUtilityExpensesAmount);
@@ -153,11 +160,10 @@ export class DashboardService {
   const paidAmount = Number(billsAgg._sum.paid_amount ?? 0);
   const estimatedTotalDue = Math.max(totalCost - totalDepositAmount, 0);
 
-  // const totalDue = Number(
-  //   (billedTotalDue > 0 ? billedTotalDue : estimatedTotalDue).toFixed(2),
-  // );
-  const totalDue = Number(totalCost > totalDepositAmount ? (totalCost - totalDepositAmount).toFixed(2) : 0);
-  console.log("totalCost:", totalCost, "totolDeposit : ", totalDepositAmount, "totalDue : ", totalDue);
+  // Use billed total due from monthly bills if available, otherwise use estimated
+  const totalDue = Number((billedTotalDue > 0 ? billedTotalDue : estimatedTotalDue).toFixed(2));
+  // const totalDue = estimatedTotalDue;
+  // console.log("totalCost:", totalCost, "totolDeposit : ", totalDepositAmount, "billedTotalDue : ", billedTotalDue, "totalDue : ", totalDue);
   return {
     todayTotalMeals,
     totalMeals,
@@ -176,6 +182,42 @@ export class DashboardService {
     totalCost,
   };
 }
+
+  private getRoomRentPerMember(
+    rooms: Prisma.JsonValue[],
+    roomNo?: string | null,
+    memberMonthlyRent?: number | null,
+    messMonthlyRent?: number | null,
+  ): number {
+    if (!roomNo) {
+      if (memberMonthlyRent && memberMonthlyRent > 0) return memberMonthlyRent;
+      if (messMonthlyRent && messMonthlyRent > 0) return messMonthlyRent;
+      return 0;
+    }
+
+    const roomConfig = rooms.find((room) => {
+      if (!room || typeof room !== 'object' || Array.isArray(room)) return false;
+      return (room as Record<string, unknown>)['roomName'] === roomNo;
+    });
+
+    if (!roomConfig || typeof roomConfig !== 'object' || Array.isArray(roomConfig)) {
+      if (memberMonthlyRent && memberMonthlyRent > 0) return memberMonthlyRent;
+      if (messMonthlyRent && messMonthlyRent > 0) return messMonthlyRent;
+      return 0;
+    }
+
+    const room = roomConfig as Record<string, unknown>;
+    const roomPrice = Number(room['roomPrice'] ?? 0);
+    const totalPerson = Number(room['perPerson'] ?? 0);
+
+    if (roomPrice > 0 && totalPerson > 0) {
+      return Number((roomPrice / totalPerson).toFixed(2));
+    }
+
+    if (memberMonthlyRent && memberMonthlyRent > 0) return memberMonthlyRent;
+    if (messMonthlyRent && messMonthlyRent > 0) return messMonthlyRent;
+    return 0;
+  }
 
   async getAdminDashboard() {
     const [

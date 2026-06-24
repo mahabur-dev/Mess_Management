@@ -4,11 +4,10 @@ import {
   GenerateBillDto,
   UpdateBillStatusDto,
 } from './dto/monthly-bill.dto';
-import { BillStatus, ExpenseCategory, ExpensePaymentType, Prisma } from '@prisma/client';
+import { BillStatus, ExpenseCategory, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ExpenseService } from '../expense/expense.service';
 
 @Injectable()
 export class MonthlyBillService {
@@ -200,9 +199,6 @@ export class MonthlyBillService {
 
     const rooms = Array.isArray(mess.rooms) ? mess.rooms : [];
 
-    // Helper to exclude PERSONAL payment type from all expense queries
-    const excludePersonal = { payment_type: { not: ExpensePaymentType.PERSONAL } };
-
     const [
       foodExpenses,
       electricityExpenses,
@@ -213,7 +209,6 @@ export class MonthlyBillService {
       mealAttendances,
       depositGroups,
       paymentGroups,
-      personalExpenseGroups,
     ] = await Promise.all([
       this.prisma.expense.aggregate({
         where: {
@@ -239,7 +234,6 @@ export class MonthlyBillService {
             lt: nextMonth,
           },
           category: ExpenseCategory.ELECTRICITY,
-          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -254,7 +248,6 @@ export class MonthlyBillService {
             lt: nextMonth,
           },
           category: ExpenseCategory.GAS,
-          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -269,7 +262,6 @@ export class MonthlyBillService {
             lt: nextMonth,
           },
           category: ExpenseCategory.WIFI,
-          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -284,7 +276,6 @@ export class MonthlyBillService {
             lt: nextMonth,
           },
           category: ExpenseCategory.CLEANER,
-          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -311,7 +302,6 @@ export class MonthlyBillService {
               ExpenseCategory.GAS
             ],
           },
-          ...excludePersonal,
         },
         _sum: {
           amount: true,
@@ -363,22 +353,6 @@ export class MonthlyBillService {
           amount: true,
         },
       }),
-
-      // Group personal expenses by member_id so they add to deposit_total
-      this.prisma.expense.groupBy({
-        by: ['created_by'],
-        where: {
-          mess_id: messId,
-          expense_date: {
-            gte: month,
-            lt: nextMonth,
-          },
-          payment_type: ExpensePaymentType.PERSONAL,
-        },
-        _sum: {
-          amount: true,
-        },
-      }),
     ]);
 
     const mealCountByUser: Record<string, number> = {};
@@ -401,12 +375,6 @@ export class MonthlyBillService {
     const depositByUser = this.makeAmountMap(depositGroups);
     const paymentByUser = this.makeAmountMap(paymentGroups);
 
-    // Map personal expenses (grouped by created_by) to user deposit totals
-    const personalExpenseByUser = this.makeAmountMap(personalExpenseGroups.map(g => ({
-      member_id: g.created_by,
-      _sum: g._sum,
-    })));
-
     const splitByMember = (value: unknown) =>
       activeMembers.length > 0
         ? this.toFixedNumber(Number(value ?? 0) / activeMembers.length)
@@ -420,7 +388,7 @@ export class MonthlyBillService {
     const cleanerShare = splitByMember(cleanerExpenses._sum.amount);
     const utilityExpensesAmount = splitByMember(utilityExpenses._sum.amount);
     const utilityPerMember = this.toFixedNumber(utilityExpensesAmount);
-    console.log("perMember : ", utilityPerMember);
+    // console.log("perMember : ", utilityPerMember);
 
     const dueDate = new Date(month);
     dueDate.setDate(mess.payment_deadline_day ?? 10);
@@ -429,7 +397,7 @@ export class MonthlyBillService {
       const memberMeals = mealCountByUser[user_id] ?? 0;
 
       const foodBill = this.toFixedNumber(memberMeals * perMealRate);
-      console.log("food bill : ", foodBill)
+      // console.log("food bill : ", foodBill)
       const seatRent = this.calculateSeatRent(
         rooms,
         room_no,

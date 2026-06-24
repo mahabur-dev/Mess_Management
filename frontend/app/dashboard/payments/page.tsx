@@ -7,6 +7,7 @@ import { apiClient, type Mess, type Payment, type PaymentMethod } from '@/lib/ap
 import { useAuth } from '@/app/context/auth-context'
 import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
 const methods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
 
@@ -55,7 +56,10 @@ export default function PaymentsPage() {
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [reviewingId, setReviewingId] = useState<string | null>(null)
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success')
+
+  useAutoDismissMessage(message, messageType, setMessage, setMessageType)
 
   async function load() {
     setLoading(true)
@@ -89,15 +93,17 @@ export default function PaymentsPage() {
   async function submitPayment() {
     if (!activeMess || !amount) return
     setSubmitting(true)
-    setAlert(null)
+    setMessage('')
     try {
       await apiClient.submitPayment({ messId: activeMess.id, amount: Number(amount), method })
       setAmount('')
       setShowModal(false)
-      setAlert({ type: 'success', message: 'Payment submitted successfully.' })
+      setMessageType('success')
+      setMessage('Payment submitted successfully.')
       await load()
     } catch (error) {
-      setAlert({ type: 'error', message: getErrorMessage(error, 'Failed to submit payment.') })
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to submit payment.'))
     } finally {
       setSubmitting(false)
     }
@@ -105,13 +111,15 @@ export default function PaymentsPage() {
 
   async function review(id: string, status: 'APPROVED' | 'REJECTED') {
     setReviewingId(id)
-    setAlert(null)
+    setMessage('')
     try {
       await apiClient.reviewPayment(id, { status })
-      setAlert({ type: 'success', message: `Payment ${status.toLowerCase()} successfully.` })
+      setMessageType('success')
+      setMessage(`Payment ${status.toLowerCase()} successfully.`)
       await load()
     } catch (error) {
-      setAlert({ type: 'error', message: getErrorMessage(error, 'Failed to review payment.') })
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to review payment.'))
     } finally {
       setReviewingId(null)
     }
@@ -127,15 +135,15 @@ export default function PaymentsPage() {
       <DashboardHeader title="Payments" description="Approve member payments and track transaction status" />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        {alert && (
+        {message && (
           <div
             className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${
-              alert.type === 'error'
+              messageType === 'error'
                 ? 'border border-red-200/70 bg-red-50 text-red-700'
                 : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'
             }`}
           >
-            {alert.message}
+            {message}
           </div>
         )}
 

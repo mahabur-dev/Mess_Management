@@ -18,6 +18,7 @@ import {
   Settings2,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
 type RoomDraft = {
   id: string
@@ -111,6 +112,9 @@ export default function MessManagementPage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
+
+  useAutoDismissMessage(message, messageType, setMessage, setMessageType)
+  
   const [requestForm, setRequestForm] = useState({
     messName: '',
     address: '',

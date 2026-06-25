@@ -28,7 +28,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react'
-import { useState } from 'react'
+
 import { useSidebar } from '@/app/context/sidebar-context'
 
 const commonItems = [
@@ -93,8 +93,7 @@ export function DashboardSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { logout, user } = useAuth()
-  const [isOpen, setIsOpen] = useState(false)
-  const { collapsed, setCollapsed } = useSidebar()
+  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar()
   const sidebarItems =
     user?.role === 'ADMIN' ? adminItems : user?.role === 'MANAGER' || user?.role === 'ORGANIZER' ? managerItems : memberItems
 
@@ -106,8 +105,8 @@ export function DashboardSidebar() {
       {/* Logo Area */}
       <div className="relative flex h-[88px] items-center border-b border-[#e6ebf4] px-5">
         {collapsed ? (
-          /* When collapsed: center the collapse button only */
-          <div className="flex w-full items-center justify-center">
+          /* When collapsed: center the expand button (desktop only) */
+          <div className="hidden lg:flex w-full items-center justify-center">
             <button
               onClick={() => setCollapsed(false)}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
@@ -117,14 +116,14 @@ export function DashboardSidebar() {
             </button>
           </div>
         ) : (
-          /* When expanded: logo on left, collapse button on right */
+          /* When expanded: logo on left, collapse button on right (desktop only) */
           <>
             <Link href="/dashboard" className="flex items-center">
               <BrandLogo />
             </Link>
             <button
               onClick={() => setCollapsed(true)}
-              className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
+              className="ml-auto hidden lg:flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
               title="Collapse sidebar"
             >
               <PanelLeftClose size={18} />
@@ -143,7 +142,7 @@ export function DashboardSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setIsOpen(false)}
+                onClick={() => setMobileOpen(false)}
                 className={`group flex h-[50px] items-center gap-3.5 rounded-xl px-3.5 text-sm font-bold transition-all ${
                   isActive
                     ? 'bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)]'
@@ -206,28 +205,18 @@ export function DashboardSidebar() {
 
   return (
     <>
-      {/* Hamburger - visible on mobile & tablet */}
-      <button
-        type="button"
-        className="fixed left-4 top-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-[#e6ebf4] bg-white text-[#172554] shadow-sm lg:hidden"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open menu"
-      >
-        <Menu size={20} />
-      </button>
-
-      {/* Desktop Sidebar - only visible on large screens and above */}
+      {/* Desktop Sidebar - only visible on desktop and above */}
       <div className="fixed left-0 top-0 z-30 hidden h-screen lg:block">{content}</div>
 
-      {/* Overlay - visible on mobile & tablet (below lg) */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-[#120a33]/65 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+      {/* Overlay - visible on mobile and tablet (hidden on desktop) */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[100] lg:hidden">
+          <div className="absolute inset-0 bg-[#120a33]/65 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <div className="relative h-full w-[280px] shadow-[0_28px_80px_rgba(18,10,51,0.35)]">
             <button
               type="button"
               className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] text-white shadow-[0_8px_20px_rgba(47,128,237,0.3)]"
-              onClick={() => setIsOpen(false)}
+              onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
             >
               <X size={16} />

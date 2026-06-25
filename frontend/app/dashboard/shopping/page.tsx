@@ -77,8 +77,8 @@ export default function ShoppingPage() {
           </div>
         </div>
 
-        {/* Shopping Items Table */}
-        <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+        {/* Shopping Items Table - Desktop */}
+        <div className="hidden lg:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -174,6 +174,77 @@ export default function ShoppingPage() {
               <p className="mt-1 text-xs font-semibold text-[#8a9bb5]">Click "Add Item" to get started</p>
             </div>
           )}
+        </div>
+
+        {/* Shopping Items - Mobile/Tablet Cards */}
+        <div className="space-y-3 lg:hidden">
+          {items.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <ShoppingCart size={40} className="mb-2 text-[#d8e6f8]" />
+              <p className="text-sm font-bold text-[#6b7a99]">No items in the list</p>
+              <p className="mt-1 text-xs font-semibold text-[#8a9bb5]">Click "Add Item" to get started</p>
+            </div>
+          )}
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb] hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    onClick={() => toggleComplete(item.id)}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition ${
+                      item.completed
+                        ? 'border-emerald-500/40 bg-emerald-50 text-emerald-600'
+                        : 'border-[#d8e6f8] text-transparent hover:border-emerald-400/60 hover:bg-emerald-50/50 hover:text-emerald-400'
+                    }`}
+                  >
+                    <CheckCircle2 size={16} />
+                  </button>
+                  <div className="min-w-0">
+                    <p className={`truncate text-sm font-bold text-[#172554] ${item.completed ? 'line-through text-[#6b7a99]' : ''}`}>
+                      {item.name}
+                    </p>
+                    <p className="text-xs font-semibold text-[#6b7a99]">
+                      {item.quantity} {item.unit}
+                    </p>
+                  </div>
+                </div>
+                <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                  item.completed
+                    ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 bg-slate-50 text-slate-500'
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${item.completed ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                  {item.completed ? 'Done' : 'Pending'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  {item.assignedTo ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed] to-[#58d68d] text-[9px] font-black text-white shadow-sm">
+                        {item.assignedTo[0].toUpperCase()}
+                      </div>
+                      <span className="text-xs font-semibold text-[#6b7a99]">{item.assignedTo}</span>
+                    </div>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                      Unassigned
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => deleteItem(item.id)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#ff4d4f]/15 bg-[#fff0f0] text-[#ff4d4f] transition hover:border-[#ff4d4f]/40 hover:bg-[#ffe5e5]"
+                  title="Delete item"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Summary Cards */}

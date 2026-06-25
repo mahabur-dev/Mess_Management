@@ -659,7 +659,7 @@ export default function FinancePage() {
                 if (!open) resetForm()
               }}
             >
-              <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-2">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <Button
                   type="button"
                   onClick={openUtilityModal}
@@ -1136,8 +1136,8 @@ export default function FinancePage() {
           </Dialog>
         </div>
 
-        {/* Desktop table */}
-        <div className="hidden md:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+        {/* Desktop table - visible on large screens and above */}
+        <div className="hidden lg:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
@@ -1281,8 +1281,8 @@ export default function FinancePage() {
           )}
         </div>
 
-        {/* Mobile cards */}
-        <div className="space-y-3 md:hidden">
+        {/* Mobile/Tablet cards - visible on mobile and tablet */}
+        <div className="space-y-3 lg:hidden">
           {loading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 size={24} className="animate-spin text-[#2f80ed]" />

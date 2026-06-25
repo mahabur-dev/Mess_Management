@@ -612,7 +612,9 @@ export default function SubscriptionsPage() {
               </div>
             </>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Desktop table - visible on desktop and above */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
@@ -747,6 +749,106 @@ export default function SubscriptionsPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile/Tablet cards */}
+            <div className="space-y-3 lg:hidden">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={24} className="animate-spin text-[#2f80ed]" />
+                </div>
+              ) : filteredSubscriptions.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-12 text-center">
+                  <CreditCard size={34} className="text-[#d8e6f8]" />
+                  <p className="text-sm font-bold text-[#6b7a99]">No subscriptions found</p>
+                  <p className="text-xs font-semibold text-[#8a9bb5]">Try changing the filters or create a new one.</p>
+                </div>
+              ) : (
+                filteredSubscriptions.map((subscription) => {
+                  const planStyle = PLAN_STYLES[subscription.plan]
+                  const statusStyle = STATUS_STYLES[subscription.status]
+                  const daysLeft = getDaysRemaining(subscription.end_date)
+                  const isExpiringSoon = typeof daysLeft === 'number' && daysLeft > 0 && daysLeft <= 7
+                  const isExpired = typeof daysLeft === 'number' && daysLeft <= 0
+                  const memberCount = subscription.mess._count?.memberships ?? 0
+                  const PlanIcon = planStyle.icon
+
+                  return (
+                    <div key={subscription.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb] hover:shadow-md">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-base font-bold text-[#172554]">{subscription.mess.name}</p>
+                          {subscription.mess.address && (
+                            <p className="mt-0.5 text-xs font-semibold text-[#8a9bb5]">{subscription.mess.address}</p>
+                          )}
+                        </div>
+                        <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${planStyle.bg} ${planStyle.text}`}>
+                          <PlanIcon size={13} />
+                          {planStyle.label}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#f8faff] p-3 mb-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-[#6b7a99]">Status</p>
+                          <span className={`mt-1 inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[10px] font-bold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${
+                              subscription.status === 'ACTIVE' ? 'bg-emerald-500' :
+                              subscription.status === 'EXPIRED' ? 'bg-red-500' :
+                              subscription.status === 'CANCELLED' ? 'bg-slate-500' : 'bg-amber-500'
+                            }`} />
+                            {statusStyle.label}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-[#6b7a99]">Members</p>
+                          <p className="mt-1 text-sm font-bold text-[#172554]">{memberCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-[#6b7a99]">Period</p>
+                          <p className="mt-1 text-xs font-semibold text-[#53617d]">{formatDate(subscription.start_date)} - {formatDate(subscription.end_date)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-[#6b7a99]">Days left</p>
+                          <p className={`mt-1 text-sm font-bold ${
+                            isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'
+                          }`}>
+                            {daysLeft === null ? 'N/A' : isExpired ? 'Expired' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openDetails(subscription)}
+                          className="flex-1 h-9 rounded-xl border border-[#d8e6f8] bg-white text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                        >
+                          <Eye size={13} className="inline mr-1" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(subscription)}
+                          className="flex-1 h-9 rounded-xl border border-[#d8e6f8] bg-white text-xs font-bold text-[#53617d] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff] hover:text-[#172554]"
+                        >
+                          <Edit3 size={13} className="inline mr-1" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => askDelete(subscription)}
+                          className="flex-1 h-9 rounded-xl bg-red-50 text-xs font-bold text-red-600 border border-red-200/50 transition hover:bg-red-100"
+                        >
+                          <Trash2 size={13} className="inline mr-1" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+            </>
           )}
         </div>
 

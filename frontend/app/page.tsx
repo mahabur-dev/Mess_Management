@@ -566,7 +566,7 @@ function WhyChooseSection() {
     ['24/7', 'Support', 'Expert support whenever you need it'],
   ]
   return (
-    <section className="bg-[#fafcff] px-4 py-20 sm:px-6 lg:px-8">
+    <section id="about" className="bg-[#fafcff] px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl text-center">
         <span className="inline-flex items-center rounded-full border border-[#d8e6f8] bg-[#f8faff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">Why Mess Management</span>
         <h2 className="mt-4 text-3xl font-black tracking-tight text-[#172554] sm:text-4xl">Why Choose Mess Management?</h2>

@@ -9,9 +9,9 @@ import { useState } from 'react'
 
 const links = [
   { label: 'Home', href: '/' },
-  { label: 'Dashboard', href: '#features' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'Why Choose', href: '#about' },
+  { label: 'Dashboard', href: '/#features' },
+  { label: 'Pricing', href: '/#pricing' },
+  { label: 'Why Choose', href: '/#about' },
   { label: 'Contact', href: '/contact' },
 ]
 

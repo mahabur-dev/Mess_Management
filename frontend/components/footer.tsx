@@ -71,7 +71,7 @@ export function Footer() {
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0f6ff] text-[#005bbb] transition group-hover:bg-[#005bbb] group-hover:text-white">
                     <Mail size={14} />
                   </span>
-                  <span className="truncate">support@gmail.com</span>
+                  <span className="truncate">support@messzen.com</span>
                 </a>
               </li>
               <li>

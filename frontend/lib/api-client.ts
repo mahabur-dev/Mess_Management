@@ -497,6 +497,18 @@ class ApiClient {
     return this.request<MessDashboard>(`/dashboard/mess/${messId}`, { params: { month } })
   }
 
+  getMonthlyOverview(messId: string, month?: string) {
+    return this.request<Array<{ day: string; income: number; expense: number }>>(`/dashboard/mess/${messId}/monthly-overview`, { params: { month } })
+  }
+
+  getExpenseBreakdown(messId: string, month?: string) {
+    return this.request<{ data: Array<{ name: string; value: number; amount: number; color: string }>; totalAmount: number }>(`/dashboard/mess/${messId}/expense-breakdown`, { params: { month } })
+  }
+
+  getWeeklyMealCount(messId: string, date?: string) {
+    return this.request<Array<{ day: string; breakfast: number; lunch: number; dinner: number }>>(`/dashboard/mess/${messId}/weekly-meals`, { params: { date } })
+  }
+
   getAdminDashboard() {
     return this.request<AdminDashboard>('/dashboard/admin')
   }

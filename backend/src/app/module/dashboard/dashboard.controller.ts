@@ -26,4 +26,31 @@ export class DashboardController {
     const data = await this.dashboardService.getMessDashboard(messId, req.user!.id, req.user!.role, month);
     return { message: 'Mess dashboard fetched successfully', data };
   }
+
+  @Get('mess/:messId/monthly-overview')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Daily income & expense data for monthly overview chart' })
+  @ApiQuery({ name: 'month', required: false, example: '2026-05-01' })
+  async getMonthlyOverview(@Param('messId') messId: string, @Req() req: Request, @Query('month') month?: string) {
+    const data = await this.dashboardService.getMonthlyOverview(messId, req.user!.id, req.user!.role, month);
+    return { message: 'Monthly overview fetched successfully', data };
+  }
+
+  @Get('mess/:messId/expense-breakdown')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Expense breakdown by category for pie chart' })
+  @ApiQuery({ name: 'month', required: false, example: '2026-05-01' })
+  async getExpenseBreakdown(@Param('messId') messId: string, @Req() req: Request, @Query('month') month?: string) {
+    const data = await this.dashboardService.getExpenseBreakdown(messId, req.user!.id, req.user!.role, month);
+    return { message: 'Expense breakdown fetched successfully', data };
+  }
+
+  @Get('mess/:messId/weekly-meals')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Weekly meal counts (Mon-Sun) for bar chart' })
+  @ApiQuery({ name: 'date', required: false, example: '2026-06-22' })
+  async getWeeklyMealCount(@Param('messId') messId: string, @Req() req: Request, @Query('date') date?: string) {
+    const data = await this.dashboardService.getWeeklyMealCount(messId, req.user!.id, req.user!.role, date);
+    return { message: 'Weekly meal count fetched successfully', data };
+  }
 }

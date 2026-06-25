@@ -23,6 +23,7 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
+  Tooltip,
 } from 'recharts'
 import {
   BadgeDollarSign,
@@ -39,34 +40,10 @@ import {
   Users,
   WalletCards,
   ArrowUpRight,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type ElementType } from 'react'
-
-const lineData = [
-  { day: '01 May', income: 35, expense: 16 },
-  { day: '05 May', income: 59, expense: 30 },
-  { day: '10 May', income: 31, expense: 33 },
-  { day: '15 May', income: 38, expense: 56 },
-  { day: '20 May', income: 50, expense: 22 },
-  { day: '25 May', income: 31, expense: 36 },
-  { day: '30 May', income: 46, expense: 31 },
-]
-
-const mealData = [
-  { day: 'Mon', breakfast: 82, lunch: 54, dinner: 70 },
-  { day: 'Tue', breakfast: 44, lunch: 38, dinner: 36 },
-  { day: 'Wed', breakfast: 60, lunch: 42, dinner: 58 },
-  { day: 'Thu', breakfast: 75, lunch: 56, dinner: 70 },
-  { day: 'Sat', breakfast: 45, lunch: 68, dinner: 100 },
-  { day: 'Sun', breakfast: 70, lunch: 38, dinner: 70 },
-]
-
-const pieData = [
-  { name: 'Food & Groceries', value: 65, color: '#2f80ed' },
-  { name: 'Utilities', value: 15, color: '#58d68d' },
-  { name: 'Rent', value: 10, color: '#ffb84d' },
-  { name: 'Others', value: 10, color: '#ff4d4f' },
-]
 
 const quickActions = [
   ['Add Member', Users, '/dashboard/member_management'],
@@ -94,6 +71,20 @@ function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
 }
 
+// ─── Chart Skeleton ──────────────────────────────────────────
+function ChartSkeleton({ height = 280 }: { height?: number }) {
+  return (
+    <div className="animate-pulse space-y-4">
+      <div className="h-4 w-1/3 rounded bg-[#e6ebf4]" />
+      <div
+        className="w-full rounded-xl bg-[#f1f5f9]"
+        style={{ height }}
+      />
+    </div>
+  )
+}
+
+// ─── StatCard ─────────────────────────────────────────────────
 function StatCard({
   label,
   value,
@@ -133,6 +124,7 @@ function StatCard({
   )
 }
 
+// ─── MiniStatCard ─────────────────────────────────────────────
 function MiniStatCard({
   label,
   value,
@@ -164,6 +156,23 @@ function MiniStatCard({
   )
 }
 
+// ─── Custom Tooltip ───────────────────────────────────────────
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-xl border border-[#e6ebf4] bg-white px-4 py-3 shadow-[0_8px_30px_rgba(65,103,153,0.12)]">
+      <p className="mb-2 text-xs font-bold text-[#6b7a99]">{label}</p>
+      {payload.map((entry, i) => (
+        <div key={i} className="flex items-center gap-2 text-sm font-bold text-[#172554]">
+          <span className="h-2.5 w-2.5 rounded-full" style={{ background: entry.color }} />
+          <span>{entry.name}: {entry.value.toLocaleString()}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Main Dashboard Page ──────────────────────────────────────
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
@@ -175,9 +184,16 @@ export default function DashboardPage() {
   const [loadingData, setLoadingData] = useState(true)
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue)
 
+  // Chart states
+  const [monthlyOverview, setMonthlyOverview] = useState<Array<{ day: string; income: number; expense: number }>>([])
+  const [expenseBreakdown, setExpenseBreakdown] = useState<Array<{ name: string; value: number; amount: number; color: string }>>([])
+  const [weeklyMeals, setWeeklyMeals] = useState<Array<{ day: string; breakfast: number; lunch: number; dinner: number }>>([])
+  const [chartLoading, setChartLoading] = useState(true)
+
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const dashboardQuickActions = user?.role === 'ADMIN' ? adminQuickActions : quickActions
 
+  // ── Load dashboard data ──────────────────────────────────────
   useEffect(() => {
     let mounted = true
 
@@ -225,6 +241,50 @@ export default function DashboardPage() {
       mounted = false
     }
   }, [selectedMonth, user])
+
+  // ── Load chart data ──────────────────────────────────────────
+  useEffect(() => {
+    let mounted = true
+
+    async function loadCharts() {
+      const messId = messes[0]?.id || user?.memberships?.[0]?.mess?.id
+      if (!messId || user?.role === 'ADMIN') {
+        if (mounted) setChartLoading(false)
+        return
+      }
+
+      setChartLoading(true)
+
+      try {
+        const [overviewRes, breakdownRes, mealsRes] = await Promise.all([
+          apiClient.getMonthlyOverview(messId, `${selectedMonth}-01`),
+          apiClient.getExpenseBreakdown(messId, `${selectedMonth}-01`),
+          apiClient.getWeeklyMealCount(messId),
+        ])
+
+        if (mounted) {
+          setMonthlyOverview(overviewRes.data || [])
+          setExpenseBreakdown(breakdownRes.data?.data || [])
+          setWeeklyMeals(mealsRes.data || [])
+        }
+      } catch {
+        // Keep empty arrays on error
+        if (mounted) {
+          setMonthlyOverview([])
+          setExpenseBreakdown([])
+          setWeeklyMeals([])
+        }
+      } finally {
+        if (mounted) setChartLoading(false)
+      }
+    }
+
+    loadCharts()
+
+    return () => {
+      mounted = false
+    }
+  }, [selectedMonth, messes, user])
 
   const stats = useMemo(() => {
     const dashboard = messDashboard as
@@ -434,62 +494,132 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Charts Row */}
-        <div className="mt-7 grid gap-6 xl:grid-cols-[1.35fr_.85fr_.7fr]">
-          {/* Line Chart */}
-          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-            <h3 className="mb-5 text-sm font-black text-[#172554]">Monthly Overview</h3>
+        {/* Charts Row - only for non-admin users */}
+        {user.role !== 'ADMIN' && (
+          <div className="mt-7 grid gap-6 xl:grid-cols-[1.35fr_.85fr_.7fr]">
+            {/* Monthly Overview - Line Chart */}
+            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+              <h3 className="mb-5 text-sm font-black text-[#172554]">Monthly Overview</h3>
 
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={lineData}>
-                <CartesianGrid stroke="#e6ebf4" vertical={false} />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
-                <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
-                <Line type="monotone" dataKey="income" stroke="#2f80ed" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="expense" stroke="#58d68d" strokeWidth={3} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Pie Chart */}
-          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-            <h3 className="mb-5 text-sm font-black text-[#172554]">Expense Breakdown</h3>
-
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie data={pieData} dataKey="value" innerRadius={58} outerRadius={92}>
-                  {pieData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-
-            <div className="mt-2 grid gap-2">
-              {pieData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-xs font-bold">
-                  <span className="flex items-center gap-2 text-[#172554]">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ background: item.color }}
-                    />
-                    {item.name}
-                  </span>
-                  <span className="font-semibold text-[#6b7a99]">{item.value}%</span>
+              {chartLoading ? (
+                <ChartSkeleton />
+              ) : monthlyOverview.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={monthlyOverview}>
+                    <CartesianGrid stroke="#e6ebf4" vertical={false} />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} interval="preserveStartEnd" />
+                    <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Line type="monotone" dataKey="income" stroke="#2f80ed" strokeWidth={3} dot={false} name="Income" />
+                    <Line type="monotone" dataKey="expense" stroke="#58d68d" strokeWidth={3} dot={false} name="Expense" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-[280px] items-center justify-center">
+                  <div className="text-center">
+                    <TrendingUp size={32} className="mx-auto mb-2 text-[#cbd5e1]" />
+                    <p className="text-sm font-semibold text-[#6b7a99]">No data available for this month</p>
+                  </div>
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Expense Breakdown - Pie Chart */}
+            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+              <h3 className="mb-5 text-sm font-black text-[#172554]">Expense Breakdown</h3>
+
+              {chartLoading ? (
+                <ChartSkeleton height={250} />
+              ) : expenseBreakdown.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={expenseBreakdown} dataKey="value" innerRadius={58} outerRadius={92}>
+                        {expenseBreakdown.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<ChartTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  <div className="mt-2 grid gap-2">
+                    {expenseBreakdown.map((item) => (
+                      <div key={item.name} className="flex items-center justify-between text-xs font-bold">
+                        <span className="flex items-center gap-2 text-[#172554]">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{ background: item.color }}
+                          />
+                          {item.name}
+                        </span>
+                        <span className="font-semibold text-[#6b7a99]">{item.value}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-[250px] items-center justify-center">
+                  <div className="text-center">
+                    <TrendingDown size={32} className="mx-auto mb-2 text-[#cbd5e1]" />
+                    <p className="text-sm font-semibold text-[#6b7a99]">No expenses recorded</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Recent Notices / Receipts */}
+            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+              <h3 className="mb-4 text-sm font-black text-[#172554]">
+                Recent Notices
+              </h3>
+
+              <div className="space-y-3">
+                {(messDashboard?.notices?.length
+                  ? messDashboard.notices
+                  : [
+                    {
+                      id: '1',
+                      title: 'Payment deadline reminder',
+                      type: 'PAYMENT',
+                      is_pinned: false,
+                      created_at: '',
+                    },
+                    {
+                      id: '2',
+                      title: 'Dinner will be served at 9 PM',
+                      type: 'MEAL',
+                      is_pinned: false,
+                      created_at: '',
+                    },
+                  ]
+                ).map((notice) => (
+                  <div
+                    key={notice.id}
+                    className="flex items-start gap-3 rounded-xl border border-[#e6ebf4] bg-white p-3 transition hover:border-[#a9ccfb] hover:bg-[#f8faff]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-50 to-orange-100 text-amber-600">
+                      <Bell size={16} />
+                    </span>
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-[#172554]">{notice.title}</p>
+                      <p className="text-xs font-semibold text-[#6b7a99]">{notice.type}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+        )}
 
-          {/* Recent Notices / Receipts */}
-          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-            <h3 className="mb-4 text-sm font-black text-[#172554]">
-              {user.role === 'ADMIN' ? 'Recent Expense Receipts' : 'Recent Notices'}
-            </h3>
-
-            <div className="space-y-3">
-              {user.role === 'ADMIN' ? (
-                adminDashboard?.recentExpenses?.length ? (
+        {/* Admin: show expense receipts instead of charts */}
+        {user.role === 'ADMIN' && (
+          <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
+            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+              <h3 className="mb-4 text-sm font-black text-[#172554]">Recent Expense Receipts</h3>
+              <div className="space-y-3">
+                {adminDashboard?.recentExpenses?.length ? (
                   adminDashboard.recentExpenses.map((expense) => (
                     <a
                       key={expense.id}
@@ -513,90 +643,70 @@ export default function DashboardPage() {
                     </a>
                   ))
                 ) : (
-                  <p className="text-sm font-semibold text-[#6b7a99]">
-                    No uploaded receipts yet.
-                  </p>
-                )
-              ) : (
-                (messDashboard?.notices?.length
-                ? messDashboard.notices
-                : [
-                  {
-                    id: '1',
-                    title: 'Payment deadline reminder',
-                    type: 'PAYMENT',
-                    is_pinned: false,
-                    created_at: '',
-                  },
-                  {
-                    id: '2',
-                    title: 'Dinner will be served at 9 PM',
-                    type: 'MEAL',
-                    is_pinned: false,
-                    created_at: '',
-                  },
-                ]
-              ).map((notice) => (
-                <div
-                  key={notice.id}
-                  className="flex items-start gap-3 rounded-xl border border-[#e6ebf4] bg-white p-3 transition hover:border-[#a9ccfb] hover:bg-[#f8faff]"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-50 to-orange-100 text-amber-600">
-                    <Bell size={16} />
-                  </span>
-
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-[#172554]">{notice.title}</p>
-                    <p className="text-xs font-semibold text-[#6b7a99]">{notice.type}</p>
-                  </div>
-                </div>
-              )))}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Row */}
-        <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
-          {/* Meal Bar Chart */}
-          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-            <h3 className="mb-4 text-sm font-black text-[#172554]">Meal Count This Week</h3>
-
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={mealData}>
-                <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
-                <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
-                <Bar dataKey="breakfast" fill="#2f80ed" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="lunch" fill="#58d68d" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="dinner" fill="#ffb84d" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Quick Actions */}
-          {user.role !== 'MEMBER' && (
-            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-5 text-sm font-black text-[#172554]">
-                {user.role === 'ADMIN' ? 'Full Access' : 'Quick Actions'}
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-2">
-                {dashboardQuickActions.map(([label, Icon, href]) => (
-                  <button
-                    key={label}
-                    onClick={() => router.push(href)}
-                    className="group rounded-xl border border-[#e6ebf4] bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md"
-                  >
-                    <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] transition group-hover:bg-gradient-to-br group-hover:from-[#2f80ed] group-hover:to-[#3b8cff] group-hover:text-white">
-                      <Icon size={20} />
-                    </span>
-
-                    <span className="text-xs font-black text-[#172554]">{label}</span>
-                  </button>
-                ))}
+                  <p className="text-sm font-semibold text-[#6b7a99]">No uploaded receipts yet.</p>
+                )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Bottom Row - Meals Bar Chart + Quick Actions (non-admin) */}
+        {user.role !== 'ADMIN' && (
+          <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
+            {/* Weekly Meal Count - Bar Chart */}
+            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+              <h3 className="mb-4 text-sm font-black text-[#172554]">Meal Count This Week</h3>
+
+              {chartLoading ? (
+                <ChartSkeleton height={260} />
+              ) : weeklyMeals.length > 0 ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={weeklyMeals}>
+                    <CartesianGrid stroke="#e6ebf4" vertical={false} />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
+                    <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Bar dataKey="breakfast" fill="#2f80ed" radius={[4, 4, 0, 0]} name="Breakfast" />
+                    <Bar dataKey="lunch" fill="#58d68d" radius={[4, 4, 0, 0]} name="Lunch" />
+                    <Bar dataKey="dinner" fill="#ffb84d" radius={[4, 4, 0, 0]} name="Dinner" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-[260px] items-center justify-center">
+                  <div className="text-center">
+                    <UtensilsCrossed size={32} className="mx-auto mb-2 text-[#cbd5e1]" />
+                    <p className="text-sm font-semibold text-[#6b7a99]">No meal data this week</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            {user.role !== 'MEMBER' && (
+              <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+                <h3 className="mb-5 text-sm font-black text-[#172554]">
+                  Quick Actions
+                </h3>
+
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-2">
+                  {dashboardQuickActions.map(([label, Icon, href]) => (
+                    <button
+                      key={label}
+                      onClick={() => router.push(href)}
+                      className="group rounded-xl border border-[#e6ebf4] bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md"
+                    >
+                      <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] transition group-hover:bg-gradient-to-br group-hover:from-[#2f80ed] group-hover:to-[#3b8cff] group-hover:text-white">
+                        <Icon size={20} />
+                      </span>
+
+                      <span className="text-xs font-black text-[#172554]">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

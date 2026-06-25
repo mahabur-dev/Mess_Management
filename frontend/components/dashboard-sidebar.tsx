@@ -25,7 +25,8 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
-  PanelLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useSidebar } from '@/app/context/sidebar-context'
@@ -104,27 +105,32 @@ export function DashboardSidebar() {
     <aside className={`flex h-full ${sidebarWidth} flex-col overflow-hidden border-r border-[#e6ebf4] bg-white transition-all duration-300`}>
       {/* Logo Area */}
       <div className="relative flex h-[88px] items-center border-b border-[#e6ebf4] px-5">
-        <Link href="/dashboard" className="flex items-center gap-3.5">
-          {/* <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-base font-black text-white shadow-[0_4px_12px_rgba(47,128,237,0.3)]">
-            M
-          </div> */}
-          <BrandLogo  />
-          {/* {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-base font-black text-[#172554] tracking-tight leading-none">Mess</p>
-              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#6b7a99]">Dashboard</p>
-            </div>
-          )} */}
-        </Link>
-        
-        {/* Collapse button - top right */}
-        {/* <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <PanelLeft size={16} />
-        </button> */}
+        {collapsed ? (
+          /* When collapsed: center the collapse button only */
+          <div className="flex w-full items-center justify-center">
+            <button
+              onClick={() => setCollapsed(false)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen size={18} />
+            </button>
+          </div>
+        ) : (
+          /* When expanded: logo on left, collapse button on right */
+          <>
+            <Link href="/dashboard" className="flex items-center">
+              <BrandLogo />
+            </Link>
+            <button
+              onClick={() => setCollapsed(true)}
+              className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose size={18} />
+            </button>
+          </>
+        )}
       </div>
 
       {/* Navigation with custom scrollbar */}

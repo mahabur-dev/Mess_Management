@@ -693,7 +693,7 @@ export default function MealsPage() {
 
               {/* Meal Sheet Table */}
               <div className="overflow-x-auto rounded-xl border border-[#e6ebf4] shadow-[inset_12px_0_18px_-18px_rgba(23,37,84,0.45),inset_-12px_0_18px_-18px_rgba(23,37,84,0.45)]">
-                <table className={`w-full border-separate border-spacing-0 ${isManager ? 'min-w-[640px] sm:min-w-[760px]' : 'min-w-[520px] sm:min-w-[620px]'}`}>
+                <table className={`w-full border-separate border-spacing-0 ${isManager ? 'min-w-[560px]' : 'min-w-[480px]'}`}>
                   <thead>
                     <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
                       <th className="sticky left-0 z-20 w-[138px] whitespace-nowrap border-b border-[#e6ebf4] bg-[#f8faff] px-3 py-3 text-left text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:static sm:w-auto sm:px-4 sm:py-4 sm:text-[11px]">Member</th>

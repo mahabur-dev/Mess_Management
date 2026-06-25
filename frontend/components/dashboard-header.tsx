@@ -1,7 +1,8 @@
 'use client'
 
 import { useAuth } from '@/app/context/auth-context'
-import { Bell, CalendarDays, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight } from 'lucide-react'
+import { useSidebar } from '@/app/context/sidebar-context'
+import { Bell, CalendarDays, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -65,6 +66,7 @@ const paymentMethods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BA
 
 export function DashboardHeader({ title, description, selectedMonth, onMonthChange, showUpgradeButton, upgradeHref = '/dashboard/contact?source=UPGRADE&plan=MONTHLY' }: DashboardHeaderProps) {
   const { user, logout } = useAuth()
+  const { setMobileOpen } = useSidebar()
   const router = useRouter()
   const [imageError, setImageError] = useState(false)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
@@ -208,7 +210,16 @@ export function DashboardHeader({ title, description, selectedMonth, onMonthChan
   return (
     <header className="sticky top-0 z-20 border-b border-[#e6ebf4] bg-white shadow-sm">
       <div className="flex min-h-[72px] flex-col gap-2 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div className="flex gap-3 pr-3 top-0">
+        <div className="flex items-center gap-3 pr-3">
+          {/* Hamburger - visible on mobile and tablet */}
+          <button
+            type="button"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e6ebf4] bg-white text-[#172554] shadow-sm lg:hidden"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu size={18} />
+          </button>
           <div>
             <h1 className="text-[20px] font-black tracking-tight text-[#172554]">{title}</h1>
             {description && <p className="mt-1 text-sm font-semibold text-[#6b7a99]">{description}</p>}

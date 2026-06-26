@@ -430,14 +430,22 @@ export class MonthlyBillService {
       const totalPaid = this.toFixedNumber(effectiveDepositTotal + paidAmount);
 
       // Include previous month's balance in the current month's calculation
+      // prevBalance from DB: Positive (+) = due/baki from last month → gets added to current costs
+      //                     Negative (-) = extra/overpaid from last month → gets subtracted from costs (credit)
+      // Formula: due = max(0, totalCost - totalPaid + prevBalance)
+      // When prevBalance is +500 (due): costs - payments + 500 → increases due ✓
+      // When prevBalance is -200 (extra): costs - payments - 200 → decreases due (credit) ✓
+
       const rawDue =
-        prevBalance + foodBill + seatRent + utilityPerMember - totalPaid;
+        foodBill + seatRent + utilityPerMember - totalPaid + prevBalance;
 
       const finalDue = this.toFixedNumber(Math.max(rawDue, 0));
-      const balance = finalDue;
+      // balance stores the actual net position (can be negative for overpayments)
+      // This ensures prev_balance carries forward properly as credit
+      const balance = this.toFixedNumber(rawDue);
 
       const billStatus =
-        balance <= 0
+        finalDue <= 0
           ? BillStatus.PAID
           : totalPaid > 0
             ? BillStatus.PARTIAL

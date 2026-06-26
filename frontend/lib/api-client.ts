@@ -471,6 +471,10 @@ class ApiClient {
     return this.request(`/mess-requests/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
+  deleteMessRequest(id: string) {
+    return this.request(`/mess-requests/${id}`, { method: 'DELETE' })
+  }
+
   updateMessSetup(id: string, data: { messName?: string; address?: string; totalSeats?: number; monthlyRent?: number; messCategory?: string; rooms?: MessRoom[]; paymentDeadlineDay?: number; mealOffDeadline?: string; bazarRules?: string; mealTypes?: MealName[]; mealRateMethod?: string }) {
     return this.request<Mess>(`/messes/${id}/setup`, { method: 'PATCH', body: JSON.stringify(data) })
   }

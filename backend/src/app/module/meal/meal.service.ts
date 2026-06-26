@@ -231,7 +231,7 @@ export class MealService {
   }
 
   private async ensureActiveSubscription(messId: string, role: string): Promise<void> {
-    if (role === 'ADMIN' || role === 'ORGANIZER') return;
+    if (role === 'ADMIN') return;
 
     const subscription = await this.prisma.subscription.findUnique({
       where: { mess_id: messId },
@@ -255,7 +255,7 @@ export class MealService {
     userId: string,
     role: string,
   ): Promise<boolean> {
-    if (role === 'ADMIN' || role === 'ORGANIZER') return true;
+    if (role === 'ADMIN') return true;
 
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
@@ -279,7 +279,7 @@ export class MealService {
     role: string,
   ): Promise<void> {
     // Admins and organizers can always bypass deadline
-    if (role === 'ADMIN' || role === 'ORGANIZER') return;
+    if (role === 'ADMIN') return;
 
     const isManager = await this.canManageMeal(messId, userId, role);
     if (isManager) return; // Managers bypass deadline check

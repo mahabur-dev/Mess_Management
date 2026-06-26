@@ -232,13 +232,12 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
   );
 }
 
-// ─── Edit Member Modal ─────────────────────────────────────────────────────
+  // ─── Edit Member Modal ─────────────────────────────────────────────────────
 function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModalProps) {
   const [roomNo, setRoomNo] = useState<string>((member as any).room_no || '');
   const [monthlyRent, setMonthlyRent] = useState<string>((member as any).monthly_rent || '');
   const [depositAmount, setDepositAmount] = useState<string>((member as any).deposit_amount || '');
   const [isActive, setIsActive] = useState<boolean>(member.is_active);
-  const [role, setRole] = useState<MembershipRole>(member.role);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -254,7 +253,6 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
       if (monthlyRent) data.monthlyRent = Number(monthlyRent);
       if (depositAmount) data.depositAmount = Number(depositAmount);
       data.isActive = isActive;
-      data.role = role;
 
       await onSave(member.user_id, data);
       onClose();
@@ -327,35 +325,6 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
             <div className="min-w-0">
               <h3 className="truncate text-base font-black text-[#172554]">{member.user.name}</h3>
               <p className="truncate text-sm font-semibold text-[#6b7a99]">{member.user.email}</p>
-            </div>
-          </div>
-
-          {/* Role */}
-          <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
-              <Shield size={12} className="mr-1 inline" />
-              Role
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {(['MEMBER', 'MANAGER'] as MembershipRole[]).map((r) => {
-                const cfg = ROLE_CONFIG[r];
-                const selected = role === r;
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition active:scale-[0.98] ${
-                      selected
-                        ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-[0_8px_20px_rgba(47,128,237,0.16)]'
-                        : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
-                    }`}
-                  >
-                    <span style={{ color: selected ? cfg.textColor : undefined }}>{cfg.icon}</span>
-                    <span>{cfg.label}</span>
-                  </button>
-                );
-              })}
             </div>
           </div>
 
@@ -1062,14 +1031,14 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
     }
   }
 
-  // Handle Change Role
+  // Handle Change Role (Single Manager Rule: promotes member → demotes current manager)
   async function handleEditRole(memberId: string, role: MembershipRole, messId: string) {
     try {
       await apiClient.updateMemberRole(messId, memberId, role);
       
-      setMembers(prev => 
-        prev.map(m => m.user_id === memberId ? { ...m, role } : m)
-      );
+      // Refresh from server to get accurate state after manager demotion
+      await loadMembers();
+      
       setEditingMember(null);
     } catch (err) {
       const errorMsg = err instanceof ApiError ? err.message : 'Failed to update role';
@@ -1077,7 +1046,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
     }
   }
 
-  // Handle Full Edit Member
+  // Handle Full Edit Member (Single Manager Rule: promotes member → demotes current manager)
   async function handleEditMember(memberId: string, data: EditMemberData) {
     if (!activeMess?.id) return;
 
@@ -1090,8 +1059,29 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
         depositAmount: data.depositAmount,
       });
 
-      setMembers(prev =>
-        prev.map(m =>
+      setMembers(prev => {
+        // If promoting a member to MANAGER, demote the existing manager to MEMBER
+        if (data.role === 'MANAGER') {
+          const newManagerUserId = memberId;
+          return prev.map(m => {
+            // Demote current manager (different user) to MEMBER
+            if (m.user_id !== newManagerUserId && m.role === 'MANAGER' && m.mess_id === activeMess.id) {
+              return { ...m, role: 'MEMBER' as MembershipRole };
+            }
+            // Update the target user
+            if (m.user_id === memberId) {
+              return {
+                ...m,
+                role: data.role || m.role,
+                is_active: data.isActive ?? m.is_active,
+                ...(data.roomNo ? { room_no: data.roomNo } : {}),
+              };
+            }
+            return m;
+          });
+        }
+        // Normal update
+        return prev.map(m =>
           m.user_id === memberId
             ? {
                 ...m,
@@ -1100,8 +1090,8 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
                 ...(data.roomNo ? { room_no: data.roomNo } : {}),
               }
             : m
-        )
-      );
+        );
+      });
       setEditingMemberEdit(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to update member');

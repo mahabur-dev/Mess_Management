@@ -38,7 +38,7 @@ export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @UseInterceptors(FileInterceptor('receipt', uploadConfig))
   @ApiOperation({ summary: 'Create an expense with optional receipt image/PDF' })
   @ApiConsumes('multipart/form-data', 'application/json')
@@ -89,7 +89,7 @@ export class ExpenseController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get expenses for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -111,7 +111,7 @@ export class ExpenseController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get an expense by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.expenseService.findOne(
@@ -123,7 +123,7 @@ export class ExpenseController {
   }
 
   @Post(':id/request-price-review')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Request price review from the expense creator' })
   async requestPriceReview(
     @Param('id') id: string,
@@ -140,7 +140,7 @@ export class ExpenseController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @UseInterceptors(FileInterceptor('receipt', uploadConfig))
   @ApiOperation({ summary: 'Update an expense with optional receipt image/PDF' })
   @ApiConsumes('multipart/form-data', 'application/json')
@@ -178,7 +178,7 @@ export class ExpenseController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Delete an expense (Manager/Admin)' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.expenseService.remove(

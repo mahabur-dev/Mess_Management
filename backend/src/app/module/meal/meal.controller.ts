@@ -33,7 +33,7 @@ export class MealController {
   constructor(private readonly mealService: MealService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Add a meal entry (all roles)' })
   async create(@Req() req: Request, @Body() dto: CreateMealDto) {
     const data = await this.mealService.create(
@@ -58,7 +58,7 @@ export class MealController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get meal entries for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -80,7 +80,7 @@ export class MealController {
   }
 
   @Get('mess/:messId/summary')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({
     summary:
       'Get meal cost summary for a mess (meal rate, each member cost & balance)',
@@ -110,7 +110,7 @@ export class MealController {
    * members can add/update meals. After the window closes, only managers can modify.
    */
   @Post('mess/:messId/deadline')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Set meal deadline window (start & end time)' })
   async setMealDeadline(
     @Param('messId') messId: string,
@@ -130,7 +130,7 @@ export class MealController {
    * Get the current meal deadline info for a mess.
    */
   @Get('mess/:messId/deadline')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get meal deadline info for a mess' })
   @ApiQuery({ name: 'date', required: false, example: '2026-06-15' })
   async getMealDeadline(
@@ -146,7 +146,7 @@ export class MealController {
    * Check if meal window is open for a specific date.
    */
   @Get('mess/:messId/window-status')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Check if meal window is open for a date' })
   @ApiQuery({ name: 'date', required: false, example: '2026-06-15' })
   async getMealWindowStatus(
@@ -162,7 +162,7 @@ export class MealController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get a meal entry by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.mealService.findOne(
@@ -174,7 +174,7 @@ export class MealController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Update a meal entry' })
   async update(
     @Param('id') id: string,
@@ -191,7 +191,7 @@ export class MealController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Delete a meal entry' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.mealService.remove(

@@ -140,6 +140,7 @@ export default function MonthlyBillPage() {
       totalUtility: filteredBills.reduce((s, b) => s + Number(b.utility_share || 0), 0),
       totalCost: filteredBills.reduce((s, b) => s + getTotalCost(b), 0),
       totalDue: filteredBills.reduce((s, b) => s + Number(b.final_due || 0), 0),
+      totalPrevBalance: filteredBills.reduce((s, b) => s + Number(b.prev_balance || 0), 0),
     }
   }, [filteredBills])
 
@@ -256,6 +257,7 @@ export default function MonthlyBillPage() {
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Rent</th>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Utilities</th>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Total Cost</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#ff8c00]">Prev Bal.</th>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Deposit</th>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-red-500">Due</th>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
@@ -265,7 +267,7 @@ export default function MonthlyBillPage() {
               <tbody className="divide-y divide-[#e6ebf4]">
                 {loading && (
                   <tr>
-                    <td colSpan={10} className="px-5 py-12 text-center">
+                    <td colSpan={11} className="px-5 py-12 text-center">
                       <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
                         <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
                         Loading monthly bills...
@@ -276,7 +278,7 @@ export default function MonthlyBillPage() {
 
                 {!loading && filteredBills.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-5 py-12 text-center">
+                    <td colSpan={11} className="px-5 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <ReceiptText size={40} className="text-[#d8e6f8]" />
                         <p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p>
@@ -325,6 +327,12 @@ export default function MonthlyBillPage() {
                         </td>
 
                         <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(getTotalCost(bill))}</td>
+
+                        <td className="px-5 py-4">
+                          <span className={`text-sm font-bold ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>
+                            {money(bill.prev_balance)}
+                          </span>
+                        </td>
 
                         <td className="px-5 py-4 text-sm font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</td>
 
@@ -437,6 +445,10 @@ export default function MonthlyBillPage() {
                     <div className="rounded-lg bg-white p-2.5">
                       <p className="font-black uppercase text-[#6b7a99]">Utility</p>
                       <p className="mt-0.5 font-bold text-[#172554]">{money(bill.utility_share)}</p>
+                    </div>
+                    <div className="rounded-lg bg-white p-2.5">
+                      <p className="font-black uppercase text-[#6b7a99]">Prev Bal.</p>
+                      <p className={`mt-0.5 font-bold ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>{money(bill.prev_balance)}</p>
                     </div>
                     <div className="rounded-lg bg-white p-2.5">
                       <p className="font-black uppercase text-[#6b7a99]">Deposit</p>

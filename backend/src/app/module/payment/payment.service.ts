@@ -106,6 +106,7 @@ export class PaymentService {
         transaction_id: dto.transactionId,
         screenshot_url: dto.screenshotUrl,
         note: dto.note,
+        payment_date: dto.paymentDate ? new Date(dto.paymentDate) : undefined,
       },
       select: this.paymentSelect,
     });

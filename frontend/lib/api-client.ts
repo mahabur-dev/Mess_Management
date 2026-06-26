@@ -192,6 +192,7 @@ export interface MonthlyBill {
   deposit_total: string
   paid_amount: string
   final_due: string
+  prev_balance: string
   balance: string
   status: BillStatus
   due_date?: string | null
@@ -206,6 +207,7 @@ export interface Payment {
   method: PaymentMethod
   status: PaymentStatus
   transaction_id?: string | null
+  payment_date?: string | null
   created_at: string
   member?: User
   mess?: Mess
@@ -581,7 +583,7 @@ class ApiClient {
     return this.request<MonthlyBill[]>('/monthly-bill/my', { params })
   }
 
-  submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string }) {
+  submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string; paymentDate?: string }) {
     return this.request<Payment>('/payments', { method: 'POST', body: JSON.stringify(data) })
   }
 

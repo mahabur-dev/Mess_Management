@@ -29,6 +29,7 @@ export class MonthlyBillService {
     deposit_total: true,
     paid_amount: true,
     final_due: true,
+    prev_balance: true,
     balance: true,
     status: true,
     due_date: true,
@@ -390,10 +391,26 @@ export class MonthlyBillService {
     const utilityPerMember = this.toFixedNumber(utilityExpensesAmount);
     // console.log("perMember : ", utilityPerMember);
 
+    // Fetch previous month's bills to get balances carried forward
+    const prevMonthStart = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1))
+    const prevBills = await this.prisma.monthlyBill.findMany({
+      where: {
+        mess_id: messId,
+        month: prevMonthStart,
+        member_id: { in: activeMembers.map(m => m.user_id) },
+      },
+      select: { member_id: true, balance: true },
+    })
+    const prevBalanceByMember: Record<string, number> = {}
+    for (const pb of prevBills) {
+      prevBalanceByMember[pb.member_id] = this.toFixedNumber(pb.balance)
+    }
+
     const dueDate = new Date(month);
     dueDate.setDate(mess.payment_deadline_day ?? 10);
 
     const billWrites: Prisma.MonthlyBillUpsertArgs[] = activeMembers.map(({ user_id, monthly_rent, room_no }) => {
+      const prevBalance = prevBalanceByMember[user_id] ?? 0;
       const memberMeals = mealCountByUser[user_id] ?? 0;
 
       const foodBill = this.toFixedNumber(memberMeals * perMealRate);
@@ -412,8 +429,9 @@ export class MonthlyBillService {
       const effectiveDepositTotal = this.toFixedNumber(depositTotal);
       const totalPaid = this.toFixedNumber(effectiveDepositTotal + paidAmount);
 
+      // Include previous month's balance in the current month's calculation
       const rawDue =
-        foodBill + seatRent + utilityPerMember - totalPaid;
+        prevBalance + foodBill + seatRent + utilityPerMember - totalPaid;
 
       const finalDue = this.toFixedNumber(Math.max(rawDue, 0));
       const balance = finalDue;
@@ -438,6 +456,7 @@ export class MonthlyBillService {
         utility_share: utilityPerMember,
         deposit_total: depositTotal,
         paid_amount: paidAmount,
+        prev_balance: prevBalance,
         final_due: finalDue,
         balance,
         due_date: dueDate,

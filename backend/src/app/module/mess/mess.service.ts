@@ -194,6 +194,14 @@ export class MessService {
     };
   }
 
+  async deleteRequest(requestId: string) {
+    const request = await this.prisma.messRequest.findUnique({ where: { id: requestId } });
+    if (!request) throw new HttpException('Mess registration request not found', 404);
+
+    await this.prisma.messRequest.delete({ where: { id: requestId } });
+    return { message: 'Mess registration request deleted successfully' };
+  }
+
   async reviewRequest(requestId: string, adminId: string, dto: ReviewMessRequestDto) {
     const request = await this.prisma.messRequest.findUnique({ where: { id: requestId } });
     if (!request) throw new HttpException('Mess registration request not found', 404);
@@ -296,26 +304,26 @@ export class MessService {
   // ─────────────────────────────────────────
   // Create mess (Manager creates own mess)
   // ─────────────────────────────────────────
-  // async create(organizerId: string, dto: CreateMessDto) {
-  //   // Verify organizer exists
-  //   const organizer = await this.prisma.user.findUnique({
-  //     where: { id: organizerId },
+  // async create(managerId: string, dto: CreateMessDto) {
+  //   // Verify manager exists
+  //   const manager = await this.prisma.user.findUnique({
+  //     where: { id: managerId },
   //   });
-  //   if (!organizer) throw new HttpException('Organizer not found', 404);
+  //   if (!manager) throw new HttpException('manager not found', 404);
 
   //   const mess = await this.prisma.mess.create({
   //     data: {
   //       name: dto.messName,
   //       address: dto.messLocation,
   //       description: dto.description,
-  //       created_by: organizerId,
+  //       created_by: managerId,
   //       meal_rate: dto.meal_rate,
   //       currency: dto.currency,
   //       memberships: {
   //         create: {
-  //           user_id: organizerId,
+  //           user_id: managerId,
   //           role: MembershipRole.MANAGER,
-  //           created_by: organizerId,
+  //           created_by: managerId,
   //         },
   //       },
   //     },
@@ -448,7 +456,7 @@ export class MessService {
     if (!mess) throw new HttpException('Mess not found', 404);
 
     if (
-      (requesterRole === 'MANAGER' || requesterRole === 'ORGANIZER') &&
+      (requesterRole === 'MANAGER' || requesterRole === 'manager') &&
       mess.created_by !== requesterId
     ) {
       throw new HttpException('Forbidden: Not your mess', 403);
@@ -477,24 +485,28 @@ export class MessService {
     if (requesterRole === 'ADMIN') {
       // Admin can delete any mess
     } else if (
-      (requesterRole === 'MANAGER' || requesterRole === 'ORGANIZER') &&
+      (requesterRole === 'MANAGER') &&
       mess.created_by !== requesterId
     ) {
       throw new HttpException('Forbidden: Not your mess', 403);
     } else if (
       requesterRole !== 'MANAGER' &&
-      requesterRole !== 'ORGANIZER' &&
       requesterRole !== 'ADMIN'
     ) {
       throw new HttpException('Forbidden', 403);
     }
 
-    await this.prisma.mess.delete({ where: { id: messId } });
+    await this.prisma.$transaction(async (tx) => {
+      // Delete related mess requests that reference this mess
+      await tx.messRequest.deleteMany({ where: { mess_id: messId } });
+      await tx.mess.delete({ where: { id: messId } });
+    });
+
     return { message: 'Mess deleted successfully' };
   }
 
   // ─────────────────────────────────────────
-  // Add member to mess (Organizer)
+  // Add member to mess (manager)
   // ─────────────────────────────────────────
   // ─────────────────────────────────────────
   // Complete mess setup / Update mess billing settings
@@ -634,8 +646,8 @@ export class MessService {
     return Math.round(roomPrice / totalPerson);
   }
 
-  async addMember(messId: string, organizerId: string, email: string, role: MembershipRole, dto?: Partial<UpdateMemberDto>) {
-    await this.verifyManagerAccess(messId, organizerId, 'MANAGER');
+  async addMember(messId: string, managerId: string, email: string, role: MembershipRole, dto?: Partial<UpdateMemberDto>) {
+    await this.verifyManagerAccess(messId, managerId, 'MANAGER');
 
     const mess = await this.prisma.mess.findUnique({
       where: { id: messId },
@@ -690,12 +702,61 @@ export class MessService {
     // Auto-calculate monthly rent from room config
     const autoRent = await this.autoCalculateMonthlyRent(messId, dto?.roomNo, rooms);
 
+    // ─── Single Manager Rule: Demote current manager if adding a new MANAGER ───
+    if (role === MembershipRole.MANAGER) {
+      await this.prisma.$transaction(async (tx) => {
+        const currentManager = await tx.messMembership.findFirst({
+          where: {
+            mess_id: messId,
+            role: MembershipRole.MANAGER,
+            is_active: true,
+            user_id: { not: user.id },
+          },
+        });
+
+        if (currentManager) {
+          await tx.messMembership.update({
+            where: { mess_id_user_id: { mess_id: messId, user_id: currentManager.user_id } },
+            data: { role: MembershipRole.MEMBER },
+          });
+
+          // Update demoted user's global role if they have no other active MANAGER memberships
+          const otherManagerCount = await tx.messMembership.count({
+            where: {
+              user_id: currentManager.user_id,
+              role: MembershipRole.MANAGER,
+              is_active: true,
+              mess_id: { not: messId },
+            },
+          });
+          if (otherManagerCount === 0) {
+            await tx.user.update({
+              where: { id: currentManager.user_id },
+              data: { role: 'MEMBER' },
+            });
+          }
+        }
+
+        // Transfer mess ownership to the new manager
+        await tx.mess.update({
+          where: { id: messId },
+          data: { created_by: user.id },
+        });
+
+        // Update new manager's global role
+        await tx.user.update({
+          where: { id: user.id },
+          data: { role: 'MANAGER' },
+        });
+      });
+    }
+
     const member = await this.prisma.messMembership.create({
       data: {
         mess_id: messId,
         user_id: user.id,
         role: role,
-        created_by: organizerId,
+        created_by: managerId,
         room_no: dto?.roomNo,
         seat_no: dto?.seatNo,
         monthly_rent: autoRent ?? dto?.monthlyRent,
@@ -712,8 +773,8 @@ export class MessService {
   // ─────────────────────────────────────────
   // Remove member from mess (Manager)
   // ─────────────────────────────────────────
-  async removeMember(messId: string, userId: string, organizerId: string) {
-    await this.verifyManagerAccess(messId, organizerId, 'MANAGER');
+  async removeMember(messId: string, userId: string, managerId: string) {
+    await this.verifyManagerAccess(messId, managerId, 'MANAGER');
 
     const member = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
@@ -794,6 +855,72 @@ export class MessService {
       }
     }
 
+    // ─── Single Manager Rule: Demote current manager if promoting a member to MANAGER ───
+    if (dto.role === MembershipRole.MANAGER && member.role !== MembershipRole.MANAGER) {
+      await this.prisma.$transaction(async (tx) => {
+        const currentManager = await tx.messMembership.findFirst({
+          where: {
+            mess_id: messId,
+            role: MembershipRole.MANAGER,
+            is_active: true,
+            user_id: { not: userId },
+          },
+        });
+
+        if (currentManager) {
+          await tx.messMembership.update({
+            where: { mess_id_user_id: { mess_id: messId, user_id: currentManager.user_id } },
+            data: { role: MembershipRole.MEMBER },
+          });
+
+          // Update demoted user's global role if they have no other active MANAGER memberships
+          const otherManagerCount = await tx.messMembership.count({
+            where: {
+              user_id: currentManager.user_id,
+              role: MembershipRole.MANAGER,
+              is_active: true,
+              mess_id: { not: messId },
+            },
+          });
+          if (otherManagerCount === 0) {
+            await tx.user.update({
+              where: { id: currentManager.user_id },
+              data: { role: 'MEMBER' },
+            });
+          }
+        }
+
+        // Transfer mess ownership to the new manager so getAllMembers works correctly
+        await tx.mess.update({
+          where: { id: messId },
+          data: { created_by: userId },
+        });
+
+        // Update the target user's global role when promoting to MANAGER
+        await tx.user.update({
+          where: { id: userId },
+          data: { role: 'MANAGER' },
+        });
+      });
+
+    // Update the target user's global role when demoting from MANAGER
+    } else if (dto.role === MembershipRole.MEMBER && member.role === MembershipRole.MANAGER) {
+      const remainingManagerCount = await this.prisma.messMembership.count({
+        where: {
+          user_id: userId,
+          role: MembershipRole.MANAGER,
+          is_active: true,
+          mess_id: { not: messId },
+        },
+      });
+      if (remainingManagerCount === 0) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { role: 'MEMBER' },
+        });
+      }
+    }
+
     return this.prisma.messMembership.update({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
       data: {
@@ -812,21 +939,68 @@ export class MessService {
     });
   }
 
-  async assignManager(messId: string, userId: string, role: MembershipRole, organizerId: string) {
+  async assignManager(messId: string, userId: string, role: MembershipRole, managerId: string) {
 
-    // Make sure the organizer owns this mess
-    const organizer = await this.prisma.user.findUnique({ where: { id: organizerId } })
+    // Make sure the manager owns this mess
+    const manager = await this.prisma.user.findUnique({ where: { id: managerId } })
 
-    if (!organizer) throw new HttpException('Forbidden', 403)
+    if (!manager) throw new HttpException('Forbidden', 403)
 
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } })
-    if (!mess || mess.created_by !== organizerId) throw new HttpException('Forbidden: Not your mess', 403)
+    if (!mess || mess.created_by !== managerId) throw new HttpException('Forbidden: Not your mess', 403)
     // Update MessMembership role
     const memberShip = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } }
     })
 
     if (!memberShip) throw new HttpException('User is not a member of this mess', 404)
+
+    // ─── Single Manager Rule: Demote current manager if promoting to MANAGER ───
+    if (role === MembershipRole.MANAGER && memberShip.role !== MembershipRole.MANAGER) {
+      const currentManager = await this.prisma.messMembership.findFirst({
+        where: {
+          mess_id: messId,
+          role: MembershipRole.MANAGER,
+          is_active: true,
+          user_id: { not: userId },
+        },
+      });
+
+      if (currentManager) {
+        await this.prisma.messMembership.update({
+          where: { mess_id_user_id: { mess_id: messId, user_id: currentManager.user_id } },
+          data: { role: MembershipRole.MEMBER },
+        });
+
+        // Update demoted user's global role if they have no other active MANAGER memberships
+        const otherManagerCount = await this.prisma.messMembership.count({
+          where: {
+            user_id: currentManager.user_id,
+            role: MembershipRole.MANAGER,
+            is_active: true,
+            mess_id: { not: messId },
+          },
+        });
+        if (otherManagerCount === 0) {
+          await this.prisma.user.update({
+            where: { id: currentManager.user_id },
+            data: { role: 'MEMBER' },
+          });
+        }
+      }
+
+      // Transfer mess ownership to the new manager so getAllMembers works correctly
+      await this.prisma.mess.update({
+        where: { id: messId },
+        data: { created_by: userId },
+      });
+
+      // Update the target user's global role to MANAGER
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { role: 'MANAGER' },
+      });
+    }
 
     return this.prisma.messMembership.update({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
@@ -838,13 +1012,17 @@ export class MessService {
     })
   }
 
-  async getAllMembers(organizerId: string, query: MessFilterDto) {
+  async getAllMembers(managerId: string, query: MessFilterDto) {
     const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
     const { page, limit, skip, sortOrder = 'desc' } = paginationHelper(paginationOptions);
 
+    console.log(managerId);
+    const manager = await this.prisma.user.findUnique({ where: { id: managerId } })
+    console.log(manager);
+    
     const where: Prisma.MessMembershipWhereInput = {
       mess: {
-        created_by: organizerId,   // Only messes owned by this organizer
+        created_by: managerId,   // Only messes owned by this manager
         is_active: true,
       },
       is_active: true,

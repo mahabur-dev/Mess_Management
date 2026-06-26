@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -77,5 +78,14 @@ export class MessRequestController {
       message: `Mess registration request ${dto.status.toLowerCase()}d successfully`,
       data,
     };
+  }
+
+  // ─── Admin: delete a request ─────────────────────────────────────────────────
+  @Delete(':requestId')
+  @UseGuards(AuthGuard('ADMIN'))
+  @ApiOperation({ summary: '[ADMIN] Delete a mess registration request' })
+  async delete(@Param('requestId') requestId: string) {
+    const data = await this.messService.deleteRequest(requestId);
+    return { message: 'Mess registration request deleted successfully', data };
   }
 }

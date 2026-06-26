@@ -53,24 +53,23 @@ export class MessController {
 
   // Organizer: get own mess
   @Get('my-mess')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get messes the current user owns or belongs to' })
   async findMyMess(@Req() req: Request) {
     const data = await this.messService.findMyMess(req.user!.id);
     return { message: 'Mess fetched successfully', data };
   }
 
-  // Get members of a organizer
-  // Get ALL members across all messes owned by the organizer
+  // Get ALL members across all messes owned by the manager
   @Get('members')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
+  @UseGuards(AuthGuard('MANAGER'))
   @ApiOperation({ summary: 'Get all members from all my messes' })
   async getAllMyMembers(
     @Query() query: MessFilterDto,
     @Req() req: any,           // or use @CurrentUser()
   ) {
-    const organizerId = req.user.id;
-    const result = await this.messService.getAllMembers(organizerId, query);
+    const managerId = req.user.id;
+    const result = await this.messService.getAllMembers(managerId, query);
 
     return {
       message: 'All members fetched successfully',
@@ -80,7 +79,7 @@ export class MessController {
   }
   // Get single mess by ID (Admin or member)
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get a mess by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.messService.findOne(id);
@@ -89,8 +88,8 @@ export class MessController {
 
   // Update mess
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
-  @ApiOperation({ summary: '[ORGANIZER/MANAGER/ADMIN] Update mess details' })
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @ApiOperation({ summary: '[MANAGER/ADMIN] Update mess details' })
   async update(
     @Param('id') id: string,
     @Req() req: Request,
@@ -106,7 +105,7 @@ export class MessController {
   }
 
   @Patch(':id/setup')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: '[MANAGER/ADMIN] Complete or update mess setup/settings' })
   async completeSetup(
     @Param('id') id: string,
@@ -119,8 +118,8 @@ export class MessController {
 
   // Delete mess
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
-  @ApiOperation({ summary: '[ORGANIZER/MANAGER/ADMIN] Delete a mess' })
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @ApiOperation({ summary: '[MANAGER/ADMIN] Delete a mess' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.messService.remove(id, req.user!.id, req.user!.role);
     return { message: 'Mess deleted successfully', data };
@@ -128,7 +127,7 @@ export class MessController {
 
   // Manager: add member
   @Post(':id/members')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
+  @UseGuards(AuthGuard('MANAGER'))
   @ApiOperation({ summary: 'MANAGER Add a member to the mess' })
   async addMember(
     @Param('id') messId: string,
@@ -141,7 +140,7 @@ export class MessController {
 
   // Manager: remove member
   @Delete(':id/members/:userId')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'ADMIN'))
+  @UseGuards(AuthGuard('MANAGER', 'ADMIN'))
   @ApiOperation({ summary: 'MANAGER Remove a member from the mess' })
   async removeMember(
     @Param('id') messId: string,
@@ -158,7 +157,7 @@ export class MessController {
 
   //assign manager role to a mess
   @Put(':id/members/:userId')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER'))
+  @UseGuards(AuthGuard('MANAGER'))
   @ApiOperation({ summary: 'MANAGER Update member details or role' })
   async updateMemberRole(
     @Param('id') messId: string,

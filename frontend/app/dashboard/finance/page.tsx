@@ -829,7 +829,111 @@ export default function FinancePage() {
         </div>
 
         {/* Mobile cards - visible on mobile only */}
-        <div className="space-y-3 md:hidden">
+        <div className="space-y-4 md:hidden">
+          {/* Summary Cards - Mobile */}
+          {filteredExpenses.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
+                <p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide text-[#6b7a99]">
+                  <ReceiptText size={11} className="text-[#2f80ed]" />
+                  Total Items
+                </p>
+                <p className="mt-1 text-xl font-black text-[#172554]">{summary.count}</p>
+              </div>
+              <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
+                <p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide text-[#6b7a99]">
+                  <Filter size={11} className="text-[#8b5cf6]" />
+                  Categories
+                </p>
+                <p className="mt-1 text-xl font-black text-[#172554]">{summary.categories}</p>
+              </div>
+              <div className="col-span-2 rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
+                <p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide text-[#6b7a99]">
+                  <TrendingUp size={11} className="text-red-500" />
+                  Total Amount
+                </p>
+                <p className="mt-1 text-xl font-black text-red-500">{money(summary.total)}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Search & Month Picker - Single Row */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
+              <input
+                className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                placeholder="Search item..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+            </div>
+
+            <label className="flex h-[42px] w-[130px] shrink-0 items-center gap-1.5 rounded-xl border border-[#d8e6f8] bg-white px-3 shadow-sm transition hover:border-[#a9ccfb]">
+              <CalendarDays size={15} className="text-[#2f80ed]" />
+              <input
+                className="bg-transparent text-xs font-bold text-[#172554] outline-none w-full"
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              />
+            </label>
+          </div>
+
+          {/* Mobile Filters Row */}
+          <div className="flex flex-row flex-wrap items-center gap-2">
+            <Select value={selectedDay} onValueChange={setSelectedDay}>
+              <SelectTrigger className="h-[42px] w-[120px] rounded-xl border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
+                <SelectValue placeholder="All Days" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
+                <SelectItem value="ALL" className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#e7f1ff]">All Days</SelectItem>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <SelectItem key={day} value={String(day).padStart(2, '0')} className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#42474e]">
+                    Day {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedCategory} onValueChange={(val) => setSelectedCategory(val as 'ALL' | ExpenseCategory)}>
+              <SelectTrigger className="h-[42px] flex-1 min-w-[140px] rounded-xl border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
+                <SelectItem value="ALL" className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#e7f1ff]">All Categories</SelectItem>
+                {categories.map((item) => (
+                  <SelectItem key={item} value={item} className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#42474e]">
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Mobile Add Buttons */}
+          {canAddExpense && (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={openUtilityModal}
+                className="flex-1 h-[42px] gap-1 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3 font-black text-[11px] text-white shadow-[0_6px_15px_rgba(47,128,237,0.2)] transition hover:shadow-[0_8px_20px_rgba(47,128,237,0.28)]"
+              >
+                <Plus size={15} />
+                Add Utility
+              </Button>
+              <Button
+                type="button"
+                onClick={openExpenseModal}
+                className="flex-1 h-[42px] gap-1 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3 font-black text-[11px] text-white shadow-[0_6px_15px_rgba(47,128,237,0.2)] transition hover:shadow-[0_8px_20px_rgba(47,128,237,0.28)]"
+              >
+                <Plus size={15} />
+                Add Expenses
+              </Button>
+            </div>
+          )}
+
+          {/* Mobile Expense Cards */}
           {loading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 size={24} className="animate-spin text-[#2f80ed]" />

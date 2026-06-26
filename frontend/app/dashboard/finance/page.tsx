@@ -35,6 +35,7 @@ import {
   Users,
   Banknote,
 } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
@@ -493,7 +494,7 @@ export default function FinancePage() {
       const matchMonth = expenseMonth === selectedMonth
       const matchCategory = selectedCategory === 'ALL' || item.category === selectedCategory
       const expenseDay = new Date(item.expense_date).getDate().toString().padStart(2, '0')
-      const matchDay = !selectedDay || expenseDay === selectedDay
+      const matchDay = selectedDay === 'ALL' || !selectedDay || expenseDay === selectedDay
       const searchableText =
         `${item.item_name ?? ''} ${item.description ?? ''} ${item.category}`.toLowerCase()
       const matchSearch = searchableText.includes(searchText.toLowerCase())
@@ -599,690 +600,236 @@ export default function FinancePage() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative w-full sm:max-w-xs">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
-              <input
-                className="h-[45px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-4 text-sm font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                placeholder="Search item..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
+        {/* Desktop/Tablet - Filters & Table inside same container */}
+        <div className="hidden md:block rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          {/* Filters & Buttons header - matches table width */}
+          <div className="flex flex-col gap-2 p-4 border-b border-[#e6ebf4] bg-[#f8faff]">
+            {/* Row 1: Search + Month + Add buttons */}
+            <div className="flex flex-row flex-wrap items-center gap-2">
+              <div className="relative w-44">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
+                <input
+                  className="h-[38px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                  placeholder="Search item..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                />
+              </div>
+
+              <label className="flex h-[38px] items-center gap-1.5 rounded-xl border border-[#d8e6f8] bg-white px-3 shadow-sm transition hover:border-[#a9ccfb]">
+                <CalendarDays size={15} className="text-[#2f80ed]" />
+                <input
+                  className="bg-transparent text-xs font-bold text-[#172554] outline-none w-[110px]"
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                />
+              </label>
+
+              {canAddExpense && (
+                <>
+                  <Button
+                    type="button"
+                    onClick={openUtilityModal}
+                    className="h-[38px] gap-1 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3.5 font-black text-[11px] text-white shadow-[0_6px_15px_rgba(47,128,237,0.2)] transition hover:shadow-[0_8px_20px_rgba(47,128,237,0.28)]"
+                  >
+                    <Plus size={15} />
+                    Add Utility
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={openExpenseModal}
+                    className="h-[38px] gap-1 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3.5 font-black text-[11px] text-white shadow-[0_6px_15px_rgba(47,128,237,0.2)] transition hover:shadow-[0_8px_20px_rgba(47,128,237,0.28)]"
+                  >
+                    <Plus size={15} />
+                    Add Expenses
+                  </Button>
+                </>
+              )}
             </div>
 
-            <label className="flex h-[45px] items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb]">
-              <CalendarDays size={17} className="text-[#2f80ed]" />
-              <input
-                className="bg-transparent text-sm font-bold text-[#172554] outline-none"
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              />
-            </label>
+            {/* Row 2: Day + Category filters */}
+            <div className="flex flex-row flex-wrap items-center gap-2">
+              <Select value={selectedDay} onValueChange={setSelectedDay}>
+                <SelectTrigger className="h-[38px] w-[120px] rounded-xl border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
+                  <SelectValue placeholder="All Days" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
+                  <SelectItem value="ALL" className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#e7f1ff]">All Days</SelectItem>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <SelectItem key={day} value={String(day).padStart(2, '0')} className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#42474e]">
+                      Day {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <select
-              className="h-[45px] rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-sm outline-none transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-              value={selectedDay}
-              onChange={(e) => setSelectedDay(e.target.value)}
-            >
-              <option value="">All Days</option>
-              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                <option key={day} value={String(day).padStart(2, '0')}>
-                  Day {day}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="h-[45px] rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-sm outline-none transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-              value={selectedCategory}
-              onChange={(e) =>
-                setSelectedCategory(e.target.value as 'ALL' | ExpenseCategory)
-              }
-            >
-              <option value="ALL">All Categories</option>
-              {categories.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
+              <Select value={selectedCategory} onValueChange={(val) => setSelectedCategory(val as 'ALL' | ExpenseCategory)}>
+                <SelectTrigger className="h-[38px] w-[160px] rounded-xl border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
+                  <SelectItem value="ALL" className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#e7f1ff]">All Categories</SelectItem>
+                  {categories.map((item) => (
+                    <SelectItem key={item} value={item} className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#42474e]">
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {canAddExpense &&(
-            <Dialog
-              open={isAddModalOpen}
-              onOpenChange={(open) => {
-                setIsAddModalOpen(open)
-                if (!open) resetForm()
-              }}
-            >
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <Button
-                  type="button"
-                  onClick={openUtilityModal}
-                  className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
-                >
-                  <Plus size={18} />
-                  Add Utility
-                </Button>
-                <Button
-                  type="button"
-                  onClick={openExpenseModal}
-                  className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
-                >
-                  <Plus size={18} />
-                  Add Expenses
-                </Button>
-              </div>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {isEditing
-                      ? expenseFormMode === 'utility'
-                        ? 'Edit Utility'
-                        : 'Edit Bazar / Expense'
-                      : expenseFormMode === 'utility'
-                        ? 'Add Utility'
-                        : 'Add Bazar / Expenses'}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {isEditing
-                      ? expenseFormMode === 'utility'
-                        ? 'Update utility cost, description, or receipt.'
-                        : 'Update your own expense. Upload a new receipt only if you want to replace the old one.'
-                      : expenseFormMode === 'utility'
-                        ? 'Add utility cost with category, price, and description.'
-                        : 'Add one or multiple items. You can attach receipt images.'}
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-6 py-4">
-                  {/* Payment Type Toggle */}
-                  <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
-                    <label className="mb-3 block text-sm font-black text-[#0a1433]">Payment Type</label>
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setExpensePaymentType('FROM_DEPOSIT')}
-                        className={`flex-1 h-12 rounded-xl border-2 text-sm font-black transition ${
-                          expensePaymentType === 'FROM_DEPOSIT'
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 bg-white text-slate-500 hover:border-blue-300'
-                        }`}
-                      >
-                        🏦 From Deposit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setExpensePaymentType('PERSONAL')}
-                        className={`flex-1 h-12 rounded-xl border-2 text-sm font-black transition ${
-                          expensePaymentType === 'PERSONAL'
-                            ? 'border-purple-500 bg-purple-50 text-purple-700'
-                            : 'border-slate-200 bg-white text-slate-500 hover:border-purple-300'
-                        }`}
-                      >
-                        👤 Personal
-                      </button>
-                    </div>
-                    <p className="mt-2 text-[10px] font-semibold text-[#6b7a99]">
-                      {expensePaymentType === 'FROM_DEPOSIT'
-                        ? 'Amount will be split among all members in monthly bill calculation.'
-                        : 'Amount will be added as your personal deposit contribution. Not split with others.'}
-                    </p>
-                  </div>
-
-                  {expenseFormMode === 'utility' && (
-                    <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
-                      <div className="grid gap-4">
-                        <div>
-                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Category</label>
-                          <select
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
-                            value={expenseItems[0].category}
-                            onChange={(e) =>
-                              updateExpenseItem(1, 'category', e.target.value as ExpenseCategory)
-                            }
+          {/* Scrollable table section */}
+          <div className="overflow-x-auto">
+            <div className="min-w-[900px]">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Item</th>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Category</th>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Added By</th>
+                    <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Amount</th>
+                    <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e6ebf4]">
+                  {loading && (
+                    <tr>
+                      <td colSpan={7} className="px-5 py-12 text-center">
+                        <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
+                          <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
+                          Loading expenses...
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && filteredExpenses.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-5 py-12 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <ShoppingBag size={40} className="text-[#d8e6f8]" />
+                          <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {!loading &&
+                    filteredExpenses.map((item) => (
+                      <tr key={item.id} className="transition hover:bg-[#f8faff] group">
+                        <td className="px-5 py-4">
+                          <p className="font-bold text-[#172554]">
+                            {item.item_name || 'Unnamed Expense'}
+                          </p>
+                          {item.description && (
+                            <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
+                              {item.description}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${getCategoryStyle(item.category)}`}
                           >
-                            {utilityCategories.map((category) => (
-                              <option key={category} value={category}>{category}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Price (৳)</label>
-                          <input
-                            type="number"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
-                            placeholder="Amount"
-                            value={expenseItems[0].amount}
-                            onChange={(e) => updateExpenseItem(1, 'amount', e.target.value)}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                            Description
-                          </label>
-                          <textarea
-                            className="min-h-28 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
-                            placeholder="Add utility note..."
-                            value={expenseItems[0].description}
-                            onChange={(e) => updateExpenseItem(1, 'description', e.target.value)}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                            Receipt Image/PDF (Optional)
-                          </label>
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
-                              <Upload size={18} />
-                              Upload Receipt
-                              <input
-                                type="file"
-                                accept="image/*,application/pdf,.pdf"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0] || null
-                                  updateReceipt(1, file)
-                                }}
-                              />
-                            </label>
-                            {expenseItems[0].receipt && (
-                              <div className="flex items-center gap-2 text-sm text-green-600">
-                                <span className="truncate">{expenseItems[0].receipt.name}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => updateReceipt(1, null)}
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  âœ•
-                                </button>
-                              </div>
+                            {item.category}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-sm font-bold text-[#6b7a99]">
+                          {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
+                            <CalendarDays size={14} className="text-[#ffb84d]" />
+                            {formatDate(item.expense_date)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">
+                              {(item.creator?.name?.[0] || '?').toUpperCase()}
+                            </div>
+                            <span className="text-sm font-semibold text-[#6b7a99]">
+                              {item.creator?.name ?? 'Unknown'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-right text-sm font-black text-red-500">
+                          {money(item.amount)}
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openViewModal(item)}
+                              className="h-8 rounded-lg border-[#2f80ed]/30 bg-[#e7f1ff] text-[11px] font-bold text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]"
+                            >
+                              <Eye size={13} className="mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={!canEditExpense(item)}
+                              title={
+                                canEditExpense(item)
+                                  ? 'Edit your expense'
+                                  : 'Only the user who added this expense can edit it'
+                              }
+                              onClick={() => {
+                                if (canEditExpense(item)) openEditExpenseModal(item)
+                              }}
+                              className={`h-8 rounded-lg text-[11px] font-bold ${
+                                canEditExpense(item)
+                                  ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]'
+                                  : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-700 opacity-70'
+                              }`}
+                            >
+                              <Edit3 size={13} className="mr-1" />
+                              Edit
+                            </Button>
+                            {canRequestExpenseReview(item) && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => openReviewModal(item)}
+                                className="h-8 rounded-lg bg-amber-50 text-[11px] font-bold text-amber-700 border border-amber-200/50 hover:bg-amber-100"
+                              >
+                                <MessageSquareWarning size={13} className="mr-1" />
+                                Review
+                              </Button>
                             )}
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {expenseFormMode !== 'utility' && (
-                    <>
-                  {/* Shared date */}
-                  <div className="rounded-2xl bg-[#faf9ff] p-4">
-                    <label className="mb-2 block text-sm font-black text-[#0a1433]">
-                      Expense Date
-                    </label>
-                    <input
-                      className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                      type="date"
-                      value={sharedDate}
-                      onChange={(e) => setSharedDate(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Dynamic item rows */}
-                  <div className="space-y-4">
-                    {expenseItems.map((item, idx) => (
-                      <div
-                        key={item.id}
-                        className="relative rounded-2xl border border-slate-200 bg-[#faf9ff] p-5"
-                      >
-                        <p className="mb-4 text-xs font-black uppercase tracking-wide text-slate-400">
-                          Item {idx + 1}
-                        </p>
-
-                        {!isEditing && expenseItems.length > 1 && (
-                          <button
-                            onClick={() => removeExpenseItem(item.id)}
-                            className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
-                          >
-                            <X size={18} />
-                          </button>
-                        )}
-
-                        <div className="grid gap-4">
-                          {/* Item Name */}
-                          <div>
-                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                              Item Name
-                            </label>
-                            <input
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
-                              placeholder="e.g. Rice, Eggs..."
-                              value={item.itemName}
-                              onChange={(e) => updateExpenseItem(item.id, 'itemName', e.target.value)}
-                            />
-                          </div>
-
-                          {/* Qty / Unit / Price */}
-                          <div className="grid grid-cols-3 gap-3">
-                            <div>
-                              <label className="mb-1.5 block text-sm font-black">Quantity</label>
-                              <input
-                                type="number"
-                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                                placeholder="Qty"
-                                value={item.quantity}
-                                onChange={(e) => updateExpenseItem(item.id, 'quantity', e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1.5 block text-sm font-black">Unit</label>
-                              <input
-                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                                placeholder="kg, pcs"
-                                value={item.unit}
-                                onChange={(e) => updateExpenseItem(item.id, 'unit', e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1.5 block text-sm font-black">Price (৳)</label>
-                              <input
-                                type="number"
-                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                                placeholder="Amount"
-                                value={item.amount}
-                                onChange={(e) => updateExpenseItem(item.id, 'amount', e.target.value)}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Category */}
-                          <div>
-                            <label className="mb-1.5 block text-sm font-black">Category</label>
-                            <select
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
-                              value={item.category}
-                              onChange={(e) =>
-                                updateExpenseItem(item.id, 'category', e.target.value as ExpenseCategory)
-                              }
-                            >
-                              {(isEditing ? categories : expenseCategories).map((c) => (
-                                <option key={c} value={c}>{c}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                              Description
-                            </label>
-                            <textarea
-                              className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
-                              placeholder="Add useful note or market detail..."
-                              value={item.description}
-                              onChange={(e) => updateExpenseItem(item.id, 'description', e.target.value)}
-                            />
-                          </div>
-
-                          {/* Receipt Image Upload */}
-                          <div>
-                            <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
-                              Receipt Image/PDF (Optional)
-                            </label>
-                            <div className="flex items-center gap-3">
-                              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
-                                <Upload size={18} />
-                                Upload Receipt
-                                <input
-                                  type="file"
-                                  accept="image/*,application/pdf,.pdf"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0] || null
-                                    updateReceipt(item.id, file)
-                                  }}
-                                />
-                              </label>
-                              {item.receipt && (
-                                <div className="flex items-center gap-2 text-sm text-green-600">
-                                  <span>{item.receipt.name}</span>
-                                  <button
-                                    onClick={() => updateReceipt(item.id, null)}
-                                    className="text-red-500 hover:text-red-700"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        </td>
+                      </tr>
                     ))}
-                  </div>
-
-                  {!isEditing && (
-                    <Button
-                      variant="outline"
-                      onClick={addExpenseItem}
-                      className="w-full h-11 border-dashed"
-                    >
-                      <Plus size={16} className="mr-2" />
-                      Add another item
-                    </Button>
-                  )}
-                    </>
-                  )}
-
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      onClick={submitAllExpenses}
-                      disabled={loading}
-                      className="flex-1 h-12 bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] font-black"
-                    >
-                      {loading
-                        ? 'Saving...'
-                        : isEditing
-                          ? expenseFormMode === 'utility'
-                            ? 'Update Utility'
-                            : 'Update Expense'
-                          : expenseFormMode === 'utility'
-                            ? 'Submit Utility'
-                          : `Submit ${expenseItems.length} Item(s)`}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-
-          <Dialog
-            open={isReviewModalOpen}
-            onOpenChange={(open) => {
-              setIsReviewModalOpen(open)
-              if (!open) {
-                setReviewExpense(null)
-                setReviewMessage('')
-              }
-            }}
-          >
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Request Price Review</DialogTitle>
-                <DialogDescription>
-                  Send a push notification to the user who added this expense.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4 py-4">
-                <div className="rounded-2xl bg-[#faf9ff] p-4 text-sm font-bold text-[#0a1433]">
-                  {reviewExpense?.item_name || reviewExpense?.category || 'Expense'} -{' '}
-                  {money(reviewExpense?.amount)}
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-black text-[#0a1433]">
-                    Message
-                  </label>
-                  <textarea
-                    className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                    placeholder="Explain what price or item data should be reviewed..."
-                    value={reviewMessage}
-                    onChange={(event) => setReviewMessage(event.target.value)}
-                  />
-                </div>
-
-                <Button
-                  onClick={submitPriceReviewRequest}
-                  disabled={loading || !reviewMessage.trim()}
-                  className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] font-black text-white"
-                >
-                  Send Review Request
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
-            open={isViewModalOpen}
-            onOpenChange={(open) => {
-              setIsViewModalOpen(open)
-              if (!open) setViewExpense(null)
-            }}
-          >
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Expense Details</DialogTitle>
-                <DialogDescription>
-                  View expense or utility description and receipt information.
-                </DialogDescription>
-              </DialogHeader>
-
-              {viewExpense && (
-                <div className="space-y-4 py-4">
-                  <div className="rounded-2xl bg-[#faf9ff] p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-wide text-[#6b7a99]">
-                          {viewExpense.category}
-                        </p>
-                        <div className="mt-1 flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg font-black text-[#172554]">
-                            {viewExpense.item_name || viewExpense.category || 'Unnamed Expense'}
-                          </h3>
-                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPaymentTypeStyle(viewExpense.payment_type).badge}`}>
-                            {getPaymentTypeStyle(viewExpense.payment_type).icon} {getPaymentTypeStyle(viewExpense.payment_type).label}
-                          </span>
-                        </div>
-                        <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
-                          <CalendarDays size={13} className="text-[#ffb84d]" />
-                          {formatDate(viewExpense.expense_date)}
-                        </p>
-                      </div>
-                      <p className="text-xl font-black text-red-500">
-                        {money(viewExpense.amount)}
-                      </p>
+                </tbody>
+              </table>
+              {/* Footer Summary */}
+              {!loading && filteredExpenses.length > 0 && (
+                <div className="border-t-2 border-[#d8e6f8] bg-[#f8faff] px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#6b7a99]">
+                      <Users size={14} />
+                      <span><span className="text-[#172554]">{filteredExpenses.length}</span> items</span>
                     </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-xl border border-slate-200 bg-white p-4">
-                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Quantity</p>
-                      <p className="mt-1 text-sm font-bold text-[#172554]">
-                        {viewExpense.quantity ? `${viewExpense.quantity} ${viewExpense.unit ?? ''}` : '-'}
-                      </p>
+                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                      <Banknote size={14} className="text-red-500" />
+                      <span className="text-red-500">Total: {money(summary.total)}</span>
                     </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-4">
-                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Added By</p>
-                      <p className="mt-1 text-sm font-bold text-[#172554]">
-                        {viewExpense.creator?.name ?? 'Unknown'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Description</p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm font-semibold text-[#172554]">
-                      {viewExpense.description || 'No description added.'}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Receipt</p>
-                    {viewExpense.receipt_url ? (
-                      <div className="mt-3 space-y-3">
-                        {/\.(png|jpe?g|webp|gif)(\?|$)/i.test(viewExpense.receipt_url) && (
-                          <img
-                            src={viewExpense.receipt_url}
-                            alt={`${viewExpense.item_name || viewExpense.category} receipt`}
-                            className="max-h-80 w-full rounded-xl border border-slate-200 object-contain"
-                          />
-                        )}
-                        <a
-                          href={viewExpense.receipt_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-[#2f80ed]/30 bg-[#e7f1ff] px-4 text-sm font-bold text-[#2f80ed]"
-                        >
-                          View Receipt
-                        </a>
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-sm font-semibold text-[#6b7a99]">
-                        No receipt uploaded.
-                      </p>
-                    )}
                   </div>
                 </div>
               )}
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Desktop table - visible on large screens and above */}
-        <div className="hidden lg:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Item</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Category</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Added By</th>
-                <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Amount</th>
-                <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e6ebf4]">
-              {loading && (
-                <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center">
-                    <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
-                      <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
-                      Loading expenses...
-                    </div>
-                  </td>
-                </tr>
-              )}
-              {!loading && filteredExpenses.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <ShoppingBag size={40} className="text-[#d8e6f8]" />
-                      <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-              {!loading &&
-                filteredExpenses.map((item) => (
-                  <tr key={item.id} className="transition hover:bg-[#f8faff] group">
-                    <td className="px-5 py-4">
-                      <p className="font-bold text-[#172554]">
-                        {item.item_name || 'Unnamed Expense'}
-                      </p>
-                      {item.description && (
-                        <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
-                          {item.description}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${getCategoryStyle(item.category)}`}
-                      >
-                        {item.category}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm font-bold text-[#6b7a99]">
-                      {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
-                        <CalendarDays size={14} className="text-[#ffb84d]" />
-                        {formatDate(item.expense_date)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">
-                          {(item.creator?.name?.[0] || '?').toUpperCase()}
-                        </div>
-                        <span className="text-sm font-semibold text-[#6b7a99]">
-                          {item.creator?.name ?? 'Unknown'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-right text-sm font-black text-red-500">
-                      {money(item.amount)}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openViewModal(item)}
-                          className="h-8 rounded-lg border-[#2f80ed]/30 bg-[#e7f1ff] text-[11px] font-bold text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]"
-                        >
-                          <Eye size={13} className="mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={!canEditExpense(item)}
-                          title={
-                            canEditExpense(item)
-                              ? 'Edit your expense'
-                              : 'Only the user who added this expense can edit it'
-                          }
-                          onClick={() => {
-                            if (canEditExpense(item)) openEditExpenseModal(item)
-                          }}
-                          className={`h-8 rounded-lg text-[11px] font-bold ${
-                            canEditExpense(item)
-                              ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]'
-                              : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-700 opacity-70'
-                          }`}
-                        >
-                          <Edit3 size={13} className="mr-1" />
-                          Edit
-                        </Button>
-                        {canRequestExpenseReview(item) && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => openReviewModal(item)}
-                            className="h-8 rounded-lg bg-amber-50 text-[11px] font-bold text-amber-700 border border-amber-200/50 hover:bg-amber-100"
-                          >
-                            <MessageSquareWarning size={13} className="mr-1" />
-                            Review
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-          {/* Footer Summary - Desktop */}
-          {!loading && filteredExpenses.length > 0 && (
-            <div className="border-t-2 border-[#d8e6f8] bg-[#f8faff] px-5 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#6b7a99]">
-                  <Users size={14} />
-                  <span><span className="text-[#172554]">{filteredExpenses.length}</span> items</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-bold">
-                  <Banknote size={14} className="text-red-500" />
-                  <span className="text-red-500">Total: {money(summary.total)}</span>
-                </div>
-              </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Mobile/Tablet cards - visible on mobile and tablet */}
-        <div className="space-y-3 lg:hidden">
+        {/* Mobile cards - visible on mobile only */}
+        <div className="space-y-3 md:hidden">
           {loading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 size={24} className="animate-spin text-[#2f80ed]" />
@@ -1399,6 +946,471 @@ export default function FinancePage() {
           )}
         </div>
       </div>
+
+      {/* Dialogs - Modals for Add, Edit, View, Review */}
+      <Dialog
+        open={isAddModalOpen}
+        onOpenChange={(open) => {
+          setIsAddModalOpen(open)
+          if (!open) resetForm()
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing
+                ? expenseFormMode === 'utility'
+                  ? 'Edit Utility'
+                  : 'Edit Bazar / Expense'
+                : expenseFormMode === 'utility'
+                  ? 'Add Utility'
+                  : 'Add Bazar / Expenses'}
+            </DialogTitle>
+            <DialogDescription>
+              {isEditing
+                ? expenseFormMode === 'utility'
+                  ? 'Update utility cost, description, or receipt.'
+                  : 'Update your own expense. Upload a new receipt only if you want to replace the old one.'
+                : expenseFormMode === 'utility'
+                  ? 'Add utility cost with category, price, and description.'
+                  : 'Add one or multiple items. You can attach receipt images.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Payment Type Toggle */}
+            <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
+              <label className="mb-3 block text-sm font-black text-[#0a1433]">Payment Type</label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setExpensePaymentType('FROM_DEPOSIT')}
+                  className={`flex-1 h-12 rounded-xl border-2 text-sm font-black transition ${
+                    expensePaymentType === 'FROM_DEPOSIT'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 bg-white text-slate-500 hover:border-blue-300'
+                  }`}
+                >
+                  🏦 From Deposit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExpensePaymentType('PERSONAL')}
+                  className={`flex-1 h-12 rounded-xl border-2 text-sm font-black transition ${
+                    expensePaymentType === 'PERSONAL'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-slate-200 bg-white text-slate-500 hover:border-purple-300'
+                  }`}
+                >
+                  👤 Personal
+                </button>
+              </div>
+              <p className="mt-2 text-[10px] font-semibold text-[#6b7a99]">
+                {expensePaymentType === 'FROM_DEPOSIT'
+                  ? 'Amount will be split among all members in monthly bill calculation.'
+                  : 'Amount will be added as your personal deposit contribution. Not split with others.'}
+              </p>
+            </div>
+
+            {expenseFormMode === 'utility' && (
+              <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
+                <div className="grid gap-4">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Category</label>
+                    <select
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                      value={expenseItems[0].category}
+                      onChange={(e) =>
+                        updateExpenseItem(1, 'category', e.target.value as ExpenseCategory)
+                      }
+                    >
+                      {utilityCategories.map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Price (৳)</label>
+                    <input
+                      type="number"
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                      placeholder="Amount"
+                      value={expenseItems[0].amount}
+                      onChange={(e) => updateExpenseItem(1, 'amount', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                      Description
+                    </label>
+                    <textarea
+                      className="min-h-28 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
+                      placeholder="Add utility note..."
+                      value={expenseItems[0].description}
+                      onChange={(e) => updateExpenseItem(1, 'description', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                      Receipt Image/PDF (Optional)
+                    </label>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
+                        <Upload size={18} />
+                        Upload Receipt
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf,.pdf"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null
+                            updateReceipt(1, file)
+                          }}
+                        />
+                      </label>
+                      {expenseItems[0].receipt && (
+                        <div className="flex items-center gap-2 text-sm text-green-600">
+                          <span className="truncate">{expenseItems[0].receipt.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateReceipt(1, null)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {expenseFormMode !== 'utility' && (
+              <>
+            {/* Shared date */}
+            <div className="rounded-2xl bg-[#faf9ff] p-4">
+              <label className="mb-2 block text-sm font-black text-[#0a1433]">
+                Expense Date
+              </label>
+              <input
+                className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
+                type="date"
+                value={sharedDate}
+                onChange={(e) => setSharedDate(e.target.value)}
+              />
+            </div>
+
+            {/* Dynamic item rows */}
+            <div className="space-y-4">
+              {expenseItems.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className="relative rounded-2xl border border-slate-200 bg-[#faf9ff] p-5"
+                >
+                  <p className="mb-4 text-xs font-black uppercase tracking-wide text-slate-400">
+                    Item {idx + 1}
+                  </p>
+
+                  {!isEditing && expenseItems.length > 1 && (
+                    <button
+                      onClick={() => removeExpenseItem(item.id)}
+                      className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+
+                  <div className="grid gap-4">
+                    {/* Item Name */}
+                    <div>
+                      <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                        Item Name
+                      </label>
+                      <input
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                        placeholder="e.g. Rice, Eggs..."
+                        value={item.itemName}
+                        onChange={(e) => updateExpenseItem(item.id, 'itemName', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Qty / Unit / Price */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-black">Quantity</label>
+                        <input
+                          type="number"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                          placeholder="Qty"
+                          value={item.quantity}
+                          onChange={(e) => updateExpenseItem(item.id, 'quantity', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-black">Unit</label>
+                        <input
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                          placeholder="kg, pcs"
+                          value={item.unit}
+                          onChange={(e) => updateExpenseItem(item.id, 'unit', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-black">Price (৳)</label>
+                        <input
+                          type="number"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                          placeholder="Amount"
+                          value={item.amount}
+                          onChange={(e) => updateExpenseItem(item.id, 'amount', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Category */}
+                    <div>
+                      <label className="mb-1.5 block text-sm font-black">Category</label>
+                      <select
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                        value={item.category}
+                        onChange={(e) =>
+                          updateExpenseItem(item.id, 'category', e.target.value as ExpenseCategory)
+                        }
+                      >
+                        {(isEditing ? categories : expenseCategories).map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                        Description
+                      </label>
+                      <textarea
+                        className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
+                        placeholder="Add useful note or market detail..."
+                        value={item.description}
+                        onChange={(e) => updateExpenseItem(item.id, 'description', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Receipt Image Upload */}
+                    <div>
+                      <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                        Receipt Image/PDF (Optional)
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
+                          <Upload size={18} />
+                          Upload Receipt
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf,.pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null
+                              updateReceipt(item.id, file)
+                            }}
+                          />
+                        </label>
+                        {item.receipt && (
+                          <div className="flex items-center gap-2 text-sm text-green-600">
+                            <span>{item.receipt.name}</span>
+                            <button
+                              onClick={() => updateReceipt(item.id, null)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {!isEditing && (
+              <Button
+                variant="outline"
+                onClick={addExpenseItem}
+                className="w-full h-11 border-dashed"
+              >
+                <Plus size={16} className="mr-2" />
+                Add another item
+              </Button>
+            )}
+              </>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={submitAllExpenses}
+                disabled={loading}
+                className="flex-1 h-12 bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] font-black"
+              >
+                {loading
+                  ? 'Saving...'
+                  : isEditing
+                    ? expenseFormMode === 'utility'
+                      ? 'Update Utility'
+                      : 'Update Expense'
+                    : expenseFormMode === 'utility'
+                      ? 'Submit Utility'
+                    : `Submit ${expenseItems.length} Item(s)`}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isReviewModalOpen}
+        onOpenChange={(open) => {
+          setIsReviewModalOpen(open)
+          if (!open) {
+            setReviewExpense(null)
+            setReviewMessage('')
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Request Price Review</DialogTitle>
+            <DialogDescription>
+              Send a push notification to the user who added this expense.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="rounded-2xl bg-[#faf9ff] p-4 text-sm font-bold text-[#0a1433]">
+              {reviewExpense?.item_name || reviewExpense?.category || 'Expense'} -{' '}
+              {money(reviewExpense?.amount)}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-black text-[#0a1433]">
+                Message
+              </label>
+              <textarea
+                className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
+                placeholder="Explain what price or item data should be reviewed..."
+                value={reviewMessage}
+                onChange={(event) => setReviewMessage(event.target.value)}
+              />
+            </div>
+
+            <Button
+              onClick={submitPriceReviewRequest}
+              disabled={loading || !reviewMessage.trim()}
+              className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] font-black text-white"
+            >
+              Send Review Request
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isViewModalOpen}
+        onOpenChange={(open) => {
+          setIsViewModalOpen(open)
+          if (!open) setViewExpense(null)
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Expense Details</DialogTitle>
+            <DialogDescription>
+              View expense or utility description and receipt information.
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewExpense && (
+            <div className="space-y-4 py-4">
+              <div className="rounded-2xl bg-[#faf9ff] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wide text-[#6b7a99]">
+                      {viewExpense.category}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg font-black text-[#172554]">
+                        {viewExpense.item_name || viewExpense.category || 'Unnamed Expense'}
+                      </h3>
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPaymentTypeStyle(viewExpense.payment_type).badge}`}>
+                        {getPaymentTypeStyle(viewExpense.payment_type).icon} {getPaymentTypeStyle(viewExpense.payment_type).label}
+                      </span>
+                    </div>
+                    <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
+                      <CalendarDays size={13} className="text-[#ffb84d]" />
+                      {formatDate(viewExpense.expense_date)}
+                    </p>
+                  </div>
+                  <p className="text-xl font-black text-red-500">
+                    {money(viewExpense.amount)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-[10px] font-black uppercase text-[#6b7a99]">Quantity</p>
+                  <p className="mt-1 text-sm font-bold text-[#172554]">
+                    {viewExpense.quantity ? `${viewExpense.quantity} ${viewExpense.unit ?? ''}` : '-'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-[10px] font-black uppercase text-[#6b7a99]">Added By</p>
+                  <p className="mt-1 text-sm font-bold text-[#172554]">
+                    {viewExpense.creator?.name ?? 'Unknown'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="text-[10px] font-black uppercase text-[#6b7a99]">Description</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold text-[#172554]">
+                  {viewExpense.description || 'No description added.'}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="text-[10px] font-black uppercase text-[#6b7a99]">Receipt</p>
+                {viewExpense.receipt_url ? (
+                  <div className="mt-3 space-y-3">
+                    {/\.(png|jpe?g|webp|gif)(\?|$)/i.test(viewExpense.receipt_url) && (
+                      <img
+                        src={viewExpense.receipt_url}
+                        alt={`${viewExpense.item_name || viewExpense.category} receipt`}
+                        className="max-h-80 w-full rounded-xl border border-slate-200 object-contain"
+                      />
+                    )}
+                    <a
+                      href={viewExpense.receipt_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-[#2f80ed]/30 bg-[#e7f1ff] px-4 text-sm font-bold text-[#2f80ed]"
+                    >
+                      View Receipt
+                    </a>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm font-semibold text-[#6b7a99]">
+                    No receipt uploaded.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

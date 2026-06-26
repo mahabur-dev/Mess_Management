@@ -35,6 +35,14 @@ const formatDate = (iso: string) => {
   })
 }
 
+const formatDateShort = (iso: string) => {
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
 }
@@ -49,6 +57,7 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true)
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<PaymentMethod>('BKASH')
+  const [paymentDate, setPaymentDate] = useState('')
   const { user } = useAuth()
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const isAdmin = user?.role === 'ADMIN'
@@ -95,8 +104,9 @@ export default function PaymentsPage() {
     setSubmitting(true)
     setMessage('')
     try {
-      await apiClient.submitPayment({ messId: activeMess.id, amount: Number(amount), method })
+      await apiClient.submitPayment({ messId: activeMess.id, amount: Number(amount), method, paymentDate: paymentDate || undefined })
       setAmount('')
+      setPaymentDate('')
       setShowModal(false)
       setMessageType('success')
       setMessage('Payment submitted successfully.')
@@ -267,10 +277,18 @@ export default function PaymentsPage() {
                     </td>
                     <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(payment.amount)}</td>
                     <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
-                        <CalendarDays size={13} className="text-[#ffb84d]" />
-                        {formatDate(payment.created_at)}
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
+                          <CalendarDays size={13} className="text-[#ffb84d]" />
+                          {formatDate(payment.created_at)}
+                        </span>
+                        {payment.payment_date && (
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#6b7a99]/70">
+                            <CalendarDays size={11} className="text-[#a0b4d6]" />
+                            For: {formatDateShort(payment.payment_date)}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex justify-center">
@@ -380,10 +398,18 @@ export default function PaymentsPage() {
                       {methodCfg.icon}
                       {methodCfg.label}
                     </span>
-                    <span className="text-xs font-semibold text-[#6b7a99]">
-                      <CalendarDays size={11} className="inline mr-1 text-[#ffb84d]" />
-                      {formatDate(payment.created_at)}
-                    </span>
+                    <div className="text-xs font-semibold text-[#6b7a99]">
+                      <span>
+                        <CalendarDays size={11} className="inline mr-1 text-[#ffb84d]" />
+                        {formatDate(payment.created_at)}
+                      </span>
+                      {payment.payment_date && (
+                        <div className="text-[10px] text-[#6b7a99]/70 mt-0.5">
+                          <CalendarDays size={9} className="inline mr-1 text-[#a0b4d6]" />
+                          For: {formatDateShort(payment.payment_date)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm font-black text-[#172554]">{money(payment.amount)}</p>
                 </div>
@@ -459,6 +485,18 @@ export default function PaymentsPage() {
                     placeholder="Enter amount"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    Payment Date
+                  </label>
+                  <input
+                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
                   />
                 </div>
 

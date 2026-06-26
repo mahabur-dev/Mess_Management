@@ -38,6 +38,11 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-15' })
+  @IsOptional()
+  @IsDateString()
+  paymentDate?: string;
 }
 
 export class ReviewPaymentDto {

@@ -38,6 +38,11 @@ function getTotalCost(bill: MonthlyBill) {
   )
 }
 
+// prev_balance sign convention:
+//   Positive (+) = extra/overpayment from previous month (acts as credit)
+//   Negative (-) = due/baki from previous month (adds to current costs)
+// Deposit column always shows raw deposit_total + paid_amount (unchanged)
+
 const STATUS_CONFIG = {
   PAID: { label: 'Paid', icon: <CheckCircle2 size={14} />, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200/50' },
   PARTIAL: { label: 'Partial', icon: <AlertTriangle size={14} />, bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200/50' },
@@ -329,8 +334,11 @@ export default function MonthlyBillPage() {
                         <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(getTotalCost(bill))}</td>
 
                         <td className="px-5 py-4">
-                          <span className={`text-sm font-bold ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>
-                            {money(bill.prev_balance)}
+                          <span className={`text-sm font-bold inline-flex items-center gap-0.5 
+                            ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>
+                            {Number(bill.prev_balance) > 0 && <span>+</span>}
+                            {Number(bill.prev_balance) < 0 && <span>−</span>}
+                            {Number(bill.prev_balance) === 0 ? <span className="text-[10px]">Paid</span> : money(Math.abs(Number(bill.prev_balance)))}
                           </span>
                         </td>
 
@@ -448,7 +456,12 @@ export default function MonthlyBillPage() {
                     </div>
                     <div className="rounded-lg bg-white p-2.5">
                       <p className="font-black uppercase text-[#6b7a99]">Prev Bal.</p>
-                      <p className={`mt-0.5 font-bold ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>{money(bill.prev_balance)}</p>
+                      <p className={`mt-0.5 font-bold inline-flex items-center gap-0.5 
+                        ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>
+                        {Number(bill.prev_balance) > 0 && <span>+</span>}
+                        {Number(bill.prev_balance) < 0 && <span>−</span>}
+                        {Number(bill.prev_balance) === 0 ? <span className="text-[10px]">Paid</span> : money(Math.abs(Number(bill.prev_balance)))}
+                      </p>
                     </div>
                     <div className="rounded-lg bg-white p-2.5">
                       <p className="font-black uppercase text-[#6b7a99]">Deposit</p>

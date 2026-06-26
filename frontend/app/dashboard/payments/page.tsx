@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { apiClient, type Mess, type Payment, type PaymentMethod } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
-import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban, Search, Filter } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
 const methods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
@@ -67,6 +67,8 @@ export default function PaymentsPage() {
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [searchText, setSearchText] = useState('')
 
   useAutoDismissMessage(message, messageType, setMessage, setMessageType)
 
@@ -135,10 +137,23 @@ export default function PaymentsPage() {
     }
   }
 
+  // Filtered payments
+  const filteredPayments = useMemo(() => {
+    return payments.filter((payment) => {
+      const paymentMonth = payment.payment_date
+        ? new Date(payment.payment_date).toISOString().slice(0, 7)
+        : new Date(payment.created_at).toISOString().slice(0, 7)
+      const matchMonth = paymentMonth === selectedMonth
+      const searchableText = `${payment.member?.name ?? ''} ${payment.member?.email ?? ''} ${payment.method} ${payment.status}`.toLowerCase()
+      const matchSearch = searchableText.includes(searchText.toLowerCase())
+      return matchMonth && matchSearch
+    })
+  }, [payments, selectedMonth, searchText])
+
   // Summary calculations
-  const pendingCount = payments.filter(p => p.status === 'PENDING').length
-  const approvedCount = payments.filter(p => p.status === 'APPROVED').length
-  const totalAmount = payments.reduce((s, p) => s + Number(p.amount || 0), 0)
+  const pendingCount = filteredPayments.filter(p => p.status === 'PENDING').length
+  const approvedCount = filteredPayments.filter(p => p.status === 'APPROVED').length
+  const totalAmount = filteredPayments.reduce((s, p) => s + Number(p.amount || 0), 0)
 
   return (
     <div className="min-h-screen bg-[#fafcff]">
@@ -213,6 +228,33 @@ export default function PaymentsPage() {
           </div>
         )}
 
+        {/* Desktop Filter Toolbar */}
+        <div className="hidden sm:flex flex-row flex-wrap items-center gap-2 mb-4">
+          <div className="relative w-52">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
+            <input
+              className="h-[38px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              placeholder="Search by name, method, status..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+          </div>
+          <label className="flex h-[38px] items-center gap-1.5 rounded-xl border border-[#d8e6f8] bg-white px-3 shadow-sm transition hover:border-[#a9ccfb]">
+            <CalendarDays size={15} className="text-[#2f80ed]" />
+            <input
+              className="bg-transparent text-xs font-bold text-[#172554] outline-none w-[110px]"
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            />
+          </label>
+          {searchText || selectedMonth !== new Date().toISOString().slice(0, 7) ? (
+            <span className="text-[10px] font-semibold text-[#6b7a99]">
+              Showing {filteredPayments.length} of {payments.length} payments
+            </span>
+          ) : null}
+        </div>
+
         {/* Payments Table - Desktop */}
         <div className="hidden sm:block overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
           <table className="w-full">
@@ -237,18 +279,22 @@ export default function PaymentsPage() {
                   </td>
                 </tr>
               )}
-              {!loading && payments.length === 0 && (
+              {!loading && filteredPayments.length === 0 && (
                 <tr>
                   <td colSpan={isManager ? 7 : 6} className="px-5 py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Wallet size={40} className="text-[#d8e6f8]" />
-                      <p className="text-sm font-bold text-[#6b7a99]">No payment records yet.</p>
-                      <p className="text-xs font-semibold text-[#8a9bb5]">Click "Submit Payment" to add one.</p>
+                      <p className="text-sm font-bold text-[#6b7a99]">
+                        {payments.length === 0 ? 'No payment records yet.' : 'No payments match your filters.'}
+                      </p>
+                      <p className="text-xs font-semibold text-[#8a9bb5]">
+                        {payments.length === 0 ? 'Click "Submit Payment" to add one.' : 'Try changing the month or search term.'}
+                      </p>
                     </div>
                   </td>
                 </tr>
               )}
-              {!loading && payments.map((payment) => {
+              {!loading && filteredPayments.map((payment) => {
                 const methodCfg = PAYMENT_METHOD_CONFIG[payment.method as PaymentMethod] || PAYMENT_METHOD_CONFIG.CASH
                 const statusCfg = STATUS_CONFIG[payment.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
                 const isReviewing = reviewingId === payment.id
@@ -350,6 +396,35 @@ export default function PaymentsPage() {
           )}
         </div>
 
+        {/* Mobile Filter Toolbar */}
+        <div className="flex flex-col gap-2 sm:hidden mb-4">
+          <div className="relative w-full">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
+            <input
+              className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              placeholder="Search by name, method, status..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex h-[42px] flex-1 items-center gap-1.5 rounded-xl border border-[#d8e6f8] bg-white px-3 shadow-sm transition hover:border-[#a9ccfb]">
+              <CalendarDays size={15} className="text-[#2f80ed]" />
+              <input
+                className="bg-transparent text-xs font-bold text-[#172554] outline-none w-full"
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              />
+            </label>
+          </div>
+          {searchText || selectedMonth !== new Date().toISOString().slice(0, 7) ? (
+            <p className="text-[10px] font-semibold text-[#6b7a99] text-center">
+              Showing {filteredPayments.length} of {payments.length} payments
+            </p>
+          ) : null}
+        </div>
+
         {/* Payments - Mobile Cards */}
         <div className="space-y-3 sm:hidden">
           {loading && (
@@ -357,14 +432,18 @@ export default function PaymentsPage() {
               <Loader2 size={24} className="animate-spin text-[#2f80ed]" />
             </div>
           )}
-          {!loading && payments.length === 0 && (
+          {!loading && filteredPayments.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
               <Wallet size={40} className="mb-2 text-[#d8e6f8]" />
-              <p className="text-sm font-bold text-[#6b7a99]">No payment records yet.</p>
-              <p className="text-xs font-semibold text-[#8a9bb5]">Click "Submit Payment" to add one.</p>
+              <p className="text-sm font-bold text-[#6b7a99]">
+                {payments.length === 0 ? 'No payment records yet.' : 'No payments match your filters.'}
+              </p>
+              <p className="text-xs font-semibold text-[#8a9bb5]">
+                {payments.length === 0 ? 'Click "Submit Payment" to add one.' : 'Try changing the month or search term.'}
+              </p>
             </div>
           )}
-          {!loading && payments.map((payment) => {
+          {!loading && filteredPayments.map((payment) => {
             const methodCfg = PAYMENT_METHOD_CONFIG[payment.method as PaymentMethod] || PAYMENT_METHOD_CONFIG.CASH
             const statusCfg = STATUS_CONFIG[payment.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
             const isReviewing = reviewingId === payment.id

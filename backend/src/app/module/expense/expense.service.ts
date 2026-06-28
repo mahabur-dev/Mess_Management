@@ -112,9 +112,25 @@ export class ExpenseService {
     throw new HttpException('Forbidden: Not a member of this mess', 403);
   }
 
-  private verifyExpenseOwner(expense: { created_by: string }, userId: string) {
+  // private verifyExpenseOwner(expense: { created_by: string }, userId: string) {
+  //   if (expense.created_by !== userId) {
+  //     throw new HttpException('Forbidden: You can edit only your own expenses', 403);
+  //   }
+  // }
+  private verifyExpenseOwner(
+    expense: { created_by: string },
+    userId: string,
+    role: string,
+  ) {
+    // Manager can edit all
+    if (role === 'MANAGER') return;
+
+    // Member can edit only own expense
     if (expense.created_by !== userId) {
-      throw new HttpException('Forbidden: You can edit only your own expenses', 403);
+      throw new HttpException(
+        'Forbidden: You can edit only your own expenses',
+        403,
+      );
     }
   }
 
@@ -319,7 +335,7 @@ export class ExpenseService {
     }
 
     await this.verifyMessMemberAccess(expense.mess_id, userId, role);
-    this.verifyExpenseOwner(expense, userId);
+    this.verifyExpenseOwner(expense, userId, role);
     await this.ensureActiveSubscription(expense.mess_id, role);
 
     const oldExpenseDate = expense.expense_date;

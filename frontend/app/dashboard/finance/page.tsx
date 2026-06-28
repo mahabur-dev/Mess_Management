@@ -58,6 +58,7 @@ const expenseCategories: ExpenseCategory[] = ['FOOD', 'GROCERY']
 const utilityCategories: ExpenseCategory[] = [
   'GAS',
   'ELECTRICITY',
+  'RENT',
   'WIFI',
   'CLEANER',
   'MAINTENANCE',
@@ -507,8 +508,17 @@ export default function FinancePage() {
     })
   }, [expenses, selectedCategory, selectedMonth, selectedDay, searchText])
 
+  // function canEditExpense(item: ExpenseItem) {
+  //   return Boolean(user?.id && item.creator?.id === user.id)
+  // }
   function canEditExpense(item: ExpenseItem) {
-    return Boolean(user?.id && item.creator?.id === user.id)
+    if (!user?.id) return false
+
+    // Manager/Admin/Organizer can edit everyone
+    if (canManageMess) return true
+
+    // Member can edit only own expense
+    return item.creator?.id === user.id
   }
 
   function canRequestExpenseReview(item: ExpenseItem) {

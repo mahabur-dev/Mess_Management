@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEnum,
-  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -25,8 +24,12 @@ export class CreateMealDto {
   memberId?: string;
 
   @ApiProperty({
-    example: 2,
-    description: 'Number of meals (supports 0.5 for half meal)',
+    example: 1.5,
+    description: 'Number of meals (supports 0.5 for half meal, e.g. 0, 0.5, 1, 1.5, 2)',
+  })
+  @Transform(({ value }) => {
+    if (value === '' || value === null || value === undefined) return 0;
+    return Number(value);
   })
   @IsNumber()
   @Min(0)
@@ -43,10 +46,13 @@ export class CreateMealDto {
   @IsEnum(AttendanceStatus)
   status?: AttendanceStatus;
 
-  @ApiPropertyOptional({ example: 1 })
+  @ApiPropertyOptional({ example: 0.5, description: 'Guest meals count (supports 0.5 increments)' })
   @IsOptional()
-  @Transform(({ value }) => Number(value))
-  @IsInt()
+  @Transform(({ value }) => {
+    if (value === '' || value === null || value === undefined) return undefined;
+    return Number(value);
+  })
+  @IsNumber()
   @Min(0)
   @Max(20)
   guests?: number;
@@ -80,10 +86,13 @@ export class UpdateMealDto {
   @IsEnum(MealStatus)
   mealStatus?: MealStatus;
 
-  @ApiPropertyOptional({ example: 1 })
+  @ApiPropertyOptional({ example: 0.5, description: 'Guest meals count (supports 0.5 increments)' })
   @IsOptional()
-  @Transform(({ value }) => Number(value))
-  @IsInt()
+  @Transform(({ value }) => {
+    if (value === '' || value === null || value === undefined) return undefined;
+    return Number(value);
+  })
+  @IsNumber()
   @Min(0)
   @Max(20)
   guests?: number;

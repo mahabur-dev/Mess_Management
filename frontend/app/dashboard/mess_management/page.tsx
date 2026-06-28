@@ -138,8 +138,14 @@ export default function MessManagementPage() {
   async function load() {
     setLoading(true)
     try {
-      const response = isAdmin ? await apiClient.getAllMesses({ limit: 100 }) : await apiClient.getMesses()
-      const list = Array.isArray(response.data) ? response.data : response.data ? [response.data] : []
+      const response = isAdmin
+        ? await apiClient.getAllMesses({ limit: 100 }).catch(() => null)
+        : await apiClient.getMesses().catch(() => null)
+      const list = response?.data
+        ? Array.isArray(response.data)
+          ? response.data
+          : [response.data]
+        : []
       setMesses(list)
       setSubscription(null)
 

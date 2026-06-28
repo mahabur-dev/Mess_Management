@@ -7,7 +7,7 @@ model MealAttendance {
   id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   meal_id    String           @db.Uuid
   member_id  String           @db.Uuid
-  guests     Int              @default(0)
+  guests     Decimal          @default(0) @db.Decimal(10, 2)
   status     AttendanceStatus @default(ON)
   updated_at DateTime         @updatedAt @db.Timestamptz
 

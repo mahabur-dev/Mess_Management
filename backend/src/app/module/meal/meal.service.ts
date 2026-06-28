@@ -18,6 +18,41 @@ const DEFAULT_DEADLINE_START = '22:00'; // 10 PM - meal window opens
 const DEFAULT_DEADLINE_END = '11:00';   // 11 AM next day - meal window closes
 
 /**
+ * Base meal value per meal type when attendance is ON.
+ * BREAKFAST = 0.5 meal, LUNCH = 1 meal, DINNER = 1 meal.
+ */
+const MEAL_BASE_VALUE: Record<MealName, number> = {
+  [MealName.BREAKFAST]: 0.5,
+  [MealName.LUNCH]: 1,
+  [MealName.DINNER]: 1,
+};
+
+/**
+ * Get the base meal value for a given meal name.
+ * A meal that is ON contributes this base value *before* any guest additions.
+ */
+function getMealBaseValue(mealName: MealName): number {
+  return MEAL_BASE_VALUE[mealName] ?? 1;
+}
+
+/**
+ * Calculate the total meal count from attendance status, meal name, and guests.
+ * - OFF       → 0
+ * - ON        → baseMealValue(mealName) + guests
+ * - guests are stored as Decimal and represent fractional meal additions (e.g. 0.5)
+ */
+function calculateTotalMeals(
+  status: AttendanceStatus,
+  mealName: MealName,
+  guests: Prisma.Decimal | number,
+): number {
+  if (status === AttendanceStatus.OFF) return 0;
+  const baseValue = getMealBaseValue(mealName);
+  const guestValue = Number(guests ?? 0);
+  return +(baseValue + guestValue).toFixed(2);
+}
+
+/**
  * Parse "HH:mm" string into total minutes since midnight.
  */
 function parseTimeToMinutes(time: string): number {
@@ -54,10 +89,6 @@ function isWithinMealWindow(
 
   // Handle the case where endTime is <= startTime (e.g. end=11:00, start=22:00)
   // This means the window crosses midnight
-  if (endMinutes <= startMinutes) {
-    // Window is: targetDate-1 startTime -> targetDate endTime
-    // Already correct above
-  }
 
   return now >= windowStart && now <= windowEnd;
 }
@@ -365,6 +396,26 @@ export class MealService {
 
     const targetMemberId = role === 'MEMBER' ? userId : (dto.memberId ?? userId);
 
+    // Determine status: if mealCount === 0 → OFF; if mealCount > 0 → ON
+    // mealCount is the total meal count desired by the user.
+    // For fractional support, mealCount = 0 means OFF, > 0 means ON.
+    const status: AttendanceStatus =
+      dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON);
+
+    // Guests field stores the *additional* fractional meals beyond the base value.
+    // If the user explicitly provides guests, use it.
+    // Otherwise, if mealCount is provided, derive guests = mealCount - baseValue (when status is ON).
+    let guestsDecimal: number;
+    if (dto.guests !== undefined) {
+      guestsDecimal = dto.guests;
+    } else if (status === AttendanceStatus.ON) {
+      // mealCount is the total desired meal count, so guests = total - baseValue
+      const base = getMealBaseValue(mealName);
+      guestsDecimal = Math.max(0, +(dto.mealCount - base).toFixed(2));
+    } else {
+      guestsDecimal = 0;
+    }
+
     const attendance = await this.prisma.mealAttendance.upsert({
       where: {
         meal_id_member_id: {
@@ -373,18 +424,14 @@ export class MealService {
         },
       },
       update: {
-        status:
-          dto.status ??
-          (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
-        guests: dto.guests ?? 0,
+        status,
+        guests: guestsDecimal,
       },
       create: {
         meal_id: savedMeal.id,
         member_id: targetMemberId,
-        status:
-          dto.status ??
-          (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
-        guests: dto.guests ?? 0,
+        status,
+        guests: guestsDecimal,
       },
       include: {
         meal: {
@@ -499,7 +546,49 @@ export class MealService {
       include: { creator: { select: { id: true, name: true } } },
     });
 
-    if (dto.status || dto.guests !== undefined || dto.mealCount !== undefined) {
+    // Update attendance if status, guests, or mealCount is provided
+    if (dto.status !== undefined || dto.guests !== undefined || dto.mealCount !== undefined) {
+      // Fetch existing attendance for fallback logic
+      const existingAttendance = await this.prisma.mealAttendance.findUnique({
+        where: {
+          meal_id_member_id: {
+            meal_id: id,
+            member_id: userId,
+          },
+        },
+      });
+
+      // Determine new status
+      // Priority: dto.status > derived from mealCount > existing status > ON
+      let newStatus: AttendanceStatus;
+      if (dto.status !== undefined) {
+        newStatus = dto.status;
+      } else if (dto.mealCount !== undefined) {
+        newStatus = dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON;
+      } else {
+        newStatus = existingAttendance?.status ?? AttendanceStatus.ON;
+      }
+
+      // Determine new guests value stored in DB
+      // Priority: dto.guests > derived from mealCount > existing guests
+      let newGuests: number;
+      if (dto.guests !== undefined) {
+        // If guests is explicitly provided, use it directly (it represents additional meals beyond base)
+        newGuests = dto.guests;
+      } else if (dto.mealCount !== undefined) {
+        if (newStatus === AttendanceStatus.ON) {
+          // mealCount = baseValue + guests, so guests = mealCount - baseValue
+          const base = getMealBaseValue(meal.name);
+          newGuests = Math.max(0, +(dto.mealCount - base).toFixed(2));
+        } else {
+          // Status is OFF, so guests = 0
+          newGuests = 0;
+        }
+      } else {
+        // No changes to guests or mealCount — keep existing
+        newGuests = Number(existingAttendance?.guests ?? 0);
+      }
+
       await this.prisma.mealAttendance.upsert({
         where: {
           meal_id_member_id: {
@@ -508,18 +597,14 @@ export class MealService {
           },
         },
         update: {
-          status:
-            dto.status ??
-            (dto.mealCount === 0 ? AttendanceStatus.OFF : undefined),
-          guests: dto.guests,
+          status: newStatus,
+          guests: newGuests,
         },
         create: {
           meal_id: id,
           member_id: userId,
-          status:
-            dto.status ??
-            (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON),
-          guests: dto.guests ?? 0,
+          status: newStatus,
+          guests: newGuests,
         },
       });
     }
@@ -657,8 +742,8 @@ export class MealService {
 
     const summary = await Promise.all(
       members.map(async (member) => {
-        const [mealCount, depositTotal] = await Promise.all([
-          this.prisma.mealAttendance.count({
+        const [attendances, depositTotal] = await Promise.all([
+          this.prisma.mealAttendance.findMany({
             where: {
               member_id: member.user_id,
               status: 'ON',
@@ -668,6 +753,9 @@ export class MealService {
                   ? { scheduled_date: dateFilter }
                   : {}),
               },
+            },
+            include: {
+              meal: { select: { name: true } },
             },
           }),
           this.prisma.deposit.aggregate({
@@ -682,9 +770,18 @@ export class MealService {
           }),
         ]);
 
+        // Calculate total meals using base meal value + guests
+        const totalMeals = attendances.reduce((sum, att) => {
+          return sum + calculateTotalMeals(
+            AttendanceStatus.ON,
+            att.meal.name as MealName,
+            att.guests,
+          );
+        }, 0);
+
         return {
           user: member.user,
-          totalMeals: mealCount,
+          totalMeals: +totalMeals.toFixed(2),
           totalDeposit: depositTotal._sum.amount ?? 0,
         };
       }),
@@ -709,7 +806,7 @@ export class MealService {
         balance: Number(s.totalDeposit) - Number(s.totalMeals) * mealRate,
       })),
       totalBazarCost,
-      totalMeals,
+      totalMeals: +totalMeals.toFixed(2),
       mealRate: parseFloat(mealRate.toFixed(2)),
     };
   }

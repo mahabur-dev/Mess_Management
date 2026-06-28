@@ -328,7 +328,7 @@ export class MonthlyBillService {
               ExpenseCategory.MAINTENANCE,
               ExpenseCategory.BUABILL,
               ExpenseCategory.WATER,
-              ExpenseCategory.OTHER,
+              // ExpenseCategory.OTHER,
               ExpenseCategory.ELECTRICITY,
               ExpenseCategory.CLEANER,
               ExpenseCategory.WIFI,

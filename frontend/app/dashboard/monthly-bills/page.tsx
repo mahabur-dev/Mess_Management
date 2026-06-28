@@ -38,6 +38,18 @@ function getTotalCost(bill: MonthlyBill) {
   )
 }
 
+function getRemainingBalance(bill: MonthlyBill) {
+  const deposit =
+    Number(bill.deposit_total || 0) +
+    Number(bill.paid_amount || 0)
+
+  const totalCost = getTotalCost(bill)
+
+  const remaining = deposit - totalCost
+
+  return remaining > 0 ? remaining : 0
+}
+
 // prev_balance sign convention:
 //   Positive (+) = extra/overpayment from previous month (acts as credit)
 //   Negative (-) = due/baki from previous month (adds to current costs)
@@ -265,6 +277,7 @@ export default function MonthlyBillPage() {
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#ff8c00]">Prev Bal.</th>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Deposit</th>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-red-500">Due</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Remaining Bal</th>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
                 </tr>
               </thead>
@@ -349,13 +362,18 @@ export default function MonthlyBillPage() {
                             {money(bill.final_due)}
                           </span>
                         </td>
+                        
 
-                        <td className="px-5 py-4">
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
-                            {statusConf.icon}
-                            {statusConf.label}
-                          </span>
-                        </td>
+                      <td className="px-5 py-4 text-sm font-bold text-[#ff8c00]">
+                        {money(getRemainingBalance(bill))}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
+                          {statusConf.icon}
+                          {statusConf.label}
+                        </span>
+                      </td>
                       </tr>
                     )
                   })}
@@ -466,6 +484,15 @@ export default function MonthlyBillPage() {
                     <div className="rounded-lg bg-white p-2.5">
                       <p className="font-black uppercase text-[#6b7a99]">Deposit</p>
                       <p className="mt-0.5 font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</p>
+                    </div>
+                    <div className="rounded-lg bg-white p-2.5">
+                      <p className="font-black uppercase text-[#6b7a99]">
+                        Remaining Bal
+                      </p>
+
+                      <p className="mt-0.5 font-bold text-green-600">
+                        {money(getRemainingBalance(bill))}
+                      </p>
                     </div>
                   </div>
                 </div>

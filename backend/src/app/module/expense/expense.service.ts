@@ -243,7 +243,9 @@ export class ExpenseService {
         where,
         skip,
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: {
+          created_at: 'desc',
+        },
         select: this.expenseSelect,
       }),
       this.prisma.expense.aggregate({ where, _sum: { amount: true } }),
@@ -501,6 +503,14 @@ export class ExpenseService {
     const where: Prisma.ExpenseWhereInput = {};
     if (query.messId) where.mess_id = query.messId;
     if (query.category) where.category = query.category;
+    if (query.userName) {
+      where.creator = {
+        name: {
+          contains: query.userName,
+          mode: 'insensitive',
+        },
+      };
+    }
     if (query.startDate || query.endDate) {
       where.expense_date = {
         ...(query.startDate && { gte: new Date(query.startDate) }),

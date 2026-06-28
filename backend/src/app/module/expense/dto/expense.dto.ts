@@ -152,6 +152,11 @@ export class ExpenseFilterDto {
   @IsEnum(ExpenseCategory)
   category?: ExpenseCategory;
 
+  @ApiPropertyOptional({ example: 'John' })
+  @IsOptional()
+  @IsString()
+  userName?: string
+
   @ApiPropertyOptional({ example: '2025-04-01' })
   @IsOptional()
   @IsDateString()

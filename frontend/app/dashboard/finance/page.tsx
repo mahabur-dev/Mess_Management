@@ -496,7 +496,12 @@ export default function FinancePage() {
       const expenseDay = new Date(item.expense_date).getDate().toString().padStart(2, '0')
       const matchDay = selectedDay === 'ALL' || !selectedDay || expenseDay === selectedDay
       const searchableText =
-        `${item.item_name ?? ''} ${item.description ?? ''} ${item.category}`.toLowerCase()
+        `${item.item_name ?? ''} 
+        ${item.description ?? ''} 
+        ${item.category}
+        ${item.creator?.name ?? ''}`
+        .toLowerCase()
+
       const matchSearch = searchableText.includes(searchText.toLowerCase())
       return matchMonth && matchCategory && matchDay && matchSearch
     })

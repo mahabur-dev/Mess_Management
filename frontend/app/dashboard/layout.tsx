@@ -1,14 +1,25 @@
 'use client'
 
-import { AuthProvider, useAuth } from '@/app/context/auth-context'
+import { useAuth } from '@/app/context/auth-context'
+import { useRouter } from 'next/navigation'
+import { ReactNode, useEffect } from 'react'
 import { SidebarProvider, useSidebar } from '@/app/context/sidebar-context'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { PushNotificationPermissionModal } from '@/components/push-notification-permission-modal'
-import { ReactNode } from 'react'
+
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
   const { collapsed } = useSidebar()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, isLoading, router])
+
+
 
   if (isLoading) {
     return (

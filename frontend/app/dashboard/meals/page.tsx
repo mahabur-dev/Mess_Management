@@ -15,6 +15,20 @@ const mealLabels: Record<MealName, string> = {
   DINNER: 'Dinner',
 }
 
+/**
+ * Base meal value per meal type when attendance is ON.
+ * BREAKFAST = 0.5 meal, LUNCH = 1 meal, DINNER = 1 meal.
+ */
+const MEAL_BASE_VALUE: Record<MealName, number> = {
+  BREAKFAST: 0.5,
+  LUNCH: 1,
+  DINNER: 1,
+}
+
+function getMealBaseValue(mealName: MealName): number {
+  return MEAL_BASE_VALUE[mealName] ?? 1
+}
+
 const MEAL_ICONS: Record<MealName, React.ReactNode> = {
   BREAKFAST: <Coffee size={22} />,
   LUNCH: <Sun size={22} />,
@@ -70,9 +84,10 @@ type DeadlineInfo = {
   windowEndTime: string
 }
 
-function getMealCount(attendance?: MealAttendance) {
+function getMealCount(attendance: MealAttendance | undefined, mealName: MealName) {
   if (!attendance || attendance.status !== 'ON') return 0
-  return 1 + Number(attendance.guests ?? 0)
+  const baseValue = getMealBaseValue(mealName)
+  return baseValue + Number(attendance.guests ?? 0)
 }
 
 const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e']
@@ -331,7 +346,7 @@ export default function MealsPage() {
           name: attendance.member?.name ?? 'Unknown member',
           meals: { BREAKFAST: 0, LUNCH: 0, DINNER: 0 },
         }
-        existing.meals[meal.name] = getMealCount(attendance)
+        existing.meals[meal.name] = getMealCount(attendance, meal.name)
         rows.set(memberId, existing)
       })
     })
@@ -416,7 +431,7 @@ export default function MealsPage() {
           memberId: row.id,
           mealName,
           status: totalCount > 0 ? 'ON' : 'OFF',
-          guests: totalCount > 0 ? totalCount - 1 : 0,
+          guests: totalCount > 0 ? Math.max(0, +(totalCount - getMealBaseValue(mealName)).toFixed(2)) : 0,
           date,
         })
       }

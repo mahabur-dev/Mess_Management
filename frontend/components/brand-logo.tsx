@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-const LOGO_SRC = '/iconic_logo.png'
+const LOGO_SRC = '/new-logo.png'
 const LOGO_ALT = 'Mess logo'
 
 type BrandLogoProps = {

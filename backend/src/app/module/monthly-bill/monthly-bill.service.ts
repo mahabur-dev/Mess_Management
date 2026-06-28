@@ -4,10 +4,42 @@ import {
   GenerateBillDto,
   UpdateBillStatusDto,
 } from './dto/monthly-bill.dto';
-import { BillStatus, ExpenseCategory, Prisma } from '@prisma/client';
+import { AttendanceStatus, BillStatus, ExpenseCategory, MealName, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+
+// ─── Constants ──────────────────────────────────────────────
+/**
+ * Base meal value per meal type when attendance is ON.
+ * BREAKFAST = 0.5 meal, LUNCH = 1 meal, DINNER = 1 meal.
+ */
+const MEAL_BASE_VALUE: Record<MealName, number> = {
+  [MealName.BREAKFAST]: 0.5,
+  [MealName.LUNCH]: 1,
+  [MealName.DINNER]: 1,
+};
+
+function getMealBaseValue(mealName: MealName): number {
+  return MEAL_BASE_VALUE[mealName] ?? 1;
+}
+
+/**
+ * Calculate the total meal count from attendance status, meal name, and guests.
+ * - OFF       → 0
+ * - ON        → baseMealValue(mealName) + guests
+ * - guests are stored as Decimal and represent fractional meal additions (e.g. 0.5)
+ */
+function calculateTotalMeals(
+  status: AttendanceStatus,
+  mealName: MealName,
+  guests: Prisma.Decimal | number,
+): number {
+  if (status === AttendanceStatus.OFF) return 0;
+  const baseValue = getMealBaseValue(mealName);
+  const guestValue = Number(guests ?? 0);
+  return +(baseValue + guestValue).toFixed(2);
+}
 
 @Injectable()
 export class MonthlyBillService {
@@ -323,6 +355,11 @@ export class MonthlyBillService {
         select: {
           member_id: true,
           guests: true,
+          meal: {
+            select: {
+              name: true,
+            },
+          },
         },
       }),
 
@@ -360,7 +397,11 @@ export class MonthlyBillService {
     let totalMeals = 0;
 
     for (const attendance of mealAttendances) {
-      const mealCount = 1 + Number(attendance.guests ?? 0);
+      const mealCount = calculateTotalMeals(
+        AttendanceStatus.ON,
+        attendance.meal.name as MealName,
+        attendance.guests,
+      );
 
       mealCountByUser[attendance.member_id] =
         (mealCountByUser[attendance.member_id] ?? 0) + mealCount;

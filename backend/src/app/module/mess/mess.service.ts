@@ -409,7 +409,7 @@ export class MessService {
       },
     });
 
-    if (!mess || mess.length === 0) throw new HttpException('You have not created a mess yet', 404);
+    if (!mess || mess.length === 0) return [];
     return mess.map((item) => this.decorateRoomsWithAvailability(item));
   }
 
@@ -497,8 +497,43 @@ export class MessService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      // Delete related mess requests that reference this mess
+      // ── Explicitly delete ALL data belonging to this mess ──
+      // (Most tables have ON DELETE CASCADE at DB level, but we delete
+      //  explicitly here for safety, clarity, and to ensure no orphan data.)
+
+      // 1. Meal attendances (through meals)
+      await tx.mealAttendance.deleteMany({ where: { meal: { mess_id: messId } } });
+      // 2. Meals
+      await tx.meal.deleteMany({ where: { mess_id: messId } });
+      // 3. Monthly bills (and their linked payments will be handled below)
+      await tx.monthlyBill.deleteMany({ where: { mess_id: messId } });
+      // 4. Payments
+      await tx.payment.deleteMany({ where: { mess_id: messId } });
+      // 5. Deposits
+      await tx.deposit.deleteMany({ where: { mess_id: messId } });
+      // 6. Expenses
+      await tx.expense.deleteMany({ where: { mess_id: messId } });
+      // 7. Shopping items (through shopping lists)
+      await tx.shoppingItem.deleteMany({ where: { list: { mess_id: messId } } });
+      // 8. Shopping lists
+      await tx.shoppingList.deleteMany({ where: { mess_id: messId } });
+      // 9. Notification reads (through notifications)
+      await tx.notificationRead.deleteMany({ where: { notification: { mess_id: messId } } });
+      // 10. Notifications
+      await tx.notification.deleteMany({ where: { mess_id: messId } });
+      // 11. Complaints
+      await tx.complaint.deleteMany({ where: { mess_id: messId } });
+      // 12. Notices
+      await tx.notice.deleteMany({ where: { mess_id: messId } });
+      // 13. Audit logs
+      await tx.auditLog.deleteMany({ where: { mess_id: messId } });
+      // 14. Subscription
+      await tx.subscription.deleteMany({ where: { mess_id: messId } });
+      // 15. Mess memberships (user accounts are NOT deleted)
+      await tx.messMembership.deleteMany({ where: { mess_id: messId } });
+      // 16. Mess requests that reference this mess
       await tx.messRequest.deleteMany({ where: { mess_id: messId } });
+      // 17. Finally delete the mess itself
       await tx.mess.delete({ where: { id: messId } });
     });
 

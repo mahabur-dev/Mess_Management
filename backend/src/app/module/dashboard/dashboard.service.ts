@@ -107,7 +107,7 @@ export class DashboardService {
         where: {
           mess_id: messId,
           category: {
-            notIn: ['FOOD', 'GROCERY'],
+            notIn: ['FOOD', 'GROCERY', 'RENT'],
           },
           expense_date: { gte: start, lt: end },
         },

@@ -2,6 +2,10 @@
 const backendApiUrl = process.env.API_URL || 'http://localhost:5001/api/v1'
 
 const nextConfig = {
+  // Set Turbopack root to this directory (silences workspace root warning)
+  turbopack: {
+    root: process.cwd(),
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

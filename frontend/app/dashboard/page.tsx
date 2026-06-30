@@ -1,30 +1,18 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { useAuth } from '@/app/context/auth-context'
-import {
-  apiClient,
-  type AdminDashboard,
-  type Mess,
-  type MessDashboard,
-} from '@/lib/api-client'
+import { type Mess } from '@/lib/api-client'
 import { useRouter } from 'next/navigation'
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from 'recharts'
+  useMesses,
+  useMessDashboard,
+  useAdminDashboard,
+  useMonthlyOverview,
+  useExpenseBreakdown,
+  useWeeklyMealCount,
+} from '@/hooks/use-dashboard-data'
 import {
   BadgeDollarSign,
   Bell,
@@ -40,10 +28,33 @@ import {
   Users,
   WalletCards,
   ArrowUpRight,
-  TrendingUp,
-  TrendingDown,
 } from 'lucide-react'
-import { useEffect, useMemo, useState, type ElementType } from 'react'
+import { useMemo, useState, type ElementType } from 'react'
+
+// ─── Lazy-loaded Chart Components ─────────────────────────────
+const MonthlyOverviewChart = dynamic(
+  () =>
+    import('@/components/dashboard/monthly-overview-chart').then(
+      (mod) => ({ default: mod.MonthlyOverviewChart }),
+    ),
+  { ssr: false },
+)
+
+const ExpenseBreakdownChart = dynamic(
+  () =>
+    import('@/components/dashboard/expense-breakdown-chart').then(
+      (mod) => ({ default: mod.ExpenseBreakdownChart }),
+    ),
+  { ssr: false },
+)
+
+const WeeklyMealsChart = dynamic(
+  () =>
+    import('@/components/dashboard/weekly-meals-chart').then(
+      (mod) => ({ default: mod.WeeklyMealsChart }),
+    ),
+  { ssr: false },
+)
 
 const quickActions = [
   ['Add Member', Users, '/dashboard/member_management'],
@@ -71,19 +82,6 @@ function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
 }
 
-// ─── Chart Skeleton ──────────────────────────────────────────
-function ChartSkeleton({ height = 280 }: { height?: number }) {
-  return (
-    <div className="animate-pulse space-y-4">
-      <div className="h-4 w-1/3 rounded bg-[#e6ebf4]" />
-      <div
-        className="w-full rounded-xl bg-[#f1f5f9]"
-        style={{ height }}
-      />
-    </div>
-  )
-}
-
 // ─── StatCard ─────────────────────────────────────────────────
 function StatCard({
   label,
@@ -100,7 +98,9 @@ function StatCard({
   iconColor: string
 }) {
   return (
-    <div className={`group relative min-h-[92px] overflow-hidden rounded-xl bg-gradient-to-r ${accent} p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]`}>
+    <div
+      className={`group relative min-h-[92px] overflow-hidden rounded-xl bg-gradient-to-r ${accent} p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]`}
+    >
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15 blur-2xl transition group-hover:bg-white/25" />
       <div className="absolute -bottom-8 -left-8 h-20 w-20 rounded-full bg-white/8 blur-xl" />
       <div className="relative flex items-center justify-between gap-4">
@@ -137,11 +137,15 @@ function MiniStatCard({
   tone: string
 }) {
   return (
-    <div className={`group relative min-h-[92px] overflow-hidden rounded-xl bg-gradient-to-r ${tone} p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]`}>
+    <div
+      className={`group relative min-h-[92px] overflow-hidden rounded-xl bg-gradient-to-r ${tone} p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]`}
+    >
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-white/80">{label}</p>
+          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-white/80">
+            {label}
+          </p>
           <p className="mt-2 text-2xl font-black leading-none">{value}</p>
           <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-white/60">
             <ArrowUpRight size={11} />
@@ -156,139 +160,65 @@ function MiniStatCard({
   )
 }
 
-// ─── Custom Tooltip ───────────────────────────────────────────
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="rounded-xl border border-[#e6ebf4] bg-white px-4 py-3 shadow-[0_8px_30px_rgba(65,103,153,0.12)]">
-      <p className="mb-2 text-xs font-bold text-[#6b7a99]">{label}</p>
-      {payload.map((entry, i) => (
-        <div key={i} className="flex items-center gap-2 text-sm font-bold text-[#172554]">
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: entry.color }} />
-          <span>{entry.name}: {entry.value.toLocaleString()}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // ─── Main Dashboard Page ──────────────────────────────────────
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-
-  const [messes, setMesses] = useState<Mess[]>([])
-  const [messDashboard, setMessDashboard] = useState<MessDashboard | null>(null)
-  const [adminDashboard, setAdminDashboard] = useState<AdminDashboard | null>(null)
-  const [messSubscription, setMessSubscription] = useState<{ plan?: string; status?: string; end_date?: string | null } | null>(null)
-  const [loadingData, setLoadingData] = useState(true)
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue)
 
-  // Chart states
-  const [monthlyOverview, setMonthlyOverview] = useState<Array<{ day: string; income: number; expense: number }>>([])
-  const [expenseBreakdown, setExpenseBreakdown] = useState<Array<{ name: string; value: number; amount: number; color: string }>>([])
-  const [weeklyMeals, setWeeklyMeals] = useState<Array<{ day: string; breakfast: number; lunch: number; dinner: number }>>([])
-  const [chartLoading, setChartLoading] = useState(true)
+  // ── SWR data fetching (parallel, cached) ────────────────────
+  const { data: messesData } = useMesses()
+  const { data: adminDashboard } = useAdminDashboard()
+  const { data: messDashboard } = useMessDashboard(
+    undefined,
+    selectedMonth,
+  )
+  const { data: monthlyOverview } = useMonthlyOverview(
+    undefined,
+    selectedMonth,
+  )
+  const { data: expenseBreakdown } = useExpenseBreakdown(undefined, selectedMonth)
+  const { data: weeklyMeals } = useWeeklyMealCount(undefined)
+
+  // ── Derive active mess and conditional SWR keys ─────────────
+  const messes = useMemo(() => {
+    const list = Array.isArray(messesData)
+      ? messesData
+      : messesData
+        ? [messesData]
+        : ((user?.memberships?.map((item) => item.mess).filter(Boolean) ?? []) as Mess[])
+    return list
+  }, [messesData, user])
 
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
-  const dashboardQuickActions = user?.role === 'ADMIN' ? adminQuickActions : quickActions
+  const messId = activeMess?.id
 
-  // ── Load dashboard data ──────────────────────────────────────
-  useEffect(() => {
-    let mounted = true
+  // Re-invoke hooks with resolved messId
+  // (SWR dedupes by key, so these will share the cache if key matches)
+  const {
+    data: messDashboardResolved,
+    isLoading: loadingMessDashboardResolved,
+  } = useMessDashboard(messId, selectedMonth)
+  const { data: monthlyOverviewResolved, isLoading: loadingChartsResolved } = useMonthlyOverview(
+    messId,
+    selectedMonth,
+  )
+  const { data: expenseBreakdownResolved } = useExpenseBreakdown(messId, selectedMonth)
+  const { data: weeklyMealsResolved } = useWeeklyMealCount(messId)
 
-    async function load() {
-      if (!user) return
+  // Use resolved data when available, fall back to initial fetch
+  const resolvedDashboard = messId ? messDashboardResolved : messDashboard
+  const resolvedMonthlyOverview = messId ? monthlyOverviewResolved : monthlyOverview
+  const resolvedExpenseBreakdown = messId ? expenseBreakdownResolved : expenseBreakdown
+  const resolvedWeeklyMeals = messId ? weeklyMealsResolved : weeklyMeals
+  const chartLoading = messId ? loadingChartsResolved : false
 
-      setLoadingData(true)
-
-      try {
-        if (user.role === 'ADMIN') {
-          const admin = await apiClient.getAdminDashboard()
-          if (mounted) setAdminDashboard(admin.data)
-        }
-
-        const messResponse = await apiClient.getMesses().catch(() => null)
-
-        const list = Array.isArray(messResponse?.data)
-          ? messResponse.data
-          : messResponse?.data
-            ? [messResponse.data]
-            : ((user.memberships?.map((item) => item.mess).filter(Boolean) ?? []) as Mess[])
-
-        if (mounted) setMesses(list)
-
-        if (list[0]) {
-          const dashboard = await apiClient.getMessDashboard(list[0].id, `${selectedMonth}-01`).catch(() => null)
-          if (mounted && dashboard) setMessDashboard(dashboard.data)
-
-          const subscription = await apiClient.getMessSubscription(list[0].id).catch(() => null)
-          if (mounted && subscription?.data) {
-            setMessSubscription(subscription.data as { plan?: string; status?: string; end_date?: string | null })
-          } else if (mounted) {
-            setMessSubscription(null)
-          }
-        }
-        if (!list[0]) setMessSubscription(null)
-      } finally {
-        if (mounted) setLoadingData(false)
-      }
-    }
-
-    load()
-
-    return () => {
-      mounted = false
-    }
-  }, [selectedMonth, user])
-
-  // ── Load chart data ──────────────────────────────────────────
-  useEffect(() => {
-    let mounted = true
-
-    async function loadCharts() {
-      const messId = messes[0]?.id || user?.memberships?.[0]?.mess?.id
-      if (!messId || user?.role === 'ADMIN') {
-        if (mounted) setChartLoading(false)
-        return
-      }
-
-      setChartLoading(true)
-
-      try {
-        const [overviewRes, breakdownRes, mealsRes] = await Promise.all([
-          apiClient.getMonthlyOverview(messId, `${selectedMonth}-01`),
-          apiClient.getExpenseBreakdown(messId, `${selectedMonth}-01`),
-          apiClient.getWeeklyMealCount(messId),
-        ])
-
-        if (mounted) {
-          setMonthlyOverview(overviewRes.data || [])
-          setExpenseBreakdown(breakdownRes.data?.data || [])
-          setWeeklyMeals(mealsRes.data || [])
-        }
-      } catch {
-        // Keep empty arrays on error
-        if (mounted) {
-          setMonthlyOverview([])
-          setExpenseBreakdown([])
-          setWeeklyMeals([])
-        }
-      } finally {
-        if (mounted) setChartLoading(false)
-      }
-    }
-
-    loadCharts()
-
-    return () => {
-      mounted = false
-    }
-  }, [selectedMonth, messes, user])
+  const dashboardQuickActions =
+    user?.role === 'ADMIN' ? adminQuickActions : quickActions
 
   const stats = useMemo(() => {
-    const dashboard = messDashboard as
-      | (MessDashboard & {
+    const dashboard = resolvedDashboard as
+      | (NonNullable<typeof resolvedDashboard> & {
         totalMeals?: number
         extraExpenses?: number
         perExtraExpenses?: number
@@ -420,9 +350,9 @@ export default function DashboardPage() {
         'text-[#dc2626]',
       ],
     ] as const
-  }, [adminDashboard, messDashboard, user?.role])
+  }, [adminDashboard, resolvedDashboard, user?.role])
 
-  if (isLoading || !user) {
+  if (authLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm font-bold text-[#6b7a99]">
         Loading...
@@ -434,13 +364,17 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader
         title={user.role === 'ADMIN' ? 'Super Admin Dashboard' : 'Dashboard'}
-        description={activeMess ? `${activeMess.name} overview` : `Welcome back, ${user.name}`}
+        description={
+          activeMess
+            ? `${activeMess.name} overview`
+            : `Welcome back, ${user.name}`
+        }
         selectedMonth={selectedMonth}
         onMonthChange={setSelectedMonth}
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        {!loadingData && !activeMess && user.role !== 'ADMIN' && (
+        {!loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
           <div className="mb-7 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
@@ -448,7 +382,9 @@ export default function DashboardPage() {
                   <Home size={22} className="text-amber-600" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-[#172554]">No approved mess found</h2>
+                  <h2 className="text-base font-black text-[#172554]">
+                    No approved mess found
+                  </h2>
                   <p className="mt-0.5 text-sm font-semibold text-[#6b7a99]">
                     Request mess registration or ask your manager to add you.
                   </p>
@@ -489,7 +425,13 @@ export default function DashboardPage() {
               label={label}
               value={value}
               icon={Icon}
-              tone={['from-[#f59e0b] to-[#f97316]', 'from-[#10b981] to-[#34d399]', 'from-[#ef4444] to-[#f43f5e]'][index]}
+              tone={
+                [
+                  'from-[#f59e0b] to-[#f97316]',
+                  'from-[#10b981] to-[#34d399]',
+                  'from-[#ef4444] to-[#f43f5e]',
+                ][index]
+              }
             />
           ))}
         </div>
@@ -499,73 +441,24 @@ export default function DashboardPage() {
           <div className="mt-7 grid gap-6 xl:grid-cols-[1.35fr_.85fr_.7fr]">
             {/* Monthly Overview - Line Chart */}
             <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-5 text-sm font-black text-[#172554]">Monthly Overview</h3>
-
-              {chartLoading ? (
-                <ChartSkeleton />
-              ) : monthlyOverview.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={monthlyOverview}>
-                    <CartesianGrid stroke="#e6ebf4" vertical={false} />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} interval="preserveStartEnd" />
-                    <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Line type="monotone" dataKey="income" stroke="#2f80ed" strokeWidth={3} dot={false} name="Income" />
-                    <Line type="monotone" dataKey="expense" stroke="#58d68d" strokeWidth={3} dot={false} name="Expense" />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-[280px] items-center justify-center">
-                  <div className="text-center">
-                    <TrendingUp size={32} className="mx-auto mb-2 text-[#cbd5e1]" />
-                    <p className="text-sm font-semibold text-[#6b7a99]">No data available for this month</p>
-                  </div>
-                </div>
-              )}
+              <h3 className="mb-5 text-sm font-black text-[#172554]">
+                Monthly Overview
+              </h3>
+              <MonthlyOverviewChart
+                data={resolvedMonthlyOverview ?? []}
+                isLoading={chartLoading ?? false}
+              />
             </div>
 
             {/* Expense Breakdown - Pie Chart */}
             <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-5 text-sm font-black text-[#172554]">Expense Breakdown</h3>
-
-              {chartLoading ? (
-                <ChartSkeleton height={250} />
-              ) : expenseBreakdown.length > 0 ? (
-                <>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie data={expenseBreakdown} dataKey="value" innerRadius={58} outerRadius={92}>
-                        {expenseBreakdown.map((entry) => (
-                          <Cell key={entry.name} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ChartTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-
-                  <div className="mt-2 grid gap-2">
-                    {expenseBreakdown.map((item) => (
-                      <div key={item.name} className="flex items-center justify-between text-xs font-bold">
-                        <span className="flex items-center gap-2 text-[#172554]">
-                          <span
-                            className="h-2.5 w-2.5 rounded-full"
-                            style={{ background: item.color }}
-                          />
-                          {item.name}
-                        </span>
-                        <span className="font-semibold text-[#6b7a99]">{item.value}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="flex h-[250px] items-center justify-center">
-                  <div className="text-center">
-                    <TrendingDown size={32} className="mx-auto mb-2 text-[#cbd5e1]" />
-                    <p className="text-sm font-semibold text-[#6b7a99]">No expenses recorded</p>
-                  </div>
-                </div>
-              )}
+              <h3 className="mb-5 text-sm font-black text-[#172554]">
+                Expense Breakdown
+              </h3>
+              <ExpenseBreakdownChart
+                data={resolvedExpenseBreakdown?.data ?? []}
+                isLoading={chartLoading ?? false}
+              />
             </div>
 
             {/* Recent Notices / Receipts */}
@@ -575,8 +468,8 @@ export default function DashboardPage() {
               </h3>
 
               <div className="space-y-3">
-                {(messDashboard?.notices?.length
-                  ? messDashboard.notices
+                {(resolvedDashboard?.notices?.length
+                  ? resolvedDashboard.notices
                   : [
                     {
                       id: '1',
@@ -603,8 +496,12 @@ export default function DashboardPage() {
                     </span>
 
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#172554]">{notice.title}</p>
-                      <p className="text-xs font-semibold text-[#6b7a99]">{notice.type}</p>
+                      <p className="truncate text-sm font-bold text-[#172554]">
+                        {notice.title}
+                      </p>
+                      <p className="text-xs font-semibold text-[#6b7a99]">
+                        {notice.type}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -617,7 +514,9 @@ export default function DashboardPage() {
         {user.role === 'ADMIN' && (
           <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
             <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-4 text-sm font-black text-[#172554]">Recent Expense Receipts</h3>
+              <h3 className="mb-4 text-sm font-black text-[#172554]">
+                Recent Expense Receipts
+              </h3>
               <div className="space-y-3">
                 {adminDashboard?.recentExpenses?.length ? (
                   adminDashboard.recentExpenses.map((expense) => (
@@ -637,13 +536,16 @@ export default function DashboardPage() {
                           {expense.item_name || expense.category}
                         </p>
                         <p className="truncate text-xs font-semibold text-[#6b7a99]">
-                          {expense.mess?.name ?? 'Mess'} - {money(expense.amount)}
+                          {expense.mess?.name ?? 'Mess'} -{' '}
+                          {money(expense.amount)}
                         </p>
                       </div>
                     </a>
                   ))
                 ) : (
-                  <p className="text-sm font-semibold text-[#6b7a99]">No uploaded receipts yet.</p>
+                  <p className="text-sm font-semibold text-[#6b7a99]">
+                    No uploaded receipts yet.
+                  </p>
                 )}
               </div>
             </div>
@@ -655,30 +557,14 @@ export default function DashboardPage() {
           <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
             {/* Weekly Meal Count - Bar Chart */}
             <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-4 text-sm font-black text-[#172554]">Meal Count This Week</h3>
+              <h3 className="mb-4 text-sm font-black text-[#172554]">
+                Meal Count This Week
+              </h3>
 
-              {chartLoading ? (
-                <ChartSkeleton height={260} />
-              ) : weeklyMeals.length > 0 ? (
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={weeklyMeals}>
-                    <CartesianGrid stroke="#e6ebf4" vertical={false} />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
-                    <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#6b7a99' }} />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Bar dataKey="breakfast" fill="#2f80ed" radius={[4, 4, 0, 0]} name="Breakfast" />
-                    <Bar dataKey="lunch" fill="#58d68d" radius={[4, 4, 0, 0]} name="Lunch" />
-                    <Bar dataKey="dinner" fill="#ffb84d" radius={[4, 4, 0, 0]} name="Dinner" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-[260px] items-center justify-center">
-                  <div className="text-center">
-                    <UtensilsCrossed size={32} className="mx-auto mb-2 text-[#cbd5e1]" />
-                    <p className="text-sm font-semibold text-[#6b7a99]">No meal data this week</p>
-                  </div>
-                </div>
-              )}
+              <WeeklyMealsChart
+                data={resolvedWeeklyMeals ?? []}
+                isLoading={chartLoading ?? false}
+              />
             </div>
 
             {/* Quick Actions */}
@@ -699,7 +585,9 @@ export default function DashboardPage() {
                         <Icon size={20} />
                       </span>
 
-                      <span className="text-xs font-black text-[#172554]">{label}</span>
+                      <span className="text-xs font-black text-[#172554]">
+                        {label}
+                      </span>
                     </button>
                   ))}
                 </div>

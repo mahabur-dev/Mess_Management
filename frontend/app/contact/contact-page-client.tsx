@@ -48,11 +48,24 @@ export function ContactPageClient({
 
   const currentTitle = useMemo(() => sourceLabel(source, requestedPlan), [source, requestedPlan])
 
+  const phoneError = useMemo(() => {
+    if (!phone) return null // phone is optional, so empty is fine
+    if (!/^\d{11}$/.test(phone)) return 'Phone number must be exactly 11 digits'
+    return null
+  }, [phone])
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
     setError(null)
     setSuccess(null)
+
+    // Client-side phone validation
+    if (phone && !/^\d{11}$/.test(phone)) {
+      setError('Phone number must be exactly 11 digits')
+      setLoading(false)
+      return
+    }
 
     try {
       await apiClient.createContactRequest({
@@ -137,9 +150,14 @@ export function ContactPageClient({
                     <Input
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
-                      placeholder="+8801XXXXXXXXX"
+                      placeholder="01712345678"
+                      pattern="\d{11}"
+                      title="Phone number must be exactly 11 digits"
                       className="h-12 rounded-xl border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] placeholder:text-[#8a9bb5] focus-visible:border-[#2f80ed]/60 focus-visible:ring-[#2f80ed]/10"
                     />
+                    {phoneError && (
+                      <p className="mt-1 text-xs font-semibold text-red-500">{phoneError}</p>
+                    )}
                   </div>
 
                   <div>

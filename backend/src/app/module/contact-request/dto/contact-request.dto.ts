@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ContactRequestSource, ContactRequestStatus, SubscriptionPlan } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export class CreateContactRequestDto {
   @ApiProperty({ example: 'Rahim Uddin' })
@@ -14,10 +14,10 @@ export class CreateContactRequestDto {
   @IsEmail()
   email: string;
 
-  @ApiPropertyOptional({ example: '+8801712345678' })
+  @ApiPropertyOptional({ example: '01712345678' })
   @IsOptional()
   @IsString()
-  @MaxLength(30)
+  @Matches(/^\d{11}$/, { message: 'Phone number must be exactly 11 digits' })
   phone?: string;
 
   @ApiProperty({ example: 'I want to know more about your monthly plan.' })

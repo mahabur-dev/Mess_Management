@@ -822,6 +822,9 @@ export class MessService {
       data: { is_active: false, left_at: new Date() },
     });
 
+    // Recalculate monthly bills so removed member's data is no longer included
+    await this.recalculateCurrentMonthBillIfPossible(messId);
+
     return { message: 'Member removed successfully' };
   }
 

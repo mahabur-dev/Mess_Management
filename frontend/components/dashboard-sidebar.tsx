@@ -38,8 +38,9 @@ const commonItems = [
 const memberItems = [
   ...commonItems,
   { label: 'My Meals', href: '/dashboard/meals', icon: UtensilsCrossed },
+  { label: 'Monthly Bills', href: '/dashboard/monthly-bills', icon: ClipboardList },
   { label: 'My Bill', href: '/dashboard/finance', icon: WalletCards },
-  { label: 'Payment', href: '/dashboard/payments', icon: CreditCard },
+  { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
   { label: 'Notices', href: '/dashboard/notices', icon: Bell },
   { label: 'Complaints', href: '/dashboard/complaints', icon: MessageSquareWarning },
   { label: 'Profile', href: '/dashboard/settings', icon: Settings },

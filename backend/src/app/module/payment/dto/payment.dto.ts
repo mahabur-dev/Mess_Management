@@ -43,6 +43,11 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsDateString()
   paymentDate?: string;
+
+  @ApiPropertyOptional({ example: ['WATER', 'WIFI', 'RENT'], description: 'Payment categories (expense categories)' })
+  @IsOptional()
+  @IsString({ each: true })
+  categories?: string[];
 }
 
 export class ReviewPaymentDto {

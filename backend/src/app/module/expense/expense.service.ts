@@ -12,6 +12,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
 import { NotificationService } from '../notification/notification.service';
 import { uploadToCloudinary } from 'src/app/helpers/fileUploder';
+import sendMailer from 'src/app/helpers/sendMailer';
 
 @Injectable()
 export class ExpenseService {
@@ -21,9 +22,9 @@ export class ExpenseService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  private async recalculateExpenseMonthBill(messId: string, date: Date) {
-    await this.monthlyBillService.recalculateMonthlyBills(messId, date);
-  }
+  // private async recalculateExpenseMonthBill(messId: string, date: Date) {
+  //   await this.monthlyBillService.recalculateMonthlyBills(messId, date);
+  // }
 
   private isSameBillMonth(dateA: Date, dateB: Date) {
     return (
@@ -112,11 +113,6 @@ export class ExpenseService {
     throw new HttpException('Forbidden: Not a member of this mess', 403);
   }
 
-  // private verifyExpenseOwner(expense: { created_by: string }, userId: string) {
-  //   if (expense.created_by !== userId) {
-  //     throw new HttpException('Forbidden: You can edit only your own expenses', 403);
-  //   }
-  // }
   private verifyExpenseOwner(
     expense: { created_by: string },
     userId: string,
@@ -222,7 +218,7 @@ export class ExpenseService {
     }
 
     // Recalculate monthly bills for both FROM_DEPOSIT and PERSONAL expenses
-    await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
+    // await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
 
     // Send push notification to all active users
     await this.notificationService.sendPushToAll({
@@ -412,13 +408,13 @@ export class ExpenseService {
     }
 
     // Recalculate monthly bills for any payment type change
-    await this.recalculateExpenseMonthBill(expense.mess_id, oldExpenseDate);
-    if (!this.isSameBillMonth(oldExpenseDate, updatedExpense.expense_date)) {
-      await this.recalculateExpenseMonthBill(
-        expense.mess_id,
-        updatedExpense.expense_date,
-      );
-    }
+    // await this.recalculateExpenseMonthBill(expense.mess_id, oldExpenseDate);
+    // if (!this.isSameBillMonth(oldExpenseDate, updatedExpense.expense_date)) {
+    //   await this.recalculateExpenseMonthBill(
+    //     expense.mess_id,
+    //     updatedExpense.expense_date,
+    //   );
+    // }
 
     return updatedExpense;
   }
@@ -478,6 +474,10 @@ export class ExpenseService {
   async remove(id: string, userId: string, role: string) {
     const expense = await this.prisma.expense.findUnique({
       where: { id },
+      include: {
+        creator: { select: { id: true, name: true, email: true } },
+        mess: { select: { id: true, name: true } },
+      },
     });
 
     if (!expense) {
@@ -486,6 +486,39 @@ export class ExpenseService {
 
     await this.verifyManagerAccess(expense.mess_id, userId, role);
     await this.ensureActiveSubscription(expense.mess_id, role);
+
+    // If manager deletes someone else's expense, send email
+    if (expense.created_by !== userId && expense.creator?.email) {
+      try {
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fafcff; border-radius: 12px;">
+            <div style="background: linear-gradient(135deg, #2f80ed, #3b8cff); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
+              <h2 style="color: #fff; margin: 0; font-size: 20px;">Expense Deleted</h2>
+            </div>
+            <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #e6ebf4;">
+              <p style="color: #172554; font-size: 16px; font-weight: 600;">Hello ${expense.creator.name},</p>
+              <p style="color: #53617d; font-size: 14px; line-height: 1.6;">
+                Your expense of <strong style="color: #dc2626;">৳ ${Number(expense.amount).toLocaleString()}</strong> 
+                for <strong>${expense.item_name || expense.category}</strong> in <strong>${expense.mess.name}</strong> has been deleted by a manager.
+              </p>
+              <div style="background: #f8faff; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                <p style="margin: 4px 0; color: #6b7a99; font-size: 13px;">Amount: <strong style="color: #172554;">৳ ${Number(expense.amount).toLocaleString()}</strong></p>
+                <p style="margin: 4px 0; color: #6b7a99; font-size: 13px;">Category: <strong style="color: #172554;">${expense.category}</strong></p>
+                <p style="margin: 4px 0; color: #6b7a99; font-size: 13px;">Date: <strong style="color: #172554;">${new Date(expense.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong></p>
+              </div>
+              <p style="color: #53617d; font-size: 14px;">If you have any questions, please contact your mess manager.</p>
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/finance" 
+                 style="display: inline-block; background: linear-gradient(135deg, #2f80ed, #3b8cff); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                View All Expenses
+              </a>
+            </div>
+          </div>
+        `;
+        await sendMailer(expense.creator.email, `Expense Deleted - ${expense.mess.name}`, html);
+      } catch (e) {
+        console.error('Failed to send expense deletion email:', e);
+      }
+    }
 
     // If personal expense, remove the associated deposit entry first
     if (expense.payment_type === ExpensePaymentType.PERSONAL) {
@@ -503,14 +536,14 @@ export class ExpenseService {
     });
 
     // Recalculate monthly bills for both FROM_DEPOSIT and PERSONAL
-    const shouldRecalculate = expense.payment_type === ExpensePaymentType.FROM_DEPOSIT || expense.payment_type === ExpensePaymentType.PERSONAL;
+    // const shouldRecalculate = expense.payment_type === ExpensePaymentType.FROM_DEPOSIT || expense.payment_type === ExpensePaymentType.PERSONAL;
 
-    if (shouldRecalculate) {
-      await this.recalculateExpenseMonthBill(
-        expense.mess_id,
-        expense.expense_date,
-      );
-    }
+    // if (shouldRecalculate) {
+    //   await this.recalculateExpenseMonthBill(
+    //     expense.mess_id,
+    //     expense.expense_date,
+    //   );
+    // }
 
     return { message: 'Expense deleted successfully' };
   }

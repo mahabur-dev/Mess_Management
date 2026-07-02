@@ -444,7 +444,7 @@ export class MealService {
       },
     });
 
-    await this.recalculateMealMonthBill(dto.messId, savedMeal.scheduled_date);
+    // await this.recalculateMealMonthBill(dto.messId, savedMeal.scheduled_date);
 
     return attendance;
   }
@@ -609,11 +609,11 @@ export class MealService {
       });
     }
 
-    await this.recalculateMealMonthBill(oldMessId, oldDate);
+    // await this.recalculateMealMonthBill(oldMessId, oldDate);
 
-    if (dto.date) {
-      await this.recalculateMealMonthBill(updatedMeal.mess_id, updatedMeal.scheduled_date);
-    }
+    // if (dto.date) {
+    //   await this.recalculateMealMonthBill(updatedMeal.mess_id, updatedMeal.scheduled_date);
+    // }
 
     return updatedMeal;
   }
@@ -715,7 +715,7 @@ export class MealService {
 
     await this.prisma.meal.delete({ where: { id } });
 
-    await this.recalculateMealMonthBill(meal.mess_id, meal.scheduled_date);
+    // await this.recalculateMealMonthBill(meal.mess_id, meal.scheduled_date);
 
     return { message: 'Meal entry deleted successfully' };
   }

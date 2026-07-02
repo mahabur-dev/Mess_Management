@@ -206,6 +206,8 @@ export interface Payment {
   amount: string
   method: PaymentMethod
   status: PaymentStatus
+  categories: string[]
+  note?: string | null
   transaction_id?: string | null
   payment_date?: string | null
   created_at: string
@@ -561,6 +563,10 @@ class ApiClient {
     })
   }
 
+  deleteExpense(id: string) {
+    return this.request<{ message: string }>(`/expense/${id}`, { method: 'DELETE' })
+  }
+
   updateExpense(id: string, data: Record<string, unknown> | FormData) {
     return this.request(`/expense/${id}`, {
       method: 'PATCH',
@@ -587,7 +593,7 @@ class ApiClient {
     return this.request<MonthlyBill[]>('/monthly-bill/my', { params })
   }
 
-  submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string; paymentDate?: string }) {
+  submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string; paymentDate?: string; categories?: string[] }) {
     return this.request<Payment>('/payments', { method: 'POST', body: JSON.stringify(data) })
   }
 
@@ -605,6 +611,10 @@ class ApiClient {
 
   reviewPayment(id: string, data: { status: 'APPROVED' | 'REJECTED'; note?: string }) {
     return this.request<Payment>(`/payments/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) })
+  }
+
+  deletePayment(id: string) {
+    return this.request<{ message: string }>(`/payments/${id}`, { method: 'DELETE' })
   }
 
   getNoticesByMess(messId: string, params?: QueryParams) {

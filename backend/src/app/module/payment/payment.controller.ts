@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import AuthGuard from '../../middlewares/auth.guard';
@@ -49,5 +49,13 @@ export class PaymentController {
   async review(@Param('id') id: string, @Req() req: Request, @Body() dto: ReviewPaymentDto) {
     const data = await this.paymentService.review(id, req.user!.id, req.user!.role, dto);
     return { message: `Payment ${dto.status.toLowerCase()} successfully`, data };
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Delete a payment (own or any if manager)' })
+  async remove(@Param('id') id: string, @Req() req: Request) {
+    const data = await this.paymentService.remove(id, req.user!.id, req.user!.role);
+    return { message: 'Payment deleted successfully', data };
   }
 }

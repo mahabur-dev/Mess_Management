@@ -800,7 +800,7 @@ function MembersTable({
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto monthly-bills-table-scroll pb-2">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">

@@ -34,9 +34,9 @@ import {
   ReceiptText,
   Users,
   Banknote,
+  Trash2,
 } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
@@ -172,8 +172,6 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export default function FinancePage() {
   const { user } = useAuth()
-  const router = useRouter()
-
   const [messes, setMesses] = useState<Mess[]>([])
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
 
@@ -449,6 +447,20 @@ export default function FinancePage() {
     setIsViewModalOpen(true)
   }
 
+  async function handleDeleteExpense(id: string) {
+    if (!confirm('Are you sure you want to delete this expense?')) return
+    setMessage('')
+    try {
+      await apiClient.deleteExpense(id)
+      setMessageType('success')
+      setMessage('Expense deleted successfully.')
+      await load()
+    } catch (error) {
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to delete expense.'))
+    }
+  }
+
   async function submitPriceReviewRequest() {
     if (!reviewExpense || !reviewMessage.trim()) {
       setMessageType('error')
@@ -576,16 +588,6 @@ export default function FinancePage() {
               </p>
             </div>
           </div>
-          {isMemberDashboard && (
-            <Button
-              type="button"
-              onClick={() => router.push('/dashboard/monthly-bills')}
-              className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
-            >
-              <ClipboardList size={18} />
-              View Monthly Bill
-            </Button>
-          )}
         </div>
 
         {/* Summary Cards */}
@@ -696,7 +698,7 @@ export default function FinancePage() {
           </div>
 
           {/* Scrollable table section */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto monthly-bills-table-scroll pb-2">
             <div className="min-w-[900px]">
               <table className="w-full">
                 <thead>
@@ -807,6 +809,17 @@ export default function FinancePage() {
                               <Edit3 size={13} className="mr-1" />
                               Edit
                             </Button>
+                            {canManageMess && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => handleDeleteExpense(item.id)}
+                                className="h-8 rounded-lg border-red-500/20 bg-red-50 text-[11px] font-bold text-red-600 hover:border-red-500/40 hover:bg-red-100"
+                                title="Delete Expense"
+                              >
+                                <Trash2 size={13} />
+                              </Button>
+                            )}
                             {canRequestExpenseReview(item) && (
                               <Button
                                 type="button"
@@ -1040,6 +1053,16 @@ export default function FinancePage() {
                     <Edit3 size={13} className="mr-1" />
                     Edit
                   </Button>
+                  {canManageMess && (
+                    <Button
+                      type="button"
+                      onClick={() => handleDeleteExpense(item.id)}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-500/20 bg-red-50 text-red-600"
+                      title="Delete Expense"
+                    >
+                      <Trash2 size={13} />
+                    </Button>
+                  )}
                   {canRequestExpenseReview(item) && (
                     <Button
                       type="button"

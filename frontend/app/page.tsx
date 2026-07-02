@@ -38,8 +38,16 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { apiClient, type PublicMessCard } from '@/lib/api-client'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  type CarouselApi,
+} from '@/components/ui/carousel'
 
 const mealData = [
   { day: 'Mon', breakfast: 82, lunch: 54, dinner: 70 },
@@ -223,12 +231,28 @@ function getDaysRemaining(endDate?: string | null) {
 function TopMessSection() {
   const [messes, setMesses] = useState<PublicMessCard[]>([])
   const [loading, setLoading] = useState(true)
+  const [api, setApi] = useState<CarouselApi | null>(null)
+  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const startAutoplay = () => {
+    stopAutoplay()
+    autoplayRef.current = setInterval(() => {
+      api?.scrollNext()
+    }, 4000)
+  }
+
+  const stopAutoplay = () => {
+    if (autoplayRef.current) {
+      clearInterval(autoplayRef.current)
+      autoplayRef.current = null
+    }
+  }
 
   useEffect(() => {
     async function fetchMesses() {
       try {
         const res = await apiClient.getPublicMesses()
-        if (res?.data) setMesses(res.data.slice(0, 6))
+        if (res?.data) setMesses(res.data)
       } catch (err) {
         console.error('Failed to fetch messes:', err)
       } finally {
@@ -237,6 +261,12 @@ function TopMessSection() {
     }
     fetchMesses()
   }, [])
+
+  useEffect(() => {
+    if (!api) return
+    startAutoplay()
+    return () => stopAutoplay()
+  }, [api, messes])
 
   const accentColors = [
     'from-[#2f80ed] to-[#6f3df4]',
@@ -257,104 +287,172 @@ function TopMessSection() {
     { id: '1', name: 'Mohakhali Premium Mess', address: 'Mohakhali, Dhaka', description: null, category: null, totalMembers: 42, totalSeats: 50, availableSeats: 8, totalMeals: 286, createdAt: '', creatorName: 'Admin', subscription: null },
     { id: '2', name: 'Banani Smart Residence', address: 'Banani, Dhaka', description: null, category: null, totalMembers: 36, totalSeats: 45, availableSeats: 9, totalMeals: 241, createdAt: '', creatorName: 'Admin', subscription: null },
     { id: '3', name: 'Dhanmondi Student Home', address: 'Dhanmondi, Dhaka', description: null, category: null, totalMembers: 58, totalSeats: 70, availableSeats: 12, totalMeals: 394, createdAt: '', creatorName: 'Admin', subscription: null },
+    { id: '4', name: 'Uttara Elite Mess', address: 'Uttara, Dhaka', description: null, category: null, totalMembers: 28, totalSeats: 40, availableSeats: 12, totalMeals: 195, createdAt: '', creatorName: 'Admin', subscription: null },
+    { id: '5', name: 'Mirpur Harmony Living', address: 'Mirpur, Dhaka', description: null, category: null, totalMembers: 45, totalSeats: 55, availableSeats: 10, totalMeals: 312, createdAt: '', creatorName: 'Admin', subscription: null },
+    { id: '6', name: 'Gulshan Premium Suite', address: 'Gulshan, Dhaka', description: null, category: null, totalMembers: 22, totalSeats: 30, availableSeats: 8, totalMeals: 178, createdAt: '', creatorName: 'Admin', subscription: null },
   ]
 
   return (
-    <section className="bg-[#fafcff] px-4 py-20 sm:px-6 lg:px-8">
+    <section id="messes" className="overflow-hidden bg-gradient-to-b from-[#fafcff] to-white px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <span className="inline-flex items-center rounded-full border border-[#d8e6f8] bg-[#f8faff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">Top Mess Showcase</span>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-[#172554] sm:text-4xl">
-              {loading ? 'Loading messes...' : 'Featured Messes'}
-            </h2>
-            <p className="mt-2 text-sm font-semibold leading-7 text-[#6b7a99]">Active messes managed beautifully with our platform</p>
-          </div>
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="inline-flex items-center rounded-full border border-[#d8e6f8] bg-[#f8faff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">Our Partner Messes</span>
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-[#172554] sm:text-4xl">
+            {loading ? 'Exploring messes...' : 'Discover Active Messes'}
+          </h2>
+          <p className="mt-2 text-sm font-semibold leading-7 text-[#6b7a99] max-w-2xl mx-auto">
+            Browse through our featured messes — each one managed efficiently with our platform. Swipe or click through to see what's available.
+          </p>
           {!loading && messes.length > 0 && (
-            <p className="max-w-sm text-sm font-semibold leading-7 text-[#6b7a99]">Showing {messes.length} active mess{ messes.length > 1 ? 'es' : '' } using Mess Management</p>
+            <p className="mt-3 text-xs font-bold text-[#2f80ed]">
+              {messes.length} mess{messes.length > 1 ? 'es' : ''} actively using Mess Management
+            </p>
           )}
         </div>
-        <div className="mt-10 grid gap-6 lg:grid-cols-3">
-          {demoMesses.slice(0, 6).map((mess, index) => (
-            <div key={mess.id} className="relative overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_25px_rgba(65,103,153,0.08)] transition hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(65,103,153,0.12)]">
-              <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accentColors[index % accentColors.length]}`} />
-              <div className="flex items-start justify-between gap-4 pt-3">
-                <div>
-                  <span className="rounded-full bg-[#e7f1ff] px-3 py-1 text-xs font-black text-[#2f80ed]">Rank #{index + 1}</span>
-                  <h3 className="mt-4 text-lg font-black text-[#172554]">{mess.name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-[#6b7a99]">{mess.address || 'Location not set'}</p>
-                </div>
-                <span className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${accentColors[index % accentColors.length]} text-base font-black text-white`}>M</span>
-              </div>
-              <div className="mt-5 grid grid-cols-3 gap-3">
-                {[
-                  ['Members', mess.totalMembers.toString()],
-                  ['Seats', mess.availableSeats > 0 ? `${mess.availableSeats} free` : 'Full'],
-                  ['Meals', mess.totalMeals.toString()]
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-xl bg-[#fafcff] p-3 text-center">
-                    <p className="text-[10px] font-bold text-[#6b7a99]">{label}</p>
-                    <p className={`mt-1 text-base font-black ${value === 'Full' ? 'text-[#ef4444]' : 'text-[#172554]'}`}>{value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#6b7a99]">Subscription</p>
-                  {mess.subscription ? (
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black ${
-                        mess.subscription.status === 'ACTIVE'
-                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                          : mess.subscription.status === 'EXPIRED'
-                            ? 'border-red-200 bg-red-50 text-red-700'
-                            : 'border-amber-200 bg-amber-50 text-amber-700'
-                      }`}
-                    >
-                      {mess.subscription.status === 'ACTIVE' ? 'Subscribed' : mess.subscription.status}
-                    </span>
-                  ) : (
-                    <span className="rounded-full border border-dashed border-[#d8e6f8] bg-white px-2.5 py-1 text-[10px] font-black text-[#6b7a99]">
-                      Not subscribed
-                    </span>
-                  )}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {mess.subscription ? (
-                    <>
-                      <span
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${
-                          subscriptionStyles[mess.subscription.plan].bg
-                        } ${subscriptionStyles[mess.subscription.plan].text} ${subscriptionStyles[mess.subscription.plan].border}`}
-                      >
-                        {subscriptionStyles[mess.subscription.plan].label}
-                      </span>
-                      <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-3 py-1 text-xs font-bold text-[#53617d]">
-                        Start: {formatDate(mess.subscription.startDate)}
-                      </span>
-                      <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-3 py-1 text-xs font-bold text-[#53617d]">
-                        End: {formatDate(mess.subscription.endDate)}
-                      </span>
-                      <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-3 py-1 text-xs font-bold text-[#172554]">
-                        {(() => {
-                          const days = getDaysRemaining(mess.subscription.endDate)
-                          if (days === null) return 'No end date'
-                          if (days <= 0) return 'Expired'
-                          return `${days} day${days === 1 ? '' : 's'} left`
-                        })()}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-xs font-semibold text-[#6b7a99]">Monthly and yearly plans are available from the pricing section.</span>
-                  )}
-                </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between rounded-xl border border-[#e6ebf4] px-4 py-3">
-                <span className="text-sm font-bold text-[#6b7a99]">Managed by</span>
-                <span className="text-sm font-black text-[#172554]">{mess.creatorName}</span>
-              </div>
-            </div>
-          ))}
+
+        <div className="relative mt-12 px-0 sm:px-12">
+          <Carousel
+            setApi={setApi}
+            opts={{
+              align: 'start',
+              loop: true,
+              skipSnaps: false,
+              slidesToScroll: 1,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-3 md:-ml-4">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <CarouselItem key={i} className="pl-3 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                    <div className="animate-pulse rounded-xl border border-[#e6ebf4] bg-white p-5">
+                      <div className="h-2 w-16 rounded-full bg-[#e6ebf4] mb-4" />
+                      <div className="h-5 w-3/4 rounded-full bg-[#e6ebf4] mb-2" />
+                      <div className="h-4 w-1/2 rounded-full bg-[#e6ebf4] mb-5" />
+                      <div className="grid grid-cols-3 gap-3 mb-4">
+                        {[1, 2, 3].map((j) => (
+                          <div key={j} className="rounded-xl bg-[#f0f6ff] p-3 h-16" />
+                        ))}
+                      </div>
+                      <div className="h-20 rounded-xl bg-[#f0f6ff]" />
+                    </div>
+                  </CarouselItem>
+                ))
+              ) : (
+                demoMesses.map((mess, index) => (
+                  <CarouselItem key={mess.id} className="pl-3 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                    <div className="group relative h-full overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_25px_rgba(65,103,153,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(65,103,153,0.14)]">
+                      {/* Top accent bar */}
+                      <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accentColors[index % accentColors.length]}`} />
+
+                      {/* Card content */}
+                      <div className="pt-3">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-2.5 py-0.5 text-[10px] font-black text-[#2f80ed]">
+                              Rank #{index + 1}
+                            </span>
+                            <h3 className="mt-3 truncate text-base font-black text-[#172554]">{mess.name}</h3>
+                            <p className="mt-0.5 truncate text-xs font-semibold text-[#6b7a99]">{mess.address || 'Location not set'}</p>
+                          </div>
+                          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${accentColors[index % accentColors.length]} text-sm font-black text-white shadow-sm`}>
+                            M
+                          </span>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="mt-4 grid grid-cols-3 gap-2">
+                          {[
+                            ['Members', mess.totalMembers.toString(), ''],
+                            ['Seats', mess.availableSeats > 0 ? `${mess.availableSeats} free` : 'Full', mess.availableSeats > 0 ? '' : 'text-[#ef4444]'],
+                            ['Meals', mess.totalMeals.toString(), '']
+                          ].map(([label, value, colorClass]) => (
+                            <div key={label} className="rounded-lg bg-[#fafcff] px-2 py-2.5 text-center">
+                              <p className="text-[9px] font-bold text-[#6b7a99]">{label}</p>
+                              <p className={`mt-0.5 text-sm font-black ${colorClass || 'text-[#172554]'}`}>{value}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Subscription */}
+                        <div className="mt-3 rounded-lg border border-[#e6ebf4] bg-[#fafcff] p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</p>
+                            {mess.subscription ? (
+                              <span
+                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-black ${
+                                  mess.subscription.status === 'ACTIVE'
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : mess.subscription.status === 'EXPIRED'
+                                      ? 'border-red-200 bg-red-50 text-red-700'
+                                      : 'border-amber-200 bg-amber-50 text-amber-700'
+                                }`}
+                              >
+                                {mess.subscription.status === 'ACTIVE' ? 'Subscribed' : mess.subscription.status}
+                              </span>
+                            ) : (
+                              <span className="rounded-full border border-dashed border-[#d8e6f8] bg-white px-2 py-0.5 text-[9px] font-black text-[#6b7a99]">
+                                Not subscribed
+                              </span>
+                            )}
+                          </div>
+                          {mess.subscription && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              <span
+                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold ${
+                                  subscriptionStyles[mess.subscription.plan].bg
+                                } ${subscriptionStyles[mess.subscription.plan].text} ${subscriptionStyles[mess.subscription.plan].border}`}
+                              >
+                                {subscriptionStyles[mess.subscription.plan].label}
+                              </span>
+                              {(() => {
+                                const days = getDaysRemaining(mess.subscription.endDate)
+                                if (days !== null && days > 0) {
+                                  return (
+                                    <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-2 py-0.5 text-[9px] font-bold text-[#172554]">
+                                      {days} day{days === 1 ? '' : 's'} left
+                                    </span>
+                                  )
+                                }
+                                return null
+                              })()}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Manager */}
+                        <div className="mt-2 flex items-center justify-between rounded-lg border border-[#e6ebf4] px-3 py-2">
+                          <span className="text-[10px] font-bold text-[#6b7a99]">Managed by</span>
+                          <span className="text-[10px] font-black text-[#172554] truncate max-w-[120px]">{mess.creatorName}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))
+              )}
+            </CarouselContent>
+
+            {/* Navigation buttons */}
+            <CarouselPrevious className="hidden sm:flex -left-1 sm:-left-3 size-10 rounded-full border-2 border-[#e6ebf4] bg-white text-[#172554] shadow-md hover:bg-[#f8faff] hover:border-[#a9ccfb] hover:text-[#2f80ed]" />
+            <CarouselNext className="hidden sm:flex -right-1 sm:-right-3 size-10 rounded-full border-2 border-[#e6ebf4] bg-white text-[#172554] shadow-md hover:bg-[#f8faff] hover:border-[#a9ccfb] hover:text-[#2f80ed]" />
+          </Carousel>
+
+          {/* Dots indicator */}
+          <div className="mt-8 flex items-center justify-center gap-2">
+            {demoMesses.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => api?.scrollTo(i)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  api?.selectedScrollSnap() === i
+                    ? `w-8 bg-gradient-to-r ${accentColors[i % accentColors.length]}`
+                    : 'w-2 bg-[#d8e6f8] hover:bg-[#a9ccfb]'
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -622,14 +720,27 @@ export default function HomePage() {
               <span className="flex h-2 w-2 rounded-full bg-[#10b981]" />
               All-in-One Mess Management Solution
             </div>
-            <h1 className="max-w-xl text-5xl font-black leading-[1.06] tracking-tight text-[#172554] sm:text-6xl">
+            {/* <h1 className="max-w-xl text-5xl font-black leading-[1.06] tracking-tight text-[#172554] sm:text-6xl">
               Manage Your Mess{' '}
               <span className="bg-gradient-to-r from-[#2f80ed] to-[#8b5cf6] bg-clip-text text-transparent">Smartly</span>{' '}
               & Easily
+            </h1> */}
+
+            <h1 className="max-w-4xl text-3xl font-black leading-[1.06] tracking-tight text-[#172554] sm:text-3xl">
+              Run Your{" "}
+              <span className="bg-gradient-to-r from-[#2f80ed] to-[#8b5cf6] bg-clip-text text-transparent">
+                Hostel & Mess
+              </span>{" "}
+              Smarter with Complete Automation
             </h1>
-            <p className="mt-6 max-w-lg text-lg font-semibold leading-8 text-[#6b7a99]">
-              A complete platform to manage meals, members, finances, shopping, attendance and everything in one place. Save time, reduce hassle, focus on what matters.
+
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+              Automate meal tracking, room management, expenses,
+              resident communication, and financial reports—all from one powerful platform.
             </p>
+            {/* <p className="mt-6 max-w-lg text-lg font-semibold leading-8 text-[#6b7a99]">
+              A complete platform to manage meals, members, finances, shopping, attendance and everything in one place. Save time, reduce hassle, focus on what matters.
+            </p> */}
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Button asChild className="h-12 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-7 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)]">
                 <Link href="/register" className="flex items-center gap-2">Get Started Free <ArrowRight size={18} /></Link>

@@ -172,17 +172,48 @@ export class ExpenseService {
 
     // Validate deposit balance before creating FROM_DEPOSIT expense
     if (paymentType === ExpensePaymentType.FROM_DEPOSIT) {
-      const deposit = await this.prisma.deposit.aggregate({
-        where: {
-          mess_id: dto.messId,
-          member_id: userId,
-        },
-        _sum: { amount: true },
-      });
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      const [deposit, allPayments, foodExpenses, utilityExpenses] = await Promise.all([
+        this.prisma.deposit.aggregate({
+          where: { mess_id: dto.messId, member_id: userId },
+          _sum: { amount: true },
+        }),
+        this.prisma.payment.aggregate({
+          where: { mess_id: dto.messId, status: "APPROVED", created_at: { gte: start, lt: end } },
+          _sum: { amount: true },
+        }),
+        this.prisma.expense.aggregate({
+          where: {
+            mess_id: dto.messId,
+            category: { in: ['FOOD', 'GROCERY'] },
+            expense_date: { gte: start, lt: end },
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.expense.aggregate({
+          where: {
+            mess_id: dto.messId,
+            category: { notIn: ['FOOD', 'GROCERY'] },
+            expense_date: { gte: start, lt: end },
+          },
+          _sum: { amount: true },
+        }),
+      ]);
+
       const currentBalance = Number(deposit._sum.amount ?? 0);
-      if (currentBalance < dto.amount) {
+      const payments = Number(allPayments._sum.amount ?? 0);
+      const totalFoodExpenses = Number(foodExpenses._sum.amount ?? 0);
+      const totalUtilityExpenses = Number(utilityExpenses._sum.amount ?? 0);
+
+      const totalDeposit = currentBalance + payments;
+      const remainingBalance = totalDeposit - totalFoodExpenses - totalUtilityExpenses;
+
+      if (remainingBalance < dto.amount) {
         throw new HttpException(
-          `Insufficient deposit balance. Required: ${dto.amount}, Available: ${currentBalance}`,
+          `Insufficient deposit balance. Required: ${dto.amount}, Available: ${remainingBalance}`,
           400,
         );
       }
@@ -349,6 +380,58 @@ export class ExpenseService {
       : dto.receiptUrl;
 
     const paymentType = dto.paymentType as ExpensePaymentType | undefined;
+
+    // Validate deposit balance when updating FROM_DEPOSIT expense
+    if ((paymentType ?? oldPaymentType) === ExpensePaymentType.FROM_DEPOSIT) {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const newAmount = dto.amount ?? Number(oldAmount);
+
+      const [deposit, allPayments, foodExpenses, utilityExpenses] = await Promise.all([
+        this.prisma.deposit.aggregate({
+          where: { mess_id: expense.mess_id, member_id: expense.created_by },
+          _sum: { amount: true },
+        }),
+        this.prisma.payment.aggregate({
+          where: { mess_id: expense.mess_id, status: "APPROVED", created_at: { gte: start, lt: end } },
+          _sum: { amount: true },
+        }),
+        this.prisma.expense.aggregate({
+          where: {
+            mess_id: expense.mess_id,
+            category: { in: ['FOOD', 'GROCERY'] },
+            expense_date: { gte: start, lt: end },
+          },
+          _sum: { amount: true },
+        }),
+        this.prisma.expense.aggregate({
+          where: {
+            mess_id: expense.mess_id,
+            category: { notIn: ['FOOD', 'GROCERY'] },
+            expense_date: { gte: start, lt: end },
+          },
+          _sum: { amount: true },
+        }),
+      ]);
+
+      const currentBalance = Number(deposit._sum.amount ?? 0);
+      const payments = Number(allPayments._sum.amount ?? 0);
+      const totalFoodExpenses = Number(foodExpenses._sum.amount ?? 0);
+      const totalUtilityExpenses = Number(utilityExpenses._sum.amount ?? 0);
+
+      // If old was FROM_DEPOSIT, the old amount goes back to available balance
+      const oldDeduction = oldPaymentType === ExpensePaymentType.FROM_DEPOSIT ? Number(oldAmount) : 0;
+      const totalDeposit = currentBalance + payments + oldDeduction;
+      const remainingBalance = totalDeposit - totalFoodExpenses - totalUtilityExpenses;
+      console.log(remainingBalance, newAmount);
+      if (remainingBalance < newAmount) {
+        throw new HttpException(
+          `Insufficient deposit balance. Required: ${newAmount}, Available: ${remainingBalance}`,
+          400,
+        );
+      }
+    }
 
     const updatedExpense = await this.prisma.expense.update({
       where: { id },

@@ -37,6 +37,7 @@ import {
   Sparkles,
   Trash2,
   X,
+  Info,
 } from 'lucide-react'
 
 type SubscriptionFormState = {
@@ -59,14 +60,15 @@ type PlanEditState = {
   days: string
   description: string
   currency: string
+  features: string[]
 }
 
 const PLAN_ORDER: SubscriptionPlan[] = ['TRIAL', 'MONTHLY', 'YEARLY']
 
-const PLAN_STYLES: Record<SubscriptionPlan, { label: string; bg: string; text: string; icon: typeof Clock3 }> = {
-  TRIAL: { label: 'Trial', bg: 'bg-slate-50', text: 'text-slate-700', icon: Clock3 },
-  MONTHLY: { label: 'Monthly', bg: 'bg-blue-50', text: 'text-blue-700', icon: CreditCard },
-  YEARLY: { label: 'Yearly', bg: 'bg-amber-50', text: 'text-amber-700', icon: Sparkles },
+const PLAN_STYLES: Record<SubscriptionPlan, { bg: string; text: string; icon: typeof Clock3 }> = {
+  TRIAL: { bg: 'bg-slate-50', text: 'text-slate-700', icon: Clock3 },
+  MONTHLY: { bg: 'bg-blue-50', text: 'text-blue-700', icon: CreditCard },
+  YEARLY: { bg: 'bg-amber-50', text: 'text-amber-700', icon: Sparkles },
 }
 
 const STATUS_STYLES: Record<SubscriptionStatus, { label: string; bg: string; text: string; border: string }> = {
@@ -120,9 +122,9 @@ function getDaysRemaining(endDate: string | null) {
   return Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 }
 
-function subscriptionLabel(value: SubscriptionRecord) {
-  const plan = PLAN_STYLES[value.plan]
-  return `${plan.label} plan`
+function subscriptionLabel(value: SubscriptionRecord, plans: Record<string, SubscriptionPlanInfo>) {
+  const info = plans[value.plan]
+  return `${info?.label ?? value.plan} plan`
 }
 
 function emptyForm(messId = ''): SubscriptionFormState {
@@ -143,6 +145,7 @@ function emptyPlanEdit(planInfo?: SubscriptionPlanInfo): PlanEditState {
     days: planInfo?.days !== undefined ? String(planInfo.days) : '',
     description: planInfo?.description ?? '',
     currency: planInfo?.currency ?? 'BDT',
+    features: planInfo?.features ?? [],
   }
 }
 
@@ -384,6 +387,7 @@ export default function SubscriptionsPage() {
         days: planEditForm.days ? Number(planEditForm.days) : undefined,
         description: planEditForm.description.trim(),
         currency: planEditForm.currency.trim() || 'BDT',
+        features: planEditForm.features.filter((f) => f.trim() !== ''),
       }
 
       const response = await apiClient.updateSubscriptionPlan(editingPlan, payload)
@@ -392,7 +396,8 @@ export default function SubscriptionsPage() {
         [editingPlan]: response.data as SubscriptionPlanInfo,
       }))
       await loadData()
-      setBanner({ type: 'success', message: `${PLAN_STYLES[editingPlan].label} plan updated successfully.` })
+      const planLabel = subscriptionPlans[editingPlan]?.label ?? editingPlan
+      setBanner({ type: 'success', message: `${planLabel} plan updated successfully.` })
       setPlanEditOpen(false)
       setEditingPlan(null)
     } catch (error) {
@@ -575,17 +580,28 @@ export default function SubscriptionsPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black ${style.bg} ${style.text}`}
-                          >
-                            <Icon size={12} />
-                            {style.label}
-                          </div>
-                          <h3 className="mt-3 text-lg font-black text-[#172554]">{info?.label ?? style.label}</h3>
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black ${style.bg} ${style.text}`}
+                        >
+                          <Icon size={12} />
+                          {info?.label ?? plan}
+                        </div>
+                        <h3 className="mt-3 text-lg font-black text-[#172554]">{info?.label ?? plan}</h3>
                           <p className="mt-1 text-sm font-semibold leading-6 text-[#6b7a99]">
                             {info?.description ?? 'Subscription plan details are available from the backend plan registry.'}
                           </p>
                         </div>
                       </div>
+                      {info?.features && info.features.length > 0 && (
+                        <div className="mt-3 space-y-1.5">
+                          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Features</p>
+                          {info.features.map((feature, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm font-semibold text-[#172554]">
+                              <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                              {feature}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <div className="rounded-xl border border-[#e6ebf4] bg-white px-3 py-2 text-right">
                           <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Price</p>
@@ -670,8 +686,8 @@ export default function SubscriptionsPage() {
                             <span
                               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${planStyle.bg} ${planStyle.text}`}
                             >
-                              <PlanIcon size={13} />
-                              {planStyle.label}
+                            <PlanIcon size={13} />
+                              {subscriptionPlans[subscription.plan]?.label ?? subscription.plan}
                             </span>
                           </td>
                           <td className="px-5 py-4">
@@ -783,7 +799,7 @@ export default function SubscriptionsPage() {
                         </div>
                         <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${planStyle.bg} ${planStyle.text}`}>
                           <PlanIcon size={13} />
-                          {planStyle.label}
+                          {subscriptionPlans[subscription.plan]?.label ?? subscription.plan}
                         </span>
                       </div>
 
@@ -1018,7 +1034,7 @@ export default function SubscriptionsPage() {
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className={`rounded-2xl border p-4 ${PLAN_STYLES[selectedSubscription.plan].bg}`}>
                     <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Plan</p>
-                    <p className={`mt-1 text-base font-black ${PLAN_STYLES[selectedSubscription.plan].text}`}>{subscriptionLabel(selectedSubscription)}</p>
+                    <p className={`mt-1 text-base font-black ${PLAN_STYLES[selectedSubscription.plan].text}`}>{subscriptionLabel(selectedSubscription, subscriptionPlans)}</p>
                   </div>
                   <div className={`rounded-2xl border p-4 ${STATUS_STYLES[selectedSubscription.status].bg}`}>
                     <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</p>
@@ -1075,7 +1091,7 @@ export default function SubscriptionsPage() {
             <div className="border-b border-[#e6ebf4] px-6 py-5">
               <DialogHeader className="text-left">
                 <DialogTitle className="text-xl font-black text-[#172554]">
-                  Edit {editingPlan ? PLAN_STYLES[editingPlan].label : 'Plan'}
+                  Edit {editingPlan ? (subscriptionPlans[editingPlan]?.label ?? editingPlan) : 'Plan'}
                 </DialogTitle>
                 <DialogDescription className="text-sm font-semibold text-[#6b7a99]">
                   Update the plan card values. For example, lower Monthly from 499 to 399.
@@ -1127,6 +1143,52 @@ export default function SubscriptionsPage() {
                   onChange={(event) => setPlanEditForm((current) => ({ ...current, description: event.target.value }))}
                   className="min-h-[120px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 py-3 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                 />
+              </div>
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Features</label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPlanEditForm((current) => ({ ...current, features: [...current.features, ''] }))
+                    }
+                    className="inline-flex items-center gap-1 rounded-lg border border-[#d8e6f8] bg-white px-2.5 py-1 text-[10px] font-bold text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#eff6ff]"
+                  >
+                    <Plus size={12} />
+                    Add more
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {planEditForm.features.map((feature, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        value={feature}
+                        onChange={(event) => {
+                          const next = [...planEditForm.features]
+                          next[index] = event.target.value
+                          setPlanEditForm((current) => ({ ...current, features: next }))
+                        }}
+                        className="h-10 w-full rounded-xl border border-[#d8e6f8] bg-white px-3 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                        placeholder="e.g. Unlimited members"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPlanEditForm((current) => ({
+                            ...current,
+                            features: current.features.filter((_, i) => i !== index),
+                          }))
+                        }
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-200/50 bg-red-50 text-red-500 transition hover:bg-red-100"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  {planEditForm.features.length === 0 && (
+                    <p className="text-xs font-semibold text-[#8a9bb5]">No features added. Click "Add more" to add plan features.</p>
+                  )}
+                </div>
               </div>
             </div>
 

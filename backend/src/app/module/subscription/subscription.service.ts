@@ -16,6 +16,7 @@ type PlanRecord = {
   days: number;
   description: string;
   currency: string;
+  features: string[];
 };
 
 function addDays(date: Date, days: number) {
@@ -55,20 +56,44 @@ export class SubscriptionService {
       days: 7,
       description: 'Trial access for newly approved messes.',
       currency: 'BDT',
+      features: [
+        'Smart Meal Tracking|Track breakfast, lunch & dinner with real-time member toggles and daily meal sheets.',
+        'Member Management|Invite members, assign roles (Manager/Member), manage rooms & seats.',
+        'Bazar & Expense Control|Record daily purchases, categorize expenses, and maintain transparent food costs.',
+        'Auto Monthly Billing|Generate bills from meals, rent, utilities & deposits automatically each month.',
+        'Notice & Communication|Publish notices, manage complaints, and keep everyone informed instantly.',
+        'Dashboard & Reports|View meal stats, dues, payments & performance with clean visual dashboards.',
+      ],
     },
     MONTHLY: {
       price: 499,
       label: '1 Month',
       days: 30,
-      description: 'Standard monthly subscription for active messes.',
+      description: 'Perfect for active messes needing full features monthly.',
       currency: 'BDT',
+      features: [
+        'Smart Meal Tracking|Track breakfast, lunch & dinner with real-time member toggles and daily meal sheets.',
+        'Unlimited Member Management|Invite unlimited members, assign roles, manage rooms & seats effortlessly.',
+        'Advanced Expense Tracking|Record daily purchases, categorize expenses, and maintain transparent food costs.',
+        'Auto Monthly Billing|Generate bills from meals, rent, utilities & deposits automatically each month.',
+        'Priority Support|Get priority assistance from our support team whenever you need help.',
+        'Full Dashboard & Reports|View meal stats, dues, payments & performance with clean visual dashboards.',
+      ],
     },
     YEARLY: {
       price: 4999,
       label: '1 Year',
       days: 365,
-      description: 'Best value annual subscription with longer coverage.',
+      description: 'Best value annual subscription with longer coverage and maximum savings.',
       currency: 'BDT',
+      features: [
+        'Smart Meal Tracking|Track breakfast, lunch & dinner with real-time member toggles and daily meal sheets.',
+        'Unlimited Member Management|Invite unlimited members, assign roles, manage rooms & seats effortlessly.',
+        'Advanced Expense Tracking|Record daily purchases, categorize expenses, and maintain transparent food costs.',
+        'Auto Monthly Billing|Generate bills from meals, rent, utilities & deposits automatically each month.',
+        'Priority Support|Get priority assistance from our support team whenever you need help.',
+        'Best Value Pricing|Save big with annual billing — get 2 months free compared to monthly plan.',
+      ],
     },
   };
 
@@ -84,11 +109,31 @@ export class SubscriptionService {
             days: defaults.days,
             description: defaults.description,
             currency: defaults.currency,
+            features: defaults.features,
           },
           update: {},
         }),
       ),
     );
+
+    // Fill empty features for any pre-migration records that have empty array
+    const emptyFeaturesRecords = await this.prisma.subscriptionPlanSetting.findMany({
+      where: { features: { equals: [] } },
+    });
+    if (emptyFeaturesRecords.length > 0) {
+      await Promise.all(
+        emptyFeaturesRecords.map((record) => {
+          const defaults = this.defaultPlanSettings[record.plan];
+          if (defaults) {
+            return this.prisma.subscriptionPlanSetting.update({
+              where: { plan: record.plan },
+              data: { features: defaults.features },
+            });
+          }
+          return Promise.resolve(record);
+        }),
+      );
+    }
   }
 
   private mapPlanSetting(setting: {
@@ -98,6 +143,7 @@ export class SubscriptionService {
     days: number;
     description: string;
     currency: string;
+    features: string[];
   }) {
     return {
       price: Number(setting.price),
@@ -105,6 +151,7 @@ export class SubscriptionService {
       days: setting.days,
       description: setting.description,
       currency: setting.currency,
+      features: setting.features,
     };
   }
 
@@ -258,6 +305,7 @@ export class SubscriptionService {
         days: dto.days ?? existing.days,
         description: dto.description ?? existing.description,
         currency: dto.currency ?? existing.currency,
+        features: dto.features ?? existing.features,
       },
     });
 

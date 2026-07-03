@@ -268,13 +268,13 @@ function TopMessSection() {
     return () => stopAutoplay()
   }, [api, messes])
 
-  const accentColors = [
-    'from-[#2f80ed] to-[#6f3df4]',
-    'from-[#10b981] to-[#34d399]',
-    'from-[#f59e0b] to-[#f97316]',
-    'from-[#ef4444] to-[#f43f5e]',
-    'from-[#6d28d9] to-[#8b5cf6]',
-    'from-[#0ea5e9] to-[#2563eb]',
+  const cardAccents = [
+    { gradient: 'from-[#2f80ed] to-[#3b8cff]', badge: 'bg-[#eef5ff] text-[#2f80ed]', iconBg: 'bg-gradient-to-br from-[#2f80ed] to-[#3b8cff]' },
+    { gradient: 'from-[#10b981] to-[#34d399]', badge: 'bg-[#ecfdf5] text-[#10b981]', iconBg: 'bg-gradient-to-br from-[#10b981] to-[#34d399]' },
+    { gradient: 'from-[#f59e0b] to-[#f97316]', badge: 'bg-[#fffbeb] text-[#f59e0b]', iconBg: 'bg-gradient-to-br from-[#f59e0b] to-[#f97316]' },
+    { gradient: 'from-[#6d28d9] to-[#8b5cf6]', badge: 'bg-[#f5f3ff] text-[#6d28d9]', iconBg: 'bg-gradient-to-br from-[#6d28d9] to-[#8b5cf6]' },
+    { gradient: 'from-[#0ea5e9] to-[#2563eb]', badge: 'bg-[#ecfeff] text-[#0ea5e9]', iconBg: 'bg-gradient-to-br from-[#0ea5e9] to-[#2563eb]' },
+    { gradient: 'from-[#ef4444] to-[#f43f5e]', badge: 'bg-[#fef2f2] text-[#ef4444]', iconBg: 'bg-gradient-to-br from-[#ef4444] to-[#f43f5e]' },
   ]
 
   const subscriptionStyles = {
@@ -301,10 +301,11 @@ function TopMessSection() {
             {loading ? 'Exploring messes...' : 'Discover Active Messes'}
           </h2>
           <p className="mt-2 text-sm font-semibold leading-7 text-[#6b7a99] max-w-2xl mx-auto">
-            Browse through our featured messes — each one managed efficiently with our platform. Swipe or click through to see what's available.
+            Browse through our featured messes — each one managed efficiently with our platform.
           </p>
           {!loading && messes.length > 0 && (
-            <p className="mt-3 text-xs font-bold text-[#2f80ed]">
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#eef5ff] px-3 py-1 text-xs font-bold text-[#2f80ed]">
+              <Building2 size={12} />
               {messes.length} mess{messes.length > 1 ? 'es' : ''} actively using Mess Management
             </p>
           )}
@@ -318,6 +319,7 @@ function TopMessSection() {
               loop: true,
               skipSnaps: false,
               slidesToScroll: 1,
+              breakpoints: { '(min-width: 1024px)': { slidesToScroll: 1 } },
             }}
             className="w-full"
           >
@@ -325,7 +327,7 @@ function TopMessSection() {
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <CarouselItem key={i} className="pl-3 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                    <div className="animate-pulse rounded-xl border border-[#e6ebf4] bg-white p-5">
+                    <div className="animate-pulse rounded-2xl border border-[#e6ebf4] bg-white p-5">
                       <div className="h-2 w-16 rounded-full bg-[#e6ebf4] mb-4" />
                       <div className="h-5 w-3/4 rounded-full bg-[#e6ebf4] mb-2" />
                       <div className="h-4 w-1/2 rounded-full bg-[#e6ebf4] mb-5" />
@@ -339,115 +341,89 @@ function TopMessSection() {
                   </CarouselItem>
                 ))
               ) : (
-                demoMesses.map((mess, index) => (
-                  <CarouselItem key={mess.id} className="pl-3 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                    <div className="group relative h-full overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_25px_rgba(65,103,153,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(65,103,153,0.14)]">
-                      {/* Top accent bar */}
-                      <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accentColors[index % accentColors.length]}`} />
+                demoMesses.map((mess, index) => {
+                  const accent = cardAccents[index % cardAccents.length]
+                  const letters = mess.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                  return (
+                    <CarouselItem key={mess.id} className="pl-3 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                      <div className="group relative h-full overflow-hidden rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_4px_20px_rgba(65,103,153,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(47,128,237,0.14)]">
+                        {/* Gradient top bar */}
+                        <div className={`h-2 w-full bg-gradient-to-r ${accent.gradient}`} />
 
-                      {/* Card content */}
-                      <div className="pt-3">
-                        {/* Header */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <span className="inline-flex items-center rounded-full bg-[#e7f1ff] px-2.5 py-0.5 text-[10px] font-black text-[#2f80ed]">
-                              Rank #{index + 1}
-                            </span>
-                            <h3 className="mt-3 truncate text-base font-black text-[#172554]">{mess.name}</h3>
-                            <p className="mt-0.5 truncate text-xs font-semibold text-[#6b7a99]">{mess.address || 'Location not set'}</p>
-                          </div>
-                          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${accentColors[index % accentColors.length]} text-sm font-black text-white shadow-sm`}>
-                            M
-                          </span>
-                        </div>
-
-                        {/* Stats */}
-                        <div className="mt-4 grid grid-cols-3 gap-2">
-                          {[
-                            ['Members', mess.totalMembers.toString(), ''],
-                            ['Seats', mess.availableSeats > 0 ? `${mess.availableSeats} free` : 'Full', mess.availableSeats > 0 ? '' : 'text-[#ef4444]'],
-                            ['Meals', mess.totalMeals.toString(), '']
-                          ].map(([label, value, colorClass]) => (
-                            <div key={label} className="rounded-lg bg-[#fafcff] px-2 py-2.5 text-center">
-                              <p className="text-[9px] font-bold text-[#6b7a99]">{label}</p>
-                              <p className={`mt-0.5 text-sm font-black ${colorClass || 'text-[#172554]'}`}>{value}</p>
+                        <div className="p-5">
+                          {/* Header with Avatar */}
+                          <div className="flex items-center gap-4">
+                            <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${accent.iconBg} text-lg font-black text-white shadow-[0_4px_12px_rgba(47,128,237,0.2)]`}>
+                              {letters || 'M'}
                             </div>
-                          ))}
-                        </div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-lg font-black text-[#172554] leading-tight truncate">{mess.name}</h3>
+                              <p className="mt-0.5 flex items-center gap-1 text-xs font-bold text-[#6b7a99]">
+                                <Building2 size={11} />
+                                <span className="truncate">{mess.address || 'Location not set'}</span>
+                              </p>
+                            </div>
+                          </div>
 
-                        {/* Subscription */}
-                        <div className="mt-3 rounded-lg border border-[#e6ebf4] bg-[#fafcff] p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</p>
-                            {mess.subscription ? (
-                              <span
-                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-black ${
-                                  mess.subscription.status === 'ACTIVE'
-                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                    : mess.subscription.status === 'EXPIRED'
-                                      ? 'border-red-200 bg-red-50 text-red-700'
-                                      : 'border-amber-200 bg-amber-50 text-amber-700'
-                                }`}
-                              >
-                                {mess.subscription.status === 'ACTIVE' ? 'Subscribed' : mess.subscription.status}
+                          {/* Stats Grid */}
+                          <div className="mt-4 grid grid-cols-3 gap-2.5">
+                            {[
+                              { label: 'Members', value: mess.totalMembers.toString(), color: 'text-[#2f80ed]' },
+                              { label: 'Seats', value: mess.availableSeats > 0 ? `${mess.availableSeats} free` : 'Full', color: mess.availableSeats > 0 ? 'text-[#10b981]' : 'text-[#ef4444]' },
+                              { label: 'Meals (Today)', value: mess.totalMeals.toString(), color: 'text-[#f59e0b]' },
+                            ].map(({ label, value, color }) => (
+                              <div key={label} className="rounded-xl bg-[#f8faff] px-2.5 py-3 text-center">
+                                <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[#8a9bb5]">{label}</p>
+                                <p className={`mt-1 text-lg font-black ${color}`}>{value}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Subscription Status */}
+                          <div className="mt-4 flex items-center justify-between rounded-xl bg-gradient-to-r from-[#f8faff] to-white border border-[#e6ebf4] px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className={`h-2 w-2 rounded-full ${mess.subscription?.status === 'ACTIVE' ? 'bg-[#10b981]' : 'bg-[#d8e6f8]'}`} />
+                              <span className="text-xs font-bold text-[#6b7a99]">
+                                {mess.subscription ? (
+                                  mess.subscription.status === 'ACTIVE' ? 'Active Subscription' : mess.subscription.status
+                                ) : 'No Subscription'}
                               </span>
-                            ) : (
-                              <span className="rounded-full border border-dashed border-[#d8e6f8] bg-white px-2 py-0.5 text-[9px] font-black text-[#6b7a99]">
-                                Not subscribed
+                            </div>
+                            {mess.subscription && (
+                              <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-black ${subscriptionStyles[mess.subscription.plan].bg} ${subscriptionStyles[mess.subscription.plan].text} ${subscriptionStyles[mess.subscription.plan].border}`}>
+                                {subscriptionStyles[mess.subscription.plan].label}
                               </span>
                             )}
                           </div>
-                          {mess.subscription && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              <span
-                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold ${
-                                  subscriptionStyles[mess.subscription.plan].bg
-                                } ${subscriptionStyles[mess.subscription.plan].text} ${subscriptionStyles[mess.subscription.plan].border}`}
-                              >
-                                {subscriptionStyles[mess.subscription.plan].label}
-                              </span>
-                              {(() => {
-                                const days = getDaysRemaining(mess.subscription.endDate)
-                                if (days !== null && days > 0) {
-                                  return (
-                                    <span className="inline-flex items-center rounded-full border border-[#e6ebf4] bg-white px-2 py-0.5 text-[9px] font-bold text-[#172554]">
-                                      {days} day{days === 1 ? '' : 's'} left
-                                    </span>
-                                  )
-                                }
-                                return null
-                              })()}
-                            </div>
-                          )}
-                        </div>
 
-                        {/* Manager */}
-                        <div className="mt-2 flex items-center justify-between rounded-lg border border-[#e6ebf4] px-3 py-2">
-                          <span className="text-[10px] font-bold text-[#6b7a99]">Managed by</span>
-                          <span className="text-[10px] font-black text-[#172554] truncate max-w-[120px]">{mess.creatorName}</span>
+                          {/* Manager */}
+                          <div className="mt-3 flex items-center justify-between rounded-xl bg-[#fafcff] px-4 py-2.5">
+                            <span className="text-xs font-bold text-[#8a9bb5]">Managed by</span>
+                            <span className="text-sm font-black text-[#172554] truncate max-w-[140px]">{mess.creatorName}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CarouselItem>
-                ))
+                    </CarouselItem>
+                  )
+                })
               )}
             </CarouselContent>
 
             {/* Navigation buttons */}
-            <CarouselPrevious className="hidden sm:flex -left-1 sm:-left-3 size-10 rounded-full border-2 border-[#e6ebf4] bg-white text-[#172554] shadow-md hover:bg-[#f8faff] hover:border-[#a9ccfb] hover:text-[#2f80ed]" />
-            <CarouselNext className="hidden sm:flex -right-1 sm:-right-3 size-10 rounded-full border-2 border-[#e6ebf4] bg-white text-[#172554] shadow-md hover:bg-[#f8faff] hover:border-[#a9ccfb] hover:text-[#2f80ed]" />
+            <CarouselPrevious className="hidden sm:flex -left-1 sm:-left-3 size-11 rounded-full border-2 border-[#d8e6f8] bg-white text-[#2f80ed] shadow-lg hover:bg-[#eef5ff] hover:border-[#a9ccfb] hover:text-[#172554]" />
+            <CarouselNext className="hidden sm:flex -right-1 sm:-right-3 size-11 rounded-full border-2 border-[#d8e6f8] bg-white text-[#2f80ed] shadow-lg hover:bg-[#eef5ff] hover:border-[#a9ccfb] hover:text-[#172554]" />
           </Carousel>
 
           {/* Dots indicator */}
-          <div className="mt-8 flex items-center justify-center gap-2">
+          <div className="mt-8 flex items-center justify-center gap-2.5">
             {demoMesses.map((_, i) => (
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${
+                className={`rounded-full transition-all duration-300 ${
                   api?.selectedScrollSnap() === i
-                    ? `w-8 bg-gradient-to-r ${accentColors[i % accentColors.length]}`
-                    : 'w-2 bg-[#d8e6f8] hover:bg-[#a9ccfb]'
+                    ? `h-2.5 w-8 bg-gradient-to-r ${cardAccents[i % cardAccents.length].gradient} shadow-sm`
+                    : 'h-2.5 w-2.5 bg-[#d8e6f8] hover:bg-[#a9ccfb]'
                 }`}
                 aria-label={`Go to slide ${i + 1}`}
               />
@@ -465,6 +441,7 @@ interface PlanInfo {
   days: number
   description: string
   currency?: string
+  features?: string[]
 }
 
 function PricingSection() {
@@ -487,7 +464,7 @@ function PricingSection() {
   }, [])
 
   const defaultPlans: Record<string, PlanInfo> = {
-    TRIAL: { price: 0, label: '7 Days Free', days: 7, description: 'Get started with a free trial. No credit card required.' },
+    TRIAL: { price: 0, label: '30 Days Free', days: 30, description: 'Get started with a free trial. No credit card required.' },
     MONTHLY: { price: 499, label: '1 Month', days: 30, description: 'Perfect for active messes needing full features monthly.', currency: '৳' },
     YEARLY: { price: 4999, label: '1 Year', days: 365, description: 'Best value for long-term mess management. Save big!', currency: '৳' },
   }
@@ -617,18 +594,28 @@ function PricingSection() {
                   </Button>
 
                   {/* Features */}
-                  <div className="mt-6 space-y-3">
-                    {[
-                      isTrial ? 'All features included' : 'All features included',
+                  <div className="mt-6 space-y-2.5">
+                    {(plan.features?.length ? plan.features : [
+                      'All features included',
                       isTrial ? '7 days full access' : 'Unlimited members',
                       isTrial ? 'No payment needed' : 'Priority support',
                       isTrial ? 'Cancel anytime' : isYearly ? 'Best savings' : 'Flexible monthly',
-                    ].map((feature) => (
-                      <div key={feature} className="flex items-center gap-2 text-sm font-semibold text-[#6b7a99]">
-                        <CheckCircle2 size={15} className="shrink-0 text-[#2f80ed]" />
-                        {feature}
-                      </div>
-                    ))}
+                    ]).map((feature: string) => {
+                      const parts = feature.split('|')
+                      const title = parts[0]?.trim() ?? feature
+                      const desc = parts[1]?.trim()
+                      return (
+                        <div key={title} className="group relative flex items-start gap-2.5">
+                          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#2f80ed]" />
+                          <div>
+                            <p className="text-sm font-bold text-[#172554]">{title}</p>
+                            {desc && (
+                              <p className="mt-0.5 text-[11px] font-semibold leading-snug text-[#8a9bb5]">{desc}</p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )

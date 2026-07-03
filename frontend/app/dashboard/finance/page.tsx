@@ -246,6 +246,20 @@ export default function FinancePage() {
         .map((membership) => membership.user!),
     [messMembers],
   )
+  const resolveMemberNameById = useMemo(() => {
+    const memberMap = new Map<string, string>()
+    messMembers.forEach((membership) => {
+      const name = membership.user?.name?.trim()
+      if (membership.user_id && name) {
+        memberMap.set(membership.user_id, name)
+      }
+    })
+
+    return (userId?: string | null, fallback = 'Unknown') => {
+      if (!userId) return fallback
+      return memberMap.get(userId) ?? fallback
+    }
+  }, [messMembers])
   const purchasedByMemberOptions = purchasedByOptions.length > 0 ? purchasedByOptions : user ? [user] : []
 
   async function load() {
@@ -546,7 +560,7 @@ export default function FinancePage() {
         ${item.description ?? ''} 
         ${item.category}
         ${item.creator?.name ?? ''}
-        ${item.purchaser?.name ?? ''}`
+        ${item.purchaser?.name ?? resolveMemberNameById(item.purchased_by, '')}`
         .toLowerCase()
 
       const matchSearch = searchableText.includes(searchText.toLowerCase())
@@ -803,7 +817,7 @@ export default function FinancePage() {
                               {(item.purchaser?.name?.[0] || item.creator?.name?.[0] || '?').toUpperCase()}
                             </div>
                             <span className="text-sm font-semibold text-[#6b7a99]">
-                              {item.purchaser?.name ?? item.creator?.name ?? 'Unknown'}
+                              {item.purchaser?.name ?? resolveMemberNameById(item.purchased_by, item.creator?.name ?? 'Unknown')}
                             </span>
                           </div>
                         </td>
@@ -1063,7 +1077,7 @@ export default function FinancePage() {
                 <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
                   <span>Purchased by</span>
                   <span className="text-[#172554]">
-                    {item.purchaser?.name ?? item.creator?.name ?? 'Unknown'}
+                    {item.purchaser?.name ?? resolveMemberNameById(item.purchased_by, item.creator?.name ?? 'Unknown')}
                   </span>
                 </div>
 
@@ -1601,7 +1615,7 @@ export default function FinancePage() {
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-[10px] font-black uppercase text-[#6b7a99]">Purchased By</p>
                   <p className="mt-1 text-sm font-bold text-[#172554]">
-                    {viewExpense.purchaser?.name ?? viewExpense.creator?.name ?? 'Unknown'}
+                    {viewExpense.purchaser?.name ?? resolveMemberNameById(viewExpense.purchased_by, viewExpense.creator?.name ?? 'Unknown')}
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">

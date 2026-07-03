@@ -167,7 +167,7 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue)
 
   // ── SWR data fetching (parallel, cached) ────────────────────
-  const { data: messesData } = useMesses()
+  const { data: messesData, isLoading: messesLoading } = useMesses()
   const { data: adminDashboard } = useAdminDashboard()
   const { data: messDashboard } = useMessDashboard(
     undefined,
@@ -374,7 +374,7 @@ export default function DashboardPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        {!loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
+        {!messesLoading && !loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
           <div className="mb-7 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">

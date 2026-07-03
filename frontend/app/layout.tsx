@@ -21,10 +21,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/check.png',
+        url: '/logo1.png',
       },
     ],
-    apple: '/check.png',
+    apple: '/logo1.png',
   },
   formatDetection: {
     telephone: true,
@@ -54,8 +54,9 @@ export default function RootLayout({
         } as CSSProperties
       }
       className="bg-background"
+      suppressHydrationWarning
     >
-      <body className="font-sans antialiased bg-background text-foreground">
+      <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
         <SWRProvider>
           <AuthProvider>
             {children}

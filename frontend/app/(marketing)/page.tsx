@@ -2,9 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/context/auth-context'
-import { Navbar } from '@/components/navbar'
-import { Footer } from '@/components/footer'
-import { BrandLogo } from '@/components/brand-logo'
 import { Button } from '@/components/ui/button'
 import {
   BarChart3,
@@ -179,35 +176,103 @@ function ProductPreview() {
 }
 
 function SystemFeaturesSection() {
+  const [api, setApi] = useState<CarouselApi | null>(null)
+  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const features = [
-    { icon: UtensilsCrossed, title: 'Meal Operations', text: 'Members can toggle meals, add guests, and managers get a full daily meal sheet at a glance.', color: '#2f80ed', bg: '#e7f1ff', num: '01' },
-    { icon: Users, title: 'Member & Role Control', text: 'Invite members, assign roles, and keep every mess member organized from one place.', color: '#10b981', bg: '#ecfdf5', num: '02' },
-    { icon: ShoppingCart, title: 'Bazar & Expense Tracking', text: 'Record daily bazar items, categorize expenses, and keep food costs transparent.', color: '#f59e0b', bg: '#fffbeb', num: '03' },
-    { icon: CreditCard, title: 'Payments & Monthly Bills', text: 'Generate monthly bills from meals, rent, utilities, deposits, and approved payments.', color: '#ef4444', bg: '#fef2f2', num: '04' },
-    { icon: Bell, title: 'Notices & Requests', text: 'Publish notices, manage complaints, and keep approvals clear for managers and members.', color: '#6d28d9', bg: '#f5f3ff', num: '05' },
-    { icon: BarChart3, title: 'Reports & Insights', text: 'Understand meals, dues, payments, and mess performance with clean summary dashboards.', color: '#0ea5e9', bg: '#ecfeff', num: '06' },
+    { icon: UtensilsCrossed, title: 'Meal Tracking', text: 'Track daily meals for every member and generate accurate meal-based calculations without manual sheets.', accent: 'from-[#2f80ed] to-[#3b8cff]', iconBg: 'bg-[#e7f1ff]', iconColor: 'text-[#2f80ed]' },
+    { icon: WalletCards, title: 'Utility & Expense Management', text: 'Record shared bills and operational expenses in one organized workflow with better financial visibility.', accent: 'from-[#10b981] to-[#34d399]', iconBg: 'bg-[#ecfdf5]', iconColor: 'text-[#10b981]' },
+    { icon: CreditCard, title: 'Deposit Management', text: 'Keep deposits, balances, and adjustments transparent so both managers and members stay informed.', accent: 'from-[#f59e0b] to-[#f97316]', iconBg: 'bg-[#fffbeb]', iconColor: 'text-[#f59e0b]' },
+    { icon: ClipboardList, title: 'Monthly Bill Generation', text: 'Automatically generate monthly bills using meals, expenses, utilities, and deposits with fewer mistakes.', accent: 'from-[#6d28d9] to-[#8b5cf6]', iconBg: 'bg-[#f5f3ff]', iconColor: 'text-[#6d28d9]' },
+    { icon: Bell, title: 'Push Notifications', text: 'Send instant alerts and important updates to members so communication stays timely and clear.', accent: 'from-[#0ea5e9] to-[#2563eb]', iconBg: 'bg-[#ecfeff]', iconColor: 'text-[#0ea5e9]' },
+    { icon: BarChart3, title: 'Reports & Insights', text: 'Download clean monthly summaries and understand meals, dues, and performance at a glance.', accent: 'from-[#ef4444] to-[#f43f5e]', iconBg: 'bg-[#fef2f2]', iconColor: 'text-[#ef4444]' },
+    { icon: Users, title: 'Member & Role Control', text: 'Invite members, assign roles, and keep every resident and manager organized from one place.', accent: 'from-[#2f80ed] to-[#6f3df4]', iconBg: 'bg-[#eef5ff]', iconColor: 'text-[#2f80ed]' },
+    { icon: ShoppingCart, title: 'Expense & Bazar Tracking', text: 'Record daily shopping, categorize spending, and keep food costs transparent for everyone.', accent: 'from-[#0891b2] to-[#06b6d4]', iconBg: 'bg-[#ecfeff]', iconColor: 'text-[#0891b2]' },
   ]
 
+  const startAutoplay = () => {
+    if (autoplayRef.current) clearInterval(autoplayRef.current)
+    autoplayRef.current = setInterval(() => {
+      api?.scrollNext()
+    }, 3500)
+  }
+
+  const stopAutoplay = () => {
+    if (autoplayRef.current) {
+      clearInterval(autoplayRef.current)
+      autoplayRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    if (!api) return
+    startAutoplay()
+    return () => stopAutoplay()
+  }, [api])
+
   return (
-    <section id="features" className="bg-white px-4 py-20 sm:px-6 lg:px-8">
+    <section id="features" className="overflow-hidden bg-[#fafcff] px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center rounded-full border border-[#d8e6f8] bg-[#f8faff] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">System Features</span>
           <h2 className="mt-4 text-3xl font-black tracking-tight text-[#172554] sm:text-4xl">Professional tools for every mess workflow</h2>
           <p className="mt-4 text-base font-semibold leading-7 text-[#6b7a99]">Mess Management brings daily operations, member coordination, billing, shopping, and reporting into one clear management experience.</p>
         </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {features.map((feature) => {
-            const Icon = feature.icon
-            return (
-              <div key={feature.title} className="group relative overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-6 transition hover:-translate-y-1 hover:border-[#a9ccfb] hover:shadow-[0_22px_55px_rgba(47,128,237,0.12)]">
-                <div className="absolute right-5 top-5 text-5xl font-black text-[#f0f6ff]">{feature.num}</div>
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: feature.bg, color: feature.color }}><Icon size={22} /></div>
-                <h3 className="relative mt-5 text-lg font-black text-[#172554]">{feature.title}</h3>
-                <p className="relative mt-2 text-sm font-semibold leading-7 text-[#6b7a99]">{feature.text}</p>
-              </div>
-            )
-          })}
+
+        <div className="relative mt-12 px-0 sm:px-12">
+          <Carousel
+            setApi={setApi}
+            opts={{
+              align: 'start',
+              loop: true,
+              skipSnaps: false,
+              slidesToScroll: 1,
+              breakpoints: { '(min-width: 1024px)': { slidesToScroll: 1 } },
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-3 md:-ml-4">
+              {features.map((feature) => {
+                const Icon = feature.icon
+
+                return (
+                  <CarouselItem key={feature.title} className="pl-3 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                    <div className="group relative h-full overflow-hidden rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_4px_20px_rgba(65,103,153,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(47,128,237,0.14)]">
+                      <div className={`h-2 w-full bg-gradient-to-r ${feature.accent}`} />
+                      <div className="p-6">
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${feature.iconBg} ${feature.iconColor}`}>
+                          <Icon size={22} />
+                        </div>
+                        <h3 className="mt-5 text-lg font-black text-[#172554]">{feature.title}</h3>
+                        <p className="mt-2 text-sm font-semibold leading-7 text-[#6b7a99]">{feature.text}</p>
+                        <div className="mt-5 inline-flex rounded-full bg-[#f8faff] px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[#8a9bb5]">
+                          Smart workflow
+                        </div>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                )
+              })}
+            </CarouselContent>
+
+            <CarouselPrevious className="hidden sm:flex -left-1 sm:-left-3 size-11 rounded-full border-2 border-[#d8e6f8] bg-white text-[#2f80ed] shadow-lg hover:bg-[#eef5ff] hover:border-[#a9ccfb] hover:text-[#172554]" />
+            <CarouselNext className="hidden sm:flex -right-1 sm:-right-3 size-11 rounded-full border-2 border-[#d8e6f8] bg-white text-[#2f80ed] shadow-lg hover:bg-[#eef5ff] hover:border-[#a9ccfb] hover:text-[#172554]" />
+          </Carousel>
+
+          <div className="mt-8 flex items-center justify-center gap-2.5">
+            {features.map((feature, i) => (
+              <button
+                key={feature.title}
+                onClick={() => api?.scrollTo(i)}
+                className={`rounded-full transition-all duration-300 ${
+                  api?.selectedScrollSnap() === i
+                    ? `h-2.5 w-8 bg-gradient-to-r ${feature.accent} shadow-sm`
+                    : 'h-2.5 w-2.5 bg-[#d8e6f8] hover:bg-[#a9ccfb]'
+                }`}
+                aria-label={`Go to feature slide ${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -597,7 +662,7 @@ function PricingSection() {
                   <div className="mt-6 space-y-2.5">
                     {(plan.features?.length ? plan.features : [
                       'All features included',
-                      isTrial ? '7 days full access' : 'Unlimited members',
+                      isTrial ? '30 days full access' : 'Unlimited members',
                       isTrial ? 'No payment needed' : 'Priority support',
                       isTrial ? 'Cancel anytime' : isYearly ? 'Best savings' : 'Flexible monthly',
                     ]).map((feature: string) => {
@@ -608,7 +673,7 @@ function PricingSection() {
                         <div key={title} className="group relative flex items-start gap-2.5">
                           <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#2f80ed]" />
                           <div>
-                            <p className="text-sm font-bold text-[#172554]">{title}</p>
+                            <p className="text-sm font-bold text-[#6b7a99]">{title}</p>
                             {desc && (
                               <p className="mt-0.5 text-[11px] font-semibold leading-snug text-[#8a9bb5]">{desc}</p>
                             )}
@@ -635,7 +700,7 @@ function PricingSection() {
           <div className="inline-flex items-center gap-2 rounded-xl border border-[#e6ebf4] bg-[#fafcff] px-5 py-3">
             <Shield size={16} className="text-[#10b981]" />
             <span className="text-xs font-bold text-[#6b7a99]">
-              All plans include a 7-day free trial. No hidden fees. Cancel anytime.
+              All plans include a 30-day free trial. No hidden fees. Cancel anytime.
             </span>
           </div>
         </div>
@@ -697,8 +762,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-white text-[#172554]">
-      <Navbar />
-      
       {/* Hero Section */}
       <section className="overflow-hidden bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[.85fr_1.15fr]">
@@ -754,7 +817,6 @@ export default function HomePage() {
       <TopMessSection />
       <PricingSection />
       <WhyChooseSection />
-      <Footer />
     </main>
   )
 }

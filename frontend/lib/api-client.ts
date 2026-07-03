@@ -279,6 +279,7 @@ export interface SubscriptionPlanInfo {
   days: number
   description?: string
   currency?: string
+  features?: string[]
 }
 
 export interface SubscriptionPlanUpdate {
@@ -287,6 +288,7 @@ export interface SubscriptionPlanUpdate {
   days?: number
   description?: string
   currency?: string
+  features?: string[]
 }
 
 export interface SubscriptionRecord {

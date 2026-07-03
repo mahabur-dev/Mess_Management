@@ -112,4 +112,8 @@ export class UpdateSubscriptionPlanDto {
   @IsOptional()
   @IsString()
   currency?: string;
+
+  @ApiPropertyOptional({ example: ['All features included', 'Unlimited members', 'Priority support'] })
+  @IsOptional()
+  features?: string[];
 }

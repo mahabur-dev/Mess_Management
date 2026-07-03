@@ -210,6 +210,7 @@ export class ExpenseService {
 
       const totalDeposit = currentBalance + payments;
       const remainingBalance = totalDeposit - totalFoodExpenses - totalUtilityExpenses;
+      // console.log(totalDeposit, totalFoodExpenses, totalUtilityExpenses, remainingBalance, dto.amount);
 
       if (remainingBalance < dto.amount) {
         throw new HttpException(
@@ -357,6 +358,8 @@ export class ExpenseService {
       where: { id },
     });
 
+    console.log('Updating expense:', { id, userId, role, dto, receipt });
+
     if (!expense) {
       throw new HttpException('Expense not found', 404);
     }
@@ -421,10 +424,12 @@ export class ExpenseService {
       const totalUtilityExpenses = Number(utilityExpenses._sum.amount ?? 0);
 
       // If old was FROM_DEPOSIT, the old amount goes back to available balance
-      const oldDeduction = oldPaymentType === ExpensePaymentType.FROM_DEPOSIT ? Number(oldAmount) : 0;
-      const totalDeposit = currentBalance + payments + oldDeduction;
+      // const oldDeduction = oldPaymentType === ExpensePaymentType.FROM_DEPOSIT ? Number(oldAmount) : 0;
+      const totalDeposit = currentBalance + payments + Number(oldAmount);
       const remainingBalance = totalDeposit - totalFoodExpenses - totalUtilityExpenses;
-      console.log(remainingBalance, newAmount);
+
+      // console.log(totalDeposit, totalFoodExpenses, totalUtilityExpenses, remainingBalance, dto.amount);
+      // console.log(remainingBalance, newAmount);
       if (remainingBalance < newAmount) {
         throw new HttpException(
           `Insufficient deposit balance. Required: ${newAmount}, Available: ${remainingBalance}`,

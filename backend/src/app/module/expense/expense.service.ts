@@ -176,7 +176,7 @@ export class ExpenseService {
     await this.verifyMessMemberAccess(dto.messId, userId, role);
     await this.ensureActiveSubscription(dto.messId, role);
 
-    const purchasedById = dto.purchasedBy ?? userId;
+    const purchasedById = dto.purchasedBy?.trim() || userId;
     if (purchasedById !== userId) {
       await this.verifyManagerAccess(dto.messId, userId, role);
     }
@@ -395,7 +395,7 @@ export class ExpenseService {
     const oldPaymentType = expense.payment_type;
     const oldAmount = expense.amount;
     const oldPurchasedBy = expense.purchased_by ?? expense.created_by;
-    const nextPurchasedBy = dto.purchasedBy ?? oldPurchasedBy;
+    const nextPurchasedBy = dto.purchasedBy?.trim() || oldPurchasedBy;
 
     if (nextPurchasedBy !== oldPurchasedBy) {
       await this.verifyManagerAccess(expense.mess_id, userId, role);

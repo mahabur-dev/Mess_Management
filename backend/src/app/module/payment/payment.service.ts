@@ -113,7 +113,7 @@ export class PaymentService {
     await this.verifyMessMember(dto.messId, userId, role);
     await this.ensureActiveSubscription(dto.messId, role);
 
-    const purchasedById = dto.purchasedBy ?? userId;
+    const purchasedById = dto.purchasedBy?.trim() || userId;
     if (purchasedById !== userId) {
       await this.verifyManager(dto.messId, userId, role);
     }

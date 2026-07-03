@@ -16,7 +16,7 @@ model Expense {
   description  String?            @db.Text
   receipt_url  String?            @db.Text
   buyer_id     String?            @db.Uuid
-  purchased_by String             @db.Uuid
+  purchased_by String?            @db.Uuid
   item_name    String?            @db.VarChar(150)
   quantity     Decimal?           @db.Decimal(10, 3)
   unit         String?            @db.VarChar(30)
@@ -28,7 +28,7 @@ model Expense {
   // Relations
   mess      Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
   creator   User @relation("ExpenseCreator", fields: [created_by], references: [id])
-  purchaser User @relation("ExpensePurchaser", fields: [purchased_by], references: [id])
+  purchaser User? @relation("ExpensePurchaser", fields: [purchased_by], references: [id])
 
   @@index([mess_id, expense_date])
   @@map("expenses")

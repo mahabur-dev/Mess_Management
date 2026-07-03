@@ -2,8 +2,6 @@
 
 import { useMemo, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { Navbar } from '@/components/navbar'
-import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -91,8 +89,6 @@ export function ContactPageClient({
 
   return (
     <main className="min-h-screen bg-[#fafcff] text-[#172554]">
-      <Navbar />
-
       <section className="px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-2xl">
           <div className="mb-6 text-center">
@@ -197,8 +193,6 @@ export function ContactPageClient({
           </Card>
         </div>
       </section>
-
-      <Footer />
     </main>
   )
 }

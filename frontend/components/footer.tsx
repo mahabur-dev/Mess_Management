@@ -12,7 +12,7 @@ export function Footer() {
             <div className="mb-4 flex items-center gap-2">
               <BrandLogo />
             </div>
-            <p className="text-sm font-semibold text-[#667085]">Simplifying mess management</p>
+            <p className="text-sm font-semibold text-[#667085]">Simplifying Mess & Hostel Management</p>
           </div>
 
           {/* Product */}
@@ -42,7 +42,7 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-black uppercase tracking-[0.12em] text-[#07143d]">Company</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/#about" className="font-semibold text-[#667085] transition hover:text-[#005bbb]">
+                <Link href="/about" className="font-semibold text-[#667085] transition hover:text-[#005bbb]">
                   About
                 </Link>
               </li>

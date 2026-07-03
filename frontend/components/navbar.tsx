@@ -1,14 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { BrandLogo } from '@/components/brand-logo'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 const links = [
   { label: 'Home', href: '/' },
+  { label: 'About', href: '/about' },
   { label: 'Dashboard', href: '/#features' },
   { label: 'Pricing', href: '/#pricing' },
   { label: 'Why Choose', href: '/#about' },
@@ -17,7 +19,33 @@ const links = [
 
 export function Navbar() {
   const router = useRouter()
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const [hash, setHash] = useState('')
+
+  useEffect(() => {
+    const syncHash = () => {
+      setHash(window.location.hash)
+    }
+
+    syncHash()
+    window.addEventListener('hashchange', syncHash)
+    return () => window.removeEventListener('hashchange', syncHash)
+  }, [pathname])
+
+  const isActiveLink = (href: string) => {
+    const [linkPath, linkHash] = href.split('#')
+
+    if (linkHash) {
+      return pathname === linkPath && hash === `#${linkHash}`
+    }
+
+    if (href === '/') {
+      return pathname === '/' && !hash
+    }
+
+    return pathname === href
+  }
 
   return (
     <nav className="sticky top-0 z-50 border-b border-[#e4eaf4] bg-white/95 backdrop-blur-xl">
@@ -31,7 +59,12 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-lg px-5 py-3 text-sm font-bold text-[#2A2A2E] transition hover:bg-[#e7f1ff] hover:text-[#005bbb]"
+              className={cn(
+                'rounded-xl px-5 py-3 text-sm font-bold transition',
+                isActiveLink(link.href)
+                  ? 'bg-[#eef5ff] text-[#005bbb] shadow-[inset_0_0_0_1px_rgba(47,128,237,0.14)]'
+                  : 'text-[#2A2A2E] hover:bg-[#e7f1ff] hover:text-[#005bbb]'
+              )}
             >
               {link.label}
             </Link>
@@ -65,7 +98,12 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg px-4 py-3 text-sm font-bold text-[#07143d] hover:bg-[#e7f1ff]"
+                className={cn(
+                  'rounded-xl px-4 py-3 text-sm font-bold transition',
+                  isActiveLink(link.href)
+                    ? 'bg-[#eef5ff] text-[#005bbb]'
+                    : 'text-[#07143d] hover:bg-[#e7f1ff]'
+                )}
               >
                 {link.label}
               </Link>

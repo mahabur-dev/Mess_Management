@@ -49,6 +49,7 @@ export class ExpenseController {
       properties: {
         messId: { type: 'string' },
         buyerId: { type: 'string' },
+        purchasedBy: { type: 'string' },
         category: { type: 'string' },
         amount: { type: 'number' },
         itemName: { type: 'string' },
@@ -149,6 +150,7 @@ export class ExpenseController {
       type: 'object',
       properties: {
         buyerId: { type: 'string' },
+        purchasedBy: { type: 'string' },
         category: { type: 'string' },
         amount: { type: 'number' },
         itemName: { type: 'string' },

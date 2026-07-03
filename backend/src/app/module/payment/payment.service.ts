@@ -47,6 +47,7 @@ export class PaymentService {
     created_at: true,
     mess: { select: { id: true, name: true } },
     member: { select: { id: true, name: true, email: true } },
+    creator: { select: { id: true, name: true, email: true } },
     monthly_bill: { select: { id: true, month: true, final_due: true, status: true } },
     approver: { select: { id: true, name: true, email: true } },
   } as const;
@@ -60,6 +61,20 @@ export class PaymentService {
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
     if (!membership?.is_active) throw new HttpException('Forbidden: Not a member of this mess', 403);
+  }
+
+  private async ensureActiveMessMember(messId: string, userId: string) {
+    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+    if (!mess) throw new HttpException('Mess not found', 404);
+    if (mess.created_by === userId) return;
+
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+
+    if (!membership?.is_active) {
+      throw new HttpException('Forbidden: Selected member is not active in this mess', 403);
+    }
   }
 
   private async verifyManager(messId: string, userId: string, role: string) {
@@ -98,10 +113,17 @@ export class PaymentService {
     await this.verifyMessMember(dto.messId, userId, role);
     await this.ensureActiveSubscription(dto.messId, role);
 
+    const purchasedById = dto.purchasedBy ?? userId;
+    if (purchasedById !== userId) {
+      await this.verifyManager(dto.messId, userId, role);
+    }
+    await this.ensureActiveMessMember(dto.messId, purchasedById);
+
     return this.prisma.payment.create({
       data: {
         mess_id: dto.messId,
-        member_id: userId,
+        member_id: purchasedById,
+        created_by: userId,
         monthly_bill_id: dto.monthlyBillId,
         amount: dto.amount,
         method: dto.method,

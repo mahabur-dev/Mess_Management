@@ -15,6 +15,7 @@ import {
   apiClient,
   type ExpenseCategory,
   type ExpensePaymentType,
+  type MessMembershipWithDetails,
   type Mess,
 } from '@/lib/api-client'
 import {
@@ -75,6 +76,7 @@ type ExpenseItem = {
   description?: string | null
   receipt_url?: string | null
   buyer_id?: string | null
+  purchased_by?: string | null
   item_name?: string | null
   quantity?: string | number | null
   unit?: string | null
@@ -85,6 +87,11 @@ type ExpenseItem = {
     name: string
   }
   creator?: {
+    id: string
+    name: string
+    email: string
+  }
+  purchaser?: {
     id: string
     name: string
     email: string
@@ -174,6 +181,7 @@ export default function FinancePage() {
   const { user } = useAuth()
   const [messes, setMesses] = useState<Mess[]>([])
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
+  const [messMembers, setMessMembers] = useState<MessMembershipWithDetails[]>([])
 
   // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -181,6 +189,7 @@ export default function FinancePage() {
 
   // ── Multi-item form state ──────────────────────────────
   const [sharedDate, setSharedDate] = useState(new Date().toISOString().slice(0, 10))
+  const [expensePurchasedBy, setExpensePurchasedBy] = useState('')
   const [expenseItems, setExpenseItems] = useState<ExpenseRow[]>([
     { 
       id: 1, 
@@ -230,6 +239,14 @@ export default function FinancePage() {
   const canAddExpense = Boolean(user && activeMess)
   const isMemberDashboard = !canManageMess
   const isEditing = Boolean(editingExpense)
+  const purchasedByOptions = useMemo(
+    () =>
+      messMembers
+        .filter((membership) => membership.is_active && membership.user)
+        .map((membership) => membership.user!),
+    [messMembers],
+  )
+  const purchasedByMemberOptions = purchasedByOptions.length > 0 ? purchasedByOptions : user ? [user] : []
 
   async function load() {
     if (!user) return
@@ -245,9 +262,10 @@ export default function FinancePage() {
       setMesses(list)
 
       if (list[0]) {
+        const active = list[0]
         const expenseRange = getMonthRange(selectedMonth)
         const expenseRes = await apiClient
-          .getExpensesByMess(list[0].id, {
+          .getExpensesByMess(active.id, {
             ...expenseRange,
             limit: 1000,
             sortBy: 'expense_date',
@@ -256,6 +274,17 @@ export default function FinancePage() {
           .catch(() => null)
 
         setExpenses(normalizeExpenses(expenseRes?.data as ExpenseListResponse | undefined))
+        setExpensePurchasedBy(user?.id ?? '')
+
+        const managerMembersRes = canManageMess
+          ? await apiClient.getAllMembers({ limit: 1000 }).catch(() => null)
+          : null
+        const fetchedMembers = Array.isArray(managerMembersRes?.data)
+          ? managerMembersRes.data
+          : []
+        const activeMembersFromApi = fetchedMembers.filter((member) => member.mess?.id === active.id)
+        const fallbackMembers = active.memberships?.filter((membership) => membership.is_active && membership.user) ?? []
+        setMessMembers(activeMembersFromApi.length > 0 ? activeMembersFromApi : fallbackMembers)
       }
     } finally {
       setLoading(false)
@@ -303,6 +332,7 @@ export default function FinancePage() {
 
   function resetForm() {
     setExpenseFormMode('expense')
+    setExpensePurchasedBy(user?.id ?? '')
     setExpenseItems([{
       id: 1,
       itemName: '',
@@ -328,6 +358,7 @@ export default function FinancePage() {
   function openUtilityModal() {
     resetForm()
     setExpenseFormMode('utility')
+    setExpensePurchasedBy(user?.id ?? '')
     setExpenseItems([{
       id: 1,
       itemName: '',
@@ -345,6 +376,7 @@ export default function FinancePage() {
     const isUtilityMode = expenseFormMode === 'utility'
     const payload: Record<string, unknown> = {
       ...(includeMessId ? { messId: activeMess?.id } : {}),
+      purchasedBy: expensePurchasedBy || user?.id,
       category: item.category,
       amount: Number(item.amount),
       itemName: isUtilityMode ? item.category : item.itemName,
@@ -420,6 +452,7 @@ export default function FinancePage() {
     setExpenseFormMode(nextFormMode)
     setEditingExpense(expense)
     setSharedDate(new Date(expense.expense_date).toISOString().slice(0, 10))
+    setExpensePurchasedBy(expense.purchased_by ?? expense.creator?.id ?? user?.id ?? '')
     setExpenseItems([
       {
         id: 1,
@@ -512,7 +545,8 @@ export default function FinancePage() {
         `${item.item_name ?? ''} 
         ${item.description ?? ''} 
         ${item.category}
-        ${item.creator?.name ?? ''}`
+        ${item.creator?.name ?? ''}
+        ${item.purchaser?.name ?? ''}`
         .toLowerCase()
 
       const matchSearch = searchableText.includes(searchText.toLowerCase())
@@ -530,15 +564,15 @@ export default function FinancePage() {
     if (canManageMess) return true
 
     // Member can edit only own expense
-    return item.creator?.id === user.id
+    return (item.purchased_by ?? item.creator?.id) === user.id
   }
 
   function canRequestExpenseReview(item: ExpenseItem) {
     return Boolean(
       canManageMess &&
-        item.creator?.id &&
+        (item.purchased_by ?? item.creator?.id) &&
         user?.id &&
-        item.creator.id !== user.id,
+        (item.purchased_by ?? item.creator?.id) !== user.id,
     )
   }
 
@@ -590,9 +624,9 @@ export default function FinancePage() {
           </div>
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Desktop/Tablet */}
         {filteredExpenses.length > 0 && (
-          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="hidden md:grid mb-6 grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
                 <ReceiptText size={13} className="text-[#2f80ed]" />
@@ -707,6 +741,7 @@ export default function FinancePage() {
                     <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Category</th>
                     <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
                     <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Purchased By</th>
                     <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Added By</th>
                     <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Amount</th>
                     <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
@@ -715,7 +750,7 @@ export default function FinancePage() {
                 <tbody className="divide-y divide-[#e6ebf4]">
                   {loading && (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center">
+                      <td colSpan={8} className="px-5 py-12 text-center">
                         <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
                           <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
                           Loading expenses...
@@ -725,7 +760,7 @@ export default function FinancePage() {
                   )}
                   {!loading && filteredExpenses.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center">
+                      <td colSpan={8} className="px-5 py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <ShoppingBag size={40} className="text-[#d8e6f8]" />
                           <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
@@ -765,6 +800,16 @@ export default function FinancePage() {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">
+                              {(item.purchaser?.name?.[0] || item.creator?.name?.[0] || '?').toUpperCase()}
+                            </div>
+                            <span className="text-sm font-semibold text-[#6b7a99]">
+                              {item.purchaser?.name ?? item.creator?.name ?? 'Unknown'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">
                               {(item.creator?.name?.[0] || '?').toUpperCase()}
                             </div>
                             <span className="text-sm font-semibold text-[#6b7a99]">
@@ -795,7 +840,7 @@ export default function FinancePage() {
                               title={
                                 canEditExpense(item)
                                   ? 'Edit your expense'
-                                  : 'Only the user who added this expense can edit it'
+                                  : 'Only the user who purchased this expense can edit it'
                               }
                               onClick={() => {
                                 if (canEditExpense(item)) openEditExpenseModal(item)
@@ -1016,6 +1061,13 @@ export default function FinancePage() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
+                  <span>Purchased by</span>
+                  <span className="text-[#172554]">
+                    {item.purchaser?.name ?? item.creator?.name ?? 'Unknown'}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
                   <span>Added by</span>
                   <span className="text-[#172554]">
                     {item.creator?.name ?? 'Unknown'}
@@ -1039,7 +1091,7 @@ export default function FinancePage() {
                     title={
                       canEditExpense(item)
                         ? 'Edit your expense'
-                        : 'Only the user who added this expense can edit it'
+                        : 'Only the user who purchased this expense can edit it'
                     }
                     onClick={() => {
                       if (canEditExpense(item)) openEditExpenseModal(item)
@@ -1156,7 +1208,7 @@ export default function FinancePage() {
 
             {expenseFormMode === 'utility' && (
               <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
-                <div className="grid gap-4">
+              <div className="grid gap-4">
                   <div>
                     <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Category</label>
                     <select
@@ -1171,6 +1223,25 @@ export default function FinancePage() {
                       ))}
                     </select>
                   </div>
+
+                  {canManageMess && purchasedByMemberOptions.length > 0 && (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                        Purchased By
+                      </label>
+                      <select
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                        value={expensePurchasedBy}
+                        onChange={(e) => setExpensePurchasedBy(e.target.value)}
+                      >
+                        {purchasedByMemberOptions.map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Price (৳)</label>
@@ -1245,6 +1316,25 @@ export default function FinancePage() {
                 onChange={(e) => setSharedDate(e.target.value)}
               />
             </div>
+
+            {canManageMess && purchasedByMemberOptions.length > 0 && (
+              <div className="rounded-2xl bg-[#faf9ff] p-4">
+                <label className="mb-2 block text-sm font-black text-[#0a1433]">
+                  Purchased By
+                </label>
+                <select
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
+                  value={expensePurchasedBy}
+                  onChange={(e) => setExpensePurchasedBy(e.target.value)}
+                >
+                  {purchasedByMemberOptions.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Dynamic item rows */}
             <div className="space-y-4">
@@ -1426,7 +1516,7 @@ export default function FinancePage() {
           <DialogHeader>
             <DialogTitle>Request Price Review</DialogTitle>
             <DialogDescription>
-              Send a push notification to the user who added this expense.
+              Send a push notification to the member who purchased this expense.
             </DialogDescription>
           </DialogHeader>
 
@@ -1501,11 +1591,17 @@ export default function FinancePage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-[10px] font-black uppercase text-[#6b7a99]">Quantity</p>
                   <p className="mt-1 text-sm font-bold text-[#172554]">
                     {viewExpense.quantity ? `${viewExpense.quantity} ${viewExpense.unit ?? ''}` : '-'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-[10px] font-black uppercase text-[#6b7a99]">Purchased By</p>
+                  <p className="mt-1 text-sm font-bold text-[#172554]">
+                    {viewExpense.purchaser?.name ?? viewExpense.creator?.name ?? 'Unknown'}
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">

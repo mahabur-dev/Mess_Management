@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import AuthGuard from '../../middlewares/auth.guard';
 import { CreatePaymentDto, PaymentFilterDto, ReviewPaymentDto } from './dto/payment.dto';
@@ -14,6 +14,24 @@ export class PaymentController {
   @Post()
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Submit a payment with transaction info/screenshot' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['messId', 'amount', 'method'],
+      properties: {
+        messId: { type: 'string' },
+        purchasedBy: { type: 'string' },
+        monthlyBillId: { type: 'string' },
+        amount: { type: 'number' },
+        method: { type: 'string' },
+        transactionId: { type: 'string' },
+        screenshotUrl: { type: 'string' },
+        note: { type: 'string' },
+        paymentDate: { type: 'string', format: 'date' },
+        categories: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
   async create(@Req() req: Request, @Body() dto: CreatePaymentDto) {
     const data = await this.paymentService.create(req.user!.id, req.user!.role, dto);
     return { message: 'Payment submitted successfully', data };

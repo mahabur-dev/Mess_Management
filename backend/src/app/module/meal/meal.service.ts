@@ -36,6 +36,15 @@ function getMealBaseValue(mealName: MealName): number {
 }
 
 /**
+ * Parse "HH:mm" string into total minutes since midnight.
+ */
+function parseTimeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) throw new Error(`Invalid time format: ${time}`);
+  return h * 60 + m;
+}
+
+/**
  * Calculate the total meal count from attendance status, meal name, and guests.
  * - OFF       → 0
  * - ON        → baseMealValue(mealName) + guests
@@ -52,43 +61,47 @@ function calculateTotalMeals(
   return +(baseValue + guestValue).toFixed(2);
 }
 
-/**
- * Parse "HH:mm" string into total minutes since midnight.
- */
-function parseTimeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  if (isNaN(h) || isNaN(m)) throw new Error(`Invalid time format: ${time}`);
-  return h * 60 + m;
+function isSameOrAfterToday(targetDate: Date, now: Date = new Date()): boolean {
+  const current = new Date(now);
+  current.setHours(0, 0, 0, 0);
+
+  const target = new Date(targetDate);
+  target.setHours(0, 0, 0, 0);
+
+  return target.getTime() >= current.getTime();
 }
 
-/**
- * Check if NOW is within the meal deadline window for a given date.
- * The window spans from startTime on the previous day to endTime on the target date.
- *
- * Example: start=22:00, end=11:00, date=tomorrow
- *   - Window opens: today at 22:00
- *   - Window closes: tomorrow at 11:00 (the `date`)
- */
+function isSameDay(targetDate: Date, now: Date = new Date()): boolean {
+  const current = new Date(now);
+  current.setHours(0, 0, 0, 0);
+
+  const target = new Date(targetDate);
+  target.setHours(0, 0, 0, 0);
+
+  return target.getTime() === current.getTime();
+}
+
 function isWithinMealWindow(
   targetDate: Date,
   startTime: string,
   endTime: string,
   now: Date = new Date(),
 ): boolean {
+  if (!isSameOrAfterToday(targetDate, now)) return false;
+  if (!isSameDay(targetDate, now)) return true;
+
   const startMinutes = parseTimeToMinutes(startTime);
   const endMinutes = parseTimeToMinutes(endTime);
 
-  // Build window start: day before target date + startTime
-  const windowStart = new Date(targetDate);
-  windowStart.setDate(windowStart.getDate() - 1);
+  const windowStart = new Date(now);
   windowStart.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
 
-  // Build window end: target date + endTime
-  const windowEnd = new Date(targetDate);
+  const windowEnd = new Date(now);
   windowEnd.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
 
-  // Handle the case where endTime is <= startTime (e.g. end=11:00, start=22:00)
-  // This means the window crosses midnight
+  if (endMinutes <= startMinutes) {
+    windowEnd.setDate(windowEnd.getDate() + 1);
+  }
 
   return now >= windowStart && now <= windowEnd;
 }
@@ -309,26 +322,35 @@ export class MealService {
     userId: string,
     role: string,
   ): Promise<void> {
-    // Admins and organizers can always bypass deadline
+    // Admins and managers can always modify meals
     if (role === 'ADMIN') return;
 
     const isManager = await this.canManageMeal(messId, userId, role);
-    if (isManager) return; // Managers bypass deadline check
+    if (isManager) return;
 
-    const mess = await this.prisma.mess.findUnique({
-      where: { id: messId },
-      select: { meal_deadline_start: true, meal_deadline_end: true },
-    });
-    if (!mess) throw new HttpException('Mess not found', 404);
-
-    const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
-    const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
-
-    if (!isWithinMealWindow(date, startTime, endTime)) {
+    if (!isSameOrAfterToday(date)) {
       throw new HttpException(
-        `Meal deadline has passed. Meal window is ${startTime} - ${endTime} (next day). Only managers can modify meals now.`,
+        'Forbidden: You can only add or update meals for today or future dates',
         400,
       );
+    }
+
+    if (isSameDay(date)) {
+      const mess = await this.prisma.mess.findUnique({
+        where: { id: messId },
+        select: { meal_deadline_start: true, meal_deadline_end: true },
+      });
+      if (!mess) throw new HttpException('Mess not found', 404);
+
+      const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
+      const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
+
+      if (!isWithinMealWindow(date, startTime, endTime)) {
+        throw new HttpException(
+          `Meal deadline has passed. Meal window is ${startTime} - ${endTime} (next day). Only managers can modify meals now.`,
+          400,
+        );
+      }
     }
   }
 
@@ -355,17 +377,9 @@ export class MealService {
    * Check if a specific meal date/time is still within the window for members.
    */
   async isMealWindowOpen(messId: string, date: string): Promise<boolean> {
-    const mess = await this.prisma.mess.findUnique({
-      where: { id: messId },
-      select: { meal_deadline_start: true, meal_deadline_end: true },
-    });
-    if (!mess) return false;
-
-    const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
-    const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
     const targetDate = new Date(date);
 
-    return isWithinMealWindow(targetDate, startTime, endTime);
+    return isSameOrAfterToday(targetDate);
   }
 
   // ─── CRUD Operations ──────────────────────────────────────
@@ -688,7 +702,7 @@ export class MealService {
         targetDate,
         deadlineConfig.startTime,
         deadlineConfig.endTime,
-      ) ?? false,
+      ),
       windowStartTime: deadlineConfig.startTime,
       windowEndTime: deadlineConfig.endTime,
     };

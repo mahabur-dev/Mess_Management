@@ -53,6 +53,13 @@ const avatarColor = (name: string) => { let h = 0; for (let i = 0; i < name.leng
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 const formatTimeReadable = (time: string) => { const [h, m] = time.split(':').map(Number); const p = h >= 12 ? 'PM' : 'AM'; const hr = h % 12 || 12; return `${hr}:${m.toString().padStart(2, '0')} ${p}` }
+const isPastDate = (value: string) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const target = new Date(value)
+  target.setHours(0, 0, 0, 0)
+  return target.getTime() < today.getTime()
+}
 function getErrorMessage(error: unknown, fallback: string) { return error instanceof Error ? error.message : fallback }
 
 export default function MealsPage() {
@@ -81,8 +88,8 @@ export default function MealsPage() {
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
   const canViewMemberMealSheet = Boolean(user?.id)
-  const isWindowOpen = deadlineInfo?.isWindowOpen ?? false
-  const mealControlsLocked = !isWindowOpen || userMealsLoading
+  const isPastSelectedDate = isPastDate(date)
+  const mealControlsLocked = userMealsLoading || (!isManager && deadlineInfo ? !deadlineInfo.isWindowOpen : false)
 
   function getManagerDraftStr(memberId: string, mealName: MealName, fallback: number) {
     const v = managerMealDrafts[memberId]?.[mealName]
@@ -194,7 +201,8 @@ export default function MealsPage() {
 
   async function setMeal(mealName: MealName, status: AttendanceStatus) {
     if (!activeMess) return
-    if (!isWindowOpen && !isManager) { setMessageType('error'); setMessage('Meal window is closed. Deadline passed.'); return }
+    if (isPastSelectedDate && !isManager) { setMessageType('error'); setMessage('Past date meals can only be updated by managers.'); return }
+    if (!isPastSelectedDate && deadlineInfo && !deadlineInfo.isWindowOpen && !isManager) { setMessageType('error'); setMessage("Today's meal window is closed. Only managers can modify meals now."); return }
     setMessage('')
     try {
       await apiClient.createMeal({ messId: activeMess.id, mealName, status, guests: parseNum(guests[mealName]), date })
@@ -262,9 +270,15 @@ export default function MealsPage() {
           </div>
         )}
 
-        {!deadlineLoading && deadlineInfo && (
-          <div className={`mb-6 rounded-xl border px-4 py-3 text-sm font-bold shadow-sm ${isWindowOpen ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700' : 'border-amber-200/60 bg-amber-50 text-amber-700'}`}>
-            {isWindowOpen ? <>✅ Meal window is OPEN ({formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)})</> : <>⏰ Meal window is CLOSED. Only managers can modify meals now.</>}
+        {!deadlineLoading && deadlineInfo && isPastSelectedDate && (
+          <div className="mb-6 rounded-xl border border-amber-200/60 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700 shadow-sm">
+            Past date selected. Only managers can modify meals for previous dates.
+          </div>
+        )}
+
+        {!deadlineLoading && deadlineInfo && !isPastSelectedDate && !deadlineInfo.isWindowOpen && !isManager && (
+          <div className="mb-6 rounded-xl border border-amber-200/60 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700 shadow-sm">
+            Today&apos;s meal window is closed. Only managers can modify meals now.
           </div>
         )}
 

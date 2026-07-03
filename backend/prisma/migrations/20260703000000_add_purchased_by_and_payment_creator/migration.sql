@@ -6,9 +6,6 @@ SET "purchased_by" = "created_by"
 WHERE "purchased_by" IS NULL;
 
 ALTER TABLE "expenses"
-ALTER COLUMN "purchased_by" SET NOT NULL;
-
-ALTER TABLE "expenses"
 ADD CONSTRAINT "expenses_purchased_by_fkey"
 FOREIGN KEY ("purchased_by") REFERENCES "users"("id")
 ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -23,6 +23,11 @@ export class CreateExpenseDto {
   @IsString()
   buyerId?: string;
 
+  @ApiPropertyOptional({ example: 'uuid-member-id', description: 'Member who purchased this expense' })
+  @IsOptional()
+  @IsString()
+  purchasedBy?: string;
+
   @ApiProperty({ enum: ExpenseCategory, example: ExpenseCategory.GROCERY })
   @IsEnum(ExpenseCategory)
   category: ExpenseCategory;
@@ -84,6 +89,11 @@ export class UpdateExpenseDto {
   @IsOptional()
   @IsString()
   buyerId?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-member-id', description: 'Member who purchased this expense' })
+  @IsOptional()
+  @IsString()
+  purchasedBy?: string;
 
   @ApiPropertyOptional({ example: 1500 })
   @IsOptional()

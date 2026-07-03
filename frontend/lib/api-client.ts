@@ -95,6 +95,7 @@ export interface Mess {
   settings_completed?: boolean
   created_at: string
   _count?: { memberships?: number; deposits?: number; meals?: number }
+  memberships?: MessMembershipWithDetails[]
 }
 
 export interface PublicMessSubscription {
@@ -212,6 +213,7 @@ export interface Payment {
   payment_date?: string | null
   created_at: string
   member?: User
+  creator?: User
   mess?: Mess
 }
 
@@ -595,7 +597,7 @@ class ApiClient {
     return this.request<MonthlyBill[]>('/monthly-bill/my', { params })
   }
 
-  submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string; paymentDate?: string; categories?: string[] }) {
+  submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string; paymentDate?: string; categories?: string[]; purchasedBy?: string }) {
     return this.request<Payment>('/payments', { method: 'POST', body: JSON.stringify(data) })
   }
 

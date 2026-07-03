@@ -3,7 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { apiClient, type Mess, type Payment, type PaymentMethod, type ExpenseCategory } from '@/lib/api-client'
+import { apiClient, type Mess, type MessMembershipWithDetails, type Payment, type PaymentMethod, type ExpenseCategory } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
 import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban, Search, Filter, Trash2, Eye } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -69,16 +69,34 @@ function getErrorMessage(error: unknown, fallback: string) {
 export default function PaymentsPage() {
   const [messes, setMesses] = useState<Mess[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
+  const [messMembers, setMessMembers] = useState<MessMembershipWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<PaymentMethod>('BKASH')
   const [paymentDate, setPaymentDate] = useState('')
+  const [paymentPurchasedBy, setPaymentPurchasedBy] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const { user } = useAuth()
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
+  const activeMembership = user?.memberships?.find(
+    (membership) =>
+      membership.mess_id === activeMess?.id || membership.mess?.id === activeMess?.id,
+  )
   const isAdmin = user?.role === 'ADMIN'
-  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const isManager =
+    user?.role === 'ADMIN' ||
+    user?.role === 'MANAGER' ||
+    user?.role === 'ORGANIZER' ||
+    activeMembership?.role === 'MANAGER'
+  const purchasedByOptions = useMemo(
+    () =>
+      messMembers
+        .filter((membership) => membership.is_active && membership.user)
+        .map((membership) => membership.user!),
+    [messMembers],
+  )
+  const purchasedByMemberOptions = purchasedByOptions.length > 0 ? purchasedByOptions : user ? [user] : []
   const [showModal, setShowModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null)
@@ -107,9 +125,15 @@ export default function PaymentsPage() {
           ? [messRes.data]
           : ((user?.memberships?.map((item) => item.mess).filter(Boolean) ?? []) as Mess[])
       setMesses(list)
+      setPaymentPurchasedBy(user?.id ?? '')
       if (list[0]) {
         const paymentRes = isManager ? await apiClient.getPaymentsByMess(list[0].id).catch(() => null) : await apiClient.getMyPayments().catch(() => null)
         setPayments(Array.isArray(paymentRes?.data) ? paymentRes.data : [])
+        const managerMembersRes = isManager ? await apiClient.getAllMembers({ limit: 1000 }).catch(() => null) : null
+        const fetchedMembers = Array.isArray(managerMembersRes?.data) ? managerMembersRes.data : []
+        const activeMembersFromApi = fetchedMembers.filter((member) => member.mess?.id === list[0].id)
+        const fallbackMembers = list[0].memberships?.filter((membership) => membership.is_active && membership.user) ?? []
+        setMessMembers(activeMembersFromApi.length > 0 ? activeMembersFromApi : fallbackMembers)
       }
     } finally {
       setLoading(false)
@@ -118,17 +142,25 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     load()
-  }, [user?.role])
+  }, [user, isManager])
 
   async function submitPayment() {
     if (!activeMess || !amount) return
     setSubmitting(true)
     setMessage('')
     try {
-      await apiClient.submitPayment({ messId: activeMess.id, amount: Number(amount), method, paymentDate: paymentDate || undefined, categories: selectedCategories.length > 0 ? selectedCategories : undefined })
+      await apiClient.submitPayment({
+        messId: activeMess.id,
+        purchasedBy: paymentPurchasedBy || user?.id,
+        amount: Number(amount),
+        method,
+        paymentDate: paymentDate || undefined,
+        categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+      })
       setAmount('')
       setPaymentDate('')
       setSelectedCategories([])
+      setPaymentPurchasedBy(user?.id ?? '')
       setShowModal(false)
       setMessageType('success')
       setMessage('Payment submitted successfully.')
@@ -185,7 +217,7 @@ export default function PaymentsPage() {
         ? new Date(payment.payment_date).toISOString().slice(0, 7)
         : new Date(payment.created_at).toISOString().slice(0, 7)
       const matchMonth = paymentMonth === selectedMonth
-      const searchableText = `${payment.member?.name ?? ''} ${payment.member?.email ?? ''} ${payment.method} ${payment.status} ${(payment.categories ?? []).join(' ')}`.toLowerCase()
+      const searchableText = `${payment.member?.name ?? ''} ${payment.member?.email ?? ''} ${payment.creator?.name ?? ''} ${payment.method} ${payment.status} ${(payment.categories ?? []).join(' ')}`.toLowerCase()
       const matchSearch = searchableText.includes(searchText.toLowerCase())
       return matchMonth && matchSearch
     })
@@ -226,7 +258,7 @@ export default function PaymentsPage() {
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{payments.length} payment{payments.length !== 1 ? 's' : ''} recorded</p>
             </div>
           </div>
-          <Button onClick={() => setShowModal(true)} className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
+          <Button onClick={() => { setPaymentPurchasedBy(user?.id ?? ''); setShowModal(true) }} className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
             <Plus size={18} /> Submit Payment
           </Button>
         </div>
@@ -273,7 +305,8 @@ export default function PaymentsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Member</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Purchased By</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Added By</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Method</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Amount</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Categories</th>
@@ -284,10 +317,10 @@ export default function PaymentsPage() {
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
               {loading && (
-                <tr><td colSpan={7} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading payments...</div></td></tr>
+                <tr><td colSpan={8} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading payments...</div></td></tr>
               )}
               {!loading && filteredPayments.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-12 text-center">
+                <tr><td colSpan={8} className="px-5 py-12 text-center">
                   <div className="flex flex-col items-center gap-2"><Wallet size={40} className="text-[#d8e6f8]" />
                     <p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No payment records yet.' : 'No payments match your filters.'}</p>
                     <p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Submit Payment" to add one.' : 'Try changing the month or search term.'}</p>
@@ -308,6 +341,12 @@ export default function PaymentsPage() {
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
                         <div><p className="text-sm font-bold text-[#172554]">{payment.member?.name ?? 'Unknown Member'}</p><p className="text-xs font-semibold text-[#6b7a99]">{payment.member?.email ?? ''}</p></div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">{(payment.creator?.name?.[0] || 'M').toUpperCase()}</div>
+                        <div><p className="text-sm font-bold text-[#172554]">{payment.creator?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-[#6b7a99]">{payment.creator?.email ?? ''}</p></div>
                       </div>
                     </td>
                     <td className="px-5 py-4">
@@ -422,6 +461,20 @@ export default function PaymentsPage() {
                   <p className="text-sm font-black text-[#172554]">{money(payment.amount)}</p>
                 </div>
 
+                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
+                  <span>Purchased by</span>
+                  <span className="text-[#172554]">
+                    {payment.member?.name ?? 'Unknown Member'}
+                  </span>
+                </div>
+
+                <div className="mt-1 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
+                  <span>Added by</span>
+                  <span className="text-[#172554]">
+                    {payment.creator?.name ?? 'Unknown'}
+                  </span>
+                </div>
+
                 {(payment.categories ?? []).length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {payment.categories.map((cat) => {
@@ -476,6 +529,16 @@ export default function PaymentsPage() {
                     </span>
                   </div>
                 </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Purchased By</p>
+                    <p className="mt-1 text-sm font-bold text-[#172554]">{viewingPayment.member?.name ?? 'Unknown Member'}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Added By</p>
+                    <p className="mt-1 text-sm font-bold text-[#172554]">{viewingPayment.creator?.name ?? 'Unknown'}</p>
+                  </div>
+                </div>
                 {viewingPayment.categories && viewingPayment.categories.length > 0 && (
                   <div><p className="mb-2 text-xs font-bold text-[#6b7a99]">Categories</p>
                     <div className="flex flex-wrap gap-1.5">{viewingPayment.categories.map((cat) => {
@@ -516,6 +579,23 @@ export default function PaymentsPage() {
                   <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Payment Date</label>
                   <input className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
                 </div>
+
+                {isManager && purchasedByMemberOptions.length > 0 && (
+                  <div>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Purchased By</label>
+                    <select
+                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      value={paymentPurchasedBy}
+                      onChange={(e) => setPaymentPurchasedBy(e.target.value)}
+                    >
+                      {purchasedByMemberOptions.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Payment Method</label>

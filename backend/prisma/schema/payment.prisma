@@ -1,24 +1,26 @@
 model Payment {
-  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  mess_id        String        @db.Uuid
-  member_id      String        @db.Uuid
-  monthly_bill_id String?      @db.Uuid
-  amount         Decimal       @db.Decimal(12, 2)
-  method         PaymentMethod
-  status         PaymentStatus @default(PENDING)
-  categories     String[]      @default([])
-  transaction_id String?       @db.VarChar(120)
-  screenshot_url String?       @db.Text
-  note           String?       @db.Text
-  approved_by    String?       @db.Uuid
-  approved_at    DateTime?     @db.Timestamptz
-  payment_date   DateTime?     @db.Date
-  created_at     DateTime      @default(now()) @db.Timestamptz
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id         String        @db.Uuid
+  member_id       String        @db.Uuid
+  created_by      String        @db.Uuid
+  monthly_bill_id String?       @db.Uuid
+  amount          Decimal       @db.Decimal(12, 2)
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  categories      String[]      @default([])
+  transaction_id  String?       @db.VarChar(120)
+  screenshot_url  String?       @db.Text
+  note            String?       @db.Text
+  approved_by     String?       @db.Uuid
+  approved_at     DateTime?     @db.Timestamptz
+  payment_date    DateTime?     @db.Date
+  created_at      DateTime      @default(now()) @db.Timestamptz
 
-  mess        Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
-  member      User @relation("PaymentMember", fields: [member_id], references: [id])
-  monthly_bill MonthlyBill? @relation(fields: [monthly_bill_id], references: [id], onDelete: SetNull)
-  approver    User? @relation("PaymentApprover", fields: [approved_by], references: [id])
+  mess         Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  member       User @relation("PaymentMember", fields: [member_id], references: [id])
+  creator      User @relation("PaymentCreator", fields: [created_by], references: [id])
+  monthly_bill  MonthlyBill? @relation(fields: [monthly_bill_id], references: [id], onDelete: SetNull)
+  approver     User? @relation("PaymentApprover", fields: [approved_by], references: [id])
 
   @@index([mess_id, member_id])
   @@index([status, created_at])

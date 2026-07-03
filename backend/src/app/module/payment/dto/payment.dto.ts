@@ -14,6 +14,11 @@ export class CreatePaymentDto {
   @IsString()
   monthlyBillId?: string;
 
+  @ApiPropertyOptional({ example: 'uuid-member-id', description: 'Member who made this payment' })
+  @IsOptional()
+  @IsString()
+  purchasedBy?: string;
+
   @ApiProperty({ example: 2500 })
   @Transform(({ value }) => Number(value))
   @IsNumber()

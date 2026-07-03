@@ -64,6 +64,7 @@ export class ExpenseService {
     description: true,
     receipt_url: true,
     buyer_id: true,
+    purchased_by: true,
     item_name: true,
     quantity: true,
     unit: true,
@@ -72,6 +73,7 @@ export class ExpenseService {
     created_at: true,
     mess: { select: { id: true, name: true } },
     creator: { select: { id: true, name: true, email: true } },
+    purchaser: { select: { id: true, name: true, email: true } },
   } as const;
 
   private async verifyManagerAccess(
@@ -113,8 +115,22 @@ export class ExpenseService {
     throw new HttpException('Forbidden: Not a member of this mess', 403);
   }
 
+  private async ensureActiveMessMember(messId: string, userId: string) {
+    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+    if (!mess) throw new HttpException('Mess not found', 404);
+    if (mess.created_by === userId) return;
+
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+
+    if (!membership?.is_active) {
+      throw new HttpException('Forbidden: Selected member is not active in this mess', 403);
+    }
+  }
+
   private verifyExpenseOwner(
-    expense: { created_by: string },
+    expense: { created_by: string; purchased_by?: string | null },
     userId: string,
     role: string,
   ) {
@@ -122,7 +138,8 @@ export class ExpenseService {
     if (role === 'MANAGER') return;
 
     // Member can edit only own expense
-    if (expense.created_by !== userId) {
+    const ownerId = expense.purchased_by ?? expense.created_by;
+    if (ownerId !== userId) {
       throw new HttpException(
         'Forbidden: You can edit only your own expenses',
         403,
@@ -159,6 +176,12 @@ export class ExpenseService {
     await this.verifyMessMemberAccess(dto.messId, userId, role);
     await this.ensureActiveSubscription(dto.messId, role);
 
+    const purchasedById = dto.purchasedBy ?? userId;
+    if (purchasedById !== userId) {
+      await this.verifyManagerAccess(dto.messId, userId, role);
+    }
+    await this.ensureActiveMessMember(dto.messId, purchasedById);
+
     const receiptUrl = receipt
       ? (
           await uploadToCloudinary(receipt, 'mess_management/expenses', {
@@ -178,7 +201,7 @@ export class ExpenseService {
 
       const [deposit, allPayments, foodExpenses, utilityExpenses] = await Promise.all([
         this.prisma.deposit.aggregate({
-          where: { mess_id: dto.messId, member_id: userId },
+          where: { mess_id: dto.messId, member_id: purchasedById },
           _sum: { amount: true },
         }),
         this.prisma.payment.aggregate({
@@ -224,6 +247,7 @@ export class ExpenseService {
       data: {
         mess_id: dto.messId,
         created_by: userId,
+        purchased_by: purchasedById,
         category: dto.category as ExpenseCategory,
         amount: dto.amount,
         expense_date: new Date(dto.expenseDate),
@@ -242,7 +266,7 @@ export class ExpenseService {
     if (paymentType === ExpensePaymentType.PERSONAL) {
       await this.handlePersonalPaymentExpense(
         dto.messId,
-        userId,
+        purchasedById,
         dto.amount,
         expense.id,
         expense.expense_date,
@@ -358,7 +382,7 @@ export class ExpenseService {
       where: { id },
     });
 
-    console.log('Updating expense:', { id, userId, role, dto, receipt });
+    // console.log('Updating expense:', { id, userId, role, dto, receipt });
 
     if (!expense) {
       throw new HttpException('Expense not found', 404);
@@ -368,10 +392,15 @@ export class ExpenseService {
     this.verifyExpenseOwner(expense, userId, role);
     await this.ensureActiveSubscription(expense.mess_id, role);
 
-    const oldExpenseDate = expense.expense_date;
     const oldPaymentType = expense.payment_type;
     const oldAmount = expense.amount;
-    const oldCreatedBy = expense.created_by;
+    const oldPurchasedBy = expense.purchased_by ?? expense.created_by;
+    const nextPurchasedBy = dto.purchasedBy ?? oldPurchasedBy;
+
+    if (nextPurchasedBy !== oldPurchasedBy) {
+      await this.verifyManagerAccess(expense.mess_id, userId, role);
+    }
+    await this.ensureActiveMessMember(expense.mess_id, nextPurchasedBy);
 
     const receiptUrl = receipt
       ? (
@@ -393,7 +422,7 @@ export class ExpenseService {
 
       const [deposit, allPayments, foodExpenses, utilityExpenses] = await Promise.all([
         this.prisma.deposit.aggregate({
-          where: { mess_id: expense.mess_id, member_id: expense.created_by },
+          where: { mess_id: expense.mess_id, member_id: nextPurchasedBy },
           _sum: { amount: true },
         }),
         this.prisma.payment.aggregate({
@@ -447,6 +476,7 @@ export class ExpenseService {
         description: dto.description,
         receipt_url: receiptUrl,
         buyer_id: dto.buyerId,
+        purchased_by: nextPurchasedBy,
         item_name: dto.itemName,
         quantity: dto.quantity,
         unit: dto.unit,
@@ -459,37 +489,21 @@ export class ExpenseService {
     const wasPersonal = oldPaymentType === ExpensePaymentType.PERSONAL;
     const isNowPersonal = paymentType === ExpensePaymentType.PERSONAL;
 
-    if (wasPersonal && !isNowPersonal) {
-      // Changed from personal to FROM_DEPOSIT: remove the auto-created deposit
+    if (wasPersonal) {
       await this.prisma.deposit.deleteMany({
         where: {
           mess_id: expense.mess_id,
-          member_id: oldCreatedBy,
+          member_id: oldPurchasedBy,
           note: { contains: `expense: ${id}` },
         },
       });
-    } else if (!wasPersonal && isNowPersonal && dto.amount) {
-      // Changed FROM_DEPOSIT to personal: create deposit
+    }
+
+    if (isNowPersonal) {
       await this.handlePersonalPaymentExpense(
         expense.mess_id,
-        oldCreatedBy,
-        dto.amount,
-        id,
-        updatedExpense.expense_date,
-      );
-    } else if (wasPersonal && isNowPersonal && dto.amount && dto.amount !== Number(oldAmount)) {
-      // Still personal but amount changed: remove old deposit and create new
-      await this.prisma.deposit.deleteMany({
-        where: {
-          mess_id: expense.mess_id,
-          member_id: oldCreatedBy,
-          note: { contains: `expense: ${id}` },
-        },
-      });
-      await this.handlePersonalPaymentExpense(
-        expense.mess_id,
-        oldCreatedBy,
-        dto.amount,
+        nextPurchasedBy,
+        dto.amount ?? Number(oldAmount),
         id,
         updatedExpense.expense_date,
       );
@@ -519,10 +533,13 @@ export class ExpenseService {
         id: true,
         mess_id: true,
         created_by: true,
+        purchased_by: true,
         item_name: true,
         category: true,
         amount: true,
         mess: { select: { id: true, name: true } },
+        creator: { select: { id: true, name: true, email: true } },
+        purchaser: { select: { id: true, name: true, email: true } },
       },
     });
 
@@ -535,9 +552,10 @@ export class ExpenseService {
 
     const message = dto.message.trim();
     const itemLabel = expense.item_name || expense.category;
+    const targetUserId = expense.purchased_by ?? expense.created_by;
 
     const result = await this.notificationService.sendPushToUser(
-      expense.created_by,
+      targetUserId,
       {
         title: `Price review requested - ${expense.mess.name}`,
         body: message,
@@ -554,7 +572,7 @@ export class ExpenseService {
 
     return {
       expenseId: expense.id,
-      targetUserId: expense.created_by,
+      targetUserId,
       ...result,
     };
   }
@@ -564,6 +582,7 @@ export class ExpenseService {
       where: { id },
       include: {
         creator: { select: { id: true, name: true, email: true } },
+        purchaser: { select: { id: true, name: true, email: true } },
         mess: { select: { id: true, name: true } },
       },
     });
@@ -574,9 +593,10 @@ export class ExpenseService {
 
     await this.verifyManagerAccess(expense.mess_id, userId, role);
     await this.ensureActiveSubscription(expense.mess_id, role);
+    const targetUser = expense.purchaser ?? expense.creator;
 
     // If manager deletes someone else's expense, send email
-    if (expense.created_by !== userId && expense.creator?.email) {
+    if (targetUser.id !== userId && targetUser.email) {
       try {
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fafcff; border-radius: 12px;">
@@ -584,7 +604,7 @@ export class ExpenseService {
               <h2 style="color: #fff; margin: 0; font-size: 20px;">Expense Deleted</h2>
             </div>
             <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #e6ebf4;">
-              <p style="color: #172554; font-size: 16px; font-weight: 600;">Hello ${expense.creator.name},</p>
+              <p style="color: #172554; font-size: 16px; font-weight: 600;">Hello ${targetUser.name},</p>
               <p style="color: #53617d; font-size: 14px; line-height: 1.6;">
                 Your expense of <strong style="color: #dc2626;">৳ ${Number(expense.amount).toLocaleString()}</strong> 
                 for <strong>${expense.item_name || expense.category}</strong> in <strong>${expense.mess.name}</strong> has been deleted by a manager.
@@ -602,7 +622,7 @@ export class ExpenseService {
             </div>
           </div>
         `;
-        await sendMailer(expense.creator.email, `Expense Deleted - ${expense.mess.name}`, html);
+        await sendMailer(targetUser.email, `Expense Deleted - ${expense.mess.name}`, html);
       } catch (e) {
         console.error('Failed to send expense deletion email:', e);
       }
@@ -613,7 +633,7 @@ export class ExpenseService {
       await this.prisma.deposit.deleteMany({
         where: {
           mess_id: expense.mess_id,
-          member_id: expense.created_by,
+          member_id: expense.purchased_by ?? expense.created_by,
           note: { contains: `expense: ${id}` },
         },
       });
@@ -641,12 +661,24 @@ export class ExpenseService {
     if (query.messId) where.mess_id = query.messId;
     if (query.category) where.category = query.category;
     if (query.userName) {
-      where.creator = {
-        name: {
-          contains: query.userName,
-          mode: 'insensitive',
+      where.OR = [
+        {
+          creator: {
+            name: {
+              contains: query.userName,
+              mode: 'insensitive',
+            },
+          },
         },
-      };
+        {
+          purchaser: {
+            name: {
+              contains: query.userName,
+              mode: 'insensitive',
+            },
+          },
+        },
+      ];
     }
     if (query.startDate || query.endDate) {
       where.expense_date = {

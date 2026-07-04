@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Banknote,
   RefreshCw,
+  Search,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -53,6 +54,7 @@ export default function MonthlyBillPage() {
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [memberSearch, setMemberSearch] = useState('')
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
   const billMonth = `${selectedMonth}-01`
@@ -87,7 +89,17 @@ export default function MonthlyBillPage() {
     } finally { setGenerating(false) }
   }
 
-  const filteredBills = useMemo(() => bills.filter(b => new Date(b.month).toISOString().slice(0, 7) === selectedMonth), [bills, selectedMonth])
+  const filteredBills = useMemo(() => {
+    const monthBills = bills.filter((bill) => new Date(bill.month).toISOString().slice(0, 7) === selectedMonth)
+    const searchTerm = memberSearch.trim().toLowerCase()
+
+    if (!searchTerm) return monthBills
+
+    return monthBills.filter((bill) => {
+      const memberName = bill.member?.name?.toLowerCase() ?? ''
+      return memberName.includes(searchTerm)
+    })
+  }, [bills, memberSearch, selectedMonth])
 
   const summary = useMemo(() => ({
     totalFood: filteredBills.reduce((s, b) => s + Number(b.food_bill || 0), 0),
@@ -127,6 +139,31 @@ export default function MonthlyBillPage() {
             <div className="flex h-[45px] w-full items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-gradient-to-r from-[#e7f1ff] to-[#f0fdf4] px-4 text-xs font-black text-[#2f80ed] shadow-sm sm:w-auto">
               <ClipboardList size={16} /> {filteredBills.length} Bill{filteredBills.length !== 1 ? 's' : ''}
             </div>
+          </div>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-[#d8e6f8] bg-white p-3 shadow-sm sm:p-4">
+          <label className="flex w-full items-center gap-3 rounded-xl border border-[#d8e6f8] bg-[#fafcff] px-4 py-3 shadow-sm transition focus-within:border-[#2f80ed]/50 focus-within:ring-4 focus-within:ring-[#2f80ed]/10">
+            <Search size={18} className="shrink-0 text-[#2f80ed]" />
+            <input
+              type="text"
+              value={memberSearch}
+              onChange={(event) => setMemberSearch(event.target.value)}
+              placeholder="Search by member name..."
+              className="w-full bg-transparent text-sm font-semibold text-[#172554] outline-none placeholder:text-[#94a3b8]"
+            />
+          </label>
+          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] font-semibold text-[#6b7a99]">
+            <span>Search uses member name only.</span>
+            {memberSearch.trim() && (
+              <button
+                type="button"
+                onClick={() => setMemberSearch('')}
+                className="font-bold text-[#2f80ed] hover:underline"
+              >
+                Clear
+              </button>
+            )}
           </div>
         </div>
 

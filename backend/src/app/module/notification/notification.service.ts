@@ -52,6 +52,35 @@ export class NotificationService {
     return { publicKey };
   }
 
+  async getPushSubscriptionStatus(userId: string) {
+    await this.ensureUserExists(userId);
+
+    const [activeSubscriptionCount, latestSubscription] = await Promise.all([
+      this.prisma.pushNotificationSubscription.count({
+        where: { user_id: userId, is_active: true },
+      }),
+      this.prisma.pushNotificationSubscription.findFirst({
+        where: { user_id: userId, is_active: true },
+        orderBy: { updated_at: 'desc' },
+        select: {
+          id: true,
+          endpoint: true,
+          user_agent: true,
+          is_active: true,
+          created_at: true,
+          updated_at: true,
+          last_used_at: true,
+        },
+      }),
+    ]);
+
+    return {
+      hasActiveSubscription: activeSubscriptionCount > 0,
+      activeSubscriptionCount,
+      latestSubscription,
+    };
+  }
+
   async savePushSubscription(
     userId: string,
     dto: SavePushSubscriptionDto,
@@ -172,35 +201,61 @@ export class NotificationService {
     metadata?: Record<string, unknown>,
     targetUserIds?: string[],
     url = '/dashboard/notifications',
+    dedupeKey?: string,
   ) {
-    const notification = await this.prisma.notification.create({
-      data: {
-        mess_id: messId,
-        sender_id: senderId,
-        type,
+    if (dedupeKey) {
+      const existing = await this.prisma.notification.findUnique({
+        where: { dedupe_key: dedupeKey },
+        select: this.notificationSelect,
+      });
+
+      if (existing) {
+        return existing;
+      }
+    }
+
+    try {
+      const notification = await this.prisma.notification.create({
+        data: {
+          mess_id: messId,
+          sender_id: senderId,
+          dedupe_key: dedupeKey,
+          type,
+          title,
+          body,
+          metadata: metadata as Prisma.InputJsonValue | undefined,
+        },
+        select: this.notificationSelect,
+      });
+
+      const resolvedTargets =
+        targetUserIds ?? (await this.resolveMessUserIds(messId));
+
+      await this.dispatchPushToUsers(resolvedTargets, {
         title,
         body,
-        metadata: metadata as Prisma.InputJsonValue | undefined,
-      },
-      select: this.notificationSelect,
-    });
+        url,
+        data: {
+          notificationId: notification.id,
+          messId,
+          type,
+          ...(metadata ?? {}),
+        },
+      });
 
-    const resolvedTargets =
-      targetUserIds ?? (await this.resolveMessUserIds(messId));
+      return notification;
+    } catch (error) {
+      const isDuplicate = (error as { code?: string }).code === 'P2002';
+      if (dedupeKey && isDuplicate) {
+        const existing = await this.prisma.notification.findUnique({
+          where: { dedupe_key: dedupeKey },
+          select: this.notificationSelect,
+        });
+        if (existing) return existing;
+      }
 
-    await this.dispatchPushToUsers(resolvedTargets, {
-      title,
-      body,
-      url,
-      data: {
-        notificationId: notification.id,
-        messId,
-        type,
-        ...(metadata ?? {}),
-      },
-    });
-
-    return notification;
+      throw error;
+    }
   }
 
   async sendPushToUsers(userIds: string[], dto: SendPushNotificationDto) {

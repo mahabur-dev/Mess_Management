@@ -320,6 +320,20 @@ export interface PushSubscriptionPayload {
   userAgent?: string
 }
 
+export interface PushSubscriptionStatus {
+  hasActiveSubscription: boolean
+  activeSubscriptionCount: number
+  latestSubscription: {
+    id: string
+    endpoint: string
+    user_agent?: string | null
+    is_active: boolean
+    created_at: string
+    updated_at: string
+    last_used_at: string
+  } | null
+}
+
 type QueryParams = Record<string, string | number | boolean | undefined | null>
 
 class ApiClient {
@@ -680,6 +694,10 @@ class ApiClient {
 
   getPushPublicKey() {
     return this.request<{ publicKey: string }>('/notification/push/public-key')
+  }
+
+  getPushSubscriptionStatus() {
+    return this.request<PushSubscriptionStatus>('/notification/push/status')
   }
 
   savePushSubscription(data: PushSubscriptionPayload) {

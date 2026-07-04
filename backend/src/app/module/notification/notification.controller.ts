@@ -47,6 +47,14 @@ export class NotificationController {
     return { message: 'Push public key fetched successfully', data };
   }
 
+  @Get('push/status')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @ApiOperation({ summary: 'Get current user push subscription status' })
+  async getPushStatus(@Req() req: Request) {
+    const data = await this.notificationService.getPushSubscriptionStatus(req.user!.id);
+    return { message: 'Push subscription status fetched successfully', data };
+  }
+
   @Post('push/subscribe')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
   @ApiOperation({ summary: 'Save current user browser push subscription' })

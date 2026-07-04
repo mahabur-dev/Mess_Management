@@ -789,11 +789,6 @@ export default function FinancePage() {
                           <p className="font-bold text-[#172554]">
                             {item.item_name || 'Unnamed Expense'}
                           </p>
-                          {item.description && (
-                            <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
-                              {item.description}
-                            </p>
-                          )}
                         </td>
                         <td className="px-5 py-4">
                           <span

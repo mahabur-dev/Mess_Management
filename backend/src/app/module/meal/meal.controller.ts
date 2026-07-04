@@ -33,8 +33,8 @@ export class MealController {
   constructor(private readonly mealService: MealService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
-  @ApiOperation({ summary: 'Add a meal entry (all roles)' })
+  @UseGuards(AuthGuard('MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Add a meal entry (manager/member only)' })
   async create(@Req() req: Request, @Body() dto: CreateMealDto) {
     const data = await this.mealService.create(
       req.user!.id,
@@ -110,7 +110,7 @@ export class MealController {
    * members can add/update meals. After the window closes, only managers can modify.
    */
   @Post('mess/:messId/deadline')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('MANAGER'))
   @ApiOperation({ summary: 'Set meal deadline window (start & end time)' })
   async setMealDeadline(
     @Param('messId') messId: string,
@@ -174,7 +174,7 @@ export class MealController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Update a meal entry' })
   async update(
     @Param('id') id: string,
@@ -191,7 +191,7 @@ export class MealController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Delete a meal entry' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.mealService.remove(

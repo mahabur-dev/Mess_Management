@@ -11,18 +11,31 @@ export function isPushNotificationSupported() {
   )
 }
 
-export function getPushPromptStorageKey(userId: string) {
-  return `push-notification-prompt:${userId}`
+export function getPushPermissionState() {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return 'unsupported' as const
+  }
+
+  return Notification.permission
 }
 
-export async function registerPushNotifications() {
+export function shouldShowPushPermissionPrompt(permission: NotificationPermission | 'unsupported') {
+  return permission !== 'granted' && permission !== 'unsupported'
+}
+
+export async function registerPushNotifications(options: { promptForPermission?: boolean } = {}) {
   if (!isPushNotificationSupported()) {
     throw new Error('Push notifications are not supported in this browser.')
   }
 
-  const permission = await Notification.requestPermission()
-  if (permission !== 'granted') {
-    throw new Error('Notification permission was not granted.')
+  const promptForPermission = options.promptForPermission ?? true
+  if (promptForPermission) {
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') {
+      throw new Error('Notification permission was not granted.')
+    }
+  } else if (Notification.permission !== 'granted') {
+    throw new Error('Notification permission is not granted.')
   }
 
   const [{ data }, registration] = await Promise.all([

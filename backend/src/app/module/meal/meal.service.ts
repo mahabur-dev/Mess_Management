@@ -44,6 +44,13 @@ function parseTimeToMinutes(time: string): number {
   return h * 60 + m;
 }
 
+function formatLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 /**
  * Calculate the total meal count from attendance status, meal name, and guests.
  * - OFF       → 0
@@ -198,6 +205,8 @@ export class MealService {
       const dateStr = date.toLocaleDateString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric',
       });
+      const targetUserIds = await this.resolveMealNotificationUserIds(messId);
+      const dedupeKey = `meal:deadline-warning:${messId}:${formatLocalDateKey(date)}:${endTime}`;
 
       await this.notificationService.createForMess(
         null,
@@ -206,8 +215,9 @@ export class MealService {
         `⏰ Meal deadline closing soon - ${messName}`,
         `Meal time will close at ${endTime} for ${dateStr}. Please add/update your meals now!`,
         { type: 'MEAL_DEADLINE_WARNING', date: date.toISOString(), endTime },
-        undefined,
+        targetUserIds,
         '/dashboard/meals',
+        dedupeKey,
       );
     } catch (error) {
       this.logger.error(`Failed to send deadline warning for mess ${messId}:`, error);
@@ -225,6 +235,8 @@ export class MealService {
       const dateStr = date.toLocaleDateString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric',
       });
+      const targetUserIds = await this.resolveMealNotificationUserIds(messId);
+      const dedupeKey = `meal:window-opened:${messId}:${formatLocalDateKey(date)}:${startTime}:${endTime}`;
 
       await this.notificationService.createForMess(
         null,
@@ -238,12 +250,39 @@ export class MealService {
           startTime,
           endTime,
         },
-        undefined,
+        targetUserIds,
         '/dashboard/meals',
+        dedupeKey,
       );
     } catch (error) {
       this.logger.error(`Failed to send meal window notification for mess ${messId}:`, error);
     }
+  }
+
+  private async resolveMealNotificationUserIds(messId: string) {
+    const memberships = await this.prisma.messMembership.findMany({
+      where: {
+        mess_id: messId,
+        is_active: true,
+        role: { in: [MembershipRole.MANAGER, MembershipRole.MEMBER] },
+      },
+      select: {
+        user_id: true,
+        user: {
+          select: {
+            id: true,
+            role: true,
+            is_active: true,
+          },
+        },
+      },
+    });
+
+    return [...new Set(
+      memberships
+        .filter((membership) => membership.user.is_active && membership.user.role !== 'ADMIN')
+        .map((membership) => membership.user_id),
+    )];
   }
 
   // ─── Private Helpers ───────────────────────────────────────
@@ -299,8 +338,6 @@ export class MealService {
     userId: string,
     role: string,
   ): Promise<boolean> {
-    if (role === 'ADMIN') return true;
-
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
     if (role === 'MANAGER' && mess.created_by === userId) return true;
@@ -314,7 +351,7 @@ export class MealService {
 
   /**
    * Check if the current time is within the meal deadline window for the given date.
-   * If the user is a manager/admin, they bypass this check.
+   * Managers bypass this check; members must stay inside the configured window.
    */
   private async checkMealDeadline(
     messId: string,
@@ -322,11 +359,12 @@ export class MealService {
     userId: string,
     role: string,
   ): Promise<void> {
-    // Admins and managers can always modify meals
-    if (role === 'ADMIN') return;
-
     const isManager = await this.canManageMeal(messId, userId, role);
     if (isManager) return;
+
+    if (role === 'ADMIN') {
+      throw new HttpException('Forbidden: Admin cannot modify meal entries', 403);
+    }
 
     if (!isSameOrAfterToday(date)) {
       throw new HttpException(
@@ -378,8 +416,13 @@ export class MealService {
    */
   async isMealWindowOpen(messId: string, date: string): Promise<boolean> {
     const targetDate = new Date(date);
+    const deadlineConfig = await this.getMessDeadlineConfig(messId);
 
-    return isSameOrAfterToday(targetDate);
+    return isWithinMealWindow(
+      targetDate,
+      deadlineConfig.startTime,
+      deadlineConfig.endTime,
+    );
   }
 
   // ─── CRUD Operations ──────────────────────────────────────
@@ -644,7 +687,7 @@ export class MealService {
     role: string,
     dto: SetMealDeadlineDto,
   ) {
-    // Only managers, admins, and organizers can set meal deadlines
+    // Only managers can set meal deadlines
     const canManage = await this.canManageMeal(messId, userId, role);
     if (!canManage) {
       throw new HttpException(

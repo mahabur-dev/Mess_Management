@@ -7,6 +7,7 @@ model Notification {
   id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   mess_id    String           @db.Uuid
   sender_id  String?          @db.Uuid
+  dedupe_key String?          @unique @db.VarChar(255)
   type       NotificationType
   title      String           @db.VarChar(200)
   body       String           @db.Text

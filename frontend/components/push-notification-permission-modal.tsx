@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bell, BellOff } from 'lucide-react'
 import { useAuth } from '@/app/context/auth-context'
+import { apiClient, type PushSubscriptionStatus } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -13,34 +14,98 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  getPushPromptStorageKey,
+  getPushPermissionState,
   isPushNotificationSupported,
   registerPushNotifications,
+  shouldShowPushPermissionPrompt,
 } from '@/lib/push-notifications'
 
 export function PushNotificationPermissionModal() {
   const { user, isAuthenticated } = useAuth()
   const [open, setOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false)
+  const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>('unsupported')
+  const [subscriptionStatus, setSubscriptionStatus] = useState<PushSubscriptionStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const storageKey = useMemo(
-    () => (user?.id ? getPushPromptStorageKey(user.id) : null),
-    [user?.id],
-  )
-
   useEffect(() => {
-    if (!isAuthenticated || !user?.id || !storageKey) return
-    if (!isPushNotificationSupported()) return
-    if (Notification.permission !== 'default') return
-    if (localStorage.getItem(storageKey) === 'dismissed') return
+    let cancelled = false
+    let promptTimer: number | undefined
 
-    const timer = window.setTimeout(() => setOpen(true), 400)
-    return () => window.clearTimeout(timer)
-  }, [isAuthenticated, storageKey, user?.id])
+    async function evaluatePushPermission() {
+      if (!isAuthenticated || !user?.id || !isPushNotificationSupported()) {
+        setOpen(false)
+        setSubscriptionStatus(null)
+        setPermissionState('unsupported')
+        setIsCheckingStatus(false)
+        return
+      }
+
+      setIsCheckingStatus(true)
+      setError(null)
+
+      try {
+        const currentPermission = getPushPermissionState()
+        if (cancelled) return
+
+        setPermissionState(currentPermission)
+
+        const response = await apiClient.getPushSubscriptionStatus()
+        if (cancelled) return
+
+        setSubscriptionStatus(response.data)
+
+        if (currentPermission === 'granted') {
+          if (!response.data.hasActiveSubscription) {
+            try {
+              setIsSaving(true)
+              await registerPushNotifications({ promptForPermission: false })
+              setSubscriptionStatus((current) =>
+                current
+                  ? {
+                      ...current,
+                      hasActiveSubscription: true,
+                      activeSubscriptionCount: Math.max(1, current.activeSubscriptionCount),
+                    }
+                  : current,
+              )
+            } catch (syncError) {
+              if (!cancelled) {
+                setError(syncError instanceof Error ? syncError.message : 'Unable to sync push subscription.')
+              }
+            } finally {
+              if (!cancelled) setIsSaving(false)
+            }
+          }
+
+          setOpen(false)
+          return
+        }
+
+        if (shouldShowPushPermissionPrompt(currentPermission)) {
+          promptTimer = window.setTimeout(() => {
+            if (!cancelled) setOpen(true)
+          }, 400)
+        }
+      } catch {
+        if (!cancelled && shouldShowPushPermissionPrompt(getPushPermissionState())) {
+          promptTimer = window.setTimeout(() => setOpen(true), 400)
+        }
+      } finally {
+        if (!cancelled) setIsCheckingStatus(false)
+      }
+    }
+
+    void evaluatePushPermission()
+
+    return () => {
+      cancelled = true
+      if (promptTimer) window.clearTimeout(promptTimer)
+    }
+  }, [isAuthenticated, user?.id])
 
   const closeForNow = () => {
-    if (storageKey) localStorage.setItem(storageKey, 'dismissed')
     setOpen(false)
   }
 
@@ -50,7 +115,8 @@ export function PushNotificationPermissionModal() {
 
     try {
       await registerPushNotifications()
-      if (storageKey) localStorage.setItem(storageKey, 'enabled')
+      setPermissionState('granted')
+      setSubscriptionStatus((current) => current ? { ...current, hasActiveSubscription: true, activeSubscriptionCount: Math.max(1, current.activeSubscriptionCount) } : current)
       setOpen(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to enable notifications.')
@@ -74,7 +140,9 @@ export function PushNotificationPermissionModal() {
               Enable push notifications?
             </DialogTitle>
             <DialogDescription className="text-sm text-white/80">
-              Get mess updates, payment reminders, meal changes, and notices even when the dashboard is not open.
+              {permissionState === 'denied'
+                ? 'Your browser has blocked notifications. Please allow them from browser settings to get mess updates.'
+                : 'Get mess updates, payment reminders, meal changes, and notices even when the dashboard is not open.'}
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -85,8 +153,15 @@ export function PushNotificationPermissionModal() {
               {error}
             </div>
           )}
+          {isCheckingStatus && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              Checking notification status...
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">
-            You can allow or block permission from your browser. We only store this device subscription for your account.
+            {subscriptionStatus?.hasActiveSubscription
+              ? 'This device is already connected for notifications. No further action is needed.'
+              : 'Allow notifications from your browser to keep this device connected for instant updates.'}
           </p>
         </div>
 

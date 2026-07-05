@@ -15,6 +15,10 @@ async function bootstrap() {
   });
 
   app.use('/api/v1/webhook', express.raw({ type: 'application/json' }));
+  app.use((req, res, next) => {
+    console.log('[BACKEND]', req.method, req.url)
+    next()
+  })
 
   app.use(express.json({ limit: '100mb' }));
   app.use(express.urlencoded({ limit: '100mb', extended: true }));
@@ -25,17 +29,22 @@ async function bootstrap() {
       // Allow requests with no origin (mobile apps, Postman, curl)
       if (!origin) return callback(null, true);
 
-      const allowedOrigins = [
-        // Local development
-        'http://localhost:3000',
-        'http://localhost:5001',
-        'http://localhost:4000',
-        'https://www.messzen.com',
+   const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5001',
+      'http://localhost:4000',
 
-        // Production frontend
-        'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
-        'https://frontend-xi-neon-98.vercel.app'
-      ];
+      'http://192.168.0.152:3000',
+      'http://192.168.0.152:5001',
+      'http://192.168.0.152:4000',
+
+      'https://www.messzen.com',
+      'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
+      'https://frontend-xi-neon-98.vercel.app',
+
+      'capacitor://localhost',
+      'http://localhost',
+    ];
 
       // Allow GitHub Codespaces preview URLs (dynamic subdomains)
       const isCodespace = origin.endsWith('.app.github.dev');

@@ -11,7 +11,7 @@ type BaseFieldProps = {
 
 export function FieldCard({ label, hint, className, children }: BaseFieldProps) {
   return (
-    <label className={className}>
+    <label className={`block w-full ${className ?? ''}`}>
       <div className="mb-2 flex items-end justify-between gap-3">
         <div className="text-sm font-bold text-[#14324a]">{label}</div>
         {hint ? <div className="text-[11px] font-medium text-[#667b8a]">{hint}</div> : null}
@@ -38,7 +38,7 @@ export function TextField({
 }) {
   return (
     <FieldCard label={label} hint={hint}>
-      <input className="field" type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      <input className="field h-14" type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
     </FieldCard>
   )
 }
@@ -88,7 +88,7 @@ export function SelectField<T extends string>({
 }) {
   return (
     <FieldCard label={label} hint={hint}>
-      <select className="field" value={value} onChange={(e) => onChange(e.target.value as T)}>
+      <select className="field h-14" value={value} onChange={(e) => onChange(e.target.value as T)}>
         {options.map((option) => (
           <option key={option} value={option}>
             {getLabel ? getLabel(option) : option}
@@ -111,7 +111,7 @@ export function ToggleField({
   onChange: (value: boolean) => void
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-[#d8ecec] bg-white px-4 py-3">
+    <div className="flex w-full items-center justify-between rounded-2xl border border-[#d8ecec] bg-white px-4 py-3">
       <div>
         <div className="text-sm font-bold text-[#14324a]">{label}</div>
         {hint ? <div className="mt-1 text-[11px] font-medium text-[#667b8a]">{hint}</div> : null}
@@ -170,7 +170,7 @@ export function SubmitButton({
   disabled?: boolean
 }) {
   return (
-    <button type={type} className="primary-btn w-full disabled:cursor-not-allowed disabled:opacity-70" onClick={onClick} disabled={busy || disabled}>
+    <button type={type} className="primary-btn mt-1 w-full disabled:cursor-not-allowed disabled:opacity-70" onClick={onClick} disabled={busy || disabled}>
       {busy ? 'Saving...' : children}
     </button>
   )

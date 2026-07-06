@@ -73,6 +73,12 @@ class Api {
     return this.request<any>(`/dashboard/mess/${messId}`)
   }
 
+  getMonthlyOverview(messId: string, month?: string) {
+    return this.request<Array<{ day: string; income: number; expense: number }>>(`/dashboard/mess/${messId}/monthly-overview`, {
+      params: month ? { month } : undefined,
+    })
+  }
+
   getAllMembers(params?: Record<string, QueryValue>) {
     return this.request<any[]>('/messes/members', { params })
   }

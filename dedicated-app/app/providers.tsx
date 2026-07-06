@@ -49,7 +49,8 @@ export function Providers({ children }: { children: ReactNode }) {
     const res = await api.login(email, password)
     localStorage.setItem('authToken', res.data.accessToken)
     setToken(res.data.accessToken)
-    setUser(res.data.user)
+    const profile = await api.getProfile()
+    setUser(profile.data)
     router.push('/')
   }, [router])
 

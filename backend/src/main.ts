@@ -25,39 +25,72 @@ async function bootstrap() {
   app.use(cookieParser());
  
   app.enableCors({
+  //   origin: (origin, callback) => {
+  //     // Allow requests with no origin (mobile apps, Postman, curl)
+  //     if (!origin) return callback(null, true);
+
+  //  const allowedOrigins = [
+  //     'http://localhost:3000',
+  //     'http://localhost:5001',
+  //     'http://localhost:4000',
+
+  //     'http://192.168.0.152:3000',
+  //     'http://192.168.0.152:5001',
+  //     'http://192.168.0.152:4000',
+
+  //     'https://www.messzen.com',
+  //     'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
+  //     'https://frontend-xi-neon-98.vercel.app',
+
+  //     'capacitor://localhost',
+  //     'http://localhost',
+  //     'https://localhost',
+  //     'https://messmanagement.up.railway.app',
+  //   ];
+
+  //     // Allow GitHub Codespaces preview URLs (dynamic subdomains)
+  //     const isCodespace = origin.endsWith('.app.github.dev');
+
+  //     if (allowedOrigins.includes(origin) || isCodespace) {
+  //       return callback(null, true);
+  //     }
+
+  //     return callback(new Error(`CORS blocked: ${origin}`), false);
+  //   },
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, curl)
+      console.log('[CORS ORIGIN]', origin);
+
       if (!origin) return callback(null, true);
 
-   const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5001',
-      'http://localhost:4000',
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5001',
+        'http://localhost:4000',
+        'http://192.168.0.152:3000',
+        'http://192.168.0.152:5001',
+        'http://192.168.0.152:4000',
+        'https://www.messzen.com',
+        'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
+        'https://frontend-xi-neon-98.vercel.app',
+        'capacitor://localhost',
+        'http://localhost',
+        'https://localhost',
+        'https://messmanagement.up.railway.app',
+      ];
 
-      'http://192.168.0.152:3000',
-      'http://192.168.0.152:5001',
-      'http://192.168.0.152:4000',
-
-      'https://www.messzen.com',
-      'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
-      'https://frontend-xi-neon-98.vercel.app',
-
-      'capacitor://localhost',
-      'http://localhost',
-    ];
-
-      // Allow GitHub Codespaces preview URLs (dynamic subdomains)
       const isCodespace = origin.endsWith('.app.github.dev');
 
       if (allowedOrigins.includes(origin) || isCodespace) {
         return callback(null, true);
       }
 
+      console.log('[CORS BLOCKED]', origin);
       return callback(new Error(`CORS blocked: ${origin}`), false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin'],
+    exposedHeaders: ['Authorization'],
   });
 
   app.setGlobalPrefix('api/v1', {

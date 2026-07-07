@@ -23,14 +23,16 @@ jobs:
         working-directory: dedicated-app
         run: pnpm install --frozen-lockfile
 
-      - name: Build Next.js (static export)
+      - name: Build Next.js static export
         working-directory: dedicated-app
         run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: https://messmanagement.up.railway.app/api/v1
 
       - name: Sync Capacitor
         working-directory: dedicated-app
         run: pnpm cap:sync
-  
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -48,3 +50,62 @@ jobs:
         with:
           name: app-debug
           path: dedicated-app/android/app/build/outputs/apk/debug/app-debug.apk
+
+
+
+# name: Build Android APK
+
+# on:
+#   workflow_dispatch:
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - uses: pnpm/action-setup@v4
+#         with:
+#           version: 9
+
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: 'pnpm'
+#           cache-dependency-path: dedicated-app/pnpm-lock.yaml
+
+#       - name: Install deps
+#         working-directory: dedicated-app
+#         run: pnpm install --frozen-lockfile
+
+#       - name: Build Next.js (static export)
+#         working-directory: dedicated-app
+#         run: pnpm build
+
+#       - name: Sync Capacitor
+#         working-directory: dedicated-app
+#         run: pnpm cap:sync
+  
+#       - name: Setup Java
+#         uses: actions/setup-java@v4
+#         with:
+#           distribution: temurin
+#           java-version: 21
+
+#       - name: Grant execute permission for gradlew
+#         run: chmod +x dedicated-app/android/gradlew
+
+#       - name: Build APK
+#         working-directory: dedicated-app/android
+#         run: ./gradlew assembleDebug
+
+#       - name: Build Next.js (static export)
+#         working-directory: dedicated-app
+#         run: pnpm build
+#         env:
+#           NEXT_PUBLIC_API_URL: https://messmanagement.up.railway.app/api/v1
+
+#       - uses: actions/upload-artifact@v4
+#         with:
+#           name: app-debug
+#           path: dedicated-app/android/app/build/outputs/apk/debug/app-debug.apk

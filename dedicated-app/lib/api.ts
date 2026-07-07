@@ -32,12 +32,34 @@ class Api {
     const token = this.token()
     if (token) headers.Authorization = `Bearer ${token}`
 
-    const res = await fetch(url, { ...options, headers })
-    const json = (await res.json().catch(() => ({}))) as ApiResponse<T>
-    if (!res.ok || json.success === false) {
-      throw new Error(json.message || res.statusText || 'Request failed')
+    // const res = await fetch(url, { ...options, headers })
+    try {
+      console.log('[API URL]', url)
+      console.log('[REQUEST HEADERS]', headers)
+
+      const res = await fetch(url, {
+        ...options,
+        headers,
+      })
+
+      console.log('[API STATUS]', res.status)
+
+      const json = (await res.json().catch(() => ({}))) as ApiResponse<T>
+
+      if (!res.ok || json.success === false) {
+        throw new Error(json.message || res.statusText || 'Request failed')
+      }
+
+      return json
+    } catch (err) {
+      console.error('[FETCH ERROR]', err)
+      throw err
     }
-    return json
+    // const json = (await res.json().catch(() => ({}))) as ApiResponse<T>
+    // if (!res.ok || json.success === false) {
+    //   throw new Error(json.message || res.statusText || 'Request failed')
+    // }
+    // return json
   }
 
   login(email: string, password: string) {

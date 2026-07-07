@@ -112,10 +112,15 @@ export class AuthService {
       expiresIn: config.jwt.refreshTokenExpires as any,
     });
 
+    // res.cookie('refreshToken', refreshToken, {
+    //   httpOnly: true,
+    //   secure: config.env === 'production',
+    //   sameSite: 'strict',
+    // });
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: config.env === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
     });
 
     return {

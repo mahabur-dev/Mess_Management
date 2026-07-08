@@ -15,7 +15,7 @@ export default function MorePage() {
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-14 w-14 place-items-center rounded-3xl bg-[#0f7e86]/12 text-[#0f7e86]">
+            <div className="grid h-14 w-14 place-items-center rounded-3xl bg-[#fff1e6]/12 text-[#fc782d]">
               <User size={24} />
             </div>
             <div>
@@ -38,7 +38,7 @@ export default function MorePage() {
           ].map(([label, href, Icon]) => (
             <Link key={label as string} href={href as string} className="flex items-center justify-between border-b border-[#d8ecec] px-4 py-4 last:border-b-0">
               <div className="flex items-center gap-3">
-                <Icon size={18} className="text-[#0f7e86]" />
+                <Icon size={18} className="text-[#fc782d]" />
                 <div className="text-sm font-bold text-[#14324a]">{label as string}</div>
               </div>
               <ChevronRight size={18} className="text-[#8aa0aa]" />

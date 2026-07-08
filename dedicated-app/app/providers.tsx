@@ -41,9 +41,24 @@ export function Providers({ children }: { children: ReactNode }) {
     api
       .getProfile()
       .then((res) => setUser(res.data))
-      .catch(() => localStorage.removeItem('authToken'))
+      .catch(() => {
+        localStorage.removeItem('authToken')
+        setToken(null)
+        setUser(null)
+      })
       .finally(() => setIsLoading(false))
   }, [])
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setToken(null)
+      setUser(null)
+      router.push('/login')
+    }
+
+    window.addEventListener('auth:expired', handleAuthExpired)
+    return () => window.removeEventListener('auth:expired', handleAuthExpired)
+  }, [router])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.login(email, password)

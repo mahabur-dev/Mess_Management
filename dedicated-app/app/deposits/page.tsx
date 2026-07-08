@@ -95,7 +95,7 @@ export default function DepositsPage() {
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#667b8a]">Total Deposit</div>
                   <div className="mt-1 text-lg font-black text-[#14324a]">BDT {Number(totalAmount).toLocaleString()}</div>
                 </div>
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#0f7e86]/10 text-[#0f7e86]">
+                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#fff1e6]/12 text-[#fc782d]">
                   <Coins size={18} />
                 </div>
               </div>
@@ -106,7 +106,7 @@ export default function DepositsPage() {
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#667b8a]">Recent</div>
                   <div className="mt-1 text-lg font-black text-[#14324a]">{items.length}</div>
                 </div>
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#0f7e86]/10 text-[#0f7e86]">
+                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#fff1e6]/12 text-[#fc782d]">
                   <PlusCircle size={18} />
                 </div>
               </div>
@@ -135,7 +135,7 @@ export default function DepositsPage() {
             placeholder="Monthly contribution"
             rows={3}
           />
-          {message ? <div className="rounded-2xl border border-[#cfe3ff] bg-[#e7f1ff] px-4 py-3 text-sm font-semibold text-[#0f7e86]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Add Deposit
           </SubmitButton>
@@ -150,7 +150,7 @@ export default function DepositsPage() {
                 {item.note ? <div className="mt-1 text-xs text-[#667b8a]">{item.note}</div> : null}
               </div>
               <div className="flex items-center gap-3">
-                <div className="text-sm font-black text-[#0f7e86]">BDT {Number(item.amount).toLocaleString()}</div>
+                <div className="text-sm font-black text-[#fc782d]">BDT {Number(item.amount).toLocaleString()}</div>
                 <IconActionLink
                   href={`/edit-deposit?depositId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
                   label="Edit deposit"

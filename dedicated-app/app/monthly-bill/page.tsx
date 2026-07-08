@@ -95,7 +95,7 @@ export default function MonthlyBillPage() {
           <div className="rounded-2xl border border-[#d8ecec] bg-[#f7fbfd] px-4 py-3 text-sm text-[#667b8a]">
             Generates bills for <span className="font-black text-[#14324a]">{month}</span> using backend billing logic.
           </div>
-          {message ? <div className="rounded-2xl border border-[#cfe3ff] bg-[#e7f1ff] px-4 py-3 text-sm font-semibold text-[#0f7e86]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleGenerate}>
             Generate Bill
           </SubmitButton>

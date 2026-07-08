@@ -3,13 +3,14 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { House, MenuSquare, UtensilsCrossed, Users } from 'lucide-react'
+import { House, MenuSquare, Settings2, UtensilsCrossed, Users } from 'lucide-react'
 
 const tabs = [
-  { href: '/', label: 'Dashboard', icon: House },
   { href: '/members', label: 'Members', icon: Users },
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed },
+  { href: '/', label: 'Home', icon: House, center: true },
   { href: '/more', label: 'More', icon: MenuSquare },
+  { href: '/settings', label: 'Settings', icon: Settings2 },
 ]
 
 export function MobileShell({ children }: { children: ReactNode }) {
@@ -19,14 +20,24 @@ export function MobileShell({ children }: { children: ReactNode }) {
     <div className="phone-frame">
       <main className="app-shell">{children}</main>
 
-      <nav className="nav-bar glass">
-        <div className="flex bg-[#0f7e86]">
-          {tabs.map(({ href, label, icon: Icon }) => {
+      <nav className="nav-bar" aria-label="Primary">
+        <div className="nav-dock">
+          {tabs.map(({ href, label, icon: Icon, center }) => {
             const active = pathname === href
             return (
-              <Link key={href} href={href} className="nav-item" data-active={active}>
-                <Icon size={18} className="mx-auto mb-1" />
-                <div className="text-[10px] font-bold leading-none">{label}</div>
+              <Link
+                key={href}
+                href={href}
+                className="nav-item"
+                data-active={active}
+                data-center={center || undefined}
+                aria-current={active ? 'page' : undefined}
+                aria-label={label}
+                title={label}
+              >
+                <span className="nav-icon-shell" aria-hidden="true">
+                  <Icon size={18} strokeWidth={2.5} className="nav-icon" />
+                </span>
               </Link>
             )
           })}

@@ -112,7 +112,7 @@ export default function ComplaintsPage() {
             placeholder="My dinner was off but counted as on."
             rows={4}
           />
-          {message ? <div className="rounded-2xl border border-[#cfe3ff] bg-[#e7f1ff] px-4 py-3 text-sm font-semibold text-[#0f7e86]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Submit Complaint
           </SubmitButton>

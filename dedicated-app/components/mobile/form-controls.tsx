@@ -120,7 +120,7 @@ export function ToggleField({
         type="button"
         onClick={() => onChange(!checked)}
         className={`relative h-7 w-12 rounded-full transition ${
-          checked ? 'bg-[#0f7e86]' : 'bg-slate-300'
+          checked ? 'bg-[#fc782d]' : 'bg-slate-300'
         }`}
       >
         <span

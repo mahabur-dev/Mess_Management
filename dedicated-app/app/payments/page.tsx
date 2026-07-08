@@ -184,7 +184,7 @@ export default function PaymentsPage() {
           <TextField label="Screenshot URL" value={form.screenshotUrl} onChange={(screenshotUrl) => setForm((prev) => ({ ...prev, screenshotUrl }))} placeholder="https://..." />
           <TextField label="Payment Date" value={form.paymentDate} onChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))} type="date" />
           <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Paid for May bill" rows={3} />
-          {message ? <div className="rounded-2xl border border-[#cfe3ff] bg-[#e7f1ff] px-4 py-3 text-sm font-semibold text-[#0f7e86]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Submit Payment
           </SubmitButton>
@@ -216,7 +216,7 @@ export default function PaymentsPage() {
                 </div>
                 <div className="flex items-center gap-3 text-right">
                   <div>
-                    <div className="text-sm font-black text-[#0f7e86]">BDT {Number(item.amount).toLocaleString()}</div>
+                    <div className="text-sm font-black text-[#fc782d]">BDT {Number(item.amount).toLocaleString()}</div>
                     <div className="text-[11px] text-[#667b8a]">{item.method}</div>
                   </div>
                   <IconActionLink

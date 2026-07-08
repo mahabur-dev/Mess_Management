@@ -6,7 +6,7 @@ import { CalendarDays, Coffee, Moon, Sun } from 'lucide-react'
 
 const meals = [
   { name: 'Breakfast', time: '06:00 AM', icon: Coffee, color: '#f59e0b' },
-  { name: 'Lunch', time: '01:00 PM', icon: Sun, color: '#0f7e86' },
+  { name: 'Lunch', time: '01:00 PM', icon: Sun, color: '#fc782d' },
   { name: 'Dinner', time: '08:30 PM', icon: Moon, color: '#3b82f6' },
 ]
 

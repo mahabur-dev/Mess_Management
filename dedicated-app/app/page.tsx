@@ -6,7 +6,6 @@ import {
   Bell,
   ClipboardList,
   CreditCard,
-  Menu,
   Shield,
   Users,
   UtensilsCrossed,
@@ -302,13 +301,10 @@ export default function HomePage() {
   return (
     <MobileShell>
       <div className="bg-[#0f7e86] px-4 pb-4 pt-4 text-white">
-        <div className="flex items-center justify-between">
-          <button type="button" className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white">
-            <Menu size={19} />
-          </button>
+        <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
+          <div className="h-10 w-10" />
           <div className="text-center">
-            <div className="text-[16px] font-extrabold leading-tight">Dashboard</div>
-            <div className="mt-0.5 text-[11px] text-white/80">{activeMess?.name ?? 'No mess selected'}</div>
+            <div className="truncate text-[16px] font-extrabold leading-tight">{activeMess?.name ?? 'No mess selected'}</div>
           </div>
           <button type="button" className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white">
             <Bell size={18} />

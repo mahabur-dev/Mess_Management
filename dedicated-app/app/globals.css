@@ -30,12 +30,19 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
   background:
     radial-gradient(circle at 15% 8%, rgba(15, 126, 134, 0.16), transparent 18rem),
     radial-gradient(circle at 95% 0%, rgba(11, 101, 112, 0.1), transparent 16rem),
     linear-gradient(180deg, #eef7fa 0%, #f7fbfd 38%, #f2f8fb 100%);
   color: var(--fg);
   font-family: var(--font-sans);
+}
+
+body {
+  position: relative;
 }
 
 a {
@@ -51,19 +58,26 @@ textarea {
 }
 
 .app-shell {
-  min-height: 100vh;
-  padding-bottom: 84px;
+  min-height: 100dvh;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 .phone-frame {
   max-width: 430px;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: transparent;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+  position: relative;
 }
 
 .screen {
   padding: 18px 16px 24px;
+  overflow-x: hidden;
 }
 
 .glass {
@@ -83,24 +97,25 @@ textarea {
 .nav-bar {
   position: fixed;
   left: 50%;
-  bottom: 14px;
+  bottom: env(safe-area-inset-bottom);
   transform: translateX(-50%);
-  width: min(430px, calc(100vw - 18px));
-  border-radius: 22px;
+  width: min(430px, 100vw);
+  border-radius: 22px 22px 0 0;
   overflow: hidden;
-  box-shadow: 0 20px 42px rgba(5, 70, 78, 0.24);
+  box-shadow: 0 20px 42px rgba(5, 70, 78, 0.14);
+  background: #ffffff;
 }
 
 .nav-item {
   flex: 1;
   padding: 10px 8px 11px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.84);
+  color: #6a7f8b;
 }
 
 .nav-item[data-active="true"] {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
+  color: #0f7e86;
+  background: #e8f7f8;
 }
 
 .field {

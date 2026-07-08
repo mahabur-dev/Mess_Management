@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { House, MenuSquare, UtensilsCrossed, Users } from 'lucide-react'
 
 const tabs = [
-  { href: '/', label: 'Dashboard', icon: House },
+  { href: '/', label: 'Home', icon: House },
   { href: '/members', label: 'Members', icon: Users },
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed },
   { href: '/more', label: 'More', icon: MenuSquare },
@@ -20,7 +20,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
       <main className="app-shell">{children}</main>
 
       <nav className="nav-bar glass">
-        <div className="flex bg-[#0f7e86]">
+        <div className="flex bg-white">
           {tabs.map(({ href, label, icon: Icon }) => {
             const active = pathname === href
             return (

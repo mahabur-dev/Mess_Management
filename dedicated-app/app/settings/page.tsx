@@ -105,7 +105,7 @@ export default function SettingsPage() {
           <FieldCard label="Profile Image" hint="Optional">
             <input className="field py-3" type="file" accept="image/*" onChange={(event) => setProfileImage(event.target.files?.[0] ?? null)} />
           </FieldCard>
-          {message ? <div className="rounded-2xl border border-[#cfe3ff] bg-[#e7f1ff] px-4 py-3 text-sm font-semibold text-[#0f7e86]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSave}>
             Save Profile
           </SubmitButton>
@@ -115,7 +115,7 @@ export default function SettingsPage() {
           <div className="section-title">Security</div>
           <TextField label="Old Password" value={password.oldPassword} onChange={(oldPassword) => setPassword((prev) => ({ ...prev, oldPassword }))} placeholder="********" />
           <TextField label="New Password" value={password.newPassword} onChange={(newPassword) => setPassword((prev) => ({ ...prev, newPassword }))} placeholder="********" />
-          {passwordMessage ? <div className="rounded-2xl border border-[#cfe3ff] bg-[#e7f1ff] px-4 py-3 text-sm font-semibold text-[#0f7e86]">{passwordMessage}</div> : null}
+          {passwordMessage ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{passwordMessage}</div> : null}
           <button className="primary-btn flex w-full items-center justify-center gap-2" type="button" onClick={handleChangePassword}>
             <ShieldCheck size={18} /> Change Password
           </button>

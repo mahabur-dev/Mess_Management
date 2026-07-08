@@ -53,7 +53,7 @@ export default function ExpensesPage() {
         <div className="space-y-3">
           {items.map((item) => (
             <div key={item.id} className="glass flex items-center gap-3 rounded-[24px] p-4">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#0f7e86]/10 text-[#0f7e86]">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#fff1e6]/12 text-[#fc782d]">
                 <ReceiptText size={20} />
               </div>
               <div className="min-w-0 flex-1">
@@ -62,7 +62,7 @@ export default function ExpensesPage() {
                 <div className="mt-1 text-[11px] text-[#8a9bb5]">{item.expenseDate ?? item.expense_date ?? ''}</div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="text-sm font-black text-[#0f7e86]">BDT {Number(item.amount ?? 0).toLocaleString()}</div>
+                <div className="text-sm font-black text-[#fc782d]">BDT {Number(item.amount ?? 0).toLocaleString()}</div>
                 <IconActionLink
                   href={`/edit-expense?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
                   label="Edit expense"

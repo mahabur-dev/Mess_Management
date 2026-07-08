@@ -75,7 +75,7 @@ export default function AddMemberPage() {
           <TextField label="Monthly Rent" value={form.monthlyRent} onChange={(monthlyRent) => setForm((prev) => ({ ...prev, monthlyRent }))} placeholder="4500" type="number" />
           <TextField label="Deposit Amount" value={form.depositAmount} onChange={(depositAmount) => setForm((prev) => ({ ...prev, depositAmount }))} placeholder="5000" type="number" />
 
-          {message ? <div className="rounded-2xl border border-[#cfe3ff] bg-[#e7f1ff] px-4 py-3 text-sm font-semibold text-[#0f7e86]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Member

@@ -34,7 +34,7 @@ export default function LoginPage() {
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col">
         {/* <header className="flex items-center justify-between rounded-[28px] border border-white/70 bg-white/75 px-4 py-3 shadow-[0_18px_45px_rgba(8,73,86,0.10)] backdrop-blur"> */}
           {/* <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[#0f7e86] to-[#0b6570] text-white shadow-[0_12px_26px_rgba(15,126,134,0.24)]">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[#fc782d] to-[#d95f10] text-white shadow-[0_12px_26px_rgba(252,120,45,0.24)]">
               <ShieldCheck size={20} />
             </div> */}
             {/* <div>
@@ -42,7 +42,7 @@ export default function LoginPage() {
               <div className="text-sm font-bold text-[#14324a]">Secure access portal</div>
             </div> */}
           {/* </div> */}
-          {/* <div className="grid h-10 w-10 place-items-center rounded-full bg-[#e7f1ff] text-[#0f7e86]">
+          {/* <div className="grid h-10 w-10 place-items-center rounded-full bg-[#fff1e6] text-[#fc782d]">
             <Sparkles size={18} />
           </div>
         </header> */}
@@ -50,7 +50,7 @@ export default function LoginPage() {
         <main className="flex flex-1 items-center py-6">
           <section className="w-full rounded-[32px] border border-white/70 bg-white/88 p-5 shadow-[0_24px_60px_rgba(8,73,86,0.14)] backdrop-blur">
             <div className="mb-6">
-              {/* <div className="inline-flex items-center gap-2 rounded-full bg-[#e7f1ff] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0f7e86]">
+              {/* <div className="inline-flex items-center gap-2 rounded-full bg-[#fff1e6] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#fc782d]">
                 <Sparkles size={13} />
                 Manager Login
               </div> */}
@@ -64,7 +64,7 @@ export default function LoginPage() {
               <label className="block">
                 <div className="mb-2 text-sm font-bold text-[#14324a]">Email address</div>
                 <div className="relative">
-                  {/* <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#0f7e86]" size={18} /> */}
+                  {/* <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#fc782d]" size={18} /> */}
                   <input
                     className="field h-14 rounded-2xl bg-white pl-12 pr-4"
                     value={email}
@@ -79,7 +79,7 @@ export default function LoginPage() {
               <label className="block">
                 <div className="mb-2 text-sm font-bold text-[#14324a]">Password</div>
                 <div className="relative">
-                  {/* <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#0f7e86]" size={18} /> */}
+                  {/* <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#fc782d]" size={18} /> */}
                   <input
                     className="field h-14 rounded-2xl bg-white pl-12 pr-4"
                     value={password}

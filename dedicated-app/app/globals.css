@@ -5,9 +5,9 @@
   --fg: #14324a;
   --card: rgba(255, 255, 255, 0.92);
   --line: rgba(26, 93, 119, 0.14);
-  --teal: #0f7e86;
-  --teal-2: #0b6570;
-  --teal-soft: #d7f2f2;
+  --teal: #fc782d;
+  --teal-2: #d95f10;
+  --teal-soft: #ffe6d6;
   --muted: #667b8a;
   --shadow: 0 18px 45px rgba(8, 73, 86, 0.12);
 }
@@ -34,9 +34,9 @@ body {
   overscroll-behavior-x: none;
   touch-action: pan-y;
   background:
-    radial-gradient(circle at 15% 8%, rgba(15, 126, 134, 0.16), transparent 18rem),
-    radial-gradient(circle at 95% 0%, rgba(11, 101, 112, 0.1), transparent 16rem),
-    linear-gradient(180deg, #eef7fa 0%, #f7fbfd 38%, #f2f8fb 100%);
+    radial-gradient(circle at 15% 8%, rgba(252, 120, 45, 0.18), transparent 18rem),
+    radial-gradient(circle at 95% 0%, rgba(217, 95, 16, 0.12), transparent 16rem),
+    linear-gradient(180deg, #fff3eb 0%, #fff8f4 38%, #fff6ef 100%);
   color: var(--fg);
   font-family: var(--font-sans);
 }
@@ -59,7 +59,7 @@ textarea {
 
 .app-shell {
   min-height: 100dvh;
-  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  padding-bottom: calc(74px + env(safe-area-inset-bottom));
   overflow-x: hidden;
   overscroll-behavior-x: none;
 }
@@ -90,32 +90,101 @@ textarea {
 .top-hero {
   background:
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.16), transparent 32%),
-    linear-gradient(180deg, var(--teal) 0%, #137983 48%, #0e6973 100%);
+    linear-gradient(180deg, var(--teal) 0%, #f28b42 48%, #d95f10 100%);
   color: white;
 }
 
 .nav-bar {
   position: fixed;
   left: 50%;
-  bottom: env(safe-area-inset-bottom);
+  bottom: calc(env(safe-area-inset-bottom) + 6px);
   transform: translateX(-50%);
-  width: min(430px, 100vw);
-  border-radius: 22px 22px 0 0;
-  overflow: hidden;
-  box-shadow: 0 20px 42px rgba(5, 70, 78, 0.14);
-  background: #ffffff;
+  width: min(392px, calc(100vw - 12px));
+  z-index: 50;
+  border-radius: 24px;
+  padding: 10px 10px 11px;
+  background: linear-gradient(180deg, #fc782d 0%, #d95f10 100%);
+  box-shadow:
+    0 12px 24px rgba(85, 35, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  overflow: visible;
+}
+
+.nav-dock {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  align-items: end;
 }
 
 .nav-item {
-  flex: 1;
-  padding: 10px 8px 11px;
-  text-align: center;
-  color: #6a7f8b;
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.92);
+  transition: transform 180ms ease, background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.nav-item[data-center="true"] {
+  transform: translateY(-10px);
+}
+
+.nav-icon-shell {
+  display: grid;
+  height: 28px;
+  width: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-icon {
+  display: block;
 }
 
 .nav-item[data-active="true"] {
-  color: #0f7e86;
-  background: #e8f7f8;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.nav-item[data-active="true"][data-center="true"] {
+  transform: translateY(-12px);
+}
+
+.nav-item[data-active="true"] .nav-icon-shell {
+  background: #2a231c;
+  box-shadow: 0 6px 12px rgba(34, 22, 12, 0.26);
+}
+
+.nav-item[data-center="true"] .nav-icon-shell {
+  height: 34px;
+  width: 34px;
+}
+
+.nav-item[data-center="true"] {
+  color: #fc782d;
+}
+
+.nav-item[data-center="true"] .nav-icon-shell {
+  background: #ffffff;
+  box-shadow: 0 8px 16px rgba(34, 22, 12, 0.14);
+}
+
+.nav-item[data-center="true"][data-active="true"] .nav-icon-shell {
+  background: #ffffff;
+  box-shadow: 0 10px 18px rgba(34, 22, 12, 0.16);
+}
+
+.nav-item:not([data-center="true"]) .nav-icon-shell {
+  background: rgba(255, 255, 255, 0);
+}
+
+.nav-item[data-center="true"][data-active="true"] {
+  color: #fc782d;
 }
 
 .field {
@@ -129,18 +198,18 @@ textarea {
 }
 
 .field:focus {
-  border-color: rgba(15, 126, 134, 0.55);
-  box-shadow: 0 0 0 4px rgba(15, 126, 134, 0.12);
+  border-color: rgba(252, 120, 45, 0.55);
+  box-shadow: 0 0 0 4px rgba(252, 120, 45, 0.12);
 }
 
 .primary-btn {
   border: 0;
   border-radius: 16px;
-  background: linear-gradient(135deg, #0f7e86 0%, #0d6871 100%);
+  background: linear-gradient(135deg, #fc782d 0%, #d95f10 100%);
   color: white;
   padding: 14px 16px;
   font-weight: 800;
-  box-shadow: 0 14px 28px rgba(15, 126, 134, 0.22);
+  box-shadow: 0 14px 28px rgba(252, 120, 45, 0.22);
 }
 
 .section-title {

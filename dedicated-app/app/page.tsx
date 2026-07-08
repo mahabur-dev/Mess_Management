@@ -77,7 +77,7 @@ const quickActions: QuickAction[] = [
 ]
 
 const toneClass: Record<QuickAction['tone'], string> = {
-  teal: 'bg-[#e6f6f8] text-[#0f7e86]',
+  teal: 'bg-[#fff1e6] text-[#fc782d]',
   green: 'bg-[#e8f7ed] text-[#16a34a]',
   amber: 'bg-[#fff4e5] text-[#f59e0b]',
   blue: 'bg-[#e9f1ff] text-[#2563eb]',
@@ -280,7 +280,7 @@ export default function HomePage() {
     { label: 'Total Member', value: summaryLoading ? '...' : summary?.activeMembers ?? '--', icon: Users, color: '#2f80ed' },
     { label: 'Today Meal', value: summaryLoading ? '...' : summary?.todayTotalMeals ?? '--', icon: UtensilsCrossed, color: '#f59e0b' },
     { label: 'Total Meals', value: summaryLoading ? '...' : summary?.totalMeals ?? '--', icon: ReceiptText, color: '#10b981' },
-    { label: 'Meal Rate', value: summaryLoading ? '...' : summary?.currentMealRate != null ? `৳ ${summary.currentMealRate}` : '--', icon: Wallet2, color: '#0f7e86' },
+    { label: 'Meal Rate', value: summaryLoading ? '...' : summary?.currentMealRate != null ? `৳ ${summary.currentMealRate}` : '--', icon: Wallet2, color: '#fc782d' },
     { label: 'Food Expenses', value: summaryLoading ? '...' : formatMoney(summary?.currentMonthTotalBazar), icon: CreditCard, color: '#ef4444' },
     { label: 'Utility Expenses', value: summaryLoading ? '...' : formatMoney(summary?.extraExpenses), icon: Landmark, color: '#14b8a6' },
     { label: 'Per Member Utility', value: summaryLoading ? '...' : formatMoney(summary?.perExtraExpenses), icon: Coins, color: '#16a34a' },
@@ -290,7 +290,7 @@ export default function HomePage() {
       label: 'Remaining Amount',
       value: summaryLoading ? '...' : formatMoney((summary?.totalDepositAmount ?? 0) - (summary?.totalDue ?? 0)),
       icon: Shield,
-      color: '#0f7e86',
+      color: '#fc782d',
     },
   ]
 
@@ -300,7 +300,7 @@ export default function HomePage() {
 
   return (
     <MobileShell>
-      <div className="bg-[#0f7e86] px-4 pb-4 pt-4 text-white">
+      <div className="bg-[#fc782d] px-4 pb-4 pt-4 text-white">
         <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
           <div className="h-10 w-10" />
           <div className="text-center">
@@ -319,7 +319,7 @@ export default function HomePage() {
 
           <div className="mt-4 grid grid-cols-3 gap-3 rounded-[22px] border border-[#e1eef1] bg-white p-3 shadow-[0_8px_20px_rgba(13,81,92,0.06)]">
             {[
-              { label: 'Add Member', href: '/add-member', icon: Users, color: '#0f7e86' },
+              { label: 'Add Member', href: '/add-member', icon: Users, color: '#fc782d' },
               { label: 'Add Expense', href: '/add-expense', icon: CreditCard, color: '#22c55e' },
               { label: 'Add Meal', href: '/add-meal', icon: UtensilsCrossed, color: '#f59e0b' },
               { label: 'Add Deposit', href: '/deposits', icon: Coins, color: '#14b8a6' },

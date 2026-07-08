@@ -54,13 +54,13 @@ export default function MembersPage() {
       <div className="screen space-y-4">
         <div className="glass rounded-[24px] p-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#0f7e86]" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#fc782d]" size={18} />
             <input className="field pl-11" placeholder="Search member..." />
           </div>
           <div className="mt-4 flex gap-2 text-xs font-bold">
-            <span className="rounded-full bg-[#0f7e86] px-3 py-1.5 text-white">All ({members.length})</span>
-            <span className="rounded-full bg-[#e9f6f7] px-3 py-1.5 text-[#0f7e86]">Active</span>
-            <span className="rounded-full bg-[#e9f6f7] px-3 py-1.5 text-[#0f7e86]">Inactive</span>
+            <span className="rounded-full bg-[#fc782d] px-3 py-1.5 text-white">All ({members.length})</span>
+            <span className="rounded-full bg-[#fff1e6] px-3 py-1.5 text-[#fc782d]">Active</span>
+            <span className="rounded-full bg-[#fff1e6] px-3 py-1.5 text-[#fc782d]">Inactive</span>
           </div>
         </div>
 
@@ -71,7 +71,7 @@ export default function MembersPage() {
         <div className="space-y-3">
           {members.map((member) => (
             <div key={member.id} className="glass flex items-center gap-3 rounded-[24px] p-4">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#0f7e86]/10 text-[#0f7e86]">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#fff1e6]/12 text-[#fc782d]">
                 <UserRound size={20} />
               </div>
               <div className="min-w-0 flex-1">

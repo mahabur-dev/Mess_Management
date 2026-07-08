@@ -16,8 +16,8 @@ export function ActionLink({ href, label, icon, tone = 'subtle' }: ActionLinkPro
       href={href}
       className={`inline-flex h-10 items-center gap-2 rounded-2xl px-3 text-sm font-bold transition ${
         tone === 'primary'
-          ? 'bg-[#0f7e86] text-white shadow-[0_10px_24px_rgba(15,126,134,0.24)]'
-          : 'bg-[#e7f1ff] text-[#0f7e86]'
+          ? 'bg-[#fc782d] text-white shadow-[0_10px_24px_rgba(252,120,45,0.24)]'
+          : 'bg-[#fff1e6] text-[#fc782d]'
       }`}
     >
       {icon}
@@ -41,8 +41,8 @@ export function IconActionLink({ href, label, icon, tone = 'subtle' }: IconActio
       title={label}
       className={`grid h-10 w-10 place-items-center rounded-2xl transition ${
         tone === 'primary'
-          ? 'bg-[#0f7e86] text-white shadow-[0_10px_24px_rgba(15,126,134,0.24)]'
-          : 'bg-[#e7f1ff] text-[#0f7e86]'
+          ? 'bg-[#fc782d] text-white shadow-[0_10px_24px_rgba(252,120,45,0.24)]'
+          : 'bg-[#fff1e6] text-[#fc782d]'
       }`}
     >
       {icon}

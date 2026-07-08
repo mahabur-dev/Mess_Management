@@ -245,7 +245,7 @@ export default function EditExpensePage() {
               <input className="field py-3" type="file" accept="image/*,application/pdf" onChange={(event) => setReceiptFile(event.target.files?.[0] ?? null)} />
             </div>
           </div>
-          {message ? <div className="rounded-2xl border border-[#cfe3ff] bg-[#e7f1ff] px-4 py-3 text-sm font-semibold text-[#0f7e86]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Changes
           </SubmitButton>

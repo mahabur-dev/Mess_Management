@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Mess App',
     start_url: '/',
     display: 'standalone',
-    background_color: '#f3f8fc',
-    theme_color: '#fc782d',
+    background_color: '#f4fbfb',
+    theme_color: '#0b7f82',
     icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }],
   }
 }

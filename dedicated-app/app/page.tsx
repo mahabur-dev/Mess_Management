@@ -6,14 +6,15 @@ import {
   Bell,
   ClipboardList,
   CreditCard,
+  Landmark,
+  MessageSquareWarning,
+  ReceiptText,
   Shield,
   Users,
   UtensilsCrossed,
   Wallet2,
-  Landmark,
-  MessageSquareWarning,
-  ReceiptText,
   Coins,
+  ArrowRightLeft,
 } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
@@ -64,7 +65,7 @@ type QuickAction = {
   href: string
   label: string
   icon: typeof Users
-  tone: 'teal' | 'green' | 'amber' | 'blue' | 'violet' | 'slate'
+  tone: 'teal' | 'green' | 'amber' | 'blue' | 'orange' | 'slate'
 }
 
 const quickActions: QuickAction[] = [
@@ -72,22 +73,22 @@ const quickActions: QuickAction[] = [
   { href: '/add-expense', label: 'Add Expense', icon: CreditCard, tone: 'green' },
   { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, tone: 'amber' },
   { href: '/deposits', label: 'Add Deposit', icon: Coins, tone: 'blue' },
-  { href: '/notices', label: 'Send Notice', icon: ClipboardList, tone: 'violet' },
-  { href: '/monthly-bill', label: 'Monthly Bill', icon: Landmark, tone: 'slate' },
+  { href: '/notices', label: 'Send Notice', icon: ClipboardList, tone: 'orange' },
+  { href: '/monthly-bill', label: 'Monthly Bill', icon: ArrowRightLeft, tone: 'slate' },
 ]
 
-const toneClass: Record<QuickAction['tone'], string> = {
-  teal: 'bg-[#fff1e6] text-[#fc782d]',
-  green: 'bg-[#e8f7ed] text-[#16a34a]',
-  amber: 'bg-[#fff4e5] text-[#f59e0b]',
-  blue: 'bg-[#e9f1ff] text-[#2563eb]',
-  violet: 'bg-[#f2ecff] text-[#7c3aed]',
-  slate: 'bg-[#edf3f7] text-[#4b6478]',
+const toneClass: Record<QuickAction['tone'], { bg: string; fg: string }> = {
+  teal: { bg: '#e7f7f6', fg: '#0b7f82' },
+  green: { bg: '#ebf8ef', fg: '#1b8f49' },
+  amber: { bg: '#fff5e6', fg: '#f59e0b' },
+  blue: { bg: '#eaf2ff', fg: '#2563eb' },
+  orange: { bg: '#fff1e7', fg: '#fc782d' },
+  slate: { bg: '#edf3f7', fg: '#4b6478' },
 }
 
 function formatMoney(value?: number | null) {
   if (value === undefined || value === null || Number.isNaN(Number(value))) return '--'
-  return `৳ ${Number(value).toLocaleString('en-US')}`
+  return `${String.fromCodePoint(0x09f3)} ${Number(value).toLocaleString('en-US')}`
 }
 
 function monthLabelFromNow() {
@@ -96,10 +97,10 @@ function monthLabelFromNow() {
 
 function buildWeeklyChart(points: MonthlyOverviewPoint[]): WeeklyPoint[] {
   const weeks: WeeklyPoint[] = [
-    { label: 'Week 1', income: 0, expense: 0 },
-    { label: 'Week 2', income: 0, expense: 0 },
-    { label: 'Week 3', income: 0, expense: 0 },
-    { label: 'Week 4', income: 0, expense: 0 },
+    { label: 'Wk 1', income: 0, expense: 0 },
+    { label: 'Wk 2', income: 0, expense: 0 },
+    { label: 'Wk 3', income: 0, expense: 0 },
+    { label: 'Wk 4', income: 0, expense: 0 },
   ]
 
   for (const point of points) {
@@ -121,7 +122,7 @@ function MiniLineChart({ points }: { points: WeeklyPoint[] }) {
   const width = 320
   const height = 150
   const paddingX = 18
-  const paddingTop = 18
+  const paddingTop = 16
   const paddingBottom = 28
 
   const maxValue = Math.max(1, ...points.flatMap((point) => [point.income, point.expense]))
@@ -152,28 +153,28 @@ function MiniLineChart({ points }: { points: WeeklyPoint[] }) {
       <svg viewBox={`0 0 ${width} ${height}`} className="h-[150px] w-full">
         <defs>
           <linearGradient id="incomeFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#16a34a" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
+            <stop offset="0%" stopColor="#20a04b" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#20a04b" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="expenseFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+            <stop offset="0%" stopColor="#f97316" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        <line x1="18" y1={height - paddingBottom} x2={width - 18} y2={height - paddingBottom} stroke="#e5edf2" strokeWidth="1.2" />
+        <line x1="18" y1={height - paddingBottom} x2={width - 18} y2={height - paddingBottom} stroke="#e8eef3" strokeWidth="1.2" />
 
         <path d={`${buildPath('income')} L ${width - paddingX} ${height - paddingBottom} L ${paddingX} ${height - paddingBottom} Z`} fill="url(#incomeFill)" />
         <path d={`${buildPath('expense')} L ${width - paddingX} ${height - paddingBottom} L ${paddingX} ${height - paddingBottom} Z`} fill="url(#expenseFill)" />
 
-        <path d={buildPath('income')} fill="none" stroke="#16a34a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={buildPath('income')} fill="none" stroke="#20a04b" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
         <path d={buildPath('expense')} fill="none" stroke="#f97316" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
 
         {incomePoints.map((point, index) => (
-          <circle key={`income-${index}`} cx={point.x} cy={point.y} r="3.2" fill="#16a34a" stroke="#ffffff" strokeWidth="2" />
+          <circle key={`income-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#20a04b" stroke="#ffffff" strokeWidth="2" />
         ))}
         {expensePoints.map((point, index) => (
-          <circle key={`expense-${index}`} cx={point.x} cy={point.y} r="3.2" fill="#f97316" stroke="#ffffff" strokeWidth="2" />
+          <circle key={`expense-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#f97316" stroke="#ffffff" strokeWidth="2" />
         ))}
       </svg>
 
@@ -277,10 +278,15 @@ export default function HomePage() {
   }, [activeMess?.id])
 
   const cards = [
-    { label: 'Total Member', value: summaryLoading ? '...' : summary?.activeMembers ?? '--', icon: Users, color: '#2f80ed' },
+    { label: 'Total Member', value: summaryLoading ? '...' : summary?.activeMembers ?? '--', icon: Users, color: '#0b7f82' },
     { label: 'Today Meal', value: summaryLoading ? '...' : summary?.todayTotalMeals ?? '--', icon: UtensilsCrossed, color: '#f59e0b' },
-    { label: 'Total Meals', value: summaryLoading ? '...' : summary?.totalMeals ?? '--', icon: ReceiptText, color: '#10b981' },
-    { label: 'Meal Rate', value: summaryLoading ? '...' : summary?.currentMealRate != null ? `৳ ${summary.currentMealRate}` : '--', icon: Wallet2, color: '#fc782d' },
+    { label: 'Total Meals', value: summaryLoading ? '...' : summary?.totalMeals ?? '--', icon: ReceiptText, color: '#20a04b' },
+    {
+      label: 'Meal Rate',
+      value: summaryLoading ? '...' : summary?.currentMealRate != null ? `${String.fromCodePoint(0x09f3)} ${summary.currentMealRate}` : '--',
+      icon: Wallet2,
+      color: '#fc782d',
+    },
     { label: 'Food Expenses', value: summaryLoading ? '...' : formatMoney(summary?.currentMonthTotalBazar), icon: CreditCard, color: '#ef4444' },
     { label: 'Utility Expenses', value: summaryLoading ? '...' : formatMoney(summary?.extraExpenses), icon: Landmark, color: '#14b8a6' },
     { label: 'Per Member Utility', value: summaryLoading ? '...' : formatMoney(summary?.perExtraExpenses), icon: Coins, color: '#16a34a' },
@@ -290,7 +296,7 @@ export default function HomePage() {
       label: 'Remaining Amount',
       value: summaryLoading ? '...' : formatMoney((summary?.totalDepositAmount ?? 0) - (summary?.totalDue ?? 0)),
       icon: Shield,
-      color: '#fc782d',
+      color: '#0b7f82',
     },
   ]
 
@@ -300,48 +306,44 @@ export default function HomePage() {
 
   return (
     <MobileShell>
-      <div className="bg-[#fc782d] px-4 pb-4 pt-4 text-white">
-        <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
+      <div className="top-hero px-4 pb-5">
+        <div className="flex items-center justify-between gap-3">
           <div className="h-10 w-10" />
-          <div className="text-center">
-            <div className="truncate text-[16px] font-extrabold leading-tight">{activeMess?.name ?? 'No mess selected'}</div>
-          </div>
-          <button type="button" className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white">
+          <button type="button" className="relative grid h-10 w-10 place-items-center rounded-full bg-white/0 text-white">
             <Bell size={18} />
+            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-[#0a7f82] bg-[#ff4d4f]" />
           </button>
+        </div>
+
+        <div className="mt-4">
+          <div className="text-[16px] font-bold text-white">Good Morning, {greetingName} 👋</div>
+          <div className="mt-1 text-[12px] text-white/82">Here&apos;s what&apos;s happening today</div>
         </div>
       </div>
 
-      <div className="screen">
-        <section className="glass -mt-6 rounded-[28px] bg-white/96 px-4 pb-4 pt-4 shadow-[0_18px_45px_rgba(8,73,86,0.10)]">
-          <div className="text-[15px] font-bold text-[#617784]">Good Morning, {greetingName} 👋</div>
-          <div className="mt-1 text-[12px] text-[#6a7f8b]">Here&apos;s what&apos;s happening today</div>
-
-          <div className="mt-4 grid grid-cols-3 gap-3 rounded-[22px] border border-[#e1eef1] bg-white p-3 shadow-[0_8px_20px_rgba(13,81,92,0.06)]">
-            {[
-              { label: 'Add Member', href: '/add-member', icon: Users, color: '#fc782d' },
-              { label: 'Add Expense', href: '/add-expense', icon: CreditCard, color: '#22c55e' },
-              { label: 'Add Meal', href: '/add-meal', icon: UtensilsCrossed, color: '#f59e0b' },
-              { label: 'Add Deposit', href: '/deposits', icon: Coins, color: '#14b8a6' },
-              { label: 'Send Notice', href: '/notices', icon: ClipboardList, color: '#3b82f6' },
-              { label: 'Monthly Bill', href: '/monthly-bill', icon: Landmark, color: '#f97316' },
-            ].map(({ label, href, icon: Icon, color }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => router.push(href)}
-                className="flex flex-col items-center justify-center gap-2 rounded-[16px] px-1 py-2.5 text-center transition-transform active:scale-[0.97]"
-              >
-                <div className="grid h-11 w-11 place-items-center rounded-[14px]" style={{ backgroundColor: `${color}15`, color }}>
-                  <Icon size={19} />
-                </div>
-                <div className="text-[11px] font-bold leading-tight text-[#1d3950]">{label}</div>
-              </button>
-            ))}
+      <div className="screen -mt-4">
+        <div className="rounded-[22px] bg-white px-3 py-3 shadow-[0_10px_20px_rgba(9,81,92,0.06)]">
+          <div className="grid grid-cols-3 gap-1.5">
+            {quickActions.map(({ label, href, icon: Icon, tone }) => {
+              const palette = toneClass[tone]
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => router.push(href)}
+                  className="flex flex-col items-center justify-center gap-2 rounded-[16px] px-1 py-2.5 text-center transition-transform active:scale-[0.97]"
+                >
+                  <div className="grid h-11 w-11 place-items-center rounded-[14px]" style={{ backgroundColor: palette.bg, color: palette.fg }}>
+                    <Icon size={19} />
+                  </div>
+                  <div className="text-[11px] font-bold leading-tight text-[#1d3950]">{label}</div>
+                </button>
+              )
+            })}
           </div>
-        </section>
+        </div>
 
-        <section className="mt-5">
+        <section className="rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(9,81,92,0.08)]">
           <div className="section-title">Overview</div>
           <div className="grid grid-cols-2 gap-3">
             {cards.map((card) => {
@@ -363,7 +365,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mt-4 glass rounded-[28px] bg-white/96 p-4">
+        <section className="mt-4 rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(9,81,92,0.08)]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-[14px] font-black uppercase tracking-[0.12em] text-[#58717d]">Monthly Overview</div>
@@ -371,7 +373,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-3 text-[11px] font-bold text-[#58717d]">
               <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-[#16a34a]" />
+                <span className="h-2 w-2 rounded-full bg-[#20a04b]" />
                 Income
               </span>
               <span className="inline-flex items-center gap-1">

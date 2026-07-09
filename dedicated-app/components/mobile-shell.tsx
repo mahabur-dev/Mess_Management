@@ -3,14 +3,13 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { House, MenuSquare, Settings2, UtensilsCrossed, Users } from 'lucide-react'
+import { House, MenuSquare, UtensilsCrossed, Users } from 'lucide-react'
 
 const tabs = [
+  { href: '/', label: 'Dashboard', icon: House, center: true },
   { href: '/members', label: 'Members', icon: Users },
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed },
-  { href: '/', label: 'Home', icon: House, center: true },
   { href: '/more', label: 'More', icon: MenuSquare },
-  { href: '/settings', label: 'Settings', icon: Settings2 },
 ]
 
 export function MobileShell({ children }: { children: ReactNode }) {

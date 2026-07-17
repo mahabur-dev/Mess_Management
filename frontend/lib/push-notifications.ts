@@ -23,6 +23,16 @@ export function shouldShowPushPermissionPrompt(permission: NotificationPermissio
   return permission !== 'granted' && permission !== 'unsupported'
 }
 
+export async function hasCurrentDevicePushSubscription() {
+  if (!isPushNotificationSupported()) return false
+
+  const registration = await navigator.serviceWorker.getRegistration(SERVICE_WORKER_PATH)
+  if (!registration) return false
+
+  const subscription = await registration.pushManager.getSubscription()
+  return Boolean(subscription)
+}
+
 export async function registerPushNotifications(options: { promptForPermission?: boolean } = {}) {
   if (!isPushNotificationSupported()) {
     throw new Error('Push notifications are not supported in this browser.')

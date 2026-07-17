@@ -722,16 +722,16 @@ export default function DashboardPage() {
 
       <div className="p-0 sm:p-6 lg:p-8">
         <div className="space-y-4 px-4 pb-8 pt-4 sm:hidden">
-          <MobileQuickActions
-            actions={mobileActions}
-            onNavigate={(href) => router.push(href)}
-          />
-
           {!messesLoading && !loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
             <MobileNoMessPrompt
               onRequest={() => router.push('/dashboard/mess_management')}
             />
           )}
+
+          <MobileQuickActions
+            actions={mobileActions}
+            onNavigate={(href) => router.push(href)}
+          />
 
           <MobileSection
             eyebrow="Live Overview"

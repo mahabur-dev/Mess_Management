@@ -88,18 +88,18 @@ export function ContactPageClient({
   }
 
   return (
-    <main className="min-h-screen bg-[#fafcff] text-[#172554]">
+    <main className="min-h-screen bg-[#fbfdfd] text-[#071821]">
       <section className="px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-2xl">
           <div className="mb-6 text-center">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#2f80ed]">{currentTitle}</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#008b80]">{currentTitle}</p>
             <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Send a request</h1>
-            <p className="mt-3 text-sm font-semibold leading-7 text-[#6b7a99]">
+            <p className="mt-3 text-sm font-semibold leading-7 text-[#334155]">
               Fill in the form below and our team will get back to you.
             </p>
           </div>
 
-          <Card className="overflow-hidden border border-[#d8e6f8] bg-white shadow-[0_24px_70px_rgba(65,103,153,0.12)]">
+          <Card className="overflow-hidden border border-[#d8e8e7] bg-white shadow-[0_24px_70px_rgba(0,107,99,0.10)]">
             <div className="p-6 sm:p-8">
               {success ? (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-800">
@@ -119,37 +119,37 @@ export function ContactPageClient({
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Name</label>
+                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#334155]">Name</label>
                       <Input
                         value={name}
                         onChange={(event) => setName(event.target.value)}
                         placeholder="Your name"
-                        className="h-12 rounded-xl border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] placeholder:text-[#8a9bb5] focus-visible:border-[#2f80ed]/60 focus-visible:ring-[#2f80ed]/10"
+                        className="h-12 rounded-xl border-[#d8e8e7] bg-white px-4 text-sm font-semibold text-[#071821] placeholder:text-[#64748b] focus-visible:border-[#008b80]/60 focus-visible:ring-[#008b80]/10"
                         required
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Email</label>
+                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#334155]">Email</label>
                       <Input
                         type="email"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         placeholder="you@example.com"
-                        className="h-12 rounded-xl border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] placeholder:text-[#8a9bb5] focus-visible:border-[#2f80ed]/60 focus-visible:ring-[#2f80ed]/10"
+                        className="h-12 rounded-xl border-[#d8e8e7] bg-white px-4 text-sm font-semibold text-[#071821] placeholder:text-[#64748b] focus-visible:border-[#008b80]/60 focus-visible:ring-[#008b80]/10"
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Phone</label>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#334155]">Phone</label>
                     <Input
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
                       placeholder="01712345678"
                       pattern="\d{11}"
                       title="Phone number must be exactly 11 digits"
-                      className="h-12 rounded-xl border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] placeholder:text-[#8a9bb5] focus-visible:border-[#2f80ed]/60 focus-visible:ring-[#2f80ed]/10"
+                      className="h-12 rounded-xl border-[#d8e8e7] bg-white px-4 text-sm font-semibold text-[#071821] placeholder:text-[#64748b] focus-visible:border-[#008b80]/60 focus-visible:ring-[#008b80]/10"
                     />
                     {phoneError && (
                       <p className="mt-1 text-xs font-semibold text-red-500">{phoneError}</p>
@@ -157,12 +157,12 @@ export function ContactPageClient({
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#334155]">Description</label>
                     <Textarea
                       value={description}
                       onChange={(event) => setDescription(event.target.value)}
                       placeholder="Tell us what you need help with."
-                      className="min-h-[140px] rounded-xl border-[#d8e6f8] bg-white px-4 py-3 text-sm font-semibold text-[#172554] placeholder:text-[#8a9bb5] focus-visible:border-[#2f80ed]/60 focus-visible:ring-[#2f80ed]/10"
+                      className="min-h-[140px] rounded-xl border-[#d8e8e7] bg-white px-4 py-3 text-sm font-semibold text-[#071821] placeholder:text-[#64748b] focus-visible:border-[#008b80]/60 focus-visible:ring-[#008b80]/10"
                       required
                     />
                   </div>
@@ -176,7 +176,7 @@ export function ContactPageClient({
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_12px_30px_rgba(47,128,237,0.25)] hover:from-[#1f6de0] hover:to-[#2f80ed]"
+                    className="h-12 w-full rounded-xl bg-gradient-to-r from-[#006b63] to-[#008b80] px-5 font-black text-white shadow-[0_12px_30px_rgba(0,107,99,0.22)] hover:from-[#00574f] hover:to-[#006b63]"
                   >
                     {loading ? (
                       'Submitting...'

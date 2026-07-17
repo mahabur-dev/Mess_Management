@@ -10,10 +10,9 @@ import { cn } from '@/lib/utils'
 
 const links = [
   { label: 'Home', href: '/' },
-  { label: 'About', href: '/about' },
-  { label: 'Dashboard', href: '/#features' },
+  { label: 'Features', href: '/#features' },
   { label: 'Pricing', href: '/#pricing' },
-  { label: 'Why Choose', href: '/#about' },
+  { label: 'About Us', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ]
 
@@ -48,22 +47,22 @@ export function Navbar() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[#e4eaf4] bg-white/95 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-[#edf3f2] bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 ">
           <BrandLogo />
         </Link>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-8 lg:flex">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                'rounded-xl px-5 py-3 text-sm font-bold transition',
+                'relative py-2 text-sm font-bold text-[#101828] transition after:absolute after:inset-x-0 after:-bottom-1 after:mx-auto after:h-0.5 after:w-0 after:rounded-full after:bg-[#008b80] after:transition-all',
                 isActiveLink(link.href)
-                  ? 'bg-[#eef5ff] text-[#005bbb] shadow-[inset_0_0_0_1px_rgba(47,128,237,0.14)]'
-                  : 'text-[#2A2A2E] hover:bg-[#e7f1ff] hover:text-[#005bbb]'
+                  ? 'text-[#008b80] after:w-full'
+                  : 'hover:text-[#008b80]'
               )}
             >
               {link.label}
@@ -72,10 +71,14 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button onClick={() => router.push('/login')} className="h-10 rounded-lg bg-[#005bbb] px-6 font-bold text-white hover:bg-[#004fa3]">
+          <Button
+            variant="outline"
+            onClick={() => router.push('/login')}
+            className="h-10 rounded-md border-[#c9e4e1] bg-white px-6 font-bold text-[#006b63] hover:border-[#008b80] hover:bg-[#e7f7f5] hover:text-[#00574f]"
+          >
             Login
           </Button>
-          <Button onClick={() => router.push('/register')} className="h-10 rounded-lg bg-[#005bbb] px-6 font-bold text-white hover:bg-[#004fa3]">
+          <Button onClick={() => router.push('/register')} className="h-10 rounded-md bg-[#008b80] px-6 font-bold text-white shadow-[0_10px_22px_rgba(0,139,128,0.18)] hover:bg-[#006b63]">
             Get Started
           </Button>
         </div>
@@ -101,8 +104,8 @@ export function Navbar() {
                 className={cn(
                   'rounded-xl px-4 py-3 text-sm font-bold transition',
                   isActiveLink(link.href)
-                    ? 'bg-[#eef5ff] text-[#005bbb]'
-                    : 'text-[#07143d] hover:bg-[#e7f1ff]'
+                    ? 'bg-[#e7f7f5] text-[#008b80]'
+                    : 'text-[#071821] hover:bg-[#eef8f7]'
                 )}
               >
                 {link.label}
@@ -110,8 +113,14 @@ export function Navbar() {
             ))}
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => router.push('/login')}>Login</Button>
-            <Button className="bg-[#005bbb] text-white hover:bg-[#004fa3]" onClick={() => router.push('/register')}>Get Started</Button>
+            <Button
+              variant="outline"
+              className="border-[#c9e4e1] bg-white text-[#006b63] hover:bg-[#e7f7f5]"
+              onClick={() => router.push('/login')}
+            >
+              Login
+            </Button>
+            <Button className="bg-[#008b80] text-white hover:bg-[#006b63]" onClick={() => router.push('/register')}>Get Started</Button>
           </div>
         </div>
       )}

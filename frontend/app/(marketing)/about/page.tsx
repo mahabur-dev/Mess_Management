@@ -1,13 +1,27 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import {
   ArrowRight,
+  BarChart3,
+  Bell,
+  Building2,
   CheckCircle2,
-  Shield,
+  ClipboardCheck,
+  Clock3,
+  Monitor,
+  PieChart,
+  Quote,
+  ReceiptText,
+  ShieldCheck,
+  Smartphone,
   Sparkles,
-  Target,
-  TrendingUp,
+  Utensils,
+  UsersRound,
+  WalletCards,
 } from 'lucide-react'
+import { MarketingHero } from '@/components/marketing-hero'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
@@ -16,193 +30,318 @@ export const metadata: Metadata = {
     'Learn how Messzen simplifies hostel and mess management with smart automation, transparent billing, and better communication.',
 }
 
-const valuePoints = [
-  'Simple and user-friendly experience for managers and members',
-  'Fully responsive design that works beautifully on mobile devices',
-  'Real-time communication through notices, alerts, and updates',
-  'Accurate automated calculations for meals, bills, and balances',
-  'Secure and reliable data handling for daily operations',
+const storyCards = [
+  {
+    title: 'Centralized Management',
+    text: 'Everything in one place: members, rooms, meals, expenses, deposits, and more.',
+    icon: ClipboardCheck,
+  },
+  {
+    title: 'Transparency & Accuracy',
+    text: 'Accurate calculations and real-time updates ensure complete transparency.',
+    icon: PieChart,
+  },
+  {
+    title: 'Save Time & Reduce Work',
+    text: 'Automate daily tasks and reports to save valuable time and reduce manual work.',
+    icon: Clock3,
+  },
+  {
+    title: 'Access Anywhere, Anytime',
+    text: 'Powerful web dashboard and mobile access to manage on the go from any device.',
+    icon: Smartphone,
+  },
 ]
 
-const plans = [
+const desktopFeatures = [
+  'Complete overview of your hostel or mess',
+  'Manage members, rooms, meals, expenses and deposits',
+  'Generate bills and reports easily',
+  'Advanced analytics and insights',
+  'Secure and role-based access',
+]
+
+const mobileFeatures = [
+  'Quick actions on the go',
+  'View key information instantly',
+  'Add meals, expenses, deposits and more',
+  'Stay updated with notices and announcements',
+  'Perfect for managers and members',
+]
+
+const trustFeatures = [
   {
-    name: 'Free Plan',
-    summary: 'Get started with essential features and experience the workflow before you scale.',
-    badge: 'Getting Started',
-    badgeClassName: 'bg-[#eef5ff] text-[#2f80ed]',
+    title: 'Meal Management',
+    text: 'Track daily meals, head count and food expenses efficiently.',
+    icon: Utensils,
   },
   {
-    name: 'Monthly Plan',
-    summary: 'A practical option for active messes and hostels that need flexibility and full access.',
-    badge: 'Flexible Growth',
-    badgeClassName: 'bg-[#ecfdf5] text-[#10b981]',
+    title: 'Expense Tracking',
+    text: 'Record all types of expenses with categories and payment types.',
+    icon: WalletCards,
   },
   {
-    name: 'Yearly Plan',
-    summary: 'Our best-value option for long-term operations that want lower cost and uninterrupted service.',
-    badge: 'Best Value',
-    badgeClassName: 'bg-[#fffbeb] text-[#f59e0b]',
+    title: 'Member & Room Management',
+    text: 'Keep member and room information organized and up to date.',
+    icon: UsersRound,
+  },
+  {
+    title: 'Monthly Billing',
+    text: 'Generate accurate monthly bills in just a few clicks.',
+    icon: ReceiptText,
+  },
+  {
+    title: 'Notices & Alerts',
+    text: 'Send important notices and get instant notifications.',
+    icon: Bell,
+  },
+  {
+    title: 'Reports & Analytics',
+    text: 'Get clear insights and reports to make better decisions.',
+    icon: BarChart3,
   },
 ]
+
+const stats = [
+  {
+    value: '1000+',
+    label: 'Hostels & Messes',
+    icon: Building2,
+  },
+  {
+    value: '10K+',
+    label: 'Active Users',
+    icon: UsersRound,
+  },
+  {
+    value: '50K+',
+    label: 'Meals Managed',
+    icon: Utensils,
+  },
+  {
+    value: '99%',
+    label: 'Customer Satisfaction',
+    icon: ShieldCheck,
+  },
+]
+
+function SectionBadge({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <span
+      className={`inline-flex flex-col items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[#008b80] lg:items-start ${className}`}
+    >
+      {children}
+      <span className="h-0.5 w-8 rounded-full bg-[#008b80]" />
+    </span>
+  )
+}
+
+function StorySection() {
+  return (
+    <section className="bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[.78fr_1.22fr]">
+        <div className="text-center lg:text-left">
+          <SectionBadge>Our Story</SectionBadge>
+          <h2 className="mt-5 text-2xl font-black leading-tight tracking-tight text-[#071821] sm:text-3xl">
+            Built to Solve Real-World Management Challenges
+          </h2>
+          <p className="mt-4 text-sm font-medium leading-7 text-[#334155]">
+            Managing a hostel or mess involves countless daily tasks, manual calculations,
+            paperwork, and constant follow-ups. We built Messzen to bring everything into
+            one organized system, making it simple, transparent, and stress-free for both
+            managers and members.
+          </p>
+          <Button asChild className="mt-6 h-11 rounded-md bg-[#006b63] px-5 text-sm font-black text-white shadow-[0_12px_24px_rgba(0,107,99,0.22)] hover:bg-[#00574f]">
+            <Link href="/register" className="flex items-center gap-2">
+              Our Mission
+              <ArrowRight size={16} />
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {storyCards.map(({ title, text, icon: Icon }) => (
+            <article
+              key={title}
+              className="rounded-2xl border border-[#d8e8e7] bg-white p-6 text-center shadow-[0_14px_36px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,107,99,0.12)]"
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#e7f7f5] text-[#008b80]">
+                <Icon size={26} />
+              </div>
+              <h3 className="mt-5 text-base font-black leading-6 text-[#071821]">{title}</h3>
+              <p className="mt-3 text-sm font-medium leading-7 text-[#334155]">{text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function PlatformSection() {
+  return (
+    <section className="bg-[#fbfdfd] px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-3xl text-center">
+          <SectionBadge className="items-center">Our Platform</SectionBadge>
+          <h2 className="mt-4 text-2xl font-black tracking-tight text-[#071821] sm:text-3xl">
+            Powerful on Desktop. Convenient on Mobile.
+          </h2>
+          <p className="mt-2 text-sm font-medium text-[#334155]">
+            A seamless experience across all devices.
+          </p>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-[#d8e8e7] bg-gradient-to-br from-[#f8fcfc] to-white p-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] sm:p-7">
+          <div className="grid items-center gap-8 lg:grid-cols-[.9fr_1.5fr_.9fr]">
+            <div>
+              <div className="flex items-center gap-3 text-[#008b80]">
+                <Monitor size={26} />
+                <h3 className="text-lg font-black">Desktop Dashboard</h3>
+              </div>
+              <ul className="mt-5 space-y-3">
+                {desktopFeatures.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-sm font-medium leading-6 text-[#334155]">
+                    <CheckCircle2 className="mt-1 shrink-0 text-[#008b80]" size={16} />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="relative flex items-end justify-center gap-3 overflow-hidden px-1 pt-4">
+              <div className="w-[72%] max-w-[560px] overflow-hidden rounded-2xl shadow-[0_18px_28px_rgba(15,23,42,0.18)]">
+                <Image
+                  src="/labtop.webp"
+                  alt="Messzen desktop dashboard on laptop"
+                  width={780}
+                  height={520}
+                  className="w-full object-contain"
+                />
+              </div>
+
+              <div className="w-[22%] min-w-[76px] max-w-[150px] rounded-[1.35rem] border-[6px] border-[#101820] bg-[#101820] shadow-[0_18px_24px_rgba(15,23,42,0.22)]">
+                <div className="mx-auto mb-1 h-1.5 w-10 rounded-b-full bg-[#101820]" />
+                <div className="overflow-hidden rounded-[1rem] bg-white">
+                  <Image
+                    src="/phone-dashboard.webp"
+                    alt="Messzen mobile dashboard"
+                    width={220}
+                    height={430}
+                    className="aspect-[9/18] w-full object-cover object-top"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-3 text-[#008b80] lg:justify-end">
+                <Smartphone size={26} />
+                <h3 className="text-lg font-black">Mobile Dashboard</h3>
+              </div>
+              <ul className="mt-5 space-y-3">
+                {mobileFeatures.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-sm font-medium leading-6 text-[#334155] lg:flex-row-reverse lg:text-right">
+                    <CheckCircle2 className="mt-1 shrink-0 text-[#008b80]" size={16} />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TrustSection() {
+  return (
+    <section className="bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-14">
+      <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-2xl font-black tracking-tight text-[#071821] sm:text-3xl">
+            Why Thousands Trust Messzen
+          </h2>
+          <span className="mx-auto mt-3 block h-0.5 w-10 rounded-full bg-[#008b80]" />
+        </div>
+
+        <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-6">
+          {trustFeatures.map(({ title, text, icon: Icon }, index) => (
+            <article
+              key={title}
+              className={`text-center ${index > 0 ? 'lg:border-l lg:border-[#b9d8d5]' : ''} px-3`}
+            >
+              <Icon className="mx-auto text-[#008b80]" size={36} />
+              <h3 className="mt-4 text-sm font-black leading-5 text-[#071821]">{title}</h3>
+              <p className="mt-3 text-xs font-medium leading-6 text-[#334155]">{text}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-10 grid gap-4 rounded-xl bg-gradient-to-r from-[#00645c] to-[#008f85] p-5 text-white shadow-[0_18px_42px_rgba(0,107,99,0.24)] sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map(({ value, label, icon: Icon }) => (
+            <div key={label} className="flex items-center justify-center gap-4 text-center sm:text-left">
+              <Icon size={34} className="shrink-0 text-white/80" />
+              <div>
+                <p className="text-2xl font-black leading-none sm:text-3xl">{value}</p>
+                <p className="mt-1 text-sm font-medium text-white/90">{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FounderSection() {
+  return (
+    <section className="bg-white px-4 pb-16 pt-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid items-center gap-8 rounded-2xl border border-[#d8e8e7] bg-gradient-to-br from-[#f6fbfb] via-white to-[#e9f7f5] p-6 shadow-[0_18px_44px_rgba(15,23,42,0.06)] sm:p-8 lg:grid-cols-[.72fr_.9fr_1.08fr]">
+          <div className="mx-auto w-full max-w-[250px] overflow-hidden rounded-2xl bg-[#d9f0ed]">
+            <Image
+              src="/ai-photo.webp"
+              alt="Mahabur Rahman, Founder of Messzen"
+              width={420}
+              height={500}
+              className="aspect-[4/5] w-full object-cover"
+            />
+          </div>
+
+          <div className="text-center lg:text-left">
+            <span className="text-xs font-black uppercase tracking-[0.18em] text-[#008b80]">Founder</span>
+            <h2 className="mt-3 text-2xl font-black tracking-tight text-[#071821] sm:text-3xl">
+              Mahabur Rahman
+            </h2>
+            <p className="mt-2 text-lg font-black text-[#006b63]">Founder, Messzen</p>
+            <p className="mt-2 text-sm font-medium text-[#334155]">Software Engineer since 2025</p>
+          </div>
+
+          <div className="border-t border-[#b9d8d5] pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <Quote size={28} className="text-[#008b80]" />
+            <p className="mt-4 text-sm font-medium leading-7 text-[#334155] sm:text-base">
+              Messzen was created to solve the everyday challenges of managing shared
+              living spaces. Our goal is to replace complicated manual processes with
+              a simple, transparent and reliable digital experience for everyone.
+            </p>
+            <p className="mt-5 font-serif text-2xl italic text-[#008b80]">Mahabur Rahman</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-white text-[#172554]">
-      <section className="overflow-hidden bg-white px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.02fr_.98fr]">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-[#f8faff] px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">
-              <Sparkles size={14} />
-              About Mess Management
-            </span>
-            <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.04] tracking-tight text-[#172554] sm:text-5xl">
-              Built to make{' '}
-              <span className="bg-gradient-to-r from-[#2f80ed] to-[#8b5cf6] bg-clip-text text-transparent">
-                hostel and mess operations
-              </span>{' '}
-              easier, faster, and more transparent
-            </h1>
-            <p className="mt-6 max-w-2xl text-base font-semibold leading-8 text-[#6b7a99] sm:text-lg">
-              Mess & Hostel Management System is a modern digital platform designed to replace stressful manual work with
-              organized workflows, smart automation, and a cleaner experience for both managers and members.
-            </p>
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <Button asChild className="h-12 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-7 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)]">
-                <Link href="/register" className="flex items-center gap-2">
-                  Get Started Today
-                  <ArrowRight size={18} />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-12 rounded-xl border-[#d8e6f8] bg-white px-7 font-black text-[#2f80ed] hover:bg-[#f8faff] hover:border-[#a9ccfb]">
-                <Link href="/#pricing">View Plans</Link>
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="absolute -left-6 top-10 h-24 w-24 rounded-full bg-[#e7f1ff] blur-3xl" />
-            <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-[#f5f3ff] blur-3xl" />
-            <div className="relative overflow-hidden rounded-[28px] border border-[#e6ebf4] bg-gradient-to-br from-white via-[#f8fbff] to-[#eef5ff] p-6 shadow-[0_24px_64px_rgba(47,128,237,0.14)] sm:p-8">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-[#e6ebf4] bg-white p-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e7f1ff] text-[#2f80ed]">
-                    <Target size={20} />
-                  </div>
-                  <h2 className="mt-4 text-lg font-black text-[#172554]">Our Mission</h2>
-                  <p className="mt-2 text-sm font-semibold leading-7 text-[#6b7a99]">
-                    Make daily management simple, efficient, and transparent while reducing manual work and confusion.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#e6ebf4] bg-white p-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ecfdf5] text-[#10b981]">
-                    <TrendingUp size={20} />
-                  </div>
-                  <h2 className="mt-4 text-lg font-black text-[#172554]">Our Vision</h2>
-                  <p className="mt-2 text-sm font-semibold leading-7 text-[#6b7a99]">
-                    Build a smarter future where shared living management becomes effortless and scalable.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-[#e6ebf4] bg-white p-6 shadow-[0_10px_28px_rgba(65,103,153,0.07)]">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#2f80ed]">Why We Built This</p>
-                <p className="mt-3 text-sm font-semibold leading-7 text-[#53617d]">
-                  Manual meal counting, scattered expenses, delayed notices, and unclear billing create unnecessary pressure.
-                  Our platform centralizes these tasks so managers can focus on operations and members can trust the process.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[.92fr_1.08fr]">
-          <div className="rounded-[28px] border border-[#e6ebf4] bg-gradient-to-br from-white via-[#f8fbff] to-[#eef5ff] p-8 shadow-[0_20px_50px_rgba(47,128,237,0.10)]">
-            <span className="inline-flex rounded-full border border-[#d8e6f8] bg-white px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">
-              Why Choose Us
-            </span>
-            <h2 className="mt-5 text-3xl font-black tracking-tight text-[#172554] sm:text-4xl">
-              Built for clarity, trust, and control
-            </h2>
-            <p className="mt-4 text-sm font-semibold leading-8 text-[#53617d]">
-              We help hostel and mess operators replace scattered spreadsheets, phone calls, and manual registers with one
-              dependable system that feels simple to use every day.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {valuePoints.map((item) => (
-              <div key={item} className="rounded-2xl border border-[#e6ebf4] bg-[#fafcff] p-5">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed]">
-                    <CheckCircle2 size={16} />
-                  </span>
-                  <p className="text-sm font-bold leading-7 text-[#172554]">{item}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#fafcff] px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center rounded-full border border-[#d8e6f8] bg-white px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed]">
-              Flexible Plans
-            </span>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-[#172554] sm:text-4xl">
-              Subscription options that fit your size and stage
-            </h2>
-            <p className="mt-4 text-base font-semibold leading-7 text-[#6b7a99]">
-              Start small, grow at your own pace, and choose the plan that works best for your hostel or mess.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className="rounded-2xl border border-[#e6ebf4] bg-white p-7 shadow-[0_12px_35px_rgba(65,103,153,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(47,128,237,0.12)]"
-              >
-                <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${plan.badgeClassName}`}>
-                  {plan.badge}
-                </span>
-                <h3 className="mt-5 text-2xl font-black text-[#172554]">{plan.name}</h3>
-                <p className="mt-3 text-sm font-semibold leading-7 text-[#6b7a99]">{plan.summary}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl rounded-[30px] border border-[#dbe7fb] bg-gradient-to-r from-[#f8fbff] via-[#eef6ff] to-[#e4f2ff] p-8 text-[#172554] shadow-[0_20px_55px_rgba(47,128,237,0.12)] sm:p-12">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-white px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#2f80ed] shadow-sm">
-                <Shield size={14} className="text-[#2f80ed]" />
-                Get Started Today
-              </span>
-              <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl">
-                A smarter way to manage your hostel or mess starts here
-              </h2>
-              <p className="mt-4 text-sm font-semibold leading-8 text-[#53617d] sm:text-base">
-                Whether you manage a small mess or a large hostel, our system helps you save time, reduce errors, and
-                run operations with confidence.
-              </p>
-            </div>
-
-            <Button asChild className="h-12 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-7 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.22)] hover:shadow-[0_16px_34px_rgba(47,128,237,0.28)]">
-              <Link href="/register" className="flex items-center gap-2">
-                Join Us Now
-                <ArrowRight size={18} />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+    <main className="min-h-screen bg-white text-[#071821]">
+      <MarketingHero />
+      <StorySection />
+      <PlatformSection />
+      <TrustSection />
+      <FounderSection />
     </main>
   )
 }

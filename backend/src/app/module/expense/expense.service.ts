@@ -5,7 +5,7 @@ import {
   RequestPriceReviewDto,
   UpdateExpenseDto,
 } from './dto/expense.dto';
-import { ExpenseCategory, ExpensePaymentType, Prisma } from '@prisma/client';
+import { ExpenseCategory, ExpensePaymentType, NotificationType, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -276,19 +276,24 @@ export class ExpenseService {
     // Recalculate monthly bills for both FROM_DEPOSIT and PERSONAL expenses
     // await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
 
-    // Send push notification to all active users
-    await this.notificationService.sendPushToAll({
-      title: `New Expense Added - ${expense.mess.name}`,
-      body: `${expense.item_name || expense.category} - ${expense.amount} [${paymentType}]`,
-      url: '/',
-      data: {
-        messId: expense.mess.id,
-        expenseId: expense.id,
-        type: 'EXPENSE',
-      },
-    }).catch(() => {
-      // Silently fail if push notification fails
-    });
+    await this.notificationService
+      .createForMess(
+        userId,
+        dto.messId,
+        NotificationType.EXPENSE_ADDED,
+        `New Expense Added - ${expense.mess.name}`,
+        `${expense.item_name || expense.category} - ${expense.amount} [${paymentType}]`,
+        {
+          source: 'EXPENSE',
+          expenseId: expense.id,
+          paymentType,
+        },
+        undefined,
+        '/dashboard/finance',
+      )
+      .catch(() => {
+        // Silently fail if notification delivery fails.
+      });
 
     return expense;
   }

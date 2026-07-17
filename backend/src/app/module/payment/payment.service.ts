@@ -1,17 +1,19 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { PaymentStatus, Prisma } from '@prisma/client';
+import { NotificationType, PaymentStatus, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePaymentDto, PaymentFilterDto, ReviewPaymentDto } from './dto/payment.dto';
 import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
 import sendMailer from 'src/app/helpers/sendMailer';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly monthlyBillService: MonthlyBillService,
+    private readonly notificationService: NotificationService,
   ) { }
 
   private async getPaymentRecalculateDate(payment: {
@@ -119,7 +121,7 @@ export class PaymentService {
     }
     await this.ensureActiveMessMember(dto.messId, purchasedById);
 
-    return this.prisma.payment.create({
+    const payment = await this.prisma.payment.create({
       data: {
         mess_id: dto.messId,
         member_id: purchasedById,
@@ -135,6 +137,27 @@ export class PaymentService {
       },
       select: this.paymentSelect,
     });
+
+    await this.notificationService
+      .createForMess(
+        userId,
+        dto.messId,
+        NotificationType.PAYMENT_NOTICE,
+        `Payment Submitted - ${payment.mess.name}`,
+        `${payment.member.name} submitted ${Number(payment.amount).toLocaleString()} via ${payment.method}.`,
+        {
+          source: 'PAYMENT',
+          paymentId: payment.id,
+          status: payment.status,
+        },
+        undefined,
+        '/dashboard/payments',
+      )
+      .catch(() => {
+        // Payment submission should not fail if notification delivery fails.
+      });
+
+    return payment;
   }
 
   async findAll(query: PaymentFilterDto) {

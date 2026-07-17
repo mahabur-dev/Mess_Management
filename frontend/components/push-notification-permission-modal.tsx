@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import {
   getPushPermissionState,
+  hasCurrentDevicePushSubscription,
   isPushNotificationSupported,
   registerPushNotifications,
   shouldShowPushPermissionPrompt,
@@ -27,6 +28,7 @@ export function PushNotificationPermissionModal() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false)
   const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>('unsupported')
   const [subscriptionStatus, setSubscriptionStatus] = useState<PushSubscriptionStatus | null>(null)
+  const [isCurrentDeviceSubscribed, setIsCurrentDeviceSubscribed] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export function PushNotificationPermissionModal() {
       if (!isAuthenticated || !user?.id || !isPushNotificationSupported()) {
         setOpen(false)
         setSubscriptionStatus(null)
+        setIsCurrentDeviceSubscribed(false)
         setPermissionState('unsupported')
         setIsCheckingStatus(false)
         return
@@ -51,13 +54,17 @@ export function PushNotificationPermissionModal() {
 
         setPermissionState(currentPermission)
 
-        const response = await apiClient.getPushSubscriptionStatus()
+        const [response, currentDeviceSubscribed] = await Promise.all([
+          apiClient.getPushSubscriptionStatus(),
+          hasCurrentDevicePushSubscription(),
+        ])
         if (cancelled) return
 
         setSubscriptionStatus(response.data)
+        setIsCurrentDeviceSubscribed(currentDeviceSubscribed)
 
         if (currentPermission === 'granted') {
-          if (!response.data.hasActiveSubscription) {
+          if (!response.data.hasActiveSubscription || !currentDeviceSubscribed) {
             try {
               setIsSaving(true)
               await registerPushNotifications({ promptForPermission: false })
@@ -70,6 +77,7 @@ export function PushNotificationPermissionModal() {
                     }
                   : current,
               )
+              setIsCurrentDeviceSubscribed(true)
             } catch (syncError) {
               if (!cancelled) {
                 setError(syncError instanceof Error ? syncError.message : 'Unable to sync push subscription.')
@@ -117,6 +125,7 @@ export function PushNotificationPermissionModal() {
       await registerPushNotifications()
       setPermissionState('granted')
       setSubscriptionStatus((current) => current ? { ...current, hasActiveSubscription: true, activeSubscriptionCount: Math.max(1, current.activeSubscriptionCount) } : current)
+      setIsCurrentDeviceSubscribed(true)
       setOpen(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to enable notifications.')
@@ -159,8 +168,10 @@ export function PushNotificationPermissionModal() {
             </div>
           )}
           <p className="text-sm text-muted-foreground">
-            {subscriptionStatus?.hasActiveSubscription
+            {permissionState === 'granted' && isCurrentDeviceSubscribed
               ? 'This device is already connected for notifications. No further action is needed.'
+              : subscriptionStatus?.hasActiveSubscription
+                ? 'Your account has notifications enabled on another device. Allow this browser too for updates here.'
               : 'Allow notifications from your browser to keep this device connected for instant updates.'}
           </p>
         </div>

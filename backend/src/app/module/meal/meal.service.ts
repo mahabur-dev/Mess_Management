@@ -51,6 +51,21 @@ function formatLocalDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function parseUtcDateStart(value: string | Date): Date {
+  const date = new Date(value);
+  return new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  ));
+}
+
+function parseUtcDateExclusiveEnd(value: string | Date): Date {
+  const date = parseUtcDateStart(value);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date;
+}
+
 /**
  * Calculate the total meal count from attendance status, meal name, and guests.
  * - OFF       → 0
@@ -431,7 +446,7 @@ export class MealService {
     await this.verifyMessAccess(dto.messId, userId, role);
     await this.ensureActiveSubscription(dto.messId, role);
 
-    const date = dto.date ? new Date(dto.date) : new Date();
+    const date = parseUtcDateStart(dto.date ?? new Date());
     const mealName = dto.mealName ?? MealName.LUNCH;
 
     // Check meal deadline (bypasses for managers/admin)
@@ -573,7 +588,7 @@ export class MealService {
     if (!meal) throw new HttpException('Meal entry not found', 404);
 
     // Check meal deadline (bypasses for managers/admin)
-    const date = dto.date ? new Date(dto.date) : meal.scheduled_date;
+    const date = dto.date ? parseUtcDateStart(dto.date) : meal.scheduled_date;
     await this.checkMealDeadline(meal.mess_id, date, userId, role);
 
     if (role === 'MEMBER' && meal.created_by !== userId) {
@@ -596,7 +611,7 @@ export class MealService {
     const updatedMeal = await this.prisma.meal.update({
       where: { id },
       data: {
-        scheduled_date: dto.date ? new Date(dto.date) : undefined,
+        scheduled_date: dto.date ? parseUtcDateStart(dto.date) : undefined,
         status: dto.mealStatus,
         is_locked: dto.mealStatus === 'LOCKED' ? true : undefined,
       },
@@ -786,9 +801,9 @@ export class MealService {
   ) {
     await this.verifyMessAccess(messId, userId, role);
 
-    const dateFilter: { gte?: Date; lte?: Date } = {};
-    if (startDate) dateFilter.gte = new Date(startDate);
-    if (endDate) dateFilter.lte = new Date(endDate);
+    const dateFilter: { gte?: Date; lt?: Date } = {};
+    if (startDate) dateFilter.gte = parseUtcDateStart(startDate);
+    if (endDate) dateFilter.lt = parseUtcDateExclusiveEnd(endDate);
 
     const members = await this.prisma.messMembership.findMany({
       where: { mess_id: messId, is_active: true },
@@ -874,8 +889,8 @@ export class MealService {
     if (query.userId) where.created_by = query.userId;
     if (query.startDate || query.endDate) {
       where.scheduled_date = {
-        ...(query.startDate && { gte: new Date(query.startDate) }),
-        ...(query.endDate && { lte: new Date(query.endDate) }),
+        ...(query.startDate && { gte: parseUtcDateStart(query.startDate) }),
+        ...(query.endDate && { lt: parseUtcDateExclusiveEnd(query.endDate) }),
       };
     }
     return where;

@@ -162,6 +162,7 @@ export class NotificationService {
       }
     }
 
+    const targetUserIds = await this.resolveNotificationPushTargets(dto);
     const notification = await this.prisma.notification.create({
       data: {
         mess_id: dto.messId,
@@ -169,12 +170,14 @@ export class NotificationService {
         type: dto.type as NotificationType,
         title: dto.title,
         body: dto.body,
-        metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+        metadata: {
+          ...(dto.metadata ?? {}),
+          targetUserIds,
+        } as Prisma.InputJsonValue,
       },
       select: this.notificationSelect,
     });
 
-    const targetUserIds = await this.resolveNotificationPushTargets(dto);
     if (targetUserIds.length > 0) {
       await this.dispatchPushToUsers(targetUserIds, {
         title: dto.title,
@@ -215,6 +218,9 @@ export class NotificationService {
     }
 
     try {
+      const resolvedTargets =
+        targetUserIds ?? (await this.resolveMessUserIds(messId));
+
       const notification = await this.prisma.notification.create({
         data: {
           mess_id: messId,
@@ -223,13 +229,13 @@ export class NotificationService {
           type,
           title,
           body,
-          metadata: metadata as Prisma.InputJsonValue | undefined,
+          metadata: {
+            ...(metadata ?? {}),
+            targetUserIds: resolvedTargets,
+          } as Prisma.InputJsonValue,
         },
         select: this.notificationSelect,
       });
-
-      const resolvedTargets =
-        targetUserIds ?? (await this.resolveMessUserIds(messId));
 
       await this.dispatchPushToUsers(resolvedTargets, {
         title,
@@ -451,15 +457,23 @@ export class NotificationService {
 
   private async resolveNotificationPushTargets(dto: CreateNotificationDto) {
     if (dto.sendToAll) {
-      const users = await this.prisma.user.findMany({
-        where: { is_active: true },
-        select: { id: true },
-      });
-
-      return users.map((user) => user.id);
+      return this.resolveMessUserIds(dto.messId);
     }
 
-    if (dto.targetUserId) return [dto.targetUserId];
+    if (dto.targetUserId) {
+      const isMessMember = await this.isActiveNonAdminMessMember(
+        dto.messId,
+        dto.targetUserId,
+      );
+      if (!isMessMember) {
+        throw new HttpException(
+          'Forbidden: Target user is not an active member of this mess',
+          403,
+        );
+      }
+
+      return [dto.targetUserId];
+    }
 
     return this.resolveMessUserIds(dto.messId);
   }
@@ -468,20 +482,50 @@ export class NotificationService {
     const [mess, memberships] = await Promise.all([
       this.prisma.mess.findUnique({
         where: { id: messId },
-        select: { created_by: true },
+        select: {
+          created_by: true,
+          creator: { select: { id: true, role: true, is_active: true } },
+        },
       }),
       this.prisma.messMembership.findMany({
         where: { mess_id: messId, is_active: true },
-        select: { user_id: true },
+        select: {
+          user_id: true,
+          user: { select: { id: true, role: true, is_active: true } },
+        },
       }),
     ]);
 
     return [
       ...new Set([
-        ...(mess?.created_by ? [mess.created_by] : []),
-        ...memberships.map((membership) => membership.user_id),
+        ...(mess?.creator?.is_active && mess.creator.role !== 'ADMIN'
+          ? [mess.created_by]
+          : []),
+        ...memberships
+          .filter((membership) => membership.user.is_active && membership.user.role !== 'ADMIN')
+          .map((membership) => membership.user_id),
       ]),
     ];
+  }
+
+  private async isActiveNonAdminMessMember(messId: string, userId: string) {
+    const [user, membership, mess] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true, is_active: true },
+      }),
+      this.prisma.messMembership.findUnique({
+        where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+        select: { is_active: true },
+      }),
+      this.prisma.mess.findUnique({
+        where: { id: messId },
+        select: { created_by: true },
+      }),
+    ]);
+
+    if (!user?.is_active || user.role === 'ADMIN') return false;
+    return Boolean(membership?.is_active || mess?.created_by === userId);
   }
 
   async resolveMessManagerAndAdminUserIds(messId: string) {
@@ -527,7 +571,13 @@ export class NotificationService {
     if (query.messId) where.mess_id = query.messId;
     if (query.type) where.type = query.type;
 
-    if (role === 'ADMIN') return where;
+    if (role === 'ADMIN') {
+      where.metadata = {
+        path: ['targetUserIds'],
+        array_contains: userId,
+      };
+      return where;
+    }
 
     const messes = await this.prisma.mess.findMany({
       where: {

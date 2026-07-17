@@ -35,11 +35,22 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   private getMonthRange(month?: string) {
-    const start = month ? new Date(month) : new Date();
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
+    const source = month ? new Date(month) : new Date();
+    const year = source.getFullYear();
+    const monthIndex = source.getMonth();
+    const start = new Date(Date.UTC(year, monthIndex, 1));
+    const end = new Date(Date.UTC(year, monthIndex + 1, 1));
+    return { start, end };
+  }
+
+  private getUtcDayRange(date: Date = new Date()) {
+    const start = new Date(Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+    ));
     const end = new Date(start);
-    end.setMonth(end.getMonth() + 1);
+    end.setUTCDate(end.getUTCDate() + 1);
     return { start, end };
   }
 
@@ -57,10 +68,7 @@ export class DashboardService {
   async getMessDashboard(messId: string, userId: string, role: string, month?: string) {
     await this.verifyMessMember(messId, userId, role);
     const { start, end } = this.getMonthRange(month);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start: today, end: tomorrow } = this.getUtcDayRange();
 
     const [
       todayAttendances,
@@ -143,6 +151,7 @@ export class DashboardService {
       }),
       this.prisma.monthlyBill.aggregate({
         where: { mess_id: messId, month: start },
+        _count: { _all: true },
         _sum: { final_due: true, paid_amount: true, prev_balance: true, deposit_total: true },
       }),
       this.prisma.messMembership.findMany({
@@ -215,6 +224,7 @@ export class DashboardService {
       creditFromPrevBalance;
 
     const billedTotalDue = Number(billsAgg._sum.final_due ?? 0);
+    const hasGeneratedBills = billsAgg._count._all > 0;
     const paidAmount = Number(billsAgg._sum.paid_amount ?? 0);
 
     const estimatedTotalDue = Math.max(
@@ -225,7 +235,7 @@ export class DashboardService {
     // When bills exist: final_due ALREADY includes prev_balance (see monthly-bill.service.ts).
     // When no bills yet: estimate and explicitly add dueFromPrevBalance.
     const totalDue = Number(
-      (billedTotalDue > 0 ? billedTotalDue : estimatedTotalDue + dueFromPrevBalance).toFixed(2),
+      (hasGeneratedBills ? billedTotalDue : estimatedTotalDue + dueFromPrevBalance).toFixed(2),
     );
 
     return {

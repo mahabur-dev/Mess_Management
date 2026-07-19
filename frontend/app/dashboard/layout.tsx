@@ -23,9 +23,9 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#fafcff' }}>
+      <div className="dashboard-theme flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-[#e6ebf4] border-t-[#2f80ed] animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin mx-auto mb-4" />
           <p className="text-sm font-bold text-[#6b7a99]">Loading...</p>
         </div>
       </div>
@@ -39,11 +39,11 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const contentMargin = collapsed ? 'lg:ml-[88px]' : 'lg:ml-[296px]'
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: '#fafcff' }}>
+    <div className="dashboard-theme flex h-screen bg-background">
       <DashboardSidebar />
       {/* Content - full width on tablet, margin adjusts on large screens when sidebar is fixed */}
       <main className={`flex-1 overflow-auto transition-all duration-300 ${contentMargin}`}>
-        <div className="min-h-screen p-0">
+        <div className="dashboard-main min-h-screen p-0">
           {children}
         </div>
       </main>

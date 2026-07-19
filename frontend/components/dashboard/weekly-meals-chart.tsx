@@ -59,7 +59,7 @@ export function WeeklyMealsChart({
           tick={{ fill: '#6b7a99' }}
         />
         <Tooltip content={<ChartTooltip />} />
-        <Bar dataKey="breakfast" fill="#2f80ed" radius={[4, 4, 0, 0]} name="Breakfast" />
+        <Bar dataKey="breakfast" fill="var(--brand)" radius={[4, 4, 0, 0]} name="Breakfast" />
         <Bar dataKey="lunch" fill="#58d68d" radius={[4, 4, 0, 0]} name="Lunch" />
         <Bar dataKey="dinner" fill="#ffb84d" radius={[4, 4, 0, 0]} name="Dinner" />
       </BarChart>

@@ -16,6 +16,8 @@ import {
   Save,
   Send,
   Settings2,
+  Tags,
+  UtensilsCrossed,
   Eye,
   Trash2,
   X,
@@ -644,8 +646,8 @@ export default function MessManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-50 to-blue-100">
-                      <Building2 size={16} className="text-indigo-600" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)]">
+                      <Tags size={17} />
                     </div>
                     <div>
                       <p className="text-xs font-bold text-[#172554]">Mess Category</p>
@@ -671,8 +673,8 @@ export default function MessManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-50 to-indigo-100">
-                      <Clock size={16} className="text-blue-600" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600">
+                      <UtensilsCrossed size={17} />
                     </div>
                     <div>
                       <p className="text-xs font-bold text-[#172554]">Meal Off Deadline</p>

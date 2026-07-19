@@ -278,7 +278,16 @@ export default function MonthlyBillPage() {
                 <div className="border-b border-[#e6ebf4] bg-[#f8faff] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black" style={{ backgroundColor: '#2f80ed18', borderColor: '#2f80ed55', color: '#2f80ed' }}>{initials}</div>
+                      <div
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black"
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--brand) 10%, transparent)',
+                          borderColor: 'color-mix(in srgb, var(--brand) 34%, transparent)',
+                          color: 'var(--brand)',
+                        }}
+                      >
+                        {initials}
+                      </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-[#172554]">{bill.member?.name ?? 'My Bill'}</p>
                         {bill.member?.email && <p className="truncate text-xs font-bold text-[#6b7a99]">{bill.member.email}</p>}

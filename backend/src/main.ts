@@ -9,91 +9,82 @@ import { GlobalExceptionFilter } from './app/middlewares/globalErrors.filter';
 import express from 'express';
 dotenv.config();
 
+const API_PREFIX = 'api/v1';
+const BODY_LIMIT = '100mb';
+const HOST = '0.0.0.0';
+const PORT = process.env.PORT ?? 5001;
+
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://www.messzen.com',
+  'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
+  'https://frontend-xi-neon-98.vercel.app',
+  'capacitor://localhost',
+  'http://localhost',
+  'https://localhost',
+  'https://messmanagement.up.railway.app',
+];
+
+const envAllowedOrigins = (process.env.CORS_ORIGINS ?? '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set([
+  ...DEFAULT_ALLOWED_ORIGINS,
+  ...envAllowedOrigins,
+]);
+
+function isAllowedCorsOrigin(origin: string) {
+  if (allowedOrigins.has(origin)) return true;
+
+  try {
+    const url = new URL(origin);
+    const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(url.hostname);
+    const isLanIp = /^192\.168\.\d{1,3}\.\d{1,3}$/.test(url.hostname);
+    const isCodespace = url.hostname.endsWith('.app.github.dev');
+
+    return isLocalhost || isLanIp || isCodespace;
+  } catch {
+    return false;
+  }
+}
+
+function configureCors(app: Awaited<ReturnType<typeof NestFactory.create>>) {
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || isAllowedCorsOrigin(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked: ${origin}`), false);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'Accept-Language',
+    ],
+    exposedHeaders: ['Authorization'],
+  });
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn'],
   });
 
-  app.use('/api/v1/webhook', express.raw({ type: 'application/json' }));
-  app.use((req, res, next) => {
-    console.log('[BACKEND]', req.method, req.url)
-    next()
-  })
+  configureCors(app);
 
-  app.use(express.json({ limit: '100mb' }));
-  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+  app.use(`/${API_PREFIX}/webhook`, express.raw({ type: 'application/json' }));
+  app.use(express.json({ limit: BODY_LIMIT }));
+  app.use(express.urlencoded({ limit: BODY_LIMIT, extended: true }));
   app.use(cookieParser());
- 
-  app.enableCors({
-  //   origin: (origin, callback) => {
-  //     // Allow requests with no origin (mobile apps, Postman, curl)
-  //     if (!origin) return callback(null, true);
 
-  //  const allowedOrigins = [
-  //     'http://localhost:3000',
-  //     'http://localhost:5001',
-  //     'http://localhost:4000',
-
-  //     'http://192.168.0.152:3000',
-  //     'http://192.168.0.152:5001',
-  //     'http://192.168.0.152:4000',
-
-  //     'https://www.messzen.com',
-  //     'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
-  //     'https://frontend-xi-neon-98.vercel.app',
-
-  //     'capacitor://localhost',
-  //     'http://localhost',
-  //     'https://localhost',
-  //     'https://messmanagement.up.railway.app',
-  //   ];
-
-  //     // Allow GitHub Codespaces preview URLs (dynamic subdomains)
-  //     const isCodespace = origin.endsWith('.app.github.dev');
-
-  //     if (allowedOrigins.includes(origin) || isCodespace) {
-  //       return callback(null, true);
-  //     }
-
-  //     return callback(new Error(`CORS blocked: ${origin}`), false);
-  //   },
-    origin: (origin, callback) => {
-      console.log('[CORS ORIGIN]', origin);
-
-      if (!origin) return callback(null, true);
-
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5001',
-        'http://localhost:4000',
-        'http://192.168.0.152:3000',
-        'http://192.168.0.152:5001',
-        'http://192.168.0.152:4000',
-        'https://www.messzen.com',
-        'https://frontend-git-backend-mahabur1814031-8144s-projects.vercel.app',
-        'https://frontend-xi-neon-98.vercel.app',
-        'capacitor://localhost',
-        'http://localhost',
-        'https://localhost',
-        'https://messmanagement.up.railway.app',
-      ];
-
-      const isCodespace = origin.endsWith('.app.github.dev');
-
-      if (allowedOrigins.includes(origin) || isCodespace) {
-        return callback(null, true);
-      }
-
-      console.log('[CORS BLOCKED]', origin);
-      return callback(new Error(`CORS blocked: ${origin}`), false);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin'],
-    exposedHeaders: ['Authorization'],
-  });
-
-  app.setGlobalPrefix('api/v1', {
+  app.setGlobalPrefix(API_PREFIX, {
     exclude: [''],
   });
 
@@ -129,13 +120,10 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: { persistAuthorization: true },
   });
-  await app.listen(process.env.PORT ?? 5001, '0.0.0.0', () => {
-    console.log(
-      `Server is running on http://localhost:${process.env.PORT ?? 5001}`,
-    );
-    console.log(
-      `Swagger: http://localhost:${process.env.PORT ?? 5001}/api/docs`,
-    );
+
+  await app.listen(PORT, HOST, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Swagger: http://localhost:${PORT}/api/docs`);
   });
 }
 bootstrap().catch(console.error);

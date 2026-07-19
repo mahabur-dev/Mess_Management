@@ -64,6 +64,12 @@ const expenseCategories: ExpenseCategory[] = [
 ]
 
 const paymentMethods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
+const quickAddMenuItemClass =
+  'group cursor-pointer gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-[var(--brand-soft)] focus:bg-[var(--brand-soft)]'
+const quickAddIconClass =
+  'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition group-hover:bg-white'
+const dashboardActionButtonClass =
+  'bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] text-white shadow-[0_16px_35px_var(--brand-shadow)] transition hover:from-[var(--brand-darker)] hover:to-[var(--brand-dark)] hover:shadow-[0_20px_42px_var(--brand-shadow)] disabled:opacity-70'
 
 export function DashboardHeader({
   title,
@@ -267,34 +273,34 @@ export function DashboardHeader({
                   type="button"
                   className="flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#e6ebf4] bg-white px-4 text-sm font-bold text-[#53617d] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md data-[state=open]:border-[#a9ccfb] data-[state=open]:bg-[#f8faff]"
                 >
-                  <Plus size={16} className="text-[#2f80ed]" />
+                  <Plus size={16} className="text-[var(--brand)]" />
                   Quick Add
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[280px] border border-[#e6ebf4] shadow-[0_8px_30px_rgba(65,103,153,0.12)] p-2">
                 <DropdownMenuItem
                   onClick={() => router.push('/dashboard/finance')}
-                  className="group cursor-pointer gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-gradient-to-r hover:from-[#2f80ed] hover:to-[#3b8cff] focus:bg-gradient-to-r focus:from-[#2f80ed] focus:to-[#3b8cff]"
+                  className={quickAddMenuItemClass}
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-50 to-red-100 transition group-hover:bg-white/20">
-                    <ShoppingBag size={18} className="text-red-500 transition group-hover:text-white" />
+                  <div className={`${quickAddIconClass} border-red-100 bg-red-50 text-red-500`}>
+                    <ShoppingBag size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-white">Add Expense</p>
-                    <p className="text-xs font-semibold text-[#6b7a99] transition group-hover:text-white/80">Record a new expense</p>
+                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-[var(--brand)]">Add Expense</p>
+                    <p className="text-xs font-semibold text-[#6b7a99]">Record a new expense</p>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-[#e6ebf4] my-1.5" />
                 <DropdownMenuItem
                   onClick={() => router.push('/dashboard/payments')}
-                  className="group cursor-pointer gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-gradient-to-r hover:from-[#2f80ed] hover:to-[#3b8cff] focus:bg-gradient-to-r focus:from-[#2f80ed] focus:to-[#3b8cff]"
+                  className={quickAddMenuItemClass}
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-green-100 transition group-hover:bg-white/20">
-                    <CreditCard size={18} className="text-emerald-600 transition group-hover:text-white" />
+                  <div className={`${quickAddIconClass} border-emerald-100 bg-emerald-50 text-emerald-600`}>
+                    <CreditCard size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-white">Submit Payment</p>
-                    <p className="text-xs font-semibold text-[#6b7a99] transition group-hover:text-white/80">Record a new payment</p>
+                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-[var(--brand)]">Submit Payment</p>
+                    <p className="text-xs font-semibold text-[#6b7a99]">Record a new payment</p>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -452,19 +458,19 @@ export function DashboardHeader({
           onClick={(e) => e.target === e.currentTarget && setShowQuickAdd(false)}
         >
           <div className="relative w-full max-w-[480px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
-            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
-            <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/12 blur-2xl" />
+            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--brand-dark)] via-[var(--brand)] to-[#ffb84d]" />
+            <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[var(--brand)]/12 blur-2xl" />
 
             {/* Modal Header */}
             <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Quick Add</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--brand)]">Quick Add</p>
                 <h2 className="mt-1 text-xl font-black text-[#172554]">Add New Entry</h2>
               </div>
               <button
                 type="button"
                 onClick={() => setShowQuickAdd(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)] transition hover:border-[var(--brand)] hover:bg-[var(--brand-softer)]"
               >
                 <X size={18} />
               </button>
@@ -476,8 +482,8 @@ export function DashboardHeader({
                 onClick={() => setQuickAddTab('expense')}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition ${
                   quickAddTab === 'expense'
-                    ? 'text-[#2f80ed] border-b-2 border-[#2f80ed] bg-[#f8faff]'
-                    : 'text-[#6b7a99] hover:text-[#2f80ed] hover:bg-[#f8faff]'
+                    ? 'text-[var(--brand)] border-b-2 border-[var(--brand)] bg-[var(--brand-soft)]'
+                    : 'text-[#6b7a99] hover:text-[var(--brand)] hover:bg-[var(--brand-soft)]'
                 }`}
               >
                 <ShoppingBag size={16} />
@@ -487,8 +493,8 @@ export function DashboardHeader({
                 onClick={() => setQuickAddTab('payment')}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition ${
                   quickAddTab === 'payment'
-                    ? 'text-[#2f80ed] border-b-2 border-[#2f80ed] bg-[#f8faff]'
-                    : 'text-[#6b7a99] hover:text-[#2f80ed] hover:bg-[#f8faff]'
+                    ? 'text-[var(--brand)] border-b-2 border-[var(--brand)] bg-[var(--brand-soft)]'
+                    : 'text-[#6b7a99] hover:text-[var(--brand)] hover:bg-[var(--brand-soft)]'
                 }`}
               >
                 <CreditCard size={16} />
@@ -554,7 +560,7 @@ export function DashboardHeader({
                   type="button"
                   onClick={handleQuickAddExpense}
                   disabled={expSubmitting || !expItemName || !expAmount}
-                  className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70"
+                  className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-black ${dashboardActionButtonClass}`}
                 >
                   {expSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ShoppingBag size={16} />}
                   {expSubmitting ? 'Adding...' : 'Add Expense'}
@@ -588,8 +594,8 @@ export function DashboardHeader({
                           onClick={() => setPayMethod(m)}
                           className={`flex items-center justify-center gap-1.5 rounded-xl border py-3 text-xs font-bold transition active:scale-[0.98] ${
                             selected
-                              ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-sm'
-                              : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'
+                              ? 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)] shadow-sm'
+                              : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)]'
                           }`}
                         >
                           <CreditCard size={14} />
@@ -603,7 +609,7 @@ export function DashboardHeader({
                   type="button"
                   onClick={handleQuickAddPayment}
                   disabled={paySubmitting || !payAmount}
-                  className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70"
+                  className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-black ${dashboardActionButtonClass}`}
                 >
                   {paySubmitting ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
                   {paySubmitting ? 'Submitting...' : 'Submit Payment'}

@@ -63,7 +63,7 @@ export function MonthlyOverviewChart({
         <Line
           type="monotone"
           dataKey="income"
-          stroke="#2f80ed"
+          stroke="var(--brand)"
           strokeWidth={3}
           dot={false}
           name="Income"

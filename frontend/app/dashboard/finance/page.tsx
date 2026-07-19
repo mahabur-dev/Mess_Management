@@ -53,6 +53,8 @@ const categories: ExpenseCategory[] = [
   'MAINTENANCE',
   'OTHER',
 ]
+const dashboardActionButtonClass =
+  'gap-1 rounded-xl bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] font-black text-white shadow-[0_6px_15px_var(--brand-shadow)] transition hover:from-[var(--brand-darker)] hover:to-[var(--brand-dark)] hover:shadow-[0_8px_20px_var(--brand-shadow)]'
 
 const expenseCategories: ExpenseCategory[] = ['FOOD', 'GROCERY']
 
@@ -696,7 +698,7 @@ export default function FinancePage() {
                   <Button
                     type="button"
                     onClick={openUtilityModal}
-                    className="h-[38px] gap-1 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3.5 font-black text-[11px] text-white shadow-[0_6px_15px_rgba(47,128,237,0.2)] transition hover:shadow-[0_8px_20px_rgba(47,128,237,0.28)]"
+                    className={`h-[38px] px-3.5 text-[11px] ${dashboardActionButtonClass}`}
                   >
                     <Plus size={15} />
                     Add Utility
@@ -704,7 +706,7 @@ export default function FinancePage() {
                   <Button
                     type="button"
                     onClick={openExpenseModal}
-                    className="h-[38px] gap-1 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3.5 font-black text-[11px] text-white shadow-[0_6px_15px_rgba(47,128,237,0.2)] transition hover:shadow-[0_8px_20px_rgba(47,128,237,0.28)]"
+                    className={`h-[38px] px-3.5 text-[11px] ${dashboardActionButtonClass}`}
                   >
                     <Plus size={15} />
                     Add Expenses
@@ -808,7 +810,7 @@ export default function FinancePage() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)]/80 to-[var(--brand-bright)]/80 text-[10px] font-black text-white shadow-sm">
                               {(item.purchaser?.name?.[0] || item.creator?.name?.[0] || '?').toUpperCase()}
                             </div>
                             <span className="text-sm font-semibold text-[#6b7a99]">
@@ -818,7 +820,7 @@ export default function FinancePage() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)]/80 to-[var(--brand-bright)]/80 text-[10px] font-black text-white shadow-sm">
                               {(item.creator?.name?.[0] || '?').toUpperCase()}
                             </div>
                             <span className="text-sm font-semibold text-[#6b7a99]">
@@ -999,7 +1001,7 @@ export default function FinancePage() {
               <Button
                 type="button"
                 onClick={openUtilityModal}
-                className="flex-1 h-[42px] gap-1 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3 font-black text-[11px] text-white shadow-[0_6px_15px_rgba(47,128,237,0.2)] transition hover:shadow-[0_8px_20px_rgba(47,128,237,0.28)]"
+                className={`flex-1 h-[42px] px-3 text-[11px] ${dashboardActionButtonClass}`}
               >
                 <Plus size={15} />
                 Add Utility
@@ -1007,7 +1009,7 @@ export default function FinancePage() {
               <Button
                 type="button"
                 onClick={openExpenseModal}
-                className="flex-1 h-[42px] gap-1 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3 font-black text-[11px] text-white shadow-[0_6px_15px_rgba(47,128,237,0.2)] transition hover:shadow-[0_8px_20px_rgba(47,128,237,0.28)]"
+                className={`flex-1 h-[42px] px-3 text-[11px] ${dashboardActionButtonClass}`}
               >
                 <Plus size={15} />
                 Add Expenses
@@ -1494,7 +1496,7 @@ export default function FinancePage() {
               <Button
                 onClick={submitAllExpenses}
                 disabled={loading}
-                className="flex-1 h-12 bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] font-black"
+                className={`flex-1 h-12 ${dashboardActionButtonClass}`}
               >
                 {loading
                   ? 'Saving...'
@@ -1550,7 +1552,7 @@ export default function FinancePage() {
             <Button
               onClick={submitPriceReviewRequest}
               disabled={loading || !reviewMessage.trim()}
-              className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] font-black text-white"
+              className={`h-12 w-full ${dashboardActionButtonClass}`}
             >
               Send Review Request
             </Button>

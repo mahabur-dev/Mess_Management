@@ -75,6 +75,14 @@ const adminItems = [
 ]
 
 const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e']
+const sidebarIconButtonClass =
+  'flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]'
+const sidebarActiveLinkClass =
+  'bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] text-white shadow-[0_8px_20px_var(--brand-shadow)]'
+const sidebarInactiveLinkClass =
+  'text-[#53617d] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]'
+const sidebarLogoutButtonClass =
+  'border-red-200 bg-red-50 text-red-600 shadow-[0_8px_18px_rgba(220,38,38,0.08)] hover:border-red-300 hover:bg-red-600 hover:text-white'
 
 const avatarColor = (name: string) => {
   let hash = 0
@@ -136,7 +144,7 @@ export function DashboardSidebar() {
           <div className="hidden lg:flex w-full items-center justify-center">
             <button
               onClick={() => setCollapsed(false)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
+              className={sidebarIconButtonClass}
               title="Expand sidebar"
             >
               <PanelLeftOpen size={18} />
@@ -150,7 +158,7 @@ export function DashboardSidebar() {
             </Link>
             <button
               onClick={() => setCollapsed(true)}
-              className="ml-auto hidden lg:flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[#f8faff] hover:text-[#2f80ed]"
+              className={`ml-auto hidden lg:flex ${sidebarIconButtonClass}`}
               title="Collapse sidebar"
             >
               <PanelLeftClose size={18} />
@@ -171,14 +179,12 @@ export function DashboardSidebar() {
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 className={`group flex h-[50px] items-center gap-3.5 rounded-xl px-3.5 text-sm font-bold transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)]'
-                    : 'text-[#53617d] hover:bg-[#f0f4fe] hover:text-[#2f80ed]'
+                  isActive ? sidebarActiveLinkClass : sidebarInactiveLinkClass
                 } ${collapsed ? 'justify-center px-0' : ''}`}
                 title={collapsed ? item.label : undefined}
               >
                 <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all ${
-                  isActive ? 'bg-white/20' : 'bg-[#f1f5f9] group-hover:bg-[#e7f1ff]'
+                  isActive ? 'bg-white/20' : 'bg-[#f1f5f9] group-hover:bg-[var(--brand-soft)]'
                 }`}>
                   <Icon size={18} />
                 </div>
@@ -219,7 +225,7 @@ export function DashboardSidebar() {
             logout()
             router.push('/login')
           }}
-          className={`mt-3 flex h-[46px] w-full items-center justify-center gap-2.5 rounded-xl border border-[#e6ebf4] bg-white text-sm font-bold text-[#53617d] transition hover:border-[#ff4d4f]/30 hover:bg-red-50 hover:text-[#ff4d4f] ${collapsed ? 'px-0' : ''}`}
+          className={`mt-3 flex h-[46px] w-full items-center justify-center gap-2.5 rounded-xl border text-sm font-bold transition ${sidebarLogoutButtonClass} ${collapsed ? 'px-0' : ''}`}
           title={collapsed ? 'Logout' : undefined}
         >
           <LogOut size={16} className="shrink-0" />
@@ -242,7 +248,7 @@ export function DashboardSidebar() {
           <div className="relative h-full w-[280px] shadow-[0_28px_80px_rgba(18,10,51,0.35)]">
             <button
               type="button"
-              className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] text-white shadow-[0_8px_20px_rgba(47,128,237,0.3)]"
+              className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] text-white shadow-[0_8px_20px_var(--brand-shadow)]"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
             >
@@ -262,17 +268,17 @@ export function DashboardSidebar() {
           background: transparent;
         }
         .sidebar-nav::-webkit-scrollbar-thumb {
-          background: #d8e6f8;
+          background: var(--brand-border-subtle);
           border-radius: 3px;
           transition: background 0.2s;
         }
         .sidebar-nav::-webkit-scrollbar-thumb:hover {
-          background: #a9ccfb;
+          background: var(--brand-border);
         }
         /* Firefox */
         .sidebar-nav {
           scrollbar-width: thin;
-          scrollbar-color: #d8e6f8 transparent;
+          scrollbar-color: var(--brand-border-subtle) transparent;
         }
       `}</style>
     </>

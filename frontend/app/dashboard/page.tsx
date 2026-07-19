@@ -75,6 +75,11 @@ const adminQuickActions = [
   ['Reports', ReceiptText, '/dashboard/reports'],
 ] as const
 
+const dashboardQuickActionButtonClass =
+  'group rounded-xl border border-[var(--brand-border-subtle)] bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:shadow-md'
+const dashboardQuickActionIconClass =
+  'mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-white text-[var(--brand)] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition group-hover:border-[var(--brand)] group-hover:bg-[var(--brand)] group-hover:text-white group-hover:shadow-[0_10px_22px_var(--brand-shadow)]'
+
 const mobileQuickActions = [
   {
     label: 'Add Meals',
@@ -103,13 +108,6 @@ const mobileQuickActions = [
     href: '/dashboard/monthly-bills',
     icon: ClipboardList,
     tone: 'purple',
-  },
-  {
-    label: 'View Reports',
-    helper: 'Analytics',
-    href: '/dashboard/reports',
-    icon: ReceiptText,
-    tone: 'cyan',
   },
   {
     label: 'Send Notice',
@@ -1092,13 +1090,13 @@ export default function DashboardPage() {
                     <button
                       key={label}
                       onClick={() => router.push(href)}
-                      className="group rounded-xl border border-[#e6ebf4] bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md"
+                      className={dashboardQuickActionButtonClass}
                     >
-                      <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] transition group-hover:bg-gradient-to-br group-hover:from-[#2f80ed] group-hover:to-[#3b8cff] group-hover:text-white">
+                      <span className={dashboardQuickActionIconClass}>
                         <Icon size={20} />
                       </span>
 
-                      <span className="text-xs font-black text-[#172554]">
+                      <span className="text-xs font-black text-[#172554] transition group-hover:text-[var(--brand)]">
                         {label}
                       </span>
                     </button>

@@ -13,26 +13,26 @@ type AuthShellProps = {
 }
 
 export const authInputClass =
-  'h-12 w-full rounded-md border border-[#d8e8e7] bg-white px-4 text-sm font-semibold text-[#071821] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none placeholder:text-[#64748b] transition focus:border-[#008b80]/60 focus:ring-4 focus:ring-[#008b80]/10'
+  'h-12 w-full rounded-md border border-[var(--brand-border-subtle)] bg-white px-4 text-sm font-semibold text-[#071821] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none placeholder:text-[#64748b] transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[var(--brand-ring)]'
 
 export const authInputWithIconClass = cn(authInputClass, 'pl-11')
 
 export const authPasswordInputClass = cn(authInputClass, 'pr-12')
 
 export const authFieldIconClass =
-  'absolute left-4 top-1/2 -translate-y-1/2 text-[#008b80]'
+  'absolute left-4 top-1/2 -translate-y-1/2 text-[var(--brand)]'
 
 export const authPasswordToggleClass =
-  'absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[#64748b] transition hover:bg-[#e7f7f5] hover:text-[#008b80]'
+  'absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[#64748b] transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]'
 
 export const authPrimaryButtonClass =
-  'inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#006b63] to-[#008b80] px-6 text-sm font-black text-white shadow-[0_14px_30px_rgba(0,107,99,0.24)] transition hover:from-[#00574f] hover:to-[#006b63] hover:shadow-[0_18px_36px_rgba(0,107,99,0.28)] disabled:opacity-70'
+  'inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] px-6 text-sm font-black text-white shadow-[0_14px_30px_var(--brand-shadow)] transition hover:from-[var(--brand-darker)] hover:to-[var(--brand-dark)] hover:shadow-[0_18px_36px_rgba(0,107,99,0.28)] disabled:opacity-70'
 
 export const authSecondaryButtonClass =
-  'flex h-12 w-full items-center justify-center gap-2 rounded-md border border-[#d8e8e7] bg-white px-4 text-sm font-bold text-[#008b80] transition hover:border-[#9edbd6] hover:bg-[#e7f7f5] disabled:opacity-70'
+  'flex h-12 w-full items-center justify-center gap-2 rounded-md border border-[var(--brand-border-subtle)] bg-white px-4 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] disabled:opacity-70'
 
 export const authLinkClass =
-  'font-bold text-[#008b80] underline-offset-4 transition hover:text-[#006b63] hover:underline'
+  'font-bold text-[var(--brand)] underline-offset-4 transition hover:text-[var(--brand-dark)] hover:underline'
 
 export function AuthMessage({ children, success }: { children: ReactNode; success?: boolean }) {
   return (

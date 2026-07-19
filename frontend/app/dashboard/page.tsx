@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { DashboardHeader } from '@/components/dashboard-header'
+import { MemberJoinRequestModal } from '@/components/member-join-request-modal'
 import { useAuth } from '@/app/context/auth-context'
 import { type Mess } from '@/lib/api-client'
 import { useRouter } from 'next/navigation'
@@ -16,6 +17,7 @@ import {
 import {
   BadgeDollarSign,
   Bell,
+  Building2,
   Calculator,
   CalendarCheck,
   ClipboardList,
@@ -26,6 +28,7 @@ import {
   ShoppingCart,
   UtensilsCrossed,
   Users,
+  UserPlus,
   WalletCards,
   ArrowUpRight,
 } from 'lucide-react'
@@ -68,7 +71,7 @@ const adminQuickActions = [
   ['Mess Requests', ClipboardList, '/dashboard/mess_requests'],
   ['All Messes', Home, '/dashboard/mess_management'],
   ['Complaints', Bell, '/dashboard/complaints'],
-  ['Payments', CreditCard, '/dashboard/payments'],
+  ['Subscriptions', BadgeDollarSign, '/dashboard/subscriptions'],
   ['Reports', ReceiptText, '/dashboard/reports'],
 ] as const
 
@@ -117,6 +120,17 @@ const mobileQuickActions = [
   },
 ] as const
 
+const managerMobileQuickActions = [
+  {
+    label: 'Add Member',
+    helper: 'Invite user',
+    href: '/dashboard/member_management',
+    icon: UserPlus,
+    tone: 'blue',
+  },
+  ...mobileQuickActions,
+] as const
+
 const adminMobileQuickActions = [
   {
     label: 'Manage Users',
@@ -147,10 +161,10 @@ const adminMobileQuickActions = [
     tone: 'rose',
   },
   {
-    label: 'Payments',
-    helper: 'Transactions',
-    href: '/dashboard/payments',
-    icon: CreditCard,
+    label: 'Subscriptions',
+    helper: 'Manage plans',
+    href: '/dashboard/subscriptions',
+    icon: BadgeDollarSign,
     tone: 'purple',
   },
   {
@@ -195,7 +209,11 @@ const mobileActionTones = {
   },
 } as const
 
-type MobileAction = (typeof mobileQuickActions | typeof adminMobileQuickActions)[number]
+type MobileAction = (
+  | typeof mobileQuickActions
+  | typeof managerMobileQuickActions
+  | typeof adminMobileQuickActions
+)[number]
 type MobileStat = readonly [
   string,
   string | number,
@@ -477,7 +495,13 @@ function MobileNoticeList({
   )
 }
 
-function MobileNoMessPrompt({ onRequest }: { onRequest: () => void }) {
+function MobileNoMessPrompt({
+  onCreate,
+  onRequestMember,
+}: {
+  onCreate: () => void
+  onRequestMember: () => void
+}) {
   return (
     <div className="overflow-hidden rounded-[24px] border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-[0_12px_28px_rgba(245,158,11,0.12)]">
       <div className="flex items-start gap-3">
@@ -486,18 +510,29 @@ function MobileNoMessPrompt({ onRequest }: { onRequest: () => void }) {
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-black text-[#172554]">
-            No approved mess found
+            No mess found
           </h2>
           <p className="mt-1 text-xs font-semibold leading-relaxed text-[#6b7a99]">
-            Request mess registration or ask your manager to add you.
+            Create your own mess or request access from an active mess manager.
           </p>
-          <button
-            type="button"
-            onClick={onRequest}
-            className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 text-xs font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.24)]"
-          >
-            Request Mess
-          </button>
+          <div className="mt-3 grid grid-cols-1 gap-2">
+            <button
+              type="button"
+              onClick={onCreate}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 text-xs font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.24)]"
+            >
+              <Building2 size={14} />
+              Create Mess
+            </button>
+            <button
+              type="button"
+              onClick={onRequestMember}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-4 text-xs font-black text-[#2f80ed] shadow-sm"
+            >
+              <UserPlus size={14} />
+              Request Member
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -508,10 +543,11 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue)
+  const [memberRequestOpen, setMemberRequestOpen] = useState(false)
 
   // ── SWR data fetching (parallel, cached) ────────────────────
   const { data: messesData, isLoading: messesLoading } = useMesses()
-  const { data: adminDashboard } = useAdminDashboard()
+  const { data: adminDashboard } = useAdminDashboard(user?.role === 'ADMIN')
   const { data: messDashboard } = useMessDashboard(
     undefined,
     selectedMonth,
@@ -704,7 +740,11 @@ export default function DashboardPage() {
   }
 
   const mobileActions =
-    user.role === 'ADMIN' ? adminMobileQuickActions : mobileQuickActions
+    user.role === 'ADMIN'
+      ? adminMobileQuickActions
+      : user.role === 'MANAGER' || user.role === 'ORGANIZER'
+        ? managerMobileQuickActions
+        : mobileQuickActions
   const mobileNotices = (resolvedDashboard?.notices ?? []) as MobileNotice[]
 
   return (
@@ -718,13 +758,15 @@ export default function DashboardPage() {
         }
         selectedMonth={selectedMonth}
         onMonthChange={setSelectedMonth}
+        showQuickAddButton={Boolean(activeMess)}
       />
 
       <div className="p-0 sm:p-6 lg:p-8">
         <div className="space-y-4 px-4 pb-8 pt-4 sm:hidden">
           {!messesLoading && !loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
             <MobileNoMessPrompt
-              onRequest={() => router.push('/dashboard/mess_management')}
+              onCreate={() => router.push('/dashboard/mess_management')}
+              onRequestMember={() => setMemberRequestOpen(true)}
             />
           )}
 
@@ -837,27 +879,37 @@ export default function DashboardPage() {
         <div className="hidden sm:block">
         {!messesLoading && !loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
           <div className="mb-7 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 shadow-sm">
                   <Home size={22} className="text-amber-600" />
                 </div>
                 <div>
                   <h2 className="text-base font-black text-[#172554]">
-                    No approved mess found
+                    No mess found
                   </h2>
                   <p className="mt-0.5 text-sm font-semibold text-[#6b7a99]">
-                    Request mess registration or ask your manager to add you.
+                    Create your own mess or request access from an active mess manager.
                   </p>
                 </div>
               </div>
 
-              <button
-                className="inline-flex h-[45px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
-                onClick={() => router.push('/dashboard/mess_management')}
-              >
-                Request Mess
-              </button>
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:w-auto">
+                <button
+                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)] sm:min-w-[150px]"
+                  onClick={() => router.push('/dashboard/mess_management')}
+                >
+                  <Building2 size={17} />
+                  Create Mess
+                </button>
+                <button
+                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#d8e6f8] bg-white px-5 font-black text-[#2f80ed] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#edf5ff] sm:min-w-[150px]"
+                  onClick={() => setMemberRequestOpen(true)}
+                >
+                  <UserPlus size={17} />
+                  Request Member
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1058,6 +1110,10 @@ export default function DashboardPage() {
         )}
         </div>
       </div>
+      <MemberJoinRequestModal
+        open={memberRequestOpen}
+        onClose={() => setMemberRequestOpen(false)}
+      />
     </div>
   )
 }

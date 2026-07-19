@@ -21,6 +21,7 @@ interface DashboardHeaderProps {
   description?: string
   selectedMonth?: string
   onMonthChange?: (month: string) => void
+  showQuickAddButton?: boolean
   showUpgradeButton?: boolean
   upgradeHref?: string
 }
@@ -64,7 +65,15 @@ const expenseCategories: ExpenseCategory[] = [
 
 const paymentMethods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
 
-export function DashboardHeader({ title, description, selectedMonth, onMonthChange, showUpgradeButton, upgradeHref = '/dashboard/contact?source=UPGRADE&plan=MONTHLY' }: DashboardHeaderProps) {
+export function DashboardHeader({
+  title,
+  description,
+  selectedMonth,
+  onMonthChange,
+  showQuickAddButton = true,
+  showUpgradeButton,
+  upgradeHref = '/dashboard/contact?source=UPGRADE&plan=MONTHLY',
+}: DashboardHeaderProps) {
   const { user, logout } = useAuth()
   const { setMobileOpen } = useSidebar()
   const router = useRouter()
@@ -93,7 +102,7 @@ export function DashboardHeader({ title, description, selectedMonth, onMonthChan
 
   const isAdmin = user?.role === 'ADMIN'
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
-  const canUseQuickAdd = !isAdmin // Hide for admin
+  const canUseQuickAdd = showQuickAddButton && !isAdmin // Hide for admin and onboarding users
 
   const loadNotifications = async () => {
     try {

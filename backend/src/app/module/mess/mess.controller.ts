@@ -17,6 +17,7 @@ import { MessService } from './mess.service';
 import {
   AddMemberDto,
   CompleteMessSetupDto,
+  CreateMessDto,
   MessFilterDto,
   UpdateMemberDto,
   UpdateMessDto,
@@ -29,14 +30,13 @@ import AuthGuard from '../../middlewares/auth.guard';
 export class MessController {
   constructor(private readonly messService: MessService) { }
 
-  // Manager creates a mess
-  // @Post()
-  // @UseGuards(AuthGuard('ORGANIZER', 'ADMIN', 'MANAGER', 'MEMBER'))
-  // @ApiOperation({ summary: '[ORGANIZER] Create a new mess' })
-  // async create(@Req() req: Request, @Body() dto: CreateMessDto) {
-  //   const data = await this.messService.create(req.user!.id, dto);
-  //   return { message: 'Mess created successfully', data };
-  // }
+  @Post()
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Create a new mess with a trial subscription' })
+  async create(@Req() req: Request, @Body() dto: CreateMessDto) {
+    const data = await this.messService.create(req.user!.id, dto);
+    return { message: 'Mess created successfully', data };
+  }
 
   // Admin: get all messes
   @Get()
@@ -77,6 +77,19 @@ export class MessController {
       data: result.data,
     };
   }
+
+  @Get('active')
+  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Get all active messes for member join requests' })
+  async findActiveForJoin(@Query() query: MessFilterDto) {
+    const result = await this.messService.findActiveMessesForJoin(query);
+    return {
+      message: 'Active messes fetched successfully',
+      meta: result.meta,
+      data: result.data,
+    };
+  }
+
   // Get single mess by ID (Admin or member)
   @Get(':id')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))

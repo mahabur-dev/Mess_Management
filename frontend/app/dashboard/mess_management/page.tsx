@@ -110,7 +110,7 @@ function planLabel(plan?: SubscriptionPlan | null) {
 }
 
 export default function MessManagementPage() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [messes, setMesses] = useState<Mess[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
@@ -190,18 +190,21 @@ export default function MessManagementPage() {
     setMessage('')
     setSubmitting(true)
     try {
-      await apiClient.requestMessRegistration({
+      const response = await apiClient.createMess({
         messName: requestForm.messName,
-        address: requestForm.address,
+        messLocation: requestForm.address,
         totalSeats: requestForm.totalSeats ? Number(requestForm.totalSeats) : undefined,
         monthlyRent: requestForm.monthlyRent ? Number(requestForm.monthlyRent) : undefined,
         description: requestForm.description || undefined,
       })
+      if (response.data) setMesses([response.data])
+      await refreshUser()
       setRequestForm({ messName: '', address: '', totalSeats: '', monthlyRent: '', description: '' })
-      setMessage('Mess registration request submitted. Super admin will review it.')
+      setMessage('Mess created successfully. Your 30-day free trial has started.')
       setMessageType('success')
+      await load()
     } catch {
-      setMessage('Failed to submit request. Please try again.')
+      setMessage('Failed to create mess. Please try again.')
       setMessageType('error')
     } finally {
       setSubmitting(false)
@@ -290,8 +293,8 @@ export default function MessManagementPage() {
   return (
     <div className="min-h-screen bg-[#fafcff]">
       <DashboardHeader
-        title={isAdmin ? 'All Messes' : isManager ? 'Mess Settings' : 'Request Mess Registration'}
-        description={isAdmin ? 'Super admin approved/rejected mess overview' : 'Follow the approved backend workflow'}
+        title={isAdmin ? 'All Messes' : isManager ? 'Mess Settings' : 'Create Mess'}
+        description={isAdmin ? 'Super admin mess overview' : 'Manage setup, rooms, billing defaults, and subscription status'}
       />
       <div className="p-4 sm:p-6 lg:p-8">
         {message && (
@@ -689,14 +692,14 @@ export default function MessManagementPage() {
                     <Building2 size={22} className="text-[#8b5cf6]" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Registration</p>
-                    <h2 className="mt-1 text-lg font-black text-[#172554]">Request Mess Registration</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">New Mess</p>
+                    <h2 className="mt-1 text-lg font-black text-[#172554]">Create Mess</h2>
                   </div>
                 </div>
               </div>
               <div className="p-6">
                 <p className="mb-6 text-sm font-semibold leading-relaxed text-[#6b7a99]">
-                  You are registered as a member. Submit this request to become a manager after super admin approval.
+                  Create your mess instantly. Admins will be notified, and your free trial starts immediately.
                 </p>
 
                 <div className="space-y-5">
@@ -764,11 +767,11 @@ export default function MessManagementPage() {
                 <div className="mt-6">
                   <button
                     onClick={submitRequest}
-                    disabled={submitting || !requestForm.messName.trim()}
+                    disabled={submitting || !requestForm.messName.trim() || !requestForm.address.trim()}
                     className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70 sm:w-auto"
                   >
                     {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                    {submitting ? 'Submitting...' : 'Submit Request'}
+                    {submitting ? 'Creating...' : 'Create Mess'}
                   </button>
                 </div>
               </div>

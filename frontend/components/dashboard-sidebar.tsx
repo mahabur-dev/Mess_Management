@@ -1,30 +1,28 @@
 'use client'
 
 import Link from 'next/link'
+import useSWR from 'swr'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/context/auth-context'
 import { BrandLogo } from '@/components/brand-logo'
-import { Button } from '@/components/ui/button'
+import { apiClient, type Mess } from '@/lib/api-client'
+import { swrFetcher } from '@/lib/swr-fetcher'
 import {
   BarChart3,
   Bell,
-  CalendarCheck,
   ClipboardList,
   CreditCard,
   Home,
   LayoutDashboard,
   LogOut,
-  Menu,
   MessageSquareWarning,
   Mail,
   Settings,
-  ShoppingCart,
   UtensilsCrossed,
   Users,
   WalletCards,
   X,
   ChevronRight,
-  ChevronLeft,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react'
@@ -33,6 +31,11 @@ import { useSidebar } from '@/app/context/sidebar-context'
 
 const commonItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+]
+
+const onboardingItems = [
+  ...commonItems,
+  { label: 'Profile', href: '/dashboard/settings', icon: Settings },
 ]
 
 const memberItems = [
@@ -95,8 +98,31 @@ export function DashboardSidebar() {
   const router = useRouter()
   const { logout, user } = useAuth()
   const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar()
+  const { data: sidebarMessesData } = useSWR(
+    user && user.role !== 'ADMIN' ? 'messes' : null,
+    () => swrFetcher(() => apiClient.getMesses()),
+    { revalidateOnFocus: true, dedupingInterval: 15_000 },
+  )
+
+  const sidebarMesses = Array.isArray(sidebarMessesData)
+    ? sidebarMessesData
+    : sidebarMessesData
+      ? [sidebarMessesData as Mess]
+      : []
+  const userMemberships = user?.memberships ?? []
+  const hasAnyMess = sidebarMesses.length > 0 || userMemberships.length > 0
+  const managesMess = sidebarMesses.some((mess) => (
+    mess.created_by === user?.id ||
+    mess.memberships?.some((membership) => membership.user_id === user?.id && membership.role === 'MANAGER' && membership.is_active)
+  ))
   const sidebarItems =
-    user?.role === 'ADMIN' ? adminItems : user?.role === 'MANAGER' || user?.role === 'ORGANIZER' ? managerItems : memberItems
+    user?.role === 'ADMIN'
+      ? adminItems
+      : user?.role === 'MANAGER' || user?.role === 'ORGANIZER' || managesMess
+        ? managerItems
+        : hasAnyMess
+          ? memberItems
+          : onboardingItems
 
   const avatarBg = avatarColor(user?.name || 'User')
   const sidebarWidth = collapsed ? 'w-[72px]' : 'w-[280px]'

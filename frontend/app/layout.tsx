@@ -21,10 +21,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/logo1.png',
+        url: '/browser-logo.webp',
       },
     ],
-    apple: '/logo1.png',
+    apple: '/browser-logo.webp',
   },
   formatDetection: {
     telephone: true,

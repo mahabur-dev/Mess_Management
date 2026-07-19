@@ -15,8 +15,8 @@ export class AppService {
   }> = {
     TRIAL: {
       price: 0,
-      label: '7 Days Free',
-      days: 7,
+      label: '30 Days Free',
+      days: 30,
       description: 'Get started with a free trial. No credit card required.',
       currency: 'BDT',
     },
@@ -49,7 +49,13 @@ export class AppService {
             description: defaults.description,
             currency: defaults.currency,
           },
-          update: {},
+          update: plan === 'TRIAL'
+            ? {
+                label: defaults.label,
+                days: defaults.days,
+                description: defaults.description,
+              }
+            : {},
         }),
       ),
     );

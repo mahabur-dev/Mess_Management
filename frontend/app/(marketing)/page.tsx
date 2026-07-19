@@ -25,6 +25,7 @@ import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { apiClient, type PublicMessCard } from '@/lib/api-client'
 import { MarketingHero } from '@/components/marketing-hero'
+import { MarketingStatsBar } from '@/components/marketing-stats'
 import {
   Carousel,
   CarouselContent,
@@ -422,7 +423,7 @@ function PricingSection() {
         <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center rounded-full border border-[#d8e8e7] bg-[#fbfdfd] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#008b80]">Subscription Plans</span>
           <h2 className="mt-4 text-3xl font-black tracking-tight text-[#071821] sm:text-4xl">Simple, Transparent Pricing</h2>
-          <p className="mt-3 text-sm font-semibold text-[#334155]">Choose the plan that fits your mess best. Start with a free 7-day trial.</p>
+          <p className="mt-3 text-sm font-semibold text-[#334155]">Choose the plan that fits your mess best. Start with a free 30-day trial.</p>
         </div>
 
         {loading ? (
@@ -570,26 +571,13 @@ function PricingSection() {
 }
 
 function WhyChooseSection() {
-  const stats = [
-    ['100+', 'Messes Trust Us', 'Managing thousands of residents daily'],
-    ['99.9%', 'Uptime', 'Reliable platform you can depend on'],
-    ['24/7', 'Support', 'Expert support whenever you need it'],
-  ]
   return (
     <section id="about" className="bg-[#fafcff] px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl text-center">
         <span className="inline-flex items-center rounded-full border border-[#d8e8e7] bg-[#fbfdfd] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#008b80]">Why Mess Management</span>
         <h2 className="mt-4 text-3xl font-black tracking-tight text-[#071821] sm:text-4xl">Why Choose Mess Management?</h2>
         <p className="mt-4 text-sm font-semibold text-[#334155]">Designed specifically for mess managers who value efficiency and transparency</p>
-        <div className="mt-14 grid gap-8 md:grid-cols-3">
-          {stats.map(([value, label, text]) => (
-            <div key={label} className="rounded-xl border border-[#e6ebf4] bg-white p-8 shadow-[0_8px_25px_rgba(65,103,153,0.08)]">
-              <p className="text-5xl font-black text-[#008b80]">{value}</p>
-              <h3 className="mt-3 text-lg font-black text-[#071821]">{label}</h3>
-              <p className="mt-2 text-sm font-semibold text-[#334155]">{text}</p>
-            </div>
-          ))}
-        </div>
+        <MarketingStatsBar className="mt-14" />
       </div>
     </section>
   )

@@ -91,6 +91,7 @@ export class AuthService {
       where: { email: dto.email },
       select: {
         ...SAFE_USER_SELECT,
+        memberships: MY_PROFILE_SELECT.memberships,
         password_hash: true,
       },
     });
@@ -135,6 +136,7 @@ export class AuthService {
         is_active: user.is_active,
         created_at: user.created_at,
         updated_at: user.updated_at,
+        memberships: user.memberships,
       },
     };
   }

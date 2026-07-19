@@ -42,8 +42,12 @@ export function useMessSubscription(messId: string | undefined) {
 }
 
 // ─── Admin Dashboard (static) ─────────────────────────────────
-export function useAdminDashboard() {
-  return useSWR('admin-dashboard', () => swrFetcher(() => apiClient.getAdminDashboard()), STATIC_SWR)
+export function useAdminDashboard(enabled = true) {
+  return useSWR(
+    enabled ? 'admin-dashboard' : null,
+    () => swrFetcher(() => apiClient.getAdminDashboard()),
+    STATIC_SWR,
+  )
 }
 
 // ─── Monthly Overview Chart (dynamic) ─────────────────────────

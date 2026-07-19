@@ -43,6 +43,7 @@ model Mess {
   notifications  Notification[]
   audit_logs     AuditLog[]
   requests       MessRequest[]
+  member_join_requests MemberJoinRequest[]
   payments       Payment[]
   notices        Notice[]
   complaints     Complaint[]

@@ -36,6 +36,8 @@ model User {
   audit_logs               AuditLog[]         @relation("AuditActor")
   mess_requests            MessRequest[]      @relation("MessRequestRequester")
   reviewed_requests        MessRequest[]      @relation("MessRequestReviewer")
+  member_join_requests     MemberJoinRequest[] @relation("MemberJoinRequestRequester")
+  reviewed_member_join_requests MemberJoinRequest[] @relation("MemberJoinRequestReviewer")
   payments_made            Payment[]          @relation("PaymentMember")
   payments_created         Payment[]          @relation("PaymentCreator")
   payments_approved        Payment[]          @relation("PaymentApprover")

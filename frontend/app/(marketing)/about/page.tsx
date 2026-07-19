@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BarChart3,
   Bell,
-  Building2,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
@@ -14,14 +13,13 @@ import {
   PieChart,
   Quote,
   ReceiptText,
-  ShieldCheck,
   Smartphone,
-  Sparkles,
   Utensils,
   UsersRound,
   WalletCards,
 } from 'lucide-react'
 import { MarketingHero } from '@/components/marketing-hero'
+import { MarketingStatsBar } from '@/components/marketing-stats'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
@@ -99,29 +97,6 @@ const trustFeatures = [
     title: 'Reports & Analytics',
     text: 'Get clear insights and reports to make better decisions.',
     icon: BarChart3,
-  },
-]
-
-const stats = [
-  {
-    value: '1000+',
-    label: 'Hostels & Messes',
-    icon: Building2,
-  },
-  {
-    value: '10K+',
-    label: 'Active Users',
-    icon: UsersRound,
-  },
-  {
-    value: '50K+',
-    label: 'Meals Managed',
-    icon: Utensils,
-  },
-  {
-    value: '99%',
-    label: 'Customer Satisfaction',
-    icon: ShieldCheck,
   },
 ]
 
@@ -220,17 +195,14 @@ function PlatformSection() {
                 />
               </div>
 
-              <div className="w-[22%] min-w-[76px] max-w-[150px] rounded-[1.35rem] border-[6px] border-[#101820] bg-[#101820] shadow-[0_18px_24px_rgba(15,23,42,0.22)]">
-                <div className="mx-auto mb-1 h-1.5 w-10 rounded-b-full bg-[#101820]" />
-                <div className="overflow-hidden rounded-[1rem] bg-white">
-                  <Image
-                    src="/phone-dashboard.webp"
-                    alt="Messzen mobile dashboard"
-                    width={220}
-                    height={430}
-                    className="aspect-[9/18] w-full object-cover object-top"
-                  />
-                </div>
+              <div className="w-[22%] min-w-[76px] max-w-[150px] overflow-hidden rounded-[1rem] bg-white">
+                <Image
+                  src="/mobile-version.webp"
+                  alt="Messzen mobile dashboard"
+                  width={220}
+                  height={430}
+                  className="aspect-[9/18] w-full object-cover object-top"
+                />
               </div>
             </div>
 
@@ -279,17 +251,7 @@ function TrustSection() {
           ))}
         </div>
 
-        <div className="mt-10 grid gap-4 rounded-xl bg-gradient-to-r from-[#00645c] to-[#008f85] p-5 text-white shadow-[0_18px_42px_rgba(0,107,99,0.24)] sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map(({ value, label, icon: Icon }) => (
-            <div key={label} className="flex items-center justify-center gap-4 text-center sm:text-left">
-              <Icon size={34} className="shrink-0 text-white/80" />
-              <div>
-                <p className="text-2xl font-black leading-none sm:text-3xl">{value}</p>
-                <p className="mt-1 text-sm font-medium text-white/90">{label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <MarketingStatsBar className="mt-10" />
       </div>
     </section>
   )
@@ -316,7 +278,7 @@ function FounderSection() {
               Mahabur Rahman
             </h2>
             <p className="mt-2 text-lg font-black text-[#006b63]">Founder, Messzen</p>
-            <p className="mt-2 text-sm font-medium text-[#334155]">Software Engineer since 2025</p>
+            <p className="mt-2 text-sm font-medium text-[#334155]">Software Engineer since 2023</p>
           </div>
 
           <div className="border-t border-[#b9d8d5] pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">

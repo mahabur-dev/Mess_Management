@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsDecimal, IsEmail, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDecimal, IsEmail, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, Min, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { MembershipRole, RequestStatus } from '@prisma/client';
 
@@ -61,6 +61,20 @@ export class CreateMessDto {
   @IsString()
   messCategory?: string;
 
+  @ApiPropertyOptional({ example: 12 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(1)
+  totalSeats?: number;
+
+  @ApiPropertyOptional({ example: 50000 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(0)
+  monthlyRent?: number;
+
   @ApiPropertyOptional({ type: [MessRoomDto] })
   @IsOptional()
   @IsArray()
@@ -119,6 +133,23 @@ export class ReviewMessRequestDto {
   status: 'APPROVED' | 'REJECTED';
 
   @ApiPropertyOptional({ example: 'Documents verified' })
+  @IsOptional()
+  @IsString()
+  reviewNote?: string;
+}
+
+export class RequestMemberJoinDto {
+  @ApiProperty({ example: 'uuid-mess-id' })
+  @IsUUID()
+  messId: string;
+}
+
+export class ReviewMemberJoinRequestDto {
+  @ApiProperty({ enum: [RequestStatus.APPROVED, RequestStatus.REJECTED] })
+  @IsIn([RequestStatus.APPROVED, RequestStatus.REJECTED])
+  status: 'APPROVED' | 'REJECTED';
+
+  @ApiPropertyOptional({ example: 'Accepted by manager' })
   @IsOptional()
   @IsString()
   reviewNote?: string;
@@ -276,6 +307,13 @@ export class MessFilterDto {
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc';
+}
+
+export class MemberJoinRequestFilterDto extends MessFilterDto {
+  @ApiPropertyOptional({ enum: [RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED] })
+  @IsOptional()
+  @IsIn([RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED])
+  status?: RequestStatus;
 }
 
 export class AddMemberDto {

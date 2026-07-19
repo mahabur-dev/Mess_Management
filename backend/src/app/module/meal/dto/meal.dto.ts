@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   Min,
 } from 'class-validator';
@@ -102,11 +103,17 @@ export class SetMealDeadlineDto {
   @ApiProperty({ example: '22:00', description: 'Deadline start time (HH:mm) - meal time window starts' })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+    message: 'startTime must be in HH:mm format, for example 22:00',
+  })
   startTime: string;
 
-  @ApiProperty({ example: '11:00', description: 'Deadline end time (HH:mm) - meal time window ends, members can no longer add/update' })
+  @ApiProperty({ example: '11:00', description: 'Deadline end time (HH:00) - must be an exact hour so hourly reminder jobs do not miss it' })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^([01]\d|2[0-3]):00$/, {
+    message: 'endTime must be an exact hour in HH:00 format, for example 11:00',
+  })
   endTime: string;
 
   @ApiProperty({ example: '2026-06-15', description: 'Date to apply this deadline (optional, if not provided uses current date)' })

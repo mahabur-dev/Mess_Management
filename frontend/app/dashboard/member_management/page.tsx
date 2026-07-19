@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog, ChevronDown, ChevronUp, MoreHorizontal, Phone, Users, Pencil, Ban, CheckCircle, DoorOpen, DollarSign, Building } from 'lucide-react';
-import { apiClient, ApiError, type Mess as ApiMess } from '@/lib/api-client';
+import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog, ChevronDown, ChevronUp, MoreHorizontal, Phone, Users, Pencil, Ban, CheckCircle, DoorOpen, DollarSign, Building, UserPlus } from 'lucide-react';
+import { apiClient, ApiError, type MemberJoinRequest, type Mess as ApiMess } from '@/lib/api-client';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -960,6 +960,93 @@ function MembersTable({
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
+function MemberJoinRequestsPanel({
+  requests,
+  reviewingId,
+  onReview,
+}: {
+  requests: MemberJoinRequest[];
+  reviewingId: string | null;
+  onReview: (requestId: string, status: 'APPROVED' | 'REJECTED') => Promise<void>;
+}) {
+  if (requests.length === 0) return null;
+
+  return (
+    <div className="mb-7 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+      <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] px-5 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e7f1ff] text-[#2f80ed]">
+              <UserPlus size={19} />
+            </span>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Requests</p>
+              <h2 className="text-base font-black text-[#172554]">Member Join Requests</h2>
+            </div>
+          </div>
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
+            {requests.length} Pending
+          </span>
+        </div>
+      </div>
+
+      <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+        {requests.map((request) => {
+          const isReviewing = reviewingId === request.id;
+          return (
+            <div key={request.id} className="rounded-xl border border-[#e6ebf4] bg-[#fbfdff] p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-sm font-black"
+                  style={{
+                    backgroundColor: `${avatarColor(request.requester_id)}18`,
+                    borderColor: `${avatarColor(request.requester_id)}55`,
+                    color: avatarColor(request.requester_id),
+                  }}
+                >
+                  {getInitials(request.requester?.name || 'User')}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-sm font-black text-[#172554]">
+                    {request.requester?.name || 'Unknown User'}
+                  </h3>
+                  <p className="truncate text-xs font-semibold text-[#6b7a99]">
+                    {request.requester?.email || ''}
+                  </p>
+                  <p className="mt-2 inline-flex max-w-full items-center rounded-lg border border-[#d8e6f8] bg-white px-2.5 py-1 text-xs font-bold text-[#2f80ed]">
+                    <span className="truncate">{request.mess?.name || 'Selected mess'}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onReview(request.id, 'APPROVED')}
+                  disabled={isReviewing}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-50 text-xs font-black text-emerald-700 transition hover:border-emerald-500/40 hover:bg-emerald-100 disabled:opacity-60"
+                >
+                  {isReviewing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                  Accept
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReview(request.id, 'REJECTED')}
+                  disabled={isReviewing}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-50 text-xs font-black text-red-700 transition hover:border-red-500/40 hover:bg-red-100 disabled:opacity-60"
+                >
+                  <X size={14} />
+                  Reject
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function MembersSection({ organizerId }: MembersSectionProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [activeMess, setActiveMess] = useState<Mess | null>(null);
@@ -967,6 +1054,8 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [editingMemberEdit, setEditingMemberEdit] = useState<Member | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [joinRequests, setJoinRequests] = useState<MemberJoinRequest[]>([]);
+  const [reviewingRequestId, setReviewingRequestId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<MembershipRole | 'ALL'>('ALL');
   const [loading, setLoading] = useState(false);
@@ -980,6 +1069,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
 
   useEffect(() => {
     loadActiveMess();
+    loadJoinRequests();
   }, []);
 
   async function loadMembers() {
@@ -1012,6 +1102,34 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
       } : null);
     } catch {
       setActiveMess(null);
+    }
+  }
+
+  async function loadJoinRequests() {
+    try {
+      const response = await apiClient.getManagedMemberJoinRequests({
+        page: 1,
+        limit: 50,
+        status: 'PENDING',
+      });
+      setJoinRequests(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      setJoinRequests([]);
+    }
+  }
+
+  async function handleReviewJoinRequest(requestId: string, status: 'APPROVED' | 'REJECTED') {
+    setReviewingRequestId(requestId);
+    setError(null);
+
+    try {
+      await apiClient.reviewMemberJoinRequest(requestId, { status });
+      await loadJoinRequests();
+      if (status === 'APPROVED') await loadMembers();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to review member request');
+    } finally {
+      setReviewingRequestId(null);
     }
   }
 
@@ -1134,6 +1252,12 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
           <button onClick={() => setError(null)} className="text-xl">✕</button>
         </div>
       )}
+
+      <MemberJoinRequestsPanel
+        requests={joinRequests}
+        reviewingId={reviewingRequestId}
+        onReview={handleReviewJoinRequest}
+      />
 
       {/* Search + Filters + Add Member row */}
       <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

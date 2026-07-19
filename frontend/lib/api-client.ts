@@ -22,6 +22,7 @@ export class ApiError extends Error {
 
 export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER' | 'ORGANIZER'
 export type MembershipRole = 'MANAGER' | 'MEMBER'
+export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
 export type AttendanceStatus = 'ON' | 'OFF'
 export type ExpenseCategory =
@@ -140,6 +141,21 @@ export interface MessMembership {
 export interface MessMembershipWithDetails extends MessMembership {
   user: User
   mess: Mess
+}
+
+export interface MemberJoinRequest {
+  id: string
+  requester_id: string
+  mess_id: string
+  status: RequestStatus
+  review_note?: string | null
+  reviewed_by?: string | null
+  reviewed_at?: string | null
+  created_at: string
+  updated_at: string
+  requester?: Pick<User, 'id' | 'name' | 'email' | 'phone' | 'role'>
+  reviewer?: Pick<User, 'id' | 'name' | 'email'> | null
+  mess?: Pick<Mess, 'id' | 'name' | 'address' | 'is_active' | 'created_by'>
 }
 
 export interface MessDashboard {
@@ -467,8 +483,12 @@ class ApiClient {
     return this.request<Mess>(`/messes/${id}`)
   }
 
-  createMess(data: { messName: string; messLocation: string; description?: string; meal_rate?: string; currency?: string; messCategory?: string; rooms?: MessRoom[] }) {
+  createMess(data: { messName: string; messLocation: string; description?: string; meal_rate?: string; currency?: string; messCategory?: string; rooms?: MessRoom[]; totalSeats?: number; monthlyRent?: number }) {
     return this.request<Mess>('/messes', { method: 'POST', body: JSON.stringify({ meal_rate: '0', currency: 'BDT', ...data }) })
+  }
+
+  getActiveMesses(params?: QueryParams) {
+    return this.request<Mess[]>('/messes/active', { params })
   }
 
   updateMess(id: string, data: { messName?: string; messLocation?: string; description?: string }) {
@@ -493,6 +513,22 @@ class ApiClient {
 
   deleteMessRequest(id: string) {
     return this.request(`/mess-requests/${id}`, { method: 'DELETE' })
+  }
+
+  requestMemberJoin(messId: string) {
+    return this.request<MemberJoinRequest>('/member-join-requests', { method: 'POST', body: JSON.stringify({ messId }) })
+  }
+
+  getMyMemberJoinRequests(params?: QueryParams) {
+    return this.request<MemberJoinRequest[]>('/member-join-requests/my', { params })
+  }
+
+  getManagedMemberJoinRequests(params?: QueryParams) {
+    return this.request<MemberJoinRequest[]>('/member-join-requests/managed', { params })
+  }
+
+  reviewMemberJoinRequest(id: string, data: { status: RequestStatus; reviewNote?: string }) {
+    return this.request<MemberJoinRequest>(`/member-join-requests/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) })
   }
 
   updateMessSetup(id: string, data: { messName?: string; address?: string; totalSeats?: number; monthlyRent?: number; messCategory?: string; rooms?: MessRoom[]; paymentDeadlineDay?: number; mealOffDeadline?: string; bazarRules?: string; mealTypes?: MealName[]; mealRateMethod?: string }) {

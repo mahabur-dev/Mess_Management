@@ -1,4 +1,5 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { Prisma, SubscriptionPlan } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -27,6 +28,8 @@ function addDays(date: Date, days: number) {
 
 @Injectable()
 export class SubscriptionService {
+  private readonly logger = new Logger(SubscriptionService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private readonly subscriptionSelect = {
@@ -52,9 +55,9 @@ export class SubscriptionService {
   private readonly defaultPlanSettings: Record<SubscriptionPlan, PlanRecord> = {
     TRIAL: {
       price: 0,
-      label: '7 Days Free',
-      days: 7,
-      description: 'Trial access for newly approved messes.',
+      label: '30 Days Free',
+      days: 30,
+      description: 'One month of trial access for newly created messes.',
       currency: 'BDT',
       features: [
         'Smart Meal Tracking|Track breakfast, lunch & dinner with real-time member toggles and daily meal sheets.',
@@ -111,7 +114,14 @@ export class SubscriptionService {
             currency: defaults.currency,
             features: defaults.features,
           },
-          update: {},
+          update: plan === 'TRIAL'
+            ? {
+                label: defaults.label,
+                days: defaults.days,
+                description: defaults.description,
+                features: defaults.features,
+              }
+            : {},
         }),
       ),
     );
@@ -336,6 +346,22 @@ export class SubscriptionService {
     return { updated: expired.count };
   }
 
+  /**
+   * Runs once every 24 hours to keep stored subscription status in sync with
+   * end_date. Runtime feature checks still validate end_date directly.
+   */
+  @Cron('5 0 * * *')
+  async checkExpiredSubscriptionsDaily() {
+    try {
+      const result = await this.checkAndUpdateExpired();
+      if (result.updated > 0) {
+        this.logger.warn(`Marked ${result.updated} subscription(s) as expired`);
+      }
+    } catch (error) {
+      this.logger.error('Failed to update expired subscriptions', error);
+    }
+  }
+
   // Initialize a TRIAL subscription when a mess is created/approved
   async initializeTrial(messId: string) {
     const existing = await this.prisma.subscription.findUnique({
@@ -346,7 +372,7 @@ export class SubscriptionService {
     const startDate = new Date();
     const endDate = new Date(startDate);
     const trialPlan = await this.getPlanInfo('TRIAL');
-    endDate.setDate(endDate.getDate() + (trialPlan?.days ?? 7)); // 7 days free trial
+    endDate.setDate(endDate.getDate() + (trialPlan?.days ?? 30)); // 30 days free trial
 
     return this.prisma.subscription.create({
       data: {

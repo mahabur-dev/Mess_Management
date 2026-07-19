@@ -1,5 +1,5 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import {
   SetMealDeadlineDto,
   CreateMealDto,
@@ -16,6 +16,10 @@ import { NotificationService } from '../notification/notification.service';
 // ─── Constants ──────────────────────────────────────────────
 const DEFAULT_DEADLINE_START = '22:00'; // 10 PM - meal window opens
 const DEFAULT_DEADLINE_END = '11:00';   // 11 AM next day - meal window closes
+const MEAL_DEADLINE_REMINDER_LEAD_MINUTES = 60;
+const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const EXACT_HOUR_TIME_REGEX = /^([01]\d|2[0-3]):00$/;
 
 /**
  * Base meal value per meal type when attendance is ON.
@@ -42,6 +46,28 @@ function parseTimeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
   if (isNaN(h) || isNaN(m)) throw new Error(`Invalid time format: ${time}`);
   return h * 60 + m;
+}
+
+function isExactHourTime(time: string): boolean {
+  return EXACT_HOUR_TIME_REGEX.test(time);
+}
+
+function buildDateAtTime(date: Date, time: string): Date {
+  const minutes = parseTimeToMinutes(time);
+  const next = new Date(date);
+  next.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+  return next;
+}
+
+function isWithinReminderWindow(
+  now: Date,
+  deadlineTime: Date,
+  leadMinutes: number,
+): boolean {
+  const reminderStart = new Date(deadlineTime.getTime() - leadMinutes * 60 * 1000);
+  const reminderEnd = new Date(reminderStart.getTime() + ONE_HOUR_IN_MS);
+
+  return now >= reminderStart && now < reminderEnd;
 }
 
 function formatLocalDateKey(date: Date): string {
@@ -141,10 +167,12 @@ export class MealService {
   // ─── Cron / Scheduled Tasks ────────────────────────────────
 
   /**
-   * Every minute check if any deadline window is about to close in 15 minutes,
-   * and send push notifications.
+   * Hourly check for meal deadlines that are one hour away.
+   *
+   * Meal deadline end times must be exact hours (HH:00). This keeps reminder
+   * checks cheap for serverless databases while avoiding missed reminders.
    */
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron('0 * * * *')
   async checkUpcomingDeadlines() {
     const now = new Date();
 
@@ -163,6 +191,13 @@ export class MealService {
       const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
       const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
 
+      if (!isExactHourTime(endTime)) {
+        this.logger.warn(
+          `Skipping meal deadline reminder for mess ${mess.id}: end time "${endTime}" is not an exact hour`,
+        );
+        continue;
+      }
+
       // Get today and tomorrow dates
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -171,27 +206,16 @@ export class MealService {
 
       // Check if the deadline is ending soon for today (if endTime applies to today)
       // or for tomorrow (if endTime applies to tomorrow)
-      const todayEnd = new Date(today);
-      todayEnd.setHours(
-        Math.floor(parseTimeToMinutes(endTime) / 60),
-        parseTimeToMinutes(endTime) % 60,
-        0, 0,
-      );
+      const todayEnd = buildDateAtTime(today, endTime);
+      const tomorrowEnd = buildDateAtTime(tomorrow, endTime);
 
-      const tomorrowEnd = new Date(tomorrow);
-      tomorrowEnd.setHours(
-        Math.floor(parseTimeToMinutes(endTime) / 60),
-        parseTimeToMinutes(endTime) % 60,
-        0, 0,
-      );
-
-      // Check 15 min warning for today's deadline
-      if (Math.abs(now.getTime() - todayEnd.getTime() - 15 * 60 * 1000) < 60000) {
+      // Check one-hour warning for today's deadline.
+      if (isWithinReminderWindow(now, todayEnd, MEAL_DEADLINE_REMINDER_LEAD_MINUTES)) {
         await this.sendDeadlineWarningNotification(mess.id, mess.name, today, endTime);
       }
 
-      // Check 15 min warning for tomorrow's deadline (if end is in morning)
-      if (Math.abs(now.getTime() - tomorrowEnd.getTime() - 15 * 60 * 1000) < 60000) {
+      // Check one-hour warning for tomorrow's deadline.
+      if (isWithinReminderWindow(now, tomorrowEnd, MEAL_DEADLINE_REMINDER_LEAD_MINUTES)) {
         await this.sendDeadlineWarningNotification(mess.id, mess.name, tomorrow, endTime);
       }
 
@@ -228,7 +252,7 @@ export class MealService {
         messId,
         'MEAL_UPDATE',
         `⏰ Meal deadline closing soon - ${messName}`,
-        `Meal time will close at ${endTime} for ${dateStr}. Please add/update your meals now!`,
+        `Meal time will close in 1 hour at ${endTime} for ${dateStr}. Please add/update your meals now!`,
         { type: 'MEAL_DEADLINE_WARNING', date: date.toISOString(), endTime },
         targetUserIds,
         '/dashboard/meals',
@@ -712,13 +736,13 @@ export class MealService {
     }
     await this.ensureActiveSubscription(messId, role);
 
-    // Validate time format
-    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-    if (!timeRegex.test(dto.startTime)) {
+    // Validate time format. The end time must stay hourly because the reminder
+    // cron runs hourly to reduce Neon compute usage.
+    if (!TIME_FORMAT_REGEX.test(dto.startTime)) {
       throw new HttpException('startTime must be in HH:mm format (e.g. 22:00)', 400);
     }
-    if (!timeRegex.test(dto.endTime)) {
-      throw new HttpException('endTime must be in HH:mm format (e.g. 11:00)', 400);
+    if (!isExactHourTime(dto.endTime)) {
+      throw new HttpException('endTime must be an exact hour in HH:00 format (e.g. 11:00)', 400);
     }
 
     const updatedMess = await this.prisma.mess.update({

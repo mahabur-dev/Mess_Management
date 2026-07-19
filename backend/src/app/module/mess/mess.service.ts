@@ -3,17 +3,22 @@ import {
   CompleteMessSetupDto,
   CreateMessDto,
   MessFilterDto,
+  RequestMemberJoinDto,
   RequestMessRegistrationDto,
+  ReviewMemberJoinRequestDto,
   ReviewMessRequestDto,
   UpdateMemberDto,
   UpdateMessDto,
 } from './dto/mess.dto';
-import { MembershipRole, Prisma, RequestStatus } from '@prisma/client';
+import { MembershipRole, NotificationType, Prisma, RequestStatus } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
 import { NotificationService } from '../notification/notification.service';
+import { SubscriptionService } from '../subscription/subscription.service';
+
+type MessMembershipReader = Pick<PrismaService, 'messMembership'> | Prisma.TransactionClient;
 
 @Injectable()
 export class MessService {
@@ -21,6 +26,7 @@ export class MessService {
     private readonly prisma: PrismaService,
     private readonly monthlyBillService: MonthlyBillService,
     private readonly notificationService: NotificationService,
+    private readonly subscriptionService: SubscriptionService,
   ) { }
 
   private async recalculateCurrentMonthBillIfPossible(messId: string) {
@@ -34,6 +40,35 @@ export class MessService {
     if (!activeMembers) return;
 
     await this.monthlyBillService.recalculateMonthlyBills(messId, new Date());
+  }
+
+  private async ensureUserHasNoActiveMess(
+    userId: string,
+    options: {
+      client?: MessMembershipReader;
+      subject?: string;
+    } = {},
+  ) {
+    const client = options.client ?? this.prisma;
+    const subject = options.subject ?? 'You are';
+    const activeMembership = await client.messMembership.findFirst({
+      where: {
+        user_id: userId,
+        is_active: true,
+      },
+      include: {
+        mess: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    if (activeMembership) {
+      throw new HttpException(
+        `${subject} already active in ${activeMembership.mess?.name ?? 'another mess'}`,
+        400,
+      );
+    }
   }
 
   private readonly messSelect = {
@@ -64,6 +99,12 @@ export class MessService {
     created_at: true,
     creator: { select: { id: true, name: true, email: true } },
     _count: { select: { memberships: true, deposits: true, meals: true } },
+  } as const;
+
+  private readonly memberJoinRequestInclude = {
+    requester: { select: { id: true, name: true, email: true, phone: true, role: true } },
+    reviewer: { select: { id: true, name: true, email: true } },
+    mess: { select: { id: true, name: true, address: true, is_active: true, created_by: true } },
   } as const;
 
   private decorateRoomsWithAvailability<
@@ -126,6 +167,7 @@ export class MessService {
       where: { requester_id: userId, status: RequestStatus.PENDING },
     });
     if (pending) throw new HttpException('You already have a pending mess registration request', 400);
+    await this.ensureUserHasNoActiveMess(userId);
 
     const request = await this.prisma.messRequest.create({
       data: {
@@ -222,75 +264,86 @@ export class MessService {
       });
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const mess = await tx.mess.create({
-        data: {
-          name: request.mess_name,
-          address: request.address,
-          description: request.description,
-          mess_category: request.mess_category,
-          rooms: (request.rooms ?? undefined) as Prisma.InputJsonValue | undefined,
-          total_seats: request.total_seats,
-          monthly_rent: request.monthly_rent,
-          created_by: request.requester_id,
-          meal_rate: 0,
-          currency: 'BDT',
-          approved_at: new Date(),
-          memberships: {
-            create: {
-              user_id: request.requester_id,
-              role: MembershipRole.MANAGER,
-              created_by: adminId,
-              monthly_rent: request.monthly_rent,
+    const trialPlan = await this.subscriptionService.getPlanInfo('TRIAL');
+    const trialDays = trialPlan?.days ?? 30;
+
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        await this.ensureUserHasNoActiveMess(request.requester_id, {
+          client: tx,
+          subject: 'This user is',
+        });
+
+        const mess = await tx.mess.create({
+          data: {
+            name: request.mess_name,
+            address: request.address,
+            description: request.description,
+            mess_category: request.mess_category,
+            rooms: (request.rooms ?? undefined) as Prisma.InputJsonValue | undefined,
+            total_seats: request.total_seats,
+            monthly_rent: request.monthly_rent,
+            created_by: request.requester_id,
+            meal_rate: 0,
+            currency: 'BDT',
+            approved_at: new Date(),
+            memberships: {
+              create: {
+                user_id: request.requester_id,
+                role: MembershipRole.MANAGER,
+                created_by: adminId,
+                monthly_rent: request.monthly_rent,
+              },
             },
           },
-        },
-      });
+        });
 
-      await tx.user.update({
-        where: { id: request.requester_id },
-        data: { role: 'MANAGER' },
-      });
+        await tx.user.update({
+          where: { id: request.requester_id },
+          data: { role: 'MANAGER' },
+        });
 
-      const existingSubscription = await tx.subscription.findUnique({
-        where: { mess_id: mess.id },
-      });
-      if (!existingSubscription) {
-        await tx.subscription.create({
+        const existingSubscription = await tx.subscription.findUnique({
+          where: { mess_id: mess.id },
+        });
+        if (!existingSubscription) {
+          await tx.subscription.create({
+            data: {
+              mess_id: mess.id,
+              plan: 'TRIAL',
+              status: 'ACTIVE',
+              start_date: new Date(),
+              end_date: (() => {
+                const endDate = new Date();
+                endDate.setDate(endDate.getDate() + trialDays);
+                return endDate;
+              })(),
+            },
+          });
+        }
+
+        return tx.messRequest.update({
+          where: { id: requestId },
           data: {
+            status: RequestStatus.APPROVED,
             mess_id: mess.id,
-            plan: 'TRIAL',
-            status: 'ACTIVE',
-            start_date: new Date(),
-            end_date: (() => {
-              const endDate = new Date();
-              endDate.setDate(endDate.getDate() + 7);
-              return endDate;
-            })(),
+            review_note: dto.reviewNote,
+            reviewed_by: adminId,
+            reviewed_at: new Date(),
+          },
+          include: {
+            requester: { select: { id: true, name: true, email: true, role: true } },
+            reviewer: { select: { id: true, name: true, email: true } },
+            mess: { select: this.messSelect },
           },
         });
-      }
-
-      return tx.messRequest.update({
-        where: { id: requestId },
-        data: {
-          status: RequestStatus.APPROVED,
-          mess_id: mess.id,
-          review_note: dto.reviewNote,
-          reviewed_by: adminId,
-          reviewed_at: new Date(),
-        },
-        include: {
-          requester: { select: { id: true, name: true, email: true, role: true } },
-          reviewer: { select: { id: true, name: true, email: true } },
-          mess: { select: this.messSelect },
-        },
-      });
-    });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     void this.notificationService.sendPushToUsers([request.requester_id], {
       title: 'Your mess is approved',
-      body: 'A 7-day free trial has started. You can upgrade anytime from the dashboard.',
+      body: 'A 30-day free trial has started. You can upgrade anytime from the dashboard.',
       url: '/dashboard',
       data: {
         source: 'MESS_APPROVAL',
@@ -304,34 +357,403 @@ export class MessService {
   // ─────────────────────────────────────────
   // Create mess (Manager creates own mess)
   // ─────────────────────────────────────────
-  // async create(managerId: string, dto: CreateMessDto) {
-  //   // Verify manager exists
-  //   const manager = await this.prisma.user.findUnique({
-  //     where: { id: managerId },
-  //   });
-  //   if (!manager) throw new HttpException('manager not found', 404);
+  async create(managerId: string, dto: CreateMessDto) {
+    const manager = await this.prisma.user.findUnique({
+      where: { id: managerId },
+      select: { id: true, name: true, email: true, role: true },
+    });
+    if (!manager) throw new HttpException('User not found', 404);
+    await this.ensureUserHasNoActiveMess(managerId);
 
-  //   const mess = await this.prisma.mess.create({
-  //     data: {
-  //       name: dto.messName,
-  //       address: dto.messLocation,
-  //       description: dto.description,
-  //       created_by: managerId,
-  //       meal_rate: dto.meal_rate,
-  //       currency: dto.currency,
-  //       memberships: {
-  //         create: {
-  //           user_id: managerId,
-  //           role: MembershipRole.MANAGER,
-  //           created_by: managerId,
-  //         },
-  //       },
-  //     },
-  //     select: this.messSelect,
-  //   });
+    const trialPlan = await this.subscriptionService.getPlanInfo('TRIAL');
+    const trialDays = trialPlan?.days ?? 30;
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + trialDays);
 
-  //   return mess;
-  // }
+    const mess = await this.prisma.$transaction(
+      async (tx) => {
+        await this.ensureUserHasNoActiveMess(managerId, { client: tx });
+
+        const createdMess = await tx.mess.create({
+          data: {
+            name: dto.messName,
+            address: dto.messLocation,
+            description: dto.description,
+            mess_category: dto.messCategory,
+            rooms: dto.rooms as Prisma.InputJsonValue | undefined,
+            total_seats: dto.totalSeats,
+            monthly_rent: dto.monthlyRent,
+            created_by: managerId,
+            meal_rate: dto.meal_rate ?? '0',
+            currency: dto.currency ?? 'BDT',
+            approved_at: new Date(),
+            memberships: {
+              create: {
+                user_id: managerId,
+                role: MembershipRole.MANAGER,
+                created_by: managerId,
+                monthly_rent: dto.monthlyRent,
+              },
+            },
+            subscription: {
+              create: {
+                plan: 'TRIAL',
+                status: 'ACTIVE',
+                start_date: startDate,
+                end_date: endDate,
+              },
+            },
+          },
+          select: this.messSelect,
+        });
+
+        await tx.user.update({
+          where: { id: managerId },
+          data: { role: 'MANAGER' },
+        });
+
+        return createdMess;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+
+    const adminUserIds = await this.notificationService.resolveAdminUserIds();
+    if (adminUserIds.length > 0) {
+      void this.notificationService.createForMess(
+        managerId,
+        mess.id,
+        NotificationType.ANNOUNCEMENT,
+        'New mess created',
+        `${manager.name} created ${mess.name}.`,
+        {
+          source: 'MESS_CREATED',
+          messId: mess.id,
+          createdBy: managerId,
+        },
+        adminUserIds,
+        '/dashboard/mess_management',
+        `mess-created-${mess.id}`,
+      ).catch(() => undefined);
+    }
+
+    return mess;
+  }
+
+  async findActiveMessesForJoin(query: MessFilterDto) {
+    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
+    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(paginationOptions);
+
+    const where: Prisma.MessWhereInput = { is_active: true };
+    if (query.searchTerm) {
+      where.OR = [
+        { name: { contains: query.searchTerm, mode: 'insensitive' } },
+        { address: { contains: query.searchTerm, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, messes] = await Promise.all([
+      this.prisma.mess.count({ where }),
+      this.prisma.mess.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          creator: { select: { id: true, name: true, email: true } },
+          memberships: {
+            where: { is_active: true },
+            select: { room_no: true, is_active: true },
+          },
+          _count: { select: { memberships: true, deposits: true, meals: true } },
+        },
+      }),
+    ]);
+
+    const data = messes.map((mess) => {
+      const decorated = this.decorateRoomsWithAvailability(mess);
+      const { memberships, ...rest } = decorated;
+      return rest;
+    });
+
+    return { data, meta: buildMeta(total, page, limit) };
+  }
+
+  async requestMemberJoin(userId: string, dto: RequestMemberJoinDto) {
+    const [requester, mess, pendingRequest] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, email: true },
+      }),
+      this.prisma.mess.findFirst({
+        where: { id: dto.messId, is_active: true },
+        select: { id: true, name: true, created_by: true },
+      }),
+      this.prisma.memberJoinRequest.findFirst({
+        where: {
+          requester_id: userId,
+          mess_id: dto.messId,
+          status: RequestStatus.PENDING,
+        },
+      }),
+    ]);
+
+    if (!requester) throw new HttpException('User not found', 404);
+    if (!mess) throw new HttpException('Mess not found', 404);
+    await this.ensureUserHasNoActiveMess(userId);
+    if (pendingRequest) {
+      throw new HttpException('You already have a pending request for this mess', 400);
+    }
+
+    const request = await this.prisma.memberJoinRequest.create({
+      data: {
+        requester_id: userId,
+        mess_id: dto.messId,
+      },
+      include: this.memberJoinRequestInclude,
+    });
+
+    const managerUserIds = await this.resolveMessManagerUserIds(dto.messId);
+    if (managerUserIds.length > 0) {
+      void this.notificationService.createForMess(
+        userId,
+        dto.messId,
+        NotificationType.ANNOUNCEMENT,
+        'New member request',
+        `${requester.name} requested to join ${mess.name}.`,
+        {
+          source: 'MEMBER_JOIN_REQUEST',
+          requestId: request.id,
+          messId: dto.messId,
+        },
+        managerUserIds,
+        '/dashboard/member_management',
+        `member-join-request-${request.id}`,
+      ).catch(() => undefined);
+    }
+
+    return request;
+  }
+
+  async findMyMemberJoinRequests(userId: string, query: MessFilterDto) {
+    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
+    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(paginationOptions);
+    const where: Prisma.MemberJoinRequestWhereInput = { requester_id: userId };
+
+    const [total, requests] = await Promise.all([
+      this.prisma.memberJoinRequest.count({ where }),
+      this.prisma.memberJoinRequest.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: this.memberJoinRequestInclude,
+      }),
+    ]);
+
+    return { data: requests, meta: buildMeta(total, page, limit) };
+  }
+
+  async findManagedMemberJoinRequests(managerId: string, query: MessFilterDto & { status?: RequestStatus }) {
+    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
+    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(paginationOptions);
+    const where: Prisma.MemberJoinRequestWhereInput = {
+      mess: {
+        is_active: true,
+        OR: [
+          { created_by: managerId },
+          {
+            memberships: {
+              some: {
+                user_id: managerId,
+                role: MembershipRole.MANAGER,
+                is_active: true,
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    if (query.status) where.status = query.status;
+    if (query.searchTerm) {
+      where.OR = [
+        { requester: { name: { contains: query.searchTerm, mode: 'insensitive' } } },
+        { requester: { email: { contains: query.searchTerm, mode: 'insensitive' } } },
+        { mess: { name: { contains: query.searchTerm, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, requests] = await Promise.all([
+      this.prisma.memberJoinRequest.count({ where }),
+      this.prisma.memberJoinRequest.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: this.memberJoinRequestInclude,
+      }),
+    ]);
+
+    return { data: requests, meta: buildMeta(total, page, limit) };
+  }
+
+  async reviewMemberJoinRequest(requestId: string, managerId: string, dto: ReviewMemberJoinRequestDto) {
+    const request = await this.prisma.memberJoinRequest.findUnique({
+      where: { id: requestId },
+      include: this.memberJoinRequestInclude,
+    });
+
+    if (!request) throw new HttpException('Member join request not found', 404);
+    if (request.status !== RequestStatus.PENDING) {
+      throw new HttpException('This request has already been reviewed', 400);
+    }
+
+    await this.verifyManagerAccess(request.mess_id, managerId, 'MANAGER');
+
+    if (dto.status === RequestStatus.REJECTED) {
+      const rejected = await this.prisma.memberJoinRequest.update({
+        where: { id: requestId },
+        data: {
+          status: RequestStatus.REJECTED,
+          review_note: dto.reviewNote,
+          reviewed_by: managerId,
+          reviewed_at: new Date(),
+        },
+        include: this.memberJoinRequestInclude,
+      });
+
+      void this.notifyMemberJoinReview(rejected.id, rejected.mess_id, rejected.requester_id, managerId, false)
+        .catch(() => undefined);
+      return rejected;
+    }
+
+    const approved = await this.prisma.$transaction(
+      async (tx) => {
+        await this.ensureUserHasNoActiveMess(request.requester_id, {
+          client: tx,
+          subject: `${request.requester.name} is`,
+        });
+
+        const existingMembership = await tx.messMembership.findUnique({
+          where: {
+            mess_id_user_id: {
+              mess_id: request.mess_id,
+              user_id: request.requester_id,
+            },
+          },
+        });
+
+        if (existingMembership) {
+          await tx.messMembership.update({
+            where: {
+              mess_id_user_id: {
+                mess_id: request.mess_id,
+                user_id: request.requester_id,
+              },
+            },
+            data: {
+              role: MembershipRole.MEMBER,
+              is_active: true,
+              joined_at: new Date(),
+              left_at: null,
+              created_by: managerId,
+            },
+          });
+        } else {
+          await tx.messMembership.create({
+            data: {
+              mess_id: request.mess_id,
+              user_id: request.requester_id,
+              role: MembershipRole.MEMBER,
+              created_by: managerId,
+            },
+          });
+        }
+
+        const activeManagerMemberships = await tx.messMembership.count({
+          where: {
+            user_id: request.requester_id,
+            role: MembershipRole.MANAGER,
+            is_active: true,
+          },
+        });
+        if (activeManagerMemberships === 0) {
+          await tx.user.update({
+            where: { id: request.requester_id },
+            data: { role: 'MEMBER' },
+          });
+        }
+
+        return tx.memberJoinRequest.update({
+          where: { id: requestId },
+          data: {
+            status: RequestStatus.APPROVED,
+            review_note: dto.reviewNote,
+            reviewed_by: managerId,
+            reviewed_at: new Date(),
+          },
+          include: this.memberJoinRequestInclude,
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+
+    await this.recalculateCurrentMonthBillIfPossible(request.mess_id);
+    void this.notifyMemberJoinReview(approved.id, approved.mess_id, approved.requester_id, managerId, true)
+      .catch(() => undefined);
+
+    return approved;
+  }
+
+  private async resolveMessManagerUserIds(messId: string) {
+    const mess = await this.prisma.mess.findUnique({
+      where: { id: messId },
+      select: {
+        created_by: true,
+        memberships: {
+          where: {
+            role: MembershipRole.MANAGER,
+            is_active: true,
+          },
+          select: { user_id: true },
+        },
+      },
+    });
+
+    return [
+      ...new Set([
+        ...(mess?.created_by ? [mess.created_by] : []),
+        ...(mess?.memberships.map((membership) => membership.user_id) ?? []),
+      ]),
+    ];
+  }
+
+  private async notifyMemberJoinReview(
+    requestId: string,
+    messId: string,
+    requesterId: string,
+    managerId: string,
+    accepted: boolean,
+  ) {
+    await this.notificationService.createForMess(
+      managerId,
+      messId,
+      NotificationType.ANNOUNCEMENT,
+      accepted ? 'Member request approved' : 'Member request rejected',
+      accepted
+        ? 'Your request to join the mess has been approved.'
+        : 'Your request to join the mess was rejected.',
+      {
+        source: accepted ? 'MEMBER_JOIN_APPROVED' : 'MEMBER_JOIN_REJECTED',
+        requestId,
+        messId,
+      },
+      [requesterId],
+      '/dashboard',
+      `member-join-review-${requestId}-${accepted ? 'approved' : 'rejected'}`,
+    );
+  }
 
   // ─────────────────────────────────────────
   // Get all messes (Admin)
@@ -695,23 +1117,7 @@ export class MessService {
     });
     if (!user) throw new HttpException('User not found', 404);
 
-    const activeMembership = await this.prisma.messMembership.findFirst({
-      where: {
-        user_id: user.id,
-        is_active: true,
-      },
-      include: {
-        mess: {
-          select: { id: true, name: true },
-        },
-      },
-    });
-    if (activeMembership) {
-      throw new HttpException(
-        `User is already active in ${activeMembership.mess?.name ?? 'another mess'}`,
-        400,
-      );
-    }
+    await this.ensureUserHasNoActiveMess(user.id, { subject: 'User is' });
 
     const existing = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: user.id } },

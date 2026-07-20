@@ -78,12 +78,12 @@ const quickActions: QuickAction[] = [
 ]
 
 const toneClass: Record<QuickAction['tone'], { bg: string; fg: string }> = {
-  teal: { bg: '#e7f7f6', fg: '#0b7f82' },
-  green: { bg: '#ebf8ef', fg: '#1b8f49' },
-  amber: { bg: '#fff5e6', fg: '#f59e0b' },
-  blue: { bg: '#eaf2ff', fg: '#2563eb' },
-  orange: { bg: '#fff1e7', fg: '#fc782d' },
-  slate: { bg: '#edf3f7', fg: '#4b6478' },
+  teal: { bg: '#dff4f3', fg: '#008d8c' },
+  green: { bg: '#edfafa', fg: '#0aa0a0' },
+  amber: { bg: '#edfafa', fg: '#4bbfc0' },
+  blue: { bg: '#edfafa', fg: '#008d8c' },
+  orange: { bg: '#dff4f3', fg: '#008d8c' },
+  slate: { bg: '#edfafa', fg: '#65838b' },
 }
 
 function formatMoney(value?: number | null) {
@@ -153,32 +153,32 @@ function MiniLineChart({ points }: { points: WeeklyPoint[] }) {
       <svg viewBox={`0 0 ${width} ${height}`} className="h-[150px] w-full">
         <defs>
           <linearGradient id="incomeFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#20a04b" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#20a04b" stopOpacity="0" />
+            <stop offset="0%" stopColor="#0aa0a0" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#0aa0a0" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="expenseFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#f97316" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+            <stop offset="0%" stopColor="#4bbfc0" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="#4bbfc0" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        <line x1="18" y1={height - paddingBottom} x2={width - 18} y2={height - paddingBottom} stroke="#e8eef3" strokeWidth="1.2" />
+        <line x1="18" y1={height - paddingBottom} x2={width - 18} y2={height - paddingBottom} stroke="#cfeeed" strokeWidth="1.2" />
 
         <path d={`${buildPath('income')} L ${width - paddingX} ${height - paddingBottom} L ${paddingX} ${height - paddingBottom} Z`} fill="url(#incomeFill)" />
         <path d={`${buildPath('expense')} L ${width - paddingX} ${height - paddingBottom} L ${paddingX} ${height - paddingBottom} Z`} fill="url(#expenseFill)" />
 
-        <path d={buildPath('income')} fill="none" stroke="#20a04b" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d={buildPath('expense')} fill="none" stroke="#f97316" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={buildPath('income')} fill="none" stroke="#0aa0a0" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={buildPath('expense')} fill="none" stroke="#4bbfc0" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
 
         {incomePoints.map((point, index) => (
-          <circle key={`income-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#20a04b" stroke="#ffffff" strokeWidth="2" />
+          <circle key={`income-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#0aa0a0" stroke="#ffffff" strokeWidth="2" />
         ))}
         {expensePoints.map((point, index) => (
-          <circle key={`expense-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#f97316" stroke="#ffffff" strokeWidth="2" />
+          <circle key={`expense-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#4bbfc0" stroke="#ffffff" strokeWidth="2" />
         ))}
       </svg>
 
-      <div className="mt-1 grid grid-cols-4 text-center text-[11px] font-medium text-[#6a7f8b]">
+      <div className="mt-1 grid grid-cols-4 text-center text-[11px] font-medium text-[#65838b]">
         {points.map((point) => (
           <div key={point.label}>{point.label}</div>
         ))}
@@ -278,30 +278,30 @@ export default function HomePage() {
   }, [activeMess?.id])
 
   const cards = [
-    { label: 'Total Member', value: summaryLoading ? '...' : summary?.activeMembers ?? '--', icon: Users, color: '#0b7f82' },
-    { label: 'Today Meal', value: summaryLoading ? '...' : summary?.todayTotalMeals ?? '--', icon: UtensilsCrossed, color: '#f59e0b' },
-    { label: 'Total Meals', value: summaryLoading ? '...' : summary?.totalMeals ?? '--', icon: ReceiptText, color: '#20a04b' },
+    { label: 'Total Member', value: summaryLoading ? '...' : summary?.activeMembers ?? '--', icon: Users, color: '#008d8c' },
+    { label: 'Today Meal', value: summaryLoading ? '...' : summary?.todayTotalMeals ?? '--', icon: UtensilsCrossed, color: '#4bbfc0' },
+    { label: 'Total Meals', value: summaryLoading ? '...' : summary?.totalMeals ?? '--', icon: ReceiptText, color: '#0aa0a0' },
     {
       label: 'Meal Rate',
       value: summaryLoading ? '...' : summary?.currentMealRate != null ? `${String.fromCodePoint(0x09f3)} ${summary.currentMealRate}` : '--',
       icon: Wallet2,
-      color: '#fc782d',
+      color: '#008d8c',
     },
-    { label: 'Food Expenses', value: summaryLoading ? '...' : formatMoney(summary?.currentMonthTotalBazar), icon: CreditCard, color: '#ef4444' },
-    { label: 'Utility Expenses', value: summaryLoading ? '...' : formatMoney(summary?.extraExpenses), icon: Landmark, color: '#14b8a6' },
-    { label: 'Per Member Utility', value: summaryLoading ? '...' : formatMoney(summary?.perExtraExpenses), icon: Coins, color: '#16a34a' },
-    { label: 'Total Deposit', value: summaryLoading ? '...' : formatMoney(summary?.totalDepositAmount), icon: ClipboardList, color: '#22c55e' },
-    { label: 'Due Amount', value: summaryLoading ? '...' : formatMoney(summary?.totalDue), icon: MessageSquareWarning, color: '#ef4444' },
+    { label: 'Food Expenses', value: summaryLoading ? '...' : formatMoney(summary?.currentMonthTotalBazar), icon: CreditCard, color: '#00777a' },
+    { label: 'Utility Expenses', value: summaryLoading ? '...' : formatMoney(summary?.extraExpenses), icon: Landmark, color: '#0aa0a0' },
+    { label: 'Per Member Utility', value: summaryLoading ? '...' : formatMoney(summary?.perExtraExpenses), icon: Coins, color: '#0aa0a0' },
+    { label: 'Total Deposit', value: summaryLoading ? '...' : formatMoney(summary?.totalDepositAmount), icon: ClipboardList, color: '#4bbfc0' },
+    { label: 'Due Amount', value: summaryLoading ? '...' : formatMoney(summary?.totalDue), icon: MessageSquareWarning, color: '#00777a' },
     {
       label: 'Remaining Amount',
       value: summaryLoading ? '...' : formatMoney((summary?.totalDepositAmount ?? 0) - (summary?.totalDue ?? 0)),
       icon: Shield,
-      color: '#0b7f82',
+      color: '#008d8c',
     },
   ]
 
   if (isLoading || !user) {
-    return <div className="grid min-h-screen place-items-center text-sm font-bold text-[#58717d]">Loading...</div>
+    return <div className="grid min-h-screen place-items-center text-sm font-bold text-[#65838b]">Loading...</div>
   }
 
   return (
@@ -311,7 +311,7 @@ export default function HomePage() {
           <div className="h-10 w-10" />
           <button type="button" className="relative grid h-10 w-10 place-items-center rounded-full bg-white/0 text-white">
             <Bell size={18} />
-            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-[#0a7f82] bg-[#ff4d4f]" />
+            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-[#00777a] bg-[#9edddc]" />
           </button>
         </div>
 
@@ -322,7 +322,7 @@ export default function HomePage() {
       </div>
 
       <div className="screen -mt-4">
-        <div className="rounded-[22px] bg-white px-3 py-3 shadow-[0_10px_20px_rgba(9,81,92,0.06)]">
+        <div className="rounded-[22px] bg-white px-3 py-3 shadow-[0_10px_20px_rgba(0,119,122,0.06)]">
           <div className="grid grid-cols-3 gap-1.5">
             {quickActions.map(({ label, href, icon: Icon, tone }) => {
               const palette = toneClass[tone]
@@ -336,27 +336,27 @@ export default function HomePage() {
                   <div className="grid h-11 w-11 place-items-center rounded-[14px]" style={{ backgroundColor: palette.bg, color: palette.fg }}>
                     <Icon size={19} />
                   </div>
-                  <div className="text-[11px] font-bold leading-tight text-[#1d3950]">{label}</div>
+                  <div className="text-[11px] font-bold leading-tight text-[#123748]">{label}</div>
                 </button>
               )
             })}
           </div>
         </div>
 
-        <section className="rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(9,81,92,0.08)]">
+        <section className="rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
           <div className="section-title">Overview</div>
           <div className="grid grid-cols-2 gap-3">
             {cards.map((card) => {
               const Icon = card.icon
               return (
-                <div key={card.label} className="rounded-[16px] border border-[#e1eef1] bg-white p-3.5 shadow-[0_8px_20px_rgba(13,81,92,0.06)]">
+                <div key={card.label} className="rounded-[16px] border border-[#cfeeed] bg-white p-3.5 shadow-[0_8px_20px_rgba(0,119,122,0.06)]">
                   <div className="flex items-start gap-2.5">
                     <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px]" style={{ backgroundColor: `${card.color}12`, color: card.color }}>
                       <Icon size={16} />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold leading-tight text-[#6a7f8b]">{card.label}</div>
-                      <div className="mt-1 text-[15px] font-black leading-none text-[#1d3950]">{card.value}</div>
+                      <div className="text-[10px] font-bold leading-tight text-[#65838b]">{card.label}</div>
+                      <div className="mt-1 text-[15px] font-black leading-none text-[#123748]">{card.value}</div>
                     </div>
                   </div>
                 </div>
@@ -365,19 +365,19 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mt-4 rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(9,81,92,0.08)]">
+        <section className="mt-4 rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-[14px] font-black uppercase tracking-[0.12em] text-[#58717d]">Monthly Overview</div>
-              <div className="mt-1 text-[11px] text-[#6a7f8b]">{currentMonthLabel}</div>
+              <div className="text-[14px] font-black uppercase tracking-[0.12em] text-[#65838b]">Monthly Overview</div>
+              <div className="mt-1 text-[11px] text-[#65838b]">{currentMonthLabel}</div>
             </div>
-            <div className="flex items-center gap-3 text-[11px] font-bold text-[#58717d]">
+            <div className="flex items-center gap-3 text-[11px] font-bold text-[#65838b]">
               <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-[#20a04b]" />
+                <span className="h-2 w-2 rounded-full bg-[#0aa0a0]" />
                 Income
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-[#f97316]" />
+                <span className="h-2 w-2 rounded-full bg-[#4bbfc0]" />
                 Expense
               </span>
             </div>
@@ -385,7 +385,7 @@ export default function HomePage() {
 
           <div className="mt-3">
             {chartLoading ? (
-              <div className="flex h-[180px] items-center justify-center text-sm font-semibold text-[#6a7f8b]">Loading chart...</div>
+              <div className="flex h-[180px] items-center justify-center text-sm font-semibold text-[#65838b]">Loading chart...</div>
             ) : (
               <MiniLineChart points={chartPoints} />
             )}

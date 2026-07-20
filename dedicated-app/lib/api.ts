@@ -1,4 +1,9 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
+const DEFAULT_API_URL =
+  process.env.NODE_ENV === 'development'
+    ? 'http://localhost:5001/api/v1'
+    : 'https://api.messzen.com/api/v1'
+
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/+$/, '')
 
 type QueryValue = string | number | boolean | undefined | null
 
@@ -55,6 +60,9 @@ class Api {
     } catch (err) {
       if (err instanceof Error && /invalid or expired token/i.test(err.message)) {
         this.clearAuth()
+      }
+      if (err instanceof TypeError && /fetch|network|failed/i.test(err.message)) {
+        throw new Error(`Unable to connect to the server at ${BASE_URL}`)
       }
       throw err
     }

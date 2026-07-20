@@ -95,10 +95,10 @@ export default function EditDepositPage() {
       <TopScreen title="Edit Deposit" subtitle={deposit?.member?.name ?? 'Update deposit'} backHref="/deposits" />
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#667b8a]">Deposit</div>
-            <div className="mt-1 text-sm font-black text-[#14324a]">{deposit?.member?.name ?? depositId}</div>
-            <div className="mt-1 text-xs text-[#667b8a]">BDT {Number(deposit?.amount ?? 0).toLocaleString()}</div>
+          <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
+            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Deposit</div>
+            <div className="mt-1 text-sm font-black text-[#123748]">{deposit?.member?.name ?? depositId}</div>
+            <div className="mt-1 text-xs text-[#65838b]">BDT {Number(deposit?.amount ?? 0).toLocaleString()}</div>
           </div>
 
           <TextField label="Amount" value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="1500" type="number" />
@@ -111,7 +111,7 @@ export default function EditDepositPage() {
             rows={4}
           />
 
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Changes

@@ -96,10 +96,10 @@ export default function EditPaymentPage() {
       <TopScreen title="Edit Payment" subtitle={payment?.member?.name ?? paymentLabel} backHref="/payments" />
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#667b8a]">Payment</div>
-            <div className="mt-1 text-sm font-black text-[#14324a]">{payment?.member?.name ?? paymentId}</div>
-            <div className="mt-1 text-xs text-[#667b8a]">
+          <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
+            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Payment</div>
+            <div className="mt-1 text-sm font-black text-[#123748]">{payment?.member?.name ?? paymentId}</div>
+            <div className="mt-1 text-xs text-[#65838b]">
               {payment?.payment_date ?? 'No date'} - BDT {Number(payment?.amount ?? 0).toLocaleString()}
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function EditPaymentPage() {
             rows={4}
           />
 
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Changes

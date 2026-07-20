@@ -5,9 +5,9 @@ import { TopScreen } from '@/components/top-screen'
 import { CalendarDays, Coffee, Moon, Sun } from 'lucide-react'
 
 const meals = [
-  { name: 'Breakfast', time: '06:00 AM', icon: Coffee, color: '#f59e0b' },
-  { name: 'Lunch', time: '01:00 PM', icon: Sun, color: '#fc782d' },
-  { name: 'Dinner', time: '08:30 PM', icon: Moon, color: '#3b82f6' },
+  { name: 'Breakfast', time: '06:00 AM', icon: Coffee, color: '#4bbfc0' },
+  { name: 'Lunch', time: '01:00 PM', icon: Sun, color: '#008d8c' },
+  { name: 'Dinner', time: '08:30 PM', icon: Moon, color: '#008d8c' },
 ]
 
 export default function MealsPage() {
@@ -23,8 +23,8 @@ export default function MealsPage() {
               ['Meal Rate', 'BDT 80'],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-white px-3 py-4 text-center shadow-sm">
-                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#667b8a]">{label}</div>
-                <div className="mt-1 text-xl font-black text-[#14324a]">{value}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#65838b]">{label}</div>
+                <div className="mt-1 text-xl font-black text-[#123748]">{value}</div>
               </div>
             ))}
           </div>
@@ -38,12 +38,12 @@ export default function MealsPage() {
                 <Icon size={20} />
               </div>
               <div className="flex-1">
-                <div className="text-sm font-extrabold text-[#14324a]">{name}</div>
-                <div className="mt-1 flex items-center gap-1 text-xs font-medium text-[#667b8a]">
+                <div className="text-sm font-extrabold text-[#123748]">{name}</div>
+                <div className="mt-1 flex items-center gap-1 text-xs font-medium text-[#65838b]">
                   <CalendarDays size={12} /> {time}
                 </div>
               </div>
-              <div className="text-sm font-black text-[#14324a]">BDT 80</div>
+              <div className="text-sm font-black text-[#123748]">BDT 80</div>
             </div>
           ))}
         </div>

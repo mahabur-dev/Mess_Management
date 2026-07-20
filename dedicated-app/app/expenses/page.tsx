@@ -53,16 +53,16 @@ export default function ExpensesPage() {
         <div className="space-y-3">
           {items.map((item) => (
             <div key={item.id} className="glass flex items-center gap-3 rounded-[24px] p-4">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#fff1e6]/12 text-[#fc782d]">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#dff4f3]/12 text-[#008d8c]">
                 <ReceiptText size={20} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-extrabold text-[#14324a]">{item.itemName ?? 'Expense'}</div>
-                <div className="mt-1 text-xs text-[#667b8a]">{item.category ?? ''}</div>
-                <div className="mt-1 text-[11px] text-[#8a9bb5]">{item.expenseDate ?? item.expense_date ?? ''}</div>
+                <div className="truncate text-sm font-extrabold text-[#123748]">{item.itemName ?? 'Expense'}</div>
+                <div className="mt-1 text-xs text-[#65838b]">{item.category ?? ''}</div>
+                <div className="mt-1 text-[11px] text-[#7da0a6]">{item.expenseDate ?? item.expense_date ?? ''}</div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="text-sm font-black text-[#fc782d]">BDT {Number(item.amount ?? 0).toLocaleString()}</div>
+                <div className="text-sm font-black text-[#008d8c]">BDT {Number(item.amount ?? 0).toLocaleString()}</div>
                 <IconActionLink
                   href={`/edit-expense?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
                   label="Edit expense"
@@ -71,7 +71,7 @@ export default function ExpensesPage() {
               </div>
             </div>
           ))}
-          {!items.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#667b8a]">No expenses loaded.</div> : null}
+          {!items.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#65838b]">No expenses loaded.</div> : null}
         </div>
       </div>
     </MobileShell>

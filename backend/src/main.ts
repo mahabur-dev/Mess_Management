@@ -22,6 +22,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost',
   'https://localhost',
   'https://messmanagement.up.railway.app',
+  'https://api.messzen.com',
 ];
 
 const envAllowedOrigins = (process.env.CORS_ORIGINS ?? '')

@@ -92,10 +92,10 @@ export default function DepositsPage() {
             <div className="rounded-2xl bg-white px-4 py-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#667b8a]">Total Deposit</div>
-                  <div className="mt-1 text-lg font-black text-[#14324a]">BDT {Number(totalAmount).toLocaleString()}</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#65838b]">Total Deposit</div>
+                  <div className="mt-1 text-lg font-black text-[#123748]">BDT {Number(totalAmount).toLocaleString()}</div>
                 </div>
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#fff1e6]/12 text-[#fc782d]">
+                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#dff4f3]/12 text-[#008d8c]">
                   <Coins size={18} />
                 </div>
               </div>
@@ -103,10 +103,10 @@ export default function DepositsPage() {
             <div className="rounded-2xl bg-white px-4 py-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#667b8a]">Recent</div>
-                  <div className="mt-1 text-lg font-black text-[#14324a]">{items.length}</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#65838b]">Recent</div>
+                  <div className="mt-1 text-lg font-black text-[#123748]">{items.length}</div>
                 </div>
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#fff1e6]/12 text-[#fc782d]">
+                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#dff4f3]/12 text-[#008d8c]">
                   <PlusCircle size={18} />
                 </div>
               </div>
@@ -135,7 +135,7 @@ export default function DepositsPage() {
             placeholder="Monthly contribution"
             rows={3}
           />
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Add Deposit
           </SubmitButton>
@@ -145,12 +145,12 @@ export default function DepositsPage() {
           {items.map((item) => (
             <div key={item.id} className="glass flex items-center justify-between gap-3 rounded-[24px] p-4">
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-extrabold text-[#14324a]">{item.member?.name ?? 'Deposit'}</div>
-                <div className="mt-1 text-xs text-[#667b8a]">{item.date ?? item.created_at ?? ''}</div>
-                {item.note ? <div className="mt-1 text-xs text-[#667b8a]">{item.note}</div> : null}
+                <div className="text-sm font-extrabold text-[#123748]">{item.member?.name ?? 'Deposit'}</div>
+                <div className="mt-1 text-xs text-[#65838b]">{item.date ?? item.created_at ?? ''}</div>
+                {item.note ? <div className="mt-1 text-xs text-[#65838b]">{item.note}</div> : null}
               </div>
               <div className="flex items-center gap-3">
-                <div className="text-sm font-black text-[#fc782d]">BDT {Number(item.amount).toLocaleString()}</div>
+                <div className="text-sm font-black text-[#008d8c]">BDT {Number(item.amount).toLocaleString()}</div>
                 <IconActionLink
                   href={`/edit-deposit?depositId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
                   label="Edit deposit"
@@ -159,7 +159,7 @@ export default function DepositsPage() {
               </div>
             </div>
           ))}
-          {!items.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#667b8a]">No deposits loaded.</div> : null}
+          {!items.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#65838b]">No deposits loaded.</div> : null}
         </div>
       </div>
     </MobileShell>

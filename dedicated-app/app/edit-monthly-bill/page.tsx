@@ -80,10 +80,10 @@ export default function EditMonthlyBillPage() {
       <TopScreen title="Edit Monthly Bill" subtitle={subtitle} backHref="/monthly-bill" />
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#667b8a]">Bill</div>
-            <div className="mt-1 text-sm font-black text-[#14324a]">{bill?.member?.name ?? billId}</div>
-            <div className="mt-1 text-xs text-[#667b8a]">{bill?.month ?? 'No month'} - BDT {Number(bill?.final_due ?? 0).toLocaleString()}</div>
+          <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
+            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Bill</div>
+            <div className="mt-1 text-sm font-black text-[#123748]">{bill?.member?.name ?? billId}</div>
+            <div className="mt-1 text-xs text-[#65838b]">{bill?.month ?? 'No month'} - BDT {Number(bill?.final_due ?? 0).toLocaleString()}</div>
           </div>
 
           <SelectField
@@ -94,7 +94,7 @@ export default function EditMonthlyBillPage() {
             getLabel={(value) => LABELS.BILL_STATUSES[value]}
           />
 
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Changes

@@ -143,8 +143,8 @@ export default function PaymentsPage() {
               ['Status', LABELS.PAYMENT_STATUSES[form.statusFilter]],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-white px-3 py-4 text-center shadow-sm">
-                <div className="text-[10px] font-black uppercase tracking-[0.12em] text-[#667b8a]">{label}</div>
-                <div className="mt-1 text-[15px] font-black text-[#14324a]">{value}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.12em] text-[#65838b]">{label}</div>
+                <div className="mt-1 text-[15px] font-black text-[#123748]">{value}</div>
               </div>
             ))}
           </div>
@@ -184,7 +184,7 @@ export default function PaymentsPage() {
           <TextField label="Screenshot URL" value={form.screenshotUrl} onChange={(screenshotUrl) => setForm((prev) => ({ ...prev, screenshotUrl }))} placeholder="https://..." />
           <TextField label="Payment Date" value={form.paymentDate} onChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))} type="date" />
           <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Paid for May bill" rows={3} />
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Submit Payment
           </SubmitButton>
@@ -203,10 +203,10 @@ export default function PaymentsPage() {
           </div>
           <div className="mt-3 space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#d8ecec] bg-white px-4 py-3">
+              <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-extrabold text-[#14324a]">{item.member?.name ?? 'Payment'}</div>
-                  <div className="mt-1 text-xs text-[#667b8a]">{item.payment_date ?? ''}</div>
+                  <div className="truncate text-sm font-extrabold text-[#123748]">{item.member?.name ?? 'Payment'}</div>
+                  <div className="mt-1 text-xs text-[#65838b]">{item.payment_date ?? ''}</div>
                   <div className="mt-2">
                     <StatusPill
                       label={LABELS.PAYMENT_STATUSES[item.status]}
@@ -216,8 +216,8 @@ export default function PaymentsPage() {
                 </div>
                 <div className="flex items-center gap-3 text-right">
                   <div>
-                    <div className="text-sm font-black text-[#fc782d]">BDT {Number(item.amount).toLocaleString()}</div>
-                    <div className="text-[11px] text-[#667b8a]">{item.method}</div>
+                    <div className="text-sm font-black text-[#008d8c]">BDT {Number(item.amount).toLocaleString()}</div>
+                    <div className="text-[11px] text-[#65838b]">{item.method}</div>
                   </div>
                   <IconActionLink
                     href={`/edit-payment?paymentId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
@@ -227,7 +227,7 @@ export default function PaymentsPage() {
                 </div>
               </div>
             ))}
-            {!items.length ? <div className="py-3 text-sm text-[#667b8a]">No payments loaded.</div> : null}
+            {!items.length ? <div className="py-3 text-sm text-[#65838b]">No payments loaded.</div> : null}
           </div>
         </div>
       </div>

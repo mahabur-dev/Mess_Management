@@ -83,7 +83,7 @@ export default function NoticesPage() {
             checked={form.isPinned}
             onChange={(isPinned) => setForm((prev) => ({ ...prev, isPinned }))}
           />
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Send Notice
           </SubmitButton>

@@ -112,7 +112,7 @@ export default function ComplaintsPage() {
             placeholder="My dinner was off but counted as on."
             rows={4}
           />
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Submit Complaint
           </SubmitButton>
@@ -131,11 +131,11 @@ export default function ComplaintsPage() {
           </div>
           <div className="mt-3 space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-[#d8ecec] bg-white px-4 py-3">
+              <div key={item.id} className="rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-extrabold text-[#14324a]">{item.title}</div>
-                    <div className="mt-1 text-xs text-[#667b8a]">{LABELS.COMPLAINT_CATEGORIES[item.category]}</div>
+                    <div className="truncate text-sm font-extrabold text-[#123748]">{item.title}</div>
+                    <div className="mt-1 text-xs text-[#65838b]">{LABELS.COMPLAINT_CATEGORIES[item.category]}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusPill label={LABELS.COMPLAINT_STATUSES[item.status]} tone={getStatusTone(item.status)} />
@@ -146,11 +146,11 @@ export default function ComplaintsPage() {
                     />
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-[#667b8a]">{item.description}</p>
-                {item.response ? <div className="mt-2 rounded-xl bg-[#f7fbfd] px-3 py-2 text-xs text-[#14324a]">{item.response}</div> : null}
+                <p className="mt-2 text-xs text-[#65838b]">{item.description}</p>
+                {item.response ? <div className="mt-2 rounded-xl bg-[#edfafa] px-3 py-2 text-xs text-[#123748]">{item.response}</div> : null}
               </div>
             ))}
-            {!items.length ? <div className="py-3 text-sm text-[#667b8a]">No complaints loaded.</div> : null}
+            {!items.length ? <div className="py-3 text-sm text-[#65838b]">No complaints loaded.</div> : null}
           </div>
         </div>
       </div>

@@ -16,8 +16,8 @@ export function ActionLink({ href, label, icon, tone = 'subtle' }: ActionLinkPro
       href={href}
       className={`inline-flex h-10 items-center gap-2 rounded-2xl px-3 text-sm font-bold transition ${
         tone === 'primary'
-          ? 'bg-[#fc782d] text-white shadow-[0_10px_24px_rgba(252,120,45,0.24)]'
-          : 'bg-[#fff1e6] text-[#fc782d]'
+          ? 'bg-[#008d8c] text-white shadow-[0_10px_24px_rgba(0,119,122,0.24)]'
+          : 'bg-[#dff4f3] text-[#008d8c]'
       }`}
     >
       {icon}
@@ -41,8 +41,8 @@ export function IconActionLink({ href, label, icon, tone = 'subtle' }: IconActio
       title={label}
       className={`grid h-10 w-10 place-items-center rounded-2xl transition ${
         tone === 'primary'
-          ? 'bg-[#fc782d] text-white shadow-[0_10px_24px_rgba(252,120,45,0.24)]'
-          : 'bg-[#fff1e6] text-[#fc782d]'
+          ? 'bg-[#008d8c] text-white shadow-[0_10px_24px_rgba(0,119,122,0.24)]'
+          : 'bg-[#dff4f3] text-[#008d8c]'
       }`}
     >
       {icon}
@@ -58,12 +58,12 @@ type StatusPillProps = {
 export function StatusPill({ label, tone = 'neutral' }: StatusPillProps) {
   const toneClass =
     tone === 'success'
-      ? 'bg-emerald-50 text-emerald-600'
+      ? 'bg-[#dff4f3] text-[#008d8c]'
       : tone === 'warning'
-        ? 'bg-amber-50 text-amber-600'
+        ? 'bg-[#edfafa] text-[#0aa0a0]'
         : tone === 'danger'
-          ? 'bg-rose-50 text-rose-500'
-          : 'bg-slate-100 text-slate-600'
+          ? 'bg-[#edfafa] text-[#00777a]'
+          : 'bg-[#edfafa] text-[#65838b]'
 
   return <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-black ${toneClass}`}>{label}</span>
 }

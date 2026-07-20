@@ -104,10 +104,10 @@ export default function EditMemberPage() {
       <TopScreen title="Edit Member" subtitle={member?.user?.name ?? 'Update member details'} backHref="/members" />
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#667b8a]">Member</div>
-            <div className="mt-1 text-sm font-black text-[#14324a]">{member?.user?.name ?? memberId}</div>
-            <div className="mt-1 text-xs text-[#667b8a]">{member?.user?.email ?? ''}</div>
+          <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
+            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Member</div>
+            <div className="mt-1 text-sm font-black text-[#123748]">{member?.user?.name ?? memberId}</div>
+            <div className="mt-1 text-xs text-[#65838b]">{member?.user?.email ?? ''}</div>
           </div>
           <SelectField
             label="Role"
@@ -138,7 +138,7 @@ export default function EditMemberPage() {
             onChange={(isActive) => setForm((prev) => ({ ...prev, isActive }))}
           />
 
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Changes

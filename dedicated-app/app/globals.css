@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f4fbfb;
-  --fg: #173447;
+  --bg: #f7fdfc;
+  --fg: #123748;
   --card: rgba(255, 255, 255, 0.96);
-  --line: rgba(18, 117, 120, 0.12);
-  --teal: #0b7f82;
-  --teal-2: #087074;
-  --teal-soft: #dff6f5;
-  --muted: #6c8490;
-  --shadow: 0 18px 40px rgba(10, 92, 96, 0.12);
+  --line: rgba(0, 127, 131, 0.14);
+  --teal-deep: #00777a;
+  --teal: #008d8c;
+  --teal-2: #0aa0a0;
+  --aqua: #4bbfc0;
+  --aqua-soft: #9edddc;
+  --teal-soft: #dff4f3;
+  --mist: #edfafa;
+  --muted: #65838b;
+  --shadow: 0 18px 40px rgba(0, 119, 122, 0.12);
 }
 
 @theme inline {
@@ -34,9 +38,9 @@ body {
   overscroll-behavior-x: none;
   touch-action: pan-y;
   background:
-    radial-gradient(circle at 12% 8%, rgba(11, 127, 130, 0.16), transparent 16rem),
-    radial-gradient(circle at 88% 0%, rgba(11, 127, 130, 0.08), transparent 14rem),
-    linear-gradient(180deg, #f5fbfb 0%, #f7fbfb 45%, #eef8f7 100%);
+    radial-gradient(circle at 18% 11rem, rgba(75, 191, 192, 0.22), transparent 12rem),
+    radial-gradient(circle at 82% 8rem, rgba(158, 221, 220, 0.2), transparent 13rem),
+    linear-gradient(180deg, #008d8c 0%, #0aa0a0 9rem, #9edddc 19rem, #edfafa 30rem, #ffffff 100%);
   color: var(--fg);
   font-family: var(--font-sans);
 }
@@ -90,9 +94,9 @@ textarea {
 .top-hero {
   color: white;
   background:
-    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.10), transparent 26%),
-    radial-gradient(circle at 82% 14%, rgba(255, 255, 255, 0.06), transparent 20%),
-    linear-gradient(180deg, #0a7f82 0%, #0d8888 58%, #0a7b7c 100%);
+    radial-gradient(circle at 17% 95%, rgba(75, 191, 192, 0.34), transparent 31%),
+    radial-gradient(circle at 73% 92%, rgba(158, 221, 220, 0.22), transparent 35%),
+    linear-gradient(180deg, #00777a 0%, #008d8c 55%, #0aa0a0 100%);
   padding-top: calc(env(safe-area-inset-top) + 10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -106,10 +110,10 @@ textarea {
   z-index: 50;
   border-radius: 18px 18px 0 0;
   padding: 11px 10px calc(12px + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, #0a7f82 0%, #087074 100%);
+  background: linear-gradient(180deg, #008d8c 0%, #00777a 100%);
   box-shadow:
-    0 -10px 24px rgba(8, 92, 95, 0.16),
-    0 12px 24px rgba(8, 92, 95, 0.18),
+    0 -10px 24px rgba(0, 119, 122, 0.16),
+    0 12px 24px rgba(0, 119, 122, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.14);
   overflow: visible;
@@ -164,7 +168,7 @@ textarea {
 
 .nav-item[data-active="true"] .nav-icon-shell {
   background: #ffffff;
-  box-shadow: 0 6px 12px rgba(8, 92, 95, 0.18);
+  box-shadow: 0 6px 12px rgba(0, 119, 122, 0.18);
   color: var(--teal);
 }
 
@@ -179,12 +183,12 @@ textarea {
 
 .nav-item[data-center="true"] .nav-icon-shell {
   background: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 8px 16px rgba(8, 92, 95, 0.18);
+  box-shadow: 0 8px 16px rgba(0, 119, 122, 0.18);
 }
 
 .nav-item[data-center="true"][data-active="true"] .nav-icon-shell {
   background: #ffffff;
-  box-shadow: 0 10px 18px rgba(8, 92, 95, 0.18);
+  box-shadow: 0 10px 18px rgba(0, 119, 122, 0.18);
 }
 
 .nav-item:not([data-center="true"]) .nav-icon-shell {
@@ -193,7 +197,7 @@ textarea {
 
 .field {
   width: 100%;
-  border: 1px solid rgba(13, 110, 121, 0.16);
+  border: 1px solid rgba(0, 127, 131, 0.16);
   background: rgba(255, 255, 255, 0.92);
   border-radius: 14px;
   padding: 14px 14px;
@@ -202,18 +206,18 @@ textarea {
 }
 
 .field:focus {
-  border-color: rgba(11, 127, 130, 0.45);
-  box-shadow: 0 0 0 4px rgba(11, 127, 130, 0.12);
+  border-color: rgba(0, 141, 140, 0.45);
+  box-shadow: 0 0 0 4px rgba(0, 141, 140, 0.12);
 }
 
 .primary-btn {
   border: 0;
   border-radius: 16px;
-  background: linear-gradient(135deg, #0b7f82 0%, #087074 100%);
+  background: linear-gradient(135deg, #008d8c 0%, #00777a 100%);
   color: white;
   padding: 14px 16px;
   font-weight: 800;
-  box-shadow: 0 14px 28px rgba(11, 127, 130, 0.18);
+  box-shadow: 0 14px 28px rgba(0, 119, 122, 0.18);
 }
 
 .section-title {
@@ -222,5 +226,5 @@ textarea {
   font-weight: 900;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #4d6974;
+  color: #65838b;
 }

@@ -96,10 +96,10 @@ export default function EditComplaintPage() {
       <TopScreen title="Edit Complaint" subtitle={complaint?.title ?? complaintLabel} backHref="/complaints" />
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#667b8a]">Complaint</div>
-            <div className="mt-1 text-sm font-black text-[#14324a]">{complaint?.title ?? complaintId}</div>
-            <div className="mt-1 text-xs text-[#667b8a]">{complaint?.description ?? 'No description'}</div>
+          <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
+            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Complaint</div>
+            <div className="mt-1 text-sm font-black text-[#123748]">{complaint?.title ?? complaintId}</div>
+            <div className="mt-1 text-xs text-[#65838b]">{complaint?.description ?? 'No description'}</div>
           </div>
 
           <SelectField
@@ -117,7 +117,7 @@ export default function EditComplaintPage() {
             rows={4}
           />
 
-          {message ? <div className="rounded-2xl border border-[#ffd8c0] bg-[#fff4ea] px-4 py-3 text-sm font-semibold text-[#fc782d]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Changes

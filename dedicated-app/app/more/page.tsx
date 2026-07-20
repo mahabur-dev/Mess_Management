@@ -15,12 +15,12 @@ export default function MorePage() {
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-14 w-14 place-items-center rounded-3xl bg-[#fff1e6]/12 text-[#fc782d]">
+            <div className="grid h-14 w-14 place-items-center rounded-3xl bg-[#dff4f3]/12 text-[#008d8c]">
               <User size={24} />
             </div>
             <div>
-              <div className="text-base font-black text-[#14324a]">{user?.name ?? 'Manager'}</div>
-              <div className="text-xs font-medium text-[#667b8a]">{user?.email ?? ''}</div>
+              <div className="text-base font-black text-[#123748]">{user?.name ?? 'Manager'}</div>
+              <div className="text-xs font-medium text-[#65838b]">{user?.email ?? ''}</div>
             </div>
           </div>
         </div>
@@ -36,12 +36,12 @@ export default function MorePage() {
             ['Notifications', '/notices', Bell],
             ['Monthly Bill', '/monthly-bill', ReceiptText],
           ].map(([label, href, Icon]) => (
-            <Link key={label as string} href={href as string} className="flex items-center justify-between border-b border-[#d8ecec] px-4 py-4 last:border-b-0">
+            <Link key={label as string} href={href as string} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 last:border-b-0">
               <div className="flex items-center gap-3">
-                <Icon size={18} className="text-[#fc782d]" />
-                <div className="text-sm font-bold text-[#14324a]">{label as string}</div>
+                <Icon size={18} className="text-[#008d8c]" />
+                <div className="text-sm font-bold text-[#123748]">{label as string}</div>
               </div>
-              <ChevronRight size={18} className="text-[#8aa0aa]" />
+              <ChevronRight size={18} className="text-[#7da0a6]" />
             </Link>
           ))}
         </div>

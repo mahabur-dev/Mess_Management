@@ -54,13 +54,13 @@ export default function MembersPage() {
       <div className="screen space-y-4">
         <div className="glass rounded-[24px] p-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#0b7f82]" size={18} />
+            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#008d8c]" size={18} />
             <input className="field pl-12" placeholder="Search member..." />
           </div>
           <div className="mt-4 flex gap-2 text-xs font-bold">
-            <span className="rounded-full bg-[#0b7f82] px-3 py-1.5 text-white">All ({members.length})</span>
-            <span className="rounded-full bg-[#e7f7f6] px-3 py-1.5 text-[#0b7f82]">Active</span>
-            <span className="rounded-full bg-[#e7f7f6] px-3 py-1.5 text-[#0b7f82]">Inactive</span>
+            <span className="rounded-full bg-[#008d8c] px-3 py-1.5 text-white">All ({members.length})</span>
+            <span className="rounded-full bg-[#dff4f3] px-3 py-1.5 text-[#008d8c]">Active</span>
+            <span className="rounded-full bg-[#dff4f3] px-3 py-1.5 text-[#008d8c]">Inactive</span>
           </div>
         </div>
 
@@ -71,13 +71,13 @@ export default function MembersPage() {
         <div className="space-y-3">
           {members.map((member) => (
             <div key={member.id} className="glass flex items-center gap-3 rounded-[24px] p-4">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#e7f7f6] text-[#0b7f82]">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#dff4f3] text-[#008d8c]">
                 <UserRound size={20} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-extrabold text-[#14324a]">{member.user?.name ?? 'Member'}</div>
-                <div className="mt-1 text-xs text-[#667b8a]">Role: {member.role}</div>
-                <div className="mt-1 text-[11px] text-[#8a9bb5]">
+                <div className="truncate text-sm font-extrabold text-[#123748]">{member.user?.name ?? 'Member'}</div>
+                <div className="mt-1 text-xs text-[#65838b]">Role: {member.role}</div>
+                <div className="mt-1 text-[11px] text-[#7da0a6]">
                   {member.room_no ? `Room ${member.room_no}` : 'No room assigned'}
                 </div>
               </div>
@@ -88,7 +88,7 @@ export default function MembersPage() {
               />
             </div>
           ))}
-          {!members.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#667b8a]">No membership data found.</div> : null}
+          {!members.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#65838b]">No membership data found.</div> : null}
         </div>
       </div>
     </MobileShell>

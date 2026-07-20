@@ -13,8 +13,8 @@ export function FieldCard({ label, hint, className, children }: BaseFieldProps) 
   return (
     <label className={`block w-full ${className ?? ''}`}>
       <div className="mb-2 flex items-end justify-between gap-3">
-        <div className="text-sm font-bold text-[#14324a]">{label}</div>
-        {hint ? <div className="text-[11px] font-medium text-[#667b8a]">{hint}</div> : null}
+        <div className="text-sm font-bold text-[#123748]">{label}</div>
+        {hint ? <div className="text-[11px] font-medium text-[#65838b]">{hint}</div> : null}
       </div>
       {children}
     </label>
@@ -111,16 +111,16 @@ export function ToggleField({
   onChange: (value: boolean) => void
 }) {
   return (
-    <div className="flex w-full items-center justify-between rounded-2xl border border-[#d8ecec] bg-white px-4 py-3">
+    <div className="flex w-full items-center justify-between rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
       <div>
-        <div className="text-sm font-bold text-[#14324a]">{label}</div>
-        {hint ? <div className="mt-1 text-[11px] font-medium text-[#667b8a]">{hint}</div> : null}
+        <div className="text-sm font-bold text-[#123748]">{label}</div>
+        {hint ? <div className="mt-1 text-[11px] font-medium text-[#65838b]">{hint}</div> : null}
       </div>
       <button
         type="button"
         onClick={() => onChange(!checked)}
         className={`relative h-7 w-12 rounded-full transition ${
-          checked ? 'bg-[#fc782d]' : 'bg-slate-300'
+          checked ? 'bg-[#008d8c]' : 'bg-[#9edddc]'
         }`}
       >
         <span
@@ -148,8 +148,8 @@ export function SectionHeader({
     <div className="flex items-start justify-between gap-3">
       <div>
         {eyebrow ? <div className="section-title mb-0">{eyebrow}</div> : null}
-        <div className="text-base font-black text-[#14324a]">{title}</div>
-        {description ? <div className="mt-1 text-xs text-[#667b8a]">{description}</div> : null}
+        <div className="text-base font-black text-[#123748]">{title}</div>
+        {description ? <div className="mt-1 text-xs text-[#65838b]">{description}</div> : null}
       </div>
       {action}
     </div>

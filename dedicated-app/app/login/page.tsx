@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { LockKeyhole, Mail } from 'lucide-react'
+import Link from 'next/link'
+import { Mail, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../providers'
+import { AuthFooterLink, AuthMessage, AuthPasswordField, AuthShell, AuthSubmitButton, AuthField, authLinkClass } from '@/components/auth-ui'
 
 export default function LoginPage() {
-  const { login, isLoading, user } = useAuth()
+  const { login, isLoading, isSubmitting, user } = useAuth()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (!isLoading && user) router.replace('/')
@@ -20,84 +21,63 @@ export default function LoginPage() {
 
   async function handleSubmit() {
     setError('')
-    setBusy(true)
     try {
       await login(email, password)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
-    } finally {
-      setBusy(false)
     }
   }
 
   return (
-    <div className="min-h-screen px-4 py-6">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col">
-        <main className="flex flex-1 items-center py-6">
-          <section className="w-full rounded-[32px] border border-white/70 bg-white/88 p-5 shadow-[0_24px_60px_rgba(0,119,122,0.14)] backdrop-blur">
-            <div className="mb-6 text-center">
-              <div className="mx-auto grid h-24 w-24 place-items-center rounded-[28px] bg-white shadow-[0_18px_35px_rgba(0,119,122,0.12)] ring-1 ring-[#dff4f3]">
-                <Image src="/icon.svg" alt="Mess Management logo" width={88} height={88} className="h-20 w-20 object-contain" priority />
-              </div>
-              <h1 className="mt-5 text-3xl font-black leading-tight text-[#123748]">Log in to your account</h1>
-              <p className="mt-2 text-sm leading-6 text-[#65838b]">
-                Access your mess dashboard, members, meals, and expenses securely.
-              </p>
-            </div>
+    <AuthShell
+      title="Log in to your account"
+      description="Access your mess dashboard, members, meals, and expenses securely."
+      footer={<AuthFooterLink text="Don't have an account?" href="/signup" action="Sign up" />}
+    >
+      {error ? <AuthMessage>{error}</AuthMessage> : null}
 
-            <div className="space-y-4">
-              <label className="block">
-                <div className="mb-2 text-sm font-bold text-[#123748]">Email address</div>
-                <div className="relative">
-                  {/* <span className="pointer-events-none absolute left-4 inset-y-0 flex items-center text-[#008d8c]">
-                    <Mail size={17} />
-                  </span> */}
-                  <input
-                    className="field h-14 rounded-2xl bg-white pl-16 pr-4"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    type="email"
-                    placeholder="manager@example.com"
-                    autoComplete="email"
-                  />
-                </div>
-              </label>
+      <form
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void handleSubmit()
+        }}
+      >
+        <AuthField
+          label="Email address"
+          icon={Mail}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          type="email"
+          placeholder="manager@example.com"
+          autoComplete="email"
+          required
+        />
 
-              <label className="block">
-                <div className="mb-2 text-sm font-bold text-[#123748]">Password</div>
-                <div className="relative">
-                  {/* <span className="pointer-events-none absolute left-4 inset-y-0 flex items-center text-[#008d8c]">
-                    <LockKeyhole size={17} />
-                  </span> */}
-                  <input
-                    className="field h-14 rounded-2xl bg-white pl-16 pr-4"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type="password"
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                  />
-                </div>
-              </label>
+        <AuthPasswordField
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          show={showPassword}
+          onToggle={() => setShowPassword((current) => !current)}
+          placeholder="Enter your password"
+          autoComplete="current-password"
+        />
 
-              {error ? (
-                <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#00777a]">
-                  {error}
-                </div>
-              ) : null}
+        <div className="flex items-center justify-between gap-4">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#65838b]">
+            <ShieldCheck size={14} className="text-[#008d8c]" />
+            Protected access
+          </span>
+          <Link href="/forget_password" className={`text-sm ${authLinkClass}`}>
+            Forgot password?
+          </Link>
+        </div>
 
-              <button
-                className="primary-btn flex h-14 w-full items-center justify-center gap-2 rounded-2xl"
-                onClick={handleSubmit}
-                type="button"
-                disabled={busy}
-              >
-                {busy ? 'Signing in...' : 'Sign In'}
-              </button>
-            </div>
-          </section>
-        </main>
-      </div>
-    </div>
+        <AuthSubmitButton busy={isSubmitting} busyLabel="Signing in...">
+          Sign In
+        </AuthSubmitButton>
+      </form>
+    </AuthShell>
   )
 }

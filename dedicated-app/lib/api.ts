@@ -15,6 +15,8 @@ type ApiResponse<T> = {
   totalAmount?: number
 }
 
+type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER' | 'ORGANIZER'
+
 class Api {
   private token() {
     if (typeof window === 'undefined') return null
@@ -72,6 +74,34 @@ class Api {
     return this.request<{ accessToken: string; user: any }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
+    })
+  }
+
+  register(data: { name: string; email: string; phone?: string; password: string; role?: GlobalRole }) {
+    return this.request<any>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  forgotPassword(email: string) {
+    return this.request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  verifyOtp(email: string, otp: string) {
+    return this.request<{ message: string }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    })
+  }
+
+  resetPassword(email: string, newPassword: string) {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, newPassword }),
     })
   }
 

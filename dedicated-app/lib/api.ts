@@ -1,3 +1,5 @@
+import { clearStoredToken, getStoredToken, type AuthUser, type GlobalRole } from './auth'
+
 const DEFAULT_API_URL =
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:5001/api/v1'
@@ -15,17 +17,14 @@ type ApiResponse<T> = {
   totalAmount?: number
 }
 
-type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER' | 'ORGANIZER'
-
 class Api {
   private token() {
-    if (typeof window === 'undefined') return null
-    return localStorage.getItem('authToken')
+    return getStoredToken()
   }
 
   private clearAuth() {
     if (typeof window === 'undefined') return
-    localStorage.removeItem('authToken')
+    clearStoredToken()
     window.dispatchEvent(new Event('auth:expired'))
   }
 
@@ -42,14 +41,20 @@ class Api {
 
     const headers: HeadersInit = {}
     if (!(options.body instanceof FormData)) headers['Content-Type'] = 'application/json'
+    Object.assign(headers, options.headers)
+    const requestHeaders = headers as Record<string, string>
     const token = this.token()
-    if (token) headers.Authorization = `Bearer ${token}`
+    if (token) requestHeaders.Authorization = `Bearer ${token}`
+
+    const fetchOptions: RequestInit & { params?: Record<string, QueryValue> } = {
+      ...options,
+      headers,
+      credentials: 'include',
+    }
+    delete fetchOptions.params
 
     try {
-      const res = await fetch(url, {
-        ...options,
-        headers,
-      })
+      const res = await fetch(url, fetchOptions)
 
       const json = (await res.json().catch(() => ({}))) as ApiResponse<T>
 
@@ -71,16 +76,22 @@ class Api {
   }
 
   login(email: string, password: string) {
-    return this.request<{ accessToken: string; user: any }>('/auth/login', {
+    return this.request<{ accessToken: string; user: AuthUser }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
   }
 
   register(data: { name: string; email: string; phone?: string; password: string; role?: GlobalRole }) {
-    return this.request<any>('/auth/register', {
+    return this.request<AuthUser>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
+    })
+  }
+
+  logout() {
+    return this.request<{ message: string }>('/auth/logout', {
+      method: 'POST',
     })
   }
 
@@ -106,11 +117,11 @@ class Api {
   }
 
   getProfile() {
-    return this.request<any>('/users/profile')
+    return this.request<AuthUser>('/users/profile')
   }
 
   updateProfile(data: FormData) {
-    return this.request<any>('/users/profile', {
+    return this.request<AuthUser>('/users/profile', {
       method: 'PATCH',
       body: data,
     })

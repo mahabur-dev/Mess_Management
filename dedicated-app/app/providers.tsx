@@ -1,26 +1,28 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-
-type User = {
-  id: string
-  name: string
-  email: string
-  phone?: string | null
-  role?: string
-  memberships?: Array<{ mess_id: string; role: string; mess?: { id: string; name: string } }>
-}
+import {
+  buildLoginPath,
+  clearStoredToken,
+  currentPathWithSearch,
+  getStoredToken,
+  isAuthPath,
+  readPostLoginPath,
+  storeToken,
+  type AuthUser,
+} from '@/lib/auth'
 
 type AuthContextValue = {
-  user: User | null
+  user: AuthUser | null
   token: string | null
+  isAuthenticated: boolean
   isLoading: boolean
   isSubmitting: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, phone: string, password: string) => Promise<void>
-  logout: () => void
+  login: (email: string, password: string, redirectTo?: string) => Promise<void>
+  register: (name: string, email: string, phone: string, password: string, redirectTo?: string) => Promise<void>
+  logout: () => Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -28,13 +30,20 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const pathname = usePathname()
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const clearSession = useCallback(() => {
+    clearStoredToken()
+    setToken(null)
+    setUser(null)
+  }, [])
+
   useEffect(() => {
-    const saved = localStorage.getItem('authToken')
+    const saved = getStoredToken()
     if (!saved) {
       setIsLoading(false)
       return
@@ -45,35 +54,45 @@ export function Providers({ children }: { children: ReactNode }) {
       .getProfile()
       .then((res) => setUser(res.data))
       .catch(() => {
-        localStorage.removeItem('authToken')
-        setToken(null)
-        setUser(null)
+        clearSession()
       })
       .finally(() => setIsLoading(false))
-  }, [])
+  }, [clearSession])
+
+  useEffect(() => {
+    if (isLoading) return
+
+    if (!user && !isAuthPath(pathname)) {
+      router.replace(buildLoginPath(currentPathWithSearch(pathname)))
+      return
+    }
+
+    if (user && isAuthPath(pathname)) {
+      router.replace(readPostLoginPath())
+    }
+  }, [isLoading, pathname, router, user])
 
   useEffect(() => {
     const handleAuthExpired = () => {
-      setToken(null)
-      setUser(null)
-      router.push('/login')
+      clearSession()
+      router.replace('/login')
     }
 
     window.addEventListener('auth:expired', handleAuthExpired)
     return () => window.removeEventListener('auth:expired', handleAuthExpired)
-  }, [router])
+  }, [clearSession, router])
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, redirectTo = readPostLoginPath()) => {
       setIsSubmitting(true)
       try {
         const normalizedEmail = email.trim().toLowerCase()
         const res = await api.login(normalizedEmail, password)
-        localStorage.setItem('authToken', res.data.accessToken)
+        storeToken(res.data.accessToken)
         setToken(res.data.accessToken)
         const profile = await api.getProfile()
         setUser(profile.data)
-        router.push('/')
+        router.replace(redirectTo)
       } finally {
         setIsSubmitting(false)
       }
@@ -82,7 +101,7 @@ export function Providers({ children }: { children: ReactNode }) {
   )
 
   const register = useCallback(
-    async (name: string, email: string, phone: string, password: string) => {
+    async (name: string, email: string, phone: string, password: string, redirectTo = '/') => {
       setIsSubmitting(true)
       try {
         const normalizedEmail = email.trim().toLowerCase()
@@ -93,7 +112,7 @@ export function Providers({ children }: { children: ReactNode }) {
           password,
           role: 'MEMBER',
         })
-        await login(normalizedEmail, password)
+        await login(normalizedEmail, password, redirectTo)
       } finally {
         setIsSubmitting(false)
       }
@@ -101,12 +120,16 @@ export function Providers({ children }: { children: ReactNode }) {
     [login]
   )
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('authToken')
-    setToken(null)
-    setUser(null)
-    router.push('/login')
-  }, [router])
+  const logout = useCallback(async () => {
+    try {
+      await api.logout()
+    } catch {
+      // Local logout must still complete if the network or cookie clear fails.
+    } finally {
+      clearSession()
+      router.replace('/login')
+    }
+  }, [clearSession, router])
 
   const refresh = useCallback(async () => {
     const res = await api.getProfile()
@@ -114,7 +137,7 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, token, isLoading, isSubmitting, login, register, logout, refresh }),
+    () => ({ user, token, isAuthenticated: Boolean(user), isLoading, isSubmitting, login, register, logout, refresh }),
     [user, token, isLoading, isSubmitting, login, register, logout, refresh]
   )
 

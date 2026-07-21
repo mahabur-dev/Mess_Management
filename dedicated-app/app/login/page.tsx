@@ -1,28 +1,28 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../providers'
+import { readPostLoginPath } from '@/lib/auth'
 import { AuthFooterLink, AuthMessage, AuthPasswordField, AuthShell, AuthSubmitButton, AuthField, authLinkClass } from '@/components/auth-ui'
 
 export default function LoginPage() {
-  const { login, isLoading, isSubmitting, user } = useAuth()
-  const router = useRouter()
+  const { login, isSubmitting } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [redirectTo, setRedirectTo] = useState('/')
 
   useEffect(() => {
-    if (!isLoading && user) router.replace('/')
-  }, [isLoading, user, router])
+    setRedirectTo(readPostLoginPath())
+  }, [])
 
   async function handleSubmit() {
     setError('')
     try {
-      await login(email, password)
+      await login(email, password, redirectTo)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     }

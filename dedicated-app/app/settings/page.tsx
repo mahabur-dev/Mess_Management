@@ -54,15 +54,8 @@ export default function SettingsPage() {
     setBusy(true)
     try {
       const data = new FormData()
-      data.append('fullName', form.fullName)
-      data.append('email', form.email)
-      if (form.phoneNumber) data.append('phoneNumber', form.phoneNumber)
-      if (form.country) data.append('country', form.country)
-      if (form.city) data.append('city', form.city)
-      if (form.address) data.append('address', form.address)
-      if (form.dateOfBirth) data.append('dateOfBirth', form.dateOfBirth)
-      if (form.stripeAccountId) data.append('stripeAccountId', form.stripeAccountId)
-      data.append('verifiedForget', String(form.verifiedForget))
+      data.append('name', form.fullName.trim())
+      if (form.phoneNumber.trim()) data.append('phone', form.phoneNumber.trim())
       if (profileImage) data.append('profileImage', profileImage)
 
       await api.updateProfile(data)
@@ -94,7 +87,7 @@ export default function SettingsPage() {
         <div className="glass rounded-[28px] p-4 space-y-4">
           <div className="section-title">Profile</div>
           <TextField label="Full Name" value={form.fullName} onChange={(fullName) => setForm((prev) => ({ ...prev, fullName }))} placeholder="Manager Name" />
-          <TextField label="Email" value={form.email} onChange={(email) => setForm((prev) => ({ ...prev, email }))} placeholder="manager@example.com" />
+          <TextField label="Email" value={form.email} onChange={(email) => setForm((prev) => ({ ...prev, email }))} placeholder="manager@example.com" type="email" />
           <TextField label="Phone Number" value={form.phoneNumber} onChange={(phoneNumber) => setForm((prev) => ({ ...prev, phoneNumber }))} placeholder="017xxxxxxxx" />
           <TextField label="Country" value={form.country} onChange={(country) => setForm((prev) => ({ ...prev, country }))} placeholder="Bangladesh" />
           <TextField label="City" value={form.city} onChange={(city) => setForm((prev) => ({ ...prev, city }))} placeholder="Dhaka" />
@@ -113,8 +106,8 @@ export default function SettingsPage() {
 
         <div className="glass rounded-[28px] p-4 space-y-4">
           <div className="section-title">Security</div>
-          <TextField label="Old Password" value={password.oldPassword} onChange={(oldPassword) => setPassword((prev) => ({ ...prev, oldPassword }))} placeholder="********" />
-          <TextField label="New Password" value={password.newPassword} onChange={(newPassword) => setPassword((prev) => ({ ...prev, newPassword }))} placeholder="********" />
+          <TextField label="Old Password" value={password.oldPassword} onChange={(oldPassword) => setPassword((prev) => ({ ...prev, oldPassword }))} placeholder="********" type="password" />
+          <TextField label="New Password" value={password.newPassword} onChange={(newPassword) => setPassword((prev) => ({ ...prev, newPassword }))} placeholder="********" type="password" />
           {passwordMessage ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{passwordMessage}</div> : null}
           <button className="primary-btn flex w-full items-center justify-center gap-2" type="button" onClick={handleChangePassword}>
             <ShieldCheck size={18} /> Change Password

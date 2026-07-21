@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { BadgeCheck, Edit3 } from 'lucide-react'
+import { BadgeCheck, Edit3, FilePlus2 } from 'lucide-react'
 import { IconActionLink } from '@/components/mobile/action-links'
+import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SelectField, SubmitButton, TextField } from '@/components/mobile/form-controls'
@@ -27,6 +28,7 @@ export default function MonthlyBillPage() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [items, setItems] = useState<BillItem[]>([])
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
     if (!messId) return
@@ -57,6 +59,7 @@ export default function MonthlyBillPage() {
     try {
       await api.generateMonthlyBills({ messId, month: `${month}-01` })
       setMessage('Monthly bills generated successfully.')
+      setShowForm(false)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to generate bills.')
     } finally {
@@ -83,7 +86,17 @@ export default function MonthlyBillPage() {
           </div>
         </div>
 
-        <div className="glass rounded-[28px] p-4 space-y-4">
+        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+
+        <DeferredFormSection
+          open={showForm}
+          title="Generate Bill"
+          description="Open this form only when you need to generate a monthly bill run."
+          actionLabel="Generate Monthly Bills"
+          icon={<FilePlus2 size={20} />}
+          onOpen={() => setShowForm(true)}
+          onClose={() => setShowForm(false)}
+        >
           <TextField label="Month" value={month} onChange={setMonth} type="month" />
           <SelectField
             label="Status"
@@ -95,11 +108,11 @@ export default function MonthlyBillPage() {
           <div className="rounded-2xl border border-[#cfeeed] bg-[#edfafa] px-4 py-3 text-sm text-[#65838b]">
             Generates bills for <span className="font-black text-[#123748]">{month}</span> using backend billing logic.
           </div>
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleGenerate}>
             Generate Bill
           </SubmitButton>
-        </div>
+        </DeferredFormSection>
 
         <div className="space-y-3">
           {items.map((item) => (

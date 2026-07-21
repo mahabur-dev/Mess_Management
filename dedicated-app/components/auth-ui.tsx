@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { ComponentType, InputHTMLAttributes, ReactNode } from 'react'
 import { Eye, EyeOff, type LucideProps } from 'lucide-react'
+import { IconInput } from '@/components/mobile/icon-input'
 
 type IconType = ComponentType<LucideProps>
 
@@ -68,12 +69,7 @@ export function AuthField({ label, icon: Icon, className = '', ...props }: AuthF
   return (
     <label className="block">
       <div className="mb-2 text-sm font-bold text-[#123748]">{label}</div>
-      <div className="relative">
-        <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[#008d8c]">
-          <Icon size={17} />
-        </span>
-        <input className={`field h-14 rounded-2xl bg-white pl-12 pr-4 ${className}`} {...props} />
-      </div>
+      <IconInput icon={Icon} className={`h-14 rounded-2xl bg-white ${className}`} {...props} />
     </label>
   )
 }
@@ -100,7 +96,7 @@ export function AuthPasswordField({
       <div className="mb-2 text-sm font-bold text-[#123748]">{label}</div>
       <div className="relative">
         <input
-          className="field h-14 rounded-2xl bg-white pl-4 pr-12"
+          className="field field--trailing-action h-14 rounded-2xl bg-white"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           type={show ? 'text' : 'password'}
@@ -112,7 +108,7 @@ export function AuthPasswordField({
           type="button"
           aria-label={show ? 'Hide password' : 'Show password'}
           onClick={onToggle}
-          className="absolute inset-y-0 right-3 grid w-9 place-items-center rounded-full text-[#65838b] transition hover:text-[#008d8c]"
+          className="field-action transition hover:text-[#008d8c]"
         >
           {show ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>

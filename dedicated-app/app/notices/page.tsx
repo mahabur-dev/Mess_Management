@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Send } from 'lucide-react'
+import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { FieldCard, SelectField, SubmitButton, TextAreaField, TextField, ToggleField } from '@/components/mobile/form-controls'
@@ -28,6 +30,7 @@ export default function NoticesPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showForm, setShowForm] = useState(false)
 
   async function handleSubmit() {
     setMessage('')
@@ -46,6 +49,7 @@ export default function NoticesPage() {
       })
       setForm(INITIAL_FORM)
       setMessage('Notice sent successfully.')
+      setShowForm(false)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to send notice.')
     } finally {
@@ -55,9 +59,19 @@ export default function NoticesPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Notices" subtitle="Announcement form" backHref="/" />
+      <TopScreen title="Notices" subtitle="Announcement center" backHref="/" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
+        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+
+        <DeferredFormSection
+          open={showForm}
+          title="Send Notice"
+          description="Create an announcement when you need to notify members."
+          actionLabel="Send Notice"
+          icon={<Send size={20} />}
+          onOpen={() => setShowForm(true)}
+          onClose={() => setShowForm(false)}
+        >
           <SelectField
             label="Notice Type"
             value={form.type}
@@ -83,11 +97,11 @@ export default function NoticesPage() {
             checked={form.isPinned}
             onChange={(isPinned) => setForm((prev) => ({ ...prev, isPinned }))}
           />
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Send Notice
           </SubmitButton>
-        </div>
+        </DeferredFormSection>
       </div>
     </MobileShell>
   )

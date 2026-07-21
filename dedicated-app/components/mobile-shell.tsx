@@ -7,7 +7,7 @@ import { House, MenuSquare, UtensilsCrossed, Users } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 
 const tabs = [
-  { href: '/', label: 'Dashboard', icon: House, center: true },
+  { href: '/', label: 'Home', icon: House },
   { href: '/members', label: 'Members', icon: Users },
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed },
   { href: '/more', label: 'More', icon: MenuSquare },
@@ -27,7 +27,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
 
       <nav className="nav-bar" aria-label="Primary">
         <div className="nav-dock">
-          {tabs.map(({ href, label, icon: Icon, center }) => {
+          {tabs.map(({ href, label, icon: Icon }) => {
             const active = pathname === href
             return (
               <Link
@@ -35,7 +35,6 @@ export function MobileShell({ children }: { children: ReactNode }) {
                 href={href}
                 className="nav-item"
                 data-active={active}
-                data-center={center || undefined}
                 aria-current={active ? 'page' : undefined}
                 aria-label={label}
                 title={label}
@@ -43,6 +42,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
                 <span className="nav-icon-shell" aria-hidden="true">
                   <Icon size={18} strokeWidth={2.5} className="nav-icon" />
                 </span>
+                <span>{label}</span>
               </Link>
             )
           })}

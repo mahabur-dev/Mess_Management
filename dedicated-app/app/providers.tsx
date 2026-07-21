@@ -17,7 +17,9 @@ type AuthContextValue = {
   user: User | null
   token: string | null
   isLoading: boolean
+  isSubmitting: boolean
   login: (email: string, password: string) => Promise<void>
+  register: (name: string, email: string, phone: string, password: string) => Promise<void>
   logout: () => void
   refresh: () => Promise<void>
 }
@@ -29,6 +31,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('authToken')
@@ -60,14 +63,43 @@ export function Providers({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:expired', handleAuthExpired)
   }, [router])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api.login(email, password)
-    localStorage.setItem('authToken', res.data.accessToken)
-    setToken(res.data.accessToken)
-    const profile = await api.getProfile()
-    setUser(profile.data)
-    router.push('/')
-  }, [router])
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setIsSubmitting(true)
+      try {
+        const normalizedEmail = email.trim().toLowerCase()
+        const res = await api.login(normalizedEmail, password)
+        localStorage.setItem('authToken', res.data.accessToken)
+        setToken(res.data.accessToken)
+        const profile = await api.getProfile()
+        setUser(profile.data)
+        router.push('/')
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    [router]
+  )
+
+  const register = useCallback(
+    async (name: string, email: string, phone: string, password: string) => {
+      setIsSubmitting(true)
+      try {
+        const normalizedEmail = email.trim().toLowerCase()
+        await api.register({
+          name: name.trim(),
+          email: normalizedEmail,
+          phone: phone.trim() || undefined,
+          password,
+          role: 'MEMBER',
+        })
+        await login(normalizedEmail, password)
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    [login]
+  )
 
   const logout = useCallback(() => {
     localStorage.removeItem('authToken')
@@ -82,8 +114,8 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, token, isLoading, login, logout, refresh }),
-    [user, token, isLoading, login, logout, refresh]
+    () => ({ user, token, isLoading, isSubmitting, login, register, logout, refresh }),
+    [user, token, isLoading, isSubmitting, login, register, logout, refresh]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

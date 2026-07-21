@@ -1,8 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
-import { CalendarDays, Coffee, Moon, Sun } from 'lucide-react'
+import { CalendarDays, Coffee, Moon, Plus, Sun } from 'lucide-react'
 
 const meals = [
   { name: 'Breakfast', time: '06:00 AM', icon: Coffee, color: '#4bbfc0' },
@@ -29,6 +30,10 @@ export default function MealsPage() {
             ))}
           </div>
         </div>
+
+        <Link href="/add-meal" className="primary-btn flex items-center justify-center gap-2">
+          <Plus size={18} /> Add Meal
+        </Link>
 
         <div className="section-title">Today</div>
         <div className="space-y-3">

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Coins, Edit3, PlusCircle } from 'lucide-react'
 import { IconActionLink } from '@/components/mobile/action-links'
+import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
@@ -38,6 +39,7 @@ export default function DepositsPage() {
   const [message, setMessage] = useState('')
   const [items, setItems] = useState<DepositItem[]>([])
   const [totalAmount, setTotalAmount] = useState(0)
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
     if (!messId) return
@@ -76,6 +78,7 @@ export default function DepositsPage() {
       })
       setForm(INITIAL_FORM)
       setMessage('Deposit added successfully.')
+      setShowForm(false)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to add deposit.')
     } finally {
@@ -114,7 +117,17 @@ export default function DepositsPage() {
           </div>
         </div>
 
-        <div className="glass rounded-[28px] p-4 space-y-4">
+        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+
+        <DeferredFormSection
+          open={showForm}
+          title="Add Deposit"
+          description="Record a member contribution only when you need a new entry."
+          actionLabel="Add Deposit"
+          icon={<PlusCircle size={20} />}
+          onOpen={() => setShowForm(true)}
+          onClose={() => setShowForm(false)}
+        >
           <TextField
             label="Amount"
             value={form.amount}
@@ -135,11 +148,11 @@ export default function DepositsPage() {
             placeholder="Monthly contribution"
             rows={3}
           />
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Add Deposit
           </SubmitButton>
-        </div>
+        </DeferredFormSection>
 
         <div className="space-y-3">
           {items.map((item) => (

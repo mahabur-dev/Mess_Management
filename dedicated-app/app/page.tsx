@@ -69,9 +69,9 @@ type QuickAction = {
 }
 
 const quickActions: QuickAction[] = [
-  { href: '/add-member', label: 'Add Member', icon: Users, tone: 'teal' },
-  { href: '/add-expense', label: 'Add Expense', icon: CreditCard, tone: 'green' },
-  { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, tone: 'amber' },
+  { href: '/members', label: 'Add Member', icon: Users, tone: 'teal' },
+  { href: '/expenses', label: 'Add Expense', icon: CreditCard, tone: 'green' },
+  { href: '/meals', label: 'Add Meal', icon: UtensilsCrossed, tone: 'amber' },
   { href: '/deposits', label: 'Add Deposit', icon: Coins, tone: 'blue' },
   { href: '/notices', label: 'Send Notice', icon: ClipboardList, tone: 'orange' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ArrowRightLeft, tone: 'slate' },

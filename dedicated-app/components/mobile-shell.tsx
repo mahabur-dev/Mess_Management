@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { House, MenuSquare, UtensilsCrossed, Users } from 'lucide-react'
+import { useAuth } from '@/app/providers'
 
 const tabs = [
   { href: '/', label: 'Dashboard', icon: House, center: true },
@@ -14,6 +15,11 @@ const tabs = [
 
 export function MobileShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const { isLoading, user } = useAuth()
+
+  if (isLoading || !user) {
+    return <div className="grid min-h-screen place-items-center text-sm font-bold text-[#65838b]">Loading...</div>
+  }
 
   return (
     <div className="phone-frame">

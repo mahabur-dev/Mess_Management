@@ -25,7 +25,6 @@ function resultMessage(result: { message?: string; data?: { message?: string } }
 }
 
 export function SignupPage() {
-  const router = useRouter()
   const { register, isSubmitting } = useAuth()
   const [form, setForm] = useState({
     name: '',
@@ -58,7 +57,6 @@ export function SignupPage() {
 
     try {
       await register(form.name, form.email, form.phone, form.password)
-      router.push('/')
     } catch (error) {
       setError(messageFrom(error, 'Registration failed. Please try again.'))
     }

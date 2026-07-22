@@ -69,10 +69,10 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => setRemember((current) => !current)}
-            className="inline-flex items-center gap-3 text-[16px] font-medium text-[#65838b]"
+            className="inline-flex items-center gap-2 text-[13px] font-medium text-[#65838b]"
           >
-            <span className={`grid h-7 w-7 place-items-center rounded-md ${remember ? 'bg-[#008d8c] text-white' : 'border border-[#bfe7e6] bg-white text-transparent'}`}>
-              <Check size={19} strokeWidth={3} />
+            <span className={`grid h-[22px] w-[22px] place-items-center rounded-md ${remember ? 'bg-[#008d8c] text-white' : 'border border-[#bfe7e6] bg-white text-transparent'}`}>
+              <Check size={14} strokeWidth={3} />
             </span>
             Remember me
           </button>

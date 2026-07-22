@@ -160,57 +160,57 @@ export function MemberDetailsModal({ member, onClose }: { member: MobileMember; 
   ]
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#123748]/38 px-4 backdrop-blur-[7px]" onClick={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-[#123748]/38 px-4 py-3 backdrop-blur-[7px]" onClick={(event) => event.target === event.currentTarget && onClose()}>
       <section className="member-overview-modal w-full max-w-[398px]">
-        <div className="relative z-10 flex items-start gap-4">
-          <div className="member-avatar h-[68px] w-[68px] text-[22px]">
+        <div className="relative z-10 flex items-start gap-3">
+          <div className="member-avatar h-12 w-12 text-[14px]">
             <span>{getInitials(name)}</span>
             <span className={`member-presence ${member.is_active ? 'bg-[#18c978]' : 'bg-[#9aaeb4]'}`} />
           </div>
-          <div className="min-w-0 flex-1 pt-1">
-            <h2 className="truncate text-[22px] font-black leading-tight text-[#123748]">{name}</h2>
-            <p className="mt-2 truncate text-[14px] font-bold text-[#65838b]">{member.user?.email ?? 'No email'}</p>
-            <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#cfeeed] bg-[#edfafa] px-4 py-2 text-[12px] font-black uppercase tracking-[0.14em] text-[#008d8c]">
-              <User size={16} />
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-[16px] font-black leading-tight text-[#123748]">{name}</h2>
+            <p className="mt-1 truncate text-[11px] font-bold text-[#65838b]">{member.user?.email ?? 'No email'}</p>
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#cfeeed] bg-[#edfafa] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[#008d8c]">
+              <User size={13} />
               {roleLabel}
             </span>
           </div>
-          <button type="button" onClick={onClose} className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#dce5ec] bg-white text-[#008d8c]" aria-label="Close member overview">
-            <X size={24} />
+          <button type="button" onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#dce5ec] bg-white text-[#008d8c]" aria-label="Close member overview">
+            <X size={18} />
           </button>
         </div>
 
-        <div className="relative z-10 mt-7 rounded-[18px] border border-[#cfeeed] bg-[#edfafa] p-4">
-          <div className="flex items-center gap-4">
-            <span className="grid h-[56px] w-[56px] place-items-center rounded-full bg-gradient-to-br from-[#0aa0a0] to-[#008d8c] text-white">
-              <ShieldCheck size={29} />
+        <div className="relative z-10 mt-4 rounded-[14px] border border-[#cfeeed] bg-[#edfafa] p-3">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[#0aa0a0] to-[#008d8c] text-white">
+              <ShieldCheck size={20} />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-bold text-[#65838b]">Status</div>
-              <div className="mt-1 text-[22px] font-black text-[#008d8c]">{member.is_active ? 'Active' : 'Inactive'}</div>
+              <div className="text-[10px] font-bold text-[#65838b]">Status</div>
+              <div className="mt-0.5 text-[16px] font-black text-[#008d8c]">{member.is_active ? 'Active' : 'Inactive'}</div>
             </div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#dff4f3] px-3 py-2 text-[13px] font-black text-[#008d8c]">
-              <BadgeCheck size={17} />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dff4f3] px-2.5 py-1.5 text-[10px] font-black text-[#008d8c]">
+              <BadgeCheck size={13} />
               Verified
             </span>
           </div>
         </div>
 
-        <div className="relative z-10 mt-6">
-          <h3 className="text-[17px] font-black text-[#123748]">Member Overview</h3>
-          <div className="mt-3 h-1 w-10 rounded-full bg-[#008d8c]" />
-          <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="relative z-10 mt-4">
+          <h3 className="text-[14px] font-black text-[#123748]">Member Overview</h3>
+          <div className="mt-2 h-1 w-8 rounded-full bg-[#008d8c]" />
+          <div className="mt-3 grid grid-cols-2 gap-2">
             {tiles.map((tile) => {
               const Icon = tile.icon
               return (
                 <div key={tile.label} className="member-overview-card">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full" style={{ backgroundColor: tile.bg, color: tile.fg }}>
-                      <Icon size={23} />
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ backgroundColor: tile.bg, color: tile.fg }}>
+                      <Icon size={17} />
                     </span>
                     <div className="min-w-0">
-                      <div className="truncate text-[12px] font-black uppercase text-[#65838b]">{tile.label}</div>
-                      <div className="mt-1 truncate text-[17px] font-black text-[#123748]">{tile.value}</div>
+                      <div className="truncate text-[9px] font-black uppercase text-[#65838b]">{tile.label}</div>
+                      <div className="mt-1 truncate text-[13px] font-black text-[#123748]">{tile.value}</div>
                     </div>
                   </div>
                 </div>
@@ -219,25 +219,25 @@ export function MemberDetailsModal({ member, onClose }: { member: MobileMember; 
           </div>
         </div>
 
-        <div className="relative z-10 mt-5 divide-y divide-[#dce5ec] border-t border-[#dce5ec]">
-          <div className="flex items-center gap-4 py-4">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-[#e8fbfa] text-[#008d8c]">
-              <CalendarDays size={21} />
+        <div className="relative z-10 mt-4 divide-y divide-[#dce5ec] border-t border-[#dce5ec]">
+          <div className="flex items-center gap-3 py-3">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#e8fbfa] text-[#008d8c]">
+              <CalendarDays size={16} />
             </span>
-            <span className="flex-1 text-[14px] font-bold text-[#65838b]">Joined On</span>
-            <span className="text-right text-[14px] font-bold text-[#123748]">{formatDate(joined)}</span>
+            <span className="flex-1 text-[11px] font-bold text-[#65838b]">Joined On</span>
+            <span className="max-w-[150px] text-right text-[11px] font-bold text-[#123748]">{formatDate(joined)}</span>
           </div>
-          <div className="flex items-center gap-4 py-4">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-[#e8fbfa] text-[#008d8c]">
-              <Clock3 size={21} />
+          <div className="flex items-center gap-3 py-3">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#e8fbfa] text-[#008d8c]">
+              <Clock3 size={16} />
             </span>
-            <span className="flex-1 text-[14px] font-bold text-[#65838b]">Last Updated</span>
-            <span className="text-right text-[14px] font-bold text-[#123748]">{formatDateTime(updated)}</span>
+            <span className="flex-1 text-[11px] font-bold text-[#65838b]">Last Updated</span>
+            <span className="max-w-[170px] text-right text-[11px] font-bold text-[#123748]">{formatDateTime(updated)}</span>
           </div>
         </div>
 
-        <button type="button" onClick={onClose} className="primary-btn relative z-10 mt-3 flex h-[58px] w-full items-center justify-center gap-3 rounded-[16px] text-[17px]">
-          <X size={23} />
+        <button type="button" onClick={onClose} className="primary-btn relative z-10 mt-2 flex h-[50px] w-full items-center justify-center gap-2 rounded-[14px] text-[14px]">
+          <X size={18} />
           Close
         </button>
       </section>

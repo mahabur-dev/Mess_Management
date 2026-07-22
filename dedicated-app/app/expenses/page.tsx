@@ -67,14 +67,14 @@ export default function ExpensesPage() {
       <ScreenHeader
         title="Expenses"
         subtitle="Track and manage all expenses"
-        left={<div className="h-[52px] w-[52px]" />}
+        left={<div className="h-10 w-10" />}
         right={
           <HeaderIconButton
             label="Notifications"
             icon={
               <>
-                <Bell size={25} />
-                <span className="absolute right-3.5 top-3 h-2.5 w-2.5 rounded-full bg-[#ff3b30]" />
+                <Bell size={18} />
+                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#ff3b30]" />
               </>
             }
           />

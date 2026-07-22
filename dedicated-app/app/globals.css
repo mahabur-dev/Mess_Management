@@ -108,7 +108,7 @@ textarea {
     radial-gradient(circle at 17% 92%, rgba(75, 191, 192, 0.33), transparent 32%),
     radial-gradient(circle at 84% 84%, rgba(255, 255, 255, 0.13), transparent 30%),
     linear-gradient(135deg, #00777a 0%, #008d8c 52%, #0aa0a0 100%);
-  padding-top: calc(env(safe-area-inset-top) + 22px);
+  padding-top: calc(env(safe-area-inset-top) + 10px);
   position: relative;
   overflow: hidden;
 }
@@ -144,37 +144,37 @@ textarea {
 
 .expense-action-card {
   display: flex;
-  min-height: 88px;
+  min-height: 76px;
   align-items: center;
-  gap: 14px;
-  border-radius: 20px;
-  padding: 18px 14px;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 12px 10px;
 }
 
 .expense-stat-card {
-  min-height: 92px;
+  min-height: 76px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  border-radius: 20px;
-  padding: 16px 12px;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 12px 10px;
   overflow: hidden;
 }
 
 .expense-list-item {
   display: flex;
-  min-height: 94px;
+  min-height: 76px;
   align-items: center;
-  gap: 12px;
-  border-radius: 24px;
-  padding: 16px 12px;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 11px 10px;
 }
 
 .design-form-card {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.84);
   background: rgba(255, 255, 255, 0.96);
-  padding: 26px 18px 22px;
+  padding: 16px 14px 18px;
   box-shadow: 0 28px 70px rgba(18, 55, 72, 0.16);
   backdrop-filter: blur(18px);
 }
@@ -189,16 +189,16 @@ textarea {
 }
 
 .detail-card {
-  border-radius: 18px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 14px;
 }
 
 .detail-row {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  min-height: 60px;
+  gap: 10px;
+  min-height: 50px;
   border-bottom: 1px solid rgba(0, 127, 131, 0.12);
 }
 
@@ -209,17 +209,17 @@ textarea {
 .member-overview-modal {
   position: relative;
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.82);
   background: rgba(255, 255, 255, 0.96);
-  padding: 24px 16px 18px;
+  padding: 16px 14px 14px;
   box-shadow: 0 28px 70px rgba(18, 55, 72, 0.24);
 }
 
 .member-overview-card {
-  min-height: 74px;
-  border-radius: 17px;
-  padding: 14px;
+  min-height: 62px;
+  border-radius: 14px;
+  padding: 10px;
 }
 
 .nav-bar {

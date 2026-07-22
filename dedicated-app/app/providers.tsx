@@ -71,7 +71,7 @@ export function Providers({ children }: { children: ReactNode }) {
       return
     }
 
-    if (user && isAuthPath(pathname)) {
+    if (user && pathname === '/login') {
       router.replace(readPostLoginPath())
     }
   }, [isLoading, pathname, router, user])

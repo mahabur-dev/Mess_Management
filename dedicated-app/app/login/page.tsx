@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Mail, ShieldCheck } from 'lucide-react'
+import { Check, Mail } from 'lucide-react'
 import { useAuth } from '../providers'
 import { readPostLoginPath } from '@/lib/auth'
 import { AuthFooterLink, AuthMessage, AuthPasswordField, AuthShell, AuthSubmitButton, AuthField, authLinkClass } from '@/components/auth-ui'
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [remember, setRemember] = useState(true)
   const [error, setError] = useState('')
   const [redirectTo, setRedirectTo] = useState('/')
 
@@ -30,7 +31,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      title="Log in to your account"
+      title="Login to Messzen"
       description="Access your mess dashboard, members, meals, and expenses securely."
       footer={<AuthFooterLink text="Don't have an account?" href="/signup" action="Sign up" />}
     >
@@ -65,10 +66,16 @@ export default function LoginPage() {
         />
 
         <div className="flex items-center justify-between gap-4">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#65838b]">
-            <ShieldCheck size={14} className="text-[#008d8c]" />
-            Protected access
-          </span>
+          <button
+            type="button"
+            onClick={() => setRemember((current) => !current)}
+            className="inline-flex items-center gap-3 text-[16px] font-medium text-[#65838b]"
+          >
+            <span className={`grid h-7 w-7 place-items-center rounded-md ${remember ? 'bg-[#008d8c] text-white' : 'border border-[#bfe7e6] bg-white text-transparent'}`}>
+              <Check size={19} strokeWidth={3} />
+            </span>
+            Remember me
+          </button>
           <Link href="/forget_password" className={`text-sm ${authLinkClass}`}>
             Forgot password?
           </Link>

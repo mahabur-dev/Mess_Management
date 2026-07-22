@@ -190,6 +190,12 @@ class Api {
     })
   }
 
+  deleteExpense(id: string) {
+    return this.request(`/expense/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   getDepositsByMess(messId: string, params?: Record<string, QueryValue>) {
     return this.request(`/deposit/mess/${messId}`, { params })
   }

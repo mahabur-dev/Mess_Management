@@ -102,6 +102,126 @@ textarea {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.expense-top {
+  color: white;
+  background:
+    radial-gradient(circle at 17% 92%, rgba(75, 191, 192, 0.33), transparent 32%),
+    radial-gradient(circle at 84% 84%, rgba(255, 255, 255, 0.13), transparent 30%),
+    linear-gradient(135deg, #00777a 0%, #008d8c 52%, #0aa0a0 100%);
+  padding-top: calc(env(safe-area-inset-top) + 22px);
+  position: relative;
+  overflow: hidden;
+}
+
+.expense-top::after,
+.detail-hero::after,
+.member-overview-modal::after {
+  content: "";
+  position: absolute;
+  right: -54px;
+  top: 74px;
+  height: 178px;
+  width: 178px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 10px rgba(255, 255, 255, 0.035),
+    0 0 0 22px rgba(255, 255, 255, 0.03),
+    0 0 0 34px rgba(255, 255, 255, 0.025),
+    0 0 0 46px rgba(255, 255, 255, 0.02);
+  pointer-events: none;
+}
+
+.expense-action-card,
+.expense-stat-card,
+.expense-list-item,
+.detail-card,
+.member-overview-card {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  box-shadow: 0 12px 28px rgba(18, 55, 72, 0.08);
+}
+
+.expense-action-card {
+  display: flex;
+  min-height: 88px;
+  align-items: center;
+  gap: 14px;
+  border-radius: 20px;
+  padding: 18px 14px;
+}
+
+.expense-stat-card {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 20px;
+  padding: 16px 12px;
+  overflow: hidden;
+}
+
+.expense-list-item {
+  display: flex;
+  min-height: 94px;
+  align-items: center;
+  gap: 12px;
+  border-radius: 24px;
+  padding: 16px 12px;
+}
+
+.design-form-card {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 26px 18px 22px;
+  box-shadow: 0 28px 70px rgba(18, 55, 72, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.detail-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #00777a 0%, #008d8c 55%, #0aa0a0 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 38px rgba(0, 119, 122, 0.18);
+}
+
+.detail-card {
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  border-bottom: 1px solid rgba(0, 127, 131, 0.12);
+}
+
+.detail-row:last-child {
+  border-bottom: 0;
+}
+
+.member-overview-modal {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 24px 16px 18px;
+  box-shadow: 0 28px 70px rgba(18, 55, 72, 0.24);
+}
+
+.member-overview-card {
+  min-height: 74px;
+  border-radius: 17px;
+  padding: 14px;
+}
+
 .nav-bar {
   position: fixed;
   left: 50%;

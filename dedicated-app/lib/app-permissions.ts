@@ -15,6 +15,7 @@ import {
   Users,
   UtensilsCrossed,
   Wallet2,
+  Zap,
   type LucideProps,
 } from 'lucide-react'
 import type { AuthUser, MessMembership } from './auth'
@@ -62,6 +63,8 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/edit-member', label: 'Edit Member', icon: Users, access: 'manager' },
   { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'manager' },
   { href: '/add-expense', label: 'Add Expense', icon: ReceiptText, access: 'manager', exact: true },
+  { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'manager', exact: true },
+  { href: '/expense-details', label: 'Expense Details', icon: ReceiptText, access: 'manager' },
   { href: '/edit-expense', label: 'Edit Expense', icon: ReceiptText, access: 'manager' },
   { href: '/deposits', label: 'Deposits', icon: Landmark, access: 'manager' },
   { href: '/edit-deposit', label: 'Edit Deposit', icon: Landmark, access: 'manager' },
@@ -81,8 +84,8 @@ const protectedRoutes: AppRouteItem[] = [
 export const managerQuickActions: AppRouteItem[] = [
   { href: '/add-member', label: 'Add Member', icon: Users, access: 'manager' },
   { href: '/add-expense', label: 'Add Expense', icon: Wallet2, access: 'manager' },
+  { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'manager' },
   { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, access: 'mess' },
-  { href: '/deposits', label: 'Add Deposit', icon: Landmark, access: 'manager' },
   { href: '/notices', label: 'Send Notice', icon: Bell, access: 'manager' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
 ]

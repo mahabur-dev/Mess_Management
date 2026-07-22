@@ -1,24 +1,30 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { House, MenuSquare, UtensilsCrossed, Users } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
-
-const tabs = [
-  { href: '/', label: 'Home', icon: House },
-  { href: '/members', label: 'Members', icon: Users },
-  { href: '/meals', label: 'Meals', icon: UtensilsCrossed },
-  { href: '/more', label: 'More', icon: MenuSquare },
-]
+import { canAccessAppPath, getBottomTabs, getDefaultAppPath } from '@/lib/app-permissions'
 
 export function MobileShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { isLoading, user } = useAuth()
+  const tabs = getBottomTabs(user)
+  const canAccess = canAccessAppPath(user, pathname)
+
+  useEffect(() => {
+    if (!isLoading && user && !canAccess) {
+      router.replace(getDefaultAppPath(user))
+    }
+  }, [canAccess, isLoading, router, user])
 
   if (isLoading || !user) {
     return <div className="grid min-h-screen place-items-center text-sm font-bold text-[#65838b]">Loading...</div>
+  }
+
+  if (!canAccess) {
+    return <div className="grid min-h-screen place-items-center text-sm font-bold text-[#65838b]">Redirecting...</div>
   }
 
   return (
@@ -28,7 +34,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
       <nav className="nav-bar" aria-label="Primary">
         <div className="nav-dock">
           {tabs.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href
+            const active = href === '/' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
             return (
               <Link
                 key={href}

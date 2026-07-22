@@ -7,6 +7,7 @@ import { IconActionLink, StatusPill } from '@/components/mobile/action-links'
 import { TopScreen } from '@/components/top-screen'
 import { SelectField, SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
 import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
 import { COMPLAINT_CATEGORIES, COMPLAINT_STATUSES, LABELS, type ComplaintCategory, type ComplaintStatus } from '@/lib/form-options'
 import { useAuth } from '../providers'
 
@@ -44,6 +45,7 @@ function getStatusTone(status: ComplaintStatus) {
 export default function ComplaintsPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
+  const canUpdateComplaints = canManageMess(user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [items, setItems] = useState<ComplaintItem[]>([])
   const [message, setMessage] = useState('')
@@ -139,11 +141,13 @@ export default function ComplaintsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusPill label={LABELS.COMPLAINT_STATUSES[item.status]} tone={getStatusTone(item.status)} />
-                    <IconActionLink
-                      href={`/edit-complaint?complaintId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-                      label="Edit complaint"
-                      icon={<Edit3 size={16} />}
-                    />
+                    {canUpdateComplaints ? (
+                      <IconActionLink
+                        href={`/edit-complaint?complaintId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+                        label="Edit complaint"
+                        icon={<Edit3 size={16} />}
+                      />
+                    ) : null}
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-[#65838b]">{item.description}</p>

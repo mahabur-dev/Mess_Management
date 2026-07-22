@@ -166,6 +166,12 @@ class Api {
     })
   }
 
+  removeMember(messId: string, memberId: string) {
+    return this.request(`/messes/${messId}/members/${memberId}`, {
+      method: 'DELETE',
+    })
+  }
+
   getExpensesByMess(messId: string, params?: Record<string, QueryValue>) {
     return this.request(`/expense/mess/${messId}`, { params })
   }
@@ -276,6 +282,10 @@ class Api {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  }
+
+  getNoticesByMess(messId: string, params?: Record<string, QueryValue>) {
+    return this.request(`/notices/mess/${messId}`, { params })
   }
 }
 

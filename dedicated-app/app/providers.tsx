@@ -2,6 +2,8 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { LogoutConfirmDialog } from '@/components/logout-confirm-dialog'
+import { NativeBackHandler } from '@/components/native-back-handler'
 import { api } from '@/lib/api'
 import {
   buildLoginPath,
@@ -35,6 +37,8 @@ export function Providers({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [logoutPromptOpen, setLogoutPromptOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const clearSession = useCallback(() => {
     clearStoredToken()
@@ -121,12 +125,15 @@ export function Providers({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(async () => {
+    setIsLoggingOut(true)
     try {
       await api.logout()
     } catch {
       // Local logout must still complete if the network or cookie clear fails.
     } finally {
+      setLogoutPromptOpen(false)
       clearSession()
+      setIsLoggingOut(false)
       router.replace('/login')
     }
   }, [clearSession, router])
@@ -136,12 +143,39 @@ export function Providers({ children }: { children: ReactNode }) {
     setUser(res.data)
   }, [])
 
+  const openLogoutPrompt = useCallback(() => {
+    setLogoutPromptOpen(true)
+  }, [])
+
+  const closeLogoutPrompt = useCallback(() => {
+    setLogoutPromptOpen(false)
+  }, [])
+
   const value = useMemo(
     () => ({ user, token, isAuthenticated: Boolean(user), isLoading, isSubmitting, login, register, logout, refresh }),
     [user, token, isLoading, isSubmitting, login, register, logout, refresh]
   )
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      <NativeBackHandler
+        user={user}
+        isLoading={isLoading}
+        homePromptOpen={logoutPromptOpen}
+        onCancelHomePrompt={closeLogoutPrompt}
+        onHomeBack={openLogoutPrompt}
+      />
+      <LogoutConfirmDialog
+        open={logoutPromptOpen}
+        busy={isLoggingOut}
+        onCancel={closeLogoutPrompt}
+        onConfirm={() => {
+          void logout()
+        }}
+      />
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

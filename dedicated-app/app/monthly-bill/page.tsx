@@ -8,6 +8,7 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SelectField, SubmitButton, TextField } from '@/components/mobile/form-controls'
 import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
 import { BILL_STATUSES, LABELS, type BillStatus } from '@/lib/form-options'
 import { useAuth } from '../providers'
 
@@ -23,6 +24,7 @@ type BillItem = {
 export default function MonthlyBillPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
+  const canGenerateBills = canManageMess(user)
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
   const [status, setStatus] = useState<BillStatus>('PENDING')
   const [busy, setBusy] = useState(false)
@@ -88,31 +90,33 @@ export default function MonthlyBillPage() {
 
         {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
 
-        <DeferredFormSection
-          open={showForm}
-          title="Generate Bill"
-          description="Open this form only when you need to generate a monthly bill run."
-          actionLabel="Generate Monthly Bills"
-          icon={<FilePlus2 size={20} />}
-          onOpen={() => setShowForm(true)}
-          onClose={() => setShowForm(false)}
-        >
-          <TextField label="Month" value={month} onChange={setMonth} type="month" />
-          <SelectField
-            label="Status"
-            value={status}
-            onChange={setStatus}
-            options={BILL_STATUSES}
-            getLabel={(value) => LABELS.BILL_STATUSES[value]}
-          />
-          <div className="rounded-2xl border border-[#cfeeed] bg-[#edfafa] px-4 py-3 text-sm text-[#65838b]">
-            Generates bills for <span className="font-black text-[#123748]">{month}</span> using backend billing logic.
-          </div>
-          {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
-          <SubmitButton busy={busy} onClick={handleGenerate}>
-            Generate Bill
-          </SubmitButton>
-        </DeferredFormSection>
+        {canGenerateBills ? (
+          <DeferredFormSection
+            open={showForm}
+            title="Generate Bill"
+            description="Open this form only when you need to generate a monthly bill run."
+            actionLabel="Generate Monthly Bills"
+            icon={<FilePlus2 size={20} />}
+            onOpen={() => setShowForm(true)}
+            onClose={() => setShowForm(false)}
+          >
+            <TextField label="Month" value={month} onChange={setMonth} type="month" />
+            <SelectField
+              label="Status"
+              value={status}
+              onChange={setStatus}
+              options={BILL_STATUSES}
+              getLabel={(value) => LABELS.BILL_STATUSES[value]}
+            />
+            <div className="rounded-2xl border border-[#cfeeed] bg-[#edfafa] px-4 py-3 text-sm text-[#65838b]">
+              Generates bills for <span className="font-black text-[#123748]">{month}</span> using backend billing logic.
+            </div>
+            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+            <SubmitButton busy={busy} onClick={handleGenerate}>
+              Generate Bill
+            </SubmitButton>
+          </DeferredFormSection>
+        ) : null}
 
         <div className="space-y-3">
           {items.map((item) => (
@@ -126,11 +130,13 @@ export default function MonthlyBillPage() {
                   <BadgeCheck size={14} />
                   {LABELS.BILL_STATUSES[item.status]}
                 </div>
-                <IconActionLink
-                  href={`/edit-monthly-bill?billId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-                  label="Update bill"
-                  icon={<Edit3 size={16} />}
-                />
+                {canGenerateBills ? (
+                  <IconActionLink
+                    href={`/edit-monthly-bill?billId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+                    label="Update bill"
+                    icon={<Edit3 size={16} />}
+                  />
+                ) : null}
               </div>
             </div>
           ))}

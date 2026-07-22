@@ -3,11 +3,13 @@
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { useAuth } from '../providers'
-import { ChevronRight, LogOut, User, Settings, Bell, ReceiptText, CreditCard, AlertTriangle, Coins } from 'lucide-react'
+import { ChevronRight, LogOut, User } from 'lucide-react'
 import Link from 'next/link'
+import { getMoreLinks } from '@/lib/app-permissions'
 
 export default function MorePage() {
   const { user, logout } = useAuth()
+  const links = getMoreLinks(user)
 
   return (
     <MobileShell>
@@ -26,20 +28,11 @@ export default function MorePage() {
         </div>
 
         <div className="glass rounded-[28px] overflow-hidden">
-          {[
-            ['Profile', '/profile', User],
-            ['Settings', '/settings', Settings],
-            ['Payments', '/payments', CreditCard],
-            ['Expenses', '/expenses', ReceiptText],
-            ['Complaints', '/complaints', AlertTriangle],
-            ['Deposits', '/deposits', Coins],
-            ['Notifications', '/notices', Bell],
-            ['Monthly Bill', '/monthly-bill', ReceiptText],
-          ].map(([label, href, Icon]) => (
-            <Link key={label as string} href={href as string} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 last:border-b-0">
+          {links.map(({ label, href, icon: Icon }) => (
+            <Link key={href} href={href} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 last:border-b-0">
               <div className="flex items-center gap-3">
                 <Icon size={18} className="text-[#008d8c]" />
-                <div className="text-sm font-bold text-[#123748]">{label as string}</div>
+                <div className="text-sm font-bold text-[#123748]">{label}</div>
               </div>
               <ChevronRight size={18} className="text-[#7da0a6]" />
             </Link>

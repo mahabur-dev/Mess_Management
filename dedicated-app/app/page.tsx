@@ -14,10 +14,10 @@ import {
   UtensilsCrossed,
   Wallet2,
   Coins,
-  ArrowRightLeft,
 } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
+import { getHomeQuickActions } from '@/lib/app-permissions'
 import { useAuth } from './providers'
 
 type DashboardNotice = {
@@ -59,31 +59,6 @@ type WeeklyPoint = {
   label: string
   income: number
   expense: number
-}
-
-type QuickAction = {
-  href: string
-  label: string
-  icon: typeof Users
-  tone: 'teal' | 'green' | 'amber' | 'blue' | 'orange' | 'slate'
-}
-
-const quickActions: QuickAction[] = [
-  { href: '/members', label: 'Add Member', icon: Users, tone: 'teal' },
-  { href: '/expenses', label: 'Add Expense', icon: CreditCard, tone: 'green' },
-  { href: '/meals', label: 'Add Meal', icon: UtensilsCrossed, tone: 'amber' },
-  { href: '/deposits', label: 'Add Deposit', icon: Coins, tone: 'blue' },
-  { href: '/notices', label: 'Send Notice', icon: ClipboardList, tone: 'orange' },
-  { href: '/monthly-bill', label: 'Monthly Bill', icon: ArrowRightLeft, tone: 'slate' },
-]
-
-const toneClass: Record<QuickAction['tone'], { bg: string; fg: string }> = {
-  teal: { bg: '#dff4f3', fg: '#008d8c' },
-  green: { bg: '#edfafa', fg: '#0aa0a0' },
-  amber: { bg: '#edfafa', fg: '#4bbfc0' },
-  blue: { bg: '#edfafa', fg: '#008d8c' },
-  orange: { bg: '#dff4f3', fg: '#008d8c' },
-  slate: { bg: '#edfafa', fg: '#65838b' },
 }
 
 function formatMoney(value?: number | null) {
@@ -199,6 +174,7 @@ export default function HomePage() {
   const greetingName = user?.name?.split(' ')[0] || 'Manager'
   const chartPoints = useMemo(() => buildWeeklyChart(monthlyOverview), [monthlyOverview])
   const currentMonthLabel = monthLabelFromNow()
+  const quickActions = getHomeQuickActions(user)
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login')
@@ -316,47 +292,44 @@ export default function HomePage() {
         </div>
 
         <div className="mt-4">
-          <div className="text-[16px] font-bold text-white">Good Morning, {greetingName} 👋</div>
+          <div className="text-[16px] font-bold text-white">Good Morning, {greetingName}</div>
           <div className="mt-1 text-[12px] text-white/82">Here&apos;s what&apos;s happening today</div>
         </div>
       </div>
 
       <div className="screen -mt-4">
-        <div className="rounded-[22px] bg-white px-3 py-3 shadow-[0_10px_20px_rgba(0,119,122,0.06)]">
+        <div className="quick-actions-card">
           <div className="grid grid-cols-3 gap-1.5">
-            {quickActions.map(({ label, href, icon: Icon, tone }) => {
-              const palette = toneClass[tone]
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => router.push(href)}
-                  className="flex flex-col items-center justify-center gap-2 rounded-[16px] px-1 py-2.5 text-center transition-transform active:scale-[0.97]"
-                >
-                  <div className="grid h-11 w-11 place-items-center rounded-[14px]" style={{ backgroundColor: palette.bg, color: palette.fg }}>
-                    <Icon size={19} />
-                  </div>
-                  <div className="text-[11px] font-bold leading-tight text-[#123748]">{label}</div>
-                </button>
-              )
-            })}
+            {quickActions.map(({ label, href, icon: Icon }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => router.push(href)}
+                className="quick-action-button"
+              >
+                <div className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c]">
+                  <Icon size={19} />
+                </div>
+                <div className="text-[11px] font-bold leading-tight text-[#123748]">{label}</div>
+              </button>
+            ))}
           </div>
         </div>
 
-        <section className="rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
+        <section className="mt-4 rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
           <div className="section-title">Overview</div>
           <div className="grid grid-cols-2 gap-3">
             {cards.map((card) => {
               const Icon = card.icon
               return (
-                <div key={card.label} className="rounded-[16px] border border-[#cfeeed] bg-white p-3.5 shadow-[0_8px_20px_rgba(0,119,122,0.06)]">
+                <div key={card.label} className="overview-card">
                   <div className="flex items-start gap-2.5">
                     <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px]" style={{ backgroundColor: `${card.color}12`, color: card.color }}>
                       <Icon size={16} />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold leading-tight text-[#65838b]">{card.label}</div>
-                      <div className="mt-1 text-[15px] font-black leading-none text-[#123748]">{card.value}</div>
+                      <div className="overview-card-label">{card.label}</div>
+                      <div className="overview-card-value">{card.value}</div>
                     </div>
                   </div>
                 </div>
@@ -383,9 +356,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-3">
+          <div className="chart-frame mt-3">
             {chartLoading ? (
-              <div className="flex h-[180px] items-center justify-center text-sm font-semibold text-[#65838b]">Loading chart...</div>
+              <div className="flex h-[178px] items-center justify-center text-sm font-semibold text-[#65838b]">Loading chart...</div>
             ) : (
               <MiniLineChart points={chartPoints} />
             )}

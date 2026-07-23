@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState } from 'react'
+import { useRef, type FormEvent, useState, type ClipboardEvent, type KeyboardEvent, } from 'react'
 import { Mail, Phone, RotateCcw, ShieldCheck, User } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 import { api } from '@/lib/api'
@@ -15,7 +15,6 @@ import {
   AuthSubmitButton,
   authLinkClass,
 } from '@/components/auth-ui'
-
 function messageFrom(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
@@ -65,7 +64,7 @@ export function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
-      description="Join your mess workspace and manage meals, payments, and notices from your phone."
+      // description="Join your mess workspace and manage meals, payments, and notices from your phone."
       footer={<AuthFooterLink text="Already have an account?" href="/login" action="Sign in" />}
     >
       {error ? <AuthMessage>{error}</AuthMessage> : null}
@@ -122,14 +121,14 @@ export function SignupPage() {
           autoComplete="new-password"
         />
 
-        <div className="rounded-2xl border border-[#cfeeed] bg-[#f7fcfb] px-4 py-3">
+        {/* <div className="rounded-2xl border border-[#cfeeed] bg-[#f7fcfb] px-4 py-3">
           <div className="flex items-start gap-3">
             <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#008d8c]" />
             <p className="text-xs font-semibold leading-relaxed text-[#65838b]">
               New accounts start as members. Your mess manager can approve access from the dashboard.
             </p>
           </div>
-        </div>
+        </div> */}
 
         <AuthSubmitButton busy={isSubmitting} busyLabel="Creating account...">
           Create Account
@@ -198,13 +197,201 @@ export function ForgotPasswordPage() {
   )
 }
 
+// export function VerifyOtpPage() {
+//   const router = useRouter()
+//   const [otp, setOtp] = useState('')
+//   const [busy, setBusy] = useState(false)
+//   const [resending, setResending] = useState(false)
+//   const [message, setMessage] = useState('')
+//   const [success, setSuccess] = useState(false)
+
+//   async function handleSubmit(event: FormEvent) {
+//     event.preventDefault()
+//     setMessage('')
+//     setSuccess(false)
+
+//     const email = sessionStorage.getItem('resetEmail')
+//     if (!email) {
+//       setMessage('Please request an OTP with your email first.')
+//       return
+//     }
+
+//     if (otp.trim().length !== 6) {
+//       setMessage('Please enter the 6-digit verification code.')
+//       return
+//     }
+
+//     setBusy(true)
+//     try {
+//       const result = await api.verifyOtp(email, otp.trim())
+//       sessionStorage.setItem('otpVerified', 'true')
+//       setSuccess(true)
+//       setMessage(resultMessage(result, 'OTP verified successfully.'))
+//       window.setTimeout(() => router.push('/reset_password'), 700)
+//     } catch (error) {
+//       setMessage(messageFrom(error, 'OTP verification failed.'))
+//     } finally {
+//       setBusy(false)
+//     }
+//   }
+
+//   async function resendOtp() {
+//     const email = sessionStorage.getItem('resetEmail')
+//     setMessage('')
+//     setSuccess(false)
+
+//     if (!email) {
+//       setMessage('Please request an OTP with your email first.')
+//       return
+//     }
+
+//     setResending(true)
+//     try {
+//       const result = await api.forgotPassword(email)
+//       setOtp('')
+//       setSuccess(true)
+//       setMessage(resultMessage(result, 'A new OTP has been sent to your email.'))
+//     } catch (error) {
+//       setMessage(messageFrom(error, 'Failed to resend OTP.'))
+//     } finally {
+//       setResending(false)
+//     }
+//   }
+
+//   return (
+//     <AuthShell
+//       title="Verify OTP"
+//       description="Enter the 6-digit code sent to your email address."
+//       footer={
+//         <div className="space-y-2">
+//           <Link href="/forget_password" className={authLinkClass}>
+//             Back to email
+//           </Link>
+//           <div>
+//             <Link href="/login" className="font-semibold text-[#65838b] transition hover:text-[#008d8c]">
+//               Remember your password? <span className={authLinkClass}>Sign in</span>
+//             </Link>
+//           </div>
+//         </div>
+//       }
+//     >
+//       {message ? <AuthMessage success={success}>{message}</AuthMessage> : null}
+
+//       <form onSubmit={handleSubmit} className="space-y-4">
+//         <label className="block">
+//           <div className="mb-2 text-center text-sm font-bold text-[#123748]">Verification code</div>
+//           <input
+//             className="field h-14 rounded-2xl bg-white px-4 text-center text-xl font-black tracking-[0.24em]"
+//             value={otp}
+//             onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+//             placeholder="000000"
+//             inputMode="numeric"
+//             autoComplete="one-time-code"
+//             required
+//           />
+//         </label>
+
+//         <AuthSubmitButton busy={busy} busyLabel="Verifying...">
+//           Verify Code
+//         </AuthSubmitButton>
+//       </form>
+
+//       <button
+//         type="button"
+//         onClick={() => void resendOtp()}
+//         disabled={resending}
+//         className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#cfeeed] bg-white text-sm font-black text-[#008d8c] disabled:cursor-not-allowed disabled:opacity-70"
+//       >
+//         <RotateCcw size={16} />
+//         {resending ? 'Resending...' : 'Resend OTP'}
+//       </button>
+//     </AuthShell>
+//   )
+// }
 export function VerifyOtpPage() {
   const router = useRouter()
-  const [otp, setOtp] = useState('')
+
+  const OTP_LENGTH = 6
+
+  const [otpDigits, setOtpDigits] = useState<string[]>(
+    Array(OTP_LENGTH).fill('')
+  )
   const [busy, setBusy] = useState(false)
   const [resending, setResending] = useState(false)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(false)
+
+  const otpRefs = useRef<Array<HTMLInputElement | null>>([])
+
+  const otp = otpDigits.join('')
+
+  function handleOtpChange(index: number, value: string) {
+    const digit = value.replace(/\D/g, '').slice(-1)
+
+    setOtpDigits((current) => {
+      const next = [...current]
+      next[index] = digit
+      return next
+    })
+
+    if (digit && index < OTP_LENGTH - 1) {
+      otpRefs.current[index + 1]?.focus()
+    }
+  }
+
+  function handleOtpKeyDown(
+    index: number,
+    event: KeyboardEvent<HTMLInputElement>
+  ) {
+    if (
+      event.key === 'Backspace' &&
+      !otpDigits[index] &&
+      index > 0
+    ) {
+      otpRefs.current[index - 1]?.focus()
+    }
+
+    if (event.key === 'ArrowLeft' && index > 0) {
+      event.preventDefault()
+      otpRefs.current[index - 1]?.focus()
+    }
+
+    if (
+      event.key === 'ArrowRight' &&
+      index < OTP_LENGTH - 1
+    ) {
+      event.preventDefault()
+      otpRefs.current[index + 1]?.focus()
+    }
+  }
+
+  function handleOtpPaste(
+    event: ClipboardEvent<HTMLDivElement>
+  ) {
+    event.preventDefault()
+
+    const pastedOtp = event.clipboardData
+      .getData('text')
+      .replace(/\D/g, '')
+      .slice(0, OTP_LENGTH)
+
+    if (!pastedOtp) return
+
+    const nextDigits = Array(OTP_LENGTH).fill('')
+
+    pastedOtp.split('').forEach((digit, index) => {
+      nextDigits[index] = digit
+    })
+
+    setOtpDigits(nextDigits)
+
+    const focusIndex = Math.min(
+      pastedOtp.length,
+      OTP_LENGTH - 1
+    )
+
+    otpRefs.current[focusIndex]?.focus()
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -212,25 +399,36 @@ export function VerifyOtpPage() {
     setSuccess(false)
 
     const email = sessionStorage.getItem('resetEmail')
+
     if (!email) {
       setMessage('Please request an OTP with your email first.')
       return
     }
 
-    if (otp.trim().length !== 6) {
+    if (otp.length !== OTP_LENGTH) {
       setMessage('Please enter the 6-digit verification code.')
+      otpRefs.current[otpDigits.findIndex((digit) => !digit)]?.focus()
       return
     }
 
     setBusy(true)
+
     try {
-      const result = await api.verifyOtp(email, otp.trim())
+      const result = await api.verifyOtp(email, otp)
+
       sessionStorage.setItem('otpVerified', 'true')
       setSuccess(true)
-      setMessage(resultMessage(result, 'OTP verified successfully.'))
-      window.setTimeout(() => router.push('/reset_password'), 700)
+      setMessage(
+        resultMessage(result, 'OTP verified successfully.')
+      )
+
+      window.setTimeout(() => {
+        router.push('/reset_password')
+      }, 700)
     } catch (error) {
-      setMessage(messageFrom(error, 'OTP verification failed.'))
+      setMessage(
+        messageFrom(error, 'OTP verification failed.')
+      )
     } finally {
       setBusy(false)
     }
@@ -238,6 +436,7 @@ export function VerifyOtpPage() {
 
   async function resendOtp() {
     const email = sessionStorage.getItem('resetEmail')
+
     setMessage('')
     setSuccess(false)
 
@@ -247,13 +446,24 @@ export function VerifyOtpPage() {
     }
 
     setResending(true)
+
     try {
       const result = await api.forgotPassword(email)
-      setOtp('')
+
+      setOtpDigits(Array(OTP_LENGTH).fill(''))
+      otpRefs.current[0]?.focus()
+
       setSuccess(true)
-      setMessage(resultMessage(result, 'A new OTP has been sent to your email.'))
+      setMessage(
+        resultMessage(
+          result,
+          'A new OTP has been sent to your email.'
+        )
+      )
     } catch (error) {
-      setMessage(messageFrom(error, 'Failed to resend OTP.'))
+      setMessage(
+        messageFrom(error, 'Failed to resend OTP.')
+      )
     } finally {
       setResending(false)
     }
@@ -265,34 +475,101 @@ export function VerifyOtpPage() {
       description="Enter the 6-digit code sent to your email address."
       footer={
         <div className="space-y-2">
-          <Link href="/forget_password" className={authLinkClass}>
+          <Link
+            href="/forget_password"
+            className={authLinkClass}
+          >
             Back to email
           </Link>
+
           <div>
-            <Link href="/login" className="font-semibold text-[#65838b] transition hover:text-[#008d8c]">
-              Remember your password? <span className={authLinkClass}>Sign in</span>
+            <Link
+              href="/login"
+              className="font-semibold text-[#65838b] transition hover:text-[#008d8c]"
+            >
+              Remember your password?{' '}
+              <span className={authLinkClass}>
+                Sign in
+              </span>
             </Link>
           </div>
         </div>
       }
     >
-      {message ? <AuthMessage success={success}>{message}</AuthMessage> : null}
+      {message ? (
+        <AuthMessage success={success}>
+          {message}
+        </AuthMessage>
+      ) : null}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label className="block">
-          <div className="mb-2 text-center text-sm font-bold text-[#123748]">Verification code</div>
-          <input
-            className="field h-14 rounded-2xl bg-white px-4 text-center text-xl font-black tracking-[0.24em]"
-            value={otp}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="000000"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            required
-          />
-        </label>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="block">
+          <div className="mb-3 text-center text-sm font-bold text-[#123748]">
+            Verification code
+          </div>
 
-        <AuthSubmitButton busy={busy} busyLabel="Verifying...">
+          <div
+            className="flex items-center justify-center gap-2 sm:gap-3"
+            onPaste={handleOtpPaste}
+          >
+            {otpDigits.map((digit, index) => (
+              <input
+                key={index}
+                ref={(element) => {
+                  otpRefs.current[index] = element
+                }}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete={
+                  index === 0 ? 'one-time-code' : 'off'
+                }
+                maxLength={1}
+                value={digit}
+                aria-label={`OTP digit ${index + 1}`}
+                onChange={(event) =>
+                  handleOtpChange(
+                    index,
+                    event.target.value
+                  )
+                }
+                onKeyDown={(event) =>
+                  handleOtpKeyDown(index, event)
+                }
+                onFocus={(event) =>
+                  event.currentTarget.select()
+                }
+                className="
+                  h-[56px] w-[48px]
+                  rounded-[14px]
+                  border border-[#c3e4e4]
+                  bg-white
+                  text-center text-[22px]
+                  font-black text-[#062b35]
+                  caret-[#008d8c]
+                  outline-none
+                  shadow-[0_5px_15px_rgba(0,141,140,0.05)]
+                  transition-all duration-200
+                  hover:border-[#7bcac8]
+                  focus:-translate-y-0.5
+                  focus:border-[#008d8c]
+                  focus:ring-4
+                  focus:ring-[#008d8c]/12
+                  sm:h-[60px] sm:w-[52px]
+                "
+              />
+            ))}
+          </div>
+
+          <div className="mt-3 text-center text-[12px] font-medium text-[#789096]">
+            Enter the code from your email
+          </div>
+        </div>
+
+        <AuthSubmitButton
+          busy={busy}
+          busyLabel="Verifying..."
+        >
           Verify Code
         </AuthSubmitButton>
       </form>
@@ -301,9 +578,23 @@ export function VerifyOtpPage() {
         type="button"
         onClick={() => void resendOtp()}
         disabled={resending}
-        className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#cfeeed] bg-white text-sm font-black text-[#008d8c] disabled:cursor-not-allowed disabled:opacity-70"
+        className="
+          mt-4 flex h-12 w-full
+          items-center justify-center gap-2
+          rounded-2xl
+          border border-[#cfeeed]
+          bg-white
+          text-sm font-black
+          text-[#008d8c]
+          transition-all duration-200
+          hover:border-[#008d8c]
+          hover:bg-[#f2fbfb]
+          disabled:cursor-not-allowed
+          disabled:opacity-70
+        "
       >
         <RotateCcw size={16} />
+
         {resending ? 'Resending...' : 'Resend OTP'}
       </button>
     </AuthShell>

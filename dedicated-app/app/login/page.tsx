@@ -5,10 +5,19 @@ import Link from 'next/link'
 import { Check, Mail } from 'lucide-react'
 import { useAuth } from '../providers'
 import { readPostLoginPath } from '@/lib/auth'
-import { AuthFooterLink, AuthMessage, AuthPasswordField, AuthShell, AuthSubmitButton, AuthField, authLinkClass } from '@/components/auth-ui'
+import {
+  AuthFooterLink,
+  AuthMessage,
+  AuthPasswordField,
+  AuthShell,
+  AuthSubmitButton,
+  AuthField,
+  authLinkClass,
+} from '@/components/auth-ui'
 
 export default function LoginPage() {
   const { login, isSubmitting } = useAuth()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -22,6 +31,7 @@ export default function LoginPage() {
 
   async function handleSubmit() {
     setError('')
+
     try {
       await login(email, password, redirectTo)
     } catch (err) {
@@ -32,8 +42,13 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Login to Messzen"
-      description="Access your mess dashboard, members, meals, and expenses securely."
-      footer={<AuthFooterLink text="Don't have an account?" href="/signup" action="Sign up" />}
+      footer={
+        <AuthFooterLink
+          text="Don't have an account?"
+          href="/signup"
+          action="Sign up"
+        />
+      }
     >
       {error ? <AuthMessage>{error}</AuthMessage> : null}
 
@@ -71,12 +86,22 @@ export default function LoginPage() {
             onClick={() => setRemember((current) => !current)}
             className="inline-flex items-center gap-2 text-[13px] font-medium text-[#65838b]"
           >
-            <span className={`grid h-[22px] w-[22px] place-items-center rounded-md ${remember ? 'bg-[#008d8c] text-white' : 'border border-[#bfe7e6] bg-white text-transparent'}`}>
+            <span
+              className={`grid h-[22px] w-[22px] place-items-center rounded-md ${remember
+                  ? 'bg-[#008d8c] text-white'
+                  : 'border border-[#bfe7e6] bg-white text-transparent'
+                }`}
+            >
               <Check size={14} strokeWidth={3} />
             </span>
+
             Remember me
           </button>
-          <Link href="/forget_password" className={`text-sm ${authLinkClass}`}>
+
+          <Link
+            href="/forget_password"
+            className={`text-sm ${authLinkClass}`}
+          >
             Forgot password?
           </Link>
         </div>
@@ -88,3 +113,96 @@ export default function LoginPage() {
     </AuthShell>
   )
 }
+
+
+
+// 'use client'
+
+// import { useEffect, useState } from 'react'
+// import Link from 'next/link'
+// import { Check, Mail } from 'lucide-react'
+// import { useAuth } from '../providers'
+// import { readPostLoginPath } from '@/lib/auth'
+// import { AuthFooterLink, AuthMessage, AuthPasswordField, AuthShell, AuthSubmitButton, AuthField, authLinkClass } from '@/components/auth-ui'
+
+// export default function LoginPage() {
+//   const { login, isSubmitting } = useAuth()
+//   const [email, setEmail] = useState('')
+//   const [password, setPassword] = useState('')
+//   const [showPassword, setShowPassword] = useState(false)
+//   const [remember, setRemember] = useState(true)
+//   const [error, setError] = useState('')
+//   const [redirectTo, setRedirectTo] = useState('/')
+
+//   useEffect(() => {
+//     setRedirectTo(readPostLoginPath())
+//   }, [])
+
+//   async function handleSubmit() {
+//     setError('')
+//     try {
+//       await login(email, password, redirectTo)
+//     } catch (err) {
+//       setError(err instanceof Error ? err.message : 'Login failed')
+//     }
+//   }
+
+//   return (
+//     <AuthShell
+//       title="Login to Messzen"
+//       description="Access your mess dashboard, members, meals, and expenses securely."
+//       footer={<AuthFooterLink text="Don't have an account?" href="/signup" action="Sign up" />}
+//     >
+//       {error ? <AuthMessage>{error}</AuthMessage> : null}
+
+//       <form
+//         className="space-y-4"
+//         onSubmit={(event) => {
+//           event.preventDefault()
+//           void handleSubmit()
+//         }}
+//       >
+//         <AuthField
+//           label="Email address"
+//           icon={Mail}
+//           value={email}
+//           onChange={(event) => setEmail(event.target.value)}
+//           type="email"
+//           placeholder="manager@example.com"
+//           autoComplete="email"
+//           required
+//         />
+
+//         <AuthPasswordField
+//           label="Password"
+//           value={password}
+//           onChange={setPassword}
+//           show={showPassword}
+//           onToggle={() => setShowPassword((current) => !current)}
+//           placeholder="Enter your password"
+//           autoComplete="current-password"
+//         />
+
+//         <div className="flex items-center justify-between gap-4">
+//           <button
+//             type="button"
+//             onClick={() => setRemember((current) => !current)}
+//             className="inline-flex items-center gap-2 text-[13px] font-medium text-[#65838b]"
+//           >
+//             <span className={`grid h-[22px] w-[22px] place-items-center rounded-md ${remember ? 'bg-[#008d8c] text-white' : 'border border-[#bfe7e6] bg-white text-transparent'}`}>
+//               <Check size={14} strokeWidth={3} />
+//             </span>
+//             Remember me
+//           </button>
+//           <Link href="/forget_password" className={`text-sm ${authLinkClass}`}>
+//             Forgot password?
+//           </Link>
+//         </div>
+
+//         <AuthSubmitButton busy={isSubmitting} busyLabel="Signing in...">
+//           Sign In
+//         </AuthSubmitButton>
+//       </form>
+//     </AuthShell>
+//   )
+// }

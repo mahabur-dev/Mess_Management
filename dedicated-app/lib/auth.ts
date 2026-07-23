@@ -32,6 +32,12 @@ export type AuthUser = {
 
 const AUTH_PATHS = new Set(['/login', '/signup', '/register', '/forget_password', '/verify_otp', '/reset_password'])
 
+export function normalizePathname(pathname: string) {
+  const pathOnly = (pathname || '/').split('?')[0]?.split('#')[0] || '/'
+  if (pathOnly === '/') return '/'
+  return pathOnly.replace(/\/+$/, '') || '/'
+}
+
 export function getStoredToken() {
   if (typeof window === 'undefined') return null
   return localStorage.getItem(AUTH_TOKEN_KEY)
@@ -48,7 +54,7 @@ export function clearStoredToken() {
 }
 
 export function isAuthPath(pathname: string) {
-  return AUTH_PATHS.has(pathname)
+  return AUTH_PATHS.has(normalizePathname(pathname))
 }
 
 export function buildLoginPath(nextPath: string) {

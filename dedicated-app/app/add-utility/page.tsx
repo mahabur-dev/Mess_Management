@@ -95,12 +95,12 @@ export default function AddUtilityPage() {
   return (
     <MobileShell>
       <form onSubmit={handleSubmit}>
-        <FormPageShell title="Add Utility" description="Add utility cost with category, price, and description." icon={Zap} backHref="/expenses">
+        <FormPageShell title="Add Utility" description="Add a new utility cost for your mess" icon={Zap} backHref="/expenses">
           <FormSection>
             <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} />
           </FormSection>
 
-          <FormSection>
+          <FormSection title="Utility Details">
             <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
               {UTILITY_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
@@ -120,8 +120,10 @@ export default function AddUtilityPage() {
               count={`${form.description.length}/250`}
             />
 
-            <DesignedInput label="Receipt URL" icon={expenseFormIcons.receipt} value={form.receiptUrl} onChange={(event) => update('receiptUrl', event.target.value)} placeholder="https://..." />
+          </FormSection>
 
+          <FormSection>
+            <DesignedInput label="Receipt URL" icon={expenseFormIcons.receipt} value={form.receiptUrl} onChange={(event) => update('receiptUrl', event.target.value)} placeholder="https://..." />
             <UploadField fileName={receiptFile?.name} onChange={setReceiptFile} />
           </FormSection>
 
@@ -131,7 +133,7 @@ export default function AddUtilityPage() {
             </div>
           ) : null}
 
-          <SubmitGradientButton busy={busy}>Submit Utility</SubmitGradientButton>
+          <SubmitGradientButton busy={busy}>Save Utility</SubmitGradientButton>
         </FormPageShell>
       </form>
     </MobileShell>

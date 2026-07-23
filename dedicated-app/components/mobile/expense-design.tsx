@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ClipboardList,
   FileText,
@@ -157,32 +158,17 @@ export function ScreenHeader({
   right?: ReactNode
 }) {
   return (
-    <header
-      className="
-        relative overflow-hidden
-        rounded-b-[28px]
-        bg-gradient-to-br
-        from-[#007f80]
-        via-[#008d8c]
-        to-[#12a4a1]
-        px-5 pb-8 pt-5
-        text-white
-        shadow-[0_18px_42px_rgba(0,119,122,0.20)]
-      "
-    >
-      <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
-
-      <div className="relative grid grid-cols-[42px_1fr_42px] items-center gap-3">
+    <header className="top-hero px-4 pb-6">
+      <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
         <div>{left}</div>
 
         <div className="min-w-0 text-center">
-          <h1 className="truncate text-[18px] font-black leading-tight tracking-[-0.02em]">
+          <h1 className="truncate text-[16px] font-extrabold leading-tight">
             {title}
           </h1>
 
           {subtitle ? (
-            <p className="mt-1.5 truncate text-[11px] font-medium text-white/85">
+            <p className="mt-1 truncate text-[11px] leading-tight text-white/78">
               {subtitle}
             </p>
           ) : null}
@@ -219,14 +205,12 @@ export function HeaderIconButton({
   label: string
 }) {
   const className = `
-    relative grid h-10 w-10
-    place-items-center rounded-[14px]
-    border border-white/15
-    bg-white/12 text-white
-    shadow-[0_10px_24px_rgba(0,0,0,0.10)]
-    backdrop-blur-md
+    grid h-10 w-10
+    place-items-center rounded-full
+    bg-white/10 text-white
+    ring-1 ring-white/10
     transition-all duration-200
-    hover:bg-white/20
+    hover:bg-white/15
     active:scale-95
   `
 
@@ -747,28 +731,33 @@ export function FormPageShell({
   children: ReactNode
 }) {
   return (
-    <div className="screen">
-      <section className="design-form-card">
-        <div className="flex items-start gap-3">
-          <CircleIcon icon={Icon} size="lg" tone={{ bg: '#008d8c', fg: '#ffffff' }} />
-          <div className="min-w-0 flex-1">
-            <h1 className="text-[18px] font-black leading-tight text-[#061638]">{title}</h1>
-            <p className="mt-1.5 text-[12px] leading-[18px] text-[#65838b]">{description}</p>
-          </div>
-          <Link href={backHref} className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-[#dce5ec] bg-white text-[#4f6375]" aria-label="Close form">
-            <ChevronDown className="rotate-45" size={18} />
+    <>
+      <header className="expense-form-hero">
+        <div className="grid grid-cols-[64px_minmax(0,1fr)_64px] items-center gap-2">
+          <Link href={backHref} className="expense-form-hero-button justify-self-start" aria-label="Back">
+            <ChevronLeft size={25} strokeWidth={2.7} />
           </Link>
+
+          <div className="min-w-0 text-center">
+            <h1 className="truncate text-[23px] font-black leading-tight text-white">{title}</h1>
+            <p className="mt-1.5 truncate text-[13px] font-semibold leading-tight text-white/90">{description}</p>
+          </div>
+
+          <span className="expense-form-hero-button justify-self-end" aria-hidden="true">
+            <Icon size={24} strokeWidth={2.4} />
+          </span>
         </div>
-        <div className="mt-5 space-y-4">{children}</div>
-      </section>
-    </div>
+      </header>
+
+      <div className="screen expense-form-screen space-y-5">{children}</div>
+    </>
   )
 }
 
 export function FormSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <section className="rounded-[14px] border border-[#dce5ec] bg-white/76 p-3.5">
-      {title ? <h2 className="mb-3 text-[14px] font-black text-[#061638]">{title}</h2> : null}
+    <section className="expense-form-card">
+      {title ? <h2 className="mb-4 text-[15px] font-black leading-tight text-[#008d8c]">{title}</h2> : null}
       <div className="space-y-4">{children}</div>
     </section>
   )
@@ -788,7 +777,7 @@ export function PaymentTypeSelector({
 
   return (
     <div>
-      <h2 className="mb-3 text-[14px] font-black text-[#061638]">Payment Type</h2>
+      <h2 className="mb-4 text-[16px] font-black leading-tight text-[#061638]">Payment Type</h2>
       <div className="grid grid-cols-2 gap-3">
         {choices.map((choice) => {
           const selected = value === choice.value
@@ -798,23 +787,29 @@ export function PaymentTypeSelector({
               key={choice.value}
               type="button"
               onClick={() => onChange(choice.value)}
-              className={`flex h-[52px] items-center justify-center gap-2 rounded-[13px] border px-2 text-[12px] font-black transition ${
-                selected ? 'border-[#008d8c] bg-[#f4ffff] text-[#008d8c]' : 'border-[#dce5ec] bg-white text-[#4f6375]'
+              className={`relative grid min-h-[64px] grid-cols-[38px_minmax(0,1fr)_24px] items-center gap-2 rounded-[16px] border px-3 text-left transition ${
+                selected
+                  ? 'border-[#008d8c] bg-[#f7ffff] text-[#061638] shadow-[0_12px_24px_rgba(0,141,140,0.10)]'
+                  : 'border-[#dce5ec] bg-white text-[#061638] shadow-[0_8px_18px_rgba(18,55,72,0.04)]'
               }`}
             >
-              <Icon size={18} />
-              <span className="truncate">{choice.label}</span>
+              <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-[#e8f8f7] text-[#008d8c]">
+                <Icon size={19} strokeWidth={2.25} />
+              </span>
+              <span className="min-w-0 text-[13px] font-black leading-4">{choice.label}</span>
               {selected ? (
-                <span className="grid h-5 w-5 place-items-center rounded-full bg-[#008d8c] text-white">
-                  <Check size={13} />
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,141,140,0.22)]">
+                  <Check size={14} strokeWidth={3} />
                 </span>
-              ) : null}
+              ) : (
+                <span aria-hidden="true" />
+              )}
             </button>
           )
         })}
       </div>
-      <p className="mt-3 flex items-start gap-2 text-[11px] font-medium leading-4 text-[#65838b]">
-        <BadgeInfo className="mt-0.5 shrink-0" size={14} />
+      <p className="mt-4 flex items-center gap-2.5 rounded-[14px] bg-[#edfafa] px-4 py-3 text-[13px] font-medium leading-5 text-[#52727b]">
+        <BadgeInfo className="shrink-0 text-[#65838b]" size={18} />
         Amount will be split among all members in monthly bill calculation.
       </p>
     </div>
@@ -829,13 +824,13 @@ type DesignedFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 export function DesignedInput({ label, icon: Icon, className = '', ...props }: DesignedFieldProps) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[13px] font-black text-[#061638]">{label}</span>
+      <span className="mb-2.5 block text-[14px] font-black leading-tight text-[#061638]">{label}</span>
       <span className="relative block">
-        <span className="absolute left-2.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-[10px] bg-[#e8f8f7] text-[#008d8c]">
-          <Icon size={17} />
+        <span className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-[#e8f8f7] text-[#008d8c]">
+          <Icon size={18} strokeWidth={2.35} />
         </span>
         <input
-          className={`h-[54px] w-full rounded-[13px] border border-[#dce5ec] bg-white px-3.5 pl-[58px] text-[14px] font-semibold text-[#123748] outline-none placeholder:text-[#8a98ad] focus:border-[#9edddc] ${className}`}
+          className={`h-[58px] w-full rounded-[16px] border border-[#dce5ec] bg-white px-4 pl-[64px] text-[15px] font-semibold text-[#061638] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10 ${className}`}
           {...props}
         />
       </span>
@@ -852,18 +847,18 @@ type DesignedSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
 export function DesignedSelect({ label, icon: Icon, children, className = '', ...props }: DesignedSelectProps) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[13px] font-black text-[#061638]">{label}</span>
+      <span className="mb-2.5 block text-[14px] font-black leading-tight text-[#061638]">{label}</span>
       <span className="relative block">
-        <span className="absolute left-2.5 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-[10px] bg-[#e8f8f7] text-[#008d8c]">
-          <Icon size={17} />
+        <span className="absolute left-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-[#e8f8f7] text-[#008d8c]">
+          <Icon size={18} strokeWidth={2.35} />
         </span>
         <select
-          className={`h-[54px] w-full appearance-none rounded-[13px] border border-[#dce5ec] bg-white px-3.5 pl-[58px] pr-10 text-[14px] font-semibold text-[#123748] outline-none focus:border-[#9edddc] ${className}`}
+          className={`h-[58px] w-full appearance-none rounded-[16px] border border-[#dce5ec] bg-white px-4 pl-[64px] pr-11 text-[15px] font-semibold text-[#061638] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10 ${className}`}
           {...props}
         >
           {children}
         </select>
-        <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#4f6375]" size={18} />
+        <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#4f6375]" size={19} strokeWidth={2.4} />
       </span>
     </label>
   )
@@ -878,32 +873,32 @@ type DesignedTextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
 export function DesignedTextarea({ label, icon: Icon, count, className = '', ...props }: DesignedTextareaProps) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[13px] font-black text-[#061638]">{label}</span>
+      <span className="mb-2.5 block text-[14px] font-black leading-tight text-[#061638]">{label}</span>
       <span className="relative block">
-        <span className="absolute left-2.5 top-3 z-10 grid h-9 w-9 place-items-center rounded-[10px] bg-[#e8f8f7] text-[#008d8c]">
-          <Icon size={17} />
+        <span className="absolute left-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-[#e8f8f7] text-[#008d8c]">
+          <Icon size={18} strokeWidth={2.35} />
         </span>
         <textarea
-          className={`min-h-[120px] w-full resize-none rounded-[13px] border border-[#dce5ec] bg-white px-3.5 py-4 pl-[58px] text-[14px] font-semibold text-[#123748] outline-none placeholder:text-[#8a98ad] focus:border-[#9edddc] ${className}`}
+          className={`min-h-[118px] w-full resize-none rounded-[16px] border border-[#dce5ec] bg-white px-4 py-4 pl-[64px] text-[15px] font-semibold text-[#061638] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10 ${className}`}
           {...props}
         />
-        {count ? <span className="absolute bottom-3 right-4 text-[10px] font-medium text-[#7d8a9d]">{count}</span> : null}
+        {count ? <span className="absolute bottom-4 right-5 text-[11px] font-semibold text-[#7d8a9d]">{count}</span> : null}
       </span>
     </label>
   )
 }
 
-export function UploadField({ onChange, fileName }: { onChange: (file: File | null) => void; fileName?: string }) {
+export function UploadField({ onChange, fileName, label = 'Receipt (Optional)' }: { onChange: (file: File | null) => void; fileName?: string; label?: string }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[13px] font-black text-[#061638]">Receipt Image/PDF (Optional)</span>
-      <span className="flex min-h-[70px] items-center gap-3 rounded-[13px] border border-dashed border-[#cbd8e1] bg-white px-4">
-        <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[#e8f8f7] text-[#008d8c]">
-          <UploadCloud size={19} />
+      <span className="mb-3 block text-[14px] font-black leading-tight text-[#061638]">{label}</span>
+      <span className="flex min-h-[78px] items-center justify-center gap-3 rounded-[16px] border border-dashed border-[#58bfc0] bg-[#f6ffff] px-4 text-center">
+        <span className="grid h-12 w-12 shrink-0 place-items-center text-[#008d8c]">
+          <UploadCloud size={32} strokeWidth={2.1} />
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-black text-[#061638]">{fileName || 'Upload Receipt'}</span>
-          <span className="mt-1 block text-[10px] font-medium text-[#65838b]">PNG, JPG, PDF up to 5MB</span>
+        <span className="min-w-0">
+          <span className="block truncate text-[14px] font-black text-[#061638]">{fileName || 'Upload receipt image'}</span>
+          <span className="mt-1 block text-[12px] font-medium text-[#65838b]">JPG, PNG, PDF up to 5MB</span>
         </span>
         <input className="sr-only" type="file" accept="image/*,application/pdf" onChange={(event) => onChange(event.target.files?.[0] ?? null)} />
       </span>
@@ -913,10 +908,12 @@ export function UploadField({ onChange, fileName }: { onChange: (file: File | nu
 
 export function SubmitGradientButton({ children, busy }: { children: ReactNode; busy?: boolean }) {
   return (
-    <button type="submit" disabled={busy} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] border-0 bg-gradient-to-br from-[#008d8c] to-[#00777a] text-[14px] font-black text-white shadow-[0_16px_30px_rgba(0,119,122,0.22)] disabled:cursor-not-allowed disabled:opacity-70">
-      <Save size={18} />
-      {busy ? 'Saving...' : children}
-    </button>
+    <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-40 -mx-4 mt-7 rounded-t-[20px] bg-white/96 px-4 py-4 shadow-[0_-14px_30px_rgba(18,55,72,0.08)] backdrop-blur">
+      <button type="submit" disabled={busy} className="flex h-[56px] w-full items-center justify-center gap-2.5 rounded-[999px] border-0 bg-gradient-to-br from-[#008d8c] to-[#00777a] text-[16px] font-black text-white shadow-[0_18px_32px_rgba(0,119,122,0.24)] disabled:cursor-not-allowed disabled:opacity-70">
+        <Save size={21} strokeWidth={2.5} />
+        {busy ? 'Saving...' : children}
+      </button>
+    </div>
   )
 }
 

@@ -5,11 +5,13 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { canAccessAppPath, getBottomTabs, getDefaultAppPath } from '@/lib/app-permissions'
+import { normalizePathname } from '@/lib/auth'
 
 export function MobileShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isLoading, user } = useAuth()
+  const normalizedPathname = normalizePathname(pathname)
   const tabs = getBottomTabs(user)
   const canAccess = canAccessAppPath(user, pathname)
 
@@ -34,7 +36,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
       <nav className="nav-bar" aria-label="Primary">
         <div className="nav-dock">
           {tabs.map(({ href, label, icon: Icon }) => {
-            const active = href === '/' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+            const active = href === '/' ? normalizedPathname === href : normalizedPathname === href || normalizedPathname.startsWith(`${href}/`)
             return (
               <Link
                 key={href}

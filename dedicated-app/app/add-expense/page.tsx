@@ -147,12 +147,12 @@ export default function AddExpensePage() {
   return (
     <MobileShell>
       <form onSubmit={handleSubmit}>
-        <FormPageShell title="Add Expense" description="Add expense with category, buyer, amount, and receipt." icon={ReceiptText} backHref="/expenses">
+        <FormPageShell title="Add Expense" description="Add a new expense for your mess" icon={ReceiptText} backHref="/expenses">
           <FormSection>
             <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} />
           </FormSection>
 
-          <FormSection>
+          <FormSection title="Expense Details">
             <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
               {EXPENSE_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
@@ -200,8 +200,10 @@ export default function AddExpensePage() {
               count={`${form.description.length}/250`}
             />
 
-            <DesignedInput label="Receipt URL" icon={expenseFormIcons.receipt} value={form.receiptUrl} onChange={(event) => update('receiptUrl', event.target.value)} placeholder="https://..." />
+          </FormSection>
 
+          <FormSection>
+            <DesignedInput label="Receipt URL" icon={expenseFormIcons.receipt} value={form.receiptUrl} onChange={(event) => update('receiptUrl', event.target.value)} placeholder="https://..." />
             <UploadField fileName={receiptFile?.name} onChange={setReceiptFile} />
           </FormSection>
 
@@ -211,7 +213,7 @@ export default function AddExpensePage() {
             </div>
           ) : null}
 
-          <SubmitGradientButton busy={busy}>Submit Expense</SubmitGradientButton>
+          <SubmitGradientButton busy={busy}>Save Expense</SubmitGradientButton>
         </FormPageShell>
       </form>
     </MobileShell>

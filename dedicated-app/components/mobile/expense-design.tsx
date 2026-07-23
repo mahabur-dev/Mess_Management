@@ -20,6 +20,7 @@ import {
   Save,
   Search,
   ShieldCheck,
+  SlidersHorizontal,
   Tag,
   Trash2,
   UploadCloud,
@@ -28,16 +29,17 @@ import {
   UtensilsCrossed,
   WalletCards,
   Zap,
+  LucideIcon,
   type LucideProps,
 } from 'lucide-react'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
 
 type IconType = ComponentType<LucideProps>
 
-export function formatBDT(value?: string | number | null, prefix = 'BDT') {
+export function formatBDT(value?: string | number | null) {
   const amount = Number(value ?? 0)
-  if (!Number.isFinite(amount)) return `${prefix} 0`
-  return `${prefix} ${amount.toLocaleString('en-US')}`
+  if (!Number.isFinite(amount)) return `0`
+  return `${amount.toLocaleString('en-US')}`
 }
 
 export function formatTaka(value?: string | number | null) {
@@ -119,6 +121,30 @@ export function CircleIcon({
   )
 }
 
+// export function ScreenHeader({
+//   title,
+//   subtitle,
+//   left,
+//   right,
+// }: {
+//   title: string
+//   subtitle?: string
+//   left?: ReactNode
+//   right?: ReactNode
+// }) {
+//   return (
+//     <header className="expense-top px-4 pb-6">
+//       <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
+//         <div>{left}</div>
+//         <div className="min-w-0 text-center text-white">
+//           <h1 className="truncate text-[16px] font-black leading-tight">{title}</h1>
+//           {subtitle ? <p className="mt-1 truncate text-[11px] font-medium text-white/88">{subtitle}</p> : null}
+//         </div>
+//         <div>{right}</div>
+//       </div>
+//     </header>
+//   )
+// }
 export function ScreenHeader({
   title,
   subtitle,
@@ -131,35 +157,136 @@ export function ScreenHeader({
   right?: ReactNode
 }) {
   return (
-    <header className="expense-top px-4 pb-6">
-      <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
+    <header
+      className="
+        relative overflow-hidden
+        rounded-b-[28px]
+        bg-gradient-to-br
+        from-[#007f80]
+        via-[#008d8c]
+        to-[#12a4a1]
+        px-5 pb-8 pt-5
+        text-white
+        shadow-[0_18px_42px_rgba(0,119,122,0.20)]
+      "
+    >
+      <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+
+      <div className="relative grid grid-cols-[42px_1fr_42px] items-center gap-3">
         <div>{left}</div>
-        <div className="min-w-0 text-center text-white">
-          <h1 className="truncate text-[16px] font-black leading-tight">{title}</h1>
-          {subtitle ? <p className="mt-1 truncate text-[11px] font-medium text-white/88">{subtitle}</p> : null}
+
+        <div className="min-w-0 text-center">
+          <h1 className="truncate text-[18px] font-black leading-tight tracking-[-0.02em]">
+            {title}
+          </h1>
+
+          {subtitle ? (
+            <p className="mt-1.5 truncate text-[11px] font-medium text-white/85">
+              {subtitle}
+            </p>
+          ) : null}
         </div>
-        <div>{right}</div>
+
+        <div className="flex justify-end">{right}</div>
       </div>
     </header>
   )
 }
 
-export function HeaderIconButton({ href, icon, label }: { href?: string; icon: ReactNode; label: string }) {
-  const className = 'relative grid h-10 w-10 place-items-center rounded-full bg-white/14 text-white ring-1 ring-white/12 backdrop-blur'
+// export function HeaderIconButton({ href, icon, label }: { href?: string; icon: ReactNode; label: string }) {
+//   const className = 'relative grid h-10 w-10 place-items-center rounded-full bg-white/14 text-white ring-1 ring-white/12 backdrop-blur'
+//   if (href) {
+//     return (
+//       <Link href={href} className={className} aria-label={label} title={label}>
+//         {icon}
+//       </Link>
+//     )
+//   }
+//   return (
+//     <button type="button" className={className} aria-label={label} title={label}>
+//       {icon}
+//     </button>
+//   )
+// }
+export function HeaderIconButton({
+  href,
+  icon,
+  label,
+}: {
+  href?: string
+  icon: ReactNode
+  label: string
+}) {
+  const className = `
+    relative grid h-10 w-10
+    place-items-center rounded-[14px]
+    border border-white/15
+    bg-white/12 text-white
+    shadow-[0_10px_24px_rgba(0,0,0,0.10)]
+    backdrop-blur-md
+    transition-all duration-200
+    hover:bg-white/20
+    active:scale-95
+  `
+
   if (href) {
     return (
-      <Link href={href} className={className} aria-label={label} title={label}>
+      <Link
+        href={href}
+        className={className}
+        aria-label={label}
+        title={label}
+      >
         {icon}
       </Link>
     )
   }
+
   return (
-    <button type="button" className={className} aria-label={label} title={label}>
+    <button
+      type="button"
+      className={className}
+      aria-label={label}
+      title={label}
+    >
       {icon}
     </button>
   )
 }
 
+// export function ExpenseActionCard({
+//   href,
+//   icon: Icon,
+//   title,
+//   subtitle,
+//   accent = 'teal',
+// }: {
+//   href: string
+//   icon: IconType
+//   title: string
+//   subtitle: string
+//   accent?: 'teal' | 'blue'
+// }) {
+//   const iconClass = accent === 'blue' ? 'from-[#4867ff] to-[#7f61ff]' : 'from-[#00777a] to-[#0aa0a0]'
+//   return (
+//     <Link href={href} className="expense-action-card">
+//       <span className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br ${iconClass} text-white shadow-[0_12px_26px_rgba(0,119,122,0.20)]`}>
+//         <Icon size={19} strokeWidth={2.25} />
+//         <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-[#dff4f3] text-[#008d8c] ring-2 ring-white">
+//           <ChevronRight size={12} />
+//         </span>
+//       </span>
+//       <span className="min-w-0 flex-1">
+//         <span className="block truncate text-[13px] font-black text-[#061638]">{title}</span>
+//         <span className="mt-1 block truncate text-[10px] font-medium text-[#65838b]">{subtitle}</span>
+//       </span>
+//       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3f6f8] text-[#061638]">
+//         <ChevronRight size={16} strokeWidth={2.6} />
+//       </span>
+//     </Link>
+//   )
+// }
 export function ExpenseActionCard({
   href,
   icon: Icon,
@@ -173,47 +300,174 @@ export function ExpenseActionCard({
   subtitle: string
   accent?: 'teal' | 'blue'
 }) {
-  const iconClass = accent === 'blue' ? 'from-[#4867ff] to-[#7f61ff]' : 'from-[#00777a] to-[#0aa0a0]'
+  const isBlue = accent === 'blue'
+
   return (
-    <Link href={href} className="expense-action-card">
-      <span className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br ${iconClass} text-white shadow-[0_12px_26px_rgba(0,119,122,0.20)]`}>
-        <Icon size={19} strokeWidth={2.25} />
-        <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-[#dff4f3] text-[#008d8c] ring-2 ring-white">
-          <ChevronRight size={12} />
+    <Link
+      href={href}
+      className={`
+        group relative flex min-h-[78px]
+        items-center gap-3 overflow-hidden
+        rounded-[18px] border
+        bg-white px-3.5 py-3
+        shadow-[0_10px_28px_rgba(18,55,72,0.07)]
+        transition-all duration-200
+        hover:-translate-y-0.5
+        hover:shadow-[0_16px_34px_rgba(18,55,72,0.11)]
+        active:scale-[0.99]
+        ${
+          isBlue
+            ? 'border-[#cfc5ff]'
+            : 'border-[#9edddc]'
+        }
+      `}
+    >
+      <span
+        className={`
+          grid h-11 w-11 shrink-0
+          place-items-center rounded-[14px]
+          text-white
+          shadow-[0_10px_22px_rgba(0,119,122,0.18)]
+          ${
+            isBlue
+              ? 'bg-gradient-to-br from-[#6455f5] to-[#815cf5]'
+              : 'bg-gradient-to-br from-[#008d8c] to-[#05a5a1]'
+          }
+        `}
+      >
+        <Icon size={20} strokeWidth={2.25} />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-black text-[#061638]">
+          {title}
+        </span>
+
+        <span className="mt-1 block truncate text-[10px] font-medium text-[#758893]">
+          {subtitle}
         </span>
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-black text-[#061638]">{title}</span>
-        <span className="mt-1 block truncate text-[10px] font-medium text-[#65838b]">{subtitle}</span>
-      </span>
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3f6f8] text-[#061638]">
+
+      <span
+        className="
+          grid h-8 w-8 shrink-0
+          place-items-center rounded-full
+          bg-[#f5f8f9] text-[#123748]
+          transition-all duration-200
+          group-hover:bg-[#edfafa]
+          group-hover:text-[#008d8c]
+        "
+      >
         <ChevronRight size={16} strokeWidth={2.6} />
       </span>
     </Link>
   )
 }
 
-export function ExpenseStatCard({
-  icon,
-  label,
-  value,
-  caption = 'This Month',
-  tone = { bg: '#dff4f3', fg: '#008d8c' },
-}: {
-  icon: IconType
-  label: string
+// export function ExpenseStatCard({
+//   icon,
+//   label,
+//   value,
+//   caption = 'This Month',
+//   tone = { bg: '#dff4f3', fg: '#008d8c' },
+// }: {
+//   icon: IconType
+//   label: string
+//   value: ReactNode
+//   caption?: string
+//   tone?: { bg: string; fg: string }
+// }) {
+//   return (
+//     <div className="expense-stat-card">
+//       <CircleIcon icon={icon} tone={tone} />
+//       <div className="min-w-0">
+//         <div className="text-[10px] font-bold text-[#65838b]">{label}</div>
+//         <div className="mt-1.5 truncate text-[16px] font-black leading-none text-[#061638]">{value}</div>
+//         <div className="mt-1.5 text-[10px] font-medium text-[#65838b]">{caption}</div>
+//       </div>
+//     </div>
+//   )
+// }
+interface ExpenseStatCardProps {
+  icon: LucideIcon
+  title: string
   value: ReactNode
-  caption?: string
-  tone?: { bg: string; fg: string }
-}) {
+  color: string
+  bg: string
+}
+export function ExpenseStatCard({
+  icon: Icon,
+  title,
+  value,
+  color,
+  bg,
+}: ExpenseStatCardProps) {
   return (
-    <div className="expense-stat-card">
-      <CircleIcon icon={icon} tone={tone} />
-      <div className="min-w-0">
-        <div className="text-[10px] font-bold text-[#65838b]">{label}</div>
-        <div className="mt-1.5 truncate text-[16px] font-black leading-none text-[#061638]">{value}</div>
-        <div className="mt-1.5 text-[10px] font-medium text-[#65838b]">{caption}</div>
-      </div>
+    <div
+      className="
+        relative overflow-hidden
+        rounded-[18px]
+        border border-[#eef2f4]
+        bg-white
+        p-4
+        shadow-[0_8px_24px_rgba(17,24,39,.05)]
+      "
+    >
+      <div className="flex items-center gap-3">
+  <div
+    className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
+    style={{ background: bg }}
+  >
+    <Icon
+      size={21}
+      strokeWidth={2.2}
+      style={{ color }}
+    />
+  </div>
+
+  <div className="flex-1">
+    <p className="whitespace-nowrap text-[11px] font-semibold text-[#94a3b8]">
+      {title}
+    </p>
+
+    <h3
+      className="mt-1 whitespace-nowrap text-[20px] font-black leading-none"
+      style={{ color }}
+    >
+      {value}
+    </h3>
+  </div>
+
+  <svg
+    width="46"
+    height="30"
+    viewBox="0 0 54 34"
+    fill="none"
+    className="shrink-0 self-end"
+  >
+    <path
+      d="M2 29
+         C12 29
+         15 10
+         25 18
+         C31 22
+         35 6
+         45 6
+         L52 2"
+      stroke={color}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+
+    <circle
+      cx="52"
+      cy="2"
+      r="3"
+      fill={color}
+    />
+  </svg>
+</div>
     </div>
   )
 }
@@ -248,6 +502,31 @@ export function SearchPanel({
   )
 }
 
+// export function FilterPill({
+//   icon: Icon,
+//   label,
+//   active,
+//   onClick,
+// }: {
+//   icon: IconType
+//   label: string
+//   active?: boolean
+//   onClick?: () => void
+// }) {
+//   return (
+//     <button
+//       type="button"
+//       onClick={onClick}
+//       className={`flex h-9 items-center justify-center gap-1 rounded-full border px-2 text-[10px] font-bold shadow-[0_8px_18px_rgba(18,55,72,0.05)] ${
+//         active ? 'border-[#9edddc] bg-[#edfafa] text-[#008d8c]' : 'border-white/80 bg-white text-[#123748]'
+//       }`}
+//     >
+//       <Icon size={13} className="shrink-0 text-[#008d8c]" />
+//       <span className="truncate">{label}</span>
+//       <ChevronDown size={12} className="shrink-0 text-[#4f6375]" />
+//     </button>
+//   )
+// }
 export function FilterPill({
   icon: Icon,
   label,
@@ -263,13 +542,38 @@ export function FilterPill({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-9 items-center justify-center gap-1 rounded-full border px-2 text-[10px] font-bold shadow-[0_8px_18px_rgba(18,55,72,0.05)] ${
-        active ? 'border-[#9edddc] bg-[#edfafa] text-[#008d8c]' : 'border-white/80 bg-white text-[#123748]'
-      }`}
+      className={`
+        flex h-9 min-w-0
+        items-center justify-center
+        gap-1.5 rounded-full
+        border px-2.5
+        text-[10px] font-bold
+        shadow-[0_7px_18px_rgba(18,55,72,0.05)]
+        transition-all duration-200
+        active:scale-[0.98]
+        ${
+          active
+            ? 'border-[#008d8c] bg-[#008d8c] text-white'
+            : 'border-white/90 bg-white text-[#123748] hover:border-[#9edddc]'
+        }
+      `}
     >
-      <Icon size={13} className="shrink-0 text-[#008d8c]" />
+      <Icon
+        size={13}
+        strokeWidth={2.2}
+        className={`shrink-0 ${
+          active ? 'text-white' : 'text-[#008d8c]'
+        }`}
+      />
+
       <span className="truncate">{label}</span>
-      <ChevronDown size={12} className="shrink-0 text-[#4f6375]" />
+
+      <ChevronDown
+        size={12}
+        className={`shrink-0 ${
+          active ? 'text-white/90' : 'text-[#627984]'
+        }`}
+      />
     </button>
   )
 }
@@ -285,24 +589,144 @@ export type ExpenseListRecord = {
   payment_method?: string | null
 }
 
-export function ExpenseListItem({ item, href }: { item: ExpenseListRecord; href: string }) {
+// export function ExpenseListItem({ item, href }: { item: ExpenseListRecord; href: string }) {
+//   const Icon = categoryIcon(item.category)
+//   const tone = categoryTone(item.category)
+//   const label = item.itemName?.trim() || categoryLabel(item.category)
+//   const payment = item.paymentType === 'PERSONAL' ? 'Personal' : item.payment_method || paymentLabel(item.paymentType)
+
+//   return (
+//     <Link href={href} className="expense-list-item">
+//       <CircleIcon icon={Icon} tone={tone} />
+//       <span className="min-w-0 flex-1">
+//         <span className="block truncate text-[13px] font-black uppercase text-[#061638]">{label}</span>
+//         <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
+//           <span className="truncate text-[10px] font-medium text-[#4f6375]">{formatDate(item.expenseDate ?? item.expense_date)}</span>
+//           <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-[8px] font-black text-[#008d8c]">{payment}</span>
+//         </span>
+//       </span>
+//       <span className="shrink-0 text-right text-[15px] font-black text-[#008d8c]">{formatTaka(item.amount).replace(' ', ' ')}</span>
+//       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3f6f8] text-[#061638]">
+//         <ChevronRight size={16} strokeWidth={2.7} />
+//       </span>
+//     </Link>
+//   )
+// }
+export function ExpenseListItem({
+  item,
+  href,
+}: {
+  item: ExpenseListRecord
+  href: string
+}) {
   const Icon = categoryIcon(item.category)
   const tone = categoryTone(item.category)
-  const label = item.itemName?.trim() || categoryLabel(item.category)
-  const payment = item.paymentType === 'PERSONAL' ? 'Personal' : item.payment_method || paymentLabel(item.paymentType)
+
+  const label =
+    item.itemName?.trim() ||
+    categoryLabel(item.category)
+
+  const payment =
+    item.paymentType === 'PERSONAL'
+      ? 'Personal'
+      : item.payment_method ||
+        paymentLabel(item.paymentType)
 
   return (
-    <Link href={href} className="expense-list-item">
-      <CircleIcon icon={Icon} tone={tone} />
+    <Link
+      href={href}
+      className="
+        group relative flex min-h-[76px]
+        items-center gap-3 overflow-hidden
+        rounded-[17px]
+        border border-white/90
+        bg-white/95
+        px-3 py-3
+        shadow-[0_10px_26px_rgba(18,55,72,0.065)]
+        transition-all duration-200
+        hover:-translate-y-0.5
+        hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]
+        active:scale-[0.995]
+      "
+    >
+      <span
+        className="
+          absolute inset-y-0 left-0
+          w-[3px] rounded-r-full
+        "
+        style={{ backgroundColor: tone.fg }}
+      />
+
+      <span
+        className="
+          ml-1 grid h-10 w-10 shrink-0
+          place-items-center rounded-full
+        "
+        style={{
+          backgroundColor: tone.bg,
+          color: tone.fg,
+        }}
+      >
+        <Icon size={17} strokeWidth={2.3} />
+      </span>
+
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-black uppercase text-[#061638]">{label}</span>
+        <span
+          className="
+            block truncate
+            text-[13px] font-black
+            uppercase tracking-[-0.01em]
+            text-[#061638]
+          "
+        >
+          {label}
+        </span>
+
         <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-[10px] font-medium text-[#4f6375]">{formatDate(item.expenseDate ?? item.expense_date)}</span>
-          <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-[8px] font-black text-[#008d8c]">{payment}</span>
+          <span className="truncate text-[9px] font-medium text-[#667d87]">
+            {formatDate(
+              item.expenseDate ??
+                item.expense_date
+            )}
+          </span>
+
+          <span
+            className="
+              truncate rounded-full
+              bg-[#e8f8f7]
+              px-2 py-0.5
+              text-[8px] font-black
+              text-[#008d8c]
+            "
+          >
+            {payment}
+          </span>
         </span>
       </span>
-      <span className="shrink-0 text-right text-[15px] font-black text-[#008d8c]">{formatTaka(item.amount).replace(' ', ' ')}</span>
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3f6f8] text-[#061638]">
+
+      <span
+        className="
+          shrink-0 whitespace-nowrap
+          text-right text-[15px]
+          font-black tracking-[-0.02em]
+        "
+        style={{ color: tone.fg }}
+      >
+        {formatTaka(item.amount)}
+      </span>
+
+      <span
+        className="
+          grid h-8 w-8 shrink-0
+          place-items-center
+          rounded-full
+          bg-[#f4f7f8]
+          text-[#123748]
+          transition-all duration-200
+          group-hover:bg-[#edfafa]
+          group-hover:text-[#008d8c]
+        "
+      >
         <ChevronRight size={16} strokeWidth={2.7} />
       </span>
     </Link>

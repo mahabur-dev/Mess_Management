@@ -87,9 +87,22 @@ export default function ExpensesPage() {
           <ExpenseActionCard href="/add-utility" icon={Zap} title="Add Utility" subtitle="Add utility expense" accent="blue" />
         </section>
 
-        <section className="grid grid-cols-2 gap-3">
-          <ExpenseStatCard icon={ClipboardList} label="Total Items" value={loading ? '...' : items.length} />
-          <ExpenseStatCard icon={Wallet2} label="Total Amount" value={loading ? '...' : formatBDT(totalAmount)} tone={{ bg: '#f0edff', fg: '#8a22e6' }} />
+        <section className="grid grid-cols-2 gap-2.5">
+          <ExpenseStatCard
+            icon={ClipboardList}
+            title="Total Items"
+            value={loading ? '...' : items.length}
+            color="#0F9D94"
+            bg="#E8FAF8"
+          />
+
+          <ExpenseStatCard
+            icon={Wallet2}
+            title="Total Amount"
+            value={loading ? '...' : formatBDT(totalAmount)}
+            color="#7C4DFF"
+            bg="#F1EBFF"
+          />
         </section>
 
         <SearchPanel search={search} onSearch={setSearch}>

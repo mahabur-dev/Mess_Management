@@ -2,7 +2,7 @@ import { clearStoredToken, getStoredToken, type AuthUser, type GlobalRole } from
 
 const DEFAULT_API_URL =
   process.env.NODE_ENV === 'development'
-    ? 'http://localhost:5001/api/v1'
+    ? 'https://stunning-halibut-5g5466vxgwfppgx-5001.app.github.dev/api/v1'
     : 'https://api.messzen.com/api/v1'
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/+$/, '')

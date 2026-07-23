@@ -179,6 +179,63 @@ textarea {
   backdrop-filter: blur(18px);
 }
 
+.expense-form-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(158, 221, 220, 0.26), transparent 15rem),
+    radial-gradient(circle at 86% 14%, rgba(255, 255, 255, 0.12), transparent 12rem),
+    linear-gradient(135deg, #00777a 0%, #008d8c 52%, #0aa0a0 100%);
+  color: #ffffff;
+  padding: calc(env(safe-area-inset-top) + 22px) 18px 30px;
+  box-shadow: 0 18px 40px rgba(0, 119, 122, 0.16);
+}
+
+.expense-form-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.34), transparent 82%);
+}
+
+.expense-form-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.expense-form-hero-button {
+  display: grid;
+  height: 54px;
+  width: 54px;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  background: rgba(237, 250, 250, 0.9);
+  color: #00777a;
+  box-shadow: 0 16px 34px rgba(0, 75, 78, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.expense-form-screen {
+  margin-top: 18px;
+  padding-bottom: calc(152px + env(safe-area-inset-bottom));
+}
+
+.expense-form-card {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.98);
+  padding: 22px;
+  box-shadow:
+    0 14px 32px rgba(18, 55, 72, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.88) inset;
+}
+
 .detail-hero {
   position: relative;
   overflow: hidden;

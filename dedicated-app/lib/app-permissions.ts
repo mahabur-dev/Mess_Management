@@ -18,7 +18,7 @@ import {
   Zap,
   type LucideProps,
 } from 'lucide-react'
-import type { AuthUser, MessMembership } from './auth'
+import { normalizePathname, type AuthUser, type MessMembership } from './auth'
 
 export type AppIcon = ComponentType<LucideProps>
 export type AccessLevel = 'public' | 'mess' | 'manager'
@@ -82,16 +82,16 @@ const protectedRoutes: AppRouteItem[] = [
 ]
 
 export const managerQuickActions: AppRouteItem[] = [
-  { href: '/add-member', label: 'Add Member', icon: Users, access: 'manager' },
-  { href: '/add-expense', label: 'Add Expense', icon: Wallet2, access: 'manager' },
-  { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'manager' },
-  { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, access: 'mess' },
-  { href: '/notices', label: 'Send Notice', icon: Bell, access: 'manager' },
+  { href: '/members', label: 'Members', icon: Users, access: 'manager' },
+  { href: '/expenses', label: 'Expenses', icon: Wallet2, access: 'manager' },
+  { href: '/expenses', label: 'Utilities', icon: Zap, access: 'manager' },
+  { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
+  { href: '/notices', label: 'Notices', icon: Bell, access: 'manager' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
 ]
 
 export const memberQuickActions: AppRouteItem[] = [
-  { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, access: 'mess' },
+  { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
   { href: '/monthly-bill', label: 'My Bill', icon: ClipboardList, access: 'mess' },
   { href: '/payments', label: 'Payments', icon: CreditCard, access: 'mess' },
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
@@ -157,11 +157,13 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
 }
 
 export function canAccessAppPath(user: AuthUser | null | undefined, pathname: string) {
-  if (pathname === '/' || pathname === '/more') return true
+  const normalizedPathname = normalizePathname(pathname)
+
+  if (normalizedPathname === '/' || normalizedPathname === '/more') return true
 
   const route = protectedRoutes.find((item) => {
-    if (item.exact) return pathname === item.href
-    return pathname === item.href || pathname.startsWith(`${item.href}/`)
+    if (item.exact) return normalizedPathname === item.href
+    return normalizedPathname === item.href || normalizedPathname.startsWith(`${item.href}/`)
   })
 
   return route ? canAccessLevel(user, route.access) : true

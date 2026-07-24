@@ -17,7 +17,6 @@ import {
   Shield,
   Building2,
   Zap,
-  Infinity,
   Sparkles,
   Clock,
 } from 'lucide-react'
@@ -37,103 +36,115 @@ import {
 
 
 function SystemFeaturesSection() {
-  const [api, setApi] = useState<CarouselApi | null>(null)
-  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
   const features = [
-    { icon: UtensilsCrossed, title: 'Meal Tracking', text: 'Track daily meals for every member and generate accurate meal-based calculations without manual sheets.', accent: 'from-[#008b80] to-[#00a99d]', iconBg: 'bg-[#e7f7f5]', iconColor: 'text-[#008b80]' },
-    { icon: WalletCards, title: 'Utility & Expense Management', text: 'Record shared bills and operational expenses in one organized workflow with better financial visibility.', accent: 'from-[#10b981] to-[#34d399]', iconBg: 'bg-[#ecfdf5]', iconColor: 'text-[#10b981]' },
-    { icon: CreditCard, title: 'Deposit Management', text: 'Keep deposits, balances, and adjustments transparent so both managers and members stay informed.', accent: 'from-[#f59e0b] to-[#f97316]', iconBg: 'bg-[#fffbeb]', iconColor: 'text-[#f59e0b]' },
-    { icon: ClipboardList, title: 'Monthly Bill Generation', text: 'Automatically generate monthly bills using meals, expenses, utilities, and deposits with fewer mistakes.', accent: 'from-[#6d28d9] to-[#8b5cf6]', iconBg: 'bg-[#f5f3ff]', iconColor: 'text-[#6d28d9]' },
-    { icon: Bell, title: 'Push Notifications', text: 'Send instant alerts and important updates to members so communication stays timely and clear.', accent: 'from-[#0ea5e9] to-[#2563eb]', iconBg: 'bg-[#ecfeff]', iconColor: 'text-[#0ea5e9]' },
-    { icon: BarChart3, title: 'Reports & Insights', text: 'Download clean monthly summaries and understand meals, dues, and performance at a glance.', accent: 'from-[#ef4444] to-[#f43f5e]', iconBg: 'bg-[#fef2f2]', iconColor: 'text-[#ef4444]' },
-    { icon: Users, title: 'Member & Role Control', text: 'Invite members, assign roles, and keep every resident and manager organized from one place.', accent: 'from-[#008b80] to-[#6f3df4]', iconBg: 'bg-[#e7f7f5]', iconColor: 'text-[#008b80]' },
-    { icon: ShoppingCart, title: 'Expense & Bazar Tracking', text: 'Record daily shopping, categorize spending, and keep food costs transparent for everyone.', accent: 'from-[#0891b2] to-[#06b6d4]', iconBg: 'bg-[#ecfeff]', iconColor: 'text-[#0891b2]' },
+    {
+      title: 'Smart Meal Suggestions',
+      description: 'Daily meal, attendance, and bazar entries stay organized with guided actions.',
+      tone: 'from-[#fff2b8] via-[#fff9dc] to-[#eef9f7]',
+      visual: 'meal',
+    },
+    {
+      title: 'Automated Bill Engine',
+      description: 'Meals, deposits, utilities, and expenses connect into clear monthly bills.',
+      tone: 'from-[#ffdce9] via-[#fff0d8] to-[#edf8f6]',
+      visual: 'billing',
+    },
+    {
+      title: 'Member Library',
+      description: 'Find residents, roles, dues, requests, and notifications from one simple hub.',
+      tone: 'from-[#ffe4f0] via-[#f1ddff] to-[#eef9f7]',
+      visual: 'members',
+    },
   ]
 
-  const startAutoplay = () => {
-    if (autoplayRef.current) clearInterval(autoplayRef.current)
-    autoplayRef.current = setInterval(() => {
-      api?.scrollNext()
-    }, 3500)
-  }
-
-  const stopAutoplay = () => {
-    if (autoplayRef.current) {
-      clearInterval(autoplayRef.current)
-      autoplayRef.current = null
-    }
-  }
-
-  useEffect(() => {
-    if (!api) return
-    startAutoplay()
-    return () => stopAutoplay()
-  }, [api])
-
   return (
-    <section id="features" className="overflow-hidden bg-[#fafcff] px-4 py-20 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex items-center rounded-full border border-[#d8e8e7] bg-[#fbfdfd] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#008b80]">System Features</span>
-          <h2 className="mt-4 text-3xl font-black tracking-tight text-[#071821] sm:text-4xl">Professional tools for every mess workflow</h2>
-          <p className="mt-4 text-base font-semibold leading-7 text-[#334155]">Mess Management brings daily operations, member coordination, billing, shopping, and reporting into one clear management experience.</p>
+    <section id="features" className="overflow-hidden bg-white px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-xl text-center">
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#b8b530]">System Features</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#073735] sm:text-4xl">
+            Built for Speed & Quality
+          </h2>
+          <p className="mx-auto mt-3 max-w-sm text-sm font-semibold leading-6 text-[#526b6a]">
+            Everything needed to run a modern mess from meal count to monthly bill.
+          </p>
         </div>
 
-        <div className="relative mt-12 px-0 sm:px-12">
-          <Carousel
-            setApi={setApi}
-            opts={{
-              align: 'start',
-              loop: true,
-              skipSnaps: false,
-              slidesToScroll: 1,
-              breakpoints: { '(min-width: 1024px)': { slidesToScroll: 1 } },
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-3 md:-ml-4">
-              {features.map((feature) => {
-                const Icon = feature.icon
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {features.map((feature) => (
+            <article
+              key={feature.title}
+              className="group overflow-hidden rounded-lg border border-[#e8f0ef] bg-[#f7fbfb] shadow-[0_18px_46px_rgba(11,90,95,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(11,90,95,0.12)]"
+            >
+              <div className={`relative h-[220px] overflow-hidden bg-gradient-to-br ${feature.tone}`}>
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.26)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.26)_1px,transparent_1px)] bg-[size:22px_22px]" />
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#f7fbfb] to-transparent" />
 
-                return (
-                  <CarouselItem key={feature.title} className="pl-3 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                    <div className="group relative h-full overflow-hidden rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_4px_20px_rgba(65,103,153,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(47,128,237,0.14)]">
-                      <div className={`h-2 w-full bg-gradient-to-r ${feature.accent}`} />
-                      <div className="p-6">
-                        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${feature.iconBg} ${feature.iconColor}`}>
-                          <Icon size={22} />
-                        </div>
-                        <h3 className="mt-5 text-lg font-black text-[#071821]">{feature.title}</h3>
-                        <p className="mt-2 text-sm font-semibold leading-7 text-[#334155]">{feature.text}</p>
-                        <div className="mt-5 inline-flex rounded-full bg-[#fbfdfd] px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[#64748b]">
-                          Smart workflow
-                        </div>
-                      </div>
+                {feature.visual === 'meal' && (
+                  <div className="absolute left-8 top-8 w-[190px] rounded-lg border border-white/80 bg-white/88 p-4 shadow-[0_18px_42px_rgba(7,55,53,0.12)] backdrop-blur">
+                    <p className="text-xs font-semibold leading-5 text-[#073735]">
+                      Add lunch, dinner, and bazar cost for today in one flow.
+                    </p>
+                    <div className="mt-4 inline-flex h-8 items-center gap-2 rounded-full border border-[#d8e8e7] bg-white px-3 text-[11px] font-black text-[#073735] shadow-sm">
+                      <UtensilsCrossed size={13} className="text-[#ff6464]" />
+                      Add meal
                     </div>
-                  </CarouselItem>
-                )
-              })}
-            </CarouselContent>
+                    <div className="absolute -bottom-8 left-16 h-0 w-0 rotate-[-18deg] border-l-[13px] border-r-[13px] border-t-[28px] border-l-transparent border-r-transparent border-t-[#073735]" />
+                  </div>
+                )}
 
-            <CarouselPrevious className="hidden sm:flex -left-1 sm:-left-3 size-11 rounded-full border-2 border-[#d8e8e7] bg-white text-[#008b80] shadow-lg hover:bg-[#e7f7f5] hover:border-[#9edbd6] hover:text-[#071821]" />
-            <CarouselNext className="hidden sm:flex -right-1 sm:-right-3 size-11 rounded-full border-2 border-[#d8e8e7] bg-white text-[#008b80] shadow-lg hover:bg-[#e7f7f5] hover:border-[#9edbd6] hover:text-[#071821]" />
-          </Carousel>
+                {feature.visual === 'billing' && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white/70 shadow-[0_22px_46px_rgba(255,126,86,0.22)] ring-1 ring-white/80">
+                      <div className="absolute h-12 w-12 rounded-full bg-gradient-to-br from-[#ffb84d] to-[#ff7d63] blur-sm opacity-75" />
+                      <WalletCards size={34} className="relative text-white drop-shadow" />
+                    </div>
+                    <div className="absolute left-[52%] top-[50px] hidden w-[120px] border-t border-white/80 sm:block" />
+                    <div className="absolute left-[60%] top-[38px] space-y-3">
+                      {[
+                        { label: 'Meals', icon: UtensilsCrossed, muted: false },
+                        { label: 'Expenses', icon: ShoppingCart, muted: false },
+                        { label: 'Deposits', icon: CreditCard, muted: true },
+                      ].map(({ label, icon: Icon, muted }) => (
+                        <div
+                          key={label}
+                          className={`flex h-8 w-28 items-center gap-2 rounded-full border border-white/70 bg-white/72 px-3 text-[10px] font-black text-[#073735] shadow-sm backdrop-blur ${muted ? 'opacity-55' : ''}`}
+                        >
+                          <Icon size={12} className={muted ? 'text-[#9aa8a6]' : 'text-[#008b80]'} />
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-          <div className="mt-8 flex items-center justify-center gap-2.5">
-            {features.map((feature, i) => (
-              <button
-                key={feature.title}
-                onClick={() => api?.scrollTo(i)}
-                className={`rounded-full transition-all duration-300 ${
-                  api?.selectedScrollSnap() === i
-                    ? `h-2.5 w-8 bg-gradient-to-r ${feature.accent} shadow-sm`
-                    : 'h-2.5 w-2.5 bg-[#d8e8e7] hover:bg-[#9edbd6]'
-                }`}
-                aria-label={`Go to feature slide ${i + 1}`}
-              />
-            ))}
-          </div>
+                {feature.visual === 'members' && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative flex h-24 w-28 items-center justify-center rounded-lg bg-white/88 shadow-[0_22px_46px_rgba(134,79,170,0.16)]">
+                      <div className="absolute -top-4 left-4 h-7 w-16 rounded-t-lg bg-white/78" />
+                      <Users size={46} className="relative text-white drop-shadow-[0_8px_18px_rgba(7,55,53,0.12)]" />
+                    </div>
+                    <div className="absolute bottom-14 left-1/2 flex h-8 -translate-x-1/2 items-center gap-2 rounded-full border border-[#d8e8e7] bg-white px-3 text-[10px] font-black text-[#073735] shadow-sm">
+                      <BarChart3 size={12} className="text-[#008b80]" />
+                      Search members
+                    </div>
+                    <div className="absolute right-7 top-9 space-y-2">
+                      {[Bell, ClipboardList].map((Icon, index) => (
+                        <div key={index} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#008b80] shadow-sm ring-1 ring-white/80">
+                          <Icon size={15} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-5 pb-5 pt-1">
+                <h3 className="text-sm font-black text-[#073735]">{feature.title}</h3>
+                <p className="mt-2 text-xs font-semibold leading-5 text-[#526b6a]">{feature.description}</p>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>

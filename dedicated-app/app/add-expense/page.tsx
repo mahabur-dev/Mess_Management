@@ -6,8 +6,10 @@ import {
   DesignedInput,
   DesignedSelect,
   DesignedTextarea,
+  FormFieldGrid,
   FormPageShell,
   FormSection,
+  FormStatusMessage,
   PaymentTypeSelector,
   SubmitGradientButton,
   UploadField,
@@ -163,16 +165,16 @@ export default function AddExpensePage() {
 
             <DesignedInput label="Item Name" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => update('itemName', event.target.value)} placeholder="Rice, cleaner, lunch..." />
 
-            <div className="grid grid-cols-2 gap-3">
+            <FormFieldGrid>
               <DesignedInput label="Quantity" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => update('quantity', event.target.value)} placeholder="5" type="number" />
               <DesignedInput label="Unit" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => update('unit', event.target.value)} placeholder="kg" />
-            </div>
+            </FormFieldGrid>
 
             <DesignedInput label="Amount (৳)" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" />
 
             <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" />
 
-            <div className="grid grid-cols-2 gap-3">
+            <FormFieldGrid>
               <DesignedSelect label="Purchased By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)}>
                 <option value="">Select member</option>
                 {members.map((member) => (
@@ -189,7 +191,7 @@ export default function AddExpensePage() {
                   </option>
                 ))}
               </DesignedSelect>
-            </div>
+            </FormFieldGrid>
 
             <DesignedTextarea
               label="Description"
@@ -199,7 +201,6 @@ export default function AddExpensePage() {
               placeholder="Add expense note..."
               count={`${form.description.length}/250`}
             />
-
           </FormSection>
 
           <FormSection>
@@ -207,11 +208,7 @@ export default function AddExpensePage() {
             <UploadField fileName={receiptFile?.name} onChange={setReceiptFile} />
           </FormSection>
 
-          {message ? (
-            <div className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${success ? 'border-[#bfe7e6] bg-[#edfafa] text-[#008d8c]' : 'border-[#f4c7c7] bg-[#fff5f5] text-[#b42318]'}`}>
-              {message}
-            </div>
-          ) : null}
+          <FormStatusMessage message={message} success={success} />
 
           <SubmitGradientButton busy={busy}>Save Expense</SubmitGradientButton>
         </FormPageShell>

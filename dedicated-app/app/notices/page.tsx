@@ -115,7 +115,7 @@ export default function NoticesPage() {
               label="Title"
               value={form.title}
               onChange={(title) => setForm((prev) => ({ ...prev, title }))}
-              placeholder="Payment deadline"
+              placeholder="Deposit deadline"
             />
             <TextAreaField
               label="Message"

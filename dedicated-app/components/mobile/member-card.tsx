@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Activity, Armchair, BadgeCheck, Bed, CalendarDays, Clock3, Eye, Home, MoreVertical, Phone, ShieldCheck, Trash2, User, WalletCards, X, Pencil } from 'lucide-react'
+import { useNativeBackAction } from '@/components/native-back-actions'
 
 export type MobileMember = {
   id: string
@@ -59,6 +60,11 @@ export function MemberCard({
   onView: () => void
   onDelete: () => void
 }) {
+  useNativeBackAction(menuOpen, () => {
+    onToggleMenu()
+    return true
+  })
+
   const name = memberName(member)
   const phone = member.user?.phone?.trim()
   const roleLabel = member.role ? member.role.replaceAll('_', ' ') : 'MEMBER'
@@ -122,6 +128,11 @@ export function MemberCard({
 }
 
 export function MemberDetailsModal({ member, onClose }: { member: MobileMember; onClose: () => void }) {
+  useNativeBackAction(true, () => {
+    onClose()
+    return true
+  })
+
   const name = memberName(member)
   const roleLabel = member.role ? member.role.replaceAll('_', ' ') : 'MEMBER'
   const joined = member.joined_at || member.created_at

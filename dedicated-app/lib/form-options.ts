@@ -60,7 +60,7 @@ export const LABELS = {
   },
   NOTICE_TYPES: {
     MEAL: 'Meal',
-    PAYMENT: 'Payment',
+    PAYMENT: 'Deposit',
     EMERGENCY: 'Emergency',
     MEETING: 'Meeting',
     RULE_UPDATE: 'Rule Update',
@@ -85,7 +85,7 @@ export const LABELS = {
   },
   COMPLAINT_CATEGORIES: {
     MEAL_CORRECTION: 'Meal Correction',
-    PAYMENT_CORRECTION: 'Payment Correction',
+    PAYMENT_CORRECTION: 'Deposit Correction',
     LEAVE_REQUEST: 'Leave Request',
     ROOM_ISSUE: 'Room Issue',
     FOOD_ISSUE: 'Food Issue',

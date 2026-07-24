@@ -8,6 +8,7 @@ import {
   DesignedTextarea,
   FormPageShell,
   FormSection,
+  FormStatusMessage,
   PaymentTypeSelector,
   SubmitGradientButton,
   UploadField,
@@ -119,7 +120,6 @@ export default function AddUtilityPage() {
               placeholder="Add utility note..."
               count={`${form.description.length}/250`}
             />
-
           </FormSection>
 
           <FormSection>
@@ -127,11 +127,7 @@ export default function AddUtilityPage() {
             <UploadField fileName={receiptFile?.name} onChange={setReceiptFile} />
           </FormSection>
 
-          {message ? (
-            <div className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${success ? 'border-[#bfe7e6] bg-[#edfafa] text-[#008d8c]' : 'border-[#f4c7c7] bg-[#fff5f5] text-[#b42318]'}`}>
-              {message}
-            </div>
-          ) : null}
+          <FormStatusMessage message={message} success={success} />
 
           <SubmitGradientButton busy={busy}>Save Utility</SubmitGradientButton>
         </FormPageShell>

@@ -6,7 +6,7 @@ import {
   MealFilterDto,
   UpdateMealDto,
 } from './dto/meal.dto';
-import { AttendanceStatus, MealName, MembershipRole, Prisma } from '@prisma/client';
+import { AttendanceStatus, MealName, MealStatus, MembershipRole, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -480,6 +480,16 @@ export class MealService {
       where: { mess_id: dto.messId, name: mealName, scheduled_date: date },
     });
 
+    if (meal?.is_locked || meal?.status === MealStatus.LOCKED) {
+      const canManage = await this.canManageMeal(dto.messId, userId, role);
+      if (!canManage) {
+        throw new HttpException(
+          'Meal is locked by manager and cannot be changed by members',
+          400,
+        );
+      }
+    }
+
     const savedMeal = meal ?? await this.prisma.meal.create({
       data: {
         mess_id: dto.messId,
@@ -611,6 +621,14 @@ export class MealService {
     const meal = await this.prisma.meal.findUnique({ where: { id } });
     if (!meal) throw new HttpException('Meal entry not found', 404);
 
+    const canManage = await this.canManageMeal(meal.mess_id, userId, role);
+    if ((meal.is_locked || meal.status === MealStatus.LOCKED) && !canManage) {
+      throw new HttpException(
+        'Meal is locked by manager and cannot be changed by members',
+        400,
+      );
+    }
+
     // Check meal deadline (bypasses for managers/admin)
     const date = dto.date ? parseUtcDateStart(dto.date) : meal.scheduled_date;
     await this.checkMealDeadline(meal.mess_id, date, userId, role);
@@ -637,7 +655,7 @@ export class MealService {
       data: {
         scheduled_date: dto.date ? parseUtcDateStart(dto.date) : undefined,
         status: dto.mealStatus,
-        is_locked: dto.mealStatus === 'LOCKED' ? true : undefined,
+        is_locked: dto.mealStatus !== undefined ? dto.mealStatus === MealStatus.LOCKED : undefined,
       },
       include: { creator: { select: { id: true, name: true } } },
     });

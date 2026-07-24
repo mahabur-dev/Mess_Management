@@ -225,6 +225,36 @@ class Api {
     })
   }
 
+  getMealsByMess(messId: string, params?: Record<string, QueryValue>) {
+    return this.request(`/meal/mess/${messId}`, { params })
+  }
+
+  getMealDeadline(messId: string, date?: string) {
+    return this.request(`/meal/mess/${messId}/deadline`, {
+      params: date ? { date } : undefined,
+    })
+  }
+
+  getMealWindowStatus(messId: string, date?: string) {
+    return this.request(`/meal/mess/${messId}/window-status`, {
+      params: date ? { date } : undefined,
+    })
+  }
+
+  setMealDeadline(messId: string, data: Record<string, unknown>) {
+    return this.request(`/meal/mess/${messId}/deadline`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  updateMeal(id: string, data: Record<string, unknown>) {
+    return this.request(`/meal/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
   generateMonthlyBills(data: { messId: string; month: string }) {
     return this.request('/monthly-bill/generate', {
       method: 'POST',

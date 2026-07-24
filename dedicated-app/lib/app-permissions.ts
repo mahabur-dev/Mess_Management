@@ -4,10 +4,9 @@ import type { ComponentType } from 'react'
 import {
   Bell,
   ClipboardList,
-  CreditCard,
-  FileText,
   House,
   Landmark,
+  LayoutGrid,
   MessageSquareWarning,
   ReceiptText,
   Settings,
@@ -73,8 +72,8 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, access: 'mess', exact: true },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
   { href: '/edit-monthly-bill', label: 'Edit Bill', icon: ClipboardList, access: 'manager' },
-  { href: '/payments', label: 'Payments', icon: CreditCard, access: 'mess' },
-  { href: '/edit-payment', label: 'Edit Payment', icon: CreditCard, access: 'mess' },
+  { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
+  { href: '/edit-payment', label: 'Edit Deposit', icon: Landmark, access: 'mess' },
   { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
   { href: '/edit-complaint', label: 'Edit Complaint', icon: MessageSquareWarning, access: 'manager' },
   { href: '/profile', label: 'Profile', icon: User, access: 'public' },
@@ -82,18 +81,18 @@ const protectedRoutes: AppRouteItem[] = [
 ]
 
 export const managerQuickActions: AppRouteItem[] = [
-  { href: '/members', label: 'Members', icon: Users, access: 'manager' },
-  { href: '/expenses', label: 'Expenses', icon: Wallet2, access: 'manager' },
-  { href: '/expenses', label: 'Utilities', icon: Zap, access: 'manager' },
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
-  { href: '/notices', label: 'Notices', icon: Bell, access: 'manager' },
+  { href: '/expenses', label: 'Expenses', icon: Wallet2, access: 'manager' },
+  { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
+  { href: '/notices', label: 'Notices', icon: Bell, access: 'manager' },
+  { href: '/members', label: 'Members', icon: Users, access: 'manager' },
 ]
 
 export const memberQuickActions: AppRouteItem[] = [
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
   { href: '/monthly-bill', label: 'My Bill', icon: ClipboardList, access: 'mess' },
-  { href: '/payments', label: 'Payments', icon: CreditCard, access: 'mess' },
+  { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
   { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
   { href: '/profile', label: 'Profile', icon: User, access: 'public' },
@@ -110,7 +109,7 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
       { href: '/', label: 'Home', icon: House, access: 'public', exact: true },
       { href: '/profile', label: 'Profile', icon: User, access: 'public' },
       { href: '/settings', label: 'Settings', icon: Settings, access: 'public' },
-      { href: '/more', label: 'More', icon: FileText, access: 'public', exact: true },
+      { href: '/more', label: 'More', icon: LayoutGrid, access: 'public', exact: true },
     ]
     return onboardingTabs
   }
@@ -123,7 +122,7 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
     { href: '/', label: 'Home', icon: House, access: 'public', exact: true },
     primary,
     { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
-    { href: '/more', label: 'More', icon: FileText, access: 'public', exact: true },
+    { href: '/more', label: 'More', icon: LayoutGrid, access: 'public', exact: true },
   ]
 
   return tabs.filter((item) => canAccessLevel(user, item.access))
@@ -134,9 +133,8 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
     { href: '/members', label: 'Members', icon: Users, access: 'manager' },
     { href: '/meals', label: 'Meal Sheet', icon: UtensilsCrossed, access: 'mess' },
     { href: '/expenses', label: 'Bazar/Expenses', icon: ReceiptText, access: 'manager' },
-    { href: '/deposits', label: 'Deposits', icon: Landmark, access: 'manager' },
+    { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
     { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
-    { href: '/payments', label: 'Payments', icon: CreditCard, access: 'mess' },
     { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
     { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
     { href: '/settings', label: 'Mess Management', icon: Settings, access: 'public' },
@@ -145,7 +143,7 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
   const memberLinks: AppRouteItem[] = [
     { href: '/meals', label: 'My Meals', icon: UtensilsCrossed, access: 'mess' },
     { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
-    { href: '/payments', label: 'Payments', icon: CreditCard, access: 'mess' },
+    { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
     { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
     { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
     { href: '/profile', label: 'Profile', icon: User, access: 'public' },
@@ -167,6 +165,34 @@ export function canAccessAppPath(user: AuthUser | null | undefined, pathname: st
   })
 
   return route ? canAccessLevel(user, route.access) : true
+}
+
+const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean }> = [
+  { href: '/add-member', fallback: '/members', exact: true },
+  { href: '/edit-member', fallback: '/members', exact: true },
+  { href: '/add-expense', fallback: '/expenses', exact: true },
+  { href: '/add-utility', fallback: '/expenses', exact: true },
+  { href: '/expense-details', fallback: '/expenses', exact: true },
+  { href: '/edit-expense', fallback: '/expenses', exact: true },
+  { href: '/edit-deposit', fallback: '/deposits', exact: true },
+  { href: '/add-meal', fallback: '/meals', exact: true },
+  { href: '/edit-monthly-bill', fallback: '/monthly-bill', exact: true },
+  { href: '/edit-payment', fallback: '/payments', exact: true },
+  { href: '/edit-complaint', fallback: '/complaints', exact: true },
+  { href: '/profile', fallback: '/more', exact: true },
+  { href: '/settings', fallback: '/more', exact: true },
+]
+
+export function getAppBackFallback(user: AuthUser | null | undefined, pathname: string) {
+  const normalizedPathname = normalizePathname(pathname)
+  const configuredFallback = appBackFallbacks.find((item) => {
+    if (item.exact) return normalizedPathname === item.href
+    return normalizedPathname === item.href || normalizedPathname.startsWith(`${item.href}/`)
+  })
+
+  if (configuredFallback) return configuredFallback.fallback
+  if (normalizedPathname === '/') return '/'
+  return getDefaultAppPath(user)
 }
 
 export function getDefaultAppPath(user: AuthUser | null | undefined) {

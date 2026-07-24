@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { useNativeBackAction } from '@/components/native-back-actions'
 import {
   Check,
   ChevronDown,
@@ -123,6 +124,10 @@ export function SelectField<T extends string>({
   getLabel?: (value: T) => string
 }) {
   const [open, setOpen] = useState(false)
+  useNativeBackAction(open, () => {
+    setOpen(false)
+    return true
+  })
 
   const selectedLabel = getLabel ? getLabel(value) : value
 
@@ -418,6 +423,3 @@ export function SubmitButton({
     </button>
   )
 }
-
-
-//check

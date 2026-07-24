@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { useNativeBackAction } from '@/components/native-back-actions'
 
 type DeferredFormSectionProps = {
   open: boolean
@@ -23,6 +24,11 @@ export function DeferredFormSection({
   onOpen,
   onClose,
 }: DeferredFormSectionProps) {
+  useNativeBackAction(open, () => {
+    onClose()
+    return true
+  })
+
   if (open) {
     return (
       <div className="glass space-y-4 rounded-[28px] p-4">

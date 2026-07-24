@@ -124,9 +124,9 @@ export default function PaymentsPage() {
         paymentDate: form.paymentDate,
       })
       setForm(INITIAL_FORM)
-      setMessage('Payment submitted successfully.')
+      setMessage('Deposit submitted successfully.')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to submit payment.')
+      setMessage(error instanceof Error ? error.message : 'Failed to submit deposit.')
     } finally {
       setBusy(false)
     }
@@ -134,7 +134,7 @@ export default function PaymentsPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Payments" subtitle="Payment submissions" backHref="/" />
+      <TopScreen title="Deposits" subtitle="Deposit submissions" backHref="/" />
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4">
           <div className="grid grid-cols-2 gap-3">
@@ -182,11 +182,11 @@ export default function PaymentsPage() {
           </div>
           <TextField label="Transaction ID" value={form.transactionId} onChange={(transactionId) => setForm((prev) => ({ ...prev, transactionId }))} placeholder="TXN123456" />
           <TextField label="Screenshot URL" value={form.screenshotUrl} onChange={(screenshotUrl) => setForm((prev) => ({ ...prev, screenshotUrl }))} placeholder="https://..." />
-          <TextField label="Payment Date" value={form.paymentDate} onChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))} type="date" />
-          <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Paid for May bill" rows={3} />
+          <TextField label="Deposit Date" value={form.paymentDate} onChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))} type="date" />
+          <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Deposit for May bill" rows={3} />
           {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
-            Submit Payment
+            Submit Deposit
           </SubmitButton>
         </div>
 
@@ -205,7 +205,7 @@ export default function PaymentsPage() {
             {items.map((item) => (
               <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-extrabold text-[#123748]">{item.member?.name ?? 'Payment'}</div>
+                  <div className="truncate text-sm font-extrabold text-[#123748]">{item.member?.name ?? 'Deposit'}</div>
                   <div className="mt-1 text-xs text-[#65838b]">{item.payment_date ?? ''}</div>
                   <div className="mt-2">
                     <StatusPill
@@ -221,13 +221,13 @@ export default function PaymentsPage() {
                   </div>
                   <IconActionLink
                     href={`/edit-payment?paymentId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-                    label="Edit payment"
+                    label="Edit deposit"
                     icon={<Edit3 size={16} />}
                   />
                 </div>
               </div>
             ))}
-            {!items.length ? <div className="py-3 text-sm text-[#65838b]">No payments loaded.</div> : null}
+            {!items.length ? <div className="py-3 text-sm text-[#65838b]">No deposits loaded.</div> : null}
           </div>
         </div>
       </div>

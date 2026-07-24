@@ -8,8 +8,10 @@ import {
   DesignedInput,
   DesignedSelect,
   DesignedTextarea,
+  FormFieldGrid,
   FormPageShell,
   FormSection,
+  FormStatusMessage,
   PaymentTypeSelector,
   SubmitGradientButton,
   UploadField,
@@ -54,6 +56,8 @@ type FormState = {
   receiptUrl: string
   paymentType: ExpensePaymentType
 }
+
+const UTILITY_CATEGORY_SET = new Set<ExpenseCategory>(['UTILITY', 'ELECTRICITY', 'GAS', 'WIFI', 'WATER', 'CLEANER', 'MAINTENANCE', 'BUABILL'])
 
 export default function EditExpensePage() {
   const searchParams = useQueryParams()
@@ -186,10 +190,17 @@ export default function EditExpensePage() {
     }
   }
 
+  const isUtilityExpense = UTILITY_CATEGORY_SET.has(form.category)
+
   return (
     <MobileShell>
       <form onSubmit={handleSubmit}>
-        <FormPageShell title="Edit Expense" description={expense?.itemName ?? 'Update expense details'} icon={ReceiptText} backHref="/expenses">
+        <FormPageShell
+          title={isUtilityExpense ? 'Edit Utility' : 'Edit Expense'}
+          description={expense?.itemName ?? (isUtilityExpense ? 'Update utility details' : 'Update expense details')}
+          icon={ReceiptText}
+          backHref="/expenses"
+        >
           <FormSection>
             <PaymentTypeSelector value={form.paymentType} onChange={(paymentType) => setForm((prev) => ({ ...prev, paymentType }))} />
           </FormSection>
@@ -205,16 +216,16 @@ export default function EditExpensePage() {
 
             <DesignedInput label="Item Name" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => setForm((prev) => ({ ...prev, itemName: event.target.value }))} placeholder="Rice" />
 
-            <div className="grid grid-cols-2 gap-4">
+            <FormFieldGrid>
               <DesignedInput label="Quantity" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => setForm((prev) => ({ ...prev, quantity: event.target.value }))} placeholder="5" type="number" />
               <DesignedInput label="Unit" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => setForm((prev) => ({ ...prev, unit: event.target.value }))} placeholder="kg" />
-            </div>
+            </FormFieldGrid>
 
             <DesignedInput label="Amount (৳)" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => setForm((prev) => ({ ...prev, amount: event.target.value }))} placeholder="Enter amount" type="number" />
 
             <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => setForm((prev) => ({ ...prev, expenseDate: event.target.value }))} type="date" />
 
-            <div className="grid grid-cols-2 gap-4">
+            <FormFieldGrid>
               <DesignedSelect label="Purchased By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => setForm((prev) => ({ ...prev, purchasedBy: event.target.value }))}>
                 <option value="">Select member</option>
                 {members.map((member) => (
@@ -232,7 +243,7 @@ export default function EditExpensePage() {
                   </option>
                 ))}
               </DesignedSelect>
-            </div>
+            </FormFieldGrid>
 
             <DesignedTextarea
               label="Description"
@@ -249,7 +260,7 @@ export default function EditExpensePage() {
             <UploadField label="Replace Receipt (Optional)" fileName={receiptFile?.name} onChange={setReceiptFile} />
           </FormSection>
 
-          {message ? <div className="rounded-[18px] border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          <FormStatusMessage message={message} />
 
           <SubmitGradientButton busy={busy}>Save Changes</SubmitGradientButton>
         </FormPageShell>

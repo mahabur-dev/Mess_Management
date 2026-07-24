@@ -1,10 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { User } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
-import { TopScreen } from '@/components/top-screen'
-import { SelectField, SubmitButton, TextField, ToggleField } from '@/components/mobile/form-controls'
+import {
+  DesignedInput,
+  DesignedSelect,
+  DesignedToggle,
+  FormFieldGrid,
+  FormPageShell,
+  FormSection,
+  FormStatusMessage,
+  FormSummaryCard,
+  SubmitGradientButton,
+  detailIcons,
+  expenseFormIcons,
+} from '@/components/mobile/expense-design'
 import { api } from '@/lib/api'
 import { LABELS, MEMBER_ROLES, type MemberRole } from '@/lib/form-options'
 import { useQueryParams } from '@/lib/use-query-params'
@@ -77,7 +89,8 @@ export default function EditMemberPage() {
     }
   }, [memberId, messId])
 
-  async function handleSubmit() {
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
     setMessage('')
     if (!memberId || !messId) return setMessage('Member id or mess id is missing.')
 
@@ -101,50 +114,66 @@ export default function EditMemberPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Edit Member" subtitle={member?.user?.name ?? 'Update member details'} backHref="/members" />
-      <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Member</div>
-            <div className="mt-1 text-sm font-black text-[#123748]">{member?.user?.name ?? memberId}</div>
-            <div className="mt-1 text-xs text-[#65838b]">{member?.user?.email ?? ''}</div>
-          </div>
-          <SelectField
-            label="Role"
-            value={form.role}
-            onChange={(role) => setForm((prev) => ({ ...prev, role }))}
-            options={MEMBER_ROLES}
-            getLabel={(value) => LABELS.MEMBER_ROLES[value]}
-          />
-          <TextField label="Room No" value={form.roomNo} onChange={(roomNo) => setForm((prev) => ({ ...prev, roomNo }))} placeholder="A-2" />
-          <TextField
-            label="Monthly Rent"
-            value={form.monthlyRent}
-            onChange={(monthlyRent) => setForm((prev) => ({ ...prev, monthlyRent }))}
-            placeholder="4500"
-            type="number"
-          />
-          <TextField
-            label="Deposit Amount"
-            value={form.depositAmount}
-            onChange={(depositAmount) => setForm((prev) => ({ ...prev, depositAmount }))}
-            placeholder="5000"
-            type="number"
-          />
-          <ToggleField
-            label="Active Member"
-            hint="Disable to mark as inactive"
-            checked={form.isActive}
-            onChange={(isActive) => setForm((prev) => ({ ...prev, isActive }))}
-          />
+      <form onSubmit={handleSubmit}>
+        <FormPageShell title="Edit Member" description={member?.user?.name ?? 'Update member details'} icon={User} backHref="/members">
+          <FormSection>
+            <FormSummaryCard
+              eyebrow="Member"
+              title={member?.user?.name ?? memberId}
+              description={member?.user?.email ?? 'Member profile'}
+              icon={User}
+            />
+          </FormSection>
 
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          <FormSection title="Member Details">
+            <DesignedSelect
+              label="Role"
+              icon={detailIcons.role}
+              value={form.role}
+              onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as MemberRole }))}
+            >
+              {MEMBER_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {LABELS.MEMBER_ROLES[role]}
+                </option>
+              ))}
+            </DesignedSelect>
 
-          <SubmitButton busy={busy} onClick={handleSubmit}>
-            Save Changes
-          </SubmitButton>
-        </div>
-      </div>
+            <DesignedInput label="Room No" icon={detailIcons.room} value={form.roomNo} onChange={(event) => setForm((prev) => ({ ...prev, roomNo: event.target.value }))} placeholder="A-2" />
+
+            <FormFieldGrid>
+              <DesignedInput
+                label="Monthly Rent"
+                icon={expenseFormIcons.amount}
+                value={form.monthlyRent}
+                onChange={(event) => setForm((prev) => ({ ...prev, monthlyRent: event.target.value }))}
+                placeholder="4500"
+                type="number"
+              />
+              <DesignedInput
+                label="Deposit Amount"
+                icon={expenseFormIcons.amount}
+                value={form.depositAmount}
+                onChange={(event) => setForm((prev) => ({ ...prev, depositAmount: event.target.value }))}
+                placeholder="5000"
+                type="number"
+              />
+            </FormFieldGrid>
+
+            <DesignedToggle
+              label="Active Member"
+              hint="Disable to mark as inactive"
+              icon={detailIcons.status}
+              checked={form.isActive}
+              onChange={(isActive) => setForm((prev) => ({ ...prev, isActive }))}
+            />
+          </FormSection>
+
+          <FormStatusMessage message={message} />
+
+          <SubmitGradientButton busy={busy}>Save Changes</SubmitGradientButton>
+        </FormPageShell>
+      </form>
     </MobileShell>
   )
 }

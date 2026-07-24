@@ -40,7 +40,7 @@ export default function EditPaymentPage() {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const paymentLabel = useMemo(() => (payment ? LABELS.PAYMENT_STATUSES[payment.status] : 'Payment'), [payment])
+  const depositLabel = useMemo(() => (payment ? LABELS.PAYMENT_STATUSES[payment.status] : 'Deposit'), [payment])
 
   useEffect(() => {
     if (!paymentId || !messId) return
@@ -59,12 +59,12 @@ export default function EditPaymentPage() {
             note: found.note ?? '',
           })
         } else {
-          setMessage('Payment not found.')
+          setMessage('Deposit not found.')
         }
       })
       .catch(() => {
         if (!alive) return
-        setMessage('Failed to load payment details.')
+        setMessage('Failed to load deposit details.')
       })
 
     return () => {
@@ -74,7 +74,7 @@ export default function EditPaymentPage() {
 
   async function handleSubmit() {
     setMessage('')
-    if (!paymentId || !messId) return setMessage('Payment id or mess id is missing.')
+    if (!paymentId || !messId) return setMessage('Deposit id or mess id is missing.')
 
     setBusy(true)
     try {
@@ -82,10 +82,10 @@ export default function EditPaymentPage() {
         status: form.status,
         note: form.note.trim() || undefined,
       })
-      setMessage('Payment updated successfully.')
+      setMessage('Deposit updated successfully.')
       router.push('/payments')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update payment.')
+      setMessage(error instanceof Error ? error.message : 'Failed to update deposit.')
     } finally {
       setBusy(false)
     }
@@ -93,11 +93,11 @@ export default function EditPaymentPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Edit Payment" subtitle={payment?.member?.name ?? paymentLabel} backHref="/payments" />
+      <TopScreen title="Edit Deposit" subtitle={payment?.member?.name ?? depositLabel} backHref="/payments" />
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4 space-y-4">
           <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Payment</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Deposit</div>
             <div className="mt-1 text-sm font-black text-[#123748]">{payment?.member?.name ?? paymentId}</div>
             <div className="mt-1 text-xs text-[#65838b]">
               {payment?.payment_date ?? 'No date'} - BDT {Number(payment?.amount ?? 0).toLocaleString()}
@@ -115,7 +115,7 @@ export default function EditPaymentPage() {
             label="Note"
             value={form.note}
             onChange={(note) => setForm((prev) => ({ ...prev, note }))}
-            placeholder="Review note or admin comment"
+            placeholder="Deposit review note or admin comment"
             rows={4}
           />
 

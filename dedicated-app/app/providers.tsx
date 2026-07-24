@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { LogoutConfirmDialog } from '@/components/logout-confirm-dialog'
+import { NativeBackActionsProvider } from '@/components/native-back-actions'
 import { NativeBackHandler } from '@/components/native-back-handler'
 import { api } from '@/lib/api'
 import {
@@ -160,22 +161,24 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      <NativeBackHandler
-        user={user}
-        isLoading={isLoading}
-        homePromptOpen={logoutPromptOpen}
-        onCancelHomePrompt={closeLogoutPrompt}
-        onHomeBack={openLogoutPrompt}
-      />
-      <LogoutConfirmDialog
-        open={logoutPromptOpen}
-        busy={isLoggingOut}
-        onCancel={closeLogoutPrompt}
-        onConfirm={() => {
-          void logout()
-        }}
-      />
-      {children}
+      <NativeBackActionsProvider>
+        <NativeBackHandler
+          user={user}
+          isLoading={isLoading}
+          homePromptOpen={logoutPromptOpen}
+          onCancelHomePrompt={closeLogoutPrompt}
+          onHomeBack={openLogoutPrompt}
+        />
+        <LogoutConfirmDialog
+          open={logoutPromptOpen}
+          busy={isLoggingOut}
+          onCancel={closeLogoutPrompt}
+          onConfirm={() => {
+            void logout()
+          }}
+        />
+        {children}
+      </NativeBackActionsProvider>
     </AuthContext.Provider>
   )
 }

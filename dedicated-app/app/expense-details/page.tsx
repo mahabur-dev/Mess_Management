@@ -174,7 +174,7 @@ export default function ExpenseDetailsPage() {
               <DetailRow icon={detailIcons.category} label="Category" value={details.category.toUpperCase()} />
               <DetailRow icon={detailIcons.amount} label="Amount" value={details.amount} />
               <DetailRow icon={detailIcons.date} label="Expense Date" value={details.date} />
-              <DetailRow icon={detailIcons.payment} label="Payment Method" value={details.payment} />
+              <DetailRow icon={detailIcons.payment} label="Deposit Method" value={details.payment} />
               <DetailRow icon={detailIcons.added} label="Added On" value={details.addedOn} />
             </section>
 

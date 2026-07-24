@@ -11,6 +11,7 @@ import {
   currentPathWithSearch,
   getStoredToken,
   isAuthPath,
+  normalizePathname,
   readPostLoginPath,
   storeToken,
   type AuthUser,
@@ -33,6 +34,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const normalizedPathname = normalizePathname(pathname)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -71,10 +73,10 @@ export function Providers({ children }: { children: ReactNode }) {
       return
     }
 
-    if (user && isAuthPath(pathname)) {
+    if (user && normalizedPathname === '/login') {
       router.replace(readPostLoginPath())
     }
-  }, [isLoading, pathname, router, user])
+  }, [isLoading, normalizedPathname, pathname, router, user])
 
   useEffect(() => {
     const handleAuthExpired = () => {

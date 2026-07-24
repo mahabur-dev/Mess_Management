@@ -1,78 +1,132 @@
 'use client'
 
-import Link from 'next/link'
-import { Edit3, Plus, ReceiptText } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { IconActionLink } from '@/components/mobile/action-links'
+import { Bell, CalendarDays, ClipboardList, ReceiptText, Tag, Wallet2, Zap } from 'lucide-react'
+import {
+  ExpenseActionCard,
+  ExpenseListItem,
+  ExpenseStatCard,
+  FilterPill,
+  HeaderIconButton,
+  ScreenHeader,
+  SearchPanel,
+  formatBDT,
+  type ExpenseListRecord,
+} from '@/components/mobile/expense-design'
 import { MobileShell } from '@/components/mobile-shell'
-import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { useAuth } from '../providers'
 
-type ExpenseItem = {
-  id: string
-  itemName?: string | null
-  category?: string
-  amount?: string | number
-  expense_date?: string
-  expenseDate?: string
-  mess?: { id: string; name: string }
-}
-
 export default function ExpensesPage() {
   const { user } = useAuth()
-  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
-  const [items, setItems] = useState<ExpenseItem[]>([])
+  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
+  const [items, setItems] = useState<ExpenseListRecord[]>([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (!messId) return
+
     let alive = true
+    setLoading(true)
+    setMessage('')
     api
-      .getExpensesByMess(messId, { limit: 20, sortBy: 'expense_date', sortOrder: 'desc' })
-      .then((res) => {
+      .getExpensesByMess(messId, { limit: 100, sortBy: 'expense_date', sortOrder: 'desc' })
+      .then((res: any) => {
         if (!alive) return
         setItems(Array.isArray(res.data) ? res.data : [])
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
         setItems([])
+        setMessage(error instanceof Error ? error.message : 'Failed to load expenses.')
       })
+      .finally(() => {
+        if (alive) setLoading(false)
+      })
+
     return () => {
       alive = false
     }
   }, [messId])
 
+  const filteredItems = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    if (!term) return items
+    return items.filter((item) => {
+      const text = `${item.itemName ?? ''} ${item.category ?? ''} ${item.paymentType ?? ''}`.toLowerCase()
+      return text.includes(term)
+    })
+  }, [items, search])
+
+  const totalAmount = useMemo(() => items.reduce((sum, item) => sum + Number(item.amount ?? 0), 0), [items])
+
   return (
     <MobileShell>
-      <TopScreen title="Expenses" subtitle="Recent expense entries" backHref="/" />
-      <div className="screen space-y-4">
-        <Link href="/add-expense" className="primary-btn flex items-center justify-center gap-2">
-          <Plus size={18} /> Add Expense
-        </Link>
+      <ScreenHeader
+        title="Expenses"
+        subtitle="Track and manage all expenses"
+        left={<div className="h-10 w-10" />}
+        right={
+          <HeaderIconButton
+            label="Notifications"
+            icon={
+              <>
+                <Bell size={18} />
+                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#ff3b30]" />
+              </>
+            }
+          />
+        }
+      />
 
-        <div className="space-y-3">
-          {items.map((item) => (
-            <div key={item.id} className="glass flex items-center gap-3 rounded-[24px] p-4">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#dff4f3]/12 text-[#008d8c]">
-                <ReceiptText size={20} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-extrabold text-[#123748]">{item.itemName ?? 'Expense'}</div>
-                <div className="mt-1 text-xs text-[#65838b]">{item.category ?? ''}</div>
-                <div className="mt-1 text-[11px] text-[#7da0a6]">{item.expenseDate ?? item.expense_date ?? ''}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-sm font-black text-[#008d8c]">BDT {Number(item.amount ?? 0).toLocaleString()}</div>
-                <IconActionLink
-                  href={`/edit-expense?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-                  label="Edit expense"
-                  icon={<Edit3 size={16} />}
-                />
-              </div>
-            </div>
-          ))}
-          {!items.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#65838b]">No expenses loaded.</div> : null}
-        </div>
+      <div className="screen -mt-1 space-y-5">
+        <section className="grid grid-cols-2 gap-3">
+          <ExpenseActionCard href="/add-expense" icon={ReceiptText} title="Add Expense" subtitle="Add new expense" />
+          <ExpenseActionCard href="/add-utility" icon={Zap} title="Add Utility" subtitle="Add utility expense" accent="blue" />
+        </section>
+
+        <section className="grid grid-cols-2 gap-2.5">
+          <ExpenseStatCard
+            icon={ClipboardList}
+            title="Total Items"
+            value={loading ? '...' : items.length}
+            color="#0F9D94"
+            bg="#E8FAF8"
+          />
+
+          <ExpenseStatCard
+            icon={Wallet2}
+            title="Total Amount"
+            value={loading ? '...' : formatBDT(totalAmount)}
+            color="#7C4DFF"
+            bg="#F1EBFF"
+          />
+        </section>
+
+        <SearchPanel search={search} onSearch={setSearch}>
+          <FilterPill icon={CalendarDays} label="This Month" active />
+          <FilterPill icon={CalendarDays} label="All Days" />
+          <FilterPill icon={Tag} label="All Categories" />
+        </SearchPanel>
+
+        {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+
+        <section className="space-y-3">
+          {loading ? <div className="rounded-[24px] bg-white/90 p-6 text-center text-sm font-bold text-[#65838b]">Loading expenses...</div> : null}
+          {!loading &&
+            filteredItems.map((item) => (
+              <ExpenseListItem
+                key={item.id}
+                item={item}
+                href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+              />
+            ))}
+          {!loading && !filteredItems.length ? (
+            <div className="rounded-[24px] bg-white/90 p-6 text-center text-sm font-bold text-[#65838b]">No expenses found.</div>
+          ) : null}
+        </section>
       </div>
     </MobileShell>
   )

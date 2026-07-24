@@ -102,6 +102,183 @@ textarea {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.expense-top {
+  color: white;
+  background:
+    radial-gradient(circle at 17% 92%, rgba(75, 191, 192, 0.33), transparent 32%),
+    radial-gradient(circle at 84% 84%, rgba(255, 255, 255, 0.13), transparent 30%),
+    linear-gradient(135deg, #00777a 0%, #008d8c 52%, #0aa0a0 100%);
+  padding-top: calc(env(safe-area-inset-top) + 10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.expense-top::after,
+.detail-hero::after,
+.member-overview-modal::after {
+  content: "";
+  position: absolute;
+  right: -54px;
+  top: 74px;
+  height: 178px;
+  width: 178px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 10px rgba(255, 255, 255, 0.035),
+    0 0 0 22px rgba(255, 255, 255, 0.03),
+    0 0 0 34px rgba(255, 255, 255, 0.025),
+    0 0 0 46px rgba(255, 255, 255, 0.02);
+  pointer-events: none;
+}
+
+.expense-action-card,
+.expense-stat-card,
+.expense-list-item,
+.detail-card,
+.member-overview-card {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  box-shadow: 0 12px 28px rgba(18, 55, 72, 0.08);
+}
+
+.expense-action-card {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 12px 10px;
+}
+
+.expense-stat-card {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 12px 10px;
+  overflow: hidden;
+}
+
+.expense-list-item {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 11px 10px;
+}
+
+.design-form-card {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 16px 14px 18px;
+  box-shadow: 0 28px 70px rgba(18, 55, 72, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.expense-form-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(158, 221, 220, 0.26), transparent 15rem),
+    radial-gradient(circle at 86% 14%, rgba(255, 255, 255, 0.12), transparent 12rem),
+    linear-gradient(135deg, #00777a 0%, #008d8c 52%, #0aa0a0 100%);
+  color: #ffffff;
+  padding: calc(env(safe-area-inset-top) + 22px) 18px 30px;
+  box-shadow: 0 18px 40px rgba(0, 119, 122, 0.16);
+}
+
+.expense-form-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.34), transparent 82%);
+}
+
+.expense-form-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.expense-form-hero-button {
+  display: grid;
+  height: 54px;
+  width: 54px;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  background: rgba(237, 250, 250, 0.9);
+  color: #00777a;
+  box-shadow: 0 16px 34px rgba(0, 75, 78, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.expense-form-screen {
+  margin-top: 18px;
+  padding-bottom: calc(152px + env(safe-area-inset-bottom));
+}
+
+.expense-form-card {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.98);
+  padding: 22px;
+  box-shadow:
+    0 14px 32px rgba(18, 55, 72, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.88) inset;
+}
+
+.detail-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #00777a 0%, #008d8c 55%, #0aa0a0 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 38px rgba(0, 119, 122, 0.18);
+}
+
+.detail-card {
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  border-bottom: 1px solid rgba(0, 127, 131, 0.12);
+}
+
+.detail-row:last-child {
+  border-bottom: 0;
+}
+
+.member-overview-modal {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 16px 14px 14px;
+  box-shadow: 0 28px 70px rgba(18, 55, 72, 0.24);
+}
+
+.member-overview-card {
+  min-height: 62px;
+  border-radius: 14px;
+  padding: 10px;
+}
+
 .nav-bar {
   position: fixed;
   left: 50%;

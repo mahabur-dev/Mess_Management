@@ -177,7 +177,7 @@ export default function HomePage() {
   const quickActions = getHomeQuickActions(user)
 
   useEffect(() => {
-    if (!isLoading && !user) router.push('/login')
+    if (!isLoading && !user) router.replace('/login')
   }, [isLoading, user, router])
 
   useEffect(() => {

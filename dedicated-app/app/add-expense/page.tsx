@@ -1,13 +1,22 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { ReceiptText } from 'lucide-react'
+import {
+  DesignedInput,
+  DesignedSelect,
+  DesignedTextarea,
+  FormPageShell,
+  FormSection,
+  PaymentTypeSelector,
+  SubmitGradientButton,
+  UploadField,
+  expenseFormIcons,
+} from '@/components/mobile/expense-design'
 import { MobileShell } from '@/components/mobile-shell'
-import { TopScreen } from '@/components/top-screen'
-import { FieldCard, SelectField, SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
 import { api } from '@/lib/api'
 import {
   EXPENSE_CATEGORIES,
-  EXPENSE_PAYMENT_TYPES,
   LABELS,
   type ExpenseCategory,
   type ExpensePaymentType,
@@ -50,11 +59,12 @@ const INITIAL_FORM: FormState = {
 
 export default function AddExpensePage() {
   const { user } = useAuth()
-  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
+  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const [members, setMembers] = useState<MemberOption[]>([])
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [message, setMessage] = useState('')
+  const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -82,8 +92,15 @@ export default function AddExpensePage() {
     }
   }, [messId, user])
 
-  async function handleSubmit() {
+  const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((current) => ({ ...current, [key]: value }))
+  }
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
     setMessage('')
+    setSuccess(false)
+
     if (!messId) return setMessage('No mess selected.')
     if (!form.amount) return setMessage('Amount is required.')
     if (!form.expenseDate) return setMessage('Expense date is required.')
@@ -96,7 +113,7 @@ export default function AddExpensePage() {
         purchasedBy: form.purchasedBy || undefined,
         category: form.category,
         amount: Number(form.amount),
-        itemName: form.itemName.trim() || undefined,
+        itemName: form.itemName.trim() || LABELS.EXPENSE_CATEGORIES[form.category],
         quantity: form.quantity ? Number(form.quantity) : undefined,
         unit: form.unit.trim() || undefined,
         expenseDate: form.expenseDate,
@@ -118,6 +135,7 @@ export default function AddExpensePage() {
 
       setForm(INITIAL_FORM)
       setReceiptFile(null)
+      setSuccess(true)
       setMessage('Expense saved successfully.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save expense.')
@@ -128,119 +146,76 @@ export default function AddExpensePage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Add Expense" subtitle="Exact backend fields" backHref="/" />
-      <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
-          <SelectField
-            label="Category"
-            value={form.category}
-            onChange={(category) => setForm((prev) => ({ ...prev, category }))}
-            options={EXPENSE_CATEGORIES}
-            getLabel={(value) => LABELS.EXPENSE_CATEGORIES[value]}
-          />
+      <form onSubmit={handleSubmit}>
+        <FormPageShell title="Add Expense" description="Add a new expense for your mess" icon={ReceiptText} backHref="/expenses">
+          <FormSection>
+            <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} />
+          </FormSection>
 
-          <TextField
-            label="Item Name"
-            value={form.itemName}
-            onChange={(itemName) => setForm((prev) => ({ ...prev, itemName }))}
-            placeholder="Rice"
-          />
+          <FormSection title="Expense Details">
+            <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
+              {EXPENSE_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {LABELS.EXPENSE_CATEGORIES[category]}
+                </option>
+              ))}
+            </DesignedSelect>
 
-          <div className="grid grid-cols-2 gap-3">
-            <TextField
-              label="Quantity"
-              value={form.quantity}
-              onChange={(quantity) => setForm((prev) => ({ ...prev, quantity }))}
-              placeholder="5"
-              type="number"
+            <DesignedInput label="Item Name" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => update('itemName', event.target.value)} placeholder="Rice, cleaner, lunch..." />
+
+            <div className="grid grid-cols-2 gap-3">
+              <DesignedInput label="Quantity" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => update('quantity', event.target.value)} placeholder="5" type="number" />
+              <DesignedInput label="Unit" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => update('unit', event.target.value)} placeholder="kg" />
+            </div>
+
+            <DesignedInput label="Amount (৳)" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" />
+
+            <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" />
+
+            <div className="grid grid-cols-2 gap-3">
+              <DesignedSelect label="Purchased By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)}>
+                <option value="">Select member</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </DesignedSelect>
+              <DesignedSelect label="Buyer ID" icon={expenseFormIcons.member} value={form.buyerId} onChange={(event) => update('buyerId', event.target.value)}>
+                <option value="">Optional</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </DesignedSelect>
+            </div>
+
+            <DesignedTextarea
+              label="Description"
+              icon={expenseFormIcons.description}
+              value={form.description}
+              onChange={(event) => update('description', event.target.value.slice(0, 250))}
+              placeholder="Add expense note..."
+              count={`${form.description.length}/250`}
             />
-            <TextField
-              label="Unit"
-              value={form.unit}
-              onChange={(unit) => setForm((prev) => ({ ...prev, unit }))}
-              placeholder="kg"
-            />
-          </div>
 
-          <TextField
-            label="Amount"
-            value={form.amount}
-            onChange={(amount) => setForm((prev) => ({ ...prev, amount }))}
-            placeholder="1200"
-            type="number"
-          />
+          </FormSection>
 
-          <TextField
-            label="Expense Date"
-            value={form.expenseDate}
-            onChange={(expenseDate) => setForm((prev) => ({ ...prev, expenseDate }))}
-            type="date"
-          />
+          <FormSection>
+            <DesignedInput label="Receipt URL" icon={expenseFormIcons.receipt} value={form.receiptUrl} onChange={(event) => update('receiptUrl', event.target.value)} placeholder="https://..." />
+            <UploadField fileName={receiptFile?.name} onChange={setReceiptFile} />
+          </FormSection>
 
-          <div className="grid grid-cols-2 gap-3">
-            <SelectField
-              label="Purchased By"
-              value={form.purchasedBy}
-              onChange={(purchasedBy) => setForm((prev) => ({ ...prev, purchasedBy }))}
-              options={['', ...members.map((member) => member.id)] as string[]}
-              getLabel={(value) => {
-                if (!value) return 'Select member'
-                const member = members.find((item) => item.id === value)
-                return member ? member.name : value
-              }}
-            />
-            <SelectField
-              label="Buyer ID"
-              value={form.buyerId}
-              onChange={(buyerId) => setForm((prev) => ({ ...prev, buyerId }))}
-              options={['', ...members.map((member) => member.id)] as string[]}
-              getLabel={(value) => {
-                if (!value) return 'Optional'
-                const member = members.find((item) => item.id === value)
-                return member ? member.name : value
-              }}
-            />
-          </div>
+          {message ? (
+            <div className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${success ? 'border-[#bfe7e6] bg-[#edfafa] text-[#008d8c]' : 'border-[#f4c7c7] bg-[#fff5f5] text-[#b42318]'}`}>
+              {message}
+            </div>
+          ) : null}
 
-          <SelectField
-            label="Payment Type"
-            value={form.paymentType}
-            onChange={(paymentType) => setForm((prev) => ({ ...prev, paymentType }))}
-            options={EXPENSE_PAYMENT_TYPES}
-            getLabel={(value) => LABELS.EXPENSE_PAYMENT_TYPES[value]}
-          />
-
-          <TextAreaField
-            label="Description"
-            value={form.description}
-            onChange={(description) => setForm((prev) => ({ ...prev, description }))}
-            placeholder="Monthly grocery run"
-          />
-
-          <TextField
-            label="Receipt URL"
-            hint="Optional if file is uploaded"
-            value={form.receiptUrl}
-            onChange={(receiptUrl) => setForm((prev) => ({ ...prev, receiptUrl }))}
-            placeholder="https://..."
-          />
-
-          <FieldCard label="Receipt File" hint="Optional">
-            <input
-              className="field py-3"
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={(event) => setReceiptFile(event.target.files?.[0] ?? null)}
-            />
-          </FieldCard>
-
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
-
-          <SubmitButton busy={busy} onClick={handleSubmit}>
-            Save Expense
-          </SubmitButton>
-        </div>
-      </div>
+          <SubmitGradientButton busy={busy}>Save Expense</SubmitGradientButton>
+        </FormPageShell>
+      </form>
     </MobileShell>
   )
 }

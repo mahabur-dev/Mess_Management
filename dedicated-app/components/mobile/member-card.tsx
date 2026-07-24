@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { BadgeCheck, Eye, Home, MoreVertical, Phone, Trash2, UserRound, Pencil } from 'lucide-react'
+import { Activity, Armchair, BadgeCheck, Bed, CalendarDays, Clock3, Eye, Home, MoreVertical, Phone, ShieldCheck, Trash2, User, WalletCards, X, Pencil } from 'lucide-react'
 
 export type MobileMember = {
   id: string
@@ -21,6 +21,9 @@ export type MobileMember = {
     avatar_url?: string | null
   }
   mess?: { id: string; name: string }
+  joined_at?: string | null
+  updated_at?: string | null
+  created_at?: string | null
 }
 
 export function getInitials(name?: string | null) {
@@ -120,38 +123,121 @@ export function MemberCard({
 
 export function MemberDetailsModal({ member, onClose }: { member: MobileMember; onClose: () => void }) {
   const name = memberName(member)
+  const roleLabel = member.role ? member.role.replaceAll('_', ' ') : 'MEMBER'
+  const joined = member.joined_at || member.created_at
+  const updated = member.updated_at || member.joined_at || member.created_at
+  const formatDate = (value?: string | null) => {
+    if (!value) return 'Not set'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toLocaleDateString('en-US', { day: '2-digit', month: 'long', year: 'numeric' })
+  }
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return 'Not set'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toLocaleString('en-US', { day: '2-digit', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  }
+  const tiles = [
+    { label: 'Role', value: roleLabel, icon: User, bg: '#e8fbfa', fg: '#008d8c' },
+    { label: 'Status', value: member.is_active ? 'Active' : 'Inactive', icon: Activity, bg: '#e8fbfa', fg: '#008d8c' },
+    { label: 'Room', value: member.room_no || 'Not assigned', icon: Bed, bg: '#edf7ff', fg: '#1f7ae0' },
+    { label: 'Seat', value: member.seat_no || 'Not assigned', icon: Armchair, bg: '#f3eaff', fg: '#9a4be8' },
+    {
+      label: 'Rent',
+      value: member.monthly_rent ? `BDT ${Number(member.monthly_rent).toLocaleString('en-US')}` : 'Not set',
+      icon: WalletCards,
+      bg: '#fff4df',
+      fg: '#f39b00',
+    },
+    {
+      label: 'Deposit',
+      value: member.deposit_amount ? `BDT ${Number(member.deposit_amount).toLocaleString('en-US')}` : 'Not set',
+      icon: WalletCards,
+      bg: '#ffeaf1',
+      fg: '#eb3d72',
+    },
+  ]
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end bg-[#123748]/38 px-3 pb-3 backdrop-blur-sm" onClick={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="w-full rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(18,55,72,0.22)]">
-        <div className="flex items-center gap-3">
-          <div className="member-avatar h-14 w-14 text-base">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-[#123748]/38 px-4 py-3 backdrop-blur-[7px]" onClick={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="member-overview-modal w-full max-w-[398px]">
+        <div className="relative z-10 flex items-start gap-3">
+          <div className="member-avatar h-12 w-12 text-[14px]">
             <span>{getInitials(name)}</span>
             <span className={`member-presence ${member.is_active ? 'bg-[#18c978]' : 'bg-[#9aaeb4]'}`} />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-base font-black text-[#123748]">{name}</h2>
-            <p className="truncate text-xs font-semibold text-[#65838b]">{member.user?.email ?? 'No email'}</p>
+            <h2 className="truncate text-[16px] font-black leading-tight text-[#123748]">{name}</h2>
+            <p className="mt-1 truncate text-[11px] font-bold text-[#65838b]">{member.user?.email ?? 'No email'}</p>
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#cfeeed] bg-[#edfafa] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[#008d8c]">
+              <User size={13} />
+              {roleLabel}
+            </span>
+          </div>
+          <button type="button" onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#dce5ec] bg-white text-[#008d8c]" aria-label="Close member overview">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="relative z-10 mt-4 rounded-[14px] border border-[#cfeeed] bg-[#edfafa] p-3">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[#0aa0a0] to-[#008d8c] text-white">
+              <ShieldCheck size={20} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold text-[#65838b]">Status</div>
+              <div className="mt-0.5 text-[16px] font-black text-[#008d8c]">{member.is_active ? 'Active' : 'Inactive'}</div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dff4f3] px-2.5 py-1.5 text-[10px] font-black text-[#008d8c]">
+              <BadgeCheck size={13} />
+              Verified
+            </span>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {[
-            ['Role', member.role || 'MEMBER'],
-            ['Status', member.is_active ? 'Active' : 'Inactive'],
-            ['Room', member.room_no || 'Not assigned'],
-            ['Seat', member.seat_no || 'Not assigned'],
-            ['Rent', member.monthly_rent ? `BDT ${Number(member.monthly_rent).toLocaleString()}` : 'Not set'],
-            ['Deposit', member.deposit_amount ? `BDT ${Number(member.deposit_amount).toLocaleString()}` : 'Not set'],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-2xl border border-[#cfeeed] bg-[#f9fffe] px-3 py-3">
-              <div className="text-[10px] font-black uppercase tracking-[0.12em] text-[#65838b]">{label}</div>
-              <div className="mt-1 truncate text-sm font-black text-[#123748]">{value}</div>
-            </div>
-          ))}
+        <div className="relative z-10 mt-4">
+          <h3 className="text-[14px] font-black text-[#123748]">Member Overview</h3>
+          <div className="mt-2 h-1 w-8 rounded-full bg-[#008d8c]" />
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {tiles.map((tile) => {
+              const Icon = tile.icon
+              return (
+                <div key={tile.label} className="member-overview-card">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ backgroundColor: tile.bg, color: tile.fg }}>
+                      <Icon size={17} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-[9px] font-black uppercase text-[#65838b]">{tile.label}</div>
+                      <div className="mt-1 truncate text-[13px] font-black text-[#123748]">{tile.value}</div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
-        <button type="button" onClick={onClose} className="primary-btn mt-4 h-12 w-full">
+        <div className="relative z-10 mt-4 divide-y divide-[#dce5ec] border-t border-[#dce5ec]">
+          <div className="flex items-center gap-3 py-3">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#e8fbfa] text-[#008d8c]">
+              <CalendarDays size={16} />
+            </span>
+            <span className="flex-1 text-[11px] font-bold text-[#65838b]">Joined On</span>
+            <span className="max-w-[150px] text-right text-[11px] font-bold text-[#123748]">{formatDate(joined)}</span>
+          </div>
+          <div className="flex items-center gap-3 py-3">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#e8fbfa] text-[#008d8c]">
+              <Clock3 size={16} />
+            </span>
+            <span className="flex-1 text-[11px] font-bold text-[#65838b]">Last Updated</span>
+            <span className="max-w-[170px] text-right text-[11px] font-bold text-[#123748]">{formatDateTime(updated)}</span>
+          </div>
+        </div>
+
+        <button type="button" onClick={onClose} className="primary-btn relative z-10 mt-2 flex h-[50px] w-full items-center justify-center gap-2 rounded-[14px] text-[14px]">
+          <X size={18} />
           Close
         </button>
       </section>

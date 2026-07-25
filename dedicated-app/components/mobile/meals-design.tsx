@@ -5,6 +5,7 @@ import type { ComponentType, ReactNode } from 'react'
 import {
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Circle,
@@ -17,6 +18,7 @@ import {
   UtensilsCrossed,
   type LucideProps,
 } from 'lucide-react'
+import { appHref } from '@/lib/routes'
 
 export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
 export type AttendanceStatus = 'ON' | 'OFF'
@@ -101,7 +103,7 @@ export function formatLocalIsoDate(date: Date) {
 
 export function formatDisplayDate(date: string) {
   if (!date) return '--'
-  return new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', {
+  return new Date(`${toIsoDateKey(date)}T00:00:00`).toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -110,7 +112,46 @@ export function formatDisplayDate(date: string) {
 
 export function formatWeekday(date: string) {
   if (!date) return ''
-  return new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' })
+  return new Date(`${toIsoDateKey(date)}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' })
+}
+
+export function formatShortWeekday(date: string) {
+  if (!date) return ''
+  return new Date(`${toIsoDateKey(date)}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short' })
+}
+
+export function toIsoDateKey(value?: string | Date | null) {
+  if (!value) return ''
+  if (value instanceof Date) return formatLocalIsoDate(value)
+  const directDate = value.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (directDate) return directDate[1]
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? value : formatLocalIsoDate(parsed)
+}
+
+export function currentMonthValue() {
+  return todayIsoDate().slice(0, 7)
+}
+
+export function monthBounds(month: string) {
+  const normalizedMonth = /^\d{4}-\d{2}$/.test(month) ? month : currentMonthValue()
+  const [year, monthIndex] = normalizedMonth.split('-').map(Number)
+  const start = new Date(year, monthIndex - 1, 1)
+  const end = new Date(year, monthIndex, 0)
+
+  return {
+    month: normalizedMonth,
+    startDate: formatLocalIsoDate(start),
+    endDate: formatLocalIsoDate(end),
+  }
+}
+
+export function formatMonthLabel(month: string) {
+  const { month: normalizedMonth } = monthBounds(month)
+  return new Date(`${normalizedMonth}-01T00:00:00`).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  })
 }
 
 export function formatTime(time?: string | null) {
@@ -167,6 +208,55 @@ export function calculateTotals(meals: MealRecord[]) {
   return {
     perMeal,
     total: Number((perMeal.BREAKFAST + perMeal.LUNCH + perMeal.DINNER).toFixed(2)),
+  }
+}
+
+export type MealHistoryItem = {
+  mealName: MealName
+  count: number
+}
+
+export type MealHistoryDay = {
+  date: string
+  meals: MealHistoryItem[]
+  total: number
+}
+
+export function buildMemberMealHistory(meals: MealRecord[], memberId?: string | null): MealHistoryDay[] {
+  if (!memberId) return []
+
+  const grouped = new Map<string, MealHistoryDay>()
+
+  for (const meal of meals) {
+    const attendance = findAttendanceForMember(meal, memberId)
+    const count = attendanceMealCount(meal.name, attendance)
+    if (count <= 0) continue
+
+    const date = toIsoDateKey(meal.scheduled_date)
+    if (!date) continue
+
+    const day = grouped.get(date) ?? { date, meals: [], total: 0 }
+    day.meals.push({ mealName: meal.name, count })
+    day.total = Number((day.total + count).toFixed(2))
+    grouped.set(date, day)
+  }
+
+  return [...grouped.values()]
+    .map((day) => ({
+      ...day,
+      meals: MEAL_ORDER.flatMap((mealName) => day.meals.filter((meal) => meal.mealName === mealName)),
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date))
+}
+
+export function summarizeMealHistory(history: MealHistoryDay[]) {
+  const totalMeals = Number(history.reduce((sum, day) => sum + day.total, 0).toFixed(2))
+  const days = history.length
+
+  return {
+    totalMeals,
+    days,
+    averagePerDay: days ? Number((totalMeals / days).toFixed(1)) : 0,
   }
 }
 
@@ -231,6 +321,29 @@ export function MealDateCard({
         </button>
       ) : null}
     </MealCard>
+  )
+}
+
+export function MealMonthSelector({
+  month,
+  onChange,
+}: {
+  month: string
+  onChange: (month: string) => void
+}) {
+  return (
+    <label className="relative mx-auto flex h-14 w-fit min-w-[210px] items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-6 text-[#123748] shadow-[0_12px_24px_rgba(18,55,72,0.12)]">
+      <CalendarDays size={19} className="shrink-0 text-[#008d8c]" />
+      <span className="text-[15px] font-black">{formatMonthLabel(month)}</span>
+      <ChevronDown size={18} className="shrink-0 text-[#123748]" />
+      <input
+        aria-label="Select month"
+        type="month"
+        value={month}
+        onChange={(event) => onChange(event.target.value)}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
+    </label>
   )
 }
 
@@ -422,30 +535,165 @@ export function MealTotalsGrid({
   )
 }
 
+export function MonthlyMealSummaryCard({
+  total,
+  href,
+  title = 'Total Meals This Month',
+}: {
+  total: number
+  href: string
+  title?: string
+}) {
+  return (
+    <div className="overflow-hidden rounded-[18px] border border-[#9edddc] bg-[linear-gradient(135deg,#ffffff_0%,#f4ffff_58%,#edfafa_100%)] shadow-[0_12px_28px_rgba(0,119,122,0.08)]">
+      <div className="relative flex min-h-[96px] items-center gap-3 px-4 py-3.5">
+        <div className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-[#008d8c]" />
+
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[#d8f2f1] text-[#008d8c] ring-1 ring-[#bfe7e6]">
+          <CalendarDays size={21} strokeWidth={2.4} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="max-w-[132px] text-[10px] font-black uppercase leading-[15px] text-[#55727b]">{title}</div>
+          <div className="mt-1 flex items-end gap-1.5">
+            <span className="text-[20px] font-black leading-none text-[#123748]">{total}</span>
+            <span className="pb-0.5 text-[10px] font-black text-[#008d8c]">meals</span>
+          </div>
+        </div>
+
+        <Link
+          href={appHref(href)}
+          className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[13px] border border-[#8dd8d7] bg-white px-3 text-[11px] font-black text-[#123748] shadow-[0_8px_18px_rgba(0,119,122,0.07)] active:scale-[0.98]"
+        >
+          Details <ChevronRight size={15} className="text-[#008d8c]" />
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+export function MealHistoryStats({
+  totalMeals,
+  days,
+  averagePerDay,
+}: {
+  totalMeals: number
+  days: number
+  averagePerDay: number
+}) {
+  const stats = [
+    { label: 'Total Meals', value: totalMeals },
+    { label: 'Days', value: days },
+    { label: 'Avg / Day', value: averagePerDay },
+  ]
+
+  return (
+    <div className="grid grid-cols-3 rounded-[20px] bg-white px-3 py-5 shadow-[0_16px_34px_rgba(18,55,72,0.1)]">
+      {stats.map((stat, index) => (
+        <div key={stat.label} className={`text-center ${index ? 'border-l border-[#d8eeee]' : ''}`}>
+          <div className="text-[22px] font-black leading-none text-[#123748]">{stat.value}</div>
+          <div className="mt-3 text-[12px] font-black text-[#55727b]">{stat.label}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function MealHistoryTable({
+  history,
+}: {
+  history: MealHistoryDay[]
+}) {
+  if (!history.length) return <EmptyMealsState title="No meal history found for this month." />
+
+  return (
+    <section className="overflow-hidden rounded-[20px] bg-white shadow-[0_16px_34px_rgba(18,55,72,0.1)]">
+      <div className="grid grid-cols-[1.1fr_1.7fr_44px] items-center bg-gradient-to-r from-[#00777a] to-[#008d8c] px-4 py-4 text-[12px] font-black text-white">
+        <div>Date</div>
+        <div>Meals Taken</div>
+        <div className="text-right">Total</div>
+      </div>
+      <div>
+        {history.map((day) => (
+          <div key={day.date} className="grid grid-cols-[1.1fr_1.7fr_44px] gap-3 border-b border-[#d8eeee] px-4 py-4 last:border-b-0">
+            <div className="min-w-0">
+              <div className="text-[13px] font-black leading-tight text-[#123748]">{formatDisplayDate(day.date)}</div>
+              <div className="mt-2 text-[11px] font-black text-[#55727b]">{formatShortWeekday(day.date)}</div>
+            </div>
+            <div className="space-y-2">
+              {day.meals.map((meal) => (
+                <div key={meal.mealName} className="grid grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2">
+                  <MealIconBadge mealName={meal.mealName} size="sm" />
+                  <span className="truncate text-[12px] font-bold text-[#55727b]">{MEAL_LABELS[meal.mealName]}</span>
+                  <span className="text-right text-[12px] font-black text-[#123748]">{meal.count}</span>
+                </div>
+              ))}
+            </div>
+            <div className="self-center text-right text-[20px] font-black text-[#123748]">{day.total}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function MealOptionRow({
   selected,
   title,
   hint,
   rightText,
+  rightSlot,
   onClick,
 }: {
   selected: boolean
   title: string
   hint?: string
   rightText?: string
+  rightSlot?: ReactNode
   onClick: () => void
 }) {
   return (
-    <button type="button" onClick={onClick} className="flex min-h-12 w-full items-center gap-3 rounded-[14px] bg-white px-1 text-left">
-      <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${selected ? 'border-[#008d8c]' : 'border-[#789096]'}`}>
-        {selected ? <span className="h-2.5 w-2.5 rounded-full bg-[#008d8c]" /> : null}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-bold text-[#123748]">{title}</span>
-        {hint ? <span className="mt-0.5 block text-[10px] font-semibold text-[#65838b]">{hint}</span> : null}
-      </span>
-      {rightText ? <span className="text-[11px] font-bold text-[#65838b]">{rightText}</span> : null}
-    </button>
+    <div className="flex min-h-12 w-full items-center gap-3 rounded-[14px] bg-white px-1">
+      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+        <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${selected ? 'border-[#008d8c]' : 'border-[#789096]'}`}>
+          {selected ? <span className="h-2.5 w-2.5 rounded-full bg-[#008d8c]" /> : null}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13px] font-bold text-[#123748]">{title}</span>
+          {hint ? <span className="mt-0.5 block text-[10px] font-semibold text-[#65838b]">{hint}</span> : null}
+        </span>
+        {!rightSlot && rightText ? <span className="shrink-0 text-[11px] font-bold text-[#65838b]">{rightText}</span> : null}
+      </button>
+      {rightSlot ? <div className="shrink-0">{rightSlot}</div> : null}
+    </div>
+  )
+}
+
+export function GuestMealCountInput({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: string
+  onChange: (value: string) => void
+  disabled?: boolean
+}) {
+  return (
+    <label className="flex h-10 w-[92px] items-center gap-1 rounded-[13px] border border-[#9edddc] bg-[#f7ffff] px-2.5 text-[#123748] shadow-[0_8px_18px_rgba(0,119,122,0.06)]">
+      <input
+        aria-label="Guest meal count"
+        className="min-w-0 flex-1 bg-transparent text-center text-[14px] font-black outline-none disabled:opacity-60"
+        type="number"
+        inputMode="decimal"
+        min="1"
+        max="20"
+        step="0.5"
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <span className="text-[10px] font-black text-[#65838b]">meal</span>
+    </label>
   )
 }
 
@@ -482,7 +730,7 @@ export function MemberMealRow({
 
   if (href) {
     return (
-      <Link href={href} className="flex min-h-[64px] items-center gap-3 rounded-[16px] bg-white px-3 py-2 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
+      <Link href={appHref(href)} className="flex min-h-[64px] items-center gap-3 rounded-[16px] bg-white px-3 py-2 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
         {content}
       </Link>
     )
@@ -535,7 +783,7 @@ export function ManagerActionCard({
   }
 
   return (
-    <Link href={href} className="flex min-h-[78px] items-center gap-3 rounded-[16px] bg-white px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
+    <Link href={appHref(href)} className="flex min-h-[78px] items-center gap-3 rounded-[16px] bg-white px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
       <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-[16px] ${tones[tone]}`}>{icon}</div>
       <div className="min-w-0 flex-1">
         <div className="text-[13px] font-black text-[#123748]">{title}</div>

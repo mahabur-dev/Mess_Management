@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { appHref } from '@/lib/routes'
 
 type ActionLinkProps = {
   href: string
@@ -13,7 +14,7 @@ type ActionLinkProps = {
 export function ActionLink({ href, label, icon, tone = 'subtle' }: ActionLinkProps) {
   return (
     <Link
-      href={href}
+      href={appHref(href)}
       className={`inline-flex h-10 items-center gap-2 rounded-2xl px-3 text-sm font-bold transition ${
         tone === 'primary'
           ? 'bg-[#008d8c] text-white shadow-[0_10px_24px_rgba(0,119,122,0.24)]'
@@ -36,7 +37,7 @@ type IconActionLinkProps = {
 export function IconActionLink({ href, label, icon, tone = 'subtle' }: IconActionLinkProps) {
   return (
     <Link
-      href={href}
+      href={appHref(href)}
       aria-label={label}
       title={label}
       className={`grid h-10 w-10 place-items-center rounded-2xl transition ${

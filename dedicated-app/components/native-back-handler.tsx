@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useNativeBackActions } from '@/components/native-back-actions'
 import { getAppBackFallback } from '@/lib/app-permissions'
 import { isAuthPath, normalizePathname, type AuthUser } from '@/lib/auth'
+import { appHref } from '@/lib/routes'
 
 type NativeBackHandlerProps = {
   user: AuthUser | null
@@ -45,11 +46,11 @@ export function NativeBackHandler({
       if (!user) {
         if (isAuthPath(normalizedPathname)) {
           if (normalizedPathname === LOGIN_PATH) void CapacitorApp.exitApp()
-          else router.replace(LOGIN_PATH)
+          else router.replace(appHref(LOGIN_PATH))
           return
         }
 
-        router.replace(LOGIN_PATH)
+        router.replace(appHref(LOGIN_PATH))
         return
       }
 
@@ -68,7 +69,7 @@ export function NativeBackHandler({
         return
       }
 
-      router.replace(getAppBackFallback(user, normalizedPathname))
+      router.replace(appHref(getAppBackFallback(user, normalizedPathname)))
     }).then((handle) => {
       if (cancelled) {
         void handle.remove()

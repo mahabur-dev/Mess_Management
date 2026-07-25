@@ -18,6 +18,7 @@ import {
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { getHomeQuickActions } from '@/lib/app-permissions'
+import { appHref } from '@/lib/routes'
 import { useAuth } from './providers'
 
 type DashboardNotice = {
@@ -304,7 +305,7 @@ export default function HomePage() {
               <button
                 key={label}
                 type="button"
-                onClick={() => router.push(href)}
+                onClick={() => router.push(appHref(href))}
                 className="quick-action-button"
               >
                 <div className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c]">

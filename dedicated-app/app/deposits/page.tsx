@@ -1,12 +1,19 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Coins, Edit3, PlusCircle } from 'lucide-react'
-import { IconActionLink } from '@/components/mobile/action-links'
+import { Coins, ListChecks, PlusCircle } from 'lucide-react'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
-import { SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { SubmitButton, TextField } from '@/components/mobile/form-controls'
+import {
+  DepositListItem,
+  DepositManualNotice,
+  DepositSectionTitle,
+  DepositStatCard,
+  formatDepositMoney,
+  type DepositListRecord,
+} from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
 import { useAuth } from '../providers'
 
@@ -40,6 +47,7 @@ export default function DepositsPage() {
   const [items, setItems] = useState<DepositItem[]>([])
   const [totalAmount, setTotalAmount] = useState(0)
   const [showForm, setShowForm] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     if (!messId) return
@@ -86,35 +94,19 @@ export default function DepositsPage() {
     }
   }
 
+  const visibleItems = useMemo(() => {
+    const value = search.trim().toLowerCase()
+    if (!value) return items
+    return items.filter((item) => `${item.member?.name ?? ''} ${item.note ?? ''}`.toLowerCase().includes(value))
+  }, [items, search])
+
   return (
     <MobileShell>
       <TopScreen title="Deposits" subtitle="Contribution tracking" backHref="/" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-white px-4 py-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#65838b]">Total Deposit</div>
-                  <div className="mt-1 text-lg font-black text-[#123748]">BDT {Number(totalAmount).toLocaleString()}</div>
-                </div>
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#dff4f3]/12 text-[#008d8c]">
-                  <Coins size={18} />
-                </div>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-white px-4 py-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#65838b]">Recent</div>
-                  <div className="mt-1 text-lg font-black text-[#123748]">{items.length}</div>
-                </div>
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#dff4f3]/12 text-[#008d8c]">
-                  <PlusCircle size={18} />
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          <DepositStatCard title="Total Deposit" value={formatDepositMoney(totalAmount)} caption="All entries" icon={Coins} />
+          <DepositStatCard title="Recent" value={items.length} caption="Loaded entries" icon={ListChecks} tone="blue" />
         </div>
 
         {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
@@ -128,52 +120,63 @@ export default function DepositsPage() {
           onOpen={() => setShowForm(true)}
           onClose={() => setShowForm(false)}
         >
+          <div className="grid grid-cols-2 gap-3">
+            <TextField
+              label="Amount"
+              value={form.amount}
+              onChange={(amount) => setForm((prev) => ({ ...prev, amount }))}
+              placeholder="1500"
+              type="number"
+            />
+            <TextField
+              label="Date"
+              value={form.date}
+              onChange={(date) => setForm((prev) => ({ ...prev, date }))}
+              type="date"
+            />
+          </div>
           <TextField
-            label="Amount"
-            value={form.amount}
-            onChange={(amount) => setForm((prev) => ({ ...prev, amount }))}
-            placeholder="1500"
-            type="number"
-          />
-          <TextField
-            label="Date"
-            value={form.date}
-            onChange={(date) => setForm((prev) => ({ ...prev, date }))}
-            type="date"
-          />
-          <TextAreaField
             label="Note"
             value={form.note}
             onChange={(note) => setForm((prev) => ({ ...prev, note }))}
             placeholder="Monthly contribution"
-            rows={3}
           />
+          <DepositManualNotice compact />
           {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Add Deposit
           </SubmitButton>
         </DeferredFormSection>
 
-        <div className="space-y-3">
-          {items.map((item) => (
-            <div key={item.id} className="glass flex items-center justify-between gap-3 rounded-[24px] p-4">
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-extrabold text-[#123748]">{item.member?.name ?? 'Deposit'}</div>
-                <div className="mt-1 text-xs text-[#65838b]">{item.date ?? item.created_at ?? ''}</div>
-                {item.note ? <div className="mt-1 text-xs text-[#65838b]">{item.note}</div> : null}
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-black text-[#008d8c]">BDT {Number(item.amount).toLocaleString()}</div>
-                <IconActionLink
-                  href={`/edit-deposit?depositId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-                  label="Edit deposit"
-                  icon={<Edit3 size={16} />}
-                />
-              </div>
-            </div>
-          ))}
-          {!items.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#65838b]">No deposits loaded.</div> : null}
-        </div>
+        <section className="rounded-[22px] border border-[#dce9ec] bg-white/96 p-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
+          <DepositSectionTitle
+            title="Recent Deposits"
+            action={<button type="button" onClick={() => setShowForm(true)} className="text-[12px] font-black text-[#008d8c]">Add</button>}
+          />
+          <input
+            className="mt-4 h-12 w-full rounded-[15px] border border-[#dce9ec] bg-white px-4 text-[13px] font-semibold outline-none placeholder:text-[#7c8b98] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search member or note..."
+          />
+          <div className="mt-3 space-y-3">
+            {visibleItems.map((item, index) => (
+              <DepositListItem
+                key={item.id}
+                item={{ ...item, status: 'APPROVED', method: 'CASH', payment_date: item.date ?? item.created_at } as DepositListRecord}
+                index={index}
+                href={`/edit-deposit?depositId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+              />
+            ))}
+            {!visibleItems.length ? <div className="rounded-[18px] bg-[#edfafa] p-5 text-sm font-semibold text-[#65838b]">No deposits loaded.</div> : null}
+          </div>
+        </section>
+
+        {!showForm ? (
+          <button type="button" onClick={() => setShowForm(true)} className="primary-btn flex w-full items-center justify-center gap-2 rounded-[22px] text-[16px]">
+            <PlusCircle size={21} /> Add Deposit
+          </button>
+        ) : null}
       </div>
     </MobileShell>
   )

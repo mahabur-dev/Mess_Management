@@ -6,6 +6,7 @@ import { useAuth } from '../providers'
 import { ChevronRight, LogOut, User } from 'lucide-react'
 import Link from 'next/link'
 import { getMoreLinks } from '@/lib/app-permissions'
+import { appHref } from '@/lib/routes'
 
 export default function MorePage() {
   const { user, logout } = useAuth()
@@ -29,7 +30,7 @@ export default function MorePage() {
 
         <div className="glass rounded-[28px] overflow-hidden">
           {links.map(({ label, href, icon: Icon }) => (
-            <Link key={href} href={href} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 last:border-b-0">
+            <Link key={href} href={appHref(href)} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 last:border-b-0">
               <div className="flex items-center gap-3">
                 <Icon size={18} className="text-[#008d8c]" />
                 <div className="text-sm font-bold text-[#123748]">{label}</div>

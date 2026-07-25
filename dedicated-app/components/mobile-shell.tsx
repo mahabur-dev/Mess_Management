@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { canAccessAppPath, getBottomTabs, getDefaultAppPath } from '@/lib/app-permissions'
 import { normalizePathname } from '@/lib/auth'
+import { appHref } from '@/lib/routes'
 
 export function MobileShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -17,7 +18,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && user && !canAccess) {
-      router.replace(getDefaultAppPath(user))
+      router.replace(appHref(getDefaultAppPath(user)))
     }
   }, [canAccess, isLoading, router, user])
 
@@ -40,7 +41,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
             return (
               <Link
                 key={href}
-                href={href}
+                href={appHref(href)}
                 className="nav-item"
                 data-active={active}
                 aria-current={active ? 'page' : undefined}

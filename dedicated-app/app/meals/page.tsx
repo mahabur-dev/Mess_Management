@@ -8,33 +8,40 @@ import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
   MealCard,
-  MealDateCard,
   MEAL_LABELS,
   MEAL_ORDER,
   MealStatusPill,
   MealTotalsGrid,
+  MonthlyMealSummaryCard,
+  buildMemberMealHistory,
+  currentMonthValue,
   deadlineLabel,
   findAttendanceForMember,
   findMeal,
-  mealIsLocked,
+  monthBounds,
   normalizeMeals,
+  summarizeMealHistory,
   todayIsoDate,
   type MealDeadlineInfo,
   type MealRecord,
 } from '@/components/mobile/meals-design'
 import { canManageMess } from '@/lib/app-permissions'
 import { api } from '@/lib/api'
+import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
 
 export default function MealsPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
-  const [date, setDate] = useState(todayIsoDate())
+  const date = useMemo(() => todayIsoDate(), [])
   const [meals, setMeals] = useState<MealRecord[]>([])
+  const [monthlyMeals, setMonthlyMeals] = useState<MealRecord[]>([])
   const [deadline, setDeadline] = useState<MealDeadlineInfo | null>(null)
   const [loading, setLoading] = useState(false)
+  const [monthlyLoading, setMonthlyLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const month = currentMonthValue()
 
   useEffect(() => {
     if (!messId) return
@@ -66,20 +73,46 @@ export default function MealsPage() {
     }
   }, [date, messId])
 
-  const activeMeal = MEAL_ORDER.map((mealName) => {
+  useEffect(() => {
+    if (!messId) return
+    let alive = true
+    const range = monthBounds(month)
+
+    setMonthlyLoading(true)
+    api
+      .getMealsByMess(messId, { startDate: range.startDate, endDate: range.endDate, limit: 200 })
+      .then((mealRes) => {
+        if (!alive) return
+        setMonthlyMeals(normalizeMeals(mealRes.data))
+      })
+      .catch(() => {
+        if (!alive) return
+        setMonthlyMeals([])
+      })
+      .finally(() => {
+        if (alive) setMonthlyLoading(false)
+      })
+
+    return () => {
+      alive = false
+    }
+  }, [messId, month])
+
+  const selectedMeals = MEAL_ORDER.map((mealName) => {
     const meal = findMeal(meals, mealName)
     const attendance = findAttendanceForMember(meal, user?.id)
     return { mealName, meal, attendance }
-  }).find((item) => item.attendance)
+  }).filter((item) => item.attendance?.status === 'ON')
+  const selectedMealLabel = selectedMeals.length
+    ? selectedMeals.map((item) => MEAL_LABELS[item.mealName]).join(', ')
+    : 'No meal selected'
+  const monthlySummary = summarizeMealHistory(buildMemberMealHistory(monthlyMeals, user?.id))
 
   return (
     <MobileShell>
-      <TopScreen title="Meal Management" subtitle={user?.memberships?.[0]?.mess?.name ?? 'Mess meals'} />
-
+      <TopScreen title="Meal Management" subtitle={user?.memberships?.[0]?.mess?.name ?? 'Mess meals'} backHref="/" />
       <div className="screen space-y-4">
-        <MealDateCard date={date} onChange={setDate} />
-
-        <MealCard>
+        <MealCard className="space-y-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="section-title mb-0">Today Overview</div>
             <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'neutral'}>{deadline?.isWindowOpen ? 'Open' : 'Closed'}</MealStatusPill>
@@ -89,6 +122,11 @@ export default function MealsPage() {
           ) : (
             <MealTotalsGrid meals={meals} />
           )}
+
+          <MonthlyMealSummaryCard
+            total={monthlyLoading ? 0 : monthlySummary.totalMeals}
+            href={`/meals/details?month=${month}`}
+          />
         </MealCard>
 
         {message ? <InlineNotice tone="danger">{message}</InlineNotice> : null}
@@ -107,38 +145,22 @@ export default function MealsPage() {
           <div className="rounded-[16px] border border-[#cfeeed] bg-[#fbffff] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-[13px] font-black text-[#123748]">{activeMeal ? MEAL_LABELS[activeMeal.mealName] : 'No meal selected'}</div>
-                <div className="mt-1 text-[11px] font-semibold text-[#65838b]">{activeMeal?.attendance?.status === 'ON' ? 'Your meal is added' : 'Update your meal preference'}</div>
+                <div className="text-[13px] font-black text-[#123748]">{selectedMealLabel}</div>
+                <div className="mt-1 text-[11px] font-semibold text-[#65838b]">{selectedMeals.length ? 'Your meal is added' : 'Update your meal preference'}</div>
               </div>
-              <MealStatusPill tone={activeMeal?.attendance?.status === 'ON' ? 'open' : 'neutral'}>
-                {activeMeal?.attendance?.status === 'ON' ? 'Added' : 'Pending'}
+              <MealStatusPill tone={selectedMeals.length ? 'open' : 'neutral'}>
+                {selectedMeals.length ? 'Added' : 'Pending'}
               </MealStatusPill>
             </div>
           </div>
 
-          <Link href={`/meals/my?date=${date}`} className="primary-btn mt-4 flex items-center justify-center gap-2">
+          <Link href={appHref(`/meals/my?date=${date}`)} className="primary-btn mt-4 flex items-center justify-center gap-2">
             <UtensilsCrossed size={18} /> Add My Meal
           </Link>
         </MealCard>
 
-        <div className="space-y-2.5">
-          {MEAL_ORDER.map((mealName) => {
-            const meal = findMeal(meals, mealName)
-            return (
-              <Link key={mealName} href={`/meals/my?date=${date}&meal=${mealName}`} className="flex min-h-[64px] items-center gap-3 rounded-[18px] bg-white px-4 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-black text-[#123748]">{MEAL_LABELS[mealName]}</div>
-                  <div className="mt-1 text-[11px] font-semibold text-[#65838b]">{mealIsLocked(meal) ? 'Locked by manager' : 'Tap to update your meal'}</div>
-                </div>
-                <MealStatusPill tone={mealIsLocked(meal) ? 'closed' : 'open'}>{mealIsLocked(meal) ? 'Locked' : 'Open'}</MealStatusPill>
-                <ChevronRight size={17} className="text-[#789096]" />
-              </Link>
-            )
-          })}
-        </div>
-
         {isManager ? (
-          <Link href="/meals/manager" className="flex min-h-[78px] items-center gap-3 rounded-[18px] bg-white px-4 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
+          <Link href={appHref('/meals/manager')} className="flex min-h-[78px] items-center gap-3 rounded-[18px] bg-white px-4 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
             <div className="grid h-12 w-12 place-items-center rounded-[16px] bg-[#fff8e9] text-[#e29a16]">
               <Settings2 size={21} />
             </div>

@@ -7,8 +7,10 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
+  GuestMealCountInput,
   MealCard,
   MEAL_LABELS,
+  MEAL_META,
   MEAL_ORDER,
   MealIconBadge,
   MealOptionRow,
@@ -38,6 +40,17 @@ function choiceFromAttendance(status?: string, guests?: number | string | null):
   return 'TAKE'
 }
 
+function guestValueFromAttendance(guests?: number | string | null) {
+  const value = Number(guests ?? 0)
+  return value > 0 ? String(value) : '1'
+}
+
+function normalizeGuestMealCount(value: string) {
+  const count = Number(value)
+  if (!Number.isFinite(count)) return 1
+  return Math.min(20, Math.max(1, Number(count.toFixed(1))))
+}
+
 function EditMemberMealContent() {
   const params = useSearchParams()
   const { user } = useAuth()
@@ -47,6 +60,7 @@ function EditMemberMealContent() {
   const date = params.get('date') || todayIsoDate()
   const mealName: MealName = isMealName(params.get('meal')) ? (params.get('meal') as MealName) : 'LUNCH'
   const [choice, setChoice] = useState<MealChoice>('TAKE')
+  const [guestCount, setGuestCount] = useState('1')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -66,6 +80,7 @@ function EditMemberMealContent() {
         const attendance = findAttendanceForMember(findMeal(mealList, mealName), memberId)
         setMeals(mealList)
         if (attendance) setChoice(choiceFromAttendance(attendance.status, attendance.guests))
+        setGuestCount(guestValueFromAttendance(attendance?.guests))
       })
       .catch((error) => {
         if (!alive) return
@@ -81,6 +96,13 @@ function EditMemberMealContent() {
   }, [date, mealName, memberId, messId])
 
   const attendance = findAttendanceForMember(findMeal(meals, mealName), memberId)
+  const guestMeals = choice === 'GUEST' ? normalizeGuestMealCount(guestCount) : 0
+  const mealCount = choice === 'NO' ? 0 : Number((MEAL_META[mealName].baseValue + guestMeals).toFixed(2))
+
+  function selectGuestMeal() {
+    setChoice('GUEST')
+    setGuestCount((current) => (Number(current) > 0 ? current : '1'))
+  }
 
   async function updateMeal() {
     if (!messId || !memberId) {
@@ -96,8 +118,8 @@ function EditMemberMealContent() {
         memberId,
         mealName,
         status: choice === 'NO' ? 'OFF' : 'ON',
-        guests: choice === 'GUEST' ? 1 : 0,
-        mealCount: choice === 'NO' ? 0 : 1,
+        guests: guestMeals,
+        mealCount,
         date,
       })
 
@@ -138,7 +160,17 @@ function EditMemberMealContent() {
 
         <MealCard className="space-y-2">
           <div className="mb-2 text-[14px] font-black text-[#123748]">Update Meal</div>
-          <MealOptionRow selected={choice === 'GUEST'} title="Guest Meal" rightText="Optional" onClick={() => setChoice('GUEST')} />
+          <MealOptionRow
+            selected={choice === 'GUEST'}
+            title="Guest Meal"
+            rightText="Optional"
+            rightSlot={
+              choice === 'GUEST' ? (
+                <GuestMealCountInput value={guestCount} onChange={setGuestCount} disabled={saving} />
+              ) : undefined
+            }
+            onClick={selectGuestMeal}
+          />
           <MealOptionRow selected={choice === 'NO'} title="No Meal" onClick={() => setChoice('NO')} />
           <MealOptionRow selected={choice === 'TAKE'} title="I will take meal" onClick={() => setChoice('TAKE')} />
         </MealCard>

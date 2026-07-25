@@ -7,9 +7,11 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
+  GuestMealCountInput,
   MealCard,
   MealDateCard,
   MEAL_LABELS,
+  MEAL_META,
   MEAL_ORDER,
   MealOptionRow,
   MealStatusPill,
@@ -43,6 +45,17 @@ function choiceFromAttendance(status?: string, guests?: number | string | null):
   return 'TAKE'
 }
 
+function guestValueFromAttendance(guests?: number | string | null) {
+  const value = Number(guests ?? 0)
+  return value > 0 ? String(value) : '1'
+}
+
+function normalizeGuestMealCount(value: string) {
+  const count = Number(value)
+  if (!Number.isFinite(count)) return 1
+  return Math.min(20, Math.max(1, Number(count.toFixed(1))))
+}
+
 function shiftIsoDate(date: string, days: number) {
   const nextDate = new Date(`${date}T00:00:00`)
   nextDate.setDate(nextDate.getDate() + days)
@@ -64,6 +77,7 @@ function MyMealContent() {
   const [date, setDate] = useState(params.get('date') || todayIsoDate())
   const [mealName, setMealName] = useState<MealName>(isMealName(initialMeal) ? initialMeal : 'LUNCH')
   const [choice, setChoice] = useState<MealChoice>('TAKE')
+  const [guestCount, setGuestCount] = useState('1')
   const [meals, setMeals] = useState<MealRecord[]>([])
   const [deadline, setDeadline] = useState<MealDeadlineInfo | null>(null)
   const [loading, setLoading] = useState(false)
@@ -88,6 +102,7 @@ function MyMealContent() {
         setMeals(mealList)
         setDeadline((deadlineRes.data ?? null) as MealDeadlineInfo | null)
         setChoice(attendance ? choiceFromAttendance(attendance.status, attendance.guests) : 'TAKE')
+        setGuestCount(guestValueFromAttendance(attendance?.guests))
       })
       .catch((error) => {
         if (!alive) return
@@ -124,6 +139,13 @@ function MyMealContent() {
         : windowOpen || isManager
           ? 'Choose how you want to take this meal.'
           : 'Meal updating time is over.'
+  const guestMeals = choice === 'GUEST' ? normalizeGuestMealCount(guestCount) : 0
+  const mealCount = choice === 'NO' ? 0 : Number((MEAL_META[mealName].baseValue + guestMeals).toFixed(2))
+
+  function selectGuestMeal() {
+    setChoice('GUEST')
+    setGuestCount((current) => (Number(current) > 0 ? current : '1'))
+  }
 
   async function saveMeal() {
     if (!messId || !canSave) return
@@ -135,8 +157,8 @@ function MyMealContent() {
         messId,
         mealName,
         status: choice === 'NO' ? 'OFF' : 'ON',
-        guests: choice === 'GUEST' ? 1 : 0,
-        mealCount: choice === 'NO' ? 0 : 1,
+        guests: guestMeals,
+        mealCount,
         date,
       })
 
@@ -178,7 +200,18 @@ function MyMealContent() {
         {loading ? <InlineNotice>Loading current meal preference...</InlineNotice> : null}
 
         <MealCard className="space-y-2">
-          <MealOptionRow selected={choice === 'GUEST'} title="Guest Meal" hint="Adds one guest meal with yours" rightText="Optional" onClick={() => setChoice('GUEST')} />
+          <MealOptionRow
+            selected={choice === 'GUEST'}
+            title="Guest Meal"
+            hint="Adds guest meals with yours"
+            rightText="Optional"
+            rightSlot={
+              choice === 'GUEST' ? (
+                <GuestMealCountInput value={guestCount} onChange={setGuestCount} disabled={!canSave || saving} />
+              ) : undefined
+            }
+            onClick={selectGuestMeal}
+          />
           <MealOptionRow selected={choice === 'NO'} title="No Meal" hint="You will not take this meal" onClick={() => setChoice('NO')} />
           <MealOptionRow selected={choice === 'TAKE'} title="I will take meal" hint="Your regular meal count" onClick={() => setChoice('TAKE')} />
 

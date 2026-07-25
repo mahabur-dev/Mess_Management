@@ -1,13 +1,26 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Edit3 } from 'lucide-react'
+import Link from 'next/link'
+import { CircleDollarSign, PlusCircle } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
-import { IconActionLink, StatusPill } from '@/components/mobile/action-links'
 import { TopScreen } from '@/components/top-screen'
+import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { SelectField, SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
+import {
+  DepositListItem,
+  DepositManualNotice,
+  DepositSectionTitle,
+  DepositStatCard,
+  DepositSubmitIntro,
+  DepositWorkCard,
+  PaymentMethodGrid,
+  formatDepositMoney,
+  type DepositListRecord,
+} from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
-import { LABELS, PAYMENT_METHODS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
+import { type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
+import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
 
 type MemberOption = { id: string; name: string; email: string }
@@ -18,6 +31,7 @@ type PaymentItem = {
   status: PaymentStatus
   method: PaymentMethod
   payment_date?: string
+  categories?: string[] | null
   note?: string | null
   member?: { id: string; name: string }
 }
@@ -31,7 +45,7 @@ type FormState = {
   screenshotUrl: string
   note: string
   paymentDate: string
-  statusFilter: PaymentStatus
+  statusFilter: PaymentStatus | 'ALL'
 }
 
 const INITIAL_FORM: FormState = {
@@ -43,13 +57,7 @@ const INITIAL_FORM: FormState = {
   screenshotUrl: '',
   note: '',
   paymentDate: new Date().toISOString().slice(0, 10),
-  statusFilter: 'PENDING',
-}
-
-function getStatusTone(status: PaymentStatus) {
-  if (status === 'APPROVED') return 'success'
-  if (status === 'REJECTED') return 'danger'
-  return 'warning'
+  statusFilter: 'ALL',
 }
 
 export default function PaymentsPage() {
@@ -60,6 +68,8 @@ export default function PaymentsPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [totalAmount, setTotalAmount] = useState(0)
 
   useEffect(() => {
     if (!messId) return
@@ -90,14 +100,21 @@ export default function PaymentsPage() {
     let alive = true
 
     api
-      .getPaymentsByMess(messId, { status: form.statusFilter, limit: 20, sortBy: 'created_at', sortOrder: 'desc' })
+      .getPaymentsByMess(messId, {
+        status: form.statusFilter === 'ALL' ? undefined : form.statusFilter,
+        limit: 20,
+        sortBy: 'created_at',
+        sortOrder: 'desc',
+      })
       .then((res) => {
         if (!alive) return
         setItems(Array.isArray(res.data) ? res.data : [])
+        setTotalAmount(Number((res as any).totalAmount ?? 0))
       })
       .catch(() => {
         if (!alive) return
         setItems([])
+        setTotalAmount(0)
       })
 
     return () => {
@@ -124,6 +141,7 @@ export default function PaymentsPage() {
         paymentDate: form.paymentDate,
       })
       setForm(INITIAL_FORM)
+      setShowForm(false)
       setMessage('Deposit submitted successfully.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to submit deposit.')
@@ -132,105 +150,109 @@ export default function PaymentsPage() {
     }
   }
 
+  const myTotal = useMemo(
+    () => items.filter((item) => item.member?.id === user?.id).reduce((total, item) => total + Number(item.amount ?? 0), 0),
+    [items, user?.id]
+  )
+  const pendingTotal = useMemo(
+    () => items.filter((item) => item.status === 'PENDING').reduce((total, item) => total + Number(item.amount ?? 0), 0),
+    [items]
+  )
   return (
     <MobileShell>
-      <TopScreen title="Deposits" subtitle="Deposit submissions" backHref="/" />
+      <TopScreen title={showForm ? 'Submit Deposit' : 'Deposit'} subtitle={showForm ? 'Manual entry' : 'Deposit submissions'} backHref="/" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4">
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              ['Method', LABELS.PAYMENT_METHODS[form.method]],
-              ['Status', LABELS.PAYMENT_STATUSES[form.statusFilter]],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl bg-white px-3 py-4 text-center shadow-sm">
-                <div className="text-[10px] font-black uppercase tracking-[0.12em] text-[#65838b]">{label}</div>
-                <div className="mt-1 text-[15px] font-black text-[#123748]">{value}</div>
-              </div>
-            ))}
-          </div>
+        {!showForm ? (
+          <>
+            <div className="grid grid-cols-3 gap-3">
+              <DepositStatCard title="My Deposit" value={formatDepositMoney(myTotal)} caption="This month" />
+              <DepositStatCard title="Total Deposit" value={formatDepositMoney(totalAmount)} caption="All deposits" tone="blue" />
+              <DepositStatCard title="Pending Deposit" value={formatDepositMoney(pendingTotal)} caption="Waiting approval" tone="orange" />
+            </div>
+
+            <DepositWorkCard />
+            <DepositManualNotice />
+          </>
+        ) : null}
+
+        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+
+        <div className={showForm ? '' : 'hidden'}>
+          <DeferredFormSection
+            open={showForm}
+            title="Submit Deposit"
+            description="Deposits are paid manually first, then entered here."
+            actionLabel="Submit Deposit"
+            icon={<PlusCircle size={20} />}
+            onOpen={() => setShowForm(true)}
+            onClose={() => setShowForm(false)}
+          >
+            <DepositSubmitIntro />
+            <PaymentMethodGrid value={form.method} onChange={(method) => setForm((prev) => ({ ...prev, method }))} />
+            <div className="grid grid-cols-2 gap-3">
+              <TextField label="Amount" value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="2500" type="number" />
+              <TextField label="Deposit Date" value={form.paymentDate} onChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))} type="date" />
+            </div>
+            <SelectField
+              label="Deposit For"
+              hint="Manager only / optional"
+              value={form.purchasedBy}
+              onChange={(purchasedBy) => setForm((prev) => ({ ...prev, purchasedBy }))}
+              options={['', ...members.map((member) => member.id)] as string[]}
+              getLabel={(value) => {
+                if (!value) return 'Select member'
+                const member = members.find((item) => item.id === value)
+                return member ? member.name : value
+              }}
+            />
+            <TextField
+              label="Monthly Bill ID"
+              hint="Optional"
+              value={form.monthlyBillId}
+              onChange={(monthlyBillId) => setForm((prev) => ({ ...prev, monthlyBillId }))}
+              placeholder="Bill UUID"
+            />
+            <TextField label="Transaction ID" hint="Optional" value={form.transactionId} onChange={(transactionId) => setForm((prev) => ({ ...prev, transactionId }))} placeholder="TXN123456" />
+            <TextField label="Screenshot URL" hint="Optional" value={form.screenshotUrl} onChange={(screenshotUrl) => setForm((prev) => ({ ...prev, screenshotUrl }))} placeholder="https://..." />
+            <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Deposit for May bill" rows={3} />
+            <DepositManualNotice compact />
+            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+            <SubmitButton busy={busy} onClick={handleSubmit}>
+              Submit Deposit
+            </SubmitButton>
+          </DeferredFormSection>
         </div>
 
-        <div className="glass rounded-[28px] p-4 space-y-4">
-          <TextField
-            label="Monthly Bill ID"
-            hint="Optional"
-            value={form.monthlyBillId}
-            onChange={(monthlyBillId) => setForm((prev) => ({ ...prev, monthlyBillId }))}
-            placeholder="Bill UUID"
-          />
-          <SelectField
-            label="Purchased By"
-            hint="Optional"
-            value={form.purchasedBy}
-            onChange={(purchasedBy) => setForm((prev) => ({ ...prev, purchasedBy }))}
-            options={['', ...members.map((member) => member.id)] as string[]}
-            getLabel={(value) => {
-              if (!value) return 'Select member'
-              const member = members.find((item) => item.id === value)
-              return member ? member.name : value
-            }}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <TextField label="Amount" value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="2500" type="number" />
-            <SelectField
-              label="Method"
-              value={form.method}
-              onChange={(method) => setForm((prev) => ({ ...prev, method }))}
-              options={PAYMENT_METHODS}
-              getLabel={(value) => LABELS.PAYMENT_METHODS[value]}
+        {!showForm ? (
+          <div className="rounded-[22px] border border-[#dce9ec] bg-white/96 p-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
+            <DepositSectionTitle
+              title="Recent Deposits"
+              action={
+                <Link href={appHref('/payments/all')} className="text-[12px] font-black text-[#008d8c]">
+                  View All Deposit
+                </Link>
+              }
             />
+            <div className="mt-4 space-y-3">
+              {items.slice(0, 5).map((item, index) => (
+                <DepositListItem
+                  key={item.id}
+                  item={item as DepositListRecord}
+                  index={index}
+                  href={`/edit-payment?paymentId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+                />
+              ))}
+              {!items.length ? <div className="rounded-[18px] bg-[#edfafa] p-5 text-sm font-semibold text-[#65838b]">No deposits loaded.</div> : null}
+            </div>
           </div>
-          <TextField label="Transaction ID" value={form.transactionId} onChange={(transactionId) => setForm((prev) => ({ ...prev, transactionId }))} placeholder="TXN123456" />
-          <TextField label="Screenshot URL" value={form.screenshotUrl} onChange={(screenshotUrl) => setForm((prev) => ({ ...prev, screenshotUrl }))} placeholder="https://..." />
-          <TextField label="Deposit Date" value={form.paymentDate} onChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))} type="date" />
-          <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Deposit for May bill" rows={3} />
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
-          <SubmitButton busy={busy} onClick={handleSubmit}>
-            Submit Deposit
-          </SubmitButton>
-        </div>
+        ) : null}
 
-        <div className="glass rounded-[28px] p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="section-title mb-0">Recent</div>
-            <SelectField
-              label="Filter"
-              value={form.statusFilter}
-              onChange={(statusFilter) => setForm((prev) => ({ ...prev, statusFilter }))}
-              options={PAYMENT_STATUSES}
-              getLabel={(value) => LABELS.PAYMENT_STATUSES[value]}
-            />
-          </div>
-          <div className="mt-3 space-y-3">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-extrabold text-[#123748]">{item.member?.name ?? 'Deposit'}</div>
-                  <div className="mt-1 text-xs text-[#65838b]">{item.payment_date ?? ''}</div>
-                  <div className="mt-2">
-                    <StatusPill
-                      label={LABELS.PAYMENT_STATUSES[item.status]}
-                      tone={getStatusTone(item.status)}
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-right">
-                  <div>
-                    <div className="text-sm font-black text-[#008d8c]">BDT {Number(item.amount).toLocaleString()}</div>
-                    <div className="text-[11px] text-[#65838b]">{item.method}</div>
-                  </div>
-                  <IconActionLink
-                    href={`/edit-payment?paymentId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-                    label="Edit deposit"
-                    icon={<Edit3 size={16} />}
-                  />
-                </div>
-              </div>
-            ))}
-            {!items.length ? <div className="py-3 text-sm text-[#65838b]">No deposits loaded.</div> : null}
-          </div>
-        </div>
       </div>
+      {!showForm ? (
+        <button type="button" onClick={() => setShowForm(true)} aria-label="Add deposit" title="Add deposit" className="floating-action-link">
+          <CircleDollarSign size={25} strokeWidth={2.4} />
+        </button>
+      ) : null}
     </MobileShell>
   )
 }

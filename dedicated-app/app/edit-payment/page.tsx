@@ -2,9 +2,18 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, Save } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
-import { SelectField, SubmitButton, TextAreaField } from '@/components/mobile/form-controls'
+import { SelectField, TextAreaField } from '@/components/mobile/form-controls'
+import {
+  DepositDetailsSummary,
+  DepositInfoRow,
+  DepositSectionTitle,
+  depositInfoIcons,
+  depositMemberName,
+  type DepositListRecord,
+} from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
 import { LABELS, PAYMENT_STATUSES, type PaymentStatus } from '@/lib/form-options'
 import { useQueryParams } from '@/lib/use-query-params'
@@ -16,8 +25,12 @@ type PaymentRecord = {
   status: PaymentStatus
   method?: string
   payment_date?: string | null
+  created_at?: string | null
+  approved_at?: string | null
+  categories?: string[] | null
   note?: string | null
   member?: { id: string; name: string }
+  creator?: { id: string; name: string }
 }
 
 type FormState = {
@@ -41,7 +54,6 @@ export default function EditPaymentPage() {
   const [busy, setBusy] = useState(false)
 
   const depositLabel = useMemo(() => (payment ? LABELS.PAYMENT_STATUSES[payment.status] : 'Deposit'), [payment])
-
   useEffect(() => {
     if (!paymentId || !messId) return
 
@@ -93,17 +105,21 @@ export default function EditPaymentPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Edit Deposit" subtitle={payment?.member?.name ?? depositLabel} backHref="/payments" />
+      <TopScreen title="Deposit Details" subtitle={payment?.member?.name ?? depositLabel} backHref="/payments" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Deposit</div>
-            <div className="mt-1 text-sm font-black text-[#123748]">{payment?.member?.name ?? paymentId}</div>
-            <div className="mt-1 text-xs text-[#65838b]">
-              {payment?.payment_date ?? 'No date'} - BDT {Number(payment?.amount ?? 0).toLocaleString()}
-            </div>
-          </div>
+        <DepositDetailsSummary item={payment as DepositListRecord | null} />
 
+        <div>
+          <DepositSectionTitle title="Deposit Information" />
+          <section className="mt-3 rounded-[20px] border border-[#dce9ec] bg-white px-4 py-2 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
+            <DepositInfoRow icon={depositInfoIcons.submittedBy} label="Submitted By" value={payment?.creator?.name ?? depositMemberName(payment as DepositListRecord | null)} />
+            <DepositInfoRow icon={depositInfoIcons.depositFor} label="Deposit For" value={payment?.member?.name ?? 'Self'} />
+            <DepositInfoRow icon={depositInfoIcons.approval} label="Approval Type" value={payment?.status === 'APPROVED' ? 'Approved deposit' : 'Needs manager approval'} />
+          </section>
+        </div>
+
+        <div className="rounded-[22px] border border-[#d7e8eb] bg-white p-4 shadow-[0_14px_32px_rgba(18,55,72,0.08)] space-y-4">
+          <DepositSectionTitle title="Review Deposit" />
           <SelectField
             label="Status"
             value={form.status}
@@ -121,9 +137,14 @@ export default function EditPaymentPage() {
 
           {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
 
-          <SubmitButton busy={busy} onClick={handleSubmit}>
-            Save Changes
-          </SubmitButton>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => router.push('/payments')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-[13px] font-black text-[#00777a]">
+              <ArrowLeft size={17} /> Back
+            </button>
+            <button type="button" onClick={() => void handleSubmit()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-[13px] disabled:opacity-70">
+              <Save size={17} /> {busy ? 'Saving...' : 'Save'}
+            </button>
+          </div>
         </div>
       </div>
     </MobileShell>

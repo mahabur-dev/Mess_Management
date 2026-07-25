@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { FieldCard, SelectField, SubmitButton, TextField } from '@/components/mobile/form-controls'
+import { GuestMealCountInput, MEAL_META, MealOptionRow } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
 import { LABELS, MEAL_NAMES, type MealName } from '@/lib/form-options'
 import { useAuth } from '../providers'
@@ -28,6 +29,12 @@ const INITIAL_FORM: FormState = {
   status: 'ON',
   guests: '0',
   date: new Date().toISOString().slice(0, 10),
+}
+
+function normalizeGuestMealCount(value: string) {
+  const count = Number(value)
+  if (!Number.isFinite(count)) return 1
+  return Math.min(20, Math.max(1, Number(count.toFixed(1))))
 }
 
 export default function AddMealPage() {
@@ -63,10 +70,20 @@ export default function AddMealPage() {
     }
   }, [messId, user])
 
+  const mealChoice = form.status === 'OFF' ? 'NO' : Number(form.guests || 0) > 0 ? 'GUEST' : 'TAKE'
+  const guestMeals = mealChoice === 'GUEST' ? normalizeGuestMealCount(form.guests) : 0
   const mealCount = useMemo(() => {
     if (form.status === 'OFF') return 0
-    return 1 + Number(form.guests || 0)
-  }, [form.guests, form.status])
+    return Number((MEAL_META[form.mealName].baseValue + guestMeals).toFixed(2))
+  }, [form.mealName, form.status, guestMeals])
+
+  function setMealChoice(choice: 'GUEST' | 'NO' | 'TAKE') {
+    setForm((prev) => {
+      if (choice === 'NO') return { ...prev, status: 'OFF', guests: '0' }
+      if (choice === 'GUEST') return { ...prev, status: 'ON', guests: Number(prev.guests) > 0 ? prev.guests : '1' }
+      return { ...prev, status: 'ON', guests: '0' }
+    })
+  }
 
   async function handleSubmit() {
     setMessage('')
@@ -81,7 +98,7 @@ export default function AddMealPage() {
         mealName: form.mealName,
         status: form.status,
         mealCount,
-        guests: Number(form.guests || 0),
+        guests: guestMeals,
         date: form.date,
       })
       setForm(INITIAL_FORM)
@@ -119,22 +136,28 @@ export default function AddMealPage() {
             }}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <SelectField
-              label="Status"
-              value={form.status}
-              onChange={(status) => setForm((prev) => ({ ...prev, status }))}
-              options={['ON', 'OFF']}
-              getLabel={(value) => value}
-            />
-            <TextField
-              label="Guests"
-              value={form.guests}
-              onChange={(guests) => setForm((prev) => ({ ...prev, guests }))}
-              placeholder="0"
-              type="number"
-            />
-          </div>
+          <FieldCard label="Meal Status">
+            <div className="space-y-2 rounded-2xl border border-[#bfe7e6] bg-white px-3 py-3">
+              <MealOptionRow
+                selected={mealChoice === 'GUEST'}
+                title="Guest Meal"
+                hint="Adds guest meals with regular meal"
+                rightText="Optional"
+                rightSlot={
+                  mealChoice === 'GUEST' ? (
+                    <GuestMealCountInput
+                      value={form.guests}
+                      onChange={(guests) => setForm((prev) => ({ ...prev, guests }))}
+                      disabled={busy}
+                    />
+                  ) : undefined
+                }
+                onClick={() => setMealChoice('GUEST')}
+              />
+              <MealOptionRow selected={mealChoice === 'NO'} title="No Meal" hint="Member will not take this meal" onClick={() => setMealChoice('NO')} />
+              <MealOptionRow selected={mealChoice === 'TAKE'} title="I will take meal" hint="Regular meal count" onClick={() => setMealChoice('TAKE')} />
+            </div>
+          </FieldCard>
 
           <TextField
             label="Date"

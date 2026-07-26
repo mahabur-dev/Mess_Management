@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Bell, ChevronLeft, UserRound } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { canManageMess, hasActiveMess } from '@/lib/app-permissions'
 import { appHref } from '@/lib/routes'
@@ -87,18 +88,46 @@ export function AppHeader({
   trailing,
   hasUnreadNotices = false,
 }: AppHeaderProps) {
+  const router = useRouter()
+  const headerRef = useRef<HTMLElement>(null)
+
+  const navigateBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+      return
+    }
+
+    if (backHref) router.replace(appHref(backHref))
+  }
+
   const leadingContent =
     leading ??
     (backHref ? (
-      <Link href={appHref(backHref)} className="app-header-action" aria-label="Go back" title="Back">
+      <button type="button" className="app-header-action" onClick={navigateBack} aria-label="Go to previous page" title="Back">
         <ChevronLeft size={20} strokeWidth={2.5} aria-hidden="true" />
-      </Link>
+      </button>
     ) : (
       <ProfileAvatarLink />
     ))
 
+  useEffect(() => {
+    const header = headerRef.current
+    const shell = header?.closest<HTMLElement>('.phone-frame')
+    if (!header || !shell) return
+
+    const syncHeaderInset = () => {
+      shell.style.setProperty('--app-header-inset', `${Math.ceil(header.getBoundingClientRect().height)}px`)
+    }
+
+    syncHeaderInset()
+    const observer = new ResizeObserver(syncHeaderInset)
+    observer.observe(header)
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <header className="app-header top-hero px-4 pb-3">
+    <header ref={headerRef} className="app-header top-hero px-4 pb-3">
       <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
         <div className="flex justify-start">{leadingContent}</div>
         <div className="min-w-0 text-center">

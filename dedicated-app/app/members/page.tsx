@@ -101,8 +101,8 @@ export default function MembersPage() {
   }
 
   return (
-    <MobileShell showBottomNavigation={false}>
-      <TopScreen title="Members" subtitle="All members in your mess" />
+    <MobileShell hasFloatingAction>
+      <TopScreen title="Members" subtitle="All members in your mess" backHref="/" />
       <div className="screen space-y-4">
         <section className="rounded-[20px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
           <IconInput icon={Search} placeholder="Search member..." value={search} onChange={(event) => setSearch(event.target.value)} />

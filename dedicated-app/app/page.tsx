@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Bell,
   ClipboardList,
   CreditCard,
   Landmark,
@@ -15,6 +14,7 @@ import {
   Wallet2,
   Coins,
 } from 'lucide-react'
+import { AppHeader } from '@/components/app-header'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { getHomeQuickActions } from '@/lib/app-permissions'
@@ -154,7 +154,7 @@ function MiniLineChart({ points }: { points: WeeklyPoint[] }) {
         ))}
       </svg>
 
-      <div className="mt-1 grid grid-cols-4 text-center text-[11px] font-medium text-[#65838b]">
+      <div className="mt-1 grid grid-cols-4 text-center text-caption font-medium text-[#65838b]">
         {points.map((point) => (
           <div key={point.label}>{point.label}</div>
         ))}
@@ -278,25 +278,16 @@ export default function HomePage() {
   ]
 
   if (isLoading || !user) {
-    return <div className="grid min-h-screen place-items-center text-sm font-bold text-[#65838b]">Loading...</div>
+    return <div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>
   }
 
   return (
     <MobileShell>
-      <div className="top-hero px-4 pb-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="h-10 w-10" />
-          <button type="button" className="relative grid h-10 w-10 place-items-center rounded-full bg-white/0 text-white">
-            <Bell size={18} />
-            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-[#00777a] bg-[#9edddc]" />
-          </button>
-        </div>
-
-        <div className="mt-4">
-          <div className="text-[16px] font-bold text-white">Good Morning, {greetingName}</div>
-          <div className="mt-1 text-[12px] text-white/82">Here&apos;s what&apos;s happening today</div>
-        </div>
-      </div>
+      <AppHeader
+        title={`Good Morning, ${greetingName}`}
+        subtitle="Here's what's happening today"
+        hasUnreadNotices={Boolean(summary?.notices?.length)}
+      />
 
       <div className="screen -mt-4">
         <div className="quick-actions-card">
@@ -311,7 +302,7 @@ export default function HomePage() {
                 <div className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c]">
                   <Icon size={19} />
                 </div>
-                <div className="text-[11px] font-bold leading-tight text-[#123748]">{label}</div>
+                <div className="text-label font-semibold text-[#123748]">{label}</div>
               </button>
             ))}
           </div>
@@ -342,10 +333,10 @@ export default function HomePage() {
         <section className="mt-4 rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-[14px] font-black uppercase tracking-[0.12em] text-[#65838b]">Monthly Overview</div>
-              <div className="mt-1 text-[11px] text-[#65838b]">{currentMonthLabel}</div>
+              <div className="text-label font-bold uppercase tracking-[0.12em] text-[#65838b]">Monthly Overview</div>
+              <div className="mt-1 text-caption text-[#65838b]">{currentMonthLabel}</div>
             </div>
-            <div className="flex items-center gap-3 text-[11px] font-bold text-[#65838b]">
+            <div className="flex items-center gap-3 text-caption font-bold text-[#65838b]">
               <span className="inline-flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-[#0aa0a0]" />
                 Income
@@ -359,7 +350,7 @@ export default function HomePage() {
 
           <div className="chart-frame mt-3">
             {chartLoading ? (
-              <div className="flex h-[178px] items-center justify-center text-sm font-semibold text-[#65838b]">Loading chart...</div>
+              <div className="flex h-[178px] items-center justify-center text-label font-semibold text-[#65838b]">Loading chart...</div>
             ) : (
               <MiniLineChart points={chartPoints} />
             )}

@@ -81,14 +81,14 @@ export default function MonthlyBillPage() {
               ['Count', String(items.length)],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-white px-3 py-4 text-center shadow-sm">
-                <div className="text-[10px] font-black uppercase tracking-[0.12em] text-[#65838b]">{label}</div>
-                <div className="mt-1 text-[15px] font-black text-[#123748]">{value}</div>
+                <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{label}</div>
+                <div className="mt-1 text-body font-bold text-[#123748]">{value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
         {canGenerateBills ? (
           <DeferredFormSection
@@ -108,10 +108,10 @@ export default function MonthlyBillPage() {
               options={BILL_STATUSES}
               getLabel={(value) => LABELS.BILL_STATUSES[value]}
             />
-            <div className="rounded-2xl border border-[#cfeeed] bg-[#edfafa] px-4 py-3 text-sm text-[#65838b]">
-              Generates bills for <span className="font-black text-[#123748]">{month}</span> using backend billing logic.
+            <div className="rounded-2xl border border-[#cfeeed] bg-[#edfafa] px-4 py-3 text-label text-[#65838b]">
+              Generates bills for <span className="font-bold text-[#123748]">{month}</span> using backend billing logic.
             </div>
-            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
             <SubmitButton busy={busy} onClick={handleGenerate}>
               Generate Bill
             </SubmitButton>
@@ -122,11 +122,11 @@ export default function MonthlyBillPage() {
           {items.map((item) => (
             <div key={item.id} className="glass flex items-center justify-between gap-3 rounded-[24px] p-4">
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-extrabold text-[#123748]">{item.member?.name ?? 'Member Bill'}</div>
-                <div className="mt-1 text-xs text-[#65838b]">{item.month}</div>
+                <div className="text-label font-extrabold text-[#123748]">{item.member?.name ?? 'Member Bill'}</div>
+                <div className="mt-1 text-caption text-[#65838b]">{item.month}</div>
               </div>
               <div className="flex items-center gap-2">
-                <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${item.status === 'PAID' ? 'bg-[#dff4f3] text-[#008d8c]' : item.status === 'PARTIAL' ? 'bg-[#edfafa] text-[#0aa0a0]' : 'bg-[#edfafa] text-[#00777a]'}`}>
+                <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-caption font-bold ${item.status === 'PAID' ? 'bg-[#dff4f3] text-[#008d8c]' : item.status === 'PARTIAL' ? 'bg-[#edfafa] text-[#0aa0a0]' : 'bg-[#edfafa] text-[#00777a]'}`}>
                   <BadgeCheck size={14} />
                   {LABELS.BILL_STATUSES[item.status]}
                 </div>
@@ -140,7 +140,7 @@ export default function MonthlyBillPage() {
               </div>
             </div>
           ))}
-          {!items.length ? <div className="rounded-[24px] bg-white/85 p-6 text-sm text-[#65838b]">No bills loaded.</div> : null}
+          {!items.length ? <div className="rounded-[24px] bg-white/85 p-6 text-label text-[#65838b]">No bills loaded.</div> : null}
         </div>
       </div>
     </MobileShell>

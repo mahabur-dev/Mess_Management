@@ -22,8 +22,8 @@ export default function MealManagerPage() {
             <UtensilsCrossed size={22} />
           </div>
           <div>
-            <div className="text-[13px] font-black text-[#123748]">Reusable meal feature</div>
-            <div className="mt-1 text-[11px] font-semibold leading-4 text-[#65838b]">All manager pages use the same meal cards, tabs and API client methods.</div>
+            <div className="text-body font-bold text-[#123748]">Reusable meal feature</div>
+            <div className="mt-1 text-label text-[#65838b]">All manager pages use the same meal cards, tabs and API client methods.</div>
           </div>
         </MealCard>
       </div>

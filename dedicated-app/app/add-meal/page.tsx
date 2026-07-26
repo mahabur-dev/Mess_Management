@@ -167,10 +167,10 @@ export default function AddMealPage() {
           />
 
           <FieldCard label="Calculated Meal Count" hint="Backend `mealCount` payload">
-            <div className="field bg-[#edfafa] py-3 font-black text-[#123748]">{mealCount}</div>
+            <div className="field bg-[#edfafa] py-3 font-bold text-[#123748]">{mealCount}</div>
           </FieldCard>
 
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Meal

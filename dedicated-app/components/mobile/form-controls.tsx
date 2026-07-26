@@ -23,8 +23,8 @@ export function FieldCard({ label, hint, className, children }: BaseFieldProps) 
   return (
     <label className={`block w-full ${className ?? ''}`}>
       <div className="mb-2 flex items-end justify-between gap-3">
-        <div className="text-sm font-bold text-[#123748]">{label}</div>
-        {hint ? <div className="text-[11px] font-medium text-[#65838b]">{hint}</div> : null}
+        <div className="text-label font-bold text-[#123748]">{label}</div>
+        {hint ? <div className="text-caption font-medium text-[#65838b]">{hint}</div> : null}
       </div>
       {children}
     </label>
@@ -48,7 +48,7 @@ export function TextField({
 }) {
   return (
     <FieldCard label={label} hint={hint}>
-      <input className="field h-14" type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      <input className="field min-h-14" type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
     </FieldCard>
   )
 }
@@ -173,7 +173,7 @@ export function SelectField<T extends string>({
             <Grip size={18} strokeWidth={2.2} />
           </span>
 
-          <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[#123748]">
+          <span className="min-w-0 flex-1 truncate text-body font-semibold text-[#123748]">
             {selectedLabel}
           </span>
 
@@ -224,11 +224,11 @@ export function SelectField<T extends string>({
 
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-[18px] font-black text-[#062b35]">
+                <div className="text-title-sm font-bold text-[#062b35]">
                   Select {label}
                 </div>
 
-                <p className="mt-1 text-[13px] leading-5 text-[#65838b]">
+                <p className="mt-1 text-body text-[#65838b]">
                   Choose the role that best matches this member.
                 </p>
               </div>
@@ -294,11 +294,11 @@ export function SelectField<T extends string>({
                     </span>
 
                     <span className="ml-3 min-w-0 flex-1">
-                      <span className="block text-[15px] font-black text-[#123748]">
+                      <span className="block text-body font-bold text-[#123748]">
                         {optionLabel}
                       </span>
 
-                      <span className="mt-0.5 block text-[12px] font-medium text-[#789096]">
+                      <span className="mt-0.5 block text-caption font-medium text-[#789096]">
                         {optionLabel === 'Manager'
                           ? 'Can manage members, meals and expenses'
                           : 'Can view and manage personal activities'}
@@ -331,7 +331,7 @@ export function SelectField<T extends string>({
                 mt-5 h-12 w-full
                 rounded-2xl
                 bg-[#008d8c]
-                text-sm font-black text-white
+                text-label font-bold text-white
                 shadow-[0_10px_24px_rgba(0,141,140,0.22)]
                 transition
                 hover:bg-[#007c7c]
@@ -361,8 +361,8 @@ export function ToggleField({
   return (
     <div className="flex w-full items-center justify-between rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
       <div>
-        <div className="text-sm font-bold text-[#123748]">{label}</div>
-        {hint ? <div className="mt-1 text-[11px] font-medium text-[#65838b]">{hint}</div> : null}
+        <div className="text-label font-bold text-[#123748]">{label}</div>
+        {hint ? <div className="mt-1 text-caption font-medium text-[#65838b]">{hint}</div> : null}
       </div>
       <button
         type="button"
@@ -396,8 +396,8 @@ export function SectionHeader({
     <div className="flex items-start justify-between gap-3">
       <div>
         {eyebrow ? <div className="section-title mb-0">{eyebrow}</div> : null}
-        <div className="text-base font-black text-[#123748]">{title}</div>
-        {description ? <div className="mt-1 text-xs text-[#65838b]">{description}</div> : null}
+        <div className="text-body font-bold text-[#123748]">{title}</div>
+        {description ? <div className="mt-1 text-label text-[#65838b]">{description}</div> : null}
       </div>
       {action}
     </div>

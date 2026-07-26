@@ -92,7 +92,7 @@ export default function NoticesPage() {
     <MobileShell>
       <TopScreen title="Notices" subtitle="Announcement center" backHref="/" />
       <div className="screen space-y-4">
-        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
         {canSendNotice ? (
           <DeferredFormSection
@@ -129,7 +129,7 @@ export default function NoticesPage() {
               checked={form.isPinned}
               onChange={(isPinned) => setForm((prev) => ({ ...prev, isPinned }))}
             />
-            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
             <SubmitButton busy={busy} onClick={handleSubmit}>
               Send Notice
             </SubmitButton>
@@ -145,16 +145,16 @@ export default function NoticesPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="truncate text-sm font-black text-[#123748]">{item.title}</h2>
-                    {item.is_pinned ? <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-[9px] font-black text-[#008d8c]">PINNED</span> : null}
+                    <h2 className="truncate text-label font-bold text-[#123748]">{item.title}</h2>
+                    {item.is_pinned ? <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-bold text-[#008d8c]">PINNED</span> : null}
                   </div>
-                  <div className="mt-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#65838b]">{LABELS.NOTICE_TYPES[item.type]}</div>
-                  <p className="mt-2 text-xs leading-5 text-[#65838b]">{item.body}</p>
+                  <div className="mt-1 text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{LABELS.NOTICE_TYPES[item.type]}</div>
+                  <p className="mt-2 text-label text-[#65838b]">{item.body}</p>
                 </div>
               </div>
             </article>
           ))}
-          {!items.length ? <div className="rounded-[20px] bg-white/90 p-6 text-center text-sm text-[#65838b]">No notices loaded.</div> : null}
+          {!items.length ? <div className="rounded-[20px] bg-white/90 p-6 text-center text-label text-[#65838b]">No notices loaded.</div> : null}
         </div>
       </div>
     </MobileShell>

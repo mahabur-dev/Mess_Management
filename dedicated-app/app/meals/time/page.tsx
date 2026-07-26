@@ -38,14 +38,14 @@ function MealTimePreview({
         <div className="flex items-center gap-3">
           <MealIconBadge mealName={mealName} />
           <div>
-            <div className="text-[13px] font-black text-[#123748]">{MEAL_LABELS[mealName]}</div>
-            <div className="mt-1 text-[11px] font-semibold text-[#65838b]">Member update window</div>
+            <div className="text-label font-bold text-[#123748]">{MEAL_LABELS[mealName]}</div>
+            <div className="mt-1 text-caption font-semibold text-[#65838b]">Member update window</div>
           </div>
         </div>
         <MealStatusPill tone={active ? 'open' : 'neutral'}>{active ? 'On' : 'Off'}</MealStatusPill>
       </div>
 
-      <div className="mt-4 grid grid-cols-[1fr_auto] gap-y-2 text-[12px] font-bold">
+      <div className="mt-4 grid grid-cols-[1fr_auto] gap-y-2 text-label font-semibold">
         <span className="text-[#65838b]">From</span>
         <span className="text-[#123748]">{formatTime(startTime)}</span>
         <span className="text-[#65838b]">To</span>
@@ -118,12 +118,12 @@ export default function SetMealTimePage() {
           <div className="section-title mb-0">Update Window</div>
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <div className="mb-2 text-[12px] font-black text-[#123748]">From</div>
-              <input className="field h-14" type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
+              <div className="mb-2 text-label font-semibold text-[#123748]">From</div>
+              <input className="field min-h-14" type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
             </label>
             <label className="block">
-              <div className="mb-2 text-[12px] font-black text-[#123748]">To</div>
-              <input className="field h-14" type="time" step="3600" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
+              <div className="mb-2 text-label font-semibold text-[#123748]">To</div>
+              <input className="field min-h-14" type="time" step="3600" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
             </label>
           </div>
 

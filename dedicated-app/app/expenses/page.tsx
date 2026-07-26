@@ -67,7 +67,6 @@ export default function ExpensesPage() {
       <ScreenHeader
         title="Expenses"
         subtitle="Track and manage all expenses"
-        left={<div className="h-10 w-10" />}
         right={
           <HeaderIconButton
             label="Notifications"
@@ -111,10 +110,10 @@ export default function ExpensesPage() {
           <FilterPill icon={Tag} label="All Categories" />
         </SearchPanel>
 
-        {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+        {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
         <section className="space-y-3">
-          {loading ? <div className="rounded-[24px] bg-white/90 p-6 text-center text-sm font-bold text-[#65838b]">Loading expenses...</div> : null}
+          {loading ? <div className="rounded-[24px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">Loading expenses...</div> : null}
           {!loading &&
             filteredItems.map((item) => (
               <ExpenseListItem
@@ -124,7 +123,7 @@ export default function ExpensesPage() {
               />
             ))}
           {!loading && !filteredItems.length ? (
-            <div className="rounded-[24px] bg-white/90 p-6 text-center text-sm font-bold text-[#65838b]">No expenses found.</div>
+            <div className="rounded-[24px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">No expenses found.</div>
           ) : null}
         </section>
       </div>

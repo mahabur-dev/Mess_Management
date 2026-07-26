@@ -129,13 +129,13 @@ export default function EditDepositPage() {
             rows={4}
           />
 
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
           <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => router.push('/deposits')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-[13px] font-black text-[#00777a]">
+            <button type="button" onClick={() => router.push('/deposits')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#00777a]">
               <ArrowLeft size={17} /> Back
             </button>
-            <button type="button" onClick={() => void handleSubmit()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-[13px] disabled:opacity-70">
+            <button type="button" onClick={() => void handleSubmit()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-label disabled:opacity-70">
               <Save size={17} /> {busy ? 'Saving...' : 'Save'}
             </button>
           </div>

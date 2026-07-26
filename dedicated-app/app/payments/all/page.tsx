@@ -106,7 +106,7 @@ export default function AllDepositsPage() {
 
         <section className="space-y-3">
           <DepositSectionTitle title={`Deposits (${visibleItems.length})`} />
-          {loading ? <div className="rounded-[18px] bg-white p-5 text-sm font-semibold text-[#65838b]">Loading deposits...</div> : null}
+          {loading ? <div className="rounded-[18px] bg-white p-5 text-label font-semibold text-[#65838b]">Loading deposits...</div> : null}
           {!loading && visibleItems.map((item, index) => (
             <DepositListItem
               key={item.id}
@@ -115,14 +115,14 @@ export default function AllDepositsPage() {
               href={`/edit-payment?paymentId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
             />
           ))}
-          {!loading && !visibleItems.length ? <div className="rounded-[18px] bg-white p-5 text-sm font-semibold text-[#65838b]">No deposits found.</div> : null}
+          {!loading && !visibleItems.length ? <div className="rounded-[18px] bg-white p-5 text-label font-semibold text-[#65838b]">No deposits found.</div> : null}
         </section>
 
         <div className="flex items-center gap-3 rounded-[18px] border border-[#cfeeed] bg-[#f3ffff] px-4 py-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#008d8c] text-[18px] font-black text-white">i</div>
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#008d8c] text-title-sm font-bold text-white">i</div>
           <div className="min-w-0">
-            <div className="text-[13px] font-black text-[#123748]">Showing deposits for {range.label}.</div>
-            <div className="mt-1 text-[12px] font-semibold text-[#65838b]">Use search and filters to find specific deposits.</div>
+            <div className="text-label font-bold text-[#123748]">Showing deposits for {range.label}.</div>
+            <div className="mt-1 text-label text-[#65838b]">Use search and filters to find specific deposits.</div>
           </div>
         </div>
       </div>

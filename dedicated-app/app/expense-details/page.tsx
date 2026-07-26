@@ -49,8 +49,8 @@ function DetailRow({ icon: Icon, label, value }: { icon: typeof detailIcons.amou
       <span className="grid h-7 w-7 place-items-center rounded-full text-[#008d8c]">
         <Icon size={17} />
       </span>
-      <span className="min-w-0 text-[12px] font-medium text-[#123748]">{label}</span>
-      <span className="max-w-[150px] truncate text-right text-[12px] font-bold text-[#123748]">{value}</span>
+      <span className="min-w-0 text-label font-medium text-[#123748]">{label}</span>
+      <span className="max-w-[150px] truncate text-right text-label font-semibold text-[#123748]">{value}</span>
     </div>
   )
 }
@@ -137,8 +137,8 @@ export default function ExpenseDetailsPage() {
       />
 
       <div className="screen -mt-2 space-y-4">
-        {loading ? <div className="rounded-[24px] bg-white/90 p-6 text-center text-sm font-bold text-[#65838b]">Loading expense details...</div> : null}
-        {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-sm font-semibold text-[#b42318]">{message}</div> : null}
+        {loading ? <div className="rounded-[24px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">Loading expense details...</div> : null}
+        {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]">{message}</div> : null}
 
         {expense && details ? (
           <>
@@ -146,10 +146,10 @@ export default function ExpenseDetailsPage() {
               <div className="relative z-10 flex items-center gap-4">
                 <CircleIcon icon={Icon} size="lg" tone={{ bg: '#ffffff', fg: tone.fg }} />
                 <div className="min-w-0">
-                  <div className="text-[13px] font-semibold uppercase text-white/92">{details.category}</div>
-                  <div className="mt-2 truncate text-[24px] font-black leading-none">{formatBDT(expense.amount)}</div>
-                  <div className="mt-3 inline-flex rounded-[10px] bg-white/16 px-3 py-1.5 text-[11px] font-black">{details.payment}</div>
-                  <div className="mt-4 flex items-center gap-2 text-[11px] font-medium text-white/92">
+                  <div className="text-label font-semibold uppercase text-white/92">{details.category}</div>
+                  <div className="mt-2 truncate text-headline font-bold leading-none">{formatBDT(expense.amount)}</div>
+                  <div className="mt-3 inline-flex rounded-[10px] bg-white/16 px-3 py-1.5 text-caption font-bold">{details.payment}</div>
+                  <div className="mt-4 flex items-center gap-2 text-caption font-medium text-white/92">
                     <detailIcons.date size={15} />
                     <span>{details.addedOn}</span>
                   </div>
@@ -160,13 +160,13 @@ export default function ExpenseDetailsPage() {
             <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-[14px] bg-white shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
               <div className="border-r border-[#edf1f4] p-4">
                 <CircleIcon icon={detailIcons.purchased} tone={{ bg: '#e8f8f1', fg: '#008d8c' }} />
-                <div className="mt-3 text-[10px] font-bold uppercase text-[#4f6375]">Purchased By</div>
-                <div className="mt-1.5 truncate text-[13px] font-black text-[#123748]">{details.purchasedBy}</div>
+                <div className="mt-3 text-caption font-bold uppercase text-[#4f6375]">Purchased By</div>
+                <div className="mt-1.5 truncate text-label font-bold text-[#123748]">{details.purchasedBy}</div>
               </div>
               <div className="p-4">
                 <CircleIcon icon={detailIcons.user} tone={{ bg: '#edf7ff', fg: '#1283c9' }} />
-                <div className="mt-3 text-[10px] font-bold uppercase text-[#4f6375]">Added By</div>
-                <div className="mt-1.5 truncate text-[13px] font-black text-[#123748]">{details.addedBy}</div>
+                <div className="mt-3 text-caption font-bold uppercase text-[#4f6375]">Added By</div>
+                <div className="mt-1.5 truncate text-label font-bold text-[#123748]">{details.addedBy}</div>
               </div>
             </section>
 
@@ -181,23 +181,23 @@ export default function ExpenseDetailsPage() {
             <section className="detail-card flex gap-3">
               <CircleIcon icon={detailIcons.description} size="sm" />
               <div>
-                <h2 className="text-[13px] font-black text-[#123748]">Description</h2>
-                <p className="mt-2 text-[12px] leading-5 text-[#123748]">{details.description}</p>
+                <h2 className="text-body font-bold text-[#123748]">Description</h2>
+                <p className="mt-2 text-body text-[#123748]">{details.description}</p>
               </div>
             </section>
 
             <section className="detail-card flex gap-3">
               <CircleIcon icon={detailIcons.receipt} size="sm" />
               <div>
-                <h2 className="text-[13px] font-black text-[#123748]">Receipt</h2>
-                <p className="mt-2 text-[12px] leading-5 text-[#123748]">{details.receipt}</p>
+                <h2 className="text-body font-bold text-[#123748]">Receipt</h2>
+                <p className="mt-2 text-body text-[#123748]">{details.receipt}</p>
               </div>
             </section>
 
             <section className="grid grid-cols-2 gap-3 pb-3">
               <Link
                 href={`/edit-expense?expenseId=${encodeURIComponent(expense.id)}&messId=${encodeURIComponent(messId)}`}
-                className="flex h-[50px] items-center justify-center gap-2 rounded-[13px] border border-[#008d8c] bg-white text-[13px] font-black text-[#008d8c]"
+                className="flex h-[50px] items-center justify-center gap-2 rounded-[13px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c]"
               >
                 <Pencil size={17} />
                 Edit Expense
@@ -206,7 +206,7 @@ export default function ExpenseDetailsPage() {
                 type="button"
                 onClick={() => void deleteExpense()}
                 disabled={deleting}
-                className="flex h-[50px] items-center justify-center gap-2 rounded-[13px] border border-[#f04438] bg-[#fffafa] text-[13px] font-black text-[#f04438] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex h-[50px] items-center justify-center gap-2 rounded-[13px] border border-[#f04438] bg-[#fffafa] text-label font-bold text-[#f04438] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <Trash2 size={17} />
                 {deleting ? 'Deleting...' : 'Delete Expense'}

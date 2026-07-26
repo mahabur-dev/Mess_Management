@@ -110,7 +110,7 @@ export function DepositStatusBadge({ status }: { status?: string | null }) {
   const tone = statusTone(status)
   return (
     <span
-      className="inline-flex h-8 items-center rounded-[11px] px-3 text-[11px] font-black"
+      className="inline-flex h-8 items-center rounded-[11px] px-3 text-caption font-bold"
       style={{ backgroundColor: tone.bg, color: tone.fg }}
     >
       {tone.label}
@@ -127,7 +127,7 @@ export function DepositSectionTitle({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="text-[17px] font-black leading-tight text-[#123748]">{title}</h2>
+      <h2 className="text-title-sm font-bold leading-tight text-[#123748]">{title}</h2>
       {action}
     </div>
   )
@@ -163,11 +163,11 @@ export function DepositStatCard({
           <Icon size={21} strokeWidth={2.35} />
         </div>
       ) : null}
-      <div className="text-[11px] font-black leading-tight" style={{ color: selected.fg }}>
+      <div className="text-caption font-bold leading-tight" style={{ color: selected.fg }}>
         {title}
       </div>
-      <div className="mt-2 truncate text-[22px] font-black leading-none text-[#123748]">{value}</div>
-      <div className="mt-2 text-[10px] font-semibold leading-tight text-[#65838b]">{caption}</div>
+      <div className="mt-2 truncate text-headline font-bold leading-none text-[#123748]">{value}</div>
+      <div className="mt-2 text-caption font-semibold leading-tight text-[#65838b]">{caption}</div>
     </section>
   )
 }
@@ -185,8 +185,8 @@ export function DepositManualNotice({
         <Info size={22} strokeWidth={2.4} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-black leading-5 text-[#123748]">Deposits are paid manually first, then entered here for tracking.</div>
-        {!compact ? <div className="mt-1 text-[12px] font-semibold leading-5 text-[#55727b]">No online payment is connected yet.</div> : null}
+        <div className="text-body font-semibold text-[#123748]">Deposits are paid manually first, then entered here for tracking.</div>
+        {!compact ? <div className="mt-1 text-label text-[#55727b]">No online payment is connected yet.</div> : null}
       </div>
       </div>
     </section>
@@ -217,10 +217,10 @@ export function DepositWorkCard() {
     <section className="relative overflow-hidden rounded-[20px] border border-[#cfeeed] bg-white px-3.5 py-3.5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-[15px] font-black leading-tight text-[#00777a]">How Deposits Work</h2>
-          <p className="mt-0.5 text-[11px] font-semibold text-[#65838b]">A simple workflow for everyone</p>
+          <h2 className="text-title-sm font-bold text-[#00777a]">How Deposits Work</h2>
+          <p className="mt-0.5 text-caption font-semibold text-[#65838b]">A simple workflow for everyone</p>
         </div>
-        <div className="rounded-full border border-[#cfeeed] bg-[#f6ffff] px-2.5 py-1 text-[10px] font-black text-[#008d8c]">
+        <div className="rounded-full border border-[#cfeeed] bg-[#f6ffff] px-2.5 py-1 text-caption font-bold text-[#008d8c]">
           2 ways
         </div>
       </div>
@@ -235,11 +235,11 @@ export function DepositWorkCard() {
                 <div key={step.title} className="contents">
                   <div className="text-center">
                     <div className="relative mx-auto grid h-9 w-9 place-items-center rounded-[13px] ring-1 ring-[#cfeeed]" style={{ backgroundColor: bg, color }}>
-                      {index === 0 ? <span className="absolute -left-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-[#21b86f] text-[9px] font-black text-white">{flowIndex + 1}</span> : null}
+                      {index === 0 ? <span className="absolute -left-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-[#21b86f] text-caption font-bold text-white">{flowIndex + 1}</span> : null}
                       <Icon size={17} strokeWidth={2.35} />
                     </div>
-                    <div className="mt-1.5 text-[10px] font-black leading-3 text-[#123748]">{step.title}</div>
-                    <div className="mt-0.5 text-[9px] font-semibold leading-3 text-[#65838b]">{step.text}</div>
+                    <div className="mt-1.5 text-caption font-bold leading-3 text-[#123748]">{step.title}</div>
+                    <div className="mt-0.5 text-caption font-semibold leading-3 text-[#65838b]">{step.text}</div>
                   </div>
                   {index < flow.steps.length - 1 ? <div className="mt-4 border-t-2 border-dotted" style={{ borderColor: color }} /> : null}
                 </div>
@@ -263,7 +263,7 @@ export function DepositSubmitIntro() {
           <div className="grid h-11 w-11 place-items-center rounded-full border-2 border-[#00777a] text-[#00777a]">
             <Info size={22} />
           </div>
-          <div className="space-y-2 text-[13px] font-semibold leading-6 text-[#123748]">
+          <div className="space-y-2 text-label font-semibold leading-6 text-[#123748]">
             <p>Deposits are paid manually first, then entered here.</p>
             <p><span className="mr-2 text-[#008d8c]">•</span>If a member submits a deposit entry, it needs manager approval.</p>
             <p><span className="mr-2 text-[#008d8c]">•</span>If a manager adds a deposit for a member, it is auto approved.</p>
@@ -288,9 +288,9 @@ export function DepositAggregateSummary({
           <ListChecks size={24} />
         </div>
         <div>
-          <div className="text-[12px] font-semibold text-[#65838b]">Total Entries</div>
-          <div className="mt-2 text-[21px] font-black leading-none text-[#123748]">{entries}</div>
-          <div className="mt-2 text-[11px] font-semibold text-[#65838b]">This month</div>
+          <div className="text-caption font-semibold text-[#65838b]">Total Entries</div>
+          <div className="mt-2 text-title font-bold leading-none text-[#123748]">{entries}</div>
+          <div className="mt-2 text-caption font-semibold text-[#65838b]">This month</div>
         </div>
       </div>
       <div className="h-16 bg-[#e0ecef]" />
@@ -299,9 +299,9 @@ export function DepositAggregateSummary({
           <WalletCards size={24} />
         </div>
         <div>
-          <div className="text-[12px] font-semibold text-[#65838b]">Total Amount</div>
-          <div className="mt-2 text-[21px] font-black leading-none text-[#123748]">{formatDepositMoney(amount)}</div>
-          <div className="mt-2 text-[11px] font-semibold text-[#65838b]">This month</div>
+          <div className="text-caption font-semibold text-[#65838b]">Total Amount</div>
+          <div className="mt-2 text-title font-bold leading-none text-[#123748]">{formatDepositMoney(amount)}</div>
+          <div className="mt-2 text-caption font-semibold text-[#65838b]">This month</div>
         </div>
       </div>
     </section>
@@ -378,17 +378,17 @@ export function DepositListItem({
   const date = item.payment_date ?? item.date ?? item.created_at ?? null
   const content = (
     <>
-      <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-[18px] font-black ${avatarTones[index % avatarTones.length]}`}>
+      <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-title-sm font-bold ${avatarTones[index % avatarTones.length]}`}>
         {initials(name)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[14px] font-black text-[#123748]">{name}</div>
-        <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] font-bold">
+        <div className="truncate text-label font-bold text-[#123748]">{name}</div>
+        <div className="mt-1 flex min-w-0 items-center gap-1.5 text-caption font-bold">
           <span style={{ color: amountTone }}>{formatDepositMoney(item.amount)}</span>
           <span className="text-[#789096]">.</span>
           <span className="truncate text-[#65838b]">{category}</span>
         </div>
-        <div className="mt-1 text-[11px] font-semibold text-[#65838b]">{formatDepositDate(date)} . {formatDepositTime(date)}</div>
+        <div className="mt-1 text-caption font-semibold text-[#65838b]">{formatDepositDate(date)} . {formatDepositTime(date)}</div>
       </div>
       <DepositStatusBadge status={item.status} />
       <ChevronRight size={18} className="shrink-0 text-[#789096]" />
@@ -418,7 +418,7 @@ export function DepositSearchBar({
       <label className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#65838b]" size={21} />
         <input
-          className="h-14 w-full rounded-[16px] border border-[#dce9ec] bg-white pl-12 pr-4 text-[13px] font-semibold text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.04)] placeholder:text-[#7c8b98] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+          className="h-14 w-full rounded-[16px] border border-[#dce9ec] bg-white pl-12 pr-4 text-body font-medium text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.04)] placeholder:text-[#7c8b98] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Search by member or category..."
@@ -454,7 +454,7 @@ export function DepositFilterTabs({
             key={filter.value}
             type="button"
             onClick={() => onChange(filter.value)}
-            className={`h-11 rounded-[14px] px-2 text-[12px] font-black transition active:scale-[0.98] ${active ? 'bg-[#008d8c] text-white shadow-[0_10px_20px_rgba(0,119,122,0.16)]' : 'border border-[#dce9ec] bg-white'}`}
+            className={`h-11 rounded-[14px] px-2 text-caption font-bold transition active:scale-[0.98] ${active ? 'bg-[#008d8c] text-white shadow-[0_10px_20px_rgba(0,119,122,0.16)]' : 'border border-[#dce9ec] bg-white'}`}
             style={!active && filter.value !== 'ALL' ? { color: tone.fg, backgroundColor: tone.bg } : undefined}
           >
             {filter.label}
@@ -479,9 +479,9 @@ export function DepositCompactFilters({
   return (
     <div className="grid grid-cols-2 gap-3">
       <label className="relative block">
-        <span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-[#65838b]">Status</span>
+        <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Status</span>
         <select
-          className="h-12 w-full appearance-none rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-[13px] font-black text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+          className="h-12 w-full appearance-none rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
           value={status}
           onChange={(event) => onStatusChange(event.target.value as PaymentStatus | 'ALL')}
         >
@@ -494,8 +494,8 @@ export function DepositCompactFilters({
       </label>
 
       <label className="relative block">
-        <span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-[#65838b]">Month</span>
-        <div className="flex h-12 items-center rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-[13px] font-black text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)]">
+        <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Month</span>
+        <div className="flex h-12 items-center rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)]">
           {month}
         </div>
         <input
@@ -520,7 +520,7 @@ export function PaymentMethodGrid({
 }) {
   return (
     <section>
-      <h2 className="mb-3 text-[17px] font-black text-[#123748]">Deposit Method</h2>
+      <h2 className="mb-3 text-title-sm font-bold text-[#123748]">Deposit Method</h2>
       <div className="grid grid-cols-2 gap-3">
         {PAYMENT_METHODS.map((method) => {
           const active = value === method
@@ -537,7 +537,7 @@ export function PaymentMethodGrid({
               }`}
             >
               <Icon size={24} strokeWidth={2.25} />
-              <span className="mt-2 text-[13px] font-black">{LABELS.PAYMENT_METHODS[method]}</span>
+              <span className="mt-2 text-label font-bold">{LABELS.PAYMENT_METHODS[method]}</span>
             </button>
           )
         })}
@@ -560,8 +560,8 @@ export function DepositInfoRow({
       <div className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#edfafa] text-[#00777a]">
         <Icon size={19} strokeWidth={2.3} />
       </div>
-      <div className="min-w-0 text-[13px] font-bold text-[#65838b]">{label}</div>
-      <div className="min-w-0 text-right text-[13px] font-black leading-5 text-[#123748]">{value}</div>
+      <div className="min-w-0 text-label font-bold text-[#65838b]">{label}</div>
+      <div className="min-w-0 text-right text-label font-bold leading-5 text-[#123748]">{value}</div>
     </div>
   )
 }
@@ -583,7 +583,7 @@ export function DepositDetailsSummary({
           <div className="grid h-16 w-16 place-items-center rounded-full" style={{ backgroundColor: status.bg, color: status.fg }}>
             <StatusIcon size={30} strokeWidth={2.25} />
           </div>
-          <div className="mt-3 text-[26px] font-black leading-none text-[#123748]">{formatDepositMoney(item?.amount)}</div>
+          <div className="mt-3 text-display font-bold leading-none text-[#123748]">{formatDepositMoney(item?.amount)}</div>
           <div className="mt-3"><DepositStatusBadge status={item?.status} /></div>
         </div>
         <div className="bg-[#e0ecef]" />
@@ -610,8 +610,8 @@ function MiniFact({
   return (
     <div className="grid grid-cols-[22px_minmax(0,1fr)_minmax(76px,auto)] items-center gap-2">
       <Icon size={17} className="text-[#00777a]" />
-      <div className="text-[12px] font-bold text-[#65838b]">{label}</div>
-      <div className="truncate text-right text-[12px] font-black text-[#123748]">{value}</div>
+      <div className="text-caption font-bold text-[#65838b]">{label}</div>
+      <div className="truncate text-right text-caption font-bold text-[#123748]">{value}</div>
     </div>
   )
 }

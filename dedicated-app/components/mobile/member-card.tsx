@@ -77,14 +77,14 @@ export function MemberCard({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-black leading-tight text-[#123748]">{name}</div>
+        <div className="truncate text-label font-bold leading-tight text-[#123748]">{name}</div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <span className="member-role-badge">
             <BadgeCheck size={10} />
             {roleLabel}
           </span>
         </div>
-        <div className="mt-1.5 flex min-w-0 items-center gap-1 text-[10px] font-semibold text-[#65838b]">
+        <div className="mt-1.5 flex min-w-0 items-center gap-1 text-caption font-semibold text-[#65838b]">
           <Home size={11} className="shrink-0" />
           <span className="truncate">{member.room_no ? `Room ${member.room_no}` : 'No room assigned'}</span>
         </div>
@@ -174,14 +174,14 @@ export function MemberDetailsModal({ member, onClose }: { member: MobileMember; 
     <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-[#123748]/38 px-4 py-3 backdrop-blur-[7px]" onClick={(event) => event.target === event.currentTarget && onClose()}>
       <section className="member-overview-modal w-full max-w-[398px]">
         <div className="relative z-10 flex items-start gap-3">
-          <div className="member-avatar h-12 w-12 text-[14px]">
+          <div className="member-avatar h-12 w-12 text-label">
             <span>{getInitials(name)}</span>
             <span className={`member-presence ${member.is_active ? 'bg-[#18c978]' : 'bg-[#9aaeb4]'}`} />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[16px] font-black leading-tight text-[#123748]">{name}</h2>
-            <p className="mt-1 truncate text-[11px] font-bold text-[#65838b]">{member.user?.email ?? 'No email'}</p>
-            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#cfeeed] bg-[#edfafa] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[#008d8c]">
+            <h2 className="truncate text-title-sm font-bold text-[#123748]">{name}</h2>
+            <p className="mt-1 truncate text-caption font-bold text-[#65838b]">{member.user?.email ?? 'No email'}</p>
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#cfeeed] bg-[#edfafa] px-3 py-1.5 text-caption font-bold uppercase tracking-[0.12em] text-[#008d8c]">
               <User size={13} />
               {roleLabel}
             </span>
@@ -197,10 +197,10 @@ export function MemberDetailsModal({ member, onClose }: { member: MobileMember; 
               <ShieldCheck size={20} />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold text-[#65838b]">Status</div>
-              <div className="mt-0.5 text-[16px] font-black text-[#008d8c]">{member.is_active ? 'Active' : 'Inactive'}</div>
+              <div className="text-caption font-bold text-[#65838b]">Status</div>
+              <div className="mt-0.5 text-body font-bold text-[#008d8c]">{member.is_active ? 'Active' : 'Inactive'}</div>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dff4f3] px-2.5 py-1.5 text-[10px] font-black text-[#008d8c]">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dff4f3] px-2.5 py-1.5 text-caption font-bold text-[#008d8c]">
               <BadgeCheck size={13} />
               Verified
             </span>
@@ -208,7 +208,7 @@ export function MemberDetailsModal({ member, onClose }: { member: MobileMember; 
         </div>
 
         <div className="relative z-10 mt-4">
-          <h3 className="text-[14px] font-black text-[#123748]">Member Overview</h3>
+          <h3 className="text-body font-bold text-[#123748]">Member Overview</h3>
           <div className="mt-2 h-1 w-8 rounded-full bg-[#008d8c]" />
           <div className="mt-3 grid grid-cols-2 gap-2">
             {tiles.map((tile) => {
@@ -220,8 +220,8 @@ export function MemberDetailsModal({ member, onClose }: { member: MobileMember; 
                       <Icon size={17} />
                     </span>
                     <div className="min-w-0">
-                      <div className="truncate text-[9px] font-black uppercase text-[#65838b]">{tile.label}</div>
-                      <div className="mt-1 truncate text-[13px] font-black text-[#123748]">{tile.value}</div>
+                      <div className="truncate text-caption font-bold uppercase text-[#65838b]">{tile.label}</div>
+                      <div className="mt-1 truncate text-label font-bold text-[#123748]">{tile.value}</div>
                     </div>
                   </div>
                 </div>
@@ -235,19 +235,19 @@ export function MemberDetailsModal({ member, onClose }: { member: MobileMember; 
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#e8fbfa] text-[#008d8c]">
               <CalendarDays size={16} />
             </span>
-            <span className="flex-1 text-[11px] font-bold text-[#65838b]">Joined On</span>
-            <span className="max-w-[150px] text-right text-[11px] font-bold text-[#123748]">{formatDate(joined)}</span>
+            <span className="flex-1 text-caption font-bold text-[#65838b]">Joined On</span>
+            <span className="max-w-[150px] text-right text-caption font-bold text-[#123748]">{formatDate(joined)}</span>
           </div>
           <div className="flex items-center gap-3 py-3">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#e8fbfa] text-[#008d8c]">
               <Clock3 size={16} />
             </span>
-            <span className="flex-1 text-[11px] font-bold text-[#65838b]">Last Updated</span>
-            <span className="max-w-[170px] text-right text-[11px] font-bold text-[#123748]">{formatDateTime(updated)}</span>
+            <span className="flex-1 text-caption font-bold text-[#65838b]">Last Updated</span>
+            <span className="max-w-[170px] text-right text-caption font-bold text-[#123748]">{formatDateTime(updated)}</span>
           </div>
         </div>
 
-        <button type="button" onClick={onClose} className="primary-btn relative z-10 mt-2 flex h-[50px] w-full items-center justify-center gap-2 rounded-[14px] text-[14px]">
+        <button type="button" onClick={onClose} className="primary-btn relative z-10 mt-2 flex h-[50px] w-full items-center justify-center gap-2 rounded-[14px] text-label">
           <X size={18} />
           Close
         </button>

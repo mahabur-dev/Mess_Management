@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check:typography": "node scripts/check-typography.mjs",
     "cap:init": "cap init \"Mess Management\" com.mess.management --web-dir=out",
     "cap:add:android": "cap add android",
     "cap:sync": "cap sync",

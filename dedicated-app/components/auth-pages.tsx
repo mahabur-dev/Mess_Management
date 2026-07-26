@@ -124,7 +124,7 @@ export function SignupPage() {
         {/* <div className="rounded-2xl border border-[#cfeeed] bg-[#f7fcfb] px-4 py-3">
           <div className="flex items-start gap-3">
             <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#008d8c]" />
-            <p className="text-xs font-semibold leading-relaxed text-[#65838b]">
+            <p className="text-caption font-semibold leading-relaxed text-[#65838b]">
               New accounts start as members. Your mess manager can approve access from the dashboard.
             </p>
           </div>
@@ -279,9 +279,9 @@ export function ForgotPasswordPage() {
 
 //       <form onSubmit={handleSubmit} className="space-y-4">
 //         <label className="block">
-//           <div className="mb-2 text-center text-sm font-bold text-[#123748]">Verification code</div>
+//           <div className="mb-2 text-center text-label font-bold text-[#123748]">Verification code</div>
 //           <input
-//             className="field h-14 rounded-2xl bg-white px-4 text-center text-xl font-black tracking-[0.24em]"
+//             className="field h-14 rounded-2xl bg-white px-4 text-center text-title font-bold tracking-[0.24em]"
 //             value={otp}
 //             onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
 //             placeholder="000000"
@@ -300,7 +300,7 @@ export function ForgotPasswordPage() {
 //         type="button"
 //         onClick={() => void resendOtp()}
 //         disabled={resending}
-//         className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#cfeeed] bg-white text-sm font-black text-[#008d8c] disabled:cursor-not-allowed disabled:opacity-70"
+//         className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#cfeeed] bg-white text-label font-bold text-[#008d8c] disabled:cursor-not-allowed disabled:opacity-70"
 //       >
 //         <RotateCcw size={16} />
 //         {resending ? 'Resending...' : 'Resend OTP'}
@@ -504,12 +504,12 @@ export function VerifyOtpPage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="block">
-          <div className="mb-3 text-center text-sm font-bold text-[#123748]">
+          <div className="mb-3 text-center text-label font-bold text-[#123748]">
             Verification code
           </div>
 
           <div
-            className="flex items-center justify-center gap-2 sm:gap-3"
+            className="grid grid-cols-6 gap-1.5 min-[360px]:gap-2"
             onPaste={handleOtpPaste}
           >
             {otpDigits.map((digit, index) => (
@@ -540,12 +540,12 @@ export function VerifyOtpPage() {
                   event.currentTarget.select()
                 }
                 className="
-                  h-[56px] w-[48px]
+                  min-h-14 min-w-0 w-full
                   rounded-[14px]
                   border border-[#c3e4e4]
                   bg-white
-                  text-center text-[22px]
-                  font-black text-[#062b35]
+                  text-center text-headline
+                  font-bold text-[#062b35]
                   caret-[#008d8c]
                   outline-none
                   shadow-[0_5px_15px_rgba(0,141,140,0.05)]
@@ -555,13 +555,13 @@ export function VerifyOtpPage() {
                   focus:border-[#008d8c]
                   focus:ring-4
                   focus:ring-[#008d8c]/12
-                  sm:h-[60px] sm:w-[52px]
+                  min-[360px]:min-h-[60px]
                 "
               />
             ))}
           </div>
 
-          <div className="mt-3 text-center text-[12px] font-medium text-[#789096]">
+          <div className="mt-3 text-center text-caption font-medium text-[#789096]">
             Enter the code from your email
           </div>
         </div>
@@ -579,12 +579,12 @@ export function VerifyOtpPage() {
         onClick={() => void resendOtp()}
         disabled={resending}
         className="
-          mt-4 flex h-12 w-full
+          mt-4 flex min-h-12 w-full py-2
           items-center justify-center gap-2
           rounded-2xl
           border border-[#cfeeed]
           bg-white
-          text-sm font-black
+          text-label font-bold
           text-[#008d8c]
           transition-all duration-200
           hover:border-[#008d8c]

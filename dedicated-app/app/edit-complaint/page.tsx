@@ -97,9 +97,9 @@ export default function EditComplaintPage() {
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4 space-y-4">
           <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#65838b]">Complaint</div>
-            <div className="mt-1 text-sm font-black text-[#123748]">{complaint?.title ?? complaintId}</div>
-            <div className="mt-1 text-xs text-[#65838b]">{complaint?.description ?? 'No description'}</div>
+            <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Complaint</div>
+            <div className="mt-1 text-label font-bold text-[#123748]">{complaint?.title ?? complaintId}</div>
+            <div className="mt-1 text-caption text-[#65838b]">{complaint?.description ?? 'No description'}</div>
           </div>
 
           <SelectField
@@ -117,7 +117,7 @@ export default function EditComplaintPage() {
             rows={4}
           />
 
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Changes

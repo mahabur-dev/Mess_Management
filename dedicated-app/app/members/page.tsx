@@ -101,12 +101,12 @@ export default function MembersPage() {
   }
 
   return (
-    <MobileShell>
+    <MobileShell showBottomNavigation={false}>
       <TopScreen title="Members" subtitle="All members in your mess" />
       <div className="screen space-y-4">
         <section className="rounded-[20px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
           <IconInput icon={Search} placeholder="Search member..." value={search} onChange={(event) => setSearch(event.target.value)} />
-          <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] font-black">
+          <div className="mt-4 grid grid-cols-3 gap-2 text-caption font-bold">
             {[
               ['ALL', `All (${counts.all})`],
               ['ACTIVE', `Active (${counts.active})`],
@@ -126,11 +126,11 @@ export default function MembersPage() {
           </div>
         </section>
 
-        {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+        {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
         <section className="space-y-2.5">
           {loading ? (
-            <div className="rounded-[20px] bg-white/90 p-6 text-center text-sm font-bold text-[#65838b]">Loading members...</div>
+            <div className="rounded-[20px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">Loading members...</div>
           ) : (
             filteredMembers.map((member) => (
               <MemberCard
@@ -148,7 +148,7 @@ export default function MembersPage() {
             ))
           )}
           {!loading && !filteredMembers.length ? (
-            <div className="rounded-[20px] bg-white/90 p-6 text-center text-sm text-[#65838b]">
+            <div className="rounded-[20px] bg-white/90 p-6 text-center text-label text-[#65838b]">
               <Users size={32} className="mx-auto mb-2 text-[#9edddc]" />
               No members found.
             </div>

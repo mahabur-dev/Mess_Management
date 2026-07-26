@@ -109,7 +109,7 @@ export default function DepositsPage() {
           <DepositStatCard title="Recent" value={items.length} caption="Loaded entries" icon={ListChecks} tone="blue" />
         </div>
 
-        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
         <DeferredFormSection
           open={showForm}
@@ -142,7 +142,7 @@ export default function DepositsPage() {
             placeholder="Monthly contribution"
           />
           <DepositManualNotice compact />
-          {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+          {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Add Deposit
           </SubmitButton>
@@ -151,10 +151,10 @@ export default function DepositsPage() {
         <section className="rounded-[22px] border border-[#dce9ec] bg-white/96 p-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
           <DepositSectionTitle
             title="Recent Deposits"
-            action={<button type="button" onClick={() => setShowForm(true)} className="text-[12px] font-black text-[#008d8c]">Add</button>}
+            action={<button type="button" onClick={() => setShowForm(true)} className="text-label font-semibold text-[#008d8c]">Add</button>}
           />
           <input
-            className="mt-4 h-12 w-full rounded-[15px] border border-[#dce9ec] bg-white px-4 text-[13px] font-semibold outline-none placeholder:text-[#7c8b98] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+            className="mt-4 h-12 w-full rounded-[15px] border border-[#dce9ec] bg-white px-4 text-body font-medium outline-none placeholder:text-[#7c8b98] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search member or note..."
@@ -168,12 +168,12 @@ export default function DepositsPage() {
                 href={`/edit-deposit?depositId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
               />
             ))}
-            {!visibleItems.length ? <div className="rounded-[18px] bg-[#edfafa] p-5 text-sm font-semibold text-[#65838b]">No deposits loaded.</div> : null}
+            {!visibleItems.length ? <div className="rounded-[18px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">No deposits loaded.</div> : null}
           </div>
         </section>
 
         {!showForm ? (
-          <button type="button" onClick={() => setShowForm(true)} className="primary-btn flex w-full items-center justify-center gap-2 rounded-[22px] text-[16px]">
+          <button type="button" onClick={() => setShowForm(true)} className="primary-btn flex w-full items-center justify-center gap-2 rounded-[22px] text-body">
             <PlusCircle size={21} /> Add Deposit
           </button>
         ) : null}

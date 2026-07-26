@@ -186,11 +186,11 @@ function MyMealContent() {
         <MealCard className="text-center">
           <MealStateIllustration state={statusClosed ? 'locked' : 'open'} mealName={mealName} />
 
-          <h2 className={`mt-5 text-[21px] font-black ${statusClosed ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
+          <h2 className={`mt-5 text-title font-bold ${statusClosed ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
             {MEAL_LABELS[mealName]} meal is {statusText}
           </h2>
-          <p className="mt-2 text-[13px] font-semibold text-[#65838b]">{statusDescription}</p>
-          <div className="mt-3 inline-flex items-center rounded-full bg-[#edfafa] px-4 py-2 text-[12px] font-black text-[#123748]">
+          <p className="mt-2 text-label font-semibold text-[#65838b]">{statusDescription}</p>
+          <div className="mt-3 inline-flex items-center rounded-full bg-[#edfafa] px-4 py-2 text-caption font-bold text-[#123748]">
             {deadlineLabel(deadline)}
           </div>
         </MealCard>
@@ -230,7 +230,7 @@ function MyMealContent() {
         )}
 
         <MealCard>
-          <div className="mb-2 text-[12px] font-black text-[#123748]">Your Meal</div>
+          <div className="mb-2 text-label font-semibold text-[#123748]">Your Meal</div>
           <MealStatusPill tone={choice === 'NO' ? 'closed' : 'open'}>{choice === 'NO' ? 'No Meal' : 'I will take meal'}</MealStatusPill>
         </MealCard>
       </div>
@@ -240,7 +240,7 @@ function MyMealContent() {
 
 export default function MyMealPage() {
   return (
-    <Suspense fallback={<div className="grid min-h-screen place-items-center text-sm font-bold text-[#65838b]">Loading...</div>}>
+    <Suspense fallback={<div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>}>
       <MyMealContent />
     </Suspense>
   )

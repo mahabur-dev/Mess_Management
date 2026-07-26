@@ -22,8 +22,8 @@ export default function MorePage() {
               <User size={24} />
             </div>
             <div>
-              <div className="text-base font-black text-[#123748]">{user?.name ?? 'Manager'}</div>
-              <div className="text-xs font-medium text-[#65838b]">{user?.email ?? ''}</div>
+              <div className="text-body font-bold text-[#123748]">{user?.name ?? 'Manager'}</div>
+              <div className="text-caption font-medium text-[#65838b]">{user?.email ?? ''}</div>
             </div>
           </div>
         </div>
@@ -33,7 +33,7 @@ export default function MorePage() {
             <Link key={href} href={appHref(href)} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 last:border-b-0">
               <div className="flex items-center gap-3">
                 <Icon size={18} className="text-[#008d8c]" />
-                <div className="text-sm font-bold text-[#123748]">{label}</div>
+                <div className="text-label font-bold text-[#123748]">{label}</div>
               </div>
               <ChevronRight size={18} className="text-[#7da0a6]" />
             </Link>

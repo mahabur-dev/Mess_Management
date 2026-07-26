@@ -15,7 +15,7 @@ export function ActionLink({ href, label, icon, tone = 'subtle' }: ActionLinkPro
   return (
     <Link
       href={appHref(href)}
-      className={`inline-flex h-10 items-center gap-2 rounded-2xl px-3 text-sm font-bold transition ${
+      className={`inline-flex h-10 items-center gap-2 rounded-2xl px-3 text-label font-bold transition ${
         tone === 'primary'
           ? 'bg-[#008d8c] text-white shadow-[0_10px_24px_rgba(0,119,122,0.24)]'
           : 'bg-[#dff4f3] text-[#008d8c]'
@@ -66,5 +66,5 @@ export function StatusPill({ label, tone = 'neutral' }: StatusPillProps) {
           ? 'bg-[#edfafa] text-[#00777a]'
           : 'bg-[#edfafa] text-[#65838b]'
 
-  return <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-black ${toneClass}`}>{label}</span>
+  return <span className={`inline-flex items-center rounded-full px-3 py-1 text-caption font-bold ${toneClass}`}>{label}</span>
 }

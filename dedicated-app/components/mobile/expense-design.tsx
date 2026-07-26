@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
 import type { ComponentType, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 import {
   BadgeInfo,
@@ -41,10 +42,10 @@ function joinClasses(...classes: Array<string | undefined | false>) {
   return classes.filter(Boolean).join(' ')
 }
 
-const formLabelClass = 'mb-2 block text-[12px] font-black leading-tight text-[#123748]'
+const formLabelClass = 'mb-2 block text-label font-semibold text-[#123748]'
 const formIconClass = 'absolute left-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[11px] bg-[#e8f8f7] text-[#008d8c]'
 const formControlClass =
-  'h-[52px] w-full rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 pl-[54px] text-[13px] font-semibold text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10'
+  'h-[52px] w-full rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 pl-[54px] text-body font-medium text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10'
 
 export function formatBDT(value?: string | number | null) {
   const amount = Number(value ?? 0)
@@ -147,8 +148,8 @@ export function CircleIcon({
 //       <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
 //         <div>{left}</div>
 //         <div className="min-w-0 text-center text-white">
-//           <h1 className="truncate text-[16px] font-black leading-tight">{title}</h1>
-//           {subtitle ? <p className="mt-1 truncate text-[11px] font-medium text-white/88">{subtitle}</p> : null}
+//           <h1 className="truncate text-body font-bold leading-tight">{title}</h1>
+//           {subtitle ? <p className="mt-1 truncate text-caption font-medium text-white/88">{subtitle}</p> : null}
 //         </div>
 //         <div>{right}</div>
 //       </div>
@@ -166,27 +167,7 @@ export function ScreenHeader({
   left?: ReactNode
   right?: ReactNode
 }) {
-  return (
-    <header className="top-hero px-4 pb-6">
-      <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
-        <div>{left}</div>
-
-        <div className="min-w-0 text-center">
-          <h1 className="truncate text-[16px] font-extrabold leading-tight">
-            {title}
-          </h1>
-
-          {subtitle ? (
-            <p className="mt-1 truncate text-[11px] leading-tight text-white/78">
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="flex justify-end">{right}</div>
-      </div>
-    </header>
-  )
+  return <AppHeader title={title} subtitle={subtitle} leading={left} trailing={right} />
 }
 
 // export function HeaderIconButton({ href, icon, label }: { href?: string; icon: ReactNode; label: string }) {
@@ -271,8 +252,8 @@ export function HeaderIconButton({
 //         </span>
 //       </span>
 //       <span className="min-w-0 flex-1">
-//         <span className="block truncate text-[13px] font-black text-[#061638]">{title}</span>
-//         <span className="mt-1 block truncate text-[10px] font-medium text-[#65838b]">{subtitle}</span>
+//         <span className="block truncate text-label font-bold text-[#061638]">{title}</span>
+//         <span className="mt-1 block truncate text-caption font-medium text-[#65838b]">{subtitle}</span>
 //       </span>
 //       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3f6f8] text-[#061638]">
 //         <ChevronRight size={16} strokeWidth={2.6} />
@@ -332,11 +313,11 @@ export function ExpenseActionCard({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-black text-[#061638]">
+        <span className="block truncate text-label font-bold text-[#061638]">
           {title}
         </span>
 
-        <span className="mt-1 block truncate text-[10px] font-medium text-[#758893]">
+        <span className="mt-1 block truncate text-caption font-medium text-[#758893]">
           {subtitle}
         </span>
       </span>
@@ -374,9 +355,9 @@ export function ExpenseActionCard({
 //     <div className="expense-stat-card">
 //       <CircleIcon icon={icon} tone={tone} />
 //       <div className="min-w-0">
-//         <div className="text-[10px] font-bold text-[#65838b]">{label}</div>
-//         <div className="mt-1.5 truncate text-[16px] font-black leading-none text-[#061638]">{value}</div>
-//         <div className="mt-1.5 text-[10px] font-medium text-[#65838b]">{caption}</div>
+//         <div className="text-caption font-bold text-[#65838b]">{label}</div>
+//         <div className="mt-1.5 truncate text-body font-bold leading-none text-[#061638]">{value}</div>
+//         <div className="mt-1.5 text-caption font-medium text-[#65838b]">{caption}</div>
 //       </div>
 //     </div>
 //   )
@@ -419,12 +400,12 @@ export function ExpenseStatCard({
   </div>
 
   <div className="flex-1">
-    <p className="whitespace-nowrap text-[11px] font-semibold text-[#94a3b8]">
+    <p className="whitespace-nowrap text-caption font-semibold text-[#94a3b8]">
       {title}
     </p>
 
     <h3
-      className="mt-1 whitespace-nowrap text-[20px] font-black leading-none"
+      className="mt-1 whitespace-nowrap text-title font-bold leading-none"
       style={{ color }}
     >
       {value}
@@ -480,7 +461,7 @@ export function SearchPanel({
         <label className="relative min-w-0 flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4f6375]" size={18} />
           <input
-            className="h-12 w-full rounded-[14px] border border-white/70 bg-white px-4 pl-11 text-[13px] font-medium text-[#123748] shadow-[0_10px_24px_rgba(18,55,72,0.06)] outline-none placeholder:text-[#7d8a9d] focus:border-[#9edddc]"
+            className="h-12 w-full rounded-[14px] border border-white/70 bg-white px-4 pl-11 text-body font-medium text-[#123748] shadow-[0_10px_24px_rgba(18,55,72,0.06)] outline-none placeholder:text-[#7d8a9d] focus:border-[#9edddc]"
             value={search}
             onChange={(event) => onSearch(event.target.value)}
             placeholder="Search expenses..."
@@ -510,7 +491,7 @@ export function SearchPanel({
 //     <button
 //       type="button"
 //       onClick={onClick}
-//       className={`flex h-9 items-center justify-center gap-1 rounded-full border px-2 text-[10px] font-bold shadow-[0_8px_18px_rgba(18,55,72,0.05)] ${
+//       className={`flex h-9 items-center justify-center gap-1 rounded-full border px-2 text-caption font-bold shadow-[0_8px_18px_rgba(18,55,72,0.05)] ${
 //         active ? 'border-[#9edddc] bg-[#edfafa] text-[#008d8c]' : 'border-white/80 bg-white text-[#123748]'
 //       }`}
 //     >
@@ -540,7 +521,7 @@ export function FilterPill({
         items-center justify-center
         gap-1.5 rounded-full
         border px-2.5
-        text-[10px] font-bold
+        text-caption font-bold
         shadow-[0_7px_18px_rgba(18,55,72,0.05)]
         transition-all duration-200
         active:scale-[0.98]
@@ -592,13 +573,13 @@ export type ExpenseListRecord = {
 //     <Link href={href} className="expense-list-item">
 //       <CircleIcon icon={Icon} tone={tone} />
 //       <span className="min-w-0 flex-1">
-//         <span className="block truncate text-[13px] font-black uppercase text-[#061638]">{label}</span>
+//         <span className="block truncate text-label font-bold uppercase text-[#061638]">{label}</span>
 //         <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
-//           <span className="truncate text-[10px] font-medium text-[#4f6375]">{formatDate(item.expenseDate ?? item.expense_date)}</span>
-//           <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-[8px] font-black text-[#008d8c]">{payment}</span>
+//           <span className="truncate text-caption font-medium text-[#4f6375]">{formatDate(item.expenseDate ?? item.expense_date)}</span>
+//           <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-bold text-[#008d8c]">{payment}</span>
 //         </span>
 //       </span>
-//       <span className="shrink-0 text-right text-[15px] font-black text-[#008d8c]">{formatTaka(item.amount).replace(' ', ' ')}</span>
+//       <span className="shrink-0 text-right text-body font-bold text-[#008d8c]">{formatTaka(item.amount).replace(' ', ' ')}</span>
 //       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3f6f8] text-[#061638]">
 //         <ChevronRight size={16} strokeWidth={2.7} />
 //       </span>
@@ -667,7 +648,7 @@ export function ExpenseListItem({
         <span
           className="
             block truncate
-            text-[13px] font-black
+            text-label font-bold
             uppercase tracking-[-0.01em]
             text-[#061638]
           "
@@ -676,7 +657,7 @@ export function ExpenseListItem({
         </span>
 
         <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-[9px] font-medium text-[#667d87]">
+          <span className="truncate text-caption font-medium text-[#667d87]">
             {formatDate(
               item.expenseDate ??
                 item.expense_date
@@ -688,7 +669,7 @@ export function ExpenseListItem({
               truncate rounded-full
               bg-[#e8f8f7]
               px-2 py-0.5
-              text-[8px] font-black
+              text-caption font-bold
               text-[#008d8c]
             "
           >
@@ -700,8 +681,8 @@ export function ExpenseListItem({
       <span
         className="
           shrink-0 whitespace-nowrap
-          text-right text-[15px]
-          font-black tracking-[-0.02em]
+          text-right text-body
+          font-bold tracking-[-0.02em]
         "
         style={{ color: tone.fg }}
       >
@@ -741,22 +722,16 @@ export function FormPageShell({
 }) {
   return (
     <>
-      <header className="top-hero px-4 pb-6">
-        <div className="grid grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-2">
-          <Link href={backHref} className="expense-form-hero-button justify-self-start" aria-label="Back">
-            <ChevronLeft size={19} strokeWidth={2.7} />
-          </Link>
-
-          <div className="min-w-0 text-center">
-            <h1 className="truncate text-[16px] font-extrabold leading-tight text-white">{title}</h1>
-            <p className="mt-1 truncate text-[11px] leading-tight text-white/78">{description}</p>
-          </div>
-
-          <span className="expense-form-hero-button justify-self-end" aria-hidden="true">
+      <AppHeader
+        title={title}
+        subtitle={description}
+        backHref={backHref}
+        trailing={
+          <span className="app-header-action" aria-hidden="true">
             <Icon size={18} strokeWidth={2.4} />
           </span>
-        </div>
-      </header>
+        }
+      />
 
       <div className="screen expense-form-screen space-y-4">{children}</div>
     </>
@@ -766,7 +741,7 @@ export function FormPageShell({
 export function FormSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="expense-form-card">
-      {title ? <h2 className="mb-3 text-[12px] font-black uppercase leading-tight text-[#008d8c]">{title}</h2> : null}
+      {title ? <h2 className="mb-3 text-caption font-bold uppercase leading-tight text-[#008d8c]">{title}</h2> : null}
       <div className="space-y-3.5">{children}</div>
     </section>
   )
@@ -781,7 +756,7 @@ export function FormStatusMessage({ message, success = false }: { message: strin
 
   return (
     <div
-      className={`rounded-[15px] border px-3.5 py-3 text-[12px] font-semibold leading-5 ${
+      className={`rounded-[15px] border px-3.5 py-3 text-label font-semibold ${
         success
           ? 'border-[#bfe7e6] bg-[#edfafa] text-[#008d8c]'
           : 'border-[#f4c7c7] bg-[#fff5f5] text-[#b42318]'
@@ -809,9 +784,9 @@ export function FormSummaryCard({
         <Icon size={18} strokeWidth={2.35} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[9px] font-black uppercase tracking-[0.12em] text-[#65838b]">{eyebrow}</span>
-        <span className="mt-1 block truncate text-[13px] font-black text-[#123748]">{title}</span>
-        {description ? <span className="mt-0.5 block truncate text-[11px] font-semibold text-[#65838b]">{description}</span> : null}
+        <span className="block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{eyebrow}</span>
+        <span className="mt-1 block truncate text-label font-bold text-[#123748]">{title}</span>
+        {description ? <span className="mt-0.5 block truncate text-caption font-semibold text-[#65838b]">{description}</span> : null}
       </span>
     </div>
   )
@@ -831,7 +806,7 @@ export function PaymentTypeSelector({
 
   return (
     <div>
-      <h2 className="mb-3 text-[12px] font-black uppercase leading-tight text-[#008d8c]">Deposit Type</h2>
+      <h2 className="mb-3 text-caption font-bold uppercase leading-tight text-[#008d8c]">Deposit Type</h2>
       <div className="grid grid-cols-2 gap-2.5">
         {choices.map((choice) => {
           const selected = value === choice.value
@@ -850,7 +825,7 @@ export function PaymentTypeSelector({
               <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[12px] bg-[#e8f8f7] text-[#008d8c]">
                 <Icon size={17} strokeWidth={2.25} />
               </span>
-              <span className="min-w-0 text-[12px] font-black leading-4">{choice.label}</span>
+              <span className="min-w-0 text-label font-semibold">{choice.label}</span>
               {selected ? (
                 <span className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,141,140,0.22)]">
                   <Check size={13} strokeWidth={3} />
@@ -862,7 +837,7 @@ export function PaymentTypeSelector({
           )
         })}
       </div>
-      <p className="mt-3 flex items-center gap-2 rounded-[13px] bg-[#edfafa] px-3.5 py-3 text-[11px] font-semibold leading-4 text-[#52727b]">
+      <p className="mt-3 flex items-center gap-2 rounded-[13px] bg-[#edfafa] px-3.5 py-3 text-label font-medium text-[#52727b]">
         <BadgeInfo className="shrink-0 text-[#65838b]" size={16} />
         Amount will be split among all members in monthly bill calculation.
       </p>
@@ -934,12 +909,12 @@ export function DesignedTextarea({ label, icon: Icon, count, className = '', ...
         </span>
         <textarea
           className={joinClasses(
-            'min-h-[104px] w-full resize-none rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 py-3.5 pl-[54px] text-[13px] font-semibold text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10',
+            'min-h-[104px] w-full resize-none rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 py-3.5 pl-[54px] text-body font-medium text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10',
             className
           )}
           {...props}
         />
-        {count ? <span className="absolute bottom-3.5 right-4 text-[10px] font-bold text-[#7d8a9d]">{count}</span> : null}
+        {count ? <span className="absolute bottom-3.5 right-4 text-caption font-bold text-[#7d8a9d]">{count}</span> : null}
       </span>
     </label>
   )
@@ -954,8 +929,8 @@ export function UploadField({ onChange, fileName, label = 'Receipt (Optional)' }
           <UploadCloud size={23} strokeWidth={2.1} />
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-[12px] font-black text-[#123748]">{fileName || 'Upload receipt image'}</span>
-          <span className="mt-1 block text-[10px] font-semibold text-[#65838b]">JPG, PNG, PDF up to 5MB</span>
+          <span className="block truncate text-label font-semibold text-[#123748]">{fileName || 'Upload receipt image'}</span>
+          <span className="mt-1 block text-caption font-semibold text-[#65838b]">JPG, PNG, PDF up to 5MB</span>
         </span>
         <input className="sr-only" type="file" accept="image/*,application/pdf" onChange={(event) => onChange(event.target.files?.[0] ?? null)} />
       </span>
@@ -983,8 +958,8 @@ export function DesignedToggle({
           <Icon size={16} strokeWidth={2.35} />
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-[12px] font-black text-[#123748]">{label}</span>
-          {hint ? <span className="mt-0.5 block truncate text-[10px] font-semibold text-[#65838b]">{hint}</span> : null}
+          <span className="block truncate text-label font-semibold text-[#123748]">{label}</span>
+          {hint ? <span className="mt-0.5 block truncate text-caption font-semibold text-[#65838b]">{hint}</span> : null}
         </span>
       </div>
       <button
@@ -1002,7 +977,7 @@ export function DesignedToggle({
 export function SubmitGradientButton({ children, busy }: { children: ReactNode; busy?: boolean }) {
   return (
     <div className="mt-4 rounded-[18px] border border-white/85 bg-white/96 p-2.5 shadow-[0_12px_30px_rgba(18,55,72,0.10)]">
-      <button type="submit" disabled={busy} className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[15px] border-0 bg-gradient-to-br from-[#008d8c] to-[#00777a] text-[13px] font-black text-white shadow-[0_14px_26px_rgba(0,119,122,0.22)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70">
+      <button type="submit" disabled={busy} className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[15px] border-0 bg-gradient-to-br from-[#008d8c] to-[#00777a] text-label font-bold text-white shadow-[0_14px_26px_rgba(0,119,122,0.22)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70">
         <Save size={17} strokeWidth={2.5} />
         {busy ? 'Saving...' : children}
       </button>

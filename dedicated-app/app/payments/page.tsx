@@ -175,7 +175,7 @@ export default function PaymentsPage() {
           </>
         ) : null}
 
-        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
         <div className={showForm ? '' : 'hidden'}>
           <DeferredFormSection
@@ -216,7 +216,7 @@ export default function PaymentsPage() {
             <TextField label="Screenshot URL" hint="Optional" value={form.screenshotUrl} onChange={(screenshotUrl) => setForm((prev) => ({ ...prev, screenshotUrl }))} placeholder="https://..." />
             <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Deposit for May bill" rows={3} />
             <DepositManualNotice compact />
-            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-sm font-semibold text-[#008d8c]">{message}</div> : null}
+            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
             <SubmitButton busy={busy} onClick={handleSubmit}>
               Submit Deposit
             </SubmitButton>
@@ -228,7 +228,7 @@ export default function PaymentsPage() {
             <DepositSectionTitle
               title="Recent Deposits"
               action={
-                <Link href={appHref('/payments/all')} className="text-[12px] font-black text-[#008d8c]">
+                <Link href={appHref('/payments/all')} className="text-label font-semibold text-[#008d8c]">
                   View All Deposit
                 </Link>
               }
@@ -242,7 +242,7 @@ export default function PaymentsPage() {
                   href={`/edit-payment?paymentId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
                 />
               ))}
-              {!items.length ? <div className="rounded-[18px] bg-[#edfafa] p-5 text-sm font-semibold text-[#65838b]">No deposits loaded.</div> : null}
+              {!items.length ? <div className="rounded-[18px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">No deposits loaded.</div> : null}
             </div>
           </div>
         ) : null}

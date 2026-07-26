@@ -118,7 +118,7 @@ export default function MealsPage() {
             <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'neutral'}>{deadline?.isWindowOpen ? 'Open' : 'Closed'}</MealStatusPill>
           </div>
           {loading ? (
-            <div className="rounded-[18px] bg-[#edfafa] p-6 text-center text-sm font-bold text-[#65838b]">Loading meals...</div>
+            <div className="rounded-[18px] bg-[#edfafa] p-6 text-center text-label font-bold text-[#65838b]">Loading meals...</div>
           ) : (
             <MealTotalsGrid meals={meals} />
           )}
@@ -134,8 +134,8 @@ export default function MealsPage() {
         <MealCard>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <div className="text-[14px] font-black text-[#123748]">My Meal Status</div>
-              <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-[#008d8c]">
+              <div className="text-body font-bold text-[#123748]">My Meal Status</div>
+              <div className="mt-1 flex items-center gap-1 text-caption font-bold text-[#008d8c]">
                 <Clock3 size={12} /> {deadlineLabel(deadline)}
               </div>
             </div>
@@ -145,8 +145,8 @@ export default function MealsPage() {
           <div className="rounded-[16px] border border-[#cfeeed] bg-[#fbffff] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-[13px] font-black text-[#123748]">{selectedMealLabel}</div>
-                <div className="mt-1 text-[11px] font-semibold text-[#65838b]">{selectedMeals.length ? 'Your meal is added' : 'Update your meal preference'}</div>
+                <div className="text-label font-bold text-[#123748]">{selectedMealLabel}</div>
+                <div className="mt-1 text-label text-[#65838b]">{selectedMeals.length ? 'Your meal is added' : 'Update your meal preference'}</div>
               </div>
               <MealStatusPill tone={selectedMeals.length ? 'open' : 'neutral'}>
                 {selectedMeals.length ? 'Added' : 'Pending'}
@@ -165,8 +165,8 @@ export default function MealsPage() {
               <Settings2 size={21} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-black text-[#123748]">Manager Controls</div>
-              <div className="mt-1 text-[11px] font-semibold leading-4 text-[#65838b]">Manage meal time, locks and members meals</div>
+              <div className="text-body font-bold text-[#123748]">Manager Controls</div>
+              <div className="mt-1 text-label text-[#65838b]">Manage meal time, locks and members meals</div>
             </div>
             <ChevronRight size={17} className="text-[#789096]" />
           </Link>

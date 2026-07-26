@@ -138,12 +138,12 @@ function EditMemberMealContent() {
       <TopScreen title="Edit Member Meal" subtitle={formatDisplayDate(date)} backHref="/meals/members" />
       <div className="screen space-y-4">
         <MealCard className="flex items-center gap-3">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#edfafa] text-[13px] font-black text-[#008d8c]">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#edfafa] text-label font-bold text-[#008d8c]">
             {initials(memberDisplayName)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[14px] font-black text-[#123748]">{memberDisplayName}</div>
-            <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-[#65838b]">
+            <div className="truncate text-label font-bold text-[#123748]">{memberDisplayName}</div>
+            <div className="mt-1 flex items-center gap-1 text-caption font-bold text-[#65838b]">
               <UserRound size={12} /> {MEAL_LABELS[mealName]} - {formatDisplayDate(date)}
             </div>
           </div>
@@ -151,7 +151,7 @@ function EditMemberMealContent() {
         </MealCard>
 
         <MealCard>
-          <div className="mb-2 text-[12px] font-black text-[#123748]">Current Status</div>
+          <div className="mb-2 text-label font-semibold text-[#123748]">Current Status</div>
           <MealStatusPill tone={attendance?.status === 'OFF' ? 'closed' : 'open'}>{attendance?.status === 'OFF' ? 'No Meal' : 'I will take meal'}</MealStatusPill>
         </MealCard>
 
@@ -159,7 +159,7 @@ function EditMemberMealContent() {
         {loading ? <InlineNotice>Loading current status...</InlineNotice> : null}
 
         <MealCard className="space-y-2">
-          <div className="mb-2 text-[14px] font-black text-[#123748]">Update Meal</div>
+          <div className="mb-2 text-body font-bold text-[#123748]">Update Meal</div>
           <MealOptionRow
             selected={choice === 'GUEST'}
             title="Guest Meal"
@@ -187,7 +187,7 @@ function EditMemberMealContent() {
 
 export default function EditMemberMealPage() {
   return (
-    <Suspense fallback={<div className="grid min-h-screen place-items-center text-sm font-bold text-[#65838b]">Loading...</div>}>
+    <Suspense fallback={<div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>}>
       <EditMemberMealContent />
     </Suspense>
   )

@@ -111,8 +111,8 @@ export default function MemberMealsPage() {
             <Users size={19} />
           </div>
           <div>
-            <div className="text-[13px] font-black text-[#123748]">{filteredMembers.length} members shown</div>
-            <div className="mt-1 text-[11px] font-semibold text-[#65838b]">Tap a member to update instantly.</div>
+            <div className="text-label font-bold text-[#123748]">{filteredMembers.length} members shown</div>
+            <div className="mt-1 text-label text-[#65838b]">Tap a member to update instantly.</div>
           </div>
         </MealCard>
       </div>

@@ -81,10 +81,10 @@ export default function LockMealsPage() {
 
         <MealCard className="text-center">
           <MealStateIllustration state={locked ? 'locked' : 'open'} mealName={mealName} />
-          <div className={`mt-3 text-[20px] font-black ${locked ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
+          <div className={`mt-3 text-title font-bold ${locked ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
             {MEAL_LABELS[mealName]} meal is {locked ? 'locked' : 'unlocked'}
           </div>
-          <div className="mt-2 text-[12px] font-semibold text-[#65838b]">
+          <div className="mt-2 text-label text-[#65838b]">
             {locked ? 'Members cannot change this meal now.' : 'Members can update this meal while the window allows.'}
           </div>
         </MealCard>
@@ -106,8 +106,8 @@ export default function LockMealsPage() {
               >
                 <MealIconBadge mealName={item} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-black text-[#123748]">{MEAL_LABELS[item]}</div>
-                  <div className="mt-0.5 text-[10px] font-semibold text-[#65838b]">{meal ? 'Meal record available' : 'No meal record yet'}</div>
+                  <div className="text-label font-bold text-[#123748]">{MEAL_LABELS[item]}</div>
+                  <div className="mt-0.5 text-caption font-semibold text-[#65838b]">{meal ? 'Meal record available' : 'No meal record yet'}</div>
                 </div>
                 <MealStatusPill tone={itemLocked ? 'closed' : 'neutral'}>{itemLocked ? 'Locked' : 'Unlocked'}</MealStatusPill>
               </button>
@@ -124,7 +124,7 @@ export default function LockMealsPage() {
 
         <button
           type="button"
-          className={`flex h-14 w-full items-center justify-center gap-2 rounded-[16px] text-[14px] font-black text-white shadow-[0_14px_28px_rgba(0,119,122,0.16)] disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`flex h-14 w-full items-center justify-center gap-2 rounded-[16px] text-label font-bold text-white shadow-[0_14px_28px_rgba(0,119,122,0.16)] disabled:cursor-not-allowed disabled:opacity-60 ${
             locked ? 'bg-[#008d8c]' : 'bg-[#ee1f2f]'
           }`}
           onClick={toggleLock}
@@ -139,8 +139,8 @@ export default function LockMealsPage() {
             <LockStateIcon locked={locked} />
           </div>
           <div>
-            <div className="text-[13px] font-black text-[#123748]">Current selection</div>
-            <div className="mt-1 text-[11px] font-semibold text-[#65838b]">{MEAL_LABELS[mealName]} is {locked ? 'locked' : 'unlocked'}.</div>
+            <div className="text-body font-bold text-[#123748]">Current selection</div>
+            <div className="mt-1 text-label text-[#65838b]">{MEAL_LABELS[mealName]} is {locked ? 'locked' : 'unlocked'}.</div>
           </div>
         </MealCard>
       </div>

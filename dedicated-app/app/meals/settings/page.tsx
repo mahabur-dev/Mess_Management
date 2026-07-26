@@ -59,7 +59,7 @@ export default function MealSettingsPage() {
           <FieldCard label="Default Meal Status">
             <button
               type="button"
-              className="field flex h-14 items-center justify-between text-left text-[13px] font-bold"
+              className="field flex h-14 items-center justify-between text-left text-body font-semibold"
               onClick={() => setSettings((prev) => ({ ...prev, defaultStatus: prev.defaultStatus === 'TAKE' ? 'NO' : 'TAKE' }))}
             >
               <span>{settings.defaultStatus === 'TAKE' ? 'I will take meal' : 'No Meal'}</span>
@@ -79,7 +79,7 @@ export default function MealSettingsPage() {
           <div className="section-title mb-0">General</div>
           <button
             type="button"
-            className="flex min-h-12 w-full items-center justify-between rounded-[16px] border border-[#cfeeed] bg-white px-4 text-[13px] font-bold text-[#123748]"
+            className="flex min-h-12 w-full items-center justify-between rounded-[16px] border border-[#cfeeed] bg-white px-4 text-body font-semibold text-[#123748]"
             onClick={() => setSettings((prev) => ({ ...prev, timeFormat: prev.timeFormat === '12' ? '24' : '12' }))}
           >
             <span className="inline-flex items-center gap-2 text-[#65838b]">
@@ -90,7 +90,7 @@ export default function MealSettingsPage() {
 
           <button
             type="button"
-            className="flex min-h-12 w-full items-center justify-between rounded-[16px] border border-[#cfeeed] bg-white px-4 text-[13px] font-bold text-[#123748]"
+            className="flex min-h-12 w-full items-center justify-between rounded-[16px] border border-[#cfeeed] bg-white px-4 text-body font-semibold text-[#123748]"
             onClick={() => setSettings((prev) => ({ ...prev, language: prev.language === 'English' ? 'Bangla' : 'English' }))}
           >
             <span className="inline-flex items-center gap-2 text-[#65838b]">
@@ -111,8 +111,8 @@ export default function MealSettingsPage() {
             <BellRing size={18} />
           </div>
           <div>
-            <div className="text-[13px] font-black text-[#123748]">Ready for notification API</div>
-            <div className="mt-1 text-[11px] font-semibold leading-4 text-[#65838b]">This page keeps the UI contract stable for future backend settings.</div>
+            <div className="text-label font-bold text-[#123748]">Ready for notification API</div>
+            <div className="mt-1 text-label text-[#65838b]">This page keeps the UI contract stable for future backend settings.</div>
           </div>
         </MealCard>
       </div>

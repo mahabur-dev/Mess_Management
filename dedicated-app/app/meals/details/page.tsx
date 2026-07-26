@@ -79,7 +79,7 @@ function MealDetailsContent() {
 
         {!loading ? <MealHistoryTable history={history} /> : null}
 
-        <p className="px-2 text-[10px] font-bold leading-4 text-[#55727b]">* Only meals added within the allowed time are counted.</p>
+        <p className="px-2 text-caption font-bold leading-4 text-[#55727b]">* Only meals added within the allowed time are counted.</p>
       </div>
     </MobileShell>
   )
@@ -87,7 +87,7 @@ function MealDetailsContent() {
 
 export default function MealDetailsPage() {
   return (
-    <Suspense fallback={<div className="grid min-h-screen place-items-center text-sm font-bold text-[#65838b]">Loading...</div>}>
+    <Suspense fallback={<div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>}>
       <MealDetailsContent />
     </Suspense>
   )

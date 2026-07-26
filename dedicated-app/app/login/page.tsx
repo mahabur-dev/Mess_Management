@@ -80,11 +80,11 @@ export default function LoginPage() {
           autoComplete="current-password"
         />
 
-        <div className="flex items-center justify-between gap-4">
+        <div className="grid gap-3 min-[360px]:grid-cols-2 min-[360px]:items-center">
           <button
             type="button"
             onClick={() => setRemember((current) => !current)}
-            className="inline-flex items-center gap-2 text-[13px] font-medium text-[#65838b]"
+            className="inline-flex min-w-0 items-center justify-start gap-2 text-left text-label font-medium text-[#65838b]"
           >
             <span
               className={`grid h-[22px] w-[22px] place-items-center rounded-md ${remember
@@ -100,7 +100,7 @@ export default function LoginPage() {
 
           <Link
             href="/forget_password"
-            className={`text-sm ${authLinkClass}`}
+            className={`min-w-0 text-left text-label min-[360px]:text-right ${authLinkClass}`}
           >
             Forgot password?
           </Link>
@@ -187,14 +187,14 @@ export default function LoginPage() {
 //           <button
 //             type="button"
 //             onClick={() => setRemember((current) => !current)}
-//             className="inline-flex items-center gap-2 text-[13px] font-medium text-[#65838b]"
+//             className="inline-flex items-center gap-2 text-label font-medium text-[#65838b]"
 //           >
 //             <span className={`grid h-[22px] w-[22px] place-items-center rounded-md ${remember ? 'bg-[#008d8c] text-white' : 'border border-[#bfe7e6] bg-white text-transparent'}`}>
 //               <Check size={14} strokeWidth={3} />
 //             </span>
 //             Remember me
 //           </button>
-//           <Link href="/forget_password" className={`text-sm ${authLinkClass}`}>
+//           <Link href="/forget_password" className={`text-label ${authLinkClass}`}>
 //             Forgot password?
 //           </Link>
 //         </div>

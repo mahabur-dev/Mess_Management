@@ -294,8 +294,8 @@ export function MealDateCard({
       ) : null}
 
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-black text-[#123748]">{formatDisplayDate(date)}</div>
-        <div className="mt-1 text-[11px] font-semibold text-[#65838b]">{formatWeekday(date)}</div>
+        <div className="text-label font-bold text-[#123748]">{formatDisplayDate(date)}</div>
+        <div className="mt-1 text-caption font-semibold text-[#65838b]">{formatWeekday(date)}</div>
       </div>
 
       {onChange ? (
@@ -334,7 +334,7 @@ export function MealMonthSelector({
   return (
     <label className="relative mx-auto flex h-14 w-fit min-w-[210px] items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-6 text-[#123748] shadow-[0_12px_24px_rgba(18,55,72,0.12)]">
       <CalendarDays size={19} className="shrink-0 text-[#008d8c]" />
-      <span className="text-[15px] font-black">{formatMonthLabel(month)}</span>
+      <span className="text-body font-bold">{formatMonthLabel(month)}</span>
       <ChevronDown size={18} className="shrink-0 text-[#123748]" />
       <input
         aria-label="Select month"
@@ -375,8 +375,8 @@ export function MealTabs({
                   : 'border-[#d8eeee] bg-white text-[#123748]'
             }`}
           >
-            <span className="block text-[11px] font-black leading-tight">{MEAL_LABELS[mealName]}</span>
-            <span className="mt-1 block text-[10px] font-black uppercase">{locked ? 'Locked' : active ? 'Selected' : 'Open'}</span>
+            <span className="block text-label font-semibold">{MEAL_LABELS[mealName]}</span>
+            <span className="mt-1 block text-caption font-bold uppercase">{locked ? 'Locked' : active ? 'Selected' : 'Open'}</span>
           </button>
         )
       })}
@@ -398,7 +398,7 @@ export function MealStatusPill({
     danger: 'bg-[#ee1f2f] text-white',
   }
 
-  return <span className={`inline-flex min-h-7 items-center rounded-full px-3 text-[10px] font-black uppercase ${classes[tone]}`}>{children}</span>
+  return <span className={`inline-flex min-h-7 items-center rounded-full px-3 text-caption font-bold uppercase ${classes[tone]}`}>{children}</span>
 }
 
 export function MealIconBadge({
@@ -554,16 +554,16 @@ export function MonthlyMealSummaryCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="max-w-[132px] text-[10px] font-black uppercase leading-[15px] text-[#55727b]">{title}</div>
+          <div className="max-w-[132px] text-caption font-bold uppercase leading-[15px] text-[#55727b]">{title}</div>
           <div className="mt-1 flex items-end gap-1.5">
-            <span className="text-[20px] font-black leading-none text-[#123748]">{total}</span>
-            <span className="pb-0.5 text-[10px] font-black text-[#008d8c]">meals</span>
+            <span className="text-title font-bold leading-none text-[#123748]">{total}</span>
+            <span className="pb-0.5 text-caption font-bold text-[#008d8c]">meals</span>
           </div>
         </div>
 
         <Link
           href={appHref(href)}
-          className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[13px] border border-[#8dd8d7] bg-white px-3 text-[11px] font-black text-[#123748] shadow-[0_8px_18px_rgba(0,119,122,0.07)] active:scale-[0.98]"
+          className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[13px] border border-[#8dd8d7] bg-white px-3 text-label font-semibold text-[#123748] shadow-[0_8px_18px_rgba(0,119,122,0.07)] active:scale-[0.98]"
         >
           Details <ChevronRight size={15} className="text-[#008d8c]" />
         </Link>
@@ -591,8 +591,8 @@ export function MealHistoryStats({
     <div className="grid grid-cols-3 rounded-[20px] bg-white px-3 py-5 shadow-[0_16px_34px_rgba(18,55,72,0.1)]">
       {stats.map((stat, index) => (
         <div key={stat.label} className={`text-center ${index ? 'border-l border-[#d8eeee]' : ''}`}>
-          <div className="text-[22px] font-black leading-none text-[#123748]">{stat.value}</div>
-          <div className="mt-3 text-[12px] font-black text-[#55727b]">{stat.label}</div>
+          <div className="text-headline font-bold leading-none text-[#123748]">{stat.value}</div>
+          <div className="mt-3 text-caption font-bold text-[#55727b]">{stat.label}</div>
         </div>
       ))}
     </div>
@@ -608,7 +608,7 @@ export function MealHistoryTable({
 
   return (
     <section className="overflow-hidden rounded-[20px] bg-white shadow-[0_16px_34px_rgba(18,55,72,0.1)]">
-      <div className="grid grid-cols-[1.1fr_1.7fr_44px] items-center bg-gradient-to-r from-[#00777a] to-[#008d8c] px-4 py-4 text-[12px] font-black text-white">
+      <div className="grid grid-cols-[1.1fr_1.7fr_44px] items-center bg-gradient-to-r from-[#00777a] to-[#008d8c] px-4 py-4 text-caption font-bold text-white">
         <div>Date</div>
         <div>Meals Taken</div>
         <div className="text-right">Total</div>
@@ -617,19 +617,19 @@ export function MealHistoryTable({
         {history.map((day) => (
           <div key={day.date} className="grid grid-cols-[1.1fr_1.7fr_44px] gap-3 border-b border-[#d8eeee] px-4 py-4 last:border-b-0">
             <div className="min-w-0">
-              <div className="text-[13px] font-black leading-tight text-[#123748]">{formatDisplayDate(day.date)}</div>
-              <div className="mt-2 text-[11px] font-black text-[#55727b]">{formatShortWeekday(day.date)}</div>
+              <div className="text-label font-bold leading-tight text-[#123748]">{formatDisplayDate(day.date)}</div>
+              <div className="mt-2 text-caption font-bold text-[#55727b]">{formatShortWeekday(day.date)}</div>
             </div>
             <div className="space-y-2">
               {day.meals.map((meal) => (
                 <div key={meal.mealName} className="grid grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2">
                   <MealIconBadge mealName={meal.mealName} size="sm" />
-                  <span className="truncate text-[12px] font-bold text-[#55727b]">{MEAL_LABELS[meal.mealName]}</span>
-                  <span className="text-right text-[12px] font-black text-[#123748]">{meal.count}</span>
+                  <span className="truncate text-caption font-bold text-[#55727b]">{MEAL_LABELS[meal.mealName]}</span>
+                  <span className="text-right text-caption font-bold text-[#123748]">{meal.count}</span>
                 </div>
               ))}
             </div>
-            <div className="self-center text-right text-[20px] font-black text-[#123748]">{day.total}</div>
+            <div className="self-center text-right text-title font-bold text-[#123748]">{day.total}</div>
           </div>
         ))}
       </div>
@@ -659,10 +659,10 @@ export function MealOptionRow({
           {selected ? <span className="h-2.5 w-2.5 rounded-full bg-[#008d8c]" /> : null}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[13px] font-bold text-[#123748]">{title}</span>
-          {hint ? <span className="mt-0.5 block text-[10px] font-semibold text-[#65838b]">{hint}</span> : null}
+          <span className="block text-label font-bold text-[#123748]">{title}</span>
+          {hint ? <span className="mt-0.5 block text-caption font-semibold text-[#65838b]">{hint}</span> : null}
         </span>
-        {!rightSlot && rightText ? <span className="shrink-0 text-[11px] font-bold text-[#65838b]">{rightText}</span> : null}
+        {!rightSlot && rightText ? <span className="shrink-0 text-caption font-bold text-[#65838b]">{rightText}</span> : null}
       </button>
       {rightSlot ? <div className="shrink-0">{rightSlot}</div> : null}
     </div>
@@ -682,7 +682,7 @@ export function GuestMealCountInput({
     <label className="flex h-10 w-[92px] items-center gap-1 rounded-[13px] border border-[#9edddc] bg-[#f7ffff] px-2.5 text-[#123748] shadow-[0_8px_18px_rgba(0,119,122,0.06)]">
       <input
         aria-label="Guest meal count"
-        className="min-w-0 flex-1 bg-transparent text-center text-[14px] font-black outline-none disabled:opacity-60"
+        className="min-w-0 flex-1 bg-transparent text-center text-body font-semibold outline-none disabled:opacity-60"
         type="number"
         inputMode="decimal"
         min="1"
@@ -692,7 +692,7 @@ export function GuestMealCountInput({
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       />
-      <span className="text-[10px] font-black text-[#65838b]">meal</span>
+      <span className="text-caption font-bold text-[#65838b]">meal</span>
     </label>
   )
 }
@@ -713,16 +713,16 @@ export function MemberMealRow({
   const tone = count > 0 ? 'text-[#008d8c]' : 'text-[#ee1f2f]'
   const content = (
     <>
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#edfafa] text-[12px] font-black text-[#008d8c]">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#edfafa] text-caption font-bold text-[#008d8c]">
         {initials(memberName(member))}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-black text-[#123748]">{memberName(member)}</div>
-        <div className="mt-0.5 truncate text-[10px] font-semibold text-[#65838b]">{member.user?.email ?? member.room_no ?? 'Mess member'}</div>
+        <div className="truncate text-label font-bold text-[#123748]">{memberName(member)}</div>
+        <div className="mt-0.5 truncate text-caption font-semibold text-[#65838b]">{member.user?.email ?? member.room_no ?? 'Mess member'}</div>
       </div>
-      <div className={`shrink-0 text-right text-[11px] font-black ${tone}`}>
+      <div className={`shrink-0 text-right text-caption font-bold ${tone}`}>
         <div>{statusText}</div>
-        {count > 1 ? <div className="mt-0.5 text-[10px] text-[#65838b]">{count} meals</div> : null}
+        {count > 1 ? <div className="mt-0.5 text-caption text-[#65838b]">{count} meals</div> : null}
       </div>
       {href ? <ChevronRight size={16} className="shrink-0 text-[#9ab2b8]" /> : null}
     </>
@@ -752,7 +752,7 @@ export function SearchBox({
     <div className="relative">
       <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#65838b]" size={17} />
       <input
-        className="field h-12 text-[13px] font-semibold"
+        className="field min-h-12 text-body font-medium"
         style={{ paddingLeft: 44 }}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -786,8 +786,8 @@ export function ManagerActionCard({
     <Link href={appHref(href)} className="flex min-h-[78px] items-center gap-3 rounded-[16px] bg-white px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
       <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-[16px] ${tones[tone]}`}>{icon}</div>
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-black text-[#123748]">{title}</div>
-        <div className="mt-1 text-[11px] font-semibold leading-4 text-[#65838b]">{description}</div>
+        <div className="text-label font-bold text-[#123748]">{title}</div>
+        <div className="mt-1 text-caption font-semibold leading-4 text-[#65838b]">{description}</div>
       </div>
       <ChevronRight size={17} className="shrink-0 text-[#789096]" />
     </Link>
@@ -812,12 +812,12 @@ export function InlineNotice({
     danger: 'border-[#ffd8d8] bg-[#fff3f3] text-[#ee1f2f]',
   }
 
-  return <div className={`rounded-[16px] border px-4 py-3 text-[12px] font-bold leading-5 ${classes[tone]}`}>{children}</div>
+  return <div className={`rounded-[16px] border px-4 py-3 text-label font-semibold ${classes[tone]}`}>{children}</div>
 }
 
 export function EmptyMealsState({ title = 'No meal data found.' }: { title?: string }) {
   return (
-    <div className="rounded-[20px] bg-white/90 p-6 text-center text-sm font-bold text-[#65838b]">
+    <div className="rounded-[20px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">
       <Circle size={34} className="mx-auto mb-2 text-[#9edddc]" />
       {title}
     </div>
@@ -826,7 +826,7 @@ export function EmptyMealsState({ title = 'No meal data found.' }: { title?: str
 
 export function SaveConfirmNote({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-[16px] border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-[12px] font-bold leading-5 text-[#008d8c]">
+    <div className="rounded-[16px] border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">
       <span className="mr-2 inline-grid h-5 w-5 place-items-center rounded-full bg-[#008d8c] align-middle text-white">
         <Check size={13} />
       </span>

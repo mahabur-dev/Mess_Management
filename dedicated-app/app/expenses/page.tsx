@@ -67,6 +67,7 @@ export default function ExpensesPage() {
       <ScreenHeader
         title="Expenses"
         subtitle="Track and manage all expenses"
+        backHref="/"
         right={
           <HeaderIconButton
             label="Notifications"
@@ -80,7 +81,7 @@ export default function ExpensesPage() {
         }
       />
 
-      <div className="screen -mt-1 space-y-5">
+      <div className="screen space-y-5">
         <section className="grid grid-cols-2 gap-3">
           <ExpenseActionCard href="/add-expense" icon={ReceiptText} title="Add Expense" subtitle="Add new expense" />
           <ExpenseActionCard href="/add-utility" icon={Zap} title="Add Utility" subtitle="Add utility expense" accent="blue" />

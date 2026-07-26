@@ -289,7 +289,7 @@ export default function HomePage() {
         hasUnreadNotices={Boolean(summary?.notices?.length)}
       />
 
-      <div className="screen -mt-4">
+      <div className="screen">
         <div className="quick-actions-card">
           <div className="grid grid-cols-3 gap-1.5">
             {quickActions.map(({ label, href, icon: Icon }) => (

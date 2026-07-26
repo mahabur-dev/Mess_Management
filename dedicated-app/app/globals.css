@@ -14,6 +14,8 @@
   --mist: #edfafa;
   --muted: #65838b;
   --shadow: 0 18px 40px rgba(0, 119, 122, 0.12);
+  --app-header-min-height: calc(66px + env(safe-area-inset-top));
+  --app-header-inset: var(--app-header-min-height);
 }
 
 @theme inline {
@@ -85,12 +87,17 @@ textarea {
 
 .app-shell {
   min-height: 100dvh;
-  padding-bottom: calc(86px + env(safe-area-inset-bottom));
+  padding-top: var(--app-header-inset);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
   overflow-x: hidden;
   overscroll-behavior-x: none;
 }
 
-.app-shell[data-bottom-navigation="hidden"] {
+.app-shell[data-bottom-navigation="visible"] {
+  padding-bottom: calc(86px + env(safe-area-inset-bottom));
+}
+
+.app-shell[data-bottom-action="floating"] {
   padding-bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
@@ -119,9 +126,6 @@ textarea {
 }
 
 .top-hero {
-  position: sticky;
-  top: 0;
-  z-index: 70;
   color: white;
   background:
     radial-gradient(circle at 17% 95%, rgba(75, 191, 192, 0.34), transparent 31%),
@@ -131,6 +135,16 @@ textarea {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 10px 24px rgba(0, 94, 98, 0.12);
   isolation: isolate;
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 70;
+  width: min(430px, 100vw);
+  min-height: var(--app-header-min-height);
+  transform: translateX(-50%);
 }
 
 .app-header-action {

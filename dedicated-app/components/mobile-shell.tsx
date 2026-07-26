@@ -10,15 +10,18 @@ import { appHref } from '@/lib/routes'
 
 export function MobileShell({
   children,
-  showBottomNavigation = true,
+  showBottomNavigation,
+  hasFloatingAction = false,
 }: {
   children: ReactNode
   showBottomNavigation?: boolean
+  hasFloatingAction?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isLoading, user } = useAuth()
   const normalizedPathname = normalizePathname(pathname)
+  const bottomNavigationVisible = showBottomNavigation ?? normalizedPathname === '/'
   const tabs = getBottomTabs(user)
   const canAccess = canAccessAppPath(user, pathname)
 
@@ -37,12 +40,16 @@ export function MobileShell({
   }
 
   return (
-    <div className="phone-frame" data-bottom-navigation={showBottomNavigation ? 'visible' : 'hidden'}>
-      <main className="app-shell" data-bottom-navigation={showBottomNavigation ? 'visible' : 'hidden'}>
+    <div className="phone-frame" data-bottom-navigation={bottomNavigationVisible ? 'visible' : 'hidden'}>
+      <main
+        className="app-shell"
+        data-bottom-navigation={bottomNavigationVisible ? 'visible' : 'hidden'}
+        data-bottom-action={hasFloatingAction ? 'floating' : 'none'}
+      >
         {children}
       </main>
 
-      {showBottomNavigation ? (
+      {bottomNavigationVisible ? (
         <nav className="nav-bar" aria-label="Primary">
           <div className="nav-dock">
             {tabs.map(({ href, label, icon: Icon }) => {

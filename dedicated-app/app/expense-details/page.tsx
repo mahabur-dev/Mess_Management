@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import {
   CircleIcon,
   HeaderIconButton,
@@ -132,11 +132,11 @@ export default function ExpenseDetailsPage() {
     <MobileShell>
       <ScreenHeader
         title="Expense Details"
-        left={<HeaderIconButton href="/expenses" label="Back to expenses" icon={<ChevronLeft size={19} />} />}
+        backHref="/expenses"
         right={<HeaderIconButton label="More actions" icon={<MoreHorizontal size={19} />} />}
       />
 
-      <div className="screen -mt-2 space-y-4">
+      <div className="screen space-y-4">
         {loading ? <div className="rounded-[24px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">Loading expense details...</div> : null}
         {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]">{message}</div> : null}
 

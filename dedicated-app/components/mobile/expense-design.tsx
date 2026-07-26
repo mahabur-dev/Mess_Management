@@ -10,7 +10,6 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   ClipboardList,
   FileText,
@@ -159,15 +158,17 @@ export function CircleIcon({
 export function ScreenHeader({
   title,
   subtitle,
+  backHref,
   left,
   right,
 }: {
   title: string
   subtitle?: string
+  backHref?: string
   left?: ReactNode
   right?: ReactNode
 }) {
-  return <AppHeader title={title} subtitle={subtitle} leading={left} trailing={right} />
+  return <AppHeader title={title} subtitle={subtitle} backHref={backHref} leading={left} trailing={right} />
 }
 
 // export function HeaderIconButton({ href, icon, label }: { href?: string; icon: ReactNode; label: string }) {

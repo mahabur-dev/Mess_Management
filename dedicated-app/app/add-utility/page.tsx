@@ -17,12 +17,14 @@ import {
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
+import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 
 const UTILITY_CATEGORIES: ExpenseCategory[] = ['UTILITY', 'ELECTRICITY', 'GAS', 'WIFI', 'WATER', 'CLEANER', 'MAINTENANCE', 'BUABILL', 'OTHER']
 
 type FormState = {
   category: ExpenseCategory
+  paymentBy: string
   amount: string
   description: string
   receiptUrl: string
@@ -31,6 +33,7 @@ type FormState = {
 
 const INITIAL_FORM: FormState = {
   category: 'UTILITY',
+  paymentBy: '',
   amount: '',
   description: '',
   receiptUrl: '',
@@ -40,6 +43,7 @@ const INITIAL_FORM: FormState = {
 export default function AddUtilityPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
+  const members = useMessMemberOptions(messId, user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [message, setMessage] = useState('')
@@ -62,6 +66,7 @@ export default function AddUtilityPage() {
     try {
       const payload = {
         messId,
+        purchasedBy: form.paymentBy || undefined,
         category: form.category,
         amount: Number(form.amount),
         itemName: LABELS.EXPENSE_CATEGORIES[form.category],
@@ -111,6 +116,15 @@ export default function AddUtilityPage() {
             </DesignedSelect>
 
             <DesignedInput label="Price (৳)" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" />
+
+            <DesignedSelect label="Payment By" icon={expenseFormIcons.member} value={form.paymentBy} onChange={(event) => update('paymentBy', event.target.value)}>
+              <option value="">Select member</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
+                </option>
+              ))}
+            </DesignedSelect>
 
             <DesignedTextarea
               label="Description"

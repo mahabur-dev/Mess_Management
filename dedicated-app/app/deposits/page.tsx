@@ -159,16 +159,17 @@ export default function DepositsPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search member or note..."
           />
-          <div className="mt-3 space-y-3">
+          <div className="flush-list flush-list--panel mt-3">
             {visibleItems.map((item, index) => (
               <DepositListItem
                 key={item.id}
                 item={{ ...item, status: 'APPROVED', method: 'CASH', payment_date: item.date ?? item.created_at } as DepositListRecord}
                 index={index}
                 href={`/edit-deposit?depositId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+                variant="horizontal"
               />
             ))}
-            {!visibleItems.length ? <div className="rounded-[18px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">No deposits loaded.</div> : null}
+            {!visibleItems.length ? <div className="mx-4 rounded-[18px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">No deposits loaded.</div> : null}
           </div>
         </section>
 

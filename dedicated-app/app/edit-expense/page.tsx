@@ -19,19 +19,13 @@ import {
 } from '@/components/mobile/expense-design'
 import { api } from '@/lib/api'
 import { EXPENSE_CATEGORIES, LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
+import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
-
-type MemberOption = {
-  id: string
-  name: string
-  email: string
-}
 
 type ExpenseRecord = {
   id: string
   category: ExpenseCategory
-  buyerId?: string | null
   purchasedBy?: string | null
   amount: string | number
   itemName?: string | null
@@ -45,7 +39,6 @@ type ExpenseRecord = {
 
 type FormState = {
   category: ExpenseCategory
-  buyerId: string
   purchasedBy: string
   amount: string
   itemName: string
@@ -66,11 +59,10 @@ export default function EditExpensePage() {
   const expenseId = searchParams.get('expenseId') ?? ''
   const messId = searchParams.get('messId') ?? user?.memberships?.[0]?.mess_id ?? ''
   const [expense, setExpense] = useState<ExpenseRecord | null>(null)
-  const [members, setMembers] = useState<MemberOption[]>([])
+  const members = useMessMemberOptions(messId, user)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [form, setForm] = useState<FormState>({
     category: 'FOOD',
-    buyerId: '',
     purchasedBy: '',
     amount: '',
     itemName: '',
@@ -83,30 +75,6 @@ export default function EditExpensePage() {
   })
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    if (!messId) return
-    let alive = true
-
-    api
-      .getAllMembers({ limit: 200 })
-      .then((res) => {
-        if (!alive) return
-        const list = Array.isArray(res.data) ? res.data : []
-        const currentMessMembers = list
-          .filter((item: any) => item.mess?.id === messId && item.user)
-          .map((item: any) => ({ id: item.user.id, name: item.user.name, email: item.user.email }))
-        setMembers(currentMessMembers.length ? currentMessMembers : user ? [{ id: user.id, name: user.name, email: user.email }] : [])
-      })
-      .catch(() => {
-        if (!alive) return
-        setMembers(user ? [{ id: user.id, name: user.name, email: user.email }] : [])
-      })
-
-    return () => {
-      alive = false
-    }
-  }, [messId, user])
 
   useEffect(() => {
     if (!expenseId || !messId) return
@@ -127,7 +95,6 @@ export default function EditExpensePage() {
 
         setForm({
           category: found.category ?? 'FOOD',
-          buyerId: found.buyerId ?? '',
           purchasedBy: found.purchasedBy ?? '',
           amount: found.amount ? String(found.amount) : '',
           itemName: found.itemName ?? '',
@@ -157,7 +124,6 @@ export default function EditExpensePage() {
     setBusy(true)
     try {
       const payload = {
-        buyerId: form.buyerId || undefined,
         purchasedBy: form.purchasedBy || undefined,
         category: form.category,
         amount: Number(form.amount),
@@ -225,25 +191,19 @@ export default function EditExpensePage() {
 
             <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => setForm((prev) => ({ ...prev, expenseDate: event.target.value }))} type="date" />
 
-            <FormFieldGrid>
-              <DesignedSelect label="Purchased By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => setForm((prev) => ({ ...prev, purchasedBy: event.target.value }))}>
-                <option value="">Select member</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </DesignedSelect>
-
-              <DesignedSelect label="Buyer ID" icon={expenseFormIcons.member} value={form.buyerId} onChange={(event) => setForm((prev) => ({ ...prev, buyerId: event.target.value }))}>
-                <option value="">Optional</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </DesignedSelect>
-            </FormFieldGrid>
+            <DesignedSelect
+              label={isUtilityExpense ? 'Payment By' : 'Purchased By'}
+              icon={expenseFormIcons.member}
+              value={form.purchasedBy}
+              onChange={(event) => setForm((prev) => ({ ...prev, purchasedBy: event.target.value }))}
+            >
+              <option value="">Select member</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
+                </option>
+              ))}
+            </DesignedSelect>
 
             <DesignedTextarea
               label="Description"

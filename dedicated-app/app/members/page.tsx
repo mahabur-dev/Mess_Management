@@ -128,7 +128,7 @@ export default function MembersPage() {
 
         {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
-        <section className="space-y-2.5">
+        <section className="flush-list">
           {loading ? (
             <div className="rounded-[20px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">Loading members...</div>
           ) : (
@@ -136,6 +136,7 @@ export default function MembersPage() {
               <MemberCard
                 key={member.id}
                 member={member}
+                variant="horizontal"
                 menuOpen={openMenuId === member.id}
                 deleting={deletingId === member.id}
                 onToggleMenu={() => setOpenMenuId((current) => (current === member.id ? null : member.id))}

@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Bell, CalendarDays, ClipboardList, ReceiptText, Tag, Wallet2, Zap } from 'lucide-react'
+import { Bell, CalendarDays, Tag } from 'lucide-react'
 import {
-  ExpenseActionCard,
   ExpenseListItem,
-  ExpenseStatCard,
+  ExpenseOverviewPanel,
+  ExpenseOverviewTile,
   FilterPill,
   HeaderIconButton,
   ScreenHeader,
@@ -82,28 +82,26 @@ export default function ExpensesPage() {
       />
 
       <div className="screen space-y-5">
-        <section className="grid grid-cols-2 gap-3">
-          <ExpenseActionCard href="/add-expense" icon={ReceiptText} title="Add Expense" subtitle="Add new expense" />
-          <ExpenseActionCard href="/add-utility" icon={Zap} title="Add Utility" subtitle="Add utility expense" accent="blue" />
-        </section>
-
-        <section className="grid grid-cols-2 gap-2.5">
-          <ExpenseStatCard
-            icon={ClipboardList}
-            title="Total Items"
+        <ExpenseOverviewPanel>
+          <ExpenseOverviewTile
+            href="/add-expense"
+            value="Add Expense"
+          />
+          <ExpenseOverviewTile
+            href="/add-utility"
+            value="Add Utility"
+            accent="blue"
+          />
+          <ExpenseOverviewTile
+            label="Total Items"
             value={loading ? '...' : items.length}
-            color="#0F9D94"
-            bg="#E8FAF8"
           />
-
-          <ExpenseStatCard
-            icon={Wallet2}
-            title="Total Amount"
+          <ExpenseOverviewTile
+            label="Total Amount"
             value={loading ? '...' : formatBDT(totalAmount)}
-            color="#7C4DFF"
-            bg="#F1EBFF"
+            accent="blue"
           />
-        </section>
+        </ExpenseOverviewPanel>
 
         <SearchPanel search={search} onSearch={setSearch}>
           <FilterPill icon={CalendarDays} label="This Month" active />
@@ -113,7 +111,7 @@ export default function ExpensesPage() {
 
         {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
-        <section className="space-y-3">
+        <section className="flush-list">
           {loading ? <div className="rounded-[24px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">Loading expenses...</div> : null}
           {!loading &&
             filteredItems.map((item) => (
@@ -121,6 +119,7 @@ export default function ExpensesPage() {
                 key={item.id}
                 item={item}
                 href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+                variant="horizontal"
               />
             ))}
           {!loading && !filteredItems.length ? (

@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ClipboardList,
+  ChevronRight,
   CreditCard,
   Landmark,
   MessageSquareWarning,
@@ -15,6 +16,7 @@ import {
   Coins,
 } from 'lucide-react'
 import { AppHeader } from '@/components/app-header'
+import { ExpenseListItem, type ExpenseListRecord } from '@/components/mobile/expense-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { getHomeQuickActions } from '@/lib/app-permissions'
@@ -50,131 +52,21 @@ type MessSummary = {
   name: string
 }
 
-type MonthlyOverviewPoint = {
-  day: string
-  income: number
-  expense: number
-}
-
-type WeeklyPoint = {
-  label: string
-  income: number
-  expense: number
-}
-
 function formatMoney(value?: number | null) {
   if (value === undefined || value === null || Number.isNaN(Number(value))) return '--'
   return `${String.fromCodePoint(0x09f3)} ${Number(value).toLocaleString('en-US')}`
-}
-
-function monthLabelFromNow() {
-  return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-}
-
-function buildWeeklyChart(points: MonthlyOverviewPoint[]): WeeklyPoint[] {
-  const weeks: WeeklyPoint[] = [
-    { label: 'Wk 1', income: 0, expense: 0 },
-    { label: 'Wk 2', income: 0, expense: 0 },
-    { label: 'Wk 3', income: 0, expense: 0 },
-    { label: 'Wk 4', income: 0, expense: 0 },
-  ]
-
-  for (const point of points) {
-    const dayNumber = Number(point.day.slice(0, 2))
-    if (!dayNumber || Number.isNaN(dayNumber)) continue
-    const weekIndex = Math.min(3, Math.floor((dayNumber - 1) / 7))
-    weeks[weekIndex].income += Number(point.income ?? 0)
-    weeks[weekIndex].expense += Number(point.expense ?? 0)
-  }
-
-  return weeks.map((week) => ({
-    ...week,
-    income: Number(week.income.toFixed(2)),
-    expense: Number(week.expense.toFixed(2)),
-  }))
-}
-
-function MiniLineChart({ points }: { points: WeeklyPoint[] }) {
-  const width = 320
-  const height = 150
-  const paddingX = 18
-  const paddingTop = 16
-  const paddingBottom = 28
-
-  const maxValue = Math.max(1, ...points.flatMap((point) => [point.income, point.expense]))
-  const stepX = (width - paddingX * 2) / Math.max(points.length - 1, 1)
-  const chartHeight = height - paddingTop - paddingBottom
-
-  const buildPath = (selector: keyof WeeklyPoint) =>
-    points
-      .map((point, index) => {
-        const x = paddingX + index * stepX
-        const y = paddingTop + chartHeight - (Number(point[selector]) / maxValue) * chartHeight
-        return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
-      })
-      .join(' ')
-
-  const pointsFor = (selector: keyof WeeklyPoint) =>
-    points.map((point, index) => {
-      const x = paddingX + index * stepX
-      const y = paddingTop + chartHeight - (Number(point[selector]) / maxValue) * chartHeight
-      return { x, y }
-    })
-
-  const incomePoints = pointsFor('income')
-  const expensePoints = pointsFor('expense')
-
-  return (
-    <div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-[150px] w-full">
-        <defs>
-          <linearGradient id="incomeFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#0aa0a0" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#0aa0a0" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="expenseFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#4bbfc0" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="#4bbfc0" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        <line x1="18" y1={height - paddingBottom} x2={width - 18} y2={height - paddingBottom} stroke="#cfeeed" strokeWidth="1.2" />
-
-        <path d={`${buildPath('income')} L ${width - paddingX} ${height - paddingBottom} L ${paddingX} ${height - paddingBottom} Z`} fill="url(#incomeFill)" />
-        <path d={`${buildPath('expense')} L ${width - paddingX} ${height - paddingBottom} L ${paddingX} ${height - paddingBottom} Z`} fill="url(#expenseFill)" />
-
-        <path d={buildPath('income')} fill="none" stroke="#0aa0a0" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d={buildPath('expense')} fill="none" stroke="#4bbfc0" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-
-        {incomePoints.map((point, index) => (
-          <circle key={`income-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#0aa0a0" stroke="#ffffff" strokeWidth="2" />
-        ))}
-        {expensePoints.map((point, index) => (
-          <circle key={`expense-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#4bbfc0" stroke="#ffffff" strokeWidth="2" />
-        ))}
-      </svg>
-
-      <div className="mt-1 grid grid-cols-4 text-center text-caption font-medium text-[#65838b]">
-        {points.map((point) => (
-          <div key={point.label}>{point.label}</div>
-        ))}
-      </div>
-    </div>
-  )
 }
 
 export default function HomePage() {
   const router = useRouter()
   const { user, isLoading } = useAuth()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
-  const [monthlyOverview, setMonthlyOverview] = useState<MonthlyOverviewPoint[]>([])
+  const [recentExpenses, setRecentExpenses] = useState<ExpenseListRecord[]>([])
   const [summaryLoading, setSummaryLoading] = useState(false)
-  const [chartLoading, setChartLoading] = useState(false)
+  const [expensesLoading, setExpensesLoading] = useState(false)
   const [activeMess, setActiveMess] = useState<MessSummary | null>(null)
 
-  const greetingName = user?.name?.split(' ')[0] || 'Manager'
-  const chartPoints = useMemo(() => buildWeeklyChart(monthlyOverview), [monthlyOverview])
-  const currentMonthLabel = monthLabelFromNow()
+  const profileName = user?.name || 'Manager'
   const quickActions = getHomeQuickActions(user)
 
   useEffect(() => {
@@ -209,7 +101,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!activeMess?.id) {
       setSummary(null)
-      setMonthlyOverview([])
+      setRecentExpenses([])
       return
     }
 
@@ -233,20 +125,23 @@ export default function HomePage() {
   }, [activeMess?.id])
 
   useEffect(() => {
-    if (!activeMess?.id) return
+    if (!activeMess?.id) {
+      setRecentExpenses([])
+      return
+    }
 
     let cancelled = false
-    setChartLoading(true)
+    setExpensesLoading(true)
     api
-      .getMonthlyOverview(activeMess.id)
-      .then((res) => {
-        if (!cancelled) setMonthlyOverview(Array.isArray(res.data) ? res.data : [])
+      .getExpensesByMess(activeMess.id, { limit: 3, sortBy: 'expense_date', sortOrder: 'desc' })
+      .then((res: any) => {
+        if (!cancelled) setRecentExpenses(Array.isArray(res.data) ? res.data.slice(0, 3) : [])
       })
       .catch(() => {
-        if (!cancelled) setMonthlyOverview([])
+        if (!cancelled) setRecentExpenses([])
       })
       .finally(() => {
-        if (!cancelled) setChartLoading(false)
+        if (!cancelled) setExpensesLoading(false)
       })
 
     return () => {
@@ -282,14 +177,14 @@ export default function HomePage() {
   }
 
   return (
-    <MobileShell>
+    <MobileShell showBottomNavigation>
       <AppHeader
-        title={`Good Morning, ${greetingName}`}
+        title={profileName}
         subtitle="Here's what's happening today"
         hasUnreadNotices={Boolean(summary?.notices?.length)}
       />
 
-      <div className="screen">
+      <div className="screen home-screen">
         <div className="quick-actions-card">
           <div className="grid grid-cols-3 gap-1.5">
             {quickActions.map(({ label, href, icon: Icon }) => (
@@ -308,15 +203,15 @@ export default function HomePage() {
           </div>
         </div>
 
-        <section className="mt-4 rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
+        <section className="home-panel mt-3.5">
           <div className="section-title">Overview</div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             {cards.map((card) => {
               const Icon = card.icon
               return (
                 <div key={card.label} className="overview-card">
-                  <div className="flex items-start gap-2.5">
-                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px]" style={{ backgroundColor: `${card.color}12`, color: card.color }}>
+                  <div className="flex items-start gap-2">
+                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-[9px]" style={{ backgroundColor: `${card.color}12`, color: card.color }}>
                       <Icon size={16} />
                     </div>
                     <div className="min-w-0">
@@ -330,30 +225,38 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mt-4 rounded-[26px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
+        <section className="home-panel mt-3.5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-label font-bold uppercase tracking-[0.12em] text-[#65838b]">Monthly Overview</div>
-              <div className="mt-1 text-caption text-[#65838b]">{currentMonthLabel}</div>
+              <div className="section-title mb-0">Recent Expenses</div>
+              <div className="mt-1 text-caption font-semibold text-[#65838b]">Latest 3 entries</div>
             </div>
-            <div className="flex items-center gap-3 text-caption font-bold text-[#65838b]">
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-[#0aa0a0]" />
-                Income
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-[#4bbfc0]" />
-                Expense
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={() => router.push(appHref('/expenses'))}
+              className="inline-flex h-9 shrink-0 items-center gap-1 rounded-[12px] bg-[#edfafa] px-3 text-caption font-bold text-[#008d8c] transition active:scale-[0.98]"
+            >
+              View All
+              <ChevronRight size={14} strokeWidth={2.7} />
+            </button>
           </div>
 
-          <div className="chart-frame mt-3">
-            {chartLoading ? (
-              <div className="flex h-[178px] items-center justify-center text-label font-semibold text-[#65838b]">Loading chart...</div>
-            ) : (
-              <MiniLineChart points={chartPoints} />
-            )}
+          <div className="flush-list flush-list--home-panel mt-3">
+            {expensesLoading ? (
+              <div className="mx-2.5 rounded-[18px] bg-[#edfafa] px-4 py-5 text-center text-label font-bold text-[#65838b]">Loading expenses...</div>
+            ) : null}
+            {!expensesLoading &&
+              recentExpenses.map((item) => (
+                <ExpenseListItem
+                  key={item.id}
+                  item={item}
+                  href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(activeMess?.id ?? '')}`}
+                  variant="horizontal"
+                />
+              ))}
+            {!expensesLoading && !recentExpenses.length ? (
+              <div className="mx-2.5 rounded-[18px] bg-[#edfafa] px-4 py-5 text-center text-label font-bold text-[#65838b]">No recent expenses found.</div>
+            ) : null}
           </div>
         </section>
       </div>

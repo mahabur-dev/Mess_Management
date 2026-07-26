@@ -52,6 +52,7 @@ export function MemberCard({
   onToggleMenu,
   onView,
   onDelete,
+  variant = 'card',
 }: {
   member: MobileMember
   menuOpen: boolean
@@ -59,6 +60,7 @@ export function MemberCard({
   onToggleMenu: () => void
   onView: () => void
   onDelete: () => void
+  variant?: 'card' | 'horizontal'
 }) {
   useNativeBackAction(menuOpen, () => {
     onToggleMenu()
@@ -68,9 +70,10 @@ export function MemberCard({
   const name = memberName(member)
   const phone = member.user?.phone?.trim()
   const roleLabel = member.role ? member.role.replaceAll('_', ' ') : 'MEMBER'
+  const isHorizontal = variant === 'horizontal'
 
   return (
-    <article className="member-card">
+    <article className={isHorizontal ? 'member-card member-card--horizontal' : 'member-card'}>
       <div className="member-avatar" aria-hidden="true">
         <span>{getInitials(name)}</span>
         <span className={`member-presence ${member.is_active ? 'bg-[#18c978]' : 'bg-[#9aaeb4]'}`} />

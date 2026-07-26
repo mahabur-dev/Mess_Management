@@ -1,6 +1,6 @@
 'use client'
 
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import { ReceiptText } from 'lucide-react'
 import {
   DesignedInput,
@@ -23,17 +23,11 @@ import {
   type ExpenseCategory,
   type ExpensePaymentType,
 } from '@/lib/form-options'
+import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
-
-type MemberOption = {
-  id: string
-  name: string
-  email: string
-}
 
 type FormState = {
   category: ExpenseCategory
-  buyerId: string
   purchasedBy: string
   amount: string
   itemName: string
@@ -47,7 +41,6 @@ type FormState = {
 
 const INITIAL_FORM: FormState = {
   category: 'FOOD',
-  buyerId: '',
   purchasedBy: '',
   amount: '',
   itemName: '',
@@ -62,37 +55,12 @@ const INITIAL_FORM: FormState = {
 export default function AddExpensePage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
-  const [members, setMembers] = useState<MemberOption[]>([])
+  const members = useMessMemberOptions(messId, user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    if (!messId) return
-
-    let alive = true
-    const currentUser = user ? { id: user.id, name: user.name, email: user.email } : null
-    api
-      .getAllMembers({ limit: 200 })
-      .then((res) => {
-        if (!alive) return
-        const list = Array.isArray(res.data) ? res.data : []
-        const currentMessMembers = list
-          .filter((item: any) => item.mess?.id === messId && item.user)
-          .map((item: any) => ({ id: item.user.id, name: item.user.name, email: item.user.email }))
-        setMembers(currentMessMembers.length ? currentMessMembers : currentUser ? [currentUser] : [])
-      })
-      .catch(() => {
-        if (!alive) return
-        setMembers(currentUser ? [currentUser] : [])
-      })
-
-    return () => {
-      alive = false
-    }
-  }, [messId, user])
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }))
@@ -111,7 +79,6 @@ export default function AddExpensePage() {
     try {
       const payload = {
         messId,
-        buyerId: form.buyerId || undefined,
         purchasedBy: form.purchasedBy || undefined,
         category: form.category,
         amount: Number(form.amount),
@@ -174,24 +141,14 @@ export default function AddExpensePage() {
 
             <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" />
 
-            <FormFieldGrid>
-              <DesignedSelect label="Purchased By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)}>
-                <option value="">Select member</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </DesignedSelect>
-              <DesignedSelect label="Buyer ID" icon={expenseFormIcons.member} value={form.buyerId} onChange={(event) => update('buyerId', event.target.value)}>
-                <option value="">Optional</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </DesignedSelect>
-            </FormFieldGrid>
+            <DesignedSelect label="Purchased By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)}>
+              <option value="">Select member</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
+                </option>
+              ))}
+            </DesignedSelect>
 
             <DesignedTextarea
               label="Description"

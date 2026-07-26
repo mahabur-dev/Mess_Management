@@ -2,7 +2,16 @@
 
 import Link from 'next/link'
 import { AppHeader } from '@/components/app-header'
-import type { ComponentType, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import {
+  Children,
+  isValidElement,
+  type ChangeEvent,
+  type ComponentType,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react'
 import {
   BadgeInfo,
   Banknote,
@@ -33,6 +42,7 @@ import {
   LucideIcon,
   type LucideProps,
 } from 'lucide-react'
+import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
 
 type IconType = ComponentType<LucideProps>
@@ -447,6 +457,66 @@ export function ExpenseStatCard({
   )
 }
 
+export function ExpenseOverviewTile({
+  label,
+  value,
+  caption,
+  href,
+  accent = 'teal',
+}: {
+  label?: string
+  value: ReactNode
+  caption?: string
+  href?: string
+  accent?: 'teal' | 'blue'
+}) {
+  const color = accent === 'blue' ? '#1666d9' : '#008d8c'
+  const borderColor = accent === 'blue' ? '#cfe0ff' : '#cfeeed'
+  const valueOnly = !label && !caption
+  const content = (
+    <>
+      {label ? <div className="overview-card-label">{label}</div> : null}
+      <div className={joinClasses('overview-card-value', valueOnly && 'mt-0 w-full text-left')} style={{ color }}>
+        {value}
+      </div>
+      {caption ? <div className="mt-2 truncate text-caption font-semibold text-[#65838b]">{caption}</div> : null}
+    </>
+  )
+  const className = joinClasses(
+    'overview-card block min-h-[82px] transition active:scale-[0.99]',
+    valueOnly && 'grid items-center justify-stretch'
+  )
+
+  if (href) {
+    return (
+      <Link href={href} className={className} style={{ borderColor }}>
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={className} style={{ borderColor }}>
+      {content}
+    </div>
+  )
+}
+
+export function ExpenseOverviewPanel({
+  title = 'Overview',
+  children,
+}: {
+  title?: string
+  children: ReactNode
+}) {
+  return (
+    <section className="home-panel">
+      <div className="section-title">{title}</div>
+      <div className="grid grid-cols-2 gap-2">{children}</div>
+    </section>
+  )
+}
+
 export function SearchPanel({
   search,
   onSearch,
@@ -590,12 +660,15 @@ export type ExpenseListRecord = {
 export function ExpenseListItem({
   item,
   href,
+  variant = 'card',
 }: {
   item: ExpenseListRecord
   href: string
+  variant?: 'card' | 'horizontal'
 }) {
   const Icon = categoryIcon(item.category)
   const tone = categoryTone(item.category)
+  const isHorizontal = variant === 'horizontal'
 
   const label =
     item.itemName?.trim() ||
@@ -610,33 +683,36 @@ export function ExpenseListItem({
   return (
     <Link
       href={href}
-      className="
+      className={joinClasses(
+        `
         group relative flex min-h-[76px]
-        items-center gap-3 overflow-hidden
-        rounded-[17px]
-        border border-white/90
-        bg-white/95
-        px-3 py-3
-        shadow-[0_10px_26px_rgba(18,55,72,0.065)]
+        items-center gap-3 overflow-hidden bg-white/95
         transition-all duration-200
-        hover:-translate-y-0.5
-        hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]
         active:scale-[0.995]
-      "
+        `,
+        isHorizontal
+          ? 'border-y border-x-0 border-[#cfeeed] py-3 shadow-none'
+          : 'rounded-[17px] border border-white/90 px-3 py-3 shadow-[0_10px_26px_rgba(18,55,72,0.065)] hover:-translate-y-0.5 hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]'
+      )}
     >
-      <span
-        className="
-          absolute inset-y-0 left-0
-          w-[3px] rounded-r-full
-        "
-        style={{ backgroundColor: tone.fg }}
-      />
+      {!isHorizontal ? (
+        <span
+          className="
+            absolute inset-y-0 left-0
+            w-[3px] rounded-r-full
+          "
+          style={{ backgroundColor: tone.fg }}
+        />
+      ) : null}
 
       <span
-        className="
-          ml-1 grid h-10 w-10 shrink-0
+        className={joinClasses(
+          `
+          grid h-10 w-10 shrink-0
           place-items-center rounded-full
-        "
+          `,
+          !isHorizontal && 'ml-1'
+        )}
         style={{
           backgroundColor: tone.bg,
           color: tone.fg,
@@ -874,23 +950,97 @@ type DesignedSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   children: ReactNode
 }
 
-export function DesignedSelect({ label, icon: Icon, children, className = '', ...props }: DesignedSelectProps) {
+type OptionElementProps = {
+  value?: string | number
+  children?: ReactNode
+  disabled?: boolean
+}
+
+function getOptionText(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(getOptionText).join('').trim()
+  if (isValidElement<OptionElementProps>(node)) return getOptionText(node.props.children)
+  return ''
+}
+
+function getDesignedSelectOptions(children: ReactNode): MobileSelectOption[] {
+  return Children.toArray(children).flatMap((child) => {
+    if (!isValidElement<OptionElementProps>(child)) return []
+
+    const label = getOptionText(child.props.children)
+    const value = child.props.value === undefined ? label : String(child.props.value)
+
+    return [
+      {
+        value,
+        label,
+        disabled: child.props.disabled,
+      },
+    ]
+  })
+}
+
+export function DesignedSelect({
+  label,
+  icon: Icon,
+  children,
+  className = '',
+  value,
+  defaultValue,
+  disabled,
+  name,
+  required,
+  id,
+  onChange,
+}: DesignedSelectProps) {
+  const options = getDesignedSelectOptions(children)
+  const selectedValue = String(value ?? defaultValue ?? '')
+
+  function handleChange(nextValue: string) {
+    onChange?.({
+      target: { value: nextValue, name },
+      currentTarget: { value: nextValue, name },
+    } as unknown as ChangeEvent<HTMLSelectElement>)
+  }
+
   return (
-    <label className="block">
-      <span className={formLabelClass}>{label}</span>
+    <div className="block">
+      <label className={formLabelClass} htmlFor={id}>
+        {label}
+      </label>
       <span className="relative block">
         <span className={`${formIconClass} z-10`}>
           <Icon size={16} strokeWidth={2.35} />
         </span>
-        <select
-          className={joinClasses(`${formControlClass} appearance-none pr-10`, className)}
-          {...props}
-        >
-          {children}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4f6375]" size={17} strokeWidth={2.4} />
+        <MobileSelectSheet
+          label={label}
+          value={selectedValue}
+          options={options}
+          onChange={handleChange}
+          disabled={disabled}
+          renderTrigger={({ open, selectedLabel, buttonProps }) => (
+            <button
+              {...buttonProps}
+              id={id}
+              className={joinClasses(
+                `${formControlClass} flex items-center pr-10 text-left disabled:cursor-not-allowed disabled:opacity-60`,
+                className,
+              )}
+            >
+              <span className={joinClasses('min-w-0 flex-1 truncate', selectedValue ? 'text-[#123748]' : 'text-[#65838b]')}>
+                {selectedLabel}
+              </span>
+              <ChevronDown
+                className={`pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4f6375] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                size={17}
+                strokeWidth={2.4}
+              />
+            </button>
+          )}
+        />
+        {name ? <input type="hidden" name={name} value={selectedValue} required={required} /> : null}
       </span>
-    </label>
+    </div>
   )
 }
 

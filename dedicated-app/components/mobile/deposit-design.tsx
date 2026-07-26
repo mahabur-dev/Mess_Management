@@ -34,6 +34,10 @@ import { appHref } from '@/lib/routes'
 
 type IconType = ComponentType<LucideProps>
 
+function joinClasses(...classes: Array<string | false | undefined>) {
+  return classes.filter(Boolean).join(' ')
+}
+
 export type DepositListRecord = {
   id: string
   amount: string | number
@@ -139,12 +143,14 @@ export function DepositStatCard({
   caption,
   icon: Icon,
   tone = 'teal',
+  compact = false,
 }: {
   title: string
   value: ReactNode
-  caption: string
+  caption?: ReactNode
   icon?: IconType
   tone?: 'teal' | 'blue' | 'orange'
+  compact?: boolean
 }) {
   const tones = {
     teal: { bg: '#f2ffff', fg: '#00777a', border: '#bfe7e6' },
@@ -155,7 +161,12 @@ export function DepositStatCard({
 
   return (
     <section
-      className="min-h-[108px] rounded-[18px] border bg-white px-2.5 py-3.5 text-center shadow-[0_10px_24px_rgba(18,55,72,0.07)]"
+      className={joinClasses(
+        'border bg-white text-center',
+        compact
+          ? 'grid min-h-[84px] place-items-center rounded-[15px] px-1.5 py-2.5 shadow-none'
+          : 'min-h-[108px] rounded-[18px] px-2.5 py-3.5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]'
+      )}
       style={{ borderColor: selected.border }}
     >
       {Icon ? (
@@ -166,8 +177,16 @@ export function DepositStatCard({
       <div className="text-caption font-bold leading-tight" style={{ color: selected.fg }}>
         {title}
       </div>
-      <div className="mt-2 truncate text-headline font-bold leading-none text-[#123748]">{value}</div>
-      <div className="mt-2 text-caption font-semibold leading-tight text-[#65838b]">{caption}</div>
+      <div className={joinClasses('mt-2 truncate font-bold leading-none text-[#123748]', compact ? 'text-title-sm' : 'text-headline')}>{value}</div>
+      {caption ? <div className="mt-2 text-caption font-semibold leading-tight text-[#65838b]">{caption}</div> : null}
+    </section>
+  )
+}
+
+export function DepositStatPanel({ children }: { children: ReactNode }) {
+  return (
+    <section className="rounded-[20px] border border-[#cfeeed] bg-white/96 p-2 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
+      <div className="grid grid-cols-3 gap-1.5">{children}</div>
     </section>
   )
 }
@@ -366,16 +385,25 @@ export function DepositListItem({
   item,
   href,
   index = 0,
+  variant = 'card',
 }: {
   item: DepositListRecord
   href?: string
   index?: number
+  variant?: 'card' | 'horizontal'
 }) {
   const name = depositMemberName(item)
   const category = depositCategory(item)
   const status = statusTone(item.status)
   const amountTone = status.label === 'Pending' ? '#ff6b00' : '#00777a'
   const date = item.payment_date ?? item.date ?? item.created_at ?? null
+  const isHorizontal = variant === 'horizontal'
+  const className = joinClasses(
+    'flex min-h-[82px] items-center gap-3 bg-white',
+    isHorizontal
+      ? 'border-y border-x-0 border-[#dce9ec] py-3 shadow-none'
+      : 'rounded-[18px] border border-[#dce9ec] px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.055)]'
+  )
   const content = (
     <>
       <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-title-sm font-bold ${avatarTones[index % avatarTones.length]}`}>
@@ -397,13 +425,13 @@ export function DepositListItem({
 
   if (href) {
     return (
-      <Link href={appHref(href)} className="flex min-h-[82px] items-center gap-3 rounded-[18px] border border-[#dce9ec] bg-white px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.055)]">
+      <Link href={appHref(href)} className={className}>
         {content}
       </Link>
     )
   }
 
-  return <div className="flex min-h-[82px] items-center gap-3 rounded-[18px] border border-[#dce9ec] bg-white px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.055)]">{content}</div>
+  return <div className={className}>{content}</div>
 }
 
 export function DepositSearchBar({
@@ -470,16 +498,18 @@ export function DepositCompactFilters({
   onStatusChange,
   month,
   onMonthChange,
+  showLabels = true,
 }: {
   status: PaymentStatus | 'ALL'
   onStatusChange: (value: PaymentStatus | 'ALL') => void
   month: string
   onMonthChange: (value: string) => void
+  showLabels?: boolean
 }) {
   return (
     <div className="grid grid-cols-2 gap-3">
       <label className="relative block">
-        <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Status</span>
+        {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Status</span> : null}
         <select
           className="h-12 w-full appearance-none rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
           value={status}
@@ -494,7 +524,7 @@ export function DepositCompactFilters({
       </label>
 
       <label className="relative block">
-        <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Month</span>
+        {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Month</span> : null}
         <div className="flex h-12 items-center rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)]">
           {month}
         </div>

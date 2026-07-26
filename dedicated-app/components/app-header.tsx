@@ -92,12 +92,14 @@ export function AppHeader({
   const headerRef = useRef<HTMLElement>(null)
 
   const navigateBack = () => {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back()
+    if (backHref) {
+      router.replace(appHref(backHref))
       return
     }
 
-    if (backHref) router.replace(appHref(backHref))
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+    }
   }
 
   const leadingContent =

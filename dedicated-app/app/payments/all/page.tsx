@@ -98,23 +98,34 @@ export default function AllDepositsPage() {
     <MobileShell>
       <TopScreen title="All Deposits" subtitle={range.label} backHref="/payments" />
       <div className="screen space-y-4">
+        <DepositAggregateSummary entries={visibleItems.length} amount={totalAmount} />
+
         <DepositSearchBar value={search} onChange={setSearch} />
 
-        <DepositCompactFilters status={statusFilter} onStatusChange={setStatusFilter} month={month} onMonthChange={setMonth} />
-
-        <DepositAggregateSummary entries={visibleItems.length} amount={totalAmount} />
+        <DepositCompactFilters
+          status={statusFilter}
+          onStatusChange={setStatusFilter}
+          month={month}
+          onMonthChange={setMonth}
+          showLabels={false}
+        />
 
         <section className="space-y-3">
           <DepositSectionTitle title={`Deposits (${visibleItems.length})`} />
           {loading ? <div className="rounded-[18px] bg-white p-5 text-label font-semibold text-[#65838b]">Loading deposits...</div> : null}
-          {!loading && visibleItems.map((item, index) => (
-            <DepositListItem
-              key={item.id}
-              item={item}
-              index={index}
-              href={`/edit-payment?paymentId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-            />
-          ))}
+          {!loading && visibleItems.length ? (
+            <div className="flush-list">
+              {visibleItems.map((item, index) => (
+                <DepositListItem
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  href={`/edit-payment?paymentId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+                  variant="horizontal"
+                />
+              ))}
+            </div>
+          ) : null}
           {!loading && !visibleItems.length ? <div className="rounded-[18px] bg-white p-5 text-label font-semibold text-[#65838b]">No deposits found.</div> : null}
         </section>
 

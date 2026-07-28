@@ -37,6 +37,7 @@ model Mess {
   memberships    MessMembership[]
   meals          Meal[]
   expenses       Expense[]
+  deposit_ledgers DepositLedger[]
   deposits       Deposit[]
   monthly_bills  MonthlyBill[]
   shopping_lists ShoppingList[]

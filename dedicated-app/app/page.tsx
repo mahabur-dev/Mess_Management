@@ -16,6 +16,7 @@ import {
   Coins,
 } from 'lucide-react'
 import { AppHeader } from '@/components/app-header'
+import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { ExpenseListItem, type ExpenseListRecord } from '@/components/mobile/expense-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
@@ -65,9 +66,11 @@ export default function HomePage() {
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [expensesLoading, setExpensesLoading] = useState(false)
   const [activeMess, setActiveMess] = useState<MessSummary | null>(null)
+  const [activeMessLoading, setActiveMessLoading] = useState(false)
 
   const profileName = user?.name || 'Manager'
-  const quickActions = getHomeQuickActions(user)
+  const hasWorkspace = Boolean(activeMess?.id)
+  const quickActions = hasWorkspace ? getHomeQuickActions(user) : []
 
   useEffect(() => {
     if (!isLoading && !user) router.replace('/login')
@@ -79,10 +82,12 @@ export default function HomePage() {
     const membershipMess = user.memberships?.find((membership) => membership.mess)?.mess ?? null
     if (membershipMess) {
       setActiveMess(membershipMess)
+      setActiveMessLoading(false)
       return
     }
 
     let cancelled = false
+    setActiveMessLoading(true)
     api
       .getMesses()
       .then((res) => {
@@ -91,6 +96,9 @@ export default function HomePage() {
       })
       .catch(() => {
         if (!cancelled) setActiveMess(null)
+      })
+      .finally(() => {
+        if (!cancelled) setActiveMessLoading(false)
       })
 
     return () => {
@@ -185,80 +193,90 @@ export default function HomePage() {
       />
 
       <div className="screen home-screen">
-        <div className="quick-actions-card">
-          <div className="grid grid-cols-3 gap-1.5">
-            {quickActions.map(({ label, href, icon: Icon }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => router.push(appHref(href))}
-                className="quick-action-button"
-              >
-                <div className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c]">
-                  <Icon size={19} />
-                </div>
-                <div className="text-label font-semibold text-[#123748]">{label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <section className="home-panel mt-3.5">
-          <div className="section-title">Overview</div>
-          <div className="grid grid-cols-2 gap-2">
-            {cards.map((card) => {
-              const Icon = card.icon
-              return (
-                <div key={card.label} className="overview-card">
-                  <div className="flex items-start gap-2">
-                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-[9px]" style={{ backgroundColor: `${card.color}12`, color: card.color }}>
-                      <Icon size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="overview-card-label">{card.label}</div>
-                      <div className="overview-card-value">{card.value}</div>
-                    </div>
+        {activeMessLoading ? (
+          <div className="quick-actions-card px-4 py-5 text-center text-label font-bold text-[#65838b]">Checking mess workspace...</div>
+        ) : hasWorkspace ? (
+          <div className="quick-actions-card">
+            <div className="grid grid-cols-3 gap-1.5">
+              {quickActions.map(({ label, href, icon: Icon }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => router.push(appHref(href))}
+                  className="quick-action-button"
+                >
+                  <div className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c]">
+                    <Icon size={19} />
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-
-        <section className="home-panel mt-3.5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="section-title mb-0">Recent Expenses</div>
-              <div className="mt-1 text-caption font-semibold text-[#65838b]">Latest 3 entries</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => router.push(appHref('/expenses'))}
-              className="inline-flex h-9 shrink-0 items-center gap-1 rounded-[12px] bg-[#edfafa] px-3 text-caption font-bold text-[#008d8c] transition active:scale-[0.98]"
-            >
-              View All
-              <ChevronRight size={14} strokeWidth={2.7} />
-            </button>
-          </div>
-
-          <div className="flush-list flush-list--home-panel mt-3">
-            {expensesLoading ? (
-              <div className="mx-2.5 rounded-[18px] bg-[#edfafa] px-4 py-5 text-center text-label font-bold text-[#65838b]">Loading expenses...</div>
-            ) : null}
-            {!expensesLoading &&
-              recentExpenses.map((item) => (
-                <ExpenseListItem
-                  key={item.id}
-                  item={item}
-                  href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(activeMess?.id ?? '')}`}
-                  variant="horizontal"
-                />
+                  <div className="text-label font-semibold text-[#123748]">{label}</div>
+                </button>
               ))}
-            {!expensesLoading && !recentExpenses.length ? (
-              <div className="mx-2.5 rounded-[18px] bg-[#edfafa] px-4 py-5 text-center text-label font-bold text-[#65838b]">No recent expenses found.</div>
-            ) : null}
+            </div>
           </div>
-        </section>
+        ) : (
+          <MessOnboardingActions />
+        )}
+
+        {hasWorkspace ? (
+          <>
+            <section className="home-panel mt-3.5">
+              <div className="section-title">Overview</div>
+              <div className="grid grid-cols-2 gap-2">
+                {cards.map((card) => {
+                  const Icon = card.icon
+                  return (
+                    <div key={card.label} className="overview-card">
+                      <div className="flex items-start gap-2">
+                        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-[9px]" style={{ backgroundColor: `${card.color}12`, color: card.color }}>
+                          <Icon size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="overview-card-label">{card.label}</div>
+                          <div className="overview-card-value">{card.value}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="home-panel mt-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="section-title mb-0">Recent Expenses</div>
+                  <div className="mt-1 text-caption font-semibold text-[#65838b]">Latest 3 entries</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push(appHref('/expenses'))}
+                  className="inline-flex h-9 shrink-0 items-center gap-1 rounded-[12px] bg-[#edfafa] px-3 text-caption font-bold text-[#008d8c] transition active:scale-[0.98]"
+                >
+                  View All
+                  <ChevronRight size={14} strokeWidth={2.7} />
+                </button>
+              </div>
+
+              <div className="flush-list flush-list--home-panel mt-3">
+                {expensesLoading ? (
+                  <div className="mx-2.5 rounded-[18px] bg-[#edfafa] px-4 py-5 text-center text-label font-bold text-[#65838b]">Loading expenses...</div>
+                ) : null}
+                {!expensesLoading &&
+                  recentExpenses.map((item) => (
+                    <ExpenseListItem
+                      key={item.id}
+                      item={item}
+                      href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(activeMess?.id ?? '')}`}
+                      variant="horizontal"
+                    />
+                  ))}
+                {!expensesLoading && !recentExpenses.length ? (
+                  <div className="mx-2.5 rounded-[18px] bg-[#edfafa] px-4 py-5 text-center text-label font-bold text-[#65838b]">No recent expenses found.</div>
+                ) : null}
+              </div>
+            </section>
+          </>
+        ) : null}
       </div>
     </MobileShell>
   )

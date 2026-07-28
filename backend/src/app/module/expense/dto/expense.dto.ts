@@ -1,16 +1,35 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
-  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUrl,
   Min,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { ExpenseCategory, ExpensePaymentType } from '@prisma/client';
+import { Transform, Type } from 'class-transformer';
+import { ExpenseCategory, ExpensePaymentType, ExpenseRecordType, ExpenseSplitMethod, ExpenseUsedBy, UtilityType } from '@prisma/client';
+
+const PAID_FROM_INPUTS = ['PERSONAL', 'FROM_DEPOSIT', 'MESS_DEPOSIT', 'COLLECTED_FUND'] as const;
+
+export class CustomExpenseShareDto {
+  @ApiProperty({ example: 'uuid-member-id' })
+  @IsString()
+  @IsNotEmpty()
+  memberId: string;
+
+  @ApiProperty({ example: 300 })
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === '' ? undefined : Number(value),
+  )
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+}
 
 export class CreateExpenseDto {
   @ApiProperty({ example: 'uuid-mess-id', description: 'Mess ID' })
@@ -28,9 +47,19 @@ export class CreateExpenseDto {
   @IsString()
   purchasedBy?: string;
 
+  @ApiPropertyOptional({ enum: ExpenseRecordType, example: ExpenseRecordType.EXPENSE })
+  @IsOptional()
+  @IsIn(Object.values(ExpenseRecordType))
+  type?: ExpenseRecordType;
+
   @ApiProperty({ enum: ExpenseCategory, example: ExpenseCategory.GROCERY })
-  @IsEnum(ExpenseCategory)
+  @IsIn(Object.values(ExpenseCategory))
   category: ExpenseCategory;
+
+  @ApiPropertyOptional({ enum: UtilityType, example: UtilityType.ELECTRICITY })
+  @IsOptional()
+  @IsIn(Object.values(UtilityType))
+  utilityType?: UtilityType;
 
   @ApiProperty({ example: 1200.5, description: 'Expense amount' })
   @Transform(({ value }) =>
@@ -63,6 +92,11 @@ export class CreateExpenseDto {
   @IsDateString()
   expenseDate: string;
 
+  @ApiPropertyOptional({ example: '2026-07-01', description: 'First day of billing month' })
+  @IsOptional()
+  @IsDateString()
+  billingMonth?: string;
+
   @ApiPropertyOptional({ example: 'Monthly grocery run' })
   @IsOptional()
   @IsString()
@@ -73,17 +107,70 @@ export class CreateExpenseDto {
   @IsUrl()
   receiptUrl?: string;
 
-  @ApiPropertyOptional({ enum: ExpensePaymentType, example: ExpensePaymentType.FROM_DEPOSIT, description: 'FROM_DEPOSIT (split among members) or PERSONAL (adds to member deposit)' })
+  @ApiPropertyOptional({ enum: PAID_FROM_INPUTS, example: 'PERSONAL', description: 'PERSONAL, MESS_DEPOSIT/FROM_DEPOSIT, or COLLECTED_FUND' })
   @IsOptional()
-  @IsEnum(ExpensePaymentType)
+  @IsIn(PAID_FROM_INPUTS)
+  paidFrom?: ExpensePaymentType | 'MESS_DEPOSIT';
+
+  @ApiPropertyOptional({ enum: ExpensePaymentType, example: ExpensePaymentType.FROM_DEPOSIT, description: 'Backward-compatible alias for paidFrom' })
+  @IsOptional()
+  @IsIn(Object.values(ExpensePaymentType))
   paymentType?: ExpensePaymentType;
+
+  @ApiPropertyOptional({ enum: ExpenseUsedBy, example: ExpenseUsedBy.ALL_MEMBERS })
+  @IsOptional()
+  @IsIn(Object.values(ExpenseUsedBy))
+  usedBy?: ExpenseUsedBy;
+
+  @ApiPropertyOptional({ enum: ExpenseSplitMethod, example: ExpenseSplitMethod.EQUAL })
+  @IsOptional()
+  @IsIn(Object.values(ExpenseSplitMethod))
+  splitMethod?: ExpenseSplitMethod;
+
+  @ApiPropertyOptional({ type: [String], example: ['uuid-member-id-1', 'uuid-member-id-2'] })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Array.isArray(value) ? value : String(value).split(',').map((item) => item.trim()).filter(Boolean);
+  })
+  @IsArray()
+  @IsString({ each: true })
+  selectedMemberIds?: string[];
+
+  @ApiPropertyOptional({ type: [CustomExpenseShareDto] })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomExpenseShareDto)
+  customShares?: CustomExpenseShareDto[];
 }
 
 export class UpdateExpenseDto {
   @ApiPropertyOptional({ enum: ExpenseCategory })
   @IsOptional()
-  @IsEnum(ExpenseCategory)
+  @IsIn(Object.values(ExpenseCategory))
   category?: ExpenseCategory;
+
+  @ApiPropertyOptional({ enum: ExpenseRecordType })
+  @IsOptional()
+  @IsIn(Object.values(ExpenseRecordType))
+  type?: ExpenseRecordType;
+
+  @ApiPropertyOptional({ enum: UtilityType })
+  @IsOptional()
+  @IsIn(Object.values(UtilityType))
+  utilityType?: UtilityType;
 
   @ApiPropertyOptional({ example: 'uuid-buyer-id' })
   @IsOptional()
@@ -128,6 +215,11 @@ export class UpdateExpenseDto {
   @IsDateString()
   expenseDate?: string;
 
+  @ApiPropertyOptional({ example: '2026-07-01' })
+  @IsOptional()
+  @IsDateString()
+  billingMonth?: string;
+
   @ApiPropertyOptional({ example: 'Updated description' })
   @IsOptional()
   @IsString()
@@ -138,11 +230,56 @@ export class UpdateExpenseDto {
   @IsUrl()
   receiptUrl?: string;
 
-  @ApiPropertyOptional({ enum: ExpensePaymentType, description: 'FROM_DEPOSIT or PERSONAL' })
+  @ApiPropertyOptional({ enum: PAID_FROM_INPUTS })
   @IsOptional()
-  @IsEnum(ExpensePaymentType)
+  @IsIn(PAID_FROM_INPUTS)
+  paidFrom?: ExpensePaymentType | 'MESS_DEPOSIT';
+
+  @ApiPropertyOptional({ enum: ExpensePaymentType, description: 'FROM_DEPOSIT, PERSONAL, or COLLECTED_FUND' })
+  @IsOptional()
+  @IsIn(Object.values(ExpensePaymentType))
   paymentType?: ExpensePaymentType;
+
+  @ApiPropertyOptional({ enum: ExpenseUsedBy })
+  @IsOptional()
+  @IsIn(Object.values(ExpenseUsedBy))
+  usedBy?: ExpenseUsedBy;
+
+  @ApiPropertyOptional({ enum: ExpenseSplitMethod })
+  @IsOptional()
+  @IsIn(Object.values(ExpenseSplitMethod))
+  splitMethod?: ExpenseSplitMethod;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Array.isArray(value) ? value : String(value).split(',').map((item) => item.trim()).filter(Boolean);
+  })
+  @IsArray()
+  @IsString({ each: true })
+  selectedMemberIds?: string[];
+
+  @ApiPropertyOptional({ type: [CustomExpenseShareDto] })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomExpenseShareDto)
+  customShares?: CustomExpenseShareDto[];
 }
+
+export class ExpensePreviewDto extends CreateExpenseDto {}
 
 export class RequestPriceReviewDto {
   @ApiProperty({ example: 'Please review the rice price and update the correct amount.' })
@@ -159,7 +296,7 @@ export class ExpenseFilterDto {
 
   @ApiPropertyOptional({ enum: ExpenseCategory })
   @IsOptional()
-  @IsEnum(ExpenseCategory)
+  @IsIn(Object.values(ExpenseCategory))
   category?: ExpenseCategory;
 
   @ApiPropertyOptional({ example: 'John' })

@@ -4,6 +4,7 @@ import type { ComponentType } from 'react'
 import {
   Bell,
   ClipboardList,
+  DoorOpen,
   House,
   Landmark,
   LayoutGrid,
@@ -57,13 +58,15 @@ export function canAccessLevel(user: AuthUser | null | undefined, access: Access
 }
 
 const protectedRoutes: AppRouteItem[] = [
+  { href: '/create-mess', label: 'Create Mess', icon: House, access: 'public', exact: true },
+  { href: '/request-mess', label: 'Request Mess', icon: DoorOpen, access: 'public', exact: true },
   { href: '/members', label: 'Members', icon: Users, access: 'manager' },
   { href: '/add-member', label: 'Add Member', icon: Users, access: 'manager', exact: true },
   { href: '/edit-member', label: 'Edit Member', icon: Users, access: 'manager' },
-  { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'manager' },
+  { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
   { href: '/add-expense', label: 'Add Expense', icon: ReceiptText, access: 'manager', exact: true },
   { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'manager', exact: true },
-  { href: '/expense-details', label: 'Expense Details', icon: ReceiptText, access: 'manager' },
+  { href: '/expense-details', label: 'Expense Details', icon: ReceiptText, access: 'mess' },
   { href: '/edit-expense', label: 'Edit Expense', icon: ReceiptText, access: 'manager' },
   { href: '/deposits', label: 'Deposits', icon: Landmark, access: 'manager' },
   { href: '/edit-deposit', label: 'Edit Deposit', icon: Landmark, access: 'manager' },
@@ -140,7 +143,7 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
   const managerLinks: AppRouteItem[] = [
     { href: '/members', label: 'Members', icon: Users, access: 'manager' },
     { href: '/meals', label: 'Meal Sheet', icon: UtensilsCrossed, access: 'mess' },
-    { href: '/expenses', label: 'Bazar/Expenses', icon: ReceiptText, access: 'manager' },
+    { href: '/expenses', label: 'Bazar/Expenses', icon: ReceiptText, access: 'mess' },
     { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
     { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
     { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
@@ -150,6 +153,7 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
 
   const memberLinks: AppRouteItem[] = [
     { href: '/meals', label: 'My Meals', icon: UtensilsCrossed, access: 'mess' },
+    { href: '/expenses', label: 'My Expenses', icon: ReceiptText, access: 'mess' },
     { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
     { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
     { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
@@ -197,6 +201,8 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/edit-complaint', fallback: '/complaints', exact: true },
   { href: '/profile', fallback: '/more', exact: true },
   { href: '/settings', fallback: '/more', exact: true },
+  { href: '/create-mess', fallback: '/', exact: true },
+  { href: '/request-mess', fallback: '/', exact: true },
 ]
 
 export function getAppBackFallback(user: AuthUser | null | undefined, pathname: string) {

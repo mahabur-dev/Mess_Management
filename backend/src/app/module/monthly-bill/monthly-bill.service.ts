@@ -4,7 +4,15 @@ import {
   GenerateBillDto,
   UpdateBillStatusDto,
 } from './dto/monthly-bill.dto';
-import { AttendanceStatus, BillStatus, ExpenseCategory, MealName, Prisma } from '@prisma/client';
+import {
+  AttendanceStatus,
+  BillStatus,
+  DepositLedgerType,
+  ExpenseCategory,
+  ExpensePaymentType,
+  MealName,
+  Prisma,
+} from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -242,6 +250,8 @@ export class MonthlyBillService {
       mealAttendances,
       depositGroups,
       paymentGroups,
+      expenseShares,
+      personalCreditGroups,
     ] = await Promise.all([
       this.prisma.expense.aggregate({
         where: {
@@ -250,6 +260,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: {
             in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
           },
@@ -266,6 +279,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: ExpenseCategory.ELECTRICITY,
         },
         _sum: {
@@ -280,6 +296,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: ExpenseCategory.GAS,
         },
         _sum: {
@@ -294,6 +313,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: ExpenseCategory.WIFI,
         },
         _sum: {
@@ -308,6 +330,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: ExpenseCategory.CLEANER,
         },
         _sum: {
@@ -322,6 +347,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: {
             in: [
               ExpenseCategory.UTILITY,
@@ -391,6 +419,43 @@ export class MonthlyBillService {
           amount: true,
         },
       }),
+
+      this.prisma.expenseShare.findMany({
+        where: {
+          expense: {
+            mess_id: messId,
+            billing_month: month,
+            status: 'CONFIRMED',
+            payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          },
+        },
+        select: {
+          member_id: true,
+          share_amount: true,
+          expense: {
+            select: {
+              category: true,
+            },
+          },
+        },
+      }),
+
+      this.prisma.depositLedger.groupBy({
+        by: ['member_id'],
+        where: {
+          mess_id: messId,
+          type: DepositLedgerType.PERSONAL_EXPENSE_CREDIT,
+          direction: 'CREDIT',
+          member_id: { not: null },
+          created_at: {
+            gte: month,
+            lt: nextMonth,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
     ]);
 
     const mealCountByUser: Record<string, number> = {};
@@ -416,6 +481,27 @@ export class MonthlyBillService {
 
     const depositByUser = this.makeAmountMap(depositGroups);
     const paymentByUser = this.makeAmountMap(paymentGroups);
+    const personalCreditByUser = personalCreditGroups.reduce<Record<string, number>>((acc, row) => {
+      if (row.member_id) acc[row.member_id] = this.toFixedNumber(row._sum.amount);
+      return acc;
+    }, {});
+
+    const allocatedFoodByUser: Record<string, number> = {};
+    const allocatedUtilityByUser: Record<string, number> = {};
+    const allocatedRentByUser: Record<string, number> = {};
+
+    for (const share of expenseShares) {
+      const value = this.toFixedNumber(share.share_amount);
+      const category = share.expense.category;
+
+      if (category === ExpenseCategory.FOOD || category === ExpenseCategory.GROCERY) {
+        allocatedFoodByUser[share.member_id] = this.toFixedNumber((allocatedFoodByUser[share.member_id] ?? 0) + value);
+      } else if (category === ExpenseCategory.RENT) {
+        allocatedRentByUser[share.member_id] = this.toFixedNumber((allocatedRentByUser[share.member_id] ?? 0) + value);
+      } else {
+        allocatedUtilityByUser[share.member_id] = this.toFixedNumber((allocatedUtilityByUser[share.member_id] ?? 0) + value);
+      }
+    }
 
     const splitByMember = (value: unknown) =>
       activeMembers.length > 0
@@ -454,17 +540,20 @@ export class MonthlyBillService {
       const prevBalance = prevBalanceByMember[user_id] ?? 0;
       const memberMeals = mealCountByUser[user_id] ?? 0;
 
-      const foodBill = this.toFixedNumber(memberMeals * perMealRate);
+      const foodBill = this.toFixedNumber(memberMeals * perMealRate + (allocatedFoodByUser[user_id] ?? 0));
       // console.log("food bill : ", foodBill)
-      const seatRent = this.calculateSeatRent(
-        rooms,
-        room_no,
-        monthly_rent,
-        mess.monthly_rent,
+      const seatRent = this.toFixedNumber(
+        this.calculateSeatRent(
+          rooms,
+          room_no,
+          monthly_rent,
+          mess.monthly_rent,
+        ) + (allocatedRentByUser[user_id] ?? 0),
       );
 
-      const depositTotal = depositByUser[user_id] ?? 0;
+      const depositTotal = this.toFixedNumber((depositByUser[user_id] ?? 0) + (personalCreditByUser[user_id] ?? 0));
       const paidAmount = paymentByUser[user_id] ?? 0;
+      const allocatedUtility = allocatedUtilityByUser[user_id] ?? 0;
 
       // deposit_total already includes auto-created deposits from PERSONAL expenses
       const effectiveDepositTotal = this.toFixedNumber(depositTotal);
@@ -478,7 +567,7 @@ export class MonthlyBillService {
       // When prevBalance is -200 (extra): costs - payments - 200 → decreases due (credit) ✓
 
       const rawDue =
-        foodBill + seatRent + utilityPerMember - totalPaid + prevBalance;
+        foodBill + seatRent + utilityPerMember + allocatedUtility - totalPaid + prevBalance;
 
       const finalDue = this.toFixedNumber(Math.max(rawDue, 0));
       // balance stores the actual net position (can be negative for overpayments)
@@ -501,8 +590,8 @@ export class MonthlyBillService {
         gas_bill: gasShare,
         wifi_bill: wifiShare,
         cleaner_bill: cleanerShare,
-        extra_cost: utilityExpensesAmount,
-        utility_share: utilityPerMember,
+        extra_cost: this.toFixedNumber(utilityExpensesAmount + allocatedUtility),
+        utility_share: this.toFixedNumber(utilityPerMember + allocatedUtility),
         deposit_total: depositTotal,
         paid_amount: paidAmount,
         prev_balance: prevBalance,

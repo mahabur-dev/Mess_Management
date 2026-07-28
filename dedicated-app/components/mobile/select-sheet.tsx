@@ -50,6 +50,7 @@ export function MobileSelectSheet<T extends string>({
 }: MobileSelectSheetProps<T>) {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [portalElement, setPortalElement] = useState<HTMLDivElement | null>(null)
   const sheetId = useId()
   const titleId = `${sheetId}-title`
   const selectedOption = useMemo(
@@ -61,6 +62,22 @@ export function MobileSelectSheet<T extends string>({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const element = document.createElement('div')
+    element.setAttribute('data-mobile-select-portal', '')
+    document.body.appendChild(element)
+    setPortalElement(element)
+
+    return () => {
+      setPortalElement(null)
+      if (document.body.contains(element)) {
+        document.body.removeChild(element)
+      }
+    }
+  }, [mounted])
 
   useNativeBackAction(open, () => {
     setOpen(false)
@@ -90,7 +107,7 @@ export function MobileSelectSheet<T extends string>({
     setOpen(false)
   }
 
-  const sheet = open && mounted
+  const sheet = open && portalElement
     ? createPortal(
         <div
           className="fixed left-1/2 top-0 z-[120] flex h-[100dvh] w-[min(430px,100vw)] -translate-x-1/2 items-end justify-center bg-[#062b35]/45 px-3 pb-[calc(14px+env(safe-area-inset-bottom))] pt-6 backdrop-blur-[3px]"
@@ -170,7 +187,7 @@ export function MobileSelectSheet<T extends string>({
             </div>
           </section>
         </div>,
-        document.body,
+        portalElement,
       )
     : null
 

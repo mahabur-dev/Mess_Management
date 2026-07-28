@@ -35,6 +35,7 @@ import {
   Trash2,
   UploadCloud,
   User,
+  UsersRound,
   UserPlus,
   UtensilsCrossed,
   WalletCards,
@@ -877,14 +878,15 @@ export function PaymentTypeSelector({
   onChange: (value: ExpensePaymentType) => void
 }) {
   const choices: Array<{ value: ExpensePaymentType; label: string; icon: IconType }> = [
-    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
     { value: 'PERSONAL', label: 'Personal', icon: User },
+    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
+    { value: 'COLLECTED_FUND', label: 'Collected Fund', icon: UsersRound },
   ]
 
   return (
     <div>
-      <h2 className="mb-3 text-caption font-bold uppercase leading-tight text-[#008d8c]">Deposit Type</h2>
-      <div className="grid grid-cols-2 gap-2.5">
+      <h2 className="mb-3 text-caption font-bold uppercase leading-tight text-[#008d8c]">Paid From</h2>
+      <div className="grid grid-cols-3 gap-2.5">
         {choices.map((choice) => {
           const selected = value === choice.value
           const Icon = choice.icon
@@ -916,7 +918,7 @@ export function PaymentTypeSelector({
       </div>
       <p className="mt-3 flex items-center gap-2 rounded-[13px] bg-[#edfafa] px-3.5 py-3 text-label font-medium text-[#52727b]">
         <BadgeInfo className="shrink-0 text-[#65838b]" size={16} />
-        Amount will be split among all members in monthly bill calculation.
+        Preview the split before saving so member bills stay accurate.
       </p>
     </div>
   )

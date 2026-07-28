@@ -527,6 +527,41 @@ textarea {
   opacity: 0.72;
 }
 
+.mess-onboarding-panel {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.97);
+  padding: 15px;
+  box-shadow: 0 14px 30px rgba(0, 119, 122, 0.1);
+}
+
+.mess-onboarding-action {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 12px;
+  border-radius: 16px;
+  padding: 12px;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.mess-onboarding-action:active {
+  transform: scale(0.985);
+  opacity: 0.86;
+}
+
+.mess-onboarding-action--primary {
+  background: linear-gradient(135deg, #008d8c 0%, #00777a 100%);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(0, 119, 122, 0.2);
+}
+
+.mess-onboarding-action--secondary {
+  border: 1px solid #cfeeed;
+  background: #ffffff;
+}
+
 .home-panel {
   border-radius: 22px;
   background: #ffffff;

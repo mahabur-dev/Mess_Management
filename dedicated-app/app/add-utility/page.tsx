@@ -1,43 +1,92 @@
 'use client'
 
 import { type FormEvent, useMemo, useState } from 'react'
-import { Zap } from 'lucide-react'
+import { ArrowLeft, Eye, Save, Scale, User, Users, UtensilsCrossed, Zap } from 'lucide-react'
 import {
   DesignedInput,
   DesignedSelect,
   DesignedTextarea,
+  FormFieldGrid,
   FormPageShell,
   FormSection,
   FormStatusMessage,
   PaymentTypeSelector,
-  SubmitGradientButton,
   UploadField,
   expenseFormIcons,
+  formatTaka,
 } from '@/components/mobile/expense-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
-import { LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
+import { LABELS, type ExpenseCategory, type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 
-const UTILITY_CATEGORIES: ExpenseCategory[] = ['UTILITY', 'ELECTRICITY', 'GAS', 'WIFI', 'WATER', 'CLEANER', 'MAINTENANCE', 'BUABILL', 'OTHER']
+const UTILITY_OPTIONS: Array<{ category: ExpenseCategory; utilityType: string; label: string }> = [
+  { category: 'ELECTRICITY', utilityType: 'ELECTRICITY', label: 'Electricity' },
+  { category: 'GAS', utilityType: 'GAS', label: 'Gas' },
+  { category: 'WATER', utilityType: 'WATER', label: 'Water' },
+  { category: 'WIFI', utilityType: 'WIFI', label: 'Wifi' },
+  { category: 'CLEANER', utilityType: 'CLEANING', label: 'Cleaning' },
+  { category: 'UTILITY', utilityType: 'OTHER', label: 'Other' },
+]
 
 type FormState = {
   category: ExpenseCategory
+  utilityType: string
   paymentBy: string
   amount: string
+  billingMonth: string
+  billDate: string
   description: string
   receiptUrl: string
   paymentType: ExpensePaymentType
+  usedBy: ExpenseUsedBy
+  splitMethod: ExpenseSplitMethod
+  selectedMemberIds: string[]
+}
+
+type PreviewData = {
+  title: string
+  amount: number
+  usedBy: ExpenseUsedBy
+  splitMethod: ExpenseSplitMethod
+  payerCredit: number
+  totalSharedCost: number
+  shares: Array<{ memberId: string; memberName?: string | null; shareAmount: number }>
 }
 
 const INITIAL_FORM: FormState = {
-  category: 'UTILITY',
+  category: 'ELECTRICITY',
+  utilityType: 'ELECTRICITY',
   paymentBy: '',
   amount: '',
+  billingMonth: new Date().toISOString().slice(0, 7),
+  billDate: new Date().toISOString().slice(0, 10),
   description: '',
   receiptUrl: '',
   paymentType: 'FROM_DEPOSIT',
+  usedBy: 'ALL_MEMBERS',
+  splitMethod: 'EQUAL',
+  selectedMemberIds: [],
+}
+
+function SmallChoice({
+  active,
+  icon: Icon,
+  title,
+  onClick,
+}: {
+  active: boolean
+  icon: typeof User
+  title: string
+  onClick: () => void
+}) {
+  return (
+    <button type="button" onClick={onClick} className={`flex min-h-[54px] items-center gap-2 rounded-[14px] border px-3 text-label font-bold ${active ? 'border-[#008d8c] bg-[#edfafa] text-[#008d8c]' : 'border-[#dce5ec] bg-white text-[#123748]'}`}>
+      <Icon size={16} />
+      {title}
+    </button>
+  )
 }
 
 export default function AddUtilityPage() {
@@ -49,46 +98,72 @@ export default function AddUtilityPage() {
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [preview, setPreview] = useState<PreviewData | null>(null)
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setPreview(null)
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-    setMessage('')
-    setSuccess(false)
+  function payload() {
+    return {
+      messId,
+      type: 'UTILITY',
+      category: form.category,
+      utilityType: form.utilityType,
+      amount: Number(form.amount),
+      itemName: LABELS.EXPENSE_CATEGORIES[form.category],
+      paidFrom: form.paymentType === 'FROM_DEPOSIT' ? 'MESS_DEPOSIT' : form.paymentType,
+      paymentType: form.paymentType,
+      usedBy: form.usedBy,
+      splitMethod: form.splitMethod,
+      selectedMemberIds: form.usedBy === 'SELECTED_MEMBERS' ? form.selectedMemberIds : undefined,
+      purchasedBy: form.paymentBy || undefined,
+      expenseDate: form.billDate,
+      billingMonth: `${form.billingMonth}-01`,
+      description: form.description.trim() || undefined,
+      receiptUrl: form.receiptUrl.trim() || undefined,
+    }
+  }
 
+  async function handlePreview(event?: FormEvent) {
+    event?.preventDefault()
+    setMessage('')
     if (!messId) return setMessage('No mess selected.')
-    if (!form.amount) return setMessage('Price is required.')
+    if (!form.amount) return setMessage('Amount is required.')
+    if (form.usedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return setMessage('Select members first.')
 
     setBusy(true)
     try {
-      const payload = {
-        messId,
-        purchasedBy: form.paymentBy || undefined,
-        category: form.category,
-        amount: Number(form.amount),
-        itemName: LABELS.EXPENSE_CATEGORIES[form.category],
-        expenseDate: new Date().toISOString().slice(0, 10),
-        description: form.description.trim() || undefined,
-        receiptUrl: form.receiptUrl.trim() || undefined,
-        paymentType: form.paymentType,
-      }
+      const res = await api.previewExpense(payload())
+      setPreview(res.data as PreviewData)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to preview utility.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
+  async function handleSave() {
+    setBusy(true)
+    setMessage('')
+    try {
+      const body = payload()
       if (receiptFile) {
         const data = new FormData()
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') data.append(key, String(value))
+        Object.entries(body).forEach(([key, value]) => {
+          if (value === undefined || value === null || value === '') return
+          if (Array.isArray(value) || typeof value === 'object') data.append(key, JSON.stringify(value))
+          else data.append(key, String(value))
         })
         data.append('receipt', receiptFile)
         await api.createExpense(data)
       } else {
-        await api.createExpense(payload)
+        await api.createExpense(body)
       }
-
       setForm(INITIAL_FORM)
       setReceiptFile(null)
+      setPreview(null)
       setSuccess(true)
       setMessage('Utility saved successfully.')
     } catch (error) {
@@ -98,25 +173,97 @@ export default function AddUtilityPage() {
     }
   }
 
+  if (preview) {
+    return (
+      <MobileShell>
+        <FormPageShell title="Split Preview" description="See exactly how this utility will be calculated" icon={Eye} backHref="/add-utility">
+          <FormSection>
+            <div className="text-body font-bold text-[#123748]">{preview.title}</div>
+            <div className="mt-2 text-headline font-extrabold text-[#008d8c]">{formatTaka(preview.amount)}</div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-[14px] bg-[#f7fbfb] p-3 text-label font-bold text-[#123748]">{LABELS.EXPENSE_USED_BY[preview.usedBy]}</div>
+              <div className="rounded-[14px] bg-[#f7fbfb] p-3 text-label font-bold text-[#123748]">{LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}</div>
+            </div>
+          </FormSection>
+          <FormSection title="Member-wise Preview">
+            {preview.shares.map((share) => (
+              <div key={share.memberId} className="mb-2 flex items-center justify-between rounded-[14px] border border-[#edf1f4] bg-white px-3 py-3">
+                <span className="text-label font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
+                <span className="text-body font-extrabold text-[#1666d9]">{formatTaka(share.shareAmount)}</span>
+              </div>
+            ))}
+          </FormSection>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => setPreview(null)} className="flex h-[50px] items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c]">
+              <ArrowLeft size={17} />
+              Back
+            </button>
+            <button type="button" onClick={handleSave} disabled={busy} className="flex h-[50px] items-center justify-center gap-2 rounded-[15px] bg-[#008d8c] text-label font-bold text-white disabled:opacity-70">
+              <Save size={17} />
+              {busy ? 'Saving...' : 'Confirm & Save'}
+            </button>
+          </div>
+          <FormStatusMessage message={message} success={success} />
+        </FormPageShell>
+      </MobileShell>
+    )
+  }
+
   return (
     <MobileShell>
-      <form onSubmit={handleSubmit}>
-        <FormPageShell title="Add Utility" description="Add a new utility cost for your mess" icon={Zap} backHref="/expenses">
+      <form onSubmit={handlePreview}>
+        <FormPageShell title="Add Utility" description="Record electricity, gas, water, or wifi cost" icon={Zap} backHref="/expenses">
           <FormSection>
             <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} />
           </FormSection>
-
+          <FormSection title="Used By">
+            <div className="grid grid-cols-2 gap-2">
+              <SmallChoice active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" onClick={() => update('usedBy', 'SELF_ONLY')} />
+              <SmallChoice active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected Members" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} />
+              <SmallChoice active={form.usedBy === 'ALL_MEMBERS'} icon={Users} title="All Members" onClick={() => update('usedBy', 'ALL_MEMBERS')} />
+              <SmallChoice active={form.usedBy === 'MEAL_ON_MEMBERS'} icon={UtensilsCrossed} title="Meal-On Members" onClick={() => update('usedBy', 'MEAL_ON_MEMBERS')} />
+            </div>
+            {form.usedBy === 'SELECTED_MEMBERS' ? (
+              <div className="grid grid-cols-2 gap-2">
+                {members.map((member) => {
+                  const active = form.selectedMemberIds.includes(member.id)
+                  return (
+                    <button key={member.id} type="button" onClick={() => update('selectedMemberIds', active ? form.selectedMemberIds.filter((id) => id !== member.id) : [...form.selectedMemberIds, member.id])} className={`rounded-[13px] border px-3 py-2.5 text-left text-label font-bold ${active ? 'border-[#008d8c] bg-[#edfafa] text-[#008d8c]' : 'border-[#dce5ec] bg-white text-[#123748]'}`}>
+                      {member.name}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : null}
+          </FormSection>
+          <FormSection title="Split Method">
+            <div className="grid grid-cols-2 gap-2">
+              <SmallChoice active={form.splitMethod === 'EQUAL'} icon={Scale} title="Equal" onClick={() => update('splitMethod', 'EQUAL')} />
+              <SmallChoice active={form.splitMethod === 'MEAL_COUNT'} icon={UtensilsCrossed} title="Meal Count" onClick={() => update('splitMethod', 'MEAL_COUNT')} />
+            </div>
+          </FormSection>
           <FormSection title="Utility Details">
-            <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
-              {UTILITY_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {LABELS.EXPENSE_CATEGORIES[category]}
+            <DesignedSelect
+              label="Utility Type"
+              icon={expenseFormIcons.category}
+              value={form.utilityType}
+              onChange={(event) => {
+                const option = UTILITY_OPTIONS.find((item) => item.utilityType === event.target.value) ?? UTILITY_OPTIONS[0]
+                update('utilityType', option.utilityType)
+                update('category', option.category)
+              }}
+            >
+              {UTILITY_OPTIONS.map((option) => (
+                <option key={option.utilityType} value={option.utilityType}>
+                  {option.label}
                 </option>
               ))}
             </DesignedSelect>
-
-            <DesignedInput label="Price (৳)" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" />
-
+            <FormFieldGrid>
+              <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" />
+              <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.billDate} onChange={(event) => update('billDate', event.target.value)} type="date" />
+            </FormFieldGrid>
+            <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" />
             <DesignedSelect label="Payment By" icon={expenseFormIcons.member} value={form.paymentBy} onChange={(event) => update('paymentBy', event.target.value)}>
               <option value="">Select member</option>
               {members.map((member) => (
@@ -125,25 +272,17 @@ export default function AddUtilityPage() {
                 </option>
               ))}
             </DesignedSelect>
-
-            <DesignedTextarea
-              label="Description"
-              icon={expenseFormIcons.description}
-              value={form.description}
-              onChange={(event) => update('description', event.target.value.slice(0, 250))}
-              placeholder="Add utility note..."
-              count={`${form.description.length}/250`}
-            />
+            <DesignedTextarea label="Description" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add utility note..." count={`${form.description.length}/250`} />
           </FormSection>
-
           <FormSection>
             <DesignedInput label="Receipt URL" icon={expenseFormIcons.receipt} value={form.receiptUrl} onChange={(event) => update('receiptUrl', event.target.value)} placeholder="https://..." />
             <UploadField fileName={receiptFile?.name} onChange={setReceiptFile} />
           </FormSection>
-
           <FormStatusMessage message={message} success={success} />
-
-          <SubmitGradientButton busy={busy}>Save Utility</SubmitGradientButton>
+          <button type="submit" disabled={busy} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c] disabled:opacity-70">
+            <Eye size={17} />
+            {busy ? 'Calculating...' : 'Preview Split'}
+          </button>
         </FormPageShell>
       </form>
     </MobileShell>

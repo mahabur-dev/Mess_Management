@@ -19,6 +19,7 @@ import {
 } from '@/components/mobile/expense-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 
@@ -41,6 +42,10 @@ type ExpenseRecord = {
   buyer?: { name?: string | null } | null
   created_by?: { name?: string | null } | null
   addedBy?: { name?: string | null } | null
+  usedBy?: string | null
+  splitMethod?: string | null
+  shares?: Array<{ memberId: string; memberName?: string | null; shareAmount: number; isPayer?: boolean }>
+  impactSummary?: { payerCredit?: number; sharedCost?: number; includedInMonthlyBill?: boolean }
 }
 
 function DetailRow({ icon: Icon, label, value }: { icon: typeof detailIcons.amount; label: string; value: string }) {
@@ -59,6 +64,7 @@ export default function ExpenseDetailsPage() {
   const router = useRouter()
   const searchParams = useQueryParams()
   const { user } = useAuth()
+  const isManager = canManageMess(user)
   const expenseId = searchParams.get('expenseId') ?? ''
   const messId = searchParams.get('messId') ?? user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? ''
   const [expense, setExpense] = useState<ExpenseRecord | null>(null)
@@ -73,11 +79,10 @@ export default function ExpenseDetailsPage() {
     setLoading(true)
     setMessage('')
     api
-      .getExpensesByMess(messId, { limit: 500, sortBy: 'expense_date', sortOrder: 'desc' })
+      .getExpenseById(expenseId)
       .then((res) => {
         if (!alive) return
-        const list = Array.isArray(res.data) ? (res.data as ExpenseRecord[]) : []
-        const found = list.find((item) => item.id === expenseId) ?? null
+        const found = (res.data as ExpenseRecord | null) ?? null
         setExpense(found)
         if (!found) setMessage('Expense not found.')
       })
@@ -102,6 +107,8 @@ export default function ExpenseDetailsPage() {
       amount: formatBDT(expense.amount),
       date: formatDate(expense.expenseDate ?? expense.expense_date),
       payment: expense.payment_method || paymentLabel(expense.paymentType),
+      usedBy: expense.usedBy ? expense.usedBy.replaceAll('_', ' ') : 'ALL MEMBERS',
+      splitMethod: expense.splitMethod ? expense.splitMethod.replaceAll('_', ' ') : 'MEAL COUNT',
       addedOn: formatDateTime(addedOn),
       purchasedBy: expense.purchased_by?.name || expense.buyer?.name || expense.purchasedBy || 'Mahabur Rahman',
       addedBy: expense.created_by?.name || expense.addedBy?.name || 'Mahabur Rahman',
@@ -174,8 +181,23 @@ export default function ExpenseDetailsPage() {
               <DetailRow icon={detailIcons.category} label="Category" value={details.category.toUpperCase()} />
               <DetailRow icon={detailIcons.amount} label="Amount" value={details.amount} />
               <DetailRow icon={detailIcons.date} label="Expense Date" value={details.date} />
-              <DetailRow icon={detailIcons.payment} label="Deposit Method" value={details.payment} />
+              <DetailRow icon={detailIcons.payment} label="Paid From" value={details.payment} />
+              <DetailRow icon={detailIcons.user} label="Used By" value={details.usedBy} />
+              <DetailRow icon={detailIcons.amount} label="Split Method" value={details.splitMethod} />
               <DetailRow icon={detailIcons.added} label="Added On" value={details.addedOn} />
+            </section>
+
+            <section className="detail-card">
+              <h2 className="text-body font-bold text-[#123748]">Who Shares This</h2>
+              <div className="mt-3 space-y-2">
+                {(expense.shares ?? []).map((share) => (
+                  <div key={share.memberId} className="flex items-center justify-between gap-3 rounded-[13px] border border-[#edf1f4] bg-white px-3 py-2.5">
+                    <span className="min-w-0 truncate text-label font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
+                    <span className="shrink-0 text-label font-extrabold text-[#1666d9]">{formatBDT(share.shareAmount)}</span>
+                  </div>
+                ))}
+                {!expense.shares?.length ? <div className="text-label font-semibold text-[#65838b]">No member-wise shares recorded.</div> : null}
+              </div>
             </section>
 
             <section className="detail-card flex gap-3">
@@ -194,7 +216,25 @@ export default function ExpenseDetailsPage() {
               </div>
             </section>
 
-            <section className="grid grid-cols-2 gap-3 pb-3">
+            <section className="detail-card">
+              <h2 className="text-body font-bold text-[#123748]">Impact Summary</h2>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-[13px] bg-[#edfafa] px-2 py-3">
+                  <div className="text-caption font-bold text-[#65838b]">Payer Credit</div>
+                  <div className="mt-1 text-label font-extrabold text-[#008d8c]">{formatBDT(expense.impactSummary?.payerCredit)}</div>
+                </div>
+                <div className="rounded-[13px] bg-[#edfafa] px-2 py-3">
+                  <div className="text-caption font-bold text-[#65838b]">Shared Cost</div>
+                  <div className="mt-1 text-label font-extrabold text-[#1666d9]">{formatBDT(expense.impactSummary?.sharedCost)}</div>
+                </div>
+                <div className="rounded-[13px] bg-[#edfafa] px-2 py-3">
+                  <div className="text-caption font-bold text-[#65838b]">Included In</div>
+                  <div className="mt-1 text-caption font-extrabold text-[#008d8c]">{expense.impactSummary?.includedInMonthlyBill ? 'Monthly Bill' : 'History Only'}</div>
+                </div>
+              </div>
+            </section>
+
+            {isManager ? <section className="grid grid-cols-2 gap-3 pb-3">
               <Link
                 href={`/edit-expense?expenseId=${encodeURIComponent(expense.id)}&messId=${encodeURIComponent(messId)}`}
                 className="flex h-[50px] items-center justify-center gap-2 rounded-[13px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c]"
@@ -211,7 +251,7 @@ export default function ExpenseDetailsPage() {
                 <Trash2 size={17} />
                 {deleting ? 'Deleting...' : 'Delete Expense'}
               </button>
-            </section>
+            </section> : null}
           </>
         ) : null}
       </div>

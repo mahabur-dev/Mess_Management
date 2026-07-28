@@ -1,9 +1,6 @@
 import { clearStoredToken, getStoredToken, type AuthUser, type GlobalRole } from './auth'
 
-const DEFAULT_API_URL = 'https://api.messzen.com/api/v1'
-  // process.env.NODE_ENV === 'development'
-  //   ? 'https://api.messzen.com/api/v1'
-  //   : 'https://api.messzen.com/api/v1'
+const DEFAULT_API_URL = 'http://localhost:5001/api/v1'
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/+$/, '')
 
@@ -138,6 +135,28 @@ class Api {
     return this.request<any[]>('/messes/my-mess')
   }
 
+  createMess(data: Record<string, unknown>) {
+    return this.request('/messes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  getActiveMesses(params?: Record<string, QueryValue>) {
+    return this.request('/messes/active', { params })
+  }
+
+  requestMemberJoin(messId: string) {
+    return this.request('/member-join-requests', {
+      method: 'POST',
+      body: JSON.stringify({ messId }),
+    })
+  }
+
+  getMyMemberJoinRequests(params?: Record<string, QueryValue>) {
+    return this.request('/member-join-requests/my', { params })
+  }
+
   getMessDashboard(messId: string) {
     return this.request<any>(`/dashboard/mess/${messId}`)
   }
@@ -174,6 +193,29 @@ class Api {
 
   getExpensesByMess(messId: string, params?: Record<string, QueryValue>) {
     return this.request(`/expense/mess/${messId}`, { params })
+  }
+
+  getExpenseSummary(messId: string, month?: string) {
+    return this.request('/expense/summary', { params: { messId, month } })
+  }
+
+  getMyExpenseDetails(messId: string, month?: string) {
+    return this.request('/expense/my-details', { params: { messId, month } })
+  }
+
+  getManagerMemberExpenses(messId: string, month?: string) {
+    return this.request('/expense/manager/members', { params: { messId, month } })
+  }
+
+  getExpenseById(id: string) {
+    return this.request(`/expense/${id}`)
+  }
+
+  previewExpense(data: Record<string, unknown>) {
+    return this.request('/expense/preview', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   }
 
   createExpense(data: Record<string, unknown> | FormData) {

@@ -664,7 +664,7 @@ export function ExpenseListItem({
   variant = 'card',
 }: {
   item: ExpenseListRecord
-  href: string
+  href?: string
   variant?: 'card' | 'horizontal'
 }) {
   const Icon = categoryIcon(item.category)
@@ -681,21 +681,8 @@ export function ExpenseListItem({
       : item.payment_method ||
         paymentLabel(item.paymentType)
 
-  return (
-    <Link
-      href={href}
-      className={joinClasses(
-        `
-        group relative flex min-h-[76px]
-        items-center gap-3 overflow-hidden bg-white/95
-        transition-all duration-200
-        active:scale-[0.995]
-        `,
-        isHorizontal
-          ? 'border-y border-x-0 border-[#cfeeed] py-3 shadow-none'
-          : 'rounded-[17px] border border-white/90 px-3 py-3 shadow-[0_10px_26px_rgba(18,55,72,0.065)] hover:-translate-y-0.5 hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]'
-      )}
-    >
+  const content = (
+    <>
       {!isHorizontal ? (
         <span
           className="
@@ -727,7 +714,7 @@ export function ExpenseListItem({
           className="
             block truncate
             text-label font-bold
-            uppercase tracking-[-0.01em]
+            uppercase
             text-[#061638]
           "
         >
@@ -760,28 +747,50 @@ export function ExpenseListItem({
         className="
           shrink-0 whitespace-nowrap
           text-right text-body
-          font-bold tracking-[-0.02em]
+          font-bold
         "
         style={{ color: tone.fg }}
       >
         {formatTaka(item.amount)}
       </span>
 
-      <span
-        className="
-          grid h-8 w-8 shrink-0
-          place-items-center
-          rounded-full
-          bg-[#f4f7f8]
-          text-[#123748]
-          transition-all duration-200
-          group-hover:bg-[#edfafa]
-          group-hover:text-[#008d8c]
-        "
-      >
-        <ChevronRight size={16} strokeWidth={2.7} />
-      </span>
+      {href ? (
+        <span
+          className="
+            grid h-8 w-8 shrink-0
+            place-items-center
+            rounded-full
+            bg-[#f4f7f8]
+            text-[#123748]
+            transition-all duration-200
+            group-hover:bg-[#edfafa]
+            group-hover:text-[#008d8c]
+          "
+        >
+          <ChevronRight size={16} strokeWidth={2.7} />
+        </span>
+      ) : null}
+    </>
+  )
+
+  const className = joinClasses(
+        `
+        group relative flex min-h-[76px]
+        items-center gap-3 overflow-hidden bg-white/95
+        transition-all duration-200
+        active:scale-[0.995]
+        `,
+        isHorizontal
+          ? 'border-y border-x-0 border-[#cfeeed] py-3 shadow-none'
+          : 'rounded-[17px] border border-white/90 px-3 py-3 shadow-[0_10px_26px_rgba(18,55,72,0.065)] hover:-translate-y-0.5 hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]'
+  )
+
+  return href ? (
+    <Link href={href} className={className}>
+      {content}
     </Link>
+  ) : (
+    <div className={className}>{content}</div>
   )
 }
 

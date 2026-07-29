@@ -3,7 +3,7 @@
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { useAuth } from '../providers'
-import { ChevronRight, LogOut, User } from 'lucide-react'
+import { ChevronRight, House, LogOut, User } from 'lucide-react'
 import Link from 'next/link'
 import { getMoreLinks } from '@/lib/app-permissions'
 import { appHref } from '@/lib/routes'
@@ -14,7 +14,7 @@ export default function MorePage() {
 
   return (
     <MobileShell>
-      <TopScreen title="More" subtitle="Settings and support" />
+      <TopScreen title="More" subtitle="Settings and support" backHref="/" />
       <div className="screen space-y-4">
         <div className="glass rounded-[28px] p-4">
           <div className="flex items-center gap-3">
@@ -26,6 +26,16 @@ export default function MorePage() {
               <div className="text-caption font-medium text-[#65838b]">{user?.email ?? ''}</div>
             </div>
           </div>
+        </div>
+
+        <div className="glass rounded-[28px] overflow-hidden">
+          <Link href={appHref('/')} className="flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-3">
+              <House size={18} className="text-[#008d8c]" />
+              <div className="text-label font-bold text-[#123748]">Back to Home</div>
+            </div>
+            <ChevronRight size={18} className="text-[#7da0a6]" />
+          </Link>
         </div>
 
         <div className="glass rounded-[28px] overflow-hidden">

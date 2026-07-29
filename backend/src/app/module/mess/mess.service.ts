@@ -101,6 +101,14 @@ export class MessService {
     _count: { select: { memberships: true, deposits: true, meals: true } },
   } as const;
 
+  private readonly activeMessForJoinSelect = {
+    ...this.messSelect,
+    memberships: {
+      where: { is_active: true },
+      select: { room_no: true, is_active: true },
+    },
+  } as const satisfies Prisma.MessSelect;
+
   private readonly memberJoinRequestInclude = {
     requester: { select: { id: true, name: true, email: true, phone: true, role: true } },
     reviewer: { select: { id: true, name: true, email: true } },
@@ -143,6 +151,13 @@ export class MessService {
       ...mess,
       rooms,
     };
+  }
+
+  private getCollectionMessage(
+    total: number,
+    messages: { empty: string; found: string },
+  ) {
+    return total > 0 ? messages.found : messages.empty;
   }
 
   private async verifyManagerAccess(messId: string, userId: string, role: string) {
@@ -459,14 +474,7 @@ export class MessService {
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        include: {
-          creator: { select: { id: true, name: true, email: true } },
-          memberships: {
-            where: { is_active: true },
-            select: { room_no: true, is_active: true },
-          },
-          _count: { select: { memberships: true, deposits: true, meals: true } },
-        },
+        select: this.activeMessForJoinSelect,
       }),
     ]);
 
@@ -476,7 +484,14 @@ export class MessService {
       return rest;
     });
 
-    return { data, meta: buildMeta(total, page, limit) };
+    return {
+      message: this.getCollectionMessage(total, {
+        found: 'Active messes fetched successfully',
+        empty: 'No active messes are available right now',
+      }),
+      data,
+      meta: buildMeta(total, page, limit),
+    };
   }
 
   async requestMemberJoin(userId: string, dto: RequestMemberJoinDto) {

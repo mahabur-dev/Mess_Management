@@ -91,7 +91,7 @@ export function ExpenseSummaryCard({
   const content = (
     <>
       <span className="expense-summary-card__icon" style={{ backgroundColor: tone.background, color: tone.foreground }}>
-        <Icon size={25} strokeWidth={2.25} />
+        <Icon size={21} strokeWidth={2.3} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="expense-summary-card__label">{label}</span>
@@ -100,7 +100,7 @@ export function ExpenseSummaryCard({
         </span>
         {caption ? <span className="expense-summary-card__caption">{caption}</span> : null}
       </span>
-      {href ? <ChevronRight size={20} className="shrink-0 text-[#123748]" strokeWidth={2.4} /> : null}
+      {href ? <ChevronRight size={18} className="shrink-0 text-[#123748]" strokeWidth={2.4} /> : null}
     </>
   )
 
@@ -111,6 +111,58 @@ export function ExpenseSummaryCard({
     </Link>
   ) : (
     <div className={className}>{content}</div>
+  )
+}
+
+export function ExpenseDetailsCta({
+  href,
+  title = 'View Details',
+  subtitle = 'Monthly costs in one place',
+  buttonLabel = 'View details',
+}: {
+  href: string
+  title?: string
+  subtitle?: string
+  buttonLabel?: string
+}) {
+  return (
+    <section className="expense-details-cta" aria-label={title}>
+      <span className="expense-details-cta__icon" aria-hidden="true">
+        <CircleDollarSign size={34} strokeWidth={1.9} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="expense-details-cta__title">{title}</span>
+        <span className="expense-details-cta__subtitle">{subtitle}</span>
+        <Link href={href} className="expense-details-cta__button">
+          {buttonLabel}
+          <ChevronRight size={15} strokeWidth={2.6} />
+        </Link>
+      </span>
+    </section>
+  )
+}
+
+export function ExpenseBreakdownList({
+  items,
+}: {
+  items: Array<{ icon: LucideIcon; label: string; value: ReactNode; accent?: Accent }>
+}) {
+  return (
+    <div className="expense-breakdown-list">
+      {items.map((item) => {
+        const Icon = item.icon
+        const tone = ACCENTS[item.accent ?? 'teal']
+        return (
+          <div key={item.label} className="expense-breakdown-row">
+            <span className="expense-breakdown-row__icon" style={{ backgroundColor: tone.background, color: tone.foreground }}>
+              <Icon size={16} strokeWidth={2.35} />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-label font-semibold text-[#123748]">{item.label}</span>
+            <span className="text-label font-black text-[#123748]">{item.value}</span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 

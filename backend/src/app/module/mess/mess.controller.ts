@@ -84,7 +84,7 @@ export class MessController {
   async findActiveForJoin(@Query() query: MessFilterDto) {
     const result = await this.messService.findActiveMessesForJoin(query);
     return {
-      message: 'Active messes fetched successfully',
+      message: result.message,
       meta: result.meta,
       data: result.data,
     };

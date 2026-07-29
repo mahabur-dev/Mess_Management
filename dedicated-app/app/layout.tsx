@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { HydrationDomGuard } from '@/components/hydration-dom-guard'
 import { Providers } from './providers'
 
 export const viewport: Viewport = {
@@ -19,9 +18,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <HydrationDomGuard />
-      </head>
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

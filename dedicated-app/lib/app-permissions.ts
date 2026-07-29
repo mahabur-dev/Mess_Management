@@ -147,7 +147,7 @@ const onboardingTabPaths = new Set(['/', '/profile', '/settings', '/more'])
  */
 export function shouldShowDefaultBottomNavigation(user: AuthUser | null | undefined, pathname: string) {
   const normalizedPathname = normalizePathname(pathname)
-  if (normalizedPathname === '/') return true
+  if (normalizedPathname === '/' || normalizedPathname === '/more') return true
   return !hasActiveMess(user) && onboardingTabPaths.has(normalizedPathname)
 }
 

@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import {
   Bell,
-  ChevronRight,
   CircleDollarSign,
   CookingPot,
   Filter,
@@ -26,6 +25,7 @@ import {
 } from '@/components/mobile/expense-design'
 import {
   ExpenseSegmentedControl,
+  ExpenseDetailsCta,
   ExpenseSummaryCard,
   ExpenseSurface,
   MemberInitials,
@@ -191,37 +191,21 @@ export default function ExpensesPage() {
         {view === 'MY' ? (
           <>
             <div className="expense-summary-grid">
-              <ExpenseSummaryCard icon={CookingPot} label="My Food Bill" value={loading ? '...' : formatTaka(my?.foodBill)} caption="Food & grocery" href="/monthly-bill" />
-              <ExpenseSummaryCard icon={Zap} label="My Utility Bill" value={loading ? '...' : formatTaka(my?.utilityBill)} caption="Utilities" accent="blue" href="/monthly-bill" />
-              <ExpenseSummaryCard icon={House} label="My Room Rent" value={loading ? '...' : formatTaka(my?.roomRent)} caption="Current month" accent="violet" href="/monthly-bill" />
-              <ExpenseSummaryCard icon={WalletCards} label="This Month Total" value={loading ? '...' : formatTaka(my?.total)} caption={`${my?.transactionCount ?? 0} transactions`} accent="green" href="/monthly-bill" />
+              <ExpenseSummaryCard icon={CookingPot} label="Food" value={loading ? '...' : formatTaka(my?.foodBill)} />
+              <ExpenseSummaryCard icon={Zap} label="Utility" value={loading ? '...' : formatTaka(my?.utilityBill)} accent="blue" />
+              <ExpenseSummaryCard icon={House} label="Rent" value={loading ? '...' : formatTaka(my?.roomRent)} accent="violet" />
+              <ExpenseSummaryCard icon={WalletCards} label="Total" value={loading ? '...' : formatTaka(my?.total)} caption={`${my?.transactionCount ?? 0} txns`} accent="green" />
             </div>
 
-            <Link href="/monthly-bill" className="expense-details-banner">
-              <span className="expense-details-banner__art" aria-hidden="true">
-                <CircleDollarSign size={42} strokeWidth={1.8} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-title-sm font-extrabold">View Details — All Your Expenses</span>
-                <span className="mt-1.5 block text-label font-medium text-white/82">Food, utility and rent information for this month in one place.</span>
-                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-label font-bold text-[#008d8c]">
-                  View all details <ChevronRight size={16} />
-                </span>
-              </span>
-              <ChevronRight size={22} className="shrink-0" />
-            </Link>
+            <ExpenseDetailsCta href="/monthly-bill" title="View Details" subtitle="Food, utility and rent" />
 
             <ExpenseSurface
               title="Recent Expenses"
-              aside={
-                <Link href="/monthly-bill" className="flex items-center gap-1 text-label font-bold text-[#008d8c]">
-                  View all <ChevronRight size={16} />
-                </Link>
-              }
+              aside={<span className="text-caption font-bold text-[#65838b]">This month</span>}
             >
               <div className="flush-list flush-list--home-panel">
                 {(summary?.recentExpenses ?? []).map((item) => (
-                  <ExpenseListItem key={item.id} item={item} href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`} variant="horizontal" />
+                  <ExpenseListItem key={item.id} item={item} variant="horizontal" />
                 ))}
                 {!loading && !summary?.recentExpenses?.length ? <div className="expense-empty-state mx-3">No expenses found for this month.</div> : null}
               </div>
@@ -263,14 +247,14 @@ export default function ExpensesPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2.5">
-                <ExpenseSummaryCard icon={CircleDollarSign} label="Total Expenses" value={formatTaka(manager?.totalExpenses)} />
+                <ExpenseSummaryCard icon={CircleDollarSign} label="Total" value={formatTaka(manager?.totalExpenses)} />
                 <ExpenseSummaryCard icon={Zap} label="Utility" value={formatTaka(manager?.totalUtility)} accent="blue" />
-                <ExpenseSummaryCard icon={Landmark} label="From Deposit" value={formatTaka(manager?.fromDeposit)} accent="green" />
+                <ExpenseSummaryCard icon={Landmark} label="Deposit" value={formatTaka(manager?.fromDeposit)} accent="green" />
                 <ExpenseSummaryCard icon={UsersRound} label="Members" value={manager?.members ?? 0} accent="violet" />
               </div>
             </ExpenseSurface>
 
-            <ExpenseSurface title="Member Expense Overview" aside={<span className="text-caption font-medium text-[#65838b]">Tap to view details</span>}>
+            <ExpenseSurface title="Member Overview" aside={<span className="text-caption font-bold text-[#65838b]">{filteredMembers.length} shown</span>}>
               <div className="-mx-3 overflow-hidden rounded-[16px] border border-[#edf1f4]">
                 {filteredMembers.map((item, index) => (
                   <div key={item.member?.id ?? index} className="flex items-center gap-3 border-b border-[#edf1f4] bg-white px-3 py-3 last:border-b-0">
@@ -287,7 +271,6 @@ export default function ExpensesPage() {
                       <div className={`text-label font-bold ${Number(item.due ?? 0) > 0 ? 'text-[#e02d37]' : 'text-[#65838b]'}`}>{formatTaka(item.due)}</div>
                       <MemberStatus member={item} />
                     </div>
-                    <ChevronRight size={18} className="shrink-0 text-[#526d79]" />
                   </div>
                 ))}
                 {!loading && !filteredMembers.length ? <div className="expense-empty-state">No matching members found.</div> : null}

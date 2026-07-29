@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { BadgeCheck, CalendarDays, CookingPot, FilePlus2, House, Info, Landmark, Pencil, WalletCards, Zap } from 'lucide-react'
 import { ExpenseListItem, ScreenHeader, formatTaka, type ExpenseListRecord } from '@/components/mobile/expense-design'
-import { ExpenseMetric, ExpenseSummaryCard, ExpenseSurface } from '@/components/mobile/expense-ui'
+import { ExpenseBreakdownList, ExpenseMetric, ExpenseSummaryCard, ExpenseSurface } from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
@@ -110,7 +110,7 @@ export default function MonthlyBillPage() {
 
   return (
     <MobileShell showBottomNavigation>
-      <ScreenHeader title="My Expense Details" subtitle="Your monthly personal summary" backHref="/expenses" />
+      <ScreenHeader title="My Expense Details" subtitle="Personal summary" backHref="/expenses" />
 
       <div className="screen expense-screen">
         <label className="relative flex h-12 w-[min(100%,190px)] items-center gap-3 rounded-full border border-white/90 bg-[#008d8c] px-4 text-label font-bold text-white shadow-[0_12px_24px_rgba(0,119,122,0.2)]">
@@ -122,41 +122,34 @@ export default function MonthlyBillPage() {
         {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]">{message}</div> : null}
 
         <div className="expense-summary-grid">
-          <ExpenseSummaryCard icon={CookingPot} label="Food Bill" value={loading ? '...' : formatTaka(details?.foodBill)} caption="Food & grocery" />
-          <ExpenseSummaryCard icon={Zap} label="Utility Bill" value={loading ? '...' : formatTaka(details?.utilityBill)} caption="Shared utilities" accent="blue" />
-          <ExpenseSummaryCard icon={House} label="Room Rent" value={loading ? '...' : formatTaka(details?.roomRent)} caption="Monthly rent" accent="violet" />
-          <ExpenseSummaryCard icon={WalletCards} label="Total This Month" value={loading ? '...' : formatTaka(details?.total)} caption={`${details?.transactionCount ?? 0} transactions`} accent="green" />
+          <ExpenseSummaryCard icon={CookingPot} label="Food" value={loading ? '...' : formatTaka(details?.foodBill)} />
+          <ExpenseSummaryCard icon={Zap} label="Utility" value={loading ? '...' : formatTaka(details?.utilityBill)} accent="blue" />
+          <ExpenseSummaryCard icon={House} label="Rent" value={loading ? '...' : formatTaka(details?.roomRent)} accent="violet" />
+          <ExpenseSummaryCard icon={WalletCards} label="Total" value={loading ? '...' : formatTaka(details?.total)} caption={`${details?.transactionCount ?? 0} txns`} accent="green" />
         </div>
 
         <ExpenseSurface title="My Cost Breakdown">
-          {[
-            { icon: CookingPot, label: 'Food', value: details?.foodBill, color: '#008d8c', bg: '#e6f7f6' },
-            { icon: Zap, label: 'Utility', value: details?.utilityBill, color: '#1473e6', bg: '#eaf3ff' },
-            { icon: House, label: 'Room Rent', value: details?.roomRent, color: '#7c3aed', bg: '#f2ebff' },
-            { icon: Landmark, label: 'Personal Paid', value: details?.personalExpenseAmount, color: '#f07818', bg: '#fff2e6' },
-          ].map((item) => {
-            const Icon = item.icon
-            return (
-              <div key={item.label} className="flex items-center gap-3 border-b border-[#edf1f4] py-2.5 last:border-b-0">
-                <span className="grid h-9 w-9 place-items-center rounded-full" style={{ backgroundColor: item.bg, color: item.color }}><Icon size={17} /></span>
-                <span className="min-w-0 flex-1 text-label font-medium text-[#123748]">{item.label}</span>
-                <span className="text-body font-bold text-[#123748]">{formatTaka(item.value)}</span>
-              </div>
-            )
-          })}
+          <ExpenseBreakdownList
+            items={[
+              { icon: CookingPot, label: 'Food', value: formatTaka(details?.foodBill) },
+              { icon: Zap, label: 'Utility', value: formatTaka(details?.utilityBill), accent: 'blue' },
+              { icon: House, label: 'Rent', value: formatTaka(details?.roomRent), accent: 'violet' },
+              { icon: Landmark, label: 'Paid', value: formatTaka(details?.personalExpenseAmount), accent: 'orange' },
+            ]}
+          />
         </ExpenseSurface>
 
-        <div className="expense-info-strip"><Info size={18} className="shrink-0 text-[#008d8c]" /> Only your own allocated costs are shown here.</div>
+        <div className="expense-info-strip"><Info size={18} className="shrink-0 text-[#008d8c]" /> Own allocated costs only.</div>
 
-        <ExpenseSurface title="My Payment & Expense History">
+        <ExpenseSurface title="History">
           <div className="flush-list flush-list--home-panel">
             {history.map((item) => (
-              <ExpenseListItem key={item.id} item={item} href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`} variant="horizontal" />
+              <ExpenseListItem key={item.id} item={item} variant="horizontal" />
             ))}
             {!loading && !history.length ? <div className="expense-empty-state mx-3">No expense history for {monthLabel(month)}.</div> : null}
           </div>
 
-          <h3 className="mt-4 text-body font-extrabold text-[#123748]">This Month Summary</h3>
+          <h3 className="mt-4 text-body font-extrabold text-[#123748]">Activity</h3>
           <div className="mt-3 grid grid-cols-3">
             <ExpenseMetric label="Transactions" value={details?.transactionCount ?? 0} />
             <ExpenseMetric label="Personal Paid" value={personalPaid} color="#f07818" />

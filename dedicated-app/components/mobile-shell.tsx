@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
-import { canAccessAppPath, getBottomTabs, getDefaultAppPath } from '@/lib/app-permissions'
+import { canAccessAppPath, getBottomTabs, getDefaultAppPath, shouldShowDefaultBottomNavigation } from '@/lib/app-permissions'
 import { normalizePathname } from '@/lib/auth'
 import { appHref } from '@/lib/routes'
 
@@ -12,16 +12,18 @@ export function MobileShell({
   children,
   showBottomNavigation,
   hasFloatingAction = false,
+  appearance = 'default',
 }: {
   children: ReactNode
   showBottomNavigation?: boolean
   hasFloatingAction?: boolean
+  appearance?: 'default' | 'onboarding'
 }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isLoading, user } = useAuth()
   const normalizedPathname = normalizePathname(pathname)
-  const bottomNavigationVisible = showBottomNavigation ?? normalizedPathname === '/'
+  const bottomNavigationVisible = showBottomNavigation ?? shouldShowDefaultBottomNavigation(user, normalizedPathname)
   const tabs = getBottomTabs(user)
   const canAccess = canAccessAppPath(user, pathname)
 
@@ -40,7 +42,11 @@ export function MobileShell({
   }
 
   return (
-    <div className="phone-frame" data-bottom-navigation={bottomNavigationVisible ? 'visible' : 'hidden'}>
+    <div
+      className="phone-frame"
+      data-appearance={appearance}
+      data-bottom-navigation={bottomNavigationVisible ? 'visible' : 'hidden'}
+    >
       <main
         className="app-shell"
         data-bottom-navigation={bottomNavigationVisible ? 'visible' : 'hidden'}

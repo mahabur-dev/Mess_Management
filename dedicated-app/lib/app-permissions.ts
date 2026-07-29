@@ -139,6 +139,18 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
   return tabs.filter((item) => canAccessLevel(user, item.access))
 }
 
+const onboardingTabPaths = new Set(['/', '/profile', '/settings', '/more'])
+
+/**
+ * Keeps primary onboarding navigation available while a user has no active
+ * mess. Connected users retain each screen's explicit navigation choice.
+ */
+export function shouldShowDefaultBottomNavigation(user: AuthUser | null | undefined, pathname: string) {
+  const normalizedPathname = normalizePathname(pathname)
+  if (normalizedPathname === '/') return true
+  return !hasActiveMess(user) && onboardingTabPaths.has(normalizedPathname)
+}
+
 export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] {
   const managerLinks: AppRouteItem[] = [
     { href: '/members', label: 'Members', icon: Users, access: 'manager' },
@@ -180,6 +192,7 @@ export function canAccessAppPath(user: AuthUser | null | undefined, pathname: st
 }
 
 const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean }> = [
+  { href: '/more', fallback: '/', exact: true },
   { href: '/add-member', fallback: '/members', exact: true },
   { href: '/edit-member', fallback: '/members', exact: true },
   { href: '/add-expense', fallback: '/expenses', exact: true },

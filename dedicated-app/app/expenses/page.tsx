@@ -1,21 +1,39 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Bell, CalendarDays, ChevronRight, Plus, Users } from 'lucide-react'
+import {
+  Bell,
+  ChevronRight,
+  CircleDollarSign,
+  CookingPot,
+  Filter,
+  House,
+  Landmark,
+  Plus,
+  Search,
+  UserRound,
+  UsersRound,
+  WalletCards,
+  Zap,
+} from 'lucide-react'
 import {
   ExpenseListItem,
-  ExpenseOverviewPanel,
-  ExpenseOverviewTile,
   HeaderIconButton,
   ScreenHeader,
   formatTaka,
   type ExpenseListRecord,
 } from '@/components/mobile/expense-design'
+import {
+  ExpenseSegmentedControl,
+  ExpenseSummaryCard,
+  ExpenseSurface,
+  MemberInitials,
+} from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { useAuth } from '../providers'
-import Link from 'next/link'
 
 type ExpenseSummary = {
   month?: string
@@ -26,11 +44,15 @@ type ExpenseSummary = {
     total?: number
     transactionCount?: number
   }
-  managerView?: {
-    totalExpenses?: number
-    transactionCount?: number
-  } | null
   recentExpenses?: ExpenseListRecord[]
+}
+
+type ManagerMember = {
+  member?: { id: string; name?: string; email?: string }
+  totalCost?: number
+  depositPaid?: number
+  due?: number
+  status?: string
 }
 
 type ManagerOverview = {
@@ -40,186 +62,248 @@ type ManagerOverview = {
     fromDeposit?: number
     members?: number
   }
-  members?: Array<{
-    member?: { id: string; name?: string; email?: string }
-    totalCost?: number
-    depositPaid?: number
-    due?: number
-    status?: string
-  }>
+  members?: ManagerMember[]
+}
+
+type ViewMode = 'MY' | 'MANAGER'
+type MemberFilter = 'ALL' | 'DUE' | 'PAID'
+
+function getStatus(member: ManagerMember) {
+  if (Number(member.due ?? 0) <= 0) return 'PAID'
+  if (Number(member.depositPaid ?? 0) > 0) return 'PARTIAL'
+  return 'DUE'
+}
+
+function MemberStatus({ member }: { member: ManagerMember }) {
+  const status = getStatus(member)
+  const styles = {
+    PAID: 'bg-[#eaf7ec] text-[#15953a]',
+    PARTIAL: 'bg-[#fff2e6] text-[#e36c0a]',
+    DUE: 'bg-[#ffebeb] text-[#e02d37]',
+  } as const
+  const label = status === 'PAID' ? 'Paid' : status === 'PARTIAL' ? 'Partial' : 'Due'
+  return <span className={`rounded-full px-2.5 py-1 text-caption font-bold ${styles[status]}`}>{label}</span>
 }
 
 export default function ExpensesPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
-  const [view, setView] = useState<'MY' | 'MANAGER'>('MY')
+  const [month] = useState(new Date().toISOString().slice(0, 7))
+  const [view, setView] = useState<ViewMode>('MY')
   const [summary, setSummary] = useState<ExpenseSummary | null>(null)
   const [managerData, setManagerData] = useState<ManagerOverview | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [search, setSearch] = useState('')
+  const [memberFilter, setMemberFilter] = useState<MemberFilter>('ALL')
 
   useEffect(() => {
     if (!messId) return
-    let alive = true
+    let active = true
     setLoading(true)
     setMessage('')
 
     api
       .getExpenseSummary(messId, `${month}-01`)
-      .then((res) => {
-        if (alive) setSummary(res.data as ExpenseSummary)
+      .then((response) => {
+        if (active) setSummary(response.data as ExpenseSummary)
       })
       .catch((error) => {
-        if (alive) setMessage(error instanceof Error ? error.message : 'Failed to load expense summary.')
+        if (active) setMessage(error instanceof Error ? error.message : 'Failed to load expense summary.')
       })
       .finally(() => {
-        if (alive) setLoading(false)
+        if (active) setLoading(false)
       })
 
     return () => {
-      alive = false
+      active = false
     }
   }, [messId, month])
 
   useEffect(() => {
-    if (!messId || !isManager || view !== 'MANAGER') return
-    let alive = true
+    if (!messId || !isManager || view !== 'MANAGER' || managerData) return
+    let active = true
+    setLoading(true)
 
     api
       .getManagerMemberExpenses(messId, `${month}-01`)
-      .then((res) => {
-        if (alive) setManagerData(res.data as ManagerOverview)
+      .then((response) => {
+        if (active) setManagerData(response.data as ManagerOverview)
       })
-      .catch(() => {
-        if (alive) setManagerData(null)
+      .catch((error) => {
+        if (active) setMessage(error instanceof Error ? error.message : 'Failed to load member expenses.')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
       })
 
     return () => {
-      alive = false
+      active = false
     }
-  }, [isManager, messId, month, view])
+  }, [isManager, managerData, messId, month, view])
 
   const my = summary?.myView
   const manager = managerData?.totals
+  const filteredMembers = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return (managerData?.members ?? []).filter((item) => {
+      const status = getStatus(item)
+      const matchesFilter = memberFilter === 'ALL' || (memberFilter === 'DUE' ? status !== 'PAID' : status === 'PAID')
+      const searchable = `${item.member?.name ?? ''} ${item.member?.email ?? ''}`.toLowerCase()
+      return matchesFilter && (!query || searchable.includes(query))
+    })
+  }, [managerData?.members, memberFilter, search])
 
   return (
     <MobileShell showBottomNavigation>
       <ScreenHeader
-        title="Expense & Utility Center"
-        subtitle="Track, manage & stay in control"
+        title={view === 'MANAGER' ? 'Manage Member Expenses' : 'Expense & Utility Center'}
+        subtitle={view === 'MANAGER' ? 'Monitor member costs and dues' : 'Track, manage & stay in control'}
         backHref="/"
         right={
           <HeaderIconButton
             label="Notifications"
             icon={
               <span className="relative">
-                <Bell size={18} />
-                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-[#ff3b30]" />
+                <Bell size={19} />
+                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-[#ff4d42] ring-1 ring-[#008d8c]" />
               </span>
             }
           />
         }
       />
 
-      <div className="screen space-y-5">
-        <div className="grid grid-cols-[1fr_auto] gap-3">
-          <label className="flex h-12 items-center gap-2 rounded-[15px] border border-white/80 bg-white px-4 text-label font-bold text-[#123748] shadow-[0_10px_24px_rgba(18,55,72,0.06)]">
-            <CalendarDays size={17} className="text-[#008d8c]" />
-            <input className="min-w-0 flex-1 bg-transparent outline-none" value={month} onChange={(event) => setMonth(event.target.value)} type="month" />
-          </label>
-          {isManager ? (
-            <div className="flex h-12 rounded-[15px] bg-white p-1 shadow-[0_10px_24px_rgba(18,55,72,0.06)]">
-              <button type="button" onClick={() => setView('MY')} className={`rounded-[12px] px-3 text-caption font-bold ${view === 'MY' ? 'bg-[#008d8c] text-white' : 'text-[#65838b]'}`}>
-                My View
-              </button>
-              <button type="button" onClick={() => setView('MANAGER')} className={`rounded-[12px] px-3 text-caption font-bold ${view === 'MANAGER' ? 'bg-[#008d8c] text-white' : 'text-[#65838b]'}`}>
-                Manager
-              </button>
-            </div>
-          ) : null}
-        </div>
+      <div className="screen expense-screen">
+        {isManager ? (
+          <ExpenseSegmentedControl
+            value={view}
+            onChange={(value) => setView(value as ViewMode)}
+            options={[
+              { value: 'MY', label: 'My View', icon: UserRound },
+              { value: 'MANAGER', label: 'Manager View', icon: UsersRound },
+            ]}
+          />
+        ) : null}
 
         {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]">{message}</div> : null}
 
         {view === 'MY' ? (
           <>
-            <ExpenseOverviewPanel title="My View">
-              <ExpenseOverviewTile label="My Food Bill" value={loading ? '...' : formatTaka(my?.foodBill)} caption={`${my?.transactionCount ?? 0} Transactions`} />
-              <ExpenseOverviewTile label="My Utility Bill" value={loading ? '...' : formatTaka(my?.utilityBill)} accent="blue" />
-              <ExpenseOverviewTile label="My Room Rent" value={loading ? '...' : formatTaka(my?.roomRent)} accent="blue" />
-              <ExpenseOverviewTile label="This Month Total" value={loading ? '...' : formatTaka(my?.total)} />
-            </ExpenseOverviewPanel>
+            <div className="expense-summary-grid">
+              <ExpenseSummaryCard icon={CookingPot} label="My Food Bill" value={loading ? '...' : formatTaka(my?.foodBill)} caption="Food & grocery" href="/monthly-bill" />
+              <ExpenseSummaryCard icon={Zap} label="My Utility Bill" value={loading ? '...' : formatTaka(my?.utilityBill)} caption="Utilities" accent="blue" href="/monthly-bill" />
+              <ExpenseSummaryCard icon={House} label="My Room Rent" value={loading ? '...' : formatTaka(my?.roomRent)} caption="Current month" accent="violet" href="/monthly-bill" />
+              <ExpenseSummaryCard icon={WalletCards} label="This Month Total" value={loading ? '...' : formatTaka(my?.total)} caption={`${my?.transactionCount ?? 0} transactions`} accent="green" href="/monthly-bill" />
+            </div>
 
-            <Link href="/monthly-bill" className="block rounded-[18px] bg-[#008d8c] p-4 text-white shadow-[0_14px_30px_rgba(0,141,140,0.22)]">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-body font-extrabold">View Details - Your All Expenses</div>
-                  <div className="mt-1 text-label font-medium text-white/85">Explore food, utility, rent and transaction history.</div>
-                </div>
-                <ChevronRight size={22} />
-              </div>
+            <Link href="/monthly-bill" className="expense-details-banner">
+              <span className="expense-details-banner__art" aria-hidden="true">
+                <CircleDollarSign size={42} strokeWidth={1.8} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-title-sm font-extrabold">View Details — All Your Expenses</span>
+                <span className="mt-1.5 block text-label font-medium text-white/82">Food, utility and rent information for this month in one place.</span>
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-label font-bold text-[#008d8c]">
+                  View all details <ChevronRight size={16} />
+                </span>
+              </span>
+              <ChevronRight size={22} className="shrink-0" />
             </Link>
+
+            <ExpenseSurface
+              title="Recent Expenses"
+              aside={
+                <Link href="/monthly-bill" className="flex items-center gap-1 text-label font-bold text-[#008d8c]">
+                  View all <ChevronRight size={16} />
+                </Link>
+              }
+            >
+              <div className="flush-list flush-list--home-panel">
+                {(summary?.recentExpenses ?? []).map((item) => (
+                  <ExpenseListItem key={item.id} item={item} href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`} variant="horizontal" />
+                ))}
+                {!loading && !summary?.recentExpenses?.length ? <div className="expense-empty-state mx-3">No expenses found for this month.</div> : null}
+              </div>
+            </ExpenseSurface>
           </>
         ) : (
           <>
-            <ExpenseOverviewPanel title="Manager View">
-              <ExpenseOverviewTile label="Total Expenses" value={formatTaka(manager?.totalExpenses)} />
-              <ExpenseOverviewTile label="Utility" value={formatTaka(manager?.totalUtility)} accent="blue" />
-              <ExpenseOverviewTile label="From Deposit" value={formatTaka(manager?.fromDeposit)} />
-              <ExpenseOverviewTile label="Members" value={manager?.members ?? 0} accent="blue" />
-            </ExpenseOverviewPanel>
-
-            <section className="home-panel">
-              <div className="flex items-center justify-between">
-                <div className="section-title">Member Expense Overview</div>
-                <div className="text-caption font-semibold text-[#65838b]">Tap a member to inspect</div>
+            <ExpenseSurface>
+              <div className="flex gap-2.5">
+                <label className="relative min-w-0 flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#65838b]" size={18} />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    className="h-12 w-full rounded-[15px] border border-[#dce5ec] bg-white pl-11 pr-3 text-label font-medium text-[#123748] outline-none placeholder:text-[#8293a5] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+                    placeholder="Search member by name or email"
+                  />
+                </label>
+                <span className="flex h-12 items-center gap-2 rounded-[15px] border border-[#cfeeed] px-3 text-label font-bold text-[#008d8c]">
+                  <Filter size={17} /> Filters
+                </span>
               </div>
-              <div className="flush-list flush-list--panel mt-3">
-                {(managerData?.members ?? []).map((item) => (
-                  <div key={item.member?.id} className="flex items-center gap-3 border-y border-[#cfeeed] bg-white/95 px-3 py-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-[#edfafa] text-label font-bold text-[#008d8c]">
-                      {(item.member?.name ?? 'M').slice(0, 2).toUpperCase()}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-label font-bold text-[#123748]">{item.member?.name ?? 'Member'}</div>
-                      <div className="truncate text-caption font-semibold text-[#65838b]">{item.member?.email}</div>
-                    </div>
-                    <div className="text-right text-caption font-bold">
-                      <div className="text-[#008d8c]">{formatTaka(item.totalCost)}</div>
-                      <div className={Number(item.due ?? 0) > 0 ? 'text-[#f04438]' : 'text-[#12a150]'}>{formatTaka(item.due)}</div>
-                    </div>
-                    <ChevronRight size={17} className="text-[#65838b]" />
-                  </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {([
+                  ['ALL', 'All'],
+                  ['DUE', 'With Due'],
+                  ['PAID', 'Fully Paid'],
+                ] as Array<[MemberFilter, string]>).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setMemberFilter(value)}
+                    className={`h-9 rounded-full border text-caption font-bold ${memberFilter === value ? 'border-[#008d8c] bg-[#008d8c] text-white' : 'border-[#dce5ec] bg-white text-[#65838b]'}`}
+                  >
+                    {label}
+                  </button>
                 ))}
               </div>
-            </section>
+
+              <div className="mt-4 grid grid-cols-2 gap-2.5">
+                <ExpenseSummaryCard icon={CircleDollarSign} label="Total Expenses" value={formatTaka(manager?.totalExpenses)} />
+                <ExpenseSummaryCard icon={Zap} label="Utility" value={formatTaka(manager?.totalUtility)} accent="blue" />
+                <ExpenseSummaryCard icon={Landmark} label="From Deposit" value={formatTaka(manager?.fromDeposit)} accent="green" />
+                <ExpenseSummaryCard icon={UsersRound} label="Members" value={manager?.members ?? 0} accent="violet" />
+              </div>
+            </ExpenseSurface>
+
+            <ExpenseSurface title="Member Expense Overview" aside={<span className="text-caption font-medium text-[#65838b]">Tap to view details</span>}>
+              <div className="-mx-3 overflow-hidden rounded-[16px] border border-[#edf1f4]">
+                {filteredMembers.map((item, index) => (
+                  <div key={item.member?.id ?? index} className="flex items-center gap-3 border-b border-[#edf1f4] bg-white px-3 py-3 last:border-b-0">
+                    <MemberInitials name={item.member?.name} accent={index % 2 ? 'blue' : 'teal'} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-label font-bold text-[#123748]">{item.member?.name ?? 'Member'}</div>
+                      <div className="mt-0.5 truncate text-caption font-medium text-[#65838b]">{item.member?.email ?? 'No email'}</div>
+                    </div>
+                    <div className="hidden text-right min-[380px]:block">
+                      <div className="text-caption font-semibold text-[#65838b]">Total</div>
+                      <div className="text-label font-bold text-[#008d8c]">{formatTaka(item.totalCost)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-label font-bold ${Number(item.due ?? 0) > 0 ? 'text-[#e02d37]' : 'text-[#65838b]'}`}>{formatTaka(item.due)}</div>
+                      <MemberStatus member={item} />
+                    </div>
+                    <ChevronRight size={18} className="shrink-0 text-[#526d79]" />
+                  </div>
+                ))}
+                {!loading && !filteredMembers.length ? <div className="expense-empty-state">No matching members found.</div> : null}
+              </div>
+            </ExpenseSurface>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/add-expense" className="expense-primary-action">
+                <Plus size={18} /> Add Expense
+              </Link>
+              <Link href="/add-utility" className="expense-secondary-action">
+                <Zap size={18} /> Add Utility
+              </Link>
+            </div>
           </>
         )}
-
-        {isManager ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/add-expense" className="flex h-12 items-center justify-center gap-2 rounded-[15px] bg-[#008d8c] text-label font-bold text-white">
-              <Plus size={18} />
-              Add Expense
-            </Link>
-            <Link href="/add-utility" className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c]">
-              <Users size={18} />
-              Add Utility
-            </Link>
-          </div>
-        ) : null}
-
-        <section className="home-panel">
-          <div className="section-title">Recent Expenses</div>
-          <div className="flush-list flush-list--panel mt-3">
-            {(summary?.recentExpenses ?? []).map((item) => (
-              <ExpenseListItem key={item.id} item={item} href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`} variant="horizontal" />
-            ))}
-            {!summary?.recentExpenses?.length ? <div className="mx-2.5 rounded-[18px] bg-[#edfafa] px-4 py-5 text-center text-label font-bold text-[#65838b]">No expenses found.</div> : null}
-          </div>
-        </section>
       </div>
     </MobileShell>
   )

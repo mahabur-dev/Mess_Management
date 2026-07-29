@@ -1,7 +1,7 @@
 'use client'
 
 import { type FormEvent, useMemo, useState } from 'react'
-import { ArrowLeft, Eye, ReceiptText, Save, Scale, User, Users, UtensilsCrossed } from 'lucide-react'
+import { Eye, ReceiptText, Scale, User, Users, UtensilsCrossed } from 'lucide-react'
 import {
   DesignedInput,
   DesignedSelect,
@@ -15,6 +15,7 @@ import {
   expenseFormIcons,
   formatTaka,
 } from '@/components/mobile/expense-design'
+import { ExpenseChoiceCard, SplitPreviewContent } from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import {
@@ -102,23 +103,7 @@ function ChoiceButton({
   onClick: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`min-h-[74px] rounded-[14px] border px-3 py-3 text-left transition ${
-        active ? 'border-[#008d8c] bg-[#f7ffff] shadow-[0_12px_24px_rgba(0,141,140,0.10)]' : 'border-[#dce5ec] bg-white'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span className="grid h-9 w-9 place-items-center rounded-[12px] bg-[#e8f8f7] text-[#008d8c]">
-          <Icon size={17} />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-label font-bold text-[#123748]">{title}</span>
-          <span className="mt-0.5 block text-caption font-semibold text-[#65838b]">{subtitle}</span>
-        </span>
-      </div>
-    </button>
+    <ExpenseChoiceCard active={active} icon={Icon} title={title} subtitle={subtitle} onClick={onClick} layout="vertical" />
   )
 }
 
@@ -260,58 +245,20 @@ export default function AddExpensePage() {
     return (
       <MobileShell>
         <FormPageShell title="Split Preview" description="See exactly how this expense will be calculated" icon={Eye} backHref="/add-expense">
-          <FormSection>
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-body font-bold text-[#123748]">{preview.title}</div>
-                <div className="mt-2 text-headline font-extrabold text-[#008d8c]">{formatTaka(preview.amount)}</div>
-              </div>
-              <div className="rounded-full bg-[#edfafa] px-3 py-1 text-caption font-bold text-[#008d8c]">{LABELS.EXPENSE_PAYMENT_TYPES[form.paymentType]}</div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 text-label">
-              <div className="rounded-[14px] bg-[#f7fbfb] p-3">
-                <div className="font-semibold text-[#65838b]">Used By</div>
-                <div className="mt-1 font-bold text-[#123748]">{LABELS.EXPENSE_USED_BY[preview.usedBy]}</div>
-              </div>
-              <div className="rounded-[14px] bg-[#f7fbfb] p-3">
-                <div className="font-semibold text-[#65838b]">Split Method</div>
-                <div className="mt-1 font-bold text-[#123748]">{LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}</div>
-              </div>
-            </div>
-          </FormSection>
-
-          <FormSection title="How this will work">
-            <div className="space-y-2 text-label font-semibold text-[#123748]">
-              <div>Payer deposit credit: <span className="text-[#008d8c]">{formatTaka(preview.payerCredit)}</span></div>
-              <div>Total shared cost: <span className="text-[#1666d9]">{formatTaka(preview.totalSharedCost)}</span></div>
-              {preview.personalHistoryAmount ? <div>Personal history amount: {formatTaka(preview.personalHistoryAmount)}</div> : null}
-            </div>
-          </FormSection>
-
-          <FormSection title="Member-wise Preview">
-            <div className="space-y-2">
-              {preview.shares.map((share) => (
-                <div key={share.memberId} className="flex items-center justify-between gap-3 rounded-[14px] border border-[#edf1f4] bg-white px-3 py-3">
-                  <div className="min-w-0">
-                    <div className="truncate text-label font-bold text-[#123748]">{share.memberName ?? share.memberId}</div>
-                    {share.mealCount != null ? <div className="mt-1 text-caption font-semibold text-[#65838b]">Meals {share.mealCount}</div> : null}
-                  </div>
-                  <div className="shrink-0 text-body font-extrabold text-[#1666d9]">{formatTaka(share.shareAmount)}</div>
-                </div>
-              ))}
-            </div>
-          </FormSection>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => setPreview(null)} className="flex h-[50px] items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c]">
-              <ArrowLeft size={17} />
-              Back to Edit
-            </button>
-            <button type="button" disabled={busy} onClick={handleSave} className="flex h-[50px] items-center justify-center gap-2 rounded-[15px] bg-[#008d8c] text-label font-bold text-white disabled:opacity-70">
-              <Save size={17} />
-              {busy ? 'Saving...' : 'Confirm & Save'}
-            </button>
-          </div>
+          <SplitPreviewContent
+            title={preview.title}
+            amount={preview.amount}
+            paidFrom={LABELS.EXPENSE_PAYMENT_TYPES[form.paymentType]}
+            usedBy={LABELS.EXPENSE_USED_BY[preview.usedBy]}
+            splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}
+            payerCredit={preview.payerCredit}
+            totalSharedCost={preview.totalSharedCost}
+            shares={preview.shares}
+            formatMoney={formatTaka}
+            busy={busy}
+            onBack={() => setPreview(null)}
+            onSave={() => void handleSave()}
+          />
           <FormStatusMessage message={message} success={success} />
         </FormPageShell>
       </MobileShell>
@@ -322,12 +269,12 @@ export default function AddExpensePage() {
     <MobileShell>
       <form onSubmit={handlePreview}>
         <FormPageShell title="Add Expense" description="Record food, rent, or other expenses" icon={ReceiptText} backHref="/expenses">
-          <FormSection>
-            <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} />
+          <FormSection title="1. Paid From">
+            <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} showHeading={false} />
           </FormSection>
 
-          <FormSection title="Used By">
-            <div className="grid grid-cols-2 gap-2.5">
+          <FormSection title="2. Used By">
+            <div className="grid grid-cols-2 gap-2.5 min-[390px]:grid-cols-4">
               <ChoiceButton active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" subtitle="Only purchaser" onClick={() => update('usedBy', 'SELF_ONLY')} />
               <ChoiceButton active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected" subtitle="Choose members" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} />
               <ChoiceButton active={form.usedBy === 'ALL_MEMBERS'} icon={Users} title="All Members" subtitle="Everyone active" onClick={() => update('usedBy', 'ALL_MEMBERS')} />
@@ -336,7 +283,7 @@ export default function AddExpensePage() {
             {form.usedBy === 'SELECTED_MEMBERS' ? <MemberSelector members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} /> : null}
           </FormSection>
 
-          <FormSection title="Split Method">
+          <FormSection title="3. Split Method">
             <div className="grid grid-cols-3 gap-2.5">
               <ChoiceButton active={form.splitMethod === 'EQUAL'} icon={Scale} title="Equal" subtitle="Same share" onClick={() => update('splitMethod', 'EQUAL')} />
               <ChoiceButton active={form.splitMethod === 'MEAL_COUNT'} icon={UtensilsCrossed} title="Meals" subtitle="Meal count" onClick={() => update('splitMethod', 'MEAL_COUNT')} />
@@ -365,15 +312,17 @@ export default function AddExpensePage() {
             ) : null}
           </FormSection>
 
-          <FormSection title="Expense Details">
-            <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
-              {EXPENSE_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {LABELS.EXPENSE_CATEGORIES[category]}
-                </option>
-              ))}
-            </DesignedSelect>
-            <DesignedInput label="Item Name" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => update('itemName', event.target.value)} placeholder="Rice, grocery, lunch..." />
+          <FormSection title="4. Expense Details">
+            <FormFieldGrid>
+              <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
+                {EXPENSE_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {LABELS.EXPENSE_CATEGORIES[category]}
+                  </option>
+                ))}
+              </DesignedSelect>
+              <DesignedInput label="Item Name" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => update('itemName', event.target.value)} placeholder="Rice, grocery..." />
+            </FormFieldGrid>
             <FormFieldGrid>
               <DesignedInput label="Quantity" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => update('quantity', event.target.value)} placeholder="5" type="number" />
               <DesignedInput label="Unit" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => update('unit', event.target.value)} placeholder="kg" />

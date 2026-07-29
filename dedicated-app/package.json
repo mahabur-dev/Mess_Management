@@ -2,6 +2,7 @@
   "name": "mess-management-dedicated-app",
   "private": true,
   "version": "0.1.0",
+  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -19,9 +20,9 @@
     "@capacitor/cli": "^7.0.0",
     "@capacitor/core": "^7.0.0",
     "lucide-react": "^0.564.0",
-    "next": "^16.2.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "15.5.22",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.2",

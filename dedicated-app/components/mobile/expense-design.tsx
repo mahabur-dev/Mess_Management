@@ -65,8 +65,8 @@ export function formatBDT(value?: string | number | null) {
 
 export function formatTaka(value?: string | number | null) {
   const amount = Number(value ?? 0)
-  if (!Number.isFinite(amount)) return '৳ 0'
-  return `৳ ${amount.toLocaleString('en-US')}`
+  const safeAmount = Number.isFinite(amount) ? amount : 0
+  return `${String.fromCodePoint(0x09f3)} ${safeAmount.toLocaleString('en-US')}`
 }
 
 export function formatDate(value?: string | null) {
@@ -819,7 +819,7 @@ export function FormPageShell({
 export function FormSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="expense-form-card">
-      {title ? <h2 className="mb-3 text-caption font-bold uppercase leading-tight text-[#008d8c]">{title}</h2> : null}
+      {title ? <h2 className="mb-3 text-body font-extrabold leading-tight text-[#123748]">{title}</h2> : null}
       <div className="space-y-3.5">{children}</div>
     </section>
   )
@@ -873,19 +873,21 @@ export function FormSummaryCard({
 export function PaymentTypeSelector({
   value,
   onChange,
+  showHeading = true,
 }: {
   value: ExpensePaymentType
   onChange: (value: ExpensePaymentType) => void
+  showHeading?: boolean
 }) {
-  const choices: Array<{ value: ExpensePaymentType; label: string; icon: IconType }> = [
-    { value: 'PERSONAL', label: 'Personal', icon: User },
-    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
-    { value: 'COLLECTED_FUND', label: 'Collected Fund', icon: UsersRound },
+  const choices: Array<{ value: ExpensePaymentType; label: string; description: string; icon: IconType }> = [
+    { value: 'PERSONAL', label: 'Personal', description: 'Paid by you', icon: User },
+    { value: 'FROM_DEPOSIT', label: 'From Deposit', description: 'Use deposit credit', icon: Landmark },
+    { value: 'COLLECTED_FUND', label: 'Collected Fund', description: 'Use collected fund', icon: UsersRound },
   ]
 
   return (
     <div>
-      <h2 className="mb-3 text-caption font-bold uppercase leading-tight text-[#008d8c]">Paid From</h2>
+      {showHeading ? <h2 className="mb-3 text-body font-extrabold leading-tight text-[#123748]">Paid From</h2> : null}
       <div className="grid grid-cols-3 gap-2.5">
         {choices.map((choice) => {
           const selected = value === choice.value
@@ -895,30 +897,29 @@ export function PaymentTypeSelector({
               key={choice.value}
               type="button"
               onClick={() => onChange(choice.value)}
-              className={`relative grid min-h-[58px] grid-cols-[34px_minmax(0,1fr)_22px] items-center gap-2 rounded-[14px] border px-2.5 text-left transition ${
+              className={`relative flex min-h-[88px] flex-col items-center justify-center gap-1.5 rounded-[15px] border px-2 py-2 text-center transition ${
                 selected
                   ? 'border-[#008d8c] bg-[#f7ffff] text-[#061638] shadow-[0_12px_24px_rgba(0,141,140,0.10)]'
                   : 'border-[#dce5ec] bg-white text-[#061638] shadow-[0_8px_18px_rgba(18,55,72,0.04)]'
               }`}
             >
-              <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[12px] bg-[#e8f8f7] text-[#008d8c]">
-                <Icon size={17} strokeWidth={2.25} />
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e8f8f7] text-[#008d8c]">
+                <Icon size={18} strokeWidth={2.25} />
               </span>
-              <span className="min-w-0 text-label font-semibold">{choice.label}</span>
+              <span className="min-w-0 text-caption font-bold leading-tight">{choice.label}</span>
+              <span className="min-w-0 text-caption font-medium leading-tight text-[#65838b]">{choice.description}</span>
               {selected ? (
-                <span className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,141,140,0.22)]">
+                <span className="absolute right-1.5 top-1.5 grid h-[20px] w-[20px] shrink-0 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,141,140,0.22)]">
                   <Check size={13} strokeWidth={3} />
                 </span>
-              ) : (
-                <span aria-hidden="true" />
-              )}
+              ) : null}
             </button>
           )
         })}
       </div>
       <p className="mt-3 flex items-center gap-2 rounded-[13px] bg-[#edfafa] px-3.5 py-3 text-label font-medium text-[#52727b]">
         <BadgeInfo className="shrink-0 text-[#65838b]" size={16} />
-        Preview the split before saving so member bills stay accurate.
+        If paid personally, the payer may receive deposit credit based on who shared the expense.
       </p>
     </div>
   )

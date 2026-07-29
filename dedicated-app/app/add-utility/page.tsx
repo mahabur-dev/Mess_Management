@@ -1,7 +1,7 @@
 'use client'
 
 import { type FormEvent, useMemo, useState } from 'react'
-import { ArrowLeft, Eye, Save, Scale, User, Users, UtensilsCrossed, Zap } from 'lucide-react'
+import { Eye, Scale, User, Users, UtensilsCrossed, Zap } from 'lucide-react'
 import {
   DesignedInput,
   DesignedSelect,
@@ -15,6 +15,7 @@ import {
   expenseFormIcons,
   formatTaka,
 } from '@/components/mobile/expense-design'
+import { ExpenseChoiceCard, SplitPreviewContent } from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
@@ -75,17 +76,16 @@ function SmallChoice({
   icon: Icon,
   title,
   onClick,
+  vertical = false,
 }: {
   active: boolean
   icon: typeof User
   title: string
   onClick: () => void
+  vertical?: boolean
 }) {
   return (
-    <button type="button" onClick={onClick} className={`flex min-h-[54px] items-center gap-2 rounded-[14px] border px-3 text-label font-bold ${active ? 'border-[#008d8c] bg-[#edfafa] text-[#008d8c]' : 'border-[#dce5ec] bg-white text-[#123748]'}`}>
-      <Icon size={16} />
-      {title}
-    </button>
+    <ExpenseChoiceCard active={active} icon={Icon} title={title} onClick={onClick} compact={!vertical} layout={vertical ? 'vertical' : 'horizontal'} />
   )
 }
 
@@ -177,32 +177,20 @@ export default function AddUtilityPage() {
     return (
       <MobileShell>
         <FormPageShell title="Split Preview" description="See exactly how this utility will be calculated" icon={Eye} backHref="/add-utility">
-          <FormSection>
-            <div className="text-body font-bold text-[#123748]">{preview.title}</div>
-            <div className="mt-2 text-headline font-extrabold text-[#008d8c]">{formatTaka(preview.amount)}</div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-[14px] bg-[#f7fbfb] p-3 text-label font-bold text-[#123748]">{LABELS.EXPENSE_USED_BY[preview.usedBy]}</div>
-              <div className="rounded-[14px] bg-[#f7fbfb] p-3 text-label font-bold text-[#123748]">{LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}</div>
-            </div>
-          </FormSection>
-          <FormSection title="Member-wise Preview">
-            {preview.shares.map((share) => (
-              <div key={share.memberId} className="mb-2 flex items-center justify-between rounded-[14px] border border-[#edf1f4] bg-white px-3 py-3">
-                <span className="text-label font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
-                <span className="text-body font-extrabold text-[#1666d9]">{formatTaka(share.shareAmount)}</span>
-              </div>
-            ))}
-          </FormSection>
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => setPreview(null)} className="flex h-[50px] items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c]">
-              <ArrowLeft size={17} />
-              Back
-            </button>
-            <button type="button" onClick={handleSave} disabled={busy} className="flex h-[50px] items-center justify-center gap-2 rounded-[15px] bg-[#008d8c] text-label font-bold text-white disabled:opacity-70">
-              <Save size={17} />
-              {busy ? 'Saving...' : 'Confirm & Save'}
-            </button>
-          </div>
+          <SplitPreviewContent
+            title={preview.title}
+            amount={preview.amount}
+            paidFrom={LABELS.EXPENSE_PAYMENT_TYPES[form.paymentType]}
+            usedBy={LABELS.EXPENSE_USED_BY[preview.usedBy]}
+            splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}
+            payerCredit={preview.payerCredit}
+            totalSharedCost={preview.totalSharedCost}
+            shares={preview.shares}
+            formatMoney={formatTaka}
+            busy={busy}
+            onBack={() => setPreview(null)}
+            onSave={() => void handleSave()}
+          />
           <FormStatusMessage message={message} success={success} />
         </FormPageShell>
       </MobileShell>
@@ -213,15 +201,15 @@ export default function AddUtilityPage() {
     <MobileShell>
       <form onSubmit={handlePreview}>
         <FormPageShell title="Add Utility" description="Record electricity, gas, water, or wifi cost" icon={Zap} backHref="/expenses">
-          <FormSection>
-            <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} />
+          <FormSection title="Paid From">
+            <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} showHeading={false} />
           </FormSection>
           <FormSection title="Used By">
-            <div className="grid grid-cols-2 gap-2">
-              <SmallChoice active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" onClick={() => update('usedBy', 'SELF_ONLY')} />
-              <SmallChoice active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected Members" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} />
-              <SmallChoice active={form.usedBy === 'ALL_MEMBERS'} icon={Users} title="All Members" onClick={() => update('usedBy', 'ALL_MEMBERS')} />
-              <SmallChoice active={form.usedBy === 'MEAL_ON_MEMBERS'} icon={UtensilsCrossed} title="Meal-On Members" onClick={() => update('usedBy', 'MEAL_ON_MEMBERS')} />
+            <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
+              <SmallChoice active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" onClick={() => update('usedBy', 'SELF_ONLY')} vertical />
+              <SmallChoice active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected Members" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} vertical />
+              <SmallChoice active={form.usedBy === 'ALL_MEMBERS'} icon={Users} title="All Members" onClick={() => update('usedBy', 'ALL_MEMBERS')} vertical />
+              <SmallChoice active={form.usedBy === 'MEAL_ON_MEMBERS'} icon={UtensilsCrossed} title="Meal-On" onClick={() => update('usedBy', 'MEAL_ON_MEMBERS')} vertical />
             </div>
             {form.usedBy === 'SELECTED_MEMBERS' ? (
               <div className="grid grid-cols-2 gap-2">

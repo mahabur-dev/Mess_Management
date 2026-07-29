@@ -185,14 +185,18 @@ export default function HomePage() {
   }
 
   return (
-    <MobileShell showBottomNavigation>
+    <MobileShell
+      showBottomNavigation
+      appearance={!hasWorkspace && !activeMessLoading ? 'onboarding' : 'default'}
+    >
       <AppHeader
         title={profileName}
         subtitle="Here's what's happening today"
         hasUnreadNotices={Boolean(summary?.notices?.length)}
+        variant={!hasWorkspace && !activeMessLoading ? 'onboarding' : 'default'}
       />
 
-      <div className="screen home-screen">
+      <div className={`screen ${hasWorkspace || activeMessLoading ? 'home-screen' : 'no-mess-home'}`}>
         {activeMessLoading ? (
           <div className="quick-actions-card px-4 py-5 text-center text-label font-bold text-[#65838b]">Checking mess workspace...</div>
         ) : hasWorkspace ? (

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { CalendarDays, ChevronRight, FileText, MessageSquareText, MoreVertical, Pencil, ReceiptText, Trash2, UserPlus, UserRound } from 'lucide-react'
 import {
   CircleIcon,
   HeaderIconButton,
@@ -12,16 +12,19 @@ import {
   categoryLabel,
   categoryTone,
   detailIcons,
-  formatBDT,
   formatDate,
   formatDateTime,
+  formatTaka,
   paymentLabel,
 } from '@/components/mobile/expense-design'
+import { ExpenseMetric, ExpenseSurface, MemberInitials } from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
+
+type ExpenseShare = { memberId: string; memberName?: string | null; shareAmount: number; isPayer?: boolean }
 
 type ExpenseRecord = {
   id: string
@@ -37,25 +40,33 @@ type ExpenseRecord = {
   paymentType?: string | null
   payment_method?: string | null
   purchasedBy?: string | null
-  buyerId?: string | null
   purchased_by?: { name?: string | null } | null
   buyer?: { name?: string | null } | null
   created_by?: { name?: string | null } | null
   addedBy?: { name?: string | null } | null
   usedBy?: string | null
   splitMethod?: string | null
-  shares?: Array<{ memberId: string; memberName?: string | null; shareAmount: number; isPayer?: boolean }>
+  shares?: ExpenseShare[]
   impactSummary?: { payerCredit?: number; sharedCost?: number; includedInMonthlyBill?: boolean }
+}
+
+function readableEnum(value?: string | null, fallback = 'Not set') {
+  if (!value) return fallback
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
 function DetailRow({ icon: Icon, label, value }: { icon: typeof detailIcons.amount; label: string; value: string }) {
   return (
     <div className="detail-row">
-      <span className="grid h-7 w-7 place-items-center rounded-full text-[#008d8c]">
-        <Icon size={17} />
+      <span className="grid h-8 w-8 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]">
+        <Icon size={16} strokeWidth={2.3} />
       </span>
-      <span className="min-w-0 text-label font-medium text-[#123748]">{label}</span>
-      <span className="max-w-[150px] truncate text-right text-label font-semibold text-[#123748]">{value}</span>
+      <span className="min-w-0 text-label font-medium text-[#65838b]">{label}</span>
+      <span className="max-w-[170px] truncate text-right text-label font-semibold text-[#123748]">{value}</span>
     </div>
   )
 }
@@ -74,53 +85,48 @@ export default function ExpenseDetailsPage() {
 
   useEffect(() => {
     if (!expenseId || !messId) return
-
-    let alive = true
+    let active = true
     setLoading(true)
     setMessage('')
+
     api
       .getExpenseById(expenseId)
-      .then((res) => {
-        if (!alive) return
-        const found = (res.data as ExpenseRecord | null) ?? null
-        setExpense(found)
-        if (!found) setMessage('Expense not found.')
+      .then((response) => {
+        if (!active) return
+        const record = (response.data as ExpenseRecord | null) ?? null
+        setExpense(record)
+        if (!record) setMessage('Expense not found.')
       })
       .catch((error) => {
-        if (!alive) return
-        setMessage(error instanceof Error ? error.message : 'Failed to load expense details.')
+        if (active) setMessage(error instanceof Error ? error.message : 'Failed to load expense details.')
       })
       .finally(() => {
-        if (alive) setLoading(false)
+        if (active) setLoading(false)
       })
 
     return () => {
-      alive = false
+      active = false
     }
   }, [expenseId, messId])
 
   const details = useMemo(() => {
     if (!expense) return null
-    const addedOn = expense.createdAt ?? expense.created_at ?? expense.expenseDate ?? expense.expense_date
+    const expenseDate = expense.expenseDate ?? expense.expense_date
+    const createdAt = expense.createdAt ?? expense.created_at ?? expenseDate
     return {
       category: categoryLabel(expense.category),
-      amount: formatBDT(expense.amount),
-      date: formatDate(expense.expenseDate ?? expense.expense_date),
+      date: formatDateTime(expenseDate),
+      createdAt: formatDateTime(createdAt),
       payment: expense.payment_method || paymentLabel(expense.paymentType),
-      usedBy: expense.usedBy ? expense.usedBy.replaceAll('_', ' ') : 'ALL MEMBERS',
-      splitMethod: expense.splitMethod ? expense.splitMethod.replaceAll('_', ' ') : 'MEAL COUNT',
-      addedOn: formatDateTime(addedOn),
-      purchasedBy: expense.purchased_by?.name || expense.buyer?.name || expense.purchasedBy || 'Mahabur Rahman',
-      addedBy: expense.created_by?.name || expense.addedBy?.name || 'Mahabur Rahman',
-      description: expense.description || 'No description added.',
-      receipt: expense.receiptUrl ? 'Receipt uploaded.' : 'No receipt uploaded.',
+      usedBy: readableEnum(expense.usedBy, 'All Members'),
+      splitMethod: readableEnum(expense.splitMethod, 'Equal Split'),
+      purchasedBy: expense.purchased_by?.name || expense.buyer?.name || expense.purchasedBy || 'Not set',
+      addedBy: expense.created_by?.name || expense.addedBy?.name || 'Not set',
     }
   }, [expense])
 
   async function deleteExpense() {
-    if (!expenseId || deleting) return
-    if (!window.confirm('Delete this expense permanently?')) return
-
+    if (!expenseId || deleting || !window.confirm('Delete this expense permanently?')) return
     setDeleting(true)
     setMessage('')
     try {
@@ -136,122 +142,110 @@ export default function ExpenseDetailsPage() {
   const tone = categoryTone(expense?.category)
 
   return (
-    <MobileShell>
+    <MobileShell showBottomNavigation>
       <ScreenHeader
         title="Expense Details"
+        subtitle="Understand one expense clearly"
         backHref="/expenses"
-        right={<HeaderIconButton label="More actions" icon={<MoreHorizontal size={19} />} />}
+        right={<HeaderIconButton label="More actions" icon={<MoreVertical size={19} />} />}
       />
 
-      <div className="screen space-y-4">
-        {loading ? <div className="rounded-[24px] bg-white/90 p-6 text-center text-label font-bold text-[#65838b]">Loading expense details...</div> : null}
+      <div className="screen expense-screen">
+        {loading ? <div className="expense-empty-state">Loading expense details...</div> : null}
         {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]">{message}</div> : null}
 
         {expense && details ? (
           <>
-            <section className="detail-hero p-5">
-              <div className="relative z-10 flex items-center gap-4">
-                <CircleIcon icon={Icon} size="lg" tone={{ bg: '#ffffff', fg: tone.fg }} />
-                <div className="min-w-0">
-                  <div className="text-label font-semibold uppercase text-white/92">{details.category}</div>
-                  <div className="mt-2 truncate text-headline font-bold leading-none">{formatBDT(expense.amount)}</div>
-                  <div className="mt-3 inline-flex rounded-[10px] bg-white/16 px-3 py-1.5 text-caption font-bold">{details.payment}</div>
-                  <div className="mt-4 flex items-center gap-2 text-caption font-medium text-white/92">
-                    <detailIcons.date size={15} />
-                    <span>{details.addedOn}</span>
+            <ExpenseSurface>
+              <div className="flex items-center gap-4">
+                <CircleIcon icon={Icon} size="lg" tone={tone} className="!h-[64px] !w-[64px]" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-caption font-semibold text-[#65838b]">Category</div>
+                  <div className="mt-1 truncate text-title font-extrabold text-[#123748]">{details.category}</div>
+                  <div className="mt-2 inline-flex rounded-full bg-[#e6f7f6] px-2.5 py-1 text-caption font-bold text-[#008d8c]">{details.payment}</div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="text-caption font-semibold text-[#65838b]">Amount</div>
+                  <div className="mt-1 text-headline font-black text-[#008d8c]">{formatTaka(expense.amount)}</div>
+                  <div className="mt-2 flex items-center justify-end gap-1.5 text-caption font-medium text-[#65838b]">
+                    <CalendarDays size={14} /> {formatDate(expense.expenseDate ?? expense.expense_date)}
                   </div>
                 </div>
               </div>
-            </section>
+            </ExpenseSurface>
 
-            <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-[14px] bg-white shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
-              <div className="border-r border-[#edf1f4] p-4">
-                <CircleIcon icon={detailIcons.purchased} tone={{ bg: '#e8f8f1', fg: '#008d8c' }} />
-                <div className="mt-3 text-caption font-bold uppercase text-[#4f6375]">Purchased By</div>
-                <div className="mt-1.5 truncate text-label font-bold text-[#123748]">{details.purchasedBy}</div>
-              </div>
-              <div className="p-4">
-                <CircleIcon icon={detailIcons.user} tone={{ bg: '#edf7ff', fg: '#1283c9' }} />
-                <div className="mt-3 text-caption font-bold uppercase text-[#4f6375]">Added By</div>
-                <div className="mt-1.5 truncate text-label font-bold text-[#123748]">{details.addedBy}</div>
-              </div>
-            </section>
+            <div className="grid grid-cols-2 gap-3">
+              <ExpenseSurface className="!p-3">
+                <div className="flex items-center gap-2.5">
+                  <CircleIcon icon={UserRound} />
+                  <div className="min-w-0"><div className="text-caption font-semibold text-[#65838b]">Purchased By</div><div className="mt-1 truncate text-label font-bold text-[#123748]">{details.purchasedBy}</div></div>
+                </div>
+              </ExpenseSurface>
+              <ExpenseSurface className="!p-3">
+                <div className="flex items-center gap-2.5">
+                  <CircleIcon icon={UserPlus} />
+                  <div className="min-w-0"><div className="text-caption font-semibold text-[#65838b]">Added By</div><div className="mt-1 truncate text-label font-bold text-[#123748]">{details.addedBy}</div></div>
+                </div>
+              </ExpenseSurface>
+            </div>
 
-            <section className="detail-card">
-              <DetailRow icon={detailIcons.category} label="Category" value={details.category.toUpperCase()} />
-              <DetailRow icon={detailIcons.amount} label="Amount" value={details.amount} />
-              <DetailRow icon={detailIcons.date} label="Expense Date" value={details.date} />
+            <ExpenseSurface title="Calculation Information">
+              <DetailRow icon={detailIcons.category} label="Category" value={details.category} />
               <DetailRow icon={detailIcons.payment} label="Paid From" value={details.payment} />
               <DetailRow icon={detailIcons.user} label="Used By" value={details.usedBy} />
               <DetailRow icon={detailIcons.amount} label="Split Method" value={details.splitMethod} />
-              <DetailRow icon={detailIcons.added} label="Added On" value={details.addedOn} />
-            </section>
+              <DetailRow icon={detailIcons.date} label="Expense Date" value={details.date} />
+              <DetailRow icon={detailIcons.added} label="Added On" value={details.createdAt} />
+              <DetailRow icon={detailIcons.user} label="Affected Members" value={`${expense.shares?.length ?? 0} Members`} />
+            </ExpenseSurface>
 
-            <section className="detail-card">
-              <h2 className="text-body font-bold text-[#123748]">Who Shares This</h2>
-              <div className="mt-3 space-y-2">
-                {(expense.shares ?? []).map((share) => (
-                  <div key={share.memberId} className="flex items-center justify-between gap-3 rounded-[13px] border border-[#edf1f4] bg-white px-3 py-2.5">
-                    <span className="min-w-0 truncate text-label font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
-                    <span className="shrink-0 text-label font-extrabold text-[#1666d9]">{formatBDT(share.shareAmount)}</span>
+            <ExpenseSurface title="Who Shares This">
+              <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
+                {(expense.shares ?? []).map((share, index) => (
+                  <div key={share.memberId} className="flex min-w-0 items-center gap-2 rounded-[14px] border border-[#edf1f4] bg-white p-2">
+                    <MemberInitials name={share.memberName} accent={index % 2 ? 'violet' : 'teal'} />
+                    <span className="min-w-0 truncate text-caption font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
                   </div>
                 ))}
-                {!expense.shares?.length ? <div className="text-label font-semibold text-[#65838b]">No member-wise shares recorded.</div> : null}
+                {!expense.shares?.length ? <div className="expense-empty-state col-span-full">No member-wise shares recorded.</div> : null}
               </div>
-            </section>
+            </ExpenseSurface>
 
-            <section className="detail-card flex gap-3">
-              <CircleIcon icon={detailIcons.description} size="sm" />
-              <div>
-                <h2 className="text-body font-bold text-[#123748]">Description</h2>
-                <p className="mt-2 text-body text-[#123748]">{details.description}</p>
+            <ExpenseSurface>
+              <div className="flex gap-3">
+                <MessageSquareText size={22} className="shrink-0 text-[#008d8c]" />
+                <div><h2 className="text-body font-extrabold text-[#123748]">Description</h2><p className="mt-1 text-label text-[#65838b]">{expense.description || 'No description added.'}</p></div>
               </div>
-            </section>
+            </ExpenseSurface>
 
-            <section className="detail-card flex gap-3">
-              <CircleIcon icon={detailIcons.receipt} size="sm" />
-              <div>
-                <h2 className="text-body font-bold text-[#123748]">Receipt</h2>
-                <p className="mt-2 text-body text-[#123748]">{details.receipt}</p>
-              </div>
-            </section>
-
-            <section className="detail-card">
-              <h2 className="text-body font-bold text-[#123748]">Impact Summary</h2>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-[13px] bg-[#edfafa] px-2 py-3">
-                  <div className="text-caption font-bold text-[#65838b]">Payer Credit</div>
-                  <div className="mt-1 text-label font-extrabold text-[#008d8c]">{formatBDT(expense.impactSummary?.payerCredit)}</div>
-                </div>
-                <div className="rounded-[13px] bg-[#edfafa] px-2 py-3">
-                  <div className="text-caption font-bold text-[#65838b]">Shared Cost</div>
-                  <div className="mt-1 text-label font-extrabold text-[#1666d9]">{formatBDT(expense.impactSummary?.sharedCost)}</div>
-                </div>
-                <div className="rounded-[13px] bg-[#edfafa] px-2 py-3">
-                  <div className="text-caption font-bold text-[#65838b]">Included In</div>
-                  <div className="mt-1 text-caption font-extrabold text-[#008d8c]">{expense.impactSummary?.includedInMonthlyBill ? 'Monthly Bill' : 'History Only'}</div>
+            <ExpenseSurface>
+              <div className="flex gap-3">
+                <ReceiptText size={22} className="shrink-0 text-[#008d8c]" />
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-body font-extrabold text-[#123748]">Receipt</h2>
+                  {expense.receiptUrl ? (
+                    <a href={expense.receiptUrl} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-3 rounded-[14px] border border-dashed border-[#c8d9df] px-3 py-3 text-label font-semibold text-[#65838b]">
+                      <FileText size={19} /> <span className="min-w-0 flex-1 truncate">View receipt</span> <ChevronRight size={18} />
+                    </a>
+                  ) : <p className="mt-1 text-label text-[#65838b]">No receipt uploaded.</p>}
                 </div>
               </div>
-            </section>
+            </ExpenseSurface>
 
-            {isManager ? <section className="grid grid-cols-2 gap-3 pb-3">
-              <Link
-                href={`/edit-expense?expenseId=${encodeURIComponent(expense.id)}&messId=${encodeURIComponent(messId)}`}
-                className="flex h-[50px] items-center justify-center gap-2 rounded-[13px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c]"
-              >
-                <Pencil size={17} />
-                Edit Expense
-              </Link>
-              <button
-                type="button"
-                onClick={() => void deleteExpense()}
-                disabled={deleting}
-                className="flex h-[50px] items-center justify-center gap-2 rounded-[13px] border border-[#f04438] bg-[#fffafa] text-label font-bold text-[#f04438] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                <Trash2 size={17} />
-                {deleting ? 'Deleting...' : 'Delete Expense'}
-              </button>
-            </section> : null}
+            <ExpenseSurface title="Impact Summary">
+              <div className="grid grid-cols-3">
+                <ExpenseMetric label="Payer Credit" value={formatTaka(expense.impactSummary?.payerCredit)} />
+                <ExpenseMetric label="Shared Cost" value={formatTaka(expense.impactSummary?.sharedCost)} color="#1473e6" />
+                <ExpenseMetric label="Included In" value={expense.impactSummary?.includedInMonthlyBill ? 'Monthly Bill' : 'History'} />
+              </div>
+            </ExpenseSurface>
+
+            {isManager ? (
+              <div className="grid grid-cols-2 gap-3 pb-3">
+                <Link href={`/edit-expense?expenseId=${encodeURIComponent(expense.id)}&messId=${encodeURIComponent(messId)}`} className="expense-secondary-action"><Pencil size={17} /> Edit Expense</Link>
+                <button type="button" onClick={() => void deleteExpense()} disabled={deleting} className="flex min-h-[50px] items-center justify-center gap-2 rounded-[15px] border border-[#f04438] bg-white text-label font-bold text-[#f04438] disabled:opacity-60"><Trash2 size={17} /> {deleting ? 'Deleting...' : 'Delete'}</button>
+              </div>
+            ) : null}
           </>
         ) : null}
       </div>

@@ -6,6 +6,7 @@ import { BrowserRuntimeGuard } from '@/components/browser-runtime-guard'
 import { LogoutConfirmDialog } from '@/components/logout-confirm-dialog'
 import { NativeBackActionsProvider } from '@/components/native-back-actions'
 import { NativeBackHandler } from '@/components/native-back-handler'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
 import {
   buildLoginPath,
@@ -168,7 +169,7 @@ export function Providers({ children }: { children: ReactNode }) {
   if (!hasMounted) {
     return (
       <AuthContext.Provider value={value}>
-        <div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>
+        <LoadingIndicator variant="screen" label="Loading application" />
       </AuthContext.Provider>
     )
   }

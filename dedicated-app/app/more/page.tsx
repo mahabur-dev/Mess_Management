@@ -22,30 +22,30 @@ export default function MorePage() {
               <User size={24} />
             </div>
             <div>
-              <div className="text-body font-bold text-[#123748]">{user?.name ?? 'Manager'}</div>
-              <div className="text-caption font-medium text-[#65838b]">{user?.email ?? ''}</div>
+              <div className="text-body font-bold text-[#245d66]">{user?.name ?? 'Manager'}</div>
+              <div className="text-caption font-medium text-[#6a858c]">{user?.email ?? ''}</div>
             </div>
           </div>
         </div>
 
         <div className="glass rounded-[28px] overflow-hidden">
-          <Link href={appHref('/')} className="flex items-center justify-between px-4 py-4">
+          <Link href={appHref('/')} className="flex items-center justify-between px-4 py-4 transition-colors active:bg-[#edfafa]">
             <div className="flex items-center gap-3">
-              <House size={18} className="text-[#008d8c]" />
-              <div className="text-label font-bold text-[#123748]">Back to Home</div>
+              <House size={18} className="text-[#009796]" />
+              <div className="text-label font-bold text-[#245d66]">Back to Home</div>
             </div>
-            <ChevronRight size={18} className="text-[#7da0a6]" />
+            <ChevronRight size={18} className="text-[#78a4a9]" />
           </Link>
         </div>
 
         <div className="glass rounded-[28px] overflow-hidden">
           {links.map(({ label, href, icon: Icon }) => (
-            <Link key={href} href={appHref(href)} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 last:border-b-0">
+            <Link key={href} href={appHref(href)} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 transition-colors last:border-b-0 active:bg-[#edfafa]">
               <div className="flex items-center gap-3">
-                <Icon size={18} className="text-[#008d8c]" />
-                <div className="text-label font-bold text-[#123748]">{label}</div>
+                <Icon size={18} className="text-[#009796]" />
+                <div className="text-label font-bold text-[#245d66]">{label}</div>
               </div>
-              <ChevronRight size={18} className="text-[#7da0a6]" />
+              <ChevronRight size={18} className="text-[#78a4a9]" />
             </Link>
           ))}
         </div>

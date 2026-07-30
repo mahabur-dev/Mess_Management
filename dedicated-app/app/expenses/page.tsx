@@ -3,10 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Bell,
   CircleDollarSign,
   CookingPot,
-  Filter,
   House,
   Landmark,
   Plus,
@@ -18,8 +16,6 @@ import {
 } from 'lucide-react'
 import {
   ExpenseListItem,
-  HeaderIconButton,
-  ScreenHeader,
   formatTaka,
   type ExpenseListRecord,
 } from '@/components/mobile/expense-design'
@@ -31,6 +27,8 @@ import {
   MemberInitials,
 } from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
+import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { useAuth } from '../providers'
@@ -157,21 +155,10 @@ export default function ExpensesPage() {
 
   return (
     <MobileShell showBottomNavigation>
-      <ScreenHeader
-        title={view === 'MANAGER' ? 'Manage Member Expenses' : 'Expense & Utility Center'}
-        subtitle={view === 'MANAGER' ? 'Monitor member costs and dues' : 'Track, manage & stay in control'}
+      <TopScreen
+        title={view === 'MANAGER' ? 'Manage Expenses' : 'Expense Management'}
+        subtitle={view === 'MANAGER' ? 'Monitor member costs and dues' : user?.memberships?.[0]?.mess?.name ?? 'Mess expenses'}
         backHref="/"
-        right={
-          <HeaderIconButton
-            label="Notifications"
-            icon={
-              <span className="relative">
-                <Bell size={19} />
-                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-[#ff4d42] ring-1 ring-[#008d8c]" />
-              </span>
-            }
-          />
-        }
       />
 
       <div className="screen expense-screen">
@@ -190,14 +177,16 @@ export default function ExpensesPage() {
 
         {view === 'MY' ? (
           <>
-            <div className="expense-summary-grid">
-              <ExpenseSummaryCard icon={CookingPot} label="Food" value={loading ? '...' : formatTaka(my?.foodBill)} />
-              <ExpenseSummaryCard icon={Zap} label="Utility" value={loading ? '...' : formatTaka(my?.utilityBill)} accent="blue" />
-              <ExpenseSummaryCard icon={House} label="Rent" value={loading ? '...' : formatTaka(my?.roomRent)} accent="violet" />
-              <ExpenseSummaryCard icon={WalletCards} label="Total" value={loading ? '...' : formatTaka(my?.total)} caption={`${my?.transactionCount ?? 0} txns`} accent="green" />
-            </div>
+            <ExpenseSurface title="This Month Overview">
+              <div className="expense-summary-grid">
+                <ExpenseSummaryCard icon={CookingPot} label="Food" value={loading ? <LoadingIndicator size="sm" label="Loading food expenses" /> : formatTaka(my?.foodBill)} />
+                <ExpenseSummaryCard icon={Zap} label="Utility" value={loading ? <LoadingIndicator size="sm" label="Loading utility expenses" /> : formatTaka(my?.utilityBill)} accent="blue" />
+                <ExpenseSummaryCard icon={House} label="Rent" value={loading ? <LoadingIndicator size="sm" label="Loading rent" /> : formatTaka(my?.roomRent)} accent="violet" />
+                <ExpenseSummaryCard icon={WalletCards} label="Total" value={loading ? <LoadingIndicator size="sm" label="Loading total expenses" /> : formatTaka(my?.total)} caption={`${my?.transactionCount ?? 0} txns`} accent="green" />
+              </div>
 
-            <ExpenseDetailsCta href="/monthly-bill" title="View Details" subtitle="Food, utility and rent" />
+              <ExpenseDetailsCta href="/monthly-bill" title="Total Expenses This Month" subtitle="Food, utility and rent" buttonLabel="Details" />
+            </ExpenseSurface>
 
             <ExpenseSurface
               title="Recent Expenses"
@@ -214,8 +203,8 @@ export default function ExpensesPage() {
         ) : (
           <>
             <ExpenseSurface>
-              <div className="flex gap-2.5">
-                <label className="relative min-w-0 flex-1">
+              <div>
+                <label className="relative block">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#65838b]" size={18} />
                   <input
                     value={search}
@@ -224,9 +213,6 @@ export default function ExpensesPage() {
                     placeholder="Search member by name or email"
                   />
                 </label>
-                <span className="flex h-12 items-center gap-2 rounded-[15px] border border-[#cfeeed] px-3 text-label font-bold text-[#008d8c]">
-                  <Filter size={17} /> Filters
-                </span>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-2">

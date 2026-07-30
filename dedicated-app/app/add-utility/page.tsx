@@ -15,7 +15,7 @@ import {
   expenseFormIcons,
   formatTaka,
 } from '@/components/mobile/expense-design'
-import { ExpenseChoiceCard, SplitPreviewContent } from '@/components/mobile/expense-ui'
+import { ExpenseChoiceCard, ExpensePrimaryAction, SplitPreviewContent } from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
@@ -39,7 +39,6 @@ type FormState = {
   billingMonth: string
   billDate: string
   description: string
-  receiptUrl: string
   paymentType: ExpensePaymentType
   usedBy: ExpenseUsedBy
   splitMethod: ExpenseSplitMethod
@@ -64,7 +63,6 @@ const INITIAL_FORM: FormState = {
   billingMonth: new Date().toISOString().slice(0, 7),
   billDate: new Date().toISOString().slice(0, 10),
   description: '',
-  receiptUrl: '',
   paymentType: 'FROM_DEPOSIT',
   usedBy: 'ALL_MEMBERS',
   splitMethod: 'EQUAL',
@@ -122,7 +120,6 @@ export default function AddUtilityPage() {
       expenseDate: form.billDate,
       billingMonth: `${form.billingMonth}-01`,
       description: form.description.trim() || undefined,
-      receiptUrl: form.receiptUrl.trim() || undefined,
     }
   }
 
@@ -176,7 +173,7 @@ export default function AddUtilityPage() {
   if (preview) {
     return (
       <MobileShell>
-        <FormPageShell title="Split Preview" description="See exactly how this utility will be calculated" icon={Eye} backHref="/add-utility">
+        <FormPageShell title="Split Preview" icon={Eye} backHref="/add-utility">
           <SplitPreviewContent
             title={preview.title}
             amount={preview.amount}
@@ -200,14 +197,14 @@ export default function AddUtilityPage() {
   return (
     <MobileShell>
       <form onSubmit={handlePreview}>
-        <FormPageShell title="Add Utility" description="Record electricity, gas, water, or wifi cost" icon={Zap} backHref="/expenses">
+        <FormPageShell title="Add Utility" icon={Zap} backHref="/expenses">
           <FormSection title="Paid From">
             <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} showHeading={false} />
           </FormSection>
           <FormSection title="Used By">
             <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
-              <SmallChoice active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" onClick={() => update('usedBy', 'SELF_ONLY')} vertical />
-              <SmallChoice active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected Members" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} vertical />
+              <SmallChoice active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" onClick={() => { update('usedBy', 'SELF_ONLY'); update('splitMethod', 'EQUAL') }} vertical />
+              <SmallChoice active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} vertical />
               <SmallChoice active={form.usedBy === 'ALL_MEMBERS'} icon={Users} title="All Members" onClick={() => update('usedBy', 'ALL_MEMBERS')} vertical />
               <SmallChoice active={form.usedBy === 'MEAL_ON_MEMBERS'} icon={UtensilsCrossed} title="Meal-On" onClick={() => update('usedBy', 'MEAL_ON_MEMBERS')} vertical />
             </div>
@@ -224,12 +221,14 @@ export default function AddUtilityPage() {
               </div>
             ) : null}
           </FormSection>
-          <FormSection title="Split Method">
-            <div className="grid grid-cols-2 gap-2">
-              <SmallChoice active={form.splitMethod === 'EQUAL'} icon={Scale} title="Equal" onClick={() => update('splitMethod', 'EQUAL')} />
-              <SmallChoice active={form.splitMethod === 'MEAL_COUNT'} icon={UtensilsCrossed} title="Meal Count" onClick={() => update('splitMethod', 'MEAL_COUNT')} />
-            </div>
-          </FormSection>
+          {form.usedBy !== 'SELF_ONLY' ? (
+            <FormSection title="Split Method">
+              <div className="grid grid-cols-2 gap-2">
+                <SmallChoice active={form.splitMethod === 'EQUAL'} icon={Scale} title="Equal" onClick={() => update('splitMethod', 'EQUAL')} />
+                <SmallChoice active={form.splitMethod === 'MEAL_COUNT'} icon={UtensilsCrossed} title="Meal Count" onClick={() => update('splitMethod', 'MEAL_COUNT')} />
+              </div>
+            </FormSection>
+          ) : null}
           <FormSection title="Utility Details">
             <DesignedSelect
               label="Utility Type"
@@ -248,11 +247,11 @@ export default function AddUtilityPage() {
               ))}
             </DesignedSelect>
             <FormFieldGrid>
-              <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" />
-              <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.billDate} onChange={(event) => update('billDate', event.target.value)} type="date" />
+              <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />
+              <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.billDate} onChange={(event) => update('billDate', event.target.value)} type="date" required />
             </FormFieldGrid>
-            <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" />
-            <DesignedSelect label="Payment By" icon={expenseFormIcons.member} value={form.paymentBy} onChange={(event) => update('paymentBy', event.target.value)}>
+            <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
+            <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.paymentBy} onChange={(event) => update('paymentBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
               <option value="">Select member</option>
               {members.map((member) => (
                 <option key={member.id} value={member.id}>
@@ -260,17 +259,16 @@ export default function AddUtilityPage() {
                 </option>
               ))}
             </DesignedSelect>
-            <DesignedTextarea label="Description" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add utility note..." count={`${form.description.length}/250`} />
+            <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
           </FormSection>
-          <FormSection>
-            <DesignedInput label="Receipt URL" icon={expenseFormIcons.receipt} value={form.receiptUrl} onChange={(event) => update('receiptUrl', event.target.value)} placeholder="https://..." />
+          <FormSection title="Attachment">
             <UploadField fileName={receiptFile?.name} onChange={setReceiptFile} />
           </FormSection>
           <FormStatusMessage message={message} success={success} />
-          <button type="submit" disabled={busy} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#008d8c] disabled:opacity-70">
+          <ExpensePrimaryAction type="submit" disabled={busy}>
             <Eye size={17} />
             {busy ? 'Calculating...' : 'Preview Split'}
-          </button>
+          </ExpensePrimaryAction>
         </FormPageShell>
       </form>
     </MobileShell>

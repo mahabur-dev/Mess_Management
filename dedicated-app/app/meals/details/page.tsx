@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
@@ -68,15 +69,17 @@ function MealDetailsContent() {
       <div className="screen space-y-5">
         <MealMonthSelector month={month} onChange={setMonth} />
 
-        <MealHistoryStats
-          totalMeals={loading ? 0 : summary.totalMeals}
-          days={loading ? 0 : summary.days}
-          averagePerDay={loading ? 0 : summary.averagePerDay}
-        />
+        {loading ? (
+          <LoadingIndicator variant="card" label="Loading meal history" />
+        ) : (
+          <MealHistoryStats
+            totalMeals={summary.totalMeals}
+            days={summary.days}
+            averagePerDay={summary.averagePerDay}
+          />
+        )}
 
         {message ? <InlineNotice tone="danger">{message}</InlineNotice> : null}
-        {loading ? <InlineNotice>Loading meal history...</InlineNotice> : null}
-
         {!loading ? <MealHistoryTable history={history} /> : null}
 
         <p className="px-2 text-caption font-bold leading-4 text-[#55727b]">* Only meals added within the allowed time are counted.</p>
@@ -87,7 +90,7 @@ function MealDetailsContent() {
 
 export default function MealDetailsPage() {
   return (
-    <Suspense fallback={<div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>}>
+    <Suspense fallback={<LoadingIndicator variant="screen" label="Loading meal history" />}>
       <MealDetailsContent />
     </Suspense>
   )

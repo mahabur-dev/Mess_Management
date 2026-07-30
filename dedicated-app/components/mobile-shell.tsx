@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { canAccessAppPath, getBottomTabs, getDefaultAppPath, shouldShowDefaultBottomNavigation } from '@/lib/app-permissions'
 import { normalizePathname } from '@/lib/auth'
 import { appHref } from '@/lib/routes'
@@ -34,7 +35,7 @@ export function MobileShell({
   }, [canAccess, isLoading, router, user])
 
   if (isLoading || !user) {
-    return <div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>
+    return <LoadingIndicator variant="screen" label="Loading application" />
   }
 
   if (!canAccess) {

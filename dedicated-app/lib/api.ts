@@ -1,8 +1,21 @@
 import { clearStoredToken, getStoredToken, type AuthUser, type GlobalRole } from './auth'
+import type { MemberJoinRequest, MemberJoinReviewStatus } from './member-join-requests'
 
 const DEFAULT_API_URL = 'http://localhost:5001/api/v1'
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/+$/, '')
+const SERVICE_UNAVAILABLE_MESSAGE = 'Messzen is temporarily unavailable. Please try again in a few moments.'
+const CONNECTION_ERROR_MESSAGE = "We couldn't connect to Messzen. Check your internet connection and try again."
+
+function safeApiErrorMessage(message: string | undefined, status: number) {
+  if (status >= 500) return SERVICE_UNAVAILABLE_MESSAGE
+
+  const candidate = message?.trim()
+  if (!candidate) return 'Something went wrong. Please try again.'
+
+  const containsTechnicalDetail = /https?:\/\/|\/api\/|cannot\s+(get|post|put|patch|delete)\b|prisma|econn|enotfound|stack trace/i.test(candidate)
+  return containsTechnicalDetail ? SERVICE_UNAVAILABLE_MESSAGE : candidate
+}
 
 type QueryValue = string | number | boolean | undefined | null
 
@@ -57,7 +70,7 @@ class Api {
 
       if (!res.ok || json.success === false) {
         if (res.status === 401) this.clearAuth()
-        throw new Error(json.message || res.statusText || 'Request failed')
+        throw new Error(safeApiErrorMessage(json.message || res.statusText, res.status))
       }
 
       return json
@@ -66,7 +79,7 @@ class Api {
         this.clearAuth()
       }
       if (err instanceof TypeError && /fetch|network|failed/i.test(err.message)) {
-        throw new Error(`Unable to connect to the server at ${BASE_URL}`)
+        throw new Error(CONNECTION_ERROR_MESSAGE)
       }
       throw err
     }
@@ -155,6 +168,17 @@ class Api {
 
   getMyMemberJoinRequests(params?: Record<string, QueryValue>) {
     return this.request('/member-join-requests/my', { params })
+  }
+
+  getManagedMemberJoinRequests(params?: Record<string, QueryValue>) {
+    return this.request<MemberJoinRequest[]>('/member-join-requests/managed', { params })
+  }
+
+  reviewMemberJoinRequest(requestId: string, status: MemberJoinReviewStatus, reviewNote?: string) {
+    return this.request<MemberJoinRequest>(`/member-join-requests/${requestId}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, reviewNote }),
+    })
   }
 
   getMessDashboard(messId: string) {

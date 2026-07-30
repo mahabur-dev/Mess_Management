@@ -2,17 +2,17 @@
 
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
-import { Check, ChevronRight, CircleDollarSign, Eye, Scale, ShieldCheck, UserRound, UsersRound, WalletCards } from 'lucide-react'
+import { Check, ChevronRight, CircleDollarSign, Scale, UserRound, WalletCards } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 type Accent = 'teal' | 'blue' | 'violet' | 'green' | 'orange'
 
 const ACCENTS: Record<Accent, { foreground: string; background: string }> = {
-  teal: { foreground: '#008d8c', background: '#e6f7f6' },
-  blue: { foreground: '#1473e6', background: '#eaf3ff' },
-  violet: { foreground: '#7c3aed', background: '#f2ebff' },
-  green: { foreground: '#15953a', background: '#eaf7ec' },
-  orange: { foreground: '#f07818', background: '#fff2e6' },
+  teal: { foreground: '#008d8c', background: '#dff4f3' },
+  blue: { foreground: '#0aa0a0', background: '#edfafa' },
+  violet: { foreground: '#00777a', background: '#dff4f3' },
+  green: { foreground: '#4bbfc0', background: '#edfafa' },
+  orange: { foreground: '#008d8c', background: '#edfafa' },
 }
 
 export function ExpenseSurface({
@@ -133,11 +133,11 @@ export function ExpenseDetailsCta({
       <span className="min-w-0 flex-1">
         <span className="expense-details-cta__title">{title}</span>
         <span className="expense-details-cta__subtitle">{subtitle}</span>
-        <Link href={href} className="expense-details-cta__button">
-          {buttonLabel}
-          <ChevronRight size={15} strokeWidth={2.6} />
-        </Link>
       </span>
+      <Link href={href} className="expense-details-cta__button">
+        {buttonLabel}
+        <ChevronRight size={15} strokeWidth={2.6} />
+      </Link>
     </section>
   )
 }
@@ -313,8 +313,6 @@ export function SplitPreviewContent({
   onBack: () => void
   onSave: () => void
 }) {
-  const sharedPerMember = shares.length ? totalSharedCost / shares.length : 0
-
   return (
     <>
       <ExpenseSurface>
@@ -343,25 +341,7 @@ export function SplitPreviewContent({
         </div>
       </ExpenseSurface>
 
-      <div className="rounded-[18px] border border-[#cfeeed] bg-[#f3fbfb]/90 p-4">
-        <h2 className="flex items-center gap-2 text-body font-extrabold text-[#123748]"><Eye size={18} className="text-[#008d8c]" /> How this will work</h2>
-        <div className="mt-3 space-y-0 text-label text-[#123748]">
-          <div className="flex items-center gap-3 border-b border-dashed border-[#bfe7e6] py-2.5">
-            <WalletCards size={18} className="shrink-0 text-[#008d8c]" />
-            <span>Payer gets deposit credit: <strong className="text-[#008d8c]">{formatMoney(payerCredit)}</strong></span>
-          </div>
-          <div className="flex items-center gap-3 border-b border-dashed border-[#bfe7e6] py-2.5">
-            <UsersRound size={18} className="shrink-0 text-[#008d8c]" />
-            <span>Average member share: <strong className="text-[#008d8c]">{formatMoney(sharedPerMember)}</strong></span>
-          </div>
-          <div className="flex items-center gap-3 pt-2.5">
-            <ShieldCheck size={18} className="shrink-0 text-[#008d8c]" />
-            <span>This expense affects only the selected members.</span>
-          </div>
-        </div>
-      </div>
-
-      <ExpenseSurface title="Member-wise Preview">
+      <ExpenseSurface title="Member Allocation">
         <div className="-mx-3 overflow-hidden rounded-[15px] border border-[#edf1f4]">
           {shares.map((share, index) => (
             <div key={share.memberId} className="flex items-center gap-3 border-b border-[#edf1f4] bg-white px-3 py-3 last:border-b-0">
@@ -372,7 +352,7 @@ export function SplitPreviewContent({
               </span>
               <span className="text-right">
                 <span className="block text-caption font-semibold text-[#65838b]">Added cost</span>
-                <span className="mt-0.5 block text-body font-black text-[#1473e6]">{formatMoney(share.shareAmount)}</span>
+                <span className="mt-0.5 block text-body font-black text-[#00777a]">{formatMoney(share.shareAmount)}</span>
               </span>
             </div>
           ))}
@@ -380,11 +360,10 @@ export function SplitPreviewContent({
         </div>
       </ExpenseSurface>
 
-      <ExpenseSurface title="Final Impact">
-        <div className="grid grid-cols-3">
+      <ExpenseSurface title="Allocation Summary">
+        <div className="grid grid-cols-2">
           <ExpenseMetric label="Payer Credit" value={formatMoney(payerCredit)} color="#15953a" />
-          <ExpenseMetric label="Shared Cost" value={formatMoney(totalSharedCost)} color="#1473e6" />
-          <ExpenseMetric label="Net Benefit" value={formatMoney(Math.max(0, payerCredit))} color="#15953a" />
+          <ExpenseMetric label="Shared Cost" value={formatMoney(totalSharedCost)} color="#00777a" />
         </div>
       </ExpenseSurface>
 

@@ -164,7 +164,7 @@ export function DepositStatCard({
       className={joinClasses(
         'border bg-white text-center',
         compact
-          ? 'grid min-h-[84px] place-items-center rounded-[15px] px-1.5 py-2.5 shadow-none'
+          ? 'grid min-h-[68px] place-items-center rounded-[10px] px-1.5 py-2 shadow-none'
           : 'min-h-[108px] rounded-[18px] px-2.5 py-3.5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]'
       )}
       style={{ borderColor: selected.border }}
@@ -177,7 +177,7 @@ export function DepositStatCard({
       <div className="text-caption font-bold leading-tight" style={{ color: selected.fg }}>
         {title}
       </div>
-      <div className={joinClasses('mt-2 truncate font-bold leading-none text-[#123748]', compact ? 'text-title-sm' : 'text-headline')}>{value}</div>
+      <div className={joinClasses('truncate font-bold leading-none text-[#123748]', compact ? 'mt-1 text-body' : 'mt-2 text-headline')}>{value}</div>
       {caption ? <div className="mt-2 text-caption font-semibold leading-tight text-[#65838b]">{caption}</div> : null}
     </section>
   )
@@ -185,7 +185,7 @@ export function DepositStatCard({
 
 export function DepositStatPanel({ children }: { children: ReactNode }) {
   return (
-    <section className="rounded-[20px] border border-[#cfeeed] bg-white/96 p-2 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
+    <section className="rounded-[14px] border border-[#cfeeed] bg-white p-1.5 shadow-[0_6px_18px_rgba(0,119,122,0.06)]">
       <div className="grid grid-cols-3 gap-1.5">{children}</div>
     </section>
   )

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   DepositAggregateSummary,
@@ -112,7 +113,7 @@ export default function AllDepositsPage() {
 
         <section className="space-y-3">
           <DepositSectionTitle title={`Deposits (${visibleItems.length})`} />
-          {loading ? <div className="rounded-[18px] bg-white p-5 text-label font-semibold text-[#65838b]">Loading deposits...</div> : null}
+          {loading ? <LoadingIndicator variant="card" label="Loading deposits" /> : null}
           {!loading && visibleItems.length ? (
             <div className="flush-list">
               {visibleItems.map((item, index) => (

@@ -8,6 +8,8 @@ import type {
   ReactNode,
 } from 'react'
 import {
+  CircleAlert,
+  CircleCheck,
   ArrowRight,
   Eye,
   EyeOff,
@@ -99,15 +101,19 @@ export function AuthMessage({
   children: ReactNode
   success?: boolean
 }) {
+  const StatusIcon = success ? CircleCheck : CircleAlert
+
   return (
     <div
-      className={`mb-4 rounded-2xl border px-4 py-3 text-label font-semibold ${
+      className={`mb-4 flex items-start gap-2.5 rounded-2xl border px-4 py-3 text-label font-semibold ${
         success
           ? 'border-[#bfe7e6] bg-[#edfafa] text-[#00777a]'
           : 'border-[#f4c7c7] bg-[#fff5f5] text-[#b42318]'
       }`}
+      role={success ? 'status' : 'alert'}
     >
-      {children}
+      <StatusIcon size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
+      <span>{children}</span>
     </div>
   )
 }

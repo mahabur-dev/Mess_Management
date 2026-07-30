@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { BadgeCheck, CalendarDays, CookingPot, FilePlus2, House, Info, Landmark, Pencil, WalletCards, Zap } from 'lucide-react'
+import { BadgeCheck, CalendarDays, CookingPot, House, Pencil, WalletCards, Zap } from 'lucide-react'
 import { ExpenseListItem, ScreenHeader, formatTaka, type ExpenseListRecord } from '@/components/mobile/expense-design'
-import { ExpenseBreakdownList, ExpenseMetric, ExpenseSummaryCard, ExpenseSurface } from '@/components/mobile/expense-ui'
+import { ExpenseSummaryCard, ExpenseSurface } from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { LABELS, type BillStatus } from '@/lib/form-options'
@@ -17,7 +18,6 @@ type MyExpenseDetails = {
   utilityBill?: number
   roomRent?: number
   total?: number
-  personalExpenseAmount?: number
   transactionCount?: number
   history?: ExpenseListRecord[]
 }
@@ -46,8 +46,6 @@ export default function MonthlyBillPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [bills, setBills] = useState<BillItem[]>([])
-  const [generating, setGenerating] = useState(false)
-  const [billingMessage, setBillingMessage] = useState('')
 
   useEffect(() => {
     if (!messId) return
@@ -88,29 +86,12 @@ export default function MonthlyBillPage() {
     return () => {
       active = false
     }
-  }, [generating, isManager, messId, month])
-
-  async function generateBills() {
-    if (!messId || generating) return
-    setGenerating(true)
-    setBillingMessage('')
-    try {
-      await api.generateMonthlyBills({ messId, month: `${month}-01` })
-      setBillingMessage(`Monthly bills generated for ${monthLabel(month)}.`)
-    } catch (error) {
-      setBillingMessage(error instanceof Error ? error.message : 'Failed to generate monthly bills.')
-    } finally {
-      setGenerating(false)
-    }
-  }
+  }, [isManager, messId, month])
 
   const history = details?.history ?? []
-  const personalPaid = history.filter((item) => String(item.paymentType ?? item.payment_method).toUpperCase() === 'PERSONAL').length
-  const fromDeposit = history.filter((item) => String(item.paymentType ?? item.payment_method).toUpperCase().includes('DEPOSIT')).length
-
   return (
     <MobileShell showBottomNavigation>
-      <ScreenHeader title="My Expense Details" subtitle="Personal summary" backHref="/expenses" />
+      <ScreenHeader title="Expense Summary" backHref="/expenses" />
 
       <div className="screen expense-screen">
         <label className="relative flex h-12 w-[min(100%,190px)] items-center gap-3 rounded-full border border-white/90 bg-[#008d8c] px-4 text-label font-bold text-white shadow-[0_12px_24px_rgba(0,119,122,0.2)]">
@@ -122,24 +103,11 @@ export default function MonthlyBillPage() {
         {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]">{message}</div> : null}
 
         <div className="expense-summary-grid">
-          <ExpenseSummaryCard icon={CookingPot} label="Food" value={loading ? '...' : formatTaka(details?.foodBill)} />
-          <ExpenseSummaryCard icon={Zap} label="Utility" value={loading ? '...' : formatTaka(details?.utilityBill)} accent="blue" />
-          <ExpenseSummaryCard icon={House} label="Rent" value={loading ? '...' : formatTaka(details?.roomRent)} accent="violet" />
-          <ExpenseSummaryCard icon={WalletCards} label="Total" value={loading ? '...' : formatTaka(details?.total)} caption={`${details?.transactionCount ?? 0} txns`} accent="green" />
+          <ExpenseSummaryCard icon={CookingPot} label="Food" value={loading ? <LoadingIndicator size="sm" label="Loading food expenses" /> : formatTaka(details?.foodBill)} />
+          <ExpenseSummaryCard icon={Zap} label="Utility" value={loading ? <LoadingIndicator size="sm" label="Loading utility expenses" /> : formatTaka(details?.utilityBill)} accent="blue" />
+          <ExpenseSummaryCard icon={House} label="Rent" value={loading ? <LoadingIndicator size="sm" label="Loading rent" /> : formatTaka(details?.roomRent)} accent="violet" />
+          <ExpenseSummaryCard icon={WalletCards} label="Total" value={loading ? <LoadingIndicator size="sm" label="Loading total expenses" /> : formatTaka(details?.total)} caption={`${details?.transactionCount ?? 0} txns`} accent="green" />
         </div>
-
-        <ExpenseSurface title="My Cost Breakdown">
-          <ExpenseBreakdownList
-            items={[
-              { icon: CookingPot, label: 'Food', value: formatTaka(details?.foodBill) },
-              { icon: Zap, label: 'Utility', value: formatTaka(details?.utilityBill), accent: 'blue' },
-              { icon: House, label: 'Rent', value: formatTaka(details?.roomRent), accent: 'violet' },
-              { icon: Landmark, label: 'Paid', value: formatTaka(details?.personalExpenseAmount), accent: 'orange' },
-            ]}
-          />
-        </ExpenseSurface>
-
-        <div className="expense-info-strip"><Info size={18} className="shrink-0 text-[#008d8c]" /> Own allocated costs only.</div>
 
         <ExpenseSurface title="History">
           <div className="flush-list flush-list--home-panel">
@@ -148,25 +116,10 @@ export default function MonthlyBillPage() {
             ))}
             {!loading && !history.length ? <div className="expense-empty-state mx-3">No expense history for {monthLabel(month)}.</div> : null}
           </div>
-
-          <h3 className="mt-4 text-body font-extrabold text-[#123748]">Activity</h3>
-          <div className="mt-3 grid grid-cols-3">
-            <ExpenseMetric label="Transactions" value={details?.transactionCount ?? 0} />
-            <ExpenseMetric label="Personal Paid" value={personalPaid} color="#f07818" />
-            <ExpenseMetric label="From Deposit" value={fromDeposit} />
-          </div>
         </ExpenseSurface>
 
         {isManager ? (
-          <ExpenseSurface
-            title="Manager Billing Tools"
-            aside={
-              <button type="button" onClick={() => void generateBills()} disabled={generating} className="flex items-center gap-1.5 rounded-full bg-[#008d8c] px-3 py-2 text-caption font-bold text-white disabled:opacity-60">
-                <FilePlus2 size={15} /> {generating ? 'Generating...' : 'Generate Bills'}
-              </button>
-            }
-          >
-            {billingMessage ? <div className="mb-3 rounded-[14px] border border-[#cfeeed] bg-[#edfafa] px-3 py-2.5 text-label font-semibold text-[#008d8c]">{billingMessage}</div> : null}
+          <ExpenseSurface title="Member Bills">
             <div className="overflow-hidden rounded-[15px] border border-[#edf1f4]">
               {bills.map((bill) => (
                 <div key={bill.id} className="flex items-center gap-3 border-b border-[#edf1f4] bg-white px-3 py-3 last:border-b-0">

@@ -8,12 +8,12 @@ import {
   type ChangeEvent,
   type ComponentType,
   type InputHTMLAttributes,
+  type MouseEvent,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
 import {
-  BadgeInfo,
   Banknote,
   Bed,
   CalendarDays,
@@ -112,10 +112,10 @@ export function categoryIcon(category?: string | null): IconType {
 
 export function categoryTone(category?: string | null) {
   const key = String(category ?? '').toUpperCase()
-  if (key === 'FOOD') return { bg: '#e8fbfa', fg: '#008d8c' }
-  if (key === 'ELECTRICITY') return { bg: '#fff1e9', fg: '#f04438' }
-  if (key === 'RENT') return { bg: '#f0edff', fg: '#6e65c7' }
-  if (key === 'GROCERY' || key === 'UTILITY' || key === 'CLEANER') return { bg: '#e8fbfa', fg: '#008d8c' }
+  if (key === 'FOOD') return { bg: '#dff4f3', fg: '#008d8c' }
+  if (key === 'ELECTRICITY') return { bg: '#edfafa', fg: '#0aa0a0' }
+  if (key === 'RENT') return { bg: '#dff4f3', fg: '#00777a' }
+  if (key === 'GROCERY' || key === 'UTILITY' || key === 'CLEANER') return { bg: '#edfafa', fg: '#4bbfc0' }
   return { bg: '#edfafa', fg: '#008d8c' }
 }
 
@@ -325,7 +325,7 @@ export function ExpenseActionCard({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-label font-bold text-[#061638]">
+        <span className="block truncate text-label font-bold text-[#123748]">
           {title}
         </span>
 
@@ -715,7 +715,7 @@ export function ExpenseListItem({
             block truncate
             text-label font-bold
             uppercase
-            text-[#061638]
+            text-[#123748]
           "
         >
           {label}
@@ -802,7 +802,7 @@ export function FormPageShell({
   children,
 }: {
   title: string
-  description: string
+  description?: string
   icon: IconType
   backHref: string
   children: ReactNode
@@ -828,7 +828,7 @@ export function FormPageShell({
 export function FormSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="expense-form-card">
-      {title ? <h2 className="mb-3 text-body font-extrabold leading-tight text-[#123748]">{title}</h2> : null}
+      {title ? <h2 className="section-title !mb-3">{title}</h2> : null}
       <div className="space-y-3.5">{children}</div>
     </section>
   )
@@ -888,10 +888,10 @@ export function PaymentTypeSelector({
   onChange: (value: ExpensePaymentType) => void
   showHeading?: boolean
 }) {
-  const choices: Array<{ value: ExpensePaymentType; label: string; description: string; icon: IconType }> = [
-    { value: 'PERSONAL', label: 'Personal', description: 'Paid by you', icon: User },
-    { value: 'FROM_DEPOSIT', label: 'From Deposit', description: 'Use deposit credit', icon: Landmark },
-    { value: 'COLLECTED_FUND', label: 'Collected Fund', description: 'Use collected fund', icon: UsersRound },
+  const choices: Array<{ value: ExpensePaymentType; label: string; icon: IconType }> = [
+    { value: 'PERSONAL', label: 'Personal', icon: User },
+    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
+    { value: 'COLLECTED_FUND', label: 'Collected Fund', icon: UsersRound },
   ]
 
   return (
@@ -906,17 +906,16 @@ export function PaymentTypeSelector({
               key={choice.value}
               type="button"
               onClick={() => onChange(choice.value)}
-              className={`relative flex min-h-[88px] flex-col items-center justify-center gap-1.5 rounded-[15px] border px-2 py-2 text-center transition ${
+              className={`relative flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-[15px] border px-2 py-2 text-center transition ${
                 selected
-                  ? 'border-[#008d8c] bg-[#f7ffff] text-[#061638] shadow-[0_12px_24px_rgba(0,141,140,0.10)]'
-                  : 'border-[#dce5ec] bg-white text-[#061638] shadow-[0_8px_18px_rgba(18,55,72,0.04)]'
+                  ? 'border-[#008d8c] bg-[#f7ffff] text-[#123748] shadow-[0_12px_24px_rgba(0,141,140,0.10)]'
+                  : 'border-[#dce5ec] bg-white text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.04)]'
               }`}
             >
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e8f8f7] text-[#008d8c]">
                 <Icon size={18} strokeWidth={2.25} />
               </span>
               <span className="min-w-0 text-caption font-bold leading-tight">{choice.label}</span>
-              <span className="min-w-0 text-caption font-medium leading-tight text-[#65838b]">{choice.description}</span>
               {selected ? (
                 <span className="absolute right-1.5 top-1.5 grid h-[20px] w-[20px] shrink-0 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,141,140,0.22)]">
                   <Check size={13} strokeWidth={3} />
@@ -926,10 +925,6 @@ export function PaymentTypeSelector({
           )
         })}
       </div>
-      <p className="mt-3 flex items-center gap-2 rounded-[13px] bg-[#edfafa] px-3.5 py-3 text-label font-medium text-[#52727b]">
-        <BadgeInfo className="shrink-0 text-[#65838b]" size={16} />
-        If paid personally, the payer may receive deposit credit based on who shared the expense.
-      </p>
     </div>
   )
 }
@@ -939,7 +934,20 @@ type DesignedFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   icon: IconType
 }
 
-export function DesignedInput({ label, icon: Icon, className = '', ...props }: DesignedFieldProps) {
+export function DesignedInput({ label, icon: Icon, className = '', type, onClick, ...props }: DesignedFieldProps) {
+  const opensPicker = type === 'date' || type === 'month'
+
+  function handleClick(event: MouseEvent<HTMLInputElement>) {
+    onClick?.(event)
+    if (!opensPicker || event.defaultPrevented) return
+
+    try {
+      event.currentTarget.showPicker()
+    } catch {
+      // Browsers without showPicker still retain their native field interaction.
+    }
+  }
+
   return (
     <label className="block">
       <span className={formLabelClass}>{label}</span>
@@ -948,7 +956,9 @@ export function DesignedInput({ label, icon: Icon, className = '', ...props }: D
           <Icon size={16} strokeWidth={2.35} />
         </span>
         <input
-          className={joinClasses(formControlClass, className)}
+          type={type}
+          onClick={handleClick}
+          className={joinClasses(formControlClass, opensPicker && 'designed-picker-input', className)}
           {...props}
         />
       </span>

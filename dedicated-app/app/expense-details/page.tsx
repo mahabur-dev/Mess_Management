@@ -3,10 +3,9 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, ChevronRight, FileText, MessageSquareText, MoreVertical, Pencil, ReceiptText, Trash2, UserPlus, UserRound } from 'lucide-react'
+import { CalendarDays, ChevronRight, FileText, MessageSquareText, Pencil, ReceiptText, Trash2, UserPlus, UserRound } from 'lucide-react'
 import {
   CircleIcon,
-  HeaderIconButton,
   ScreenHeader,
   categoryIcon,
   categoryLabel,
@@ -19,6 +18,7 @@ import {
 } from '@/components/mobile/expense-design'
 import { ExpenseMetric, ExpenseSurface, MemberInitials } from '@/components/mobile/expense-ui'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { useQueryParams } from '@/lib/use-query-params'
@@ -115,7 +115,6 @@ export default function ExpenseDetailsPage() {
     const createdAt = expense.createdAt ?? expense.created_at ?? expenseDate
     return {
       category: categoryLabel(expense.category),
-      date: formatDateTime(expenseDate),
       createdAt: formatDateTime(createdAt),
       payment: expense.payment_method || paymentLabel(expense.paymentType),
       usedBy: readableEnum(expense.usedBy, 'All Members'),
@@ -145,13 +144,11 @@ export default function ExpenseDetailsPage() {
     <MobileShell showBottomNavigation>
       <ScreenHeader
         title="Expense Details"
-        subtitle="Understand one expense clearly"
         backHref="/expenses"
-        right={<HeaderIconButton label="More actions" icon={<MoreVertical size={19} />} />}
       />
 
       <div className="screen expense-screen">
-        {loading ? <div className="expense-empty-state">Loading expense details...</div> : null}
+        {loading ? <LoadingIndicator variant="card" label="Loading expense details" /> : null}
         {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]">{message}</div> : null}
 
         {expense && details ? (
@@ -189,53 +186,53 @@ export default function ExpenseDetailsPage() {
               </ExpenseSurface>
             </div>
 
-            <ExpenseSurface title="Calculation Information">
-              <DetailRow icon={detailIcons.category} label="Category" value={details.category} />
+            <ExpenseSurface title="Calculation">
               <DetailRow icon={detailIcons.payment} label="Paid From" value={details.payment} />
               <DetailRow icon={detailIcons.user} label="Used By" value={details.usedBy} />
               <DetailRow icon={detailIcons.amount} label="Split Method" value={details.splitMethod} />
-              <DetailRow icon={detailIcons.date} label="Expense Date" value={details.date} />
               <DetailRow icon={detailIcons.added} label="Added On" value={details.createdAt} />
               <DetailRow icon={detailIcons.user} label="Affected Members" value={`${expense.shares?.length ?? 0} Members`} />
             </ExpenseSurface>
 
-            <ExpenseSurface title="Who Shares This">
-              <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
-                {(expense.shares ?? []).map((share, index) => (
-                  <div key={share.memberId} className="flex min-w-0 items-center gap-2 rounded-[14px] border border-[#edf1f4] bg-white p-2">
-                    <MemberInitials name={share.memberName} accent={index % 2 ? 'violet' : 'teal'} />
-                    <span className="min-w-0 truncate text-caption font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
-                  </div>
-                ))}
-                {!expense.shares?.length ? <div className="expense-empty-state col-span-full">No member-wise shares recorded.</div> : null}
-              </div>
-            </ExpenseSurface>
+            {expense.shares?.length ? (
+              <ExpenseSurface title="Member Allocation">
+                <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
+                  {expense.shares.map((share, index) => (
+                    <div key={share.memberId} className="flex min-w-0 items-center gap-2 rounded-[14px] border border-[#cfeeed] bg-white p-2">
+                      <MemberInitials name={share.memberName} accent={index % 2 ? 'violet' : 'teal'} />
+                      <span className="min-w-0 truncate text-caption font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
+                    </div>
+                  ))}
+                </div>
+              </ExpenseSurface>
+            ) : null}
 
-            <ExpenseSurface>
-              <div className="flex gap-3">
-                <MessageSquareText size={22} className="shrink-0 text-[#008d8c]" />
-                <div><h2 className="text-body font-extrabold text-[#123748]">Description</h2><p className="mt-1 text-label text-[#65838b]">{expense.description || 'No description added.'}</p></div>
-              </div>
-            </ExpenseSurface>
+            {expense.description ? (
+              <ExpenseSurface title="Note">
+                <div className="flex gap-3">
+                  <MessageSquareText size={20} className="shrink-0 text-[#008d8c]" />
+                  <p className="text-label text-[#65838b]">{expense.description}</p>
+                </div>
+              </ExpenseSurface>
+            ) : null}
 
-            <ExpenseSurface>
-              <div className="flex gap-3">
-                <ReceiptText size={22} className="shrink-0 text-[#008d8c]" />
+            {expense.receiptUrl ? (
+              <ExpenseSurface title="Receipt">
+                <div className="flex gap-3">
+                <ReceiptText size={20} className="shrink-0 text-[#008d8c]" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-body font-extrabold text-[#123748]">Receipt</h2>
-                  {expense.receiptUrl ? (
-                    <a href={expense.receiptUrl} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-3 rounded-[14px] border border-dashed border-[#c8d9df] px-3 py-3 text-label font-semibold text-[#65838b]">
-                      <FileText size={19} /> <span className="min-w-0 flex-1 truncate">View receipt</span> <ChevronRight size={18} />
-                    </a>
-                  ) : <p className="mt-1 text-label text-[#65838b]">No receipt uploaded.</p>}
+                  <a href={expense.receiptUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-[14px] border border-dashed border-[#c8d9df] px-3 py-3 text-label font-semibold text-[#65838b]">
+                    <FileText size={19} /> <span className="min-w-0 flex-1 truncate">View receipt</span> <ChevronRight size={18} />
+                  </a>
                 </div>
               </div>
-            </ExpenseSurface>
+              </ExpenseSurface>
+            ) : null}
 
             <ExpenseSurface title="Impact Summary">
               <div className="grid grid-cols-3">
                 <ExpenseMetric label="Payer Credit" value={formatTaka(expense.impactSummary?.payerCredit)} />
-                <ExpenseMetric label="Shared Cost" value={formatTaka(expense.impactSummary?.sharedCost)} color="#1473e6" />
+                <ExpenseMetric label="Shared Cost" value={formatTaka(expense.impactSummary?.sharedCost)} color="#00777a" />
                 <ExpenseMetric label="Included In" value={expense.impactSummary?.includedInMonthlyBill ? 'Monthly Bill' : 'History'} />
               </div>
             </ExpenseSurface>

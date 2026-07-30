@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronRight, Clock3, Settings2, UtensilsCrossed } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
@@ -118,13 +119,13 @@ export default function MealsPage() {
             <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'neutral'}>{deadline?.isWindowOpen ? 'Open' : 'Closed'}</MealStatusPill>
           </div>
           {loading ? (
-            <div className="rounded-[18px] bg-[#edfafa] p-6 text-center text-label font-bold text-[#65838b]">Loading meals...</div>
+            <LoadingIndicator variant="card" label="Loading meals" />
           ) : (
             <MealTotalsGrid meals={meals} />
           )}
 
           <MonthlyMealSummaryCard
-            total={monthlyLoading ? 0 : monthlySummary.totalMeals}
+            total={monthlyLoading ? <LoadingIndicator size="sm" label="Loading monthly meals" /> : monthlySummary.totalMeals}
             href={`/meals/details?month=${month}`}
           />
         </MealCard>

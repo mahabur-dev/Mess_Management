@@ -33,7 +33,6 @@ type ExpenseRecord = {
   unit?: string | null
   expenseDate?: string | null
   description?: string | null
-  receiptUrl?: string | null
   paymentType?: ExpensePaymentType | null
 }
 
@@ -46,7 +45,6 @@ type FormState = {
   unit: string
   expenseDate: string
   description: string
-  receiptUrl: string
   paymentType: ExpensePaymentType
 }
 
@@ -58,7 +56,6 @@ export default function EditExpensePage() {
   const { user } = useAuth()
   const expenseId = searchParams.get('expenseId') ?? ''
   const messId = searchParams.get('messId') ?? user?.memberships?.[0]?.mess_id ?? ''
-  const [expense, setExpense] = useState<ExpenseRecord | null>(null)
   const members = useMessMemberOptions(messId, user)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [form, setForm] = useState<FormState>({
@@ -70,7 +67,6 @@ export default function EditExpensePage() {
     unit: '',
     expenseDate: new Date().toISOString().slice(0, 10),
     description: '',
-    receiptUrl: '',
     paymentType: 'FROM_DEPOSIT',
   })
   const [message, setMessage] = useState('')
@@ -86,8 +82,6 @@ export default function EditExpensePage() {
         if (!alive) return
         const list = Array.isArray(res.data) ? (res.data as ExpenseRecord[]) : []
         const found = list.find((item) => item.id === expenseId) ?? null
-        setExpense(found)
-
         if (!found) {
           setMessage('Expense not found.')
           return
@@ -102,7 +96,6 @@ export default function EditExpensePage() {
           unit: found.unit ?? '',
           expenseDate: found.expenseDate ?? new Date().toISOString().slice(0, 10),
           description: found.description ?? '',
-          receiptUrl: found.receiptUrl ?? '',
           paymentType: found.paymentType ?? 'FROM_DEPOSIT',
         })
       })
@@ -132,7 +125,6 @@ export default function EditExpensePage() {
         unit: form.unit.trim() || undefined,
         expenseDate: form.expenseDate,
         description: form.description.trim() || undefined,
-        receiptUrl: form.receiptUrl.trim() || undefined,
         paymentType: form.paymentType,
       }
 
@@ -163,12 +155,11 @@ export default function EditExpensePage() {
       <form onSubmit={handleSubmit}>
         <FormPageShell
           title={isUtilityExpense ? 'Edit Utility' : 'Edit Expense'}
-          description={expense?.itemName ?? (isUtilityExpense ? 'Update utility details' : 'Update expense details')}
           icon={ReceiptText}
           backHref="/expenses"
         >
-          <FormSection>
-            <PaymentTypeSelector value={form.paymentType} onChange={(paymentType) => setForm((prev) => ({ ...prev, paymentType }))} />
+          <FormSection title="Paid From">
+            <PaymentTypeSelector value={form.paymentType} onChange={(paymentType) => setForm((prev) => ({ ...prev, paymentType }))} showHeading={false} />
           </FormSection>
 
           <FormSection title="Expense Details">
@@ -182,20 +173,23 @@ export default function EditExpensePage() {
 
             <DesignedInput label="Item Name" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => setForm((prev) => ({ ...prev, itemName: event.target.value }))} placeholder="Rice" />
 
-            <FormFieldGrid>
-              <DesignedInput label="Quantity" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => setForm((prev) => ({ ...prev, quantity: event.target.value }))} placeholder="5" type="number" />
-              <DesignedInput label="Unit" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => setForm((prev) => ({ ...prev, unit: event.target.value }))} placeholder="kg" />
-            </FormFieldGrid>
+            {form.category === 'FOOD' || form.category === 'GROCERY' ? (
+              <FormFieldGrid>
+                <DesignedInput label="Quantity (Optional)" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => setForm((prev) => ({ ...prev, quantity: event.target.value }))} placeholder="0" type="number" />
+                <DesignedInput label="Unit (Optional)" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => setForm((prev) => ({ ...prev, unit: event.target.value }))} placeholder="kg" />
+              </FormFieldGrid>
+            ) : null}
 
-            <DesignedInput label="Amount (৳)" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => setForm((prev) => ({ ...prev, amount: event.target.value }))} placeholder="Enter amount" type="number" />
+            <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => setForm((prev) => ({ ...prev, amount: event.target.value }))} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
 
-            <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => setForm((prev) => ({ ...prev, expenseDate: event.target.value }))} type="date" />
+            <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => setForm((prev) => ({ ...prev, expenseDate: event.target.value }))} type="date" required />
 
             <DesignedSelect
               label={isUtilityExpense ? 'Payment By' : 'Purchased By'}
               icon={expenseFormIcons.member}
               value={form.purchasedBy}
               onChange={(event) => setForm((prev) => ({ ...prev, purchasedBy: event.target.value }))}
+              required={form.paymentType === 'PERSONAL'}
             >
               <option value="">Select member</option>
               {members.map((member) => (
@@ -206,17 +200,16 @@ export default function EditExpensePage() {
             </DesignedSelect>
 
             <DesignedTextarea
-              label="Description"
+              label="Note (Optional)"
               icon={expenseFormIcons.description}
               value={form.description}
               onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value.slice(0, 250) }))}
-              placeholder="Monthly grocery run"
+              placeholder="Add a note"
               count={`${form.description.length}/250`}
             />
           </FormSection>
 
-          <FormSection>
-            <DesignedInput label="Receipt URL" icon={expenseFormIcons.receipt} value={form.receiptUrl} onChange={(event) => setForm((prev) => ({ ...prev, receiptUrl: event.target.value }))} placeholder="https://..." />
+          <FormSection title="Attachment">
             <UploadField label="Replace Receipt (Optional)" fileName={receiptFile?.name} onChange={setReceiptFile} />
           </FormSection>
 

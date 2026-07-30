@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: 'Dedicated App | Mess Management',
   description: 'Mess management app',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon.svg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

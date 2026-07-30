@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Clock3, Save } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
@@ -127,7 +128,7 @@ export default function SetMealTimePage() {
             </label>
           </div>
 
-          {loading ? <InlineNotice>Loading current deadline...</InlineNotice> : null}
+          {loading ? <LoadingIndicator variant="card" label="Loading meal deadline" /> : null}
           {message ? <InlineNotice tone={message.includes('successfully') ? 'success' : 'danger'}>{message}</InlineNotice> : null}
         </MealCard>
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, DoorOpen, MapPin, Search, Users } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { FieldCard } from '@/components/mobile/form-controls'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
@@ -142,7 +143,7 @@ export default function RequestMessPage() {
 
         <section className="space-y-3">
           {loading ? (
-            <div className="glass rounded-[22px] px-4 py-5 text-center text-label font-bold text-[#65838b]">Loading messes...</div>
+            <LoadingIndicator variant="card" label="Loading messes" />
           ) : null}
 
           {!loading && !messes.length ? (

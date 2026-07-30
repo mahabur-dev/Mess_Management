@@ -542,7 +542,7 @@ export class MessService {
           messId: dto.messId,
         },
         managerUserIds,
-        '/dashboard/member_management',
+        '/members',
         `member-join-request-${request.id}`,
       ).catch(() => undefined);
     }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { CircleDollarSign, PlusCircle } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
@@ -75,12 +76,14 @@ export default function PaymentsPage() {
   const [form, setForm] = useState<FormState>(() => createInitialForm())
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [totalAmount, setTotalAmount] = useState(0)
 
   useEffect(() => {
     if (!messId) return
     let alive = true
+    setLoading(true)
 
     api
       .getPaymentsByMess(messId, {
@@ -98,6 +101,9 @@ export default function PaymentsPage() {
         if (!alive) return
         setItems([])
         setTotalAmount(0)
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
       })
 
     return () => {
@@ -154,9 +160,9 @@ export default function PaymentsPage() {
         {!showForm ? (
           <>
             <DepositStatPanel>
-              <DepositStatCard title="My Deposit" value={formatDepositMoney(myTotal)} compact />
-              <DepositStatCard title="Total Deposit" value={formatDepositMoney(totalAmount)} tone="blue" compact />
-              <DepositStatCard title="Pending Deposit" value={formatDepositMoney(pendingTotal)} tone="orange" compact />
+              <DepositStatCard title="My Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading my deposit" /> : formatDepositMoney(myTotal)} compact />
+              <DepositStatCard title="Total Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading total deposit" /> : formatDepositMoney(totalAmount)} tone="blue" compact />
+              <DepositStatCard title="Pending Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading pending deposit" /> : formatDepositMoney(pendingTotal)} tone="orange" compact />
             </DepositStatPanel>
 
             <DepositWorkCard />
@@ -223,7 +229,8 @@ export default function PaymentsPage() {
               }
             />
             <div className="flush-list flush-list--panel mt-4">
-              {items.slice(0, 5).map((item, index) => (
+              {loading ? <LoadingIndicator variant="card" label="Loading deposits" className="mx-4 !w-auto" /> : null}
+              {!loading && items.slice(0, 5).map((item, index) => (
                 <DepositListItem
                   key={item.id}
                   item={item as DepositListRecord}
@@ -232,7 +239,7 @@ export default function PaymentsPage() {
                   variant="horizontal"
                 />
               ))}
-              {!items.length ? <div className="mx-4 rounded-[18px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">No deposits loaded.</div> : null}
+              {!loading && !items.length ? <div className="mx-4 rounded-[12px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">No deposits found.</div> : null}
             </div>
           </div>
         ) : null}

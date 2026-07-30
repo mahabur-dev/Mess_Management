@@ -540,7 +540,7 @@ export function MonthlyMealSummaryCard({
   href,
   title = 'Total Meals This Month',
 }: {
-  total: number
+  total: ReactNode
   href: string
   title?: string
 }) {

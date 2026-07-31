@@ -211,7 +211,7 @@ export default function AddUtilityPage() {
             </div>
           )}
           {isManager ? <FormSection title="Used By">
-            <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 min-[390px]:grid-cols-4">
               <SmallChoice active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" onClick={() => { update('usedBy', 'SELF_ONLY'); update('splitMethod', 'EQUAL') }} vertical />
               <SmallChoice active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} vertical />
               <SmallChoice active={form.usedBy === 'ALL_MEMBERS'} icon={Users} title="All Members" onClick={() => update('usedBy', 'ALL_MEMBERS')} vertical />
@@ -232,9 +232,9 @@ export default function AddUtilityPage() {
           </FormSection> : null}
           {isManager && form.usedBy !== 'SELF_ONLY' ? (
             <FormSection title="Split Method">
-              <div className="grid grid-cols-2 gap-2">
-                <SmallChoice active={form.splitMethod === 'EQUAL'} icon={Scale} title="Equal" onClick={() => update('splitMethod', 'EQUAL')} />
-                <SmallChoice active={form.splitMethod === 'MEAL_COUNT'} icon={UtensilsCrossed} title="Meal Count" onClick={() => update('splitMethod', 'MEAL_COUNT')} />
+              <div className="grid grid-cols-2 gap-2.5">
+                <SmallChoice active={form.splitMethod === 'EQUAL'} icon={Scale} title="Equal" onClick={() => update('splitMethod', 'EQUAL')} vertical />
+                <SmallChoice active={form.splitMethod === 'MEAL_COUNT'} icon={UtensilsCrossed} title="Meal Count" onClick={() => update('splitMethod', 'MEAL_COUNT')} vertical />
               </div>
             </FormSection>
           ) : null}

@@ -91,7 +91,7 @@ export default function CreateMessPage() {
               <Building2 size={23} strokeWidth={2.35} />
             </div>
             <div className="min-w-0">
-              <div className="text-body font-black text-[#123748]">Manager setup</div>
+              <div className="text-body font-semibold text-[#1d3a42]">Manager setup</div>
               <div className="mt-0.5 text-caption font-semibold text-[#65838b]">You will become manager after creation.</div>
             </div>
           </div>

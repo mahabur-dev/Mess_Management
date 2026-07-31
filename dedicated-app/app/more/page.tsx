@@ -16,41 +16,37 @@ export default function MorePage() {
     <MobileShell>
       <TopScreen title="More" subtitle="Settings and support" backHref="/" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4">
+        <div className="ui-card">
           <div className="flex items-center gap-3">
-            <div className="grid h-14 w-14 place-items-center rounded-3xl bg-[#dff4f3]/12 text-[#008d8c]">
+            <div className="ui-icon-tile ui-icon-tile--lg bg-[#dff4f3] text-[#008d8c]">
               <User size={24} />
             </div>
             <div>
-              <div className="text-body font-bold text-[#245d66]">{user?.name ?? 'Manager'}</div>
-              <div className="text-caption font-medium text-[#6a858c]">{user?.email ?? ''}</div>
+              <div className="ui-body font-bold">{user?.name ?? 'Manager'}</div>
+              <div className="ui-caption mt-0.5">{user?.email ?? ''}</div>
             </div>
           </div>
         </div>
 
-        <div className="glass rounded-[28px] overflow-hidden">
-          <Link href={appHref('/')} className="flex items-center justify-between px-4 py-4 transition-colors active:bg-[#edfafa]">
-            <div className="flex items-center gap-3">
-              <House size={18} className="text-[#009796]" />
-              <div className="text-label font-bold text-[#245d66]">Back to Home</div>
-            </div>
+        <div className="ui-card overflow-hidden" style={{ padding: 0 }}>
+          <Link href={appHref('/')} className="flex items-center gap-3 border-b border-[#e4eaec] px-4 py-3.5 transition-colors active:bg-[#edfafa]">
+            <House size={18} className="text-[#009796] shrink-0" />
+            <span className="ui-label flex-1">Back to Home</span>
             <ChevronRight size={18} className="text-[#78a4a9]" />
           </Link>
         </div>
 
-        <div className="glass rounded-[28px] overflow-hidden">
+        <div className="ui-card overflow-hidden" style={{ padding: 0 }}>
           {links.map(({ label, href, icon: Icon }) => (
-            <Link key={href} href={appHref(href)} className="flex items-center justify-between border-b border-[#cfeeed] px-4 py-4 transition-colors last:border-b-0 active:bg-[#edfafa]">
-              <div className="flex items-center gap-3">
-                <Icon size={18} className="text-[#009796]" />
-                <div className="text-label font-bold text-[#245d66]">{label}</div>
-              </div>
+            <Link key={href} href={appHref(href)} className="flex items-center gap-3 border-b border-[#e4eaec] px-4 py-3.5 transition-colors last:border-b-0 active:bg-[#edfafa]">
+              <Icon size={18} className="text-[#009796] shrink-0" />
+              <span className="ui-label flex-1">{label}</span>
               <ChevronRight size={18} className="text-[#78a4a9]" />
             </Link>
           ))}
         </div>
 
-        <button className="primary-btn flex w-full items-center justify-center gap-2" onClick={logout}>
+        <button className="ui-btn ui-btn--primary w-full" onClick={logout}>
           <LogOut size={18} /> Logout
         </button>
       </div>

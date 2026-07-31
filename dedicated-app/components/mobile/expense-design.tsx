@@ -52,10 +52,10 @@ function joinClasses(...classes: Array<string | undefined | false>) {
   return classes.filter(Boolean).join(' ')
 }
 
-const formLabelClass = 'mb-2 block text-label font-semibold text-[#123748]'
+const formLabelClass = 'mb-2 block text-label font-semibold text-[#1d3a42] ui-field-label'
 const formIconClass = 'absolute left-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[11px] bg-[#e8f8f7] text-[#008d8c]'
 const formControlClass =
-  'h-[52px] w-full rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 pl-[54px] text-body font-medium text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10'
+  'h-[52px] w-full rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 pl-[54px] text-body font-medium text-[#1d3a42] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10'
 
 export function formatBDT(value?: string | number | null) {
   const amount = Number(value ?? 0)
@@ -325,11 +325,11 @@ export function ExpenseActionCard({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-label font-bold text-[#123748]">
+        <span className="block truncate text-label font-semibold text-[#1d3a42]">
           {title}
         </span>
 
-        <span className="mt-1 block truncate text-caption font-medium text-[#758893]">
+        <span className="mt-1 block truncate text-caption font-normal text-[#758893]">
           {subtitle}
         </span>
       </span>
@@ -412,12 +412,12 @@ export function ExpenseStatCard({
   </div>
 
   <div className="flex-1">
-    <p className="whitespace-nowrap text-caption font-semibold text-[#94a3b8]">
+    <p className="whitespace-nowrap text-caption font-medium text-[#94a3b8]">
       {title}
     </p>
 
     <h3
-      className="mt-1 whitespace-nowrap text-title font-bold leading-none"
+      className="mt-1 whitespace-nowrap text-title font-semibold leading-none"
       style={{ color }}
     >
       {value}
@@ -710,16 +710,16 @@ export function ExpenseListItem({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span
-          className="
-            block truncate
-            text-label font-bold
-            uppercase
-            text-[#123748]
-          "
-        >
-          {label}
-        </span>
+      <span
+        className="
+          block truncate
+          text-label font-semibold
+          uppercase
+          text-[#1d3a42]
+        "
+      >
+        {label}
+      </span>
 
         <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
           <span className="truncate text-caption font-medium text-[#667d87]">
@@ -747,7 +747,7 @@ export function ExpenseListItem({
         className="
           shrink-0 whitespace-nowrap
           text-right text-body
-          font-bold
+          font-semibold
         "
         style={{ color: tone.fg }}
       >
@@ -828,7 +828,7 @@ export function FormPageShell({
 export function FormSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="expense-form-card">
-      {title ? <h2 className="section-title !mb-3">{title}</h2> : null}
+      {title ? <h2 className="section-title mb-3!">{title}</h2> : null}
       <div className="space-y-3.5">{children}</div>
     </section>
   )
@@ -896,7 +896,7 @@ export function PaymentTypeSelector({
 
   return (
     <div>
-      {showHeading ? <h2 className="mb-3 text-body font-extrabold leading-tight text-[#123748]">Paid From</h2> : null}
+      {showHeading ? <h2 className="mb-3 text-body font-semibold leading-tight text-[#1d3a42]">Paid From</h2> : null}
       <div className="grid grid-cols-3 gap-2.5">
         {choices.map((choice) => {
           const selected = value === choice.value
@@ -906,21 +906,23 @@ export function PaymentTypeSelector({
               key={choice.value}
               type="button"
               onClick={() => onChange(choice.value)}
-              className={`relative flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-[15px] border px-2 py-2 text-center transition ${
-                selected
-                  ? 'border-[#008d8c] bg-[#f7ffff] text-[#123748] shadow-[0_12px_24px_rgba(0,141,140,0.10)]'
-                  : 'border-[#dce5ec] bg-white text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.04)]'
-              }`}
+              className="expense-choice-card"
+              data-active={selected}
+              data-compact={false}
+              data-layout="vertical"
+              aria-pressed={selected}
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e8f8f7] text-[#008d8c]">
-                <Icon size={18} strokeWidth={2.25} />
+              <span className="expense-choice-card__icon bg-[#e8f8f7] text-[#008d8c]">
+                <Icon size={21} strokeWidth={2.2} />
               </span>
-              <span className="min-w-0 text-caption font-bold leading-tight">{choice.label}</span>
               {selected ? (
-                <span className="absolute right-1.5 top-1.5 grid h-[20px] w-[20px] shrink-0 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,141,140,0.22)]">
-                  <Check size={13} strokeWidth={3} />
+                <span className="expense-choice-card__check" aria-hidden="true">
+                  <Check size={12} strokeWidth={3} />
                 </span>
               ) : null}
+              <span className="min-w-0">
+                <span className="expense-choice-card__title">{choice.label}</span>
+              </span>
             </button>
           )
         })}

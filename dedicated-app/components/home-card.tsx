@@ -29,11 +29,11 @@ export function HomeCard({
   const Element = as
 
   return (
-    <Element className={classes('home-card', className)} role={role} aria-label={ariaLabel}>
+    <Element className={classes('home-card ui-card', className)} role={role} aria-label={ariaLabel}>
       {title || caption || action ? (
         <div className="home-card__header">
           <div className="min-w-0 flex-1">
-            {title ? <h2 className="section-title !mb-0">{title}</h2> : null}
+            {title ? <h2 className="ui-section-title mb-0!">{title}</h2> : null}
             {caption ? <p className="home-card__caption">{caption}</p> : null}
           </div>
           {action}
@@ -82,7 +82,7 @@ export function HomeQuickAction({
       <span className="home-quick-action__icon">
         <Icon size={19} />
       </span>
-      <span className="text-label font-semibold text-[#123748]">{label}</span>
+      <span className="text-label font-medium text-[#3d5560]">{label}</span>
     </button>
   )
 }

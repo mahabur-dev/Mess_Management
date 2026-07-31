@@ -131,7 +131,7 @@ export function DepositSectionTitle({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="text-title-sm font-bold leading-tight text-[#123748]">{title}</h2>
+      <h2 className="text-title-sm font-semibold leading-tight text-[#1d3a42]">{title}</h2>
       {action}
     </div>
   )
@@ -177,7 +177,7 @@ export function DepositStatCard({
       <div className="text-caption font-bold leading-tight" style={{ color: selected.fg }}>
         {title}
       </div>
-      <div className={joinClasses('truncate font-bold leading-none text-[#123748]', compact ? 'mt-1 text-body' : 'mt-2 text-headline')}>{value}</div>
+      <div className={joinClasses('truncate font-semibold leading-none text-[#1d3a42]', compact ? 'mt-1 text-body' : 'mt-2 text-headline')}>{value}</div>
       {caption ? <div className="mt-2 text-caption font-semibold leading-tight text-[#65838b]">{caption}</div> : null}
     </section>
   )
@@ -308,7 +308,7 @@ export function DepositAggregateSummary({
         </div>
         <div>
           <div className="text-caption font-semibold text-[#65838b]">Total Entries</div>
-          <div className="mt-2 text-title font-bold leading-none text-[#123748]">{entries}</div>
+          <div className="mt-2 text-title font-semibold leading-none text-[#1d3a42]">{entries}</div>
           <div className="mt-2 text-caption font-semibold text-[#65838b]">This month</div>
         </div>
       </div>
@@ -319,7 +319,7 @@ export function DepositAggregateSummary({
         </div>
         <div>
           <div className="text-caption font-semibold text-[#65838b]">Total Amount</div>
-          <div className="mt-2 text-title font-bold leading-none text-[#123748]">{formatDepositMoney(amount)}</div>
+          <div className="mt-2 text-title font-semibold leading-none text-[#1d3a42]">{formatDepositMoney(amount)}</div>
           <div className="mt-2 text-caption font-semibold text-[#65838b]">This month</div>
         </div>
       </div>
@@ -410,7 +410,7 @@ export function DepositListItem({
         {initials(name)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-label font-bold text-[#123748]">{name}</div>
+        <div className="truncate text-label font-semibold text-[#1d3a42]">{name}</div>
         <div className="mt-1 flex min-w-0 items-center gap-1.5 text-caption font-bold">
           <span style={{ color: amountTone }}>{formatDepositMoney(item.amount)}</span>
           <span className="text-[#789096]">.</span>
@@ -550,7 +550,7 @@ export function PaymentMethodGrid({
 }) {
   return (
     <section>
-      <h2 className="mb-3 text-title-sm font-bold text-[#123748]">Deposit Method</h2>
+      <h2 className="mb-3 text-title-sm font-semibold text-[#1d3a42]">Deposit Method</h2>
       <div className="grid grid-cols-2 gap-3">
         {PAYMENT_METHODS.map((method) => {
           const active = value === method
@@ -591,7 +591,7 @@ export function DepositInfoRow({
         <Icon size={19} strokeWidth={2.3} />
       </div>
       <div className="min-w-0 text-label font-bold text-[#65838b]">{label}</div>
-      <div className="min-w-0 text-right text-label font-bold leading-5 text-[#123748]">{value}</div>
+      <div className="min-w-0 text-right text-label font-semibold leading-5 text-[#1d3a42]">{value}</div>
     </div>
   )
 }
@@ -613,7 +613,7 @@ export function DepositDetailsSummary({
           <div className="grid h-16 w-16 place-items-center rounded-full" style={{ backgroundColor: status.bg, color: status.fg }}>
             <StatusIcon size={30} strokeWidth={2.25} />
           </div>
-          <div className="mt-3 text-display font-bold leading-none text-[#123748]">{formatDepositMoney(item?.amount)}</div>
+          <div className="mt-3 text-display font-semibold leading-none text-[#1d3a42]">{formatDepositMoney(item?.amount)}</div>
           <div className="mt-3"><DepositStatusBadge status={item?.status} /></div>
         </div>
         <div className="bg-[#e0ecef]" />
@@ -641,7 +641,7 @@ function MiniFact({
     <div className="grid grid-cols-[22px_minmax(0,1fr)_minmax(76px,auto)] items-center gap-2">
       <Icon size={17} className="text-[#00777a]" />
       <div className="text-caption font-bold text-[#65838b]">{label}</div>
-      <div className="truncate text-right text-caption font-bold text-[#123748]">{value}</div>
+      <div className="truncate text-right text-caption font-semibold text-[#1d3a42]">{value}</div>
     </div>
   )
 }

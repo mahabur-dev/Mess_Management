@@ -972,72 +972,124 @@ function MemberJoinRequestsPanel({
   if (requests.length === 0) return null;
 
   return (
-    <div className="mb-7 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-      <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] px-5 py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e7f1ff] text-[#2f80ed]">
-              <UserPlus size={19} />
+    <div className="mb-8 overflow-hidden rounded-2xl border border-[#e0e8f5] bg-white shadow-[0_10px_40px_rgba(65,103,153,0.10)]">
+      <div className="relative overflow-hidden border-b border-[#e6ebf4] bg-gradient-to-r from-[#f0f6ff] via-white to-[#fafcff] px-5 py-5">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-36 w-36 rounded-full bg-[#2f80ed]/8 blur-2xl" />
+        <div className="relative flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5">
+            <span className="relative grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-white shadow-[0_8px_20px_rgba(47,128,237,0.28)]">
+              <UserPlus size={20} />
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-white ring-2 ring-white">
+                {requests.length}
+              </span>
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Requests</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Pending Approval</p>
               <h2 className="text-base font-black text-[#172554]">Member Join Requests</h2>
+              <p className="mt-0.5 text-xs font-semibold text-[#8a9bb5]">
+                Review who wants to join your mess
+              </p>
             </div>
           </div>
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
-            {requests.length} Pending
+          <span className="hidden items-center gap-1.5 rounded-full border border-amber-200/70 bg-amber-50 px-3.5 py-1.5 text-xs font-black text-amber-700 sm:inline-flex">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+            </span>
+            {requests.length} Pending {requests.length === 1 ? 'Request' : 'Requests'}
           </span>
         </div>
       </div>
 
-      <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3 sm:p-5">
         {requests.map((request) => {
           const isReviewing = reviewingId === request.id;
-          return (
-            <div key={request.id} className="rounded-xl border border-[#e6ebf4] bg-[#fbfdff] p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-sm font-black"
-                  style={{
-                    backgroundColor: `${avatarColor(request.requester_id)}18`,
-                    borderColor: `${avatarColor(request.requester_id)}55`,
-                    color: avatarColor(request.requester_id),
-                  }}
-                >
-                  {getInitials(request.requester?.name || 'User')}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-black text-[#172554]">
-                    {request.requester?.name || 'Unknown User'}
-                  </h3>
-                  <p className="truncate text-xs font-semibold text-[#6b7a99]">
-                    {request.requester?.email || ''}
-                  </p>
-                  <p className="mt-2 inline-flex max-w-full items-center rounded-lg border border-[#d8e6f8] bg-white px-2.5 py-1 text-xs font-bold text-[#2f80ed]">
-                    <span className="truncate">{request.mess?.name || 'Selected mess'}</span>
-                  </p>
-                </div>
-              </div>
+          const color = avatarColor(request.requester_id);
+          const requestedAt = new Date(request.created_at);
+          const dateLabel = requestedAt.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          });
+          const timeLabel = requestedAt.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
 
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => onReview(request.id, 'APPROVED')}
-                  disabled={isReviewing}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-50 text-xs font-black text-emerald-700 transition hover:border-emerald-500/40 hover:bg-emerald-100 disabled:opacity-60"
-                >
-                  {isReviewing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                  Accept
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onReview(request.id, 'REJECTED')}
-                  disabled={isReviewing}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-50 text-xs font-black text-red-700 transition hover:border-red-500/40 hover:bg-red-100 disabled:opacity-60"
-                >
-                  <X size={14} />
-                  Reject
-                </button>
+          return (
+            <div
+              key={request.id}
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_4px_16px_rgba(65,103,153,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#a9ccfb] hover:shadow-[0_12px_30px_rgba(65,103,153,0.14)]"
+            >
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d] opacity-70 transition-opacity group-hover:opacity-100" />
+
+              <div className="flex flex-1 flex-col p-4 pt-5 sm:p-5 sm:pt-6">
+                <div className="flex items-start gap-3.5">
+                  <div className="relative shrink-0">
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-black shadow-sm ring-2 ring-white"
+                      style={{
+                        background: `linear-gradient(135deg, ${color}22, ${color}0d)`,
+                        border: `1.5px solid ${color}55`,
+                        color,
+                      }}
+                    >
+                      {getInitials(request.requester?.name || 'User')}
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-[15px] font-black text-[#172554] group-hover:text-[#2f80ed]">
+                      {request.requester?.name || 'Unknown User'}
+                    </h3>
+                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-semibold text-[#6b7a99]">
+                      <Mail size={11} className="shrink-0 text-[#2f80ed]" />
+                      <span className="truncate">{request.requester?.email || 'No email'}</span>
+                    </p>
+                    {request.requester?.phone && (
+                      <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-semibold text-[#8a9bb5]">
+                        <Phone size={11} className="shrink-0 text-[#58d68d]" />
+                        <span className="truncate">{request.requester.phone}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] px-2.5 py-1 text-[11px] font-bold text-[#2f80ed]">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2f80ed]" />
+                    <span className="truncate">{request.mess?.name || 'Selected mess'}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#e6ebf4] bg-[#f8faff] px-2.5 py-1 text-[11px] font-bold text-[#6b7a99]">
+                    <CalendarDays size={11} className="text-[#ffb84d]" />
+                    {dateLabel} · {timeLabel}
+                  </span>
+                </div>
+
+                <div className="mt-5 border-t border-dashed border-[#dbe5f5]" />
+
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => onReview(request.id, 'APPROVED')}
+                    disabled={isReviewing}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-50 text-xs font-black text-emerald-700 shadow-[0_4px_12px_rgba(16,185,129,0.10)] transition hover:border-emerald-500/50 hover:bg-emerald-100 hover:shadow-[0_6px_16px_rgba(16,185,129,0.18)] active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
+                  >
+                    {isReviewing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={15} />}
+                    <span>Accept</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onReview(request.id, 'REJECTED')}
+                    disabled={isReviewing}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-50 text-xs font-black text-red-700 shadow-[0_4px_12px_rgba(239,68,68,0.08)] transition hover:border-red-500/50 hover:bg-red-100 hover:shadow-[0_6px_16px_rgba(239,68,68,0.16)] active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
+                  >
+                    <X size={15} />
+                    <span>Reject</span>
+                  </button>
+                </div>
               </div>
             </div>
           );

@@ -164,7 +164,7 @@ export default function RequestMessPage() {
                       <DoorOpen size={22} strokeWidth={2.4} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-body font-black text-[#123748]">{mess.name}</div>
+                      <div className="truncate text-body font-semibold text-[#1d3a42]">{mess.name}</div>
                       <div className="mt-1 flex items-center gap-1.5 text-caption font-semibold text-[#65838b]">
                         <MapPin size={14} strokeWidth={2.4} />
                         <span className="min-w-0 truncate">{mess.address ?? 'Location not set'}</span>

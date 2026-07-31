@@ -158,12 +158,12 @@ export default function ExpenseDetailsPage() {
                 <CircleIcon icon={Icon} size="lg" tone={tone} className="!h-[64px] !w-[64px]" />
                 <div className="min-w-0 flex-1">
                   <div className="text-caption font-semibold text-[#65838b]">Category</div>
-                  <div className="mt-1 truncate text-title font-extrabold text-[#123748]">{details.category}</div>
-                  <div className="mt-2 inline-flex rounded-full bg-[#e6f7f6] px-2.5 py-1 text-caption font-bold text-[#008d8c]">{details.payment}</div>
+                  <div className="mt-1 truncate text-title font-semibold text-[#1d3a42]">{details.category}</div>
+                  <div className="mt-2 inline-flex rounded-full bg-[#e6f7f6] px-2.5 py-1 text-caption font-semibold text-[#008d8c]">{details.payment}</div>
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="text-caption font-semibold text-[#65838b]">Amount</div>
-                  <div className="mt-1 text-headline font-black text-[#008d8c]">{formatTaka(expense.amount)}</div>
+                  <div className="mt-1 text-headline font-semibold text-[#008d8c]">{formatTaka(expense.amount)}</div>
                   <div className="mt-2 flex items-center justify-end gap-1.5 text-caption font-medium text-[#65838b]">
                     <CalendarDays size={14} /> {formatDate(expense.expenseDate ?? expense.expense_date)}
                   </div>

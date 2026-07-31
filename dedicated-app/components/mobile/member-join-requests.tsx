@@ -51,11 +51,11 @@ export function MemberJoinRequestCard({
   return (
     <article className="rounded-[14px] border border-[#dcebea] bg-white p-3 shadow-[0_8px_20px_rgba(18,55,72,0.05)]">
       <div className="flex items-start gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#e6f7f6] text-label font-black text-[#008d8c]" aria-hidden="true">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#e6f7f6] text-label font-semibold text-[#008d8c]" aria-hidden="true">
           {requesterInitials(request.requester.name)}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-body font-extrabold text-[#123748]">{request.requester.name}</span>
+          <span className="block truncate text-body font-semibold text-[#1d3a42]">{request.requester.name}</span>
           <span className="mt-0.5 flex items-center gap-1.5 truncate text-caption font-medium text-[#65838b]">
             <Mail size={13} className="shrink-0" />
             <span className="truncate">{request.requester.email}</span>
@@ -115,10 +115,10 @@ export function MemberJoinRequestsPanel({
     <section className="rounded-[16px] border border-[#dcebea] bg-[#f8fdfd] p-3 shadow-[0_10px_24px_rgba(0,119,122,0.06)]" aria-labelledby="join-requests-title">
       <div className="flex items-center justify-between gap-3 px-1 pb-3">
         <div>
-          <h2 id="join-requests-title" className="text-body font-extrabold text-[#123748]">Join Requests</h2>
+          <h2 id="join-requests-title" className="text-body font-semibold text-[#1d3a42]">Join Requests</h2>
           <p className="mt-0.5 text-caption font-medium text-[#65838b]">Review members waiting to join</p>
         </div>
-        <span className="grid min-w-8 place-items-center rounded-full bg-[#e6f7f6] px-2.5 py-1.5 text-label font-black text-[#008d8c]" aria-label={`${requests.length} pending requests`}>
+        <span className="grid min-w-8 place-items-center rounded-full bg-[#e6f7f6] px-2.5 py-1.5 text-label font-semibold text-[#008d8c]" aria-label={`${requests.length} pending requests`}>
           {requests.length}
         </span>
       </div>

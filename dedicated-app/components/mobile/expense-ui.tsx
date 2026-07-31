@@ -27,10 +27,10 @@ export function ExpenseSurface({
   className?: string
 }) {
   return (
-    <section className={`expense-surface ${className}`}>
+    <section className={`ui-card ${className}`}>
       {title || aside ? (
         <div className="mb-3 flex items-center justify-between gap-3">
-          {title ? <h2 className="expense-section-title">{title}</h2> : <span />}
+          {title ? <h2 className="ui-section-title mb-0!">{title}</h2> : <span />}
           {aside}
         </div>
       ) : null}
@@ -100,7 +100,7 @@ export function ExpenseSummaryCard({
         </span>
         {caption ? <span className="expense-summary-card__caption">{caption}</span> : null}
       </span>
-      {href ? <ChevronRight size={18} className="shrink-0 text-[#123748]" strokeWidth={2.4} /> : null}
+      {href ? <ChevronRight size={18} className="shrink-0 text-[#3d5560]" strokeWidth={2.4} /> : null}
     </>
   )
 
@@ -157,8 +157,8 @@ export function ExpenseBreakdownList({
             <span className="expense-breakdown-row__icon" style={{ backgroundColor: tone.background, color: tone.foreground }}>
               <Icon size={16} strokeWidth={2.35} />
             </span>
-            <span className="min-w-0 flex-1 truncate text-label font-semibold text-[#123748]">{item.label}</span>
-            <span className="text-label font-black text-[#123748]">{item.value}</span>
+            <span className="min-w-0 flex-1 truncate text-label font-medium text-[#3d5560]">{item.label}</span>
+            <span className="text-label font-semibold text-[#1d3a42]">{item.value}</span>
           </div>
         )
       })}
@@ -321,22 +321,22 @@ export function SplitPreviewContent({
             <CircleDollarSign size={27} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-body font-extrabold text-[#123748]">{title}</div>
-            <div className="mt-1 text-headline font-black text-[#008d8c]">{formatMoney(amount)}</div>
+            <div className="truncate text-body font-semibold text-[#1d3a42]">{title}</div>
+            <div className="mt-1 text-headline font-semibold text-[#008d8c]">{formatMoney(amount)}</div>
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-[#edf1f4] pt-3">
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><WalletCards size={17} /></span>
-            <span><span className="block text-caption font-semibold text-[#65838b]">Paid From</span><span className="block text-label font-bold text-[#123748]">{paidFrom}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">Paid From</span><span className="block text-label font-semibold text-[#1d3a42]">{paidFrom}</span></span>
           </div>
           <div className="flex items-center gap-2 border-l border-[#edf1f4] pl-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><UserRound size={17} /></span>
-            <span><span className="block text-caption font-semibold text-[#65838b]">Used By</span><span className="block text-label font-bold text-[#123748]">{usedBy}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">Used By</span><span className="block text-label font-semibold text-[#1d3a42]">{usedBy}</span></span>
           </div>
           <div className="col-span-2 flex items-center gap-2 border-t border-[#edf1f4] pt-2">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><Scale size={17} /></span>
-            <span><span className="block text-caption font-semibold text-[#65838b]">Split Method</span><span className="block text-label font-bold text-[#123748]">{splitMethod}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">Split Method</span><span className="block text-label font-semibold text-[#1d3a42]">{splitMethod}</span></span>
           </div>
         </div>
       </ExpenseSurface>
@@ -347,12 +347,12 @@ export function SplitPreviewContent({
             <div key={share.memberId} className="flex items-center gap-3 border-b border-[#edf1f4] bg-white px-3 py-3 last:border-b-0">
               <MemberInitials name={share.memberName ?? share.memberId} accent={index % 2 ? 'blue' : 'teal'} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-label font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
-                {share.isPayer ? <span className="mt-0.5 inline-flex rounded-full bg-[#e6f7f6] px-2 py-0.5 text-caption font-bold text-[#008d8c]">Paid by</span> : null}
+                <span className="block truncate text-label font-semibold text-[#1d3a42]">{share.memberName ?? share.memberId}</span>
+                {share.isPayer ? <span className="mt-0.5 inline-flex rounded-full bg-[#e6f7f6] px-2 py-0.5 text-caption font-semibold text-[#008d8c]">Paid by</span> : null}
               </span>
               <span className="text-right">
-                <span className="block text-caption font-semibold text-[#65838b]">Added cost</span>
-                <span className="mt-0.5 block text-body font-black text-[#00777a]">{formatMoney(share.shareAmount)}</span>
+                <span className="block text-caption font-medium text-[#65838b]">Added cost</span>
+                <span className="mt-0.5 block text-body font-semibold text-[#00777a]">{formatMoney(share.shareAmount)}</span>
               </span>
             </div>
           ))}

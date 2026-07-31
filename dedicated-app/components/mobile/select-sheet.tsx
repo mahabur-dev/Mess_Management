@@ -157,7 +157,7 @@ export function MobileSelectSheet<T extends string>({
                       }`}
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block text-body font-bold leading-snug text-[#123748] [overflow-wrap:anywhere]">
+                        <span className="block text-body font-semibold leading-snug text-[#1d3a42] [overflow-wrap:anywhere]">
                           {option.label}
                         </span>
                         {option.description ? (

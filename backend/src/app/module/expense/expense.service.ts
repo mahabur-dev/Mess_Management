@@ -14,9 +14,14 @@ import {
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
+import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 import { NotificationService } from '../notification/notification.service';
-import { uploadToCloudinary } from 'src/app/helpers/fileUploder';
+import { FundLedgerService } from '../fund-ledger/fund-ledger.service';
+import {
+  type CloudinaryResourceType,
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from 'src/app/helpers/fileUploder';
 import {
   CreateExpenseDto,
   ExpenseFilterDto,
@@ -26,6 +31,7 @@ import {
 } from './dto/expense.dto';
 import {
   calculateSplit,
+  ExpenseCalculationError,
   roundMoney,
   type CalculatedShare,
   type SplitMember,
@@ -47,11 +53,13 @@ type PreparedExpense = {
   addedByUserId: string;
   expenseDate: Date;
   billingMonth: Date;
-  itemName?: string;
-  quantity?: number;
-  unit?: string;
-  description?: string;
-  receiptUrl?: string;
+  itemName: string | null;
+  quantity: number | null;
+  unit: string | null;
+  description: string | null;
+  receiptUrl: string | null;
+  receiptPublicId: string | null;
+  receiptResourceType: CloudinaryResourceType | null;
   affectedMembers: SplitMember[];
   shares: CalculatedShare[];
   payerCredit: number;
@@ -71,8 +79,9 @@ const utilityCategoryMap: Partial<Record<ExpenseCategory, UtilityType>> = {
 export class ExpenseService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly monthlyBillService: MonthlyBillService,
+    private readonly billReconciliation: MonthlyBillReconciliationService,
     private readonly notificationService: NotificationService,
+    private readonly fundLedgerService: FundLedgerService,
   ) {}
 
   private readonly expenseSelect = {
@@ -131,14 +140,22 @@ export class ExpenseService {
 
   private monthRange(input: string | Date) {
     const start = this.monthStart(input);
-    const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1));
+    const end = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1),
+    );
     return { start, end };
   }
 
-  private normalizePaidFrom(dto: Pick<CreateExpenseDto | UpdateExpenseDto, 'paidFrom' | 'paymentType'>) {
-    const value = String(dto.paidFrom ?? dto.paymentType ?? ExpensePaymentType.FROM_DEPOSIT).toUpperCase();
+  private normalizePaidFrom(
+    dto: Pick<CreateExpenseDto | UpdateExpenseDto, 'paidFrom' | 'paymentType'>,
+  ) {
+    const value = String(
+      dto.paidFrom ?? dto.paymentType ?? ExpensePaymentType.FROM_DEPOSIT,
+    ).toUpperCase();
     if (value === 'MESS_DEPOSIT') return ExpensePaymentType.FROM_DEPOSIT;
-    if (Object.values(ExpensePaymentType).includes(value as ExpensePaymentType)) {
+    if (
+      Object.values(ExpensePaymentType).includes(value as ExpensePaymentType)
+    ) {
       return value as ExpensePaymentType;
     }
     throw new HttpException('Invalid paid from value', 400);
@@ -155,22 +172,42 @@ export class ExpenseService {
     if (!value) return [];
     if (typeof value === 'string') {
       try {
-        const parsed = JSON.parse(value) as Array<{ memberId: string; amount: number }>;
+        const parsed = JSON.parse(value) as Array<{
+          memberId: string;
+          amount: number;
+        }>;
         return Array.isArray(parsed) ? parsed : [];
       } catch {
         throw new HttpException('Invalid custom share payload', 400);
       }
     }
-    return Array.isArray(value) ? (value as Array<{ memberId: string; amount: number }>) : [];
+    return Array.isArray(value)
+      ? (value as Array<{ memberId: string; amount: number }>)
+      : [];
   }
 
-  private getExpenseDate(dto: Pick<CreateExpenseDto | UpdateExpenseDto, 'expenseDate'>, fallback?: Date) {
+  private hasOwn<T extends object>(value: T, key: PropertyKey) {
+    return Object.prototype.hasOwnProperty.call(value, key);
+  }
+
+  private normalizeOptionalText(value: string | null | undefined) {
+    const normalized = value?.trim();
+    return normalized ? normalized : null;
+  }
+
+  private getExpenseDate(
+    dto: Pick<CreateExpenseDto | UpdateExpenseDto, 'expenseDate'>,
+    fallback?: Date,
+  ) {
     if (dto.expenseDate) return new Date(dto.expenseDate);
     if (fallback) return fallback;
     return new Date();
   }
 
-  private inferRecordType(category: ExpenseCategory, explicit?: ExpenseRecordType) {
+  private inferRecordType(
+    category: ExpenseCategory,
+    explicit?: ExpenseRecordType,
+  ) {
     if (explicit) return explicit;
     const utilityCategories = new Set<ExpenseCategory>([
       ExpenseCategory.UTILITY,
@@ -182,16 +219,28 @@ export class ExpenseService {
       ExpenseCategory.BUABILL,
       ExpenseCategory.WATER,
     ]);
-    return utilityCategories.has(category) ? ExpenseRecordType.UTILITY : ExpenseRecordType.EXPENSE;
+    return utilityCategories.has(category)
+      ? ExpenseRecordType.UTILITY
+      : ExpenseRecordType.EXPENSE;
   }
 
-  private inferUtilityType(category: ExpenseCategory, explicit?: UtilityType | null) {
+  private inferUtilityType(
+    category: ExpenseCategory,
+    explicit?: UtilityType | null,
+  ) {
     if (explicit) return explicit;
-    return utilityCategoryMap[category] ?? (category === ExpenseCategory.UTILITY ? UtilityType.OTHER : null);
+    return (
+      utilityCategoryMap[category] ??
+      (category === ExpenseCategory.UTILITY ? UtilityType.OTHER : null)
+    );
   }
 
-  private async verifyManagerAccess(messId: string, userId: string, role: AuthRole): Promise<void> {
-    if (role === 'ADMIN' || role === 'ORGANIZER') return;
+  private async verifyManagerAccess(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+  ): Promise<void> {
+    if (role === 'ADMIN') return;
 
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
@@ -202,11 +251,18 @@ export class ExpenseService {
     });
     if (membership?.is_active && membership.role === 'MANAGER') return;
 
-    throw new HttpException('Forbidden: Only managers can manage shared expenses', 403);
+    throw new HttpException(
+      'Forbidden: Only managers can manage shared expenses',
+      403,
+    );
   }
 
-  private async verifyMessMemberAccess(messId: string, userId: string, role: AuthRole): Promise<void> {
-    if (role === 'ADMIN' || role === 'ORGANIZER') return;
+  private async verifyMessMemberAccess(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+  ): Promise<void> {
+    if (role === 'ADMIN') return;
 
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
@@ -230,7 +286,10 @@ export class ExpenseService {
     });
 
     if (!membership?.is_active) {
-      throw new HttpException('Forbidden: Selected member is not active in this mess', 403);
+      throw new HttpException(
+        'Forbidden: Selected member is not active in this mess',
+        403,
+      );
     }
   }
 
@@ -260,7 +319,9 @@ export class ExpenseService {
       orderBy: { joined_at: 'asc' },
       select: {
         user_id: true,
-        user: { select: { id: true, name: true, email: true, is_active: true } },
+        user: {
+          select: { id: true, name: true, email: true, is_active: true },
+        },
       },
     });
 
@@ -272,7 +333,11 @@ export class ExpenseService {
       }));
   }
 
-  private async getMealCounts(messId: string, memberIds: string[], month: Date) {
+  private async getMealCounts(
+    messId: string,
+    memberIds: string[],
+    month: Date,
+  ) {
     if (!memberIds.length) return new Map<string, number>();
     const { start, end } = this.monthRange(month);
 
@@ -293,17 +358,31 @@ export class ExpenseService {
       },
     });
 
-    const baseValueByMeal = { BREAKFAST: 0.5, LUNCH: 1, DINNER: 1 } as Record<string, number>;
+    const baseValueByMeal = { BREAKFAST: 0.5, LUNCH: 1, DINNER: 1 } as Record<
+      string,
+      number
+    >;
     const counts = new Map<string, number>();
     for (const attendance of attendances) {
-      const value = (baseValueByMeal[attendance.meal.name] ?? 1) + Number(attendance.guests ?? 0);
-      counts.set(attendance.member_id, roundMoney((counts.get(attendance.member_id) ?? 0) + value));
+      const value =
+        (baseValueByMeal[attendance.meal.name] ?? 1) +
+        Number(attendance.guests ?? 0);
+      counts.set(
+        attendance.member_id,
+        roundMoney((counts.get(attendance.member_id) ?? 0) + value),
+      );
     }
     return counts;
   }
 
   private async getMealOnMemberIds(messId: string, expenseDate: Date) {
-    const dayStart = new Date(Date.UTC(expenseDate.getUTCFullYear(), expenseDate.getUTCMonth(), expenseDate.getUTCDate()));
+    const dayStart = new Date(
+      Date.UTC(
+        expenseDate.getUTCFullYear(),
+        expenseDate.getUTCMonth(),
+        expenseDate.getUTCDate(),
+      ),
+    );
     const dayEnd = new Date(dayStart);
     dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
 
@@ -333,7 +412,15 @@ export class ExpenseService {
     billingMonth: Date;
     splitMethod: ExpenseSplitMethod;
   }): Promise<SplitMember[]> {
-    const { messId, usedBy, purchasedByMemberId, selectedMemberIds, expenseDate, billingMonth, splitMethod } = params;
+    const {
+      messId,
+      usedBy,
+      purchasedByMemberId,
+      selectedMemberIds,
+      expenseDate,
+      billingMonth,
+      splitMethod,
+    } = params;
     let memberIds: string[];
 
     if (usedBy === ExpenseUsedBy.SELF_ONLY) {
@@ -346,19 +433,29 @@ export class ExpenseService {
     } else if (usedBy === ExpenseUsedBy.MEAL_ON_MEMBERS) {
       memberIds = await this.getMealOnMemberIds(messId, expenseDate);
       if (!memberIds.length) {
-        throw new HttpException('No meal-on members found for the expense date', 400);
+        throw new HttpException(
+          'No meal-on members found for the expense date',
+          400,
+        );
       }
     } else {
-      memberIds = (await this.getActiveMembers(messId)).map((member) => member.id);
+      memberIds = (await this.getActiveMembers(messId)).map(
+        (member) => member.id,
+      );
     }
 
     memberIds = [...new Set(memberIds)];
 
     const activeMembers = await this.getActiveMembers(messId);
-    const activeById = new Map(activeMembers.map((member) => [member.id, member]));
+    const activeById = new Map(
+      activeMembers.map((member) => [member.id, member]),
+    );
     const invalidId = memberIds.find((id) => !activeById.has(id));
     if (invalidId) {
-      throw new HttpException('Selected members must be active members of this mess', 400);
+      throw new HttpException(
+        'Selected members must be active members of this mess',
+        400,
+      );
     }
 
     const mealCounts =
@@ -371,55 +468,6 @@ export class ExpenseService {
       name: activeById.get(id)?.name,
       mealCount: mealCounts.get(id) ?? 0,
     }));
-  }
-
-  private async ensureFundBalance(messId: string, paidFrom: NormalizedPaidFrom, amount: number) {
-    if (paidFrom === ExpensePaymentType.PERSONAL) return;
-
-    if (paidFrom === ExpensePaymentType.COLLECTED_FUND) {
-      const [credits, debits] = await Promise.all([
-        this.prisma.depositLedger.aggregate({
-          where: { mess_id: messId, type: DepositLedgerType.COLLECTED_FUND_IN },
-          _sum: { amount: true },
-        }),
-        this.prisma.depositLedger.aggregate({
-          where: { mess_id: messId, type: DepositLedgerType.COLLECTED_FUND_OUT },
-          _sum: { amount: true },
-        }),
-      ]);
-      const balance = Number(credits._sum.amount ?? 0) - Number(debits._sum.amount ?? 0);
-      if (balance < amount) {
-        throw new HttpException(`Insufficient collected fund balance. Required: ${amount}, Available: ${balance}`, 400);
-      }
-      return;
-    }
-
-    const [payments, deposits, fundDebits] = await Promise.all([
-      this.prisma.payment.aggregate({
-        where: { mess_id: messId, status: 'APPROVED' },
-        _sum: { amount: true },
-      }),
-      this.prisma.deposit.aggregate({
-        where: { mess_id: messId },
-        _sum: { amount: true },
-      }),
-      this.prisma.depositLedger.aggregate({
-        where: {
-          mess_id: messId,
-          type: { in: [DepositLedgerType.MESS_EXPENSE_DEBIT, DepositLedgerType.COLLECTED_FUND_OUT] },
-        },
-        _sum: { amount: true },
-      }),
-    ]);
-
-    const balance =
-      Number(payments._sum.amount ?? 0) +
-      Number(deposits._sum.amount ?? 0) -
-      Number(fundDebits._sum.amount ?? 0);
-
-    if (balance < amount) {
-      throw new HttpException(`Insufficient deposit balance. Required: ${amount}, Available: ${roundMoney(balance)}`, 400);
-    }
   }
 
   private async prepareExpense(
@@ -444,9 +492,21 @@ export class ExpenseService {
       unit: string | null;
       description: string | null;
       receipt_url: string | null;
+      receipt_public_id: string | null;
+      receipt_resource_type: string | null;
+      shares?: Array<{
+        member_id: string;
+        share_amount: Prisma.Decimal;
+      }>;
+    },
+    uploadedReceipt?: {
+      url: string;
+      publicId: string;
+      resourceType: CloudinaryResourceType;
     },
   ): Promise<PreparedExpense> {
-    const messId = 'messId' in dto && dto.messId ? dto.messId : existing?.mess_id;
+    const messId =
+      'messId' in dto && dto.messId ? dto.messId : existing?.mess_id;
     if (!messId) throw new HttpException('Mess ID is required', 400);
 
     await this.verifyMessMemberAccess(messId, userId, role);
@@ -457,25 +517,54 @@ export class ExpenseService {
       throw new HttpException('Amount must be greater than zero', 400);
     }
 
-    const category = (dto.category ?? existing?.category ?? ExpenseCategory.OTHER) as ExpenseCategory;
-    const type = this.inferRecordType(category, dto.type ?? existing?.type);
-    const utilityType = this.inferUtilityType(category, dto.utilityType ?? existing?.utility_type);
+    const category =
+      dto.category ?? existing?.category ?? ExpenseCategory.OTHER;
+    const categoryChanged =
+      dto.category !== undefined && dto.category !== existing?.category;
+    const type = this.inferRecordType(
+      category,
+      dto.type ?? (categoryChanged ? undefined : existing?.type),
+    );
+    const utilityType = this.inferUtilityType(
+      category,
+      dto.utilityType ?? (categoryChanged ? undefined : existing?.utility_type),
+    );
     const paidFrom = this.normalizePaidFrom({
       paidFrom: dto.paidFrom ?? undefined,
       paymentType: dto.paymentType ?? existing?.payment_type,
     });
     const usedBy = dto.usedBy ?? existing?.used_by ?? ExpenseUsedBy.ALL_MEMBERS;
-    const splitMethod = dto.splitMethod ?? existing?.split_method ?? (category === ExpenseCategory.FOOD || category === ExpenseCategory.GROCERY ? ExpenseSplitMethod.MEAL_COUNT : ExpenseSplitMethod.EQUAL);
+    const splitMethod =
+      dto.splitMethod ??
+      existing?.split_method ??
+      (category === ExpenseCategory.FOOD || category === ExpenseCategory.GROCERY
+        ? ExpenseSplitMethod.MEAL_COUNT
+        : ExpenseSplitMethod.EQUAL);
     const expenseDate = this.getExpenseDate(dto, existing?.expense_date);
-    const billingMonth = this.monthStart(dto.billingMonth ?? existing?.billing_month ?? expenseDate);
-    const purchasedByMemberId = dto.purchasedBy?.trim() || existing?.purchased_by || existing?.created_by || userId;
+    const billingMonth = this.monthStart(
+      dto.billingMonth ?? existing?.billing_month ?? expenseDate,
+    );
+    const purchasedByMemberId =
+      dto.purchasedBy?.trim() ||
+      existing?.purchased_by ||
+      existing?.created_by ||
+      userId;
 
-    if (purchasedByMemberId !== userId || usedBy !== ExpenseUsedBy.SELF_ONLY) {
+    const requiresManager =
+      paidFrom !== ExpensePaymentType.PERSONAL ||
+      purchasedByMemberId !== userId ||
+      usedBy !== ExpenseUsedBy.SELF_ONLY;
+    if (requiresManager) {
       await this.verifyManagerAccess(messId, userId, role);
     }
     await this.ensureActiveMessMember(messId, purchasedByMemberId);
 
-    const selectedMemberIds = this.normalizeIdList(dto.selectedMemberIds as string[] | string | undefined);
+    const selectedMemberIds =
+      dto.selectedMemberIds !== undefined
+        ? this.normalizeIdList(
+            dto.selectedMemberIds as string[] | string | undefined,
+          )
+        : [...new Set(existing?.shares?.map((share) => share.member_id) ?? [])];
     const affectedMembers = await this.resolveAffectedMembers({
       messId,
       usedBy,
@@ -486,17 +575,32 @@ export class ExpenseService {
       splitMethod,
     });
 
-    await this.ensureFundBalance(messId, paidFrom, amount);
+    const customShares =
+      dto.customShares !== undefined
+        ? this.normalizeCustomShares(dto.customShares)
+        : splitMethod === ExpenseSplitMethod.CUSTOM
+          ? (existing?.shares ?? []).map((share) => ({
+              memberId: share.member_id,
+              amount: Number(share.share_amount),
+            }))
+          : [];
 
-    const impact = calculateSplit({
-      amount,
-      paidFrom,
-      usedBy,
-      splitMethod,
-      payerMemberId: purchasedByMemberId,
-      members: affectedMembers,
-      customShares: this.normalizeCustomShares(dto.customShares),
-    });
+    let impact;
+    try {
+      impact = calculateSplit({
+        amount,
+        paidFrom,
+        usedBy,
+        splitMethod,
+        members: affectedMembers,
+        customShares,
+      });
+    } catch (error) {
+      if (error instanceof ExpenseCalculationError) {
+        throw new HttpException(error.message, 400);
+      }
+      throw error;
+    }
 
     return {
       messId,
@@ -511,11 +615,38 @@ export class ExpenseService {
       addedByUserId: existing?.created_by ?? userId,
       expenseDate,
       billingMonth,
-      itemName: dto.itemName ?? existing?.item_name ?? undefined,
-      quantity: dto.quantity ?? (existing?.quantity ? Number(existing.quantity) : undefined),
-      unit: dto.unit ?? existing?.unit ?? undefined,
-      description: dto.description ?? existing?.description ?? undefined,
-      receiptUrl: dto.receiptUrl ?? existing?.receipt_url ?? undefined,
+      itemName: this.hasOwn(dto, 'itemName')
+        ? this.normalizeOptionalText(dto.itemName)
+        : (existing?.item_name ?? null),
+      quantity: this.hasOwn(dto, 'quantity')
+        ? dto.quantity == null
+          ? null
+          : Number(dto.quantity)
+        : existing?.quantity == null
+          ? null
+          : Number(existing.quantity),
+      unit: this.hasOwn(dto, 'unit')
+        ? this.normalizeOptionalText(dto.unit)
+        : (existing?.unit ?? null),
+      description: this.hasOwn(dto, 'description')
+        ? this.normalizeOptionalText(dto.description)
+        : (existing?.description ?? null),
+      receiptUrl: uploadedReceipt
+        ? uploadedReceipt.url
+        : this.hasOwn(dto, 'receiptUrl')
+          ? (dto.receiptUrl ?? null)
+          : (existing?.receipt_url ?? null),
+      receiptPublicId: uploadedReceipt
+        ? uploadedReceipt.publicId
+        : this.hasOwn(dto, 'receiptUrl')
+          ? null
+          : (existing?.receipt_public_id ?? null),
+      receiptResourceType: uploadedReceipt
+        ? uploadedReceipt.resourceType
+        : this.hasOwn(dto, 'receiptUrl')
+          ? null
+          : ((existing?.receipt_resource_type as CloudinaryResourceType | null) ??
+            null),
       affectedMembers,
       shares: impact.shares,
       payerCredit: impact.payerCredit,
@@ -531,7 +662,10 @@ export class ExpenseService {
       type: prepared.type,
       category: prepared.category,
       utilityType: prepared.utilityType,
-      paidFrom: prepared.paidFrom === ExpensePaymentType.FROM_DEPOSIT ? 'MESS_DEPOSIT' : prepared.paidFrom,
+      paidFrom:
+        prepared.paidFrom === ExpensePaymentType.FROM_DEPOSIT
+          ? 'MESS_DEPOSIT'
+          : prepared.paidFrom,
       paymentType: prepared.paidFrom,
       usedBy: prepared.usedBy,
       splitMethod: prepared.splitMethod,
@@ -542,7 +676,10 @@ export class ExpenseService {
       totalSharedCost: prepared.totalSharedCost,
       shares: prepared.shares,
       validation: {
-        isValid: roundMoney(prepared.totalSharedCost) === roundMoney(prepared.amount) || prepared.personalHistoryAmount === prepared.amount || prepared.paidFrom === ExpensePaymentType.COLLECTED_FUND,
+        isValid:
+          roundMoney(prepared.totalSharedCost) ===
+            roundMoney(prepared.amount) ||
+          prepared.personalHistoryAmount === prepared.amount,
         message: 'Split preview calculated successfully',
       },
     };
@@ -560,9 +697,15 @@ export class ExpenseService {
       member: share.member,
     }));
     const payerCredit = (expense.ledger_entries ?? [])
-      .filter((entry: any) => entry.type === DepositLedgerType.PERSONAL_EXPENSE_CREDIT)
+      .filter(
+        (entry: any) =>
+          entry.type === DepositLedgerType.PERSONAL_EXPENSE_CREDIT,
+      )
       .reduce((sum: number, entry: any) => sum + Number(entry.amount ?? 0), 0);
-    const sharedCost = shares.reduce((sum: number, share: any) => sum + share.shareAmount, 0);
+    const sharedCost = shares.reduce(
+      (sum: number, share: any) => sum + share.shareAmount,
+      0,
+    );
 
     return {
       ...expense,
@@ -581,7 +724,10 @@ export class ExpenseService {
       expenseDate: expense.expense_date,
       billingMonth: expense.billing_month,
       paymentType: expense.payment_type,
-      paidFrom: expense.payment_type === ExpensePaymentType.FROM_DEPOSIT ? 'MESS_DEPOSIT' : expense.payment_type,
+      paidFrom:
+        expense.payment_type === ExpensePaymentType.FROM_DEPOSIT
+          ? 'MESS_DEPOSIT'
+          : expense.payment_type,
       usedBy: expense.used_by,
       splitMethod: expense.split_method,
       status: expense.status,
@@ -593,16 +739,44 @@ export class ExpenseService {
       created_by: expense.creator,
       shares,
       impactSummary: {
-        payerCredit: roundMoney(payerCredit),
-        sharedCost: roundMoney(sharedCost),
-        includedInMonthlyBill: expense.payment_type !== ExpensePaymentType.COLLECTED_FUND,
+        payerCredit: roundMoney(Number(payerCredit)),
+        sharedCost: roundMoney(Number(sharedCost)),
+        includedInMonthlyBill:
+          expense.payment_type !== ExpensePaymentType.COLLECTED_FUND,
       },
     };
   }
 
   async preview(userId: string, role: AuthRole, dto: ExpensePreviewDto) {
     const prepared = await this.prepareExpense(userId, role, dto);
+    await this.fundLedgerService.assertSufficientBalance(
+      this.prisma,
+      prepared.messId,
+      prepared.paidFrom,
+      prepared.amount,
+    );
     return this.previewResponse(prepared);
+  }
+
+  private async runSerializableTransaction<T>(
+    operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(operation, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          maxWait: 5_000,
+          timeout: 20_000,
+        });
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2034';
+        if (!isWriteConflict || attempt === maxAttempts) throw error;
+      }
+    }
+    throw new Error('Serializable transaction retry limit exceeded');
   }
 
   async create(
@@ -611,74 +785,109 @@ export class ExpenseService {
     dto: CreateExpenseDto,
     receipt?: Express.Multer.File,
   ) {
-    const receiptUrl = receipt
-      ? (
-          await uploadToCloudinary(receipt, 'mess_management/expenses', {
-            allowedTypes: ['image', 'pdf'],
-            maxSizeBytes: 10 * 1024 * 1024,
-          })
-        ).url
-      : dto.receiptUrl;
+    const uploaded = receipt
+      ? await uploadToCloudinary(receipt, 'mess_management/expenses', {
+          allowedTypes: ['image', 'pdf'],
+          maxSizeBytes: 10 * 1024 * 1024,
+        })
+      : null;
 
-    const prepared = await this.prepareExpense(userId, role, { ...dto, receiptUrl });
+    try {
+      const prepared = await this.prepareExpense(
+        userId,
+        role,
+        dto,
+        undefined,
+        uploaded
+          ? {
+              url: uploaded.url,
+              publicId: uploaded.public_id,
+              resourceType: uploaded.resource_type,
+            }
+          : undefined,
+      );
 
-    const expense = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.expense.create({
-        data: {
-          mess_id: prepared.messId,
-          created_by: prepared.addedByUserId,
-          purchased_by: prepared.purchasedByMemberId,
-          type: prepared.type,
-          category: prepared.category,
-          utility_type: prepared.utilityType,
-          amount: prepared.amount,
-          expense_date: prepared.expenseDate,
-          billing_month: prepared.billingMonth,
-          description: prepared.description,
-          receipt_url: prepared.receiptUrl,
-          buyer_id: dto.buyerId,
-          item_name: prepared.itemName,
-          quantity: prepared.quantity,
-          unit: prepared.unit,
-          payment_type: prepared.paidFrom,
-          used_by: prepared.usedBy,
-          split_method: prepared.splitMethod,
-          status: 'CONFIRMED',
-        },
-      });
+      const expense = await this.runSerializableTransaction(async (tx) => {
+        await this.fundLedgerService.assertSufficientBalance(
+          tx,
+          prepared.messId,
+          prepared.paidFrom,
+          prepared.amount,
+        );
 
-      if (prepared.shares.length) {
-        await tx.expenseShare.createMany({
-          data: prepared.shares.map((share) => ({
-            expense_id: created.id,
-            member_id: share.memberId,
-            member_name: share.memberName,
-            meal_count: share.mealCount,
-            share_amount: share.shareAmount,
-            is_payer: share.memberId === prepared.purchasedByMemberId,
-          })),
+        const created = await tx.expense.create({
+          data: {
+            mess_id: prepared.messId,
+            created_by: prepared.addedByUserId,
+            purchased_by: prepared.purchasedByMemberId,
+            type: prepared.type,
+            category: prepared.category,
+            utility_type: prepared.utilityType,
+            amount: prepared.amount,
+            expense_date: prepared.expenseDate,
+            billing_month: prepared.billingMonth,
+            description: prepared.description,
+            receipt_url: prepared.receiptUrl,
+            receipt_public_id: prepared.receiptPublicId,
+            receipt_resource_type: prepared.receiptResourceType,
+            buyer_id: dto.buyerId,
+            item_name: prepared.itemName,
+            quantity: prepared.quantity,
+            unit: prepared.unit,
+            payment_type: prepared.paidFrom,
+            used_by: prepared.usedBy,
+            split_method: prepared.splitMethod,
+            status: 'CONFIRMED',
+          },
         });
-      }
 
-      const ledgers = this.buildLedgerRows(created.id, prepared);
-      if (ledgers.length) {
-        await tx.depositLedger.createMany({ data: ledgers });
-      }
+        if (prepared.shares.length) {
+          await tx.expenseShare.createMany({
+            data: prepared.shares.map((share) => ({
+              expense_id: created.id,
+              member_id: share.memberId,
+              member_name: share.memberName,
+              meal_count: share.mealCount,
+              share_amount: share.shareAmount,
+              is_payer: share.memberId === prepared.purchasedByMemberId,
+            })),
+          });
+        }
 
-      return tx.expense.findUniqueOrThrow({
-        where: { id: created.id },
-        select: this.expenseSelect,
+        const ledgers = this.buildLedgerRows(created.id, prepared);
+        if (ledgers.length) {
+          await tx.depositLedger.createMany({ data: ledgers });
+        }
+
+        return tx.expense.findUniqueOrThrow({
+          where: { id: created.id },
+          select: this.expenseSelect,
+        });
       });
-    });
 
-    await this.recalculateAfterChange(prepared.messId, prepared.billingMonth);
-    await this.sendExpenseNotification(userId, prepared, expense.id);
+      const billingSync = await this.billReconciliation.reconcile(
+        prepared.messId,
+        prepared.billingMonth,
+      );
+      await this.sendExpenseNotification(userId, prepared, expense.id);
 
-    return this.mapExpense(expense);
+      return { ...this.mapExpense(expense), billingSync };
+    } catch (error) {
+      if (uploaded) {
+        await deleteFromCloudinary(uploaded.public_id, uploaded.resource_type);
+      }
+      throw error;
+    }
   }
 
-  private buildLedgerRows(expenseId: string, prepared: PreparedExpense): Prisma.DepositLedgerCreateManyInput[] {
-    if (prepared.paidFrom === ExpensePaymentType.PERSONAL && prepared.payerCredit > 0) {
+  private buildLedgerRows(
+    expenseId: string,
+    prepared: PreparedExpense,
+  ): Prisma.DepositLedgerCreateManyInput[] {
+    if (
+      prepared.paidFrom === ExpensePaymentType.PERSONAL &&
+      prepared.payerCredit > 0
+    ) {
       return [
         {
           mess_id: prepared.messId,
@@ -687,6 +896,7 @@ export class ExpenseService {
           type: DepositLedgerType.PERSONAL_EXPENSE_CREDIT,
           direction: LedgerDirection.CREDIT,
           amount: prepared.payerCredit,
+          effective_date: prepared.billingMonth,
           note: 'Personal expense credit',
         },
       ];
@@ -700,6 +910,7 @@ export class ExpenseService {
           type: DepositLedgerType.MESS_EXPENSE_DEBIT,
           direction: LedgerDirection.DEBIT,
           amount: prepared.amount,
+          effective_date: prepared.billingMonth,
           note: 'Mess deposit funded expense',
         },
       ];
@@ -713,6 +924,7 @@ export class ExpenseService {
           type: DepositLedgerType.COLLECTED_FUND_OUT,
           direction: LedgerDirection.DEBIT,
           amount: prepared.amount,
+          effective_date: prepared.billingMonth,
           note: 'Collected fund expense',
         },
       ];
@@ -721,11 +933,11 @@ export class ExpenseService {
     return [];
   }
 
-  private async recalculateAfterChange(messId: string, month: Date) {
-    await this.monthlyBillService.recalculateMonthlyBills(messId, month).catch(() => undefined);
-  }
-
-  private async sendExpenseNotification(userId: string, prepared: PreparedExpense, expenseId: string) {
+  private async sendExpenseNotification(
+    userId: string,
+    prepared: PreparedExpense,
+    expenseId: string,
+  ) {
     await this.notificationService
       .createForMess(
         userId,
@@ -747,7 +959,12 @@ export class ExpenseService {
   }
 
   async findAll(query: ExpenseFilterDto) {
-    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
+    const paginationOptions = pick(query, [
+      'page',
+      'limit',
+      'sortBy',
+      'sortOrder',
+    ]);
     const { page, limit, skip } = paginationHelper(paginationOptions);
     const where = this.buildWhere(query);
 
@@ -770,7 +987,12 @@ export class ExpenseService {
     };
   }
 
-  async findByMess(messId: string, userId: string, role: AuthRole, query: ExpenseFilterDto) {
+  async findByMess(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+    query: ExpenseFilterDto,
+  ) {
     await this.verifyMessMemberAccess(messId, userId, role);
     return this.findAll({ ...query, messId });
   }
@@ -784,11 +1006,17 @@ export class ExpenseService {
     if (!expense) throw new HttpException('Expense not found', 404);
     await this.verifyMessMemberAccess(expense.mess.id, userId, role);
 
-    const isManager = role === 'ADMIN' || role === 'ORGANIZER' || role === 'MANAGER';
-    const isAffected = expense.shares.some((share) => share.member_id === userId);
-    const isOwner = expense.purchased_by === userId || expense.creator.id === userId;
+    const isManager = role === 'ADMIN' || role === 'MANAGER';
+    const isAffected = expense.shares.some(
+      (share) => share.member_id === userId,
+    );
+    const isOwner =
+      expense.purchased_by === userId || expense.creator.id === userId;
     if (!isManager && !isAffected && !isOwner) {
-      throw new HttpException('Forbidden: You can view only your own allocated expense details', 403);
+      throw new HttpException(
+        'Forbidden: You can view only your own allocated expense details',
+        403,
+      );
     }
 
     return this.mapExpense(expense);
@@ -801,96 +1029,183 @@ export class ExpenseService {
     dto: UpdateExpenseDto,
     receipt?: Express.Multer.File,
   ) {
-    const existing = await this.prisma.expense.findUnique({ where: { id } });
+    const existing = await this.prisma.expense.findUnique({
+      where: { id },
+      include: {
+        shares: {
+          select: { member_id: true, share_amount: true },
+        },
+      },
+    });
     if (!existing) throw new HttpException('Expense not found', 404);
 
     await this.verifyManagerAccess(existing.mess_id, userId, role);
 
-    const receiptUrl = receipt
-      ? (
-          await uploadToCloudinary(receipt, 'mess_management/expenses', {
-            allowedTypes: ['image', 'pdf'],
-            maxSizeBytes: 10 * 1024 * 1024,
-          })
-        ).url
-      : dto.receiptUrl ?? existing.receipt_url ?? undefined;
+    const uploaded = receipt
+      ? await uploadToCloudinary(receipt, 'mess_management/expenses', {
+          allowedTypes: ['image', 'pdf'],
+          maxSizeBytes: 10 * 1024 * 1024,
+        })
+      : null;
 
-    const prepared = await this.prepareExpense(userId, role, { ...dto, receiptUrl }, existing);
-    const previousMonth = this.monthStart(existing.billing_month ?? existing.expense_date);
-
-    const updated = await this.prisma.$transaction(async (tx) => {
-      await tx.expenseShare.deleteMany({ where: { expense_id: id } });
-      await tx.depositLedger.deleteMany({ where: { expense_id: id } });
-
-      await tx.expense.update({
-        where: { id },
-        data: {
-          purchased_by: prepared.purchasedByMemberId,
-          type: prepared.type,
-          category: prepared.category,
-          utility_type: prepared.utilityType,
-          amount: prepared.amount,
-          expense_date: prepared.expenseDate,
-          billing_month: prepared.billingMonth,
-          description: prepared.description,
-          receipt_url: prepared.receiptUrl,
-          buyer_id: dto.buyerId ?? existing.buyer_id,
-          item_name: prepared.itemName,
-          quantity: prepared.quantity,
-          unit: prepared.unit,
-          payment_type: prepared.paidFrom,
-          used_by: prepared.usedBy,
-          split_method: prepared.splitMethod,
-        },
-      });
-
-      if (prepared.shares.length) {
-        await tx.expenseShare.createMany({
-          data: prepared.shares.map((share) => ({
-            expense_id: id,
-            member_id: share.memberId,
-            member_name: share.memberName,
-            meal_count: share.mealCount,
-            share_amount: share.shareAmount,
-            is_payer: share.memberId === prepared.purchasedByMemberId,
-          })),
-        });
+    let prepared: PreparedExpense;
+    try {
+      prepared = await this.prepareExpense(
+        userId,
+        role,
+        dto,
+        existing,
+        uploaded
+          ? {
+              url: uploaded.url,
+              publicId: uploaded.public_id,
+              resourceType: uploaded.resource_type,
+            }
+          : undefined,
+      );
+    } catch (error) {
+      if (uploaded) {
+        await deleteFromCloudinary(uploaded.public_id, uploaded.resource_type);
       }
+      throw error;
+    }
+    const previousMonth = this.monthStart(
+      existing.billing_month ?? existing.expense_date,
+    );
 
-      const ledgers = this.buildLedgerRows(id, prepared);
-      if (ledgers.length) await tx.depositLedger.createMany({ data: ledgers });
+    let updated;
+    try {
+      updated = await this.runSerializableTransaction(async (tx) => {
+        await tx.depositLedger.deleteMany({ where: { expense_id: id } });
+        await this.fundLedgerService.assertSufficientBalance(
+          tx,
+          prepared.messId,
+          prepared.paidFrom,
+          prepared.amount,
+        );
+        await tx.expenseShare.deleteMany({ where: { expense_id: id } });
 
-      return tx.expense.findUniqueOrThrow({
-        where: { id },
-        select: this.expenseSelect,
+        await tx.expense.update({
+          where: { id },
+          data: {
+            purchased_by: prepared.purchasedByMemberId,
+            type: prepared.type,
+            category: prepared.category,
+            utility_type: prepared.utilityType,
+            amount: prepared.amount,
+            expense_date: prepared.expenseDate,
+            billing_month: prepared.billingMonth,
+            description: prepared.description,
+            receipt_url: prepared.receiptUrl,
+            receipt_public_id: prepared.receiptPublicId,
+            receipt_resource_type: prepared.receiptResourceType,
+            buyer_id: dto.buyerId ?? existing.buyer_id,
+            item_name: prepared.itemName,
+            quantity: prepared.quantity,
+            unit: prepared.unit,
+            payment_type: prepared.paidFrom,
+            used_by: prepared.usedBy,
+            split_method: prepared.splitMethod,
+          },
+        });
+
+        if (prepared.shares.length) {
+          await tx.expenseShare.createMany({
+            data: prepared.shares.map((share) => ({
+              expense_id: id,
+              member_id: share.memberId,
+              member_name: share.memberName,
+              meal_count: share.mealCount,
+              share_amount: share.shareAmount,
+              is_payer: share.memberId === prepared.purchasedByMemberId,
+            })),
+          });
+        }
+
+        const ledgers = this.buildLedgerRows(id, prepared);
+        if (ledgers.length) {
+          await tx.depositLedger.createMany({ data: ledgers });
+        }
+
+        return tx.expense.findUniqueOrThrow({
+          where: { id },
+          select: this.expenseSelect,
+        });
       });
-    });
-
-    await this.recalculateAfterChange(existing.mess_id, previousMonth);
-    if (previousMonth.getTime() !== prepared.billingMonth.getTime()) {
-      await this.recalculateAfterChange(existing.mess_id, prepared.billingMonth);
+    } catch (error) {
+      if (uploaded) {
+        await deleteFromCloudinary(uploaded.public_id, uploaded.resource_type);
+      }
+      throw error;
     }
 
-    return this.mapExpense(updated);
+    if (
+      existing.receipt_public_id &&
+      existing.receipt_public_id !== prepared.receiptPublicId
+    ) {
+      await deleteFromCloudinary(
+        existing.receipt_public_id,
+        (existing.receipt_resource_type as CloudinaryResourceType | null) ??
+          'image',
+      );
+    }
+
+    const billingSync = await this.billReconciliation.reconcile(
+      existing.mess_id,
+      previousMonth,
+      prepared.billingMonth,
+    );
+
+    return {
+      ...this.mapExpense(updated),
+      billingSync,
+    };
   }
 
   async remove(id: string, userId: string, role: AuthRole) {
     const expense = await this.prisma.expense.findUnique({
       where: { id },
-      select: { id: true, mess_id: true, expense_date: true, billing_month: true },
+      select: {
+        id: true,
+        mess_id: true,
+        expense_date: true,
+        billing_month: true,
+        receipt_public_id: true,
+        receipt_resource_type: true,
+      },
     });
     if (!expense) throw new HttpException('Expense not found', 404);
 
     await this.verifyManagerAccess(expense.mess_id, userId, role);
-    const month = this.monthStart(expense.billing_month ?? expense.expense_date);
+    const month = this.monthStart(
+      expense.billing_month ?? expense.expense_date,
+    );
 
-    await this.prisma.expense.delete({ where: { id } });
-    await this.recalculateAfterChange(expense.mess_id, month);
+    await this.runSerializableTransaction(async (tx) => {
+      await tx.depositLedger.deleteMany({ where: { expense_id: id } });
+      await tx.expense.delete({ where: { id } });
+    });
+    if (expense.receipt_public_id) {
+      await deleteFromCloudinary(
+        expense.receipt_public_id,
+        (expense.receipt_resource_type as CloudinaryResourceType | null) ??
+          'image',
+      );
+    }
+    const billingSync = await this.billReconciliation.reconcile(
+      expense.mess_id,
+      month,
+    );
 
-    return { message: 'Expense deleted successfully' };
+    return { message: 'Expense deleted successfully', billingSync };
   }
 
-  async requestPriceReview(id: string, userId: string, role: AuthRole, dto: RequestPriceReviewDto) {
+  async requestPriceReview(
+    id: string,
+    userId: string,
+    role: AuthRole,
+    dto: RequestPriceReviewDto,
+  ) {
     const expense = await this.prisma.expense.findUnique({
       where: { id },
       select: {
@@ -908,24 +1223,32 @@ export class ExpenseService {
     if (!expense) throw new HttpException('Expense not found', 404);
     await this.verifyManagerAccess(expense.mess_id, userId, role);
 
-    return this.notificationService.sendPushToUser(expense.purchased_by ?? expense.created_by, {
-      title: `Price review requested - ${expense.mess.name}`,
-      body: dto.message.trim(),
-      url: '/expenses',
-      data: {
-        messId: expense.mess.id,
-        expenseId: expense.id,
-        itemName: expense.item_name || expense.category,
-        amount: String(expense.amount),
-        type: 'EXPENSE_PRICE_REVIEW',
+    return this.notificationService.sendPushToUser(
+      expense.purchased_by ?? expense.created_by,
+      {
+        title: `Price review requested - ${expense.mess.name}`,
+        body: dto.message.trim(),
+        url: '/expenses',
+        data: {
+          messId: expense.mess.id,
+          expenseId: expense.id,
+          itemName: expense.item_name || expense.category,
+          amount: String(expense.amount),
+          type: 'EXPENSE_PRICE_REVIEW',
+        },
       },
-    });
+    );
   }
 
-  async getSummary(messId: string, userId: string, role: AuthRole, month: string) {
+  async getSummary(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+    month: string,
+  ) {
     await this.verifyMessMemberAccess(messId, userId, role);
-    const { start, end } = this.monthRange(month);
-    const isManager = role === 'ADMIN' || role === 'ORGANIZER' || role === 'MANAGER';
+    const { start } = this.monthRange(month);
+    const isManager = role === 'ADMIN' || role === 'MANAGER';
 
     const shareWhere: Prisma.ExpenseShareWhereInput = {
       member_id: userId,
@@ -934,6 +1257,10 @@ export class ExpenseService {
         status: 'CONFIRMED',
         billing_month: start,
         payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+        NOT: {
+          payment_type: ExpensePaymentType.PERSONAL,
+          used_by: ExpenseUsedBy.SELF_ONLY,
+        },
       },
     };
 
@@ -949,6 +1276,7 @@ export class ExpenseService {
           payment_type: ExpensePaymentType.PERSONAL,
           used_by: ExpenseUsedBy.SELF_ONLY,
           billing_month: start,
+          status: 'CONFIRMED',
         },
       }),
       this.prisma.expense.findMany({
@@ -962,7 +1290,8 @@ export class ExpenseService {
                   { shares: { some: { member_id: userId } } },
                 ],
               }),
-          expense_date: { gte: start, lt: end },
+          billing_month: start,
+          status: 'CONFIRMED',
         },
         take: 4,
         orderBy: { expense_date: 'desc' },
@@ -970,14 +1299,21 @@ export class ExpenseService {
       }),
       isManager
         ? this.prisma.expense.aggregate({
-            where: { mess_id: messId, billing_month: start, status: 'CONFIRMED' },
+            where: {
+              mess_id: messId,
+              billing_month: start,
+              status: 'CONFIRMED',
+            },
             _sum: { amount: true },
             _count: { _all: true },
           })
         : Promise.resolve(null),
     ]);
 
-    const foodCategories = new Set<ExpenseCategory>([ExpenseCategory.FOOD, ExpenseCategory.GROCERY]);
+    const foodCategories = new Set<ExpenseCategory>([
+      ExpenseCategory.FOOD,
+      ExpenseCategory.GROCERY,
+    ]);
     const utilityExclusions = new Set<ExpenseCategory>([
       ExpenseCategory.FOOD,
       ExpenseCategory.GROCERY,
@@ -993,7 +1329,10 @@ export class ExpenseService {
     const roomRent = myShares
       .filter((share) => share.expense.category === ExpenseCategory.RENT)
       .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
-    const personalAmount = personalSelf.reduce((sum, expense) => sum + Number(expense.amount ?? 0), 0);
+    const personalAmount = personalSelf.reduce(
+      (sum, expense) => sum + Number(expense.amount ?? 0),
+      0,
+    );
 
     return {
       month: start,
@@ -1015,14 +1354,22 @@ export class ExpenseService {
     };
   }
 
-  async getMyDetails(messId: string, userId: string, role: AuthRole, month: string) {
+  async getMyDetails(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+    month: string,
+  ) {
     const summary = await this.getSummary(messId, userId, role, month);
     const { start } = this.monthRange(month);
     const history = await this.prisma.expense.findMany({
       where: {
         mess_id: messId,
         billing_month: start,
-        OR: [{ purchased_by: userId }, { shares: { some: { member_id: userId } } }],
+        OR: [
+          { purchased_by: userId },
+          { shares: { some: { member_id: userId } } },
+        ],
       },
       take: 20,
       orderBy: { expense_date: 'desc' },
@@ -1036,10 +1383,15 @@ export class ExpenseService {
     };
   }
 
-  async getManagerMemberExpenses(messId: string, userId: string, role: AuthRole, month: string) {
+  async getManagerMemberExpenses(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+    month: string,
+  ) {
     await this.verifyManagerAccess(messId, userId, role);
     const { start } = this.monthRange(month);
-    await this.monthlyBillService.recalculateMonthlyBills(messId, start).catch(() => undefined);
+    const billingSync = await this.billReconciliation.reconcile(messId, start);
 
     const bills = await this.prisma.monthlyBill.findMany({
       where: { mess_id: messId, month: start },
@@ -1059,15 +1411,39 @@ export class ExpenseService {
 
     return {
       month: start,
+      billingSync,
       totals: {
-        totalExpenses: roundMoney(bills.reduce((sum, bill) => sum + Number(bill.food_bill) + Number(bill.seat_rent) + Number(bill.utility_share), 0)),
-        totalUtility: roundMoney(bills.reduce((sum, bill) => sum + Number(bill.utility_share), 0)),
-        fromDeposit: roundMoney(bills.reduce((sum, bill) => sum + Number(bill.deposit_total) + Number(bill.paid_amount), 0)),
+        totalExpenses: roundMoney(
+          bills.reduce(
+            (sum, bill) =>
+              sum +
+              Number(bill.food_bill) +
+              Number(bill.seat_rent) +
+              Number(bill.utility_share),
+            0,
+          ),
+        ),
+        totalUtility: roundMoney(
+          bills.reduce((sum, bill) => sum + Number(bill.utility_share), 0),
+        ),
+        fromDeposit: roundMoney(
+          bills.reduce(
+            (sum, bill) =>
+              sum + Number(bill.deposit_total) + Number(bill.paid_amount),
+            0,
+          ),
+        ),
         members: bills.length,
       },
       members: bills.map((bill) => {
-        const totalCost = roundMoney(Number(bill.food_bill) + Number(bill.seat_rent) + Number(bill.utility_share));
-        const depositPaid = roundMoney(Number(bill.deposit_total) + Number(bill.paid_amount));
+        const totalCost = roundMoney(
+          Number(bill.food_bill) +
+            Number(bill.seat_rent) +
+            Number(bill.utility_share),
+        );
+        const depositPaid = roundMoney(
+          Number(bill.deposit_total) + Number(bill.paid_amount),
+        );
         return {
           member: bill.member,
           totalCost,
@@ -1085,8 +1461,14 @@ export class ExpenseService {
     if (query.category) where.category = query.category;
     if (query.userName) {
       where.OR = [
-        { creator: { name: { contains: query.userName, mode: 'insensitive' } } },
-        { purchaser: { name: { contains: query.userName, mode: 'insensitive' } } },
+        {
+          creator: { name: { contains: query.userName, mode: 'insensitive' } },
+        },
+        {
+          purchaser: {
+            name: { contains: query.userName, mode: 'insensitive' },
+          },
+        },
       ];
     }
     if (query.startDate || query.endDate) {

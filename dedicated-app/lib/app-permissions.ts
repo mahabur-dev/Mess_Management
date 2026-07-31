@@ -31,7 +31,7 @@ export type AppRouteItem = {
   exact?: boolean
 }
 
-const managerGlobalRoles = new Set(['ADMIN', 'MANAGER', 'ORGANIZER'])
+const managerGlobalRoles = new Set(['ADMIN', 'MANAGER'])
 
 function normalizeRole(role?: string | null) {
   return String(role ?? '').toUpperCase()
@@ -64,8 +64,8 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/add-member', label: 'Add Member', icon: Users, access: 'manager', exact: true },
   { href: '/edit-member', label: 'Edit Member', icon: Users, access: 'manager' },
   { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
-  { href: '/add-expense', label: 'Add Expense', icon: ReceiptText, access: 'manager', exact: true },
-  { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'manager', exact: true },
+  { href: '/add-expense', label: 'Add Expense', icon: ReceiptText, access: 'mess', exact: true },
+  { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'mess', exact: true },
   { href: '/expense-details', label: 'Expense Details', icon: ReceiptText, access: 'mess' },
   { href: '/edit-expense', label: 'Edit Expense', icon: ReceiptText, access: 'manager' },
   { href: '/deposits', label: 'Deposits', icon: Landmark, access: 'manager' },

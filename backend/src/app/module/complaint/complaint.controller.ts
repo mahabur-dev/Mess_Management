@@ -12,7 +12,7 @@ export class ComplaintController {
   constructor(private readonly complaintService: ComplaintService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Submit a complaint or request' })
   async create(@Req() req: Request, @Body() dto: CreateComplaintDto) {
     const data = await this.complaintService.create(req.user!.id, req.user!.role, dto);
@@ -28,7 +28,7 @@ export class ComplaintController {
   }
 
   @Get('my')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get my complaints' })
   async findMyComplaints(@Req() req: Request, @Query() query: ComplaintFilterDto) {
     const result = await this.complaintService.findMyComplaints(req.user!.id, query);
@@ -36,7 +36,7 @@ export class ComplaintController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get complaints for a mess' })
   async findByMess(@Param('messId') messId: string, @Req() req: Request, @Query() query: ComplaintFilterDto) {
     const result = await this.complaintService.findByMess(messId, req.user!.id, req.user!.role, query);
@@ -44,7 +44,7 @@ export class ComplaintController {
   }
 
   @Patch(':id/status')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Update complaint status' })
   async updateStatus(@Param('id') id: string, @Req() req: Request, @Body() dto: UpdateComplaintStatusDto) {
     const data = await this.complaintService.updateStatus(id, req.user!.id, req.user!.role, dto);
@@ -52,7 +52,7 @@ export class ComplaintController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Delete a complaint (Admin: all, Manager: own mess)' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     return this.complaintService.remove(id, req.user!.id, req.user!.role);

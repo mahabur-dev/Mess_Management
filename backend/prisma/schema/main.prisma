@@ -17,7 +17,6 @@ enum GlobalRole {
   ADMIN
   MANAGER
   MEMBER
-  ORGANIZER
 }
 
 enum RequestStatus {

@@ -200,7 +200,10 @@ export default function ExpenseDetailsPage() {
                   {expense.shares.map((share, index) => (
                     <div key={share.memberId} className="flex min-w-0 items-center gap-2 rounded-[14px] border border-[#cfeeed] bg-white p-2">
                       <MemberInitials name={share.memberName} accent={index % 2 ? 'violet' : 'teal'} />
-                      <span className="min-w-0 truncate text-caption font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-caption font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
+                        <span className="mt-0.5 block text-caption font-semibold text-[#008d8c]">{formatTaka(share.shareAmount)}</span>
+                      </span>
                     </div>
                   ))}
                 </div>

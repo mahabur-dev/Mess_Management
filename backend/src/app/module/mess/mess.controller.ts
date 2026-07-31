@@ -31,7 +31,7 @@ export class MessController {
   constructor(private readonly messService: MessService) { }
 
   @Post()
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Create a new mess with a trial subscription' })
   async create(@Req() req: Request, @Body() dto: CreateMessDto) {
     const data = await this.messService.create(req.user!.id, dto);
@@ -79,7 +79,7 @@ export class MessController {
   }
 
   @Get('active')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get all active messes for member join requests' })
   async findActiveForJoin(@Query() query: MessFilterDto) {
     const result = await this.messService.findActiveMessesForJoin(query);

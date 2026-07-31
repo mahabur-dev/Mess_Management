@@ -18,6 +18,7 @@ import { api } from '@/lib/api'
 import { LABELS, PAYMENT_STATUSES, type PaymentStatus } from '@/lib/form-options'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
+import { canManageMess } from '@/lib/app-permissions'
 
 type PaymentRecord = {
   id: string
@@ -44,6 +45,7 @@ export default function EditPaymentPage() {
   const { user } = useAuth()
   const paymentId = searchParams.get('paymentId') ?? ''
   const messId = searchParams.get('messId') ?? user?.memberships?.[0]?.mess_id ?? ''
+  const isManager = canManageMess(user)
 
   const [payment, setPayment] = useState<PaymentRecord | null>(null)
   const [form, setForm] = useState<FormState>({
@@ -118,13 +120,14 @@ export default function EditPaymentPage() {
           </section>
         </div>
 
+        {isManager && payment?.status === 'PENDING' ? (
         <div className="rounded-[22px] border border-[#d7e8eb] bg-white p-4 shadow-[0_14px_32px_rgba(18,55,72,0.08)] space-y-4">
           <DepositSectionTitle title="Review Deposit" />
           <SelectField
             label="Status"
             value={form.status}
             onChange={(status) => setForm((prev) => ({ ...prev, status }))}
-            options={PAYMENT_STATUSES}
+            options={PAYMENT_STATUSES.filter((status) => status !== 'PENDING')}
             getLabel={(value) => LABELS.PAYMENT_STATUSES[value]}
           />
           <TextAreaField
@@ -146,6 +149,7 @@ export default function EditPaymentPage() {
             </button>
           </div>
         </div>
+        ) : null}
       </div>
     </MobileShell>
   )

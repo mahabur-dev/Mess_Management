@@ -26,7 +26,7 @@ export class MonthlyBillController {
   constructor(private readonly monthlyBillService: MonthlyBillService) {}
 
   @Post('generate')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Generate monthly bills for a mess (Manager/Admin)' })
   async generate(@Req() req: Request, @Body() dto: GenerateBillDto) {
     const data = await this.monthlyBillService.generate(
@@ -50,7 +50,7 @@ export class MonthlyBillController {
   }
 
   @Get('my')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get my monthly bills' })
   async findMyBills(@Req() req: Request, @Query() query: BillFilterDto) {
     const result = await this.monthlyBillService.findMyBills(
@@ -65,7 +65,7 @@ export class MonthlyBillController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get monthly bills for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -86,7 +86,7 @@ export class MonthlyBillController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get a monthly bill by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.monthlyBillService.findOne(
@@ -98,7 +98,7 @@ export class MonthlyBillController {
   }
 
   @Patch(':id/status')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Update bill status (Manager/Admin)' })
   async updateStatus(
     @Param('id') id: string,

@@ -25,9 +25,14 @@ model Mess {
   meal_rate_method String @default("EXPENSE_DIVIDED_BY_MEAL_COUNT") @db.VarChar(80)
   bazar_rules String? @db.Text
   payment_deadline_day Int @default(10)
-  meal_off_deadline String? @default("22:00") @db.VarChar(5)
-  meal_deadline_start String @default("22:00") @db.VarChar(5)
-  meal_deadline_end String @default("11:00") @db.VarChar(5)
+  meal_off_deadline String? @default("17:00") @db.VarChar(5)
+  meal_deadline_start String @default("09:00") @db.VarChar(5)
+  meal_deadline_end String @default("17:00") @db.VarChar(5)
+  meal_default_status AttendanceStatus @default(ON)
+  meal_allow_no_meal Boolean @default(true)
+  meal_window_notification_enabled Boolean @default(true)
+  meal_deadline_notification_enabled Boolean @default(true)
+  meal_deadline_reminder_minutes Int @default(60)
   settings_completed Boolean @default(false)
   approved_at DateTime? @db.Timestamptz
   created_at  DateTime @default(now()) @db.Timestamptz

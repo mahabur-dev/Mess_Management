@@ -1103,7 +1103,7 @@ export function UploadField({ onChange, fileName, label = 'Receipt (Optional)' }
         </span>
         <span className="min-w-0">
           <span className="block truncate text-label font-semibold text-[#123748]">{fileName || 'Upload receipt image'}</span>
-          <span className="mt-1 block text-caption font-semibold text-[#65838b]">JPG, PNG, PDF up to 5MB</span>
+          <span className="mt-1 block text-caption font-semibold text-[#65838b]">JPG, PNG, PDF up to 10MB</span>
         </span>
         <input className="sr-only" type="file" accept="image/*,application/pdf" onChange={(event) => onChange(event.target.files?.[0] ?? null)} />
       </span>

@@ -15,6 +15,14 @@ export class CreateDepositDto {
   @IsNotEmpty()
   messId: string;
 
+  @ApiPropertyOptional({
+    example: 'uuid-member-id',
+    description: 'Member receiving the manager-recorded deposit credit',
+  })
+  @IsOptional()
+  @IsString()
+  memberId?: string;
+
   @ApiProperty({ example: 1500, description: 'Deposit amount in BDT' })
   @IsNumber()
   @Min(1)

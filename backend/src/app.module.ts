@@ -16,6 +16,7 @@ import { MonthlyBillModule } from './app/module/monthly-bill/monthly-bill.module
 import { ExpenseModule } from './app/module/expense/expense.module';
 import { ShoppingModule } from './app/module/shopping/shopping.module';
 import { PaymentModule } from './app/module/payment/payment.module';
+import { FundLedgerModule } from './app/module/fund-ledger/fund-ledger.module';
 import { NoticeModule } from './app/module/notice/notice.module';
 import { ComplaintModule } from './app/module/complaint/complaint.module';
 import { DashboardModule } from './app/module/dashboard/dashboard.module';
@@ -40,6 +41,7 @@ import { ContactRequestModule } from './app/module/contact-request/contact-reque
     ExpenseModule,
     ShoppingModule,
     PaymentModule,
+    FundLedgerModule,
     NoticeModule,
     ComplaintModule,
     DashboardModule,

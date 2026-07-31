@@ -4,7 +4,7 @@ import { appHref } from './routes'
 
 export const AUTH_TOKEN_KEY = 'authToken'
 
-export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER' | 'ORGANIZER'
+export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER'
 export type MembershipRole = 'MANAGER' | 'MEMBER'
 
 export type MessMembership = {

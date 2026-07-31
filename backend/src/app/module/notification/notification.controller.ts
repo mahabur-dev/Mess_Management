@@ -28,7 +28,7 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Create a notification (Manager/Admin)' })
   async create(@Req() req: Request, @Body() dto: CreateNotificationDto) {
     const data = await this.notificationService.create(
@@ -40,7 +40,7 @@ export class NotificationController {
   }
 
   @Get('push/public-key')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get browser push notification public key' })
   async getPushPublicKey() {
     const data = this.notificationService.getPushPublicKey();
@@ -48,7 +48,7 @@ export class NotificationController {
   }
 
   @Get('push/status')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get current user push subscription status' })
   async getPushStatus(@Req() req: Request) {
     const data = await this.notificationService.getPushSubscriptionStatus(req.user!.id);
@@ -56,7 +56,7 @@ export class NotificationController {
   }
 
   @Post('push/subscribe')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Save current user browser push subscription' })
   async savePushSubscription(
     @Req() req: Request,
@@ -70,7 +70,7 @@ export class NotificationController {
   }
 
   @Patch('push/unsubscribe')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Disable current user browser push subscription' })
   async removePushSubscription(
     @Req() req: Request,
@@ -80,7 +80,7 @@ export class NotificationController {
   }
 
   @Post('push/send/user/:userId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Send browser push notification to one user' })
   async sendPushToUser(
     @Param('userId') userId: string,
@@ -111,7 +111,7 @@ export class NotificationController {
   }
 
   @Get('my')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get notifications visible to current user' })
   async findMine(@Req() req: Request, @Query() query: NotificationFilterDto) {
     const result = await this.notificationService.findMine(
@@ -127,7 +127,7 @@ export class NotificationController {
   }
 
   @Get('unread-count')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get current user unread notification count' })
   async getUnreadCount(@Req() req: Request) {
     const data = await this.notificationService.getUnreadCount(
@@ -138,7 +138,7 @@ export class NotificationController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get notifications for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -159,7 +159,7 @@ export class NotificationController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get a notification by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.notificationService.findOne(
@@ -171,7 +171,7 @@ export class NotificationController {
   }
 
   @Patch(':id/read')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Mark a notification as read' })
   async markAsRead(@Param('id') id: string, @Req() req: Request) {
     const data = await this.notificationService.markAsRead(
@@ -183,7 +183,7 @@ export class NotificationController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Delete a notification for current user, or globally for admin' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.notificationService.remove(

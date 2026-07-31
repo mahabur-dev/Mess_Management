@@ -112,7 +112,12 @@ export default function MonthlyBillPage() {
         <ExpenseSurface title="History">
           <div className="flush-list flush-list--home-panel">
             {history.map((item) => (
-              <ExpenseListItem key={item.id} item={item} variant="horizontal" />
+              <ExpenseListItem
+                key={item.id}
+                item={item}
+                href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+                variant="horizontal"
+              />
             ))}
             {!loading && !history.length ? <div className="expense-empty-state mx-3">No expense history for {monthLabel(month)}.</div> : null}
           </div>

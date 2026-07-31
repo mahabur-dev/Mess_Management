@@ -1,125 +1,153 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   Matches,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AttendanceStatus, MealName, MealStatus } from '@prisma/client';
 
+const toOptionalNumber = ({ value }: { value: unknown }) => {
+  if (value === '' || value === null || value === undefined) return undefined;
+  return Number(value);
+};
+
 export class CreateMealDto {
-  @ApiProperty({ example: 'clxyz123456', description: 'Mess ID' })
+  @ApiProperty({ example: '97938db5-7fc1-47f5-970b-d5ddfc19e612' })
   @IsString()
   @IsNotEmpty()
   messId: string;
 
-  @ApiPropertyOptional({ example: 'uuid-member-id', description: 'Manager/Admin can set meal for another member' })
+  @ApiPropertyOptional({
+    example: '46083bde-ad97-44bc-94e2-3414160bdb8a',
+    description: 'Only a manager or admin may set attendance for another member',
+  })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   memberId?: string;
 
-  @ApiProperty({
-    example: 1.5,
-    description: 'Number of meals (supports 0.5 for half meal, e.g. 0, 0.5, 1, 1.5, 2)',
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'Total count, including the meal-type base value and guest meals',
   })
-  @Transform(({ value }) => {
-    if (value === '' || value === null || value === undefined) return 0;
-    return Number(value);
-  })
+  @IsOptional()
+  @Transform(toOptionalNumber)
   @IsNumber()
   @Min(0)
-  @Max(5)
-  mealCount: number;
+  @Max(21)
+  mealCount?: number;
 
-  @ApiPropertyOptional({ enum: MealName, example: MealName.DINNER })
-  @IsOptional()
+  @ApiProperty({ enum: MealName, example: MealName.DINNER })
   @IsEnum(MealName)
-  mealName?: MealName;
+  mealName: MealName;
 
   @ApiPropertyOptional({ enum: AttendanceStatus, example: AttendanceStatus.ON })
   @IsOptional()
   @IsEnum(AttendanceStatus)
   status?: AttendanceStatus;
 
-  @ApiPropertyOptional({ example: 0.5, description: 'Guest meals count (supports 0.5 increments)' })
-  @IsOptional()
-  @Transform(({ value }) => {
-    if (value === '' || value === null || value === undefined) return undefined;
-    return Number(value);
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Additional guest meals beyond the meal-type base value',
   })
+  @IsOptional()
+  @Transform(toOptionalNumber)
   @IsNumber()
   @Min(0)
   @Max(20)
   guests?: number;
 
-  @ApiPropertyOptional({ example: '2025-04-26' })
-  @IsOptional()
+  @ApiProperty({
+    example: '2026-08-01',
+    description: 'Target meal date in YYYY-MM-DD format',
+  })
   @IsDateString()
-  date?: string;
+  date: string;
 }
 
 export class UpdateMealDto {
-  @ApiPropertyOptional({ example: 1.5 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(5)
-  mealCount?: number;
-
-  @ApiPropertyOptional({ example: '2025-04-26' })
+  @ApiPropertyOptional({ example: '2026-08-02' })
   @IsOptional()
   @IsDateString()
   date?: string;
-
-  @ApiPropertyOptional({ enum: AttendanceStatus })
-  @IsOptional()
-  @IsEnum(AttendanceStatus)
-  status?: AttendanceStatus;
 
   @ApiPropertyOptional({ enum: MealStatus })
   @IsOptional()
   @IsEnum(MealStatus)
   mealStatus?: MealStatus;
 
-  @ApiPropertyOptional({ example: 0.5, description: 'Guest meals count (supports 0.5 increments)' })
+  @ApiPropertyOptional({ example: 'Special schedule for the day' })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (value === '' || value === null || value === undefined) return undefined;
-    return Number(value);
-  })
-  @IsNumber()
-  @Min(0)
-  @Max(20)
-  guests?: number;
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
+}
+
+export class LockMealDto {
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  locked: boolean;
 }
 
 export class SetMealDeadlineDto {
-  @ApiProperty({ example: '22:00', description: 'Deadline start time (HH:mm) - meal time window starts' })
+  @ApiProperty({
+    example: '09:00',
+    description: 'Opening time for the meal decision window',
+  })
   @IsString()
-  @IsNotEmpty()
   @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-    message: 'startTime must be in HH:mm format, for example 22:00',
+    message: 'startTime must use 24-hour HH:mm format',
   })
   startTime: string;
 
-  @ApiProperty({ example: '11:00', description: 'Deadline end time (HH:00) - must be an exact hour so hourly reminder jobs do not miss it' })
+  @ApiProperty({
+    example: '17:00',
+    description: 'Closing time for the meal decision window. Overnight windows may end on the target meal date.',
+  })
   @IsString()
-  @IsNotEmpty()
-  @Matches(/^([01]\d|2[0-3]):00$/, {
-    message: 'endTime must be an exact hour in HH:00 format, for example 11:00',
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+    message: 'endTime must use 24-hour HH:mm format',
   })
   endTime: string;
+}
 
-  @ApiProperty({ example: '2026-06-15', description: 'Date to apply this deadline (optional, if not provided uses current date)' })
+export class UpdateMealSettingsDto {
+  @ApiPropertyOptional({ enum: AttendanceStatus })
   @IsOptional()
-  @IsDateString()
-  date?: string;
+  @IsEnum(AttendanceStatus)
+  defaultStatus?: AttendanceStatus;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  allowNoMeal?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  windowNotificationEnabled?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  deadlineNotificationEnabled?: boolean;
+
+  @ApiPropertyOptional({ example: 60, minimum: 5, maximum: 720 })
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(720)
+  deadlineReminderMinutes?: number;
 }
 
 export class MealFilterDto {
@@ -128,17 +156,19 @@ export class MealFilterDto {
   @IsString()
   messId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by user ID' })
+  @ApiPropertyOptional({
+    description: 'Filter meals containing attendance for this member',
+  })
   @IsOptional()
   @IsString()
   userId?: string;
 
-  @ApiPropertyOptional({ example: '2025-04-01' })
+  @ApiPropertyOptional({ example: '2026-08-01' })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiPropertyOptional({ example: '2025-04-30' })
+  @ApiPropertyOptional({ example: '2026-08-31' })
   @IsOptional()
   @IsDateString()
   endDate?: string;
@@ -153,7 +183,7 @@ export class MealFilterDto {
   @Transform(({ value }) => value?.toString())
   limit?: string;
 
-  @ApiPropertyOptional({ example: 'date' })
+  @ApiPropertyOptional({ example: 'scheduled_date' })
   @IsOptional()
   @IsString()
   sortBy?: string;

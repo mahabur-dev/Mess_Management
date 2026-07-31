@@ -19,12 +19,18 @@ export class UtilsInterceptor implements NestInterceptor {
           typeof response === 'object' &&
           ('data' in response || 'message' in response)
         ) {
+          const responseRecord = response as Record<string, unknown>;
           return {
             statusCode: res.statusCode,
             success: res.statusCode >= 200 && res.statusCode < 300,
-            message: response.message || null,
-            meta: response.meta || null,
-            data: response.data,
+            message: responseRecord.message || null,
+            meta: responseRecord.meta || null,
+            ...Object.fromEntries(
+              Object.entries(responseRecord).filter(
+                ([key]) => !['message', 'meta', 'data'].includes(key),
+              ),
+            ),
+            data: responseRecord.data,
           };
         }
 

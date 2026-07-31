@@ -28,7 +28,7 @@ export class ShoppingController {
   constructor(private readonly shoppingService: ShoppingService) {}
 
   @Post('list')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Create a shopping list (Manager/Admin)' })
   async createList(@Req() req: Request, @Body() dto: CreateShoppingListDto) {
     const data = await this.shoppingService.createList(
@@ -52,7 +52,7 @@ export class ShoppingController {
   }
 
   @Get('list/mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get shopping lists for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -73,7 +73,7 @@ export class ShoppingController {
   }
 
   @Get('list/:id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get a shopping list by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.shoppingService.findOne(
@@ -85,7 +85,7 @@ export class ShoppingController {
   }
 
   @Patch('list/:id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Update a shopping list (Manager/Admin)' })
   async updateList(
     @Param('id') id: string,
@@ -102,7 +102,7 @@ export class ShoppingController {
   }
 
   @Delete('list/:id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Delete a shopping list (Manager/Admin)' })
   async removeList(@Param('id') id: string, @Req() req: Request) {
     const data = await this.shoppingService.removeList(
@@ -114,7 +114,7 @@ export class ShoppingController {
   }
 
   @Patch('item/:itemId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Update a shopping item (mark purchased, update price, etc.)' })
   async updateItem(
     @Param('itemId') itemId: string,
@@ -131,7 +131,7 @@ export class ShoppingController {
   }
 
   @Delete('item/:itemId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Delete a shopping item (Manager/Admin)' })
   async removeItem(@Param('itemId') itemId: string, @Req() req: Request) {
     const data = await this.shoppingService.removeItem(

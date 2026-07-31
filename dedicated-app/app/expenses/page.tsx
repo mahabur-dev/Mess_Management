@@ -63,8 +63,14 @@ type ManagerOverview = {
   members?: ManagerMember[]
 }
 
+type FundBalances = {
+  messDepositBalance: number
+  collectedFundBalance: number
+}
+
 type ViewMode = 'MY' | 'MANAGER'
 type MemberFilter = 'ALL' | 'DUE' | 'PAID'
+type MessageTone = 'SUCCESS' | 'ERROR'
 
 function getStatus(member: ManagerMember) {
   if (Number(member.due ?? 0) <= 0) return 'PAID'
@@ -93,14 +99,20 @@ export default function ExpensesPage() {
   const [managerData, setManagerData] = useState<ManagerOverview | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [messageTone, setMessageTone] = useState<MessageTone>('ERROR')
   const [search, setSearch] = useState('')
   const [memberFilter, setMemberFilter] = useState<MemberFilter>('ALL')
+  const [fundBalances, setFundBalances] = useState<FundBalances | null>(null)
+  const [collectedAmount, setCollectedAmount] = useState('')
+  const [collectedNote, setCollectedNote] = useState('')
+  const [fundBusy, setFundBusy] = useState(false)
 
   useEffect(() => {
     if (!messId) return
     let active = true
     setLoading(true)
     setMessage('')
+    setMessageTone('ERROR')
 
     api
       .getExpenseSummary(messId, `${month}-01`)
@@ -124,13 +136,29 @@ export default function ExpensesPage() {
     let active = true
     setLoading(true)
 
-    api
-      .getManagerMemberExpenses(messId, `${month}-01`)
-      .then((response) => {
-        if (active) setManagerData(response.data as ManagerOverview)
-      })
-      .catch((error) => {
-        if (active) setMessage(error instanceof Error ? error.message : 'Failed to load member expenses.')
+    Promise.allSettled([
+      api.getManagerMemberExpenses(messId, `${month}-01`),
+      api.getFundBalances(messId),
+    ])
+      .then(([memberResult, balanceResult]) => {
+        if (!active) return
+        if (memberResult.status === 'fulfilled') {
+          setManagerData(memberResult.value.data as ManagerOverview)
+        }
+        if (balanceResult.status === 'fulfilled') {
+          setFundBalances(balanceResult.value.data)
+        }
+        const errors = [memberResult, balanceResult]
+          .filter((result) => result.status === 'rejected')
+          .map((result) =>
+            result.status === 'rejected' && result.reason instanceof Error
+              ? result.reason.message
+              : 'Part of the manager expense overview could not be loaded.',
+          )
+        if (errors.length) {
+          setMessageTone('ERROR')
+          setMessage(errors.join(' '))
+        }
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -140,6 +168,35 @@ export default function ExpensesPage() {
       active = false
     }
   }, [isManager, managerData, messId, month, view])
+
+  async function addCollectedFund() {
+    setMessage('')
+    setMessageTone('ERROR')
+    const amount = Number(collectedAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setMessage('Enter a valid collected fund amount.')
+      return
+    }
+
+    setFundBusy(true)
+    try {
+      const response = await api.createCollectedFund({
+        messId,
+        amount,
+        date: new Date().toISOString().slice(0, 10),
+        note: collectedNote.trim() || undefined,
+      })
+      setFundBalances(response.data.balances)
+      setCollectedAmount('')
+      setCollectedNote('')
+      setMessageTone('SUCCESS')
+      setMessage('Collected fund recorded successfully.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to record collected fund.')
+    } finally {
+      setFundBusy(false)
+    }
+  }
 
   const my = summary?.myView
   const manager = managerData?.totals
@@ -173,7 +230,17 @@ export default function ExpensesPage() {
           />
         ) : null}
 
-        {message ? <div className="rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]">{message}</div> : null}
+        {message ? (
+          <div
+            className={
+              messageTone === 'SUCCESS'
+                ? 'rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]'
+                : 'rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]'
+            }
+          >
+            {message}
+          </div>
+        ) : null}
 
         {view === 'MY' ? (
           <>
@@ -194,11 +261,27 @@ export default function ExpensesPage() {
             >
               <div className="flush-list flush-list--home-panel">
                 {(summary?.recentExpenses ?? []).map((item) => (
-                  <ExpenseListItem key={item.id} item={item} variant="horizontal" />
+                  <ExpenseListItem
+                    key={item.id}
+                    item={item}
+                    href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+                    variant="horizontal"
+                  />
                 ))}
                 {!loading && !summary?.recentExpenses?.length ? <div className="expense-empty-state mx-3">No expenses found for this month.</div> : null}
               </div>
             </ExpenseSurface>
+
+            {!isManager ? (
+              <div className="grid grid-cols-2 gap-3">
+                <Link href="/add-expense" className="expense-primary-action">
+                  <Plus size={18} /> Add Personal Expense
+                </Link>
+                <Link href="/add-utility" className="expense-secondary-action">
+                  <Zap size={18} /> Add Personal Utility
+                </Link>
+              </div>
+            ) : null}
           </>
         ) : (
           <>
@@ -237,6 +320,48 @@ export default function ExpensesPage() {
                 <ExpenseSummaryCard icon={Zap} label="Utility" value={formatTaka(manager?.totalUtility)} accent="blue" />
                 <ExpenseSummaryCard icon={Landmark} label="Deposit" value={formatTaka(manager?.fromDeposit)} accent="green" />
                 <ExpenseSummaryCard icon={UsersRound} label="Members" value={manager?.members ?? 0} accent="violet" />
+              </div>
+            </ExpenseSurface>
+
+            <ExpenseSurface title="Available Funds">
+              <div className="grid grid-cols-2 gap-2.5">
+                <ExpenseSummaryCard
+                  icon={Landmark}
+                  label="Mess Deposit"
+                  value={formatTaka(fundBalances?.messDepositBalance)}
+                  accent="green"
+                />
+                <ExpenseSummaryCard
+                  icon={UsersRound}
+                  label="Collected Fund"
+                  value={formatTaka(fundBalances?.collectedFundBalance)}
+                  accent="violet"
+                />
+              </div>
+              <div className="mt-4 grid gap-2.5">
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={collectedAmount}
+                  onChange={(event) => setCollectedAmount(event.target.value)}
+                  className="h-12 rounded-[15px] border border-[#dce5ec] bg-white px-4 text-label font-medium text-[#123748] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+                  placeholder="Collected fund amount"
+                />
+                <input
+                  value={collectedNote}
+                  onChange={(event) => setCollectedNote(event.target.value.slice(0, 250))}
+                  className="h-12 rounded-[15px] border border-[#dce5ec] bg-white px-4 text-label font-medium text-[#123748] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+                  placeholder="Collection note (optional)"
+                />
+                <button
+                  type="button"
+                  onClick={() => void addCollectedFund()}
+                  disabled={fundBusy}
+                  className="expense-secondary-action disabled:opacity-60"
+                >
+                  <Plus size={18} /> {fundBusy ? 'Recording...' : 'Record Collected Fund'}
+                </button>
               </div>
             </ExpenseSurface>
 

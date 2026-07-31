@@ -13,12 +13,14 @@ model Meal {
   note           String?    @db.Text
   is_locked      Boolean    @default(false)
   created_at     DateTime   @default(now()) @db.Timestamptz
+  updated_at     DateTime   @updatedAt @db.Timestamptz
 
   // ─── Relations ─────────────────────────────────────────
   mess        Mess             @relation(fields: [mess_id], references: [id], onDelete: Cascade)
   creator     User             @relation("MealCreator", fields: [created_by], references: [id])
   attendances MealAttendance[]
 
+  @@unique([mess_id, name, scheduled_date])
   @@index([mess_id, scheduled_date])
   @@map("meals")
 }

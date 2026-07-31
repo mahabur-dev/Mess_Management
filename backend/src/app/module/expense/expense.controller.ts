@@ -39,16 +39,22 @@ export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
   @Post('preview')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Preview expense split without saving' })
   async preview(@Req() req: Request, @Body() dto: ExpensePreviewDto) {
-    const data = await this.expenseService.preview(req.user!.id, req.user!.role, dto);
+    const data = await this.expenseService.preview(
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
     return { message: 'Expense split preview calculated successfully', data };
   }
 
   @Get('summary')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
-  @ApiOperation({ summary: 'Expense & Utility Center summary for current user' })
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({
+    summary: 'Expense & Utility Center summary for current user',
+  })
   async summary(
     @Req() req: Request,
     @Query('messId') messId: string,
@@ -64,8 +70,10 @@ export class ExpenseController {
   }
 
   @Get('my-details')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
-  @ApiOperation({ summary: 'Logged-in member monthly allocated expense details' })
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({
+    summary: 'Logged-in member monthly allocated expense details',
+  })
   async myDetails(
     @Req() req: Request,
     @Query('messId') messId: string,
@@ -81,7 +89,7 @@ export class ExpenseController {
   }
 
   @Get('manager/members')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Manager member-wise monthly expense overview' })
   async managerMembers(
     @Req() req: Request,
@@ -100,7 +108,9 @@ export class ExpenseController {
   @Post()
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @UseInterceptors(FileInterceptor('receipt', uploadConfig))
-  @ApiOperation({ summary: 'Create an expense with optional receipt image/PDF' })
+  @ApiOperation({
+    summary: 'Create an expense with optional receipt image/PDF',
+  })
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({
     schema: {
@@ -118,9 +128,23 @@ export class ExpenseController {
         expenseDate: { type: 'string', format: 'date' },
         description: { type: 'string' },
         receiptUrl: { type: 'string' },
-        paidFrom: { type: 'string', enum: ['PERSONAL', 'MESS_DEPOSIT', 'FROM_DEPOSIT', 'COLLECTED_FUND'] },
-        usedBy: { type: 'string', enum: ['SELF_ONLY', 'SELECTED_MEMBERS', 'ALL_MEMBERS', 'MEAL_ON_MEMBERS'] },
-        splitMethod: { type: 'string', enum: ['EQUAL', 'MEAL_COUNT', 'CUSTOM'] },
+        paidFrom: {
+          type: 'string',
+          enum: ['PERSONAL', 'MESS_DEPOSIT', 'FROM_DEPOSIT', 'COLLECTED_FUND'],
+        },
+        usedBy: {
+          type: 'string',
+          enum: [
+            'SELF_ONLY',
+            'SELECTED_MEMBERS',
+            'ALL_MEMBERS',
+            'MEAL_ON_MEMBERS',
+          ],
+        },
+        splitMethod: {
+          type: 'string',
+          enum: ['EQUAL', 'MEAL_COUNT', 'CUSTOM'],
+        },
         selectedMemberIds: { type: 'array', items: { type: 'string' } },
         customShares: { type: 'array', items: { type: 'object' } },
         receipt: { type: 'string', format: 'binary' },
@@ -208,7 +232,9 @@ export class ExpenseController {
   @Patch(':id')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @UseInterceptors(FileInterceptor('receipt', uploadConfig))
-  @ApiOperation({ summary: 'Update an expense with optional receipt image/PDF' })
+  @ApiOperation({
+    summary: 'Update an expense with optional receipt image/PDF',
+  })
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({
     schema: {

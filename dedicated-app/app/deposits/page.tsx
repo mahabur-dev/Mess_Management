@@ -15,6 +15,8 @@ import {
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
+import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-design'
+import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 
 type DepositItem = {
@@ -27,12 +29,14 @@ type DepositItem = {
 }
 
 type FormState = {
+  memberId: string
   amount: string
   date: string
   note: string
 }
 
 const INITIAL_FORM: FormState = {
+  memberId: '',
   amount: '',
   date: new Date().toISOString().slice(0, 10),
   note: '',
@@ -41,6 +45,7 @@ const INITIAL_FORM: FormState = {
 export default function DepositsPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
+  const members = useMessMemberOptions(messId, user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -74,12 +79,14 @@ export default function DepositsPage() {
   async function handleSubmit() {
     setMessage('')
     if (!messId) return setMessage('No mess selected.')
+    if (!form.memberId) return setMessage('Select the member receiving this deposit.')
     if (!form.amount) return setMessage('Amount is required.')
 
     setBusy(true)
     try {
       await api.createDeposit({
         messId,
+        memberId: form.memberId || undefined,
         amount: Number(form.amount),
         date: form.date,
         note: form.note.trim() || undefined,
@@ -120,6 +127,20 @@ export default function DepositsPage() {
           onOpen={() => setShowForm(true)}
           onClose={() => setShowForm(false)}
         >
+          <DesignedSelect
+            label="Deposit For"
+            icon={expenseFormIcons.member}
+            value={form.memberId}
+            onChange={(event) => setForm((prev) => ({ ...prev, memberId: event.target.value }))}
+            required
+          >
+            <option value="">Select member</option>
+            {members.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.name}
+              </option>
+            ))}
+          </DesignedSelect>
           <div className="grid grid-cols-2 gap-3">
             <TextField
               label="Amount"

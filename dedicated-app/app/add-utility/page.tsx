@@ -21,6 +21,7 @@ import { api } from '@/lib/api'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
+import { canManageMess } from '@/lib/app-permissions'
 
 const UTILITY_OPTIONS: Array<{ category: ExpenseCategory; utilityType: string; label: string }> = [
   { category: 'ELECTRICITY', utilityType: 'ELECTRICITY', label: 'Electricity' },
@@ -91,12 +92,16 @@ export default function AddUtilityPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const members = useMessMemberOptions(messId, user)
+  const isManager = canManageMess(user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState<PreviewData | null>(null)
+  const effectivePaymentType: ExpensePaymentType = isManager ? form.paymentType : 'PERSONAL'
+  const effectiveUsedBy: ExpenseUsedBy = isManager ? form.usedBy : 'SELF_ONLY'
+  const effectiveSplitMethod: ExpenseSplitMethod = isManager ? form.splitMethod : 'EQUAL'
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setPreview(null)
@@ -111,12 +116,12 @@ export default function AddUtilityPage() {
       utilityType: form.utilityType,
       amount: Number(form.amount),
       itemName: LABELS.EXPENSE_CATEGORIES[form.category],
-      paidFrom: form.paymentType === 'FROM_DEPOSIT' ? 'MESS_DEPOSIT' : form.paymentType,
-      paymentType: form.paymentType,
-      usedBy: form.usedBy,
-      splitMethod: form.splitMethod,
-      selectedMemberIds: form.usedBy === 'SELECTED_MEMBERS' ? form.selectedMemberIds : undefined,
-      purchasedBy: form.paymentBy || undefined,
+      paidFrom: effectivePaymentType === 'FROM_DEPOSIT' ? 'MESS_DEPOSIT' : effectivePaymentType,
+      paymentType: effectivePaymentType,
+      usedBy: effectiveUsedBy,
+      splitMethod: effectiveSplitMethod,
+      selectedMemberIds: effectiveUsedBy === 'SELECTED_MEMBERS' ? form.selectedMemberIds : undefined,
+      purchasedBy: isManager ? form.paymentBy || undefined : user?.id,
       expenseDate: form.billDate,
       billingMonth: `${form.billingMonth}-01`,
       description: form.description.trim() || undefined,
@@ -128,7 +133,7 @@ export default function AddUtilityPage() {
     setMessage('')
     if (!messId) return setMessage('No mess selected.')
     if (!form.amount) return setMessage('Amount is required.')
-    if (form.usedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return setMessage('Select members first.')
+    if (effectiveUsedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return setMessage('Select members first.')
 
     setBusy(true)
     try {
@@ -177,7 +182,7 @@ export default function AddUtilityPage() {
           <SplitPreviewContent
             title={preview.title}
             amount={preview.amount}
-            paidFrom={LABELS.EXPENSE_PAYMENT_TYPES[form.paymentType]}
+            paidFrom={LABELS.EXPENSE_PAYMENT_TYPES[effectivePaymentType]}
             usedBy={LABELS.EXPENSE_USED_BY[preview.usedBy]}
             splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}
             payerCredit={preview.payerCredit}
@@ -198,10 +203,14 @@ export default function AddUtilityPage() {
     <MobileShell>
       <form onSubmit={handlePreview}>
         <FormPageShell title="Add Utility" icon={Zap} backHref="/expenses">
-          <FormSection title="Paid From">
+          {isManager ? <FormSection title="Paid From">
             <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} showHeading={false} />
-          </FormSection>
-          <FormSection title="Used By">
+          </FormSection> : (
+            <div className="rounded-[16px] border border-[#cfeeed] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#00777a]">
+              Member entries are saved as your personal, self-only utility expenses.
+            </div>
+          )}
+          {isManager ? <FormSection title="Used By">
             <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
               <SmallChoice active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" onClick={() => { update('usedBy', 'SELF_ONLY'); update('splitMethod', 'EQUAL') }} vertical />
               <SmallChoice active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} vertical />
@@ -220,8 +229,8 @@ export default function AddUtilityPage() {
                 })}
               </div>
             ) : null}
-          </FormSection>
-          {form.usedBy !== 'SELF_ONLY' ? (
+          </FormSection> : null}
+          {isManager && form.usedBy !== 'SELF_ONLY' ? (
             <FormSection title="Split Method">
               <div className="grid grid-cols-2 gap-2">
                 <SmallChoice active={form.splitMethod === 'EQUAL'} icon={Scale} title="Equal" onClick={() => update('splitMethod', 'EQUAL')} />
@@ -251,14 +260,14 @@ export default function AddUtilityPage() {
               <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.billDate} onChange={(event) => update('billDate', event.target.value)} type="date" required />
             </FormFieldGrid>
             <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
-            <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.paymentBy} onChange={(event) => update('paymentBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
+            {isManager ? <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.paymentBy} onChange={(event) => update('paymentBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
               <option value="">Select member</option>
               {members.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.name}
                 </option>
               ))}
-            </DesignedSelect>
+            </DesignedSelect> : null}
             <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
           </FormSection>
           <FormSection title="Attachment">

@@ -51,6 +51,8 @@ model Expense {
   amount       Decimal            @db.Decimal(12, 2)
   description  String?            @db.Text
   receipt_url  String?            @db.Text
+  receipt_public_id String?        @db.Text
+  receipt_resource_type String?    @db.VarChar(20)
   buyer_id     String?            @db.Uuid
   purchased_by String?            @db.Uuid
   item_name    String?            @db.VarChar(150)

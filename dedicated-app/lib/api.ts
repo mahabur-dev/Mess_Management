@@ -262,6 +262,43 @@ class Api {
     })
   }
 
+  getFundBalances(messId: string) {
+    return this.request<{
+      messDepositBalance: number
+      collectedFundBalance: number
+    }>(`/funds/${messId}/balances`)
+  }
+
+  createCollectedFund(data: {
+    messId: string
+    amount: number
+    date?: string
+    note?: string
+  }) {
+    return this.request<{
+      id: string
+      amount: number
+      balance: number
+      balances: {
+        messDepositBalance: number
+        collectedFundBalance: number
+      }
+    }>('/funds/collected', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  getCollectedFundEntries(messId: string, params?: Record<string, QueryValue>) {
+    return this.request(`/funds/${messId}/collected`, { params })
+  }
+
+  deleteCollectedFundEntry(id: string) {
+    return this.request(`/funds/collected/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   getDepositsByMess(messId: string, params?: Record<string, QueryValue>) {
     return this.request(`/deposit/mess/${messId}`, { params })
   }
@@ -310,6 +347,17 @@ class Api {
   setMealDeadline(messId: string, data: Record<string, unknown>) {
     return this.request(`/meal/mess/${messId}/deadline`, {
       method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  getMealSettings(messId: string) {
+    return this.request(`/meal/mess/${messId}/settings`)
+  }
+
+  updateMealSettings(messId: string, data: Record<string, unknown>) {
+    return this.request(`/meal/mess/${messId}/settings`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     })
   }

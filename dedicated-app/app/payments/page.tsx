@@ -26,6 +26,7 @@ import { type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
+import { canManageMess } from '@/lib/app-permissions'
 
 type PaymentItem = {
   id: string
@@ -72,6 +73,7 @@ export default function PaymentsPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const members = useMessMemberOptions(messId, user)
+  const isManager = canManageMess(user)
   const [items, setItems] = useState<PaymentItem[]>([])
   const [form, setForm] = useState<FormState>(() => createInitialForm())
   const [message, setMessage] = useState('')
@@ -187,19 +189,21 @@ export default function PaymentsPage() {
               <TextField label="Amount" value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="2500" type="number" />
               <TextField label="Deposit Date" value={form.paymentDate} onChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))} type="date" />
             </div>
-            <DesignedSelect
-              label="Deposit For"
-              icon={expenseFormIcons.member}
-              value={form.purchasedBy}
-              onChange={(event) => setForm((prev) => ({ ...prev, purchasedBy: event.target.value }))}
-            >
-              <option value="">Select member</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </DesignedSelect>
+            {isManager ? (
+              <DesignedSelect
+                label="Deposit For"
+                icon={expenseFormIcons.member}
+                value={form.purchasedBy}
+                onChange={(event) => setForm((prev) => ({ ...prev, purchasedBy: event.target.value }))}
+              >
+                <option value="">Self</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </DesignedSelect>
+            ) : null}
             <TextField
               label="Monthly Bill ID"
               hint="Optional"

@@ -27,14 +27,45 @@ export type ExpenseImpact = {
 
 const MONEY_DECIMALS = 2;
 
+export class ExpenseCalculationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ExpenseCalculationError';
+  }
+}
+
 export function roundMoney(value: number) {
-  return Number((Math.round((value + Number.EPSILON) * 100) / 100).toFixed(MONEY_DECIMALS));
+  return Number(
+    (Math.round((value + Number.EPSILON) * 100) / 100).toFixed(MONEY_DECIMALS),
+  );
 }
 
 function assertValidAmount(amount: number, label = 'Amount') {
   if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error(`${label} must be greater than zero`);
+    throw new ExpenseCalculationError(`${label} must be greater than zero`);
   }
+}
+
+function assertUniqueMemberIds(members: SplitMember[]) {
+  const memberIds = members.map((member) => member.id);
+  if (memberIds.some((memberId) => !memberId)) {
+    throw new ExpenseCalculationError('Every affected member must have an id');
+  }
+  if (new Set(memberIds).size !== memberIds.length) {
+    throw new ExpenseCalculationError('Affected members must be unique');
+  }
+}
+
+function assertSplitTotal(shares: CalculatedShare[], amount: number) {
+  const total = roundMoney(
+    shares.reduce((sum, share) => sum + Number(share.shareAmount ?? 0), 0),
+  );
+  if (Math.abs(total - roundMoney(amount)) > 0.01) {
+    throw new ExpenseCalculationError(
+      'Calculated shares must equal the expense amount',
+    );
+  }
+  return total;
 }
 
 function withRoundingBalance(
@@ -65,16 +96,18 @@ export function calculateSplit(params: {
   paidFrom: string;
   usedBy: string;
   splitMethod: SplitMethod;
-  payerMemberId: string;
   members: SplitMember[];
   customShares?: CustomShareInput[];
 }): ExpenseImpact {
-  const { amount, paidFrom, usedBy, splitMethod, payerMemberId, members } = params;
+  const { amount, paidFrom, usedBy, splitMethod, members } = params;
   assertValidAmount(amount);
 
   if (!members.length) {
-    throw new Error('At least one affected member is required');
+    throw new ExpenseCalculationError(
+      'At least one affected member is required',
+    );
   }
+  assertUniqueMemberIds(members);
 
   const isPersonalSelfOnly = paidFrom === 'PERSONAL' && usedBy === 'SELF_ONLY';
 
@@ -98,9 +131,14 @@ export function calculateSplit(params: {
     const equalShare = amount / members.length;
     shares = withRoundingBalance(members, amount, () => equalShare);
   } else if (splitMethod === 'MEAL_COUNT') {
-    const totalMeals = members.reduce((sum, member) => sum + Number(member.mealCount ?? 0), 0);
+    const totalMeals = members.reduce(
+      (sum, member) => sum + Number(member.mealCount ?? 0),
+      0,
+    );
     if (totalMeals <= 0) {
-      throw new Error('Meal count split requires meal data for the selected members');
+      throw new ExpenseCalculationError(
+        'Meal count split requires meal data for the selected members',
+      );
     }
 
     shares = withRoundingBalance(
@@ -110,18 +148,47 @@ export function calculateSplit(params: {
     );
   } else {
     const customShares = params.customShares ?? [];
-    const amountByMember = new Map(customShares.map((share) => [share.memberId, Number(share.amount)]));
-    const missingMember = members.find((member) => !amountByMember.has(member.id));
+    const affectedMemberIds = new Set(members.map((member) => member.id));
+    const customMemberIds = customShares.map((share) => share.memberId);
+
+    if (new Set(customMemberIds).size !== customMemberIds.length) {
+      throw new ExpenseCalculationError(
+        'Custom split cannot contain duplicate members',
+      );
+    }
+
+    const unexpectedMember = customMemberIds.find(
+      (memberId) => !affectedMemberIds.has(memberId),
+    );
+    if (unexpectedMember) {
+      throw new ExpenseCalculationError(
+        'Custom split can include only affected members',
+      );
+    }
+
+    const amountByMember = new Map(
+      customShares.map((share) => [share.memberId, Number(share.amount)]),
+    );
+    const missingMember = members.find(
+      (member) => !amountByMember.has(member.id),
+    );
     if (missingMember) {
-      throw new Error('Custom split requires an amount for every affected member');
+      throw new ExpenseCalculationError(
+        'Custom split requires an amount for every affected member',
+      );
     }
 
     const total = roundMoney(
-      customShares.reduce((sum, share) => sum + Number(share.amount ?? 0), 0),
+      members.reduce(
+        (sum, member) => sum + Number(amountByMember.get(member.id) ?? 0),
+        0,
+      ),
     );
 
     if (Math.abs(total - roundMoney(amount)) > 0.01) {
-      throw new Error('Custom split total must equal the expense amount');
+      throw new ExpenseCalculationError(
+        'Custom split total must equal the expense amount',
+      );
     }
 
     shares = members.map((member) => {
@@ -137,7 +204,7 @@ export function calculateSplit(params: {
     });
   }
 
-  const totalSharedCost = roundMoney(shares.reduce((sum, share) => sum + share.shareAmount, 0));
+  const totalSharedCost = assertSplitTotal(shares, amount);
 
   return {
     shares,

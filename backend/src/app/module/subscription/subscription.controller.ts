@@ -55,7 +55,7 @@ export class SubscriptionController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'ORGANIZER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get subscription for a specific mess' })
   async findByMess(@Param('messId') messId: string) {
     const data = await this.subscriptionService.findByMess(messId);

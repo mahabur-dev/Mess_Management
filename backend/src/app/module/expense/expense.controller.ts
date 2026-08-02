@@ -27,6 +27,7 @@ import {
   ExpenseFilterDto,
   ExpensePreviewDto,
   RequestPriceReviewDto,
+  ReviewExpenseDto,
   UpdateExpenseDto,
 } from './dto/expense.dto';
 import AuthGuard from '../../middlewares/auth.guard';
@@ -227,6 +228,26 @@ export class ExpenseController {
       dto,
     );
     return { message: 'Price review request sent successfully', data };
+  }
+
+  @Patch(':id/approval')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Approve or reject a submitted expense' })
+  async review(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Body() dto: ReviewExpenseDto,
+  ) {
+    const data = await this.expenseService.review(
+      id,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return {
+      message: `Expense ${dto.status === 'APPROVED' ? 'approved' : 'rejected'} successfully`,
+      data,
+    };
   }
 
   @Patch(':id')

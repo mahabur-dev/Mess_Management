@@ -3,7 +3,7 @@
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { useAuth } from '../providers'
-import { ChevronRight, House, LogOut, User } from 'lucide-react'
+import { ChevronRight, LogOut, User } from 'lucide-react'
 import Link from 'next/link'
 import { getMoreLinks } from '@/lib/app-permissions'
 import { appHref } from '@/lib/routes'
@@ -26,14 +26,6 @@ export default function MorePage() {
               <div className="ui-caption mt-0.5">{user?.email ?? ''}</div>
             </div>
           </div>
-        </div>
-
-        <div className="ui-card overflow-hidden" style={{ padding: 0 }}>
-          <Link href={appHref('/')} className="flex items-center gap-3 border-b border-[#e4eaec] px-4 py-3.5 transition-colors active:bg-[#edfafa]">
-            <House size={18} className="text-[#009796] shrink-0" />
-            <span className="ui-label flex-1">Back to Home</span>
-            <ChevronRight size={18} className="text-[#78a4a9]" />
-          </Link>
         </div>
 
         <div className="ui-card overflow-hidden" style={{ padding: 0 }}>

@@ -195,6 +195,10 @@ class Api {
     return this.request<any[]>('/messes/members', { params })
   }
 
+  getMessMemberOptions(messId: string) {
+    return this.request<Array<{ id: string; name: string; email: string }>>(`/messes/${messId}/member-options`)
+  }
+
   addMember(messId: string, data: Record<string, unknown>) {
     return this.request(`/messes/${messId}/members`, {
       method: 'POST',
@@ -253,6 +257,13 @@ class Api {
     return this.request(`/expense/${id}`, {
       method: 'PATCH',
       body: data instanceof FormData ? data : JSON.stringify(data),
+    })
+  }
+
+  reviewExpense(id: string, status: 'APPROVED' | 'REJECTED', note?: string) {
+    return this.request(`/expense/${id}/approval`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, note }),
     })
   }
 

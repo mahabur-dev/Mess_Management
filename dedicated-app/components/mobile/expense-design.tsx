@@ -44,6 +44,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
+import { ExpenseApprovalBadge } from '@/components/mobile/expense-approval'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
 
 type IconType = ComponentType<LucideProps>
@@ -631,8 +632,12 @@ export type ExpenseListRecord = {
   amount?: string | number | null
   expenseDate?: string | null
   expense_date?: string | null
+  billingMonth?: string | null
+  billing_month?: string | null
   paymentType?: string | null
   payment_method?: string | null
+  status?: string | null
+  approvalStatus?: string | null
 }
 
 // export function ExpenseListItem({ item, href }: { item: ExpenseListRecord; href: string }) {
@@ -721,7 +726,7 @@ export function ExpenseListItem({
         {label}
       </span>
 
-        <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
+        <span className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="truncate text-caption font-medium text-[#667d87]">
             {formatDate(
               item.expenseDate ??
@@ -740,6 +745,7 @@ export function ExpenseListItem({
           >
             {payment}
           </span>
+          <ExpenseApprovalBadge status={item.approvalStatus} recordStatus={item.status} />
         </span>
       </span>
 
@@ -1033,9 +1039,6 @@ export function DesignedSelect({
         {label}
       </label>
       <span className="relative block">
-        <span className={`${formIconClass} z-10`}>
-          <Icon size={16} strokeWidth={2.35} />
-        </span>
         <MobileSelectSheet
           label={label}
           value={selectedValue}
@@ -1047,10 +1050,13 @@ export function DesignedSelect({
               {...buttonProps}
               id={id}
               className={joinClasses(
-                `${formControlClass} flex items-center pr-10 text-left disabled:cursor-not-allowed disabled:opacity-60`,
+                `${formControlClass} relative flex items-center pr-10 text-left disabled:cursor-not-allowed disabled:opacity-60`,
                 className,
               )}
             >
+              <span className={`${formIconClass} z-10`}>
+                <Icon size={16} strokeWidth={2.35} />
+              </span>
               <span className={joinClasses('min-w-0 flex-1 truncate', selectedValue ? 'text-[#123748]' : 'text-[#65838b]')}>
                 {selectedLabel}
               </span>

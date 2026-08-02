@@ -16,7 +16,13 @@ import {
   formatTaka,
   paymentLabel,
 } from '@/components/mobile/expense-design'
-import { ExpenseMetric, ExpenseSurface, MemberInitials } from '@/components/mobile/expense-ui'
+import { ExpenseMetric, ExpenseSurface, MemberAllocationList } from '@/components/mobile/expense-ui'
+import {
+  ExpenseApprovalBadge,
+  ExpenseReviewActions,
+  normalizeExpenseApprovalStatus,
+  type ExpenseApprovalStatus,
+} from '@/components/mobile/expense-approval'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
@@ -42,10 +48,16 @@ type ExpenseRecord = {
   purchasedBy?: string | null
   purchased_by?: { name?: string | null } | null
   buyer?: { name?: string | null } | null
-  created_by?: { name?: string | null } | null
+  created_by?: { id?: string | null; name?: string | null } | null
+  creator?: { id?: string | null; name?: string | null } | null
+  createdById?: string | null
   addedBy?: { name?: string | null } | null
   usedBy?: string | null
   splitMethod?: string | null
+  status?: string | null
+  approvalStatus?: ExpenseApprovalStatus | null
+  reviewNote?: string | null
+  reviewedAt?: string | null
   shares?: ExpenseShare[]
   impactSummary?: { payerCredit?: number; sharedCost?: number; includedInMonthlyBill?: boolean }
 }
@@ -82,6 +94,9 @@ export default function ExpenseDetailsPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [reviewBusy, setReviewBusy] = useState(false)
+  const [reviewMessage, setReviewMessage] = useState('')
+  const [reviewFailed, setReviewFailed] = useState(false)
 
   useEffect(() => {
     if (!expenseId || !messId) return
@@ -137,8 +152,31 @@ export default function ExpenseDetailsPage() {
     }
   }
 
+  async function reviewExpense(status: 'APPROVED' | 'REJECTED') {
+    if (!expenseId || reviewBusy) return
+    const action = status === 'APPROVED' ? 'approve' : 'reject'
+    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this expense?`)) return
+
+    setReviewBusy(true)
+    setReviewMessage('')
+    setReviewFailed(false)
+    try {
+      const response = await api.reviewExpense(expenseId, status)
+      setExpense(response.data as ExpenseRecord)
+      setReviewMessage(`Expense ${status === 'APPROVED' ? 'approved' : 'rejected'} successfully.`)
+    } catch (error) {
+      setReviewFailed(true)
+      setReviewMessage(error instanceof Error ? error.message : 'Failed to review expense.')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
+
   const Icon = categoryIcon(expense?.category)
   const tone = categoryTone(expense?.category)
+  const approvalStatus = normalizeExpenseApprovalStatus(expense?.approvalStatus, expense?.status)
+  const createdById = expense?.createdById ?? expense?.creator?.id ?? expense?.created_by?.id
+  const canEdit = Boolean(expense && (isManager || createdById === user?.id))
 
   return (
     <MobileShell showBottomNavigation>
@@ -171,6 +209,20 @@ export default function ExpenseDetailsPage() {
               </div>
             </ExpenseSurface>
 
+            <ExpenseSurface
+              title="Approval Status"
+              aside={<ExpenseApprovalBadge status={expense.approvalStatus} recordStatus={expense.status} />}
+            >
+              <p className="text-label font-semibold text-[#65838b]">
+                {approvalStatus === 'PENDING'
+                  ? 'Waiting for manager review.'
+                  : approvalStatus === 'REJECTED'
+                    ? 'This submission was rejected.'
+                    : 'This expense is approved.'}
+              </p>
+              {expense.reviewNote ? <p className="mt-2 text-label font-medium text-[#123748]">{expense.reviewNote}</p> : null}
+            </ExpenseSurface>
+
             <div className="grid grid-cols-2 gap-3">
               <ExpenseSurface className="!p-3">
                 <div className="flex items-center gap-2.5">
@@ -195,18 +247,11 @@ export default function ExpenseDetailsPage() {
             </ExpenseSurface>
 
             {expense.shares?.length ? (
-              <ExpenseSurface title="Member Allocation">
-                <div className="grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
-                  {expense.shares.map((share, index) => (
-                    <div key={share.memberId} className="flex min-w-0 items-center gap-2 rounded-[14px] border border-[#cfeeed] bg-white p-2">
-                      <MemberInitials name={share.memberName} accent={index % 2 ? 'violet' : 'teal'} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-caption font-bold text-[#123748]">{share.memberName ?? share.memberId}</span>
-                        <span className="mt-0.5 block text-caption font-semibold text-[#008d8c]">{formatTaka(share.shareAmount)}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <ExpenseSurface
+                title="Member Allocation"
+                aside={<span className="ui-badge ui-badge--info">{expense.shares.length} {expense.shares.length === 1 ? 'member' : 'members'}</span>}
+              >
+                <MemberAllocationList shares={expense.shares} formatMoney={formatTaka} />
               </ExpenseSurface>
             ) : null}
 
@@ -240,10 +285,24 @@ export default function ExpenseDetailsPage() {
               </div>
             </ExpenseSurface>
 
-            {isManager ? (
-              <div className="grid grid-cols-2 gap-3 pb-3">
+            {reviewMessage ? <div className={`ui-notice ${reviewFailed ? 'ui-notice--danger' : 'ui-notice--success'}`}>{reviewMessage}</div> : null}
+
+            {isManager && approvalStatus === 'PENDING' ? (
+              <ExpenseSurface title="Manager Review">
+                <ExpenseReviewActions
+                  busy={reviewBusy}
+                  onApprove={() => void reviewExpense('APPROVED')}
+                  onReject={() => void reviewExpense('REJECTED')}
+                />
+              </ExpenseSurface>
+            ) : null}
+
+            {canEdit || isManager ? (
+              <div className={`grid gap-3 pb-3 ${canEdit && isManager ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {canEdit ? (
                 <Link href={`/edit-expense?expenseId=${encodeURIComponent(expense.id)}&messId=${encodeURIComponent(messId)}`} className="expense-secondary-action"><Pencil size={17} /> Edit Expense</Link>
-                <button type="button" onClick={() => void deleteExpense()} disabled={deleting} className="flex min-h-[50px] items-center justify-center gap-2 rounded-[15px] border border-[#f04438] bg-white text-label font-bold text-[#f04438] disabled:opacity-60"><Trash2 size={17} /> {deleting ? 'Deleting...' : 'Delete'}</button>
+                ) : null}
+                {isManager ? <button type="button" onClick={() => void deleteExpense()} disabled={deleting} className="flex min-h-[50px] items-center justify-center gap-2 rounded-[15px] border border-[#f04438] bg-white text-label font-bold text-[#f04438] disabled:opacity-60"><Trash2 size={17} /> {deleting ? 'Deleting...' : 'Delete'}</button> : null}
               </div>
             ) : null}
           </>

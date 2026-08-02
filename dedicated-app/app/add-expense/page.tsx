@@ -1,7 +1,7 @@
 'use client'
 
 import { type FormEvent, useMemo, useState } from 'react'
-import { Eye, ReceiptText, Scale, User, Users, UtensilsCrossed } from 'lucide-react'
+import { Eye, ReceiptText } from 'lucide-react'
 import {
   DesignedInput,
   DesignedSelect,
@@ -15,25 +15,31 @@ import {
   expenseFormIcons,
   formatTaka,
 } from '@/components/mobile/expense-design'
-import { ExpenseChoiceCard, ExpensePrimaryAction, SplitPreviewContent } from '@/components/mobile/expense-ui'
+import {
+  ExpensePrimaryAction,
+  ExpenseSplitMethodSelector,
+  ExpenseUsedBySelector,
+  SplitPreviewContent,
+} from '@/components/mobile/expense-ui'
+import {
+  ExpenseCustomShareFields,
+  buildCustomShares,
+  type ExpenseCustomShare,
+} from '@/components/mobile/expense-custom-shares'
+import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import {
-  EXPENSE_CATEGORIES,
+  GENERAL_EXPENSE_CATEGORIES,
   LABELS,
   type ExpenseCategory,
   type ExpensePaymentType,
   type ExpenseSplitMethod,
   type ExpenseUsedBy,
 } from '@/lib/form-options'
-import { useMessMemberOptions, type MemberOption } from '@/hooks/use-mess-member-options'
+import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
-
-type CustomShare = {
-  memberId: string
-  amount: string
-}
 
 type FormState = {
   category: ExpenseCategory
@@ -49,7 +55,7 @@ type FormState = {
   usedBy: ExpenseUsedBy
   splitMethod: ExpenseSplitMethod
   selectedMemberIds: string[]
-  customShares: CustomShare[]
+  customShares: ExpenseCustomShare[]
 }
 
 type PreviewShare = {
@@ -88,62 +94,11 @@ const INITIAL_FORM: FormState = {
   customShares: [],
 }
 
-const GENERAL_EXPENSE_CATEGORIES = EXPENSE_CATEGORIES.filter((category) =>
-  ['GROCERY', 'FOOD', 'RENT', 'MAINTENANCE', 'OTHER'].includes(category)
-)
-
-function ChoiceButton({
-  active,
-  icon: Icon,
-  title,
-  onClick,
-}: {
-  active: boolean
-  icon: typeof User
-  title: string
-  onClick: () => void
-}) {
-  return <ExpenseChoiceCard active={active} icon={Icon} title={title} onClick={onClick} layout="vertical" />
-}
-
-function MemberSelector({
-  members,
-  selected,
-  onChange,
-}: {
-  members: MemberOption[]
-  selected: string[]
-  onChange: (ids: string[]) => void
-}) {
-  const selectedSet = new Set(selected)
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {members.map((member) => {
-        const active = selectedSet.has(member.id)
-        return (
-          <button
-            type="button"
-            key={member.id}
-            onClick={() => {
-              onChange(active ? selected.filter((id) => id !== member.id) : [...selected, member.id])
-            }}
-            className={`rounded-[13px] border px-3 py-2.5 text-left text-label font-bold transition ${
-              active ? 'border-[#008d8c] bg-[#edfafa] text-[#008d8c]' : 'border-[#dce5ec] bg-white text-[#123748]'
-            }`}
-          >
-            {member.name}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 export default function AddExpensePage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
-  const members = useMessMemberOptions(messId, user)
   const isManager = canManageMess(user)
+  const members = useMessMemberOptions(messId, user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [message, setMessage] = useState('')
@@ -151,9 +106,9 @@ export default function AddExpensePage() {
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState<PreviewData | null>(null)
 
-  const effectivePaymentType: ExpensePaymentType = isManager ? form.paymentType : 'PERSONAL'
-  const effectiveUsedBy: ExpenseUsedBy = isManager ? form.usedBy : 'SELF_ONLY'
-  const effectiveSplitMethod: ExpenseSplitMethod = isManager ? form.splitMethod : 'EQUAL'
+  const effectivePaymentType: ExpensePaymentType = form.paymentType
+  const effectiveUsedBy: ExpenseUsedBy = form.usedBy
+  const effectiveSplitMethod: ExpenseSplitMethod = form.splitMethod
   const selectedMembers =
     effectiveUsedBy === 'SELECTED_MEMBERS'
       ? form.selectedMemberIds
@@ -172,10 +127,7 @@ export default function AddExpensePage() {
     const selectedMemberIds = effectiveUsedBy === 'SELECTED_MEMBERS' ? form.selectedMemberIds : undefined
     const customShares =
       effectiveSplitMethod === 'CUSTOM'
-        ? selectedMembers.map((memberId) => ({
-            memberId,
-            amount: Number(form.customShares.find((share) => share.memberId === memberId)?.amount ?? 0),
-          }))
+        ? buildCustomShares(selectedMembers, form.customShares)
         : undefined
 
     return {
@@ -242,7 +194,7 @@ export default function AddExpensePage() {
       setReceiptFile(null)
       setPreview(null)
       setSuccess(true)
-      setMessage('Expense saved successfully.')
+      setMessage(isManager ? 'Expense saved successfully.' : 'Expense submitted for manager approval.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save expense.')
     } finally {
@@ -278,56 +230,38 @@ export default function AddExpensePage() {
     <MobileShell>
       <form onSubmit={handlePreview}>
         <FormPageShell title="Add Expense" icon={ReceiptText} backHref="/expenses">
-          {isManager ? (
-            <FormSection title="Paid From">
-              <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} showHeading={false} />
-            </FormSection>
-          ) : (
-            <div className="rounded-[16px] border border-[#cfeeed] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#00777a]">
-              Member entries are saved as your personal, self-only expenses.
-            </div>
-          )}
+          <FormSection title="Paid From">
+            <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} showHeading={false} />
+          </FormSection>
 
-          {isManager ? <FormSection title="Used By">
-            <div className="grid grid-cols-2 gap-2.5 min-[390px]:grid-cols-4">
-              <ChoiceButton active={form.usedBy === 'SELF_ONLY'} icon={User} title="Self Only" onClick={() => { update('usedBy', 'SELF_ONLY'); update('splitMethod', 'EQUAL') }} />
-              <ChoiceButton active={form.usedBy === 'SELECTED_MEMBERS'} icon={Users} title="Selected" onClick={() => update('usedBy', 'SELECTED_MEMBERS')} />
-              <ChoiceButton active={form.usedBy === 'ALL_MEMBERS'} icon={Users} title="All Members" onClick={() => update('usedBy', 'ALL_MEMBERS')} />
-              <ChoiceButton active={form.usedBy === 'MEAL_ON_MEMBERS'} icon={UtensilsCrossed} title="Meal-On" onClick={() => { update('usedBy', 'MEAL_ON_MEMBERS'); if (form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT') }} />
-            </div>
-            {form.usedBy === 'SELECTED_MEMBERS' ? <MemberSelector members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} /> : null}
-          </FormSection> : null}
+          <FormSection title="Used By">
+            <ExpenseUsedBySelector
+              value={form.usedBy}
+              onChange={(usedBy) => {
+                update('usedBy', usedBy)
+                if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
+                if (usedBy === 'MEAL_ON_MEMBERS' && form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT')
+              }}
+            />
+            {form.usedBy === 'SELECTED_MEMBERS' ? (
+              <MemberMultiSelect members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} />
+            ) : null}
+          </FormSection>
 
-          {isManager && form.usedBy !== 'SELF_ONLY' ? (
+          {form.usedBy !== 'SELF_ONLY' ? (
             <FormSection title="Split Method">
-              <div className="grid grid-cols-3 gap-2.5">
-              <ChoiceButton active={form.splitMethod === 'EQUAL'} icon={Scale} title="Equal" onClick={() => update('splitMethod', 'EQUAL')} />
-              <ChoiceButton active={form.splitMethod === 'MEAL_COUNT'} icon={UtensilsCrossed} title="Meal Count" onClick={() => update('splitMethod', 'MEAL_COUNT')} />
-              {form.usedBy !== 'MEAL_ON_MEMBERS' ? <ChoiceButton active={form.splitMethod === 'CUSTOM'} icon={Scale} title="Custom" onClick={() => update('splitMethod', 'CUSTOM')} /> : null}
-              </div>
+              <ExpenseSplitMethodSelector
+                value={form.splitMethod}
+                onChange={(splitMethod) => update('splitMethod', splitMethod)}
+                allowCustom={form.usedBy !== 'MEAL_ON_MEMBERS'}
+              />
               {form.splitMethod === 'CUSTOM' ? (
-                <div className="space-y-2">
-                {selectedMembers.map((memberId) => {
-                  const member = members.find((item) => item.id === memberId)
-                  return (
-                    <DesignedInput
-                      key={memberId}
-                      label={member?.name ?? memberId}
-                      icon={expenseFormIcons.amount}
-                      value={form.customShares.find((share) => share.memberId === memberId)?.amount ?? ''}
-                      onChange={(event) => {
-                        const amount = event.target.value
-                        update('customShares', [...form.customShares.filter((share) => share.memberId !== memberId), { memberId, amount }])
-                      }}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      required
-                      placeholder="0"
-                    />
-                  )
-                })}
-                </div>
+                <ExpenseCustomShareFields
+                  members={members}
+                  memberIds={selectedMembers}
+                  shares={form.customShares}
+                  onChange={(shares) => update('customShares', shares)}
+                />
               ) : null}
             </FormSection>
           ) : null}

@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import { LABELS, PAYMENT_METHODS, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
+import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
 
 type IconType = ComponentType<LucideProps>
 
@@ -506,22 +507,33 @@ export function DepositCompactFilters({
   onMonthChange: (value: string) => void
   showLabels?: boolean
 }) {
+  const statusOptions: Array<MobileSelectOption<PaymentStatus | 'ALL'>> = [
+    { value: 'ALL', label: 'All Status' },
+    { value: 'APPROVED', label: 'Approved' },
+    { value: 'PENDING', label: 'Pending' },
+    { value: 'REJECTED', label: 'Rejected' },
+  ]
+
   return (
     <div className="grid grid-cols-2 gap-3">
-      <label className="relative block">
+      <div className="relative block">
         {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Status</span> : null}
-        <select
-          className="h-12 w-full appearance-none rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+        <MobileSelectSheet
+          label="Status"
           value={status}
-          onChange={(event) => onStatusChange(event.target.value as PaymentStatus | 'ALL')}
-        >
-          <option value="ALL">All Status</option>
-          <option value="APPROVED">Approved</option>
-          <option value="PENDING">Pending</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
-        <ChevronDown className="pointer-events-none absolute bottom-3.5 right-3 text-[#65838b]" size={16} />
-      </label>
+          options={statusOptions}
+          onChange={onStatusChange}
+          renderTrigger={({ open, selectedLabel, buttonProps }) => (
+            <button
+              {...buttonProps}
+              className="flex h-12 w-full items-center rounded-[15px] border border-[#cfeeed] bg-white px-3 text-left text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)] outline-none transition focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+            >
+              <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+              <ChevronDown className={`shrink-0 text-[#65838b] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} size={16} />
+            </button>
+          )}
+        />
+      </div>
 
       <label className="relative block">
         {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Month</span> : null}

@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
-import { Check, ChevronRight, CircleDollarSign, Scale, UserRound, WalletCards } from 'lucide-react'
+import { Check, ChevronRight, CircleDollarSign, Scale, User, UserRound, Users, UtensilsCrossed, WalletCards } from 'lucide-react'
 import type { ReactNode } from 'react'
+import type { ExpenseSplitMethod, ExpenseUsedBy } from '@/lib/form-options'
 
 type Accent = 'teal' | 'blue' | 'violet' | 'green' | 'orange'
 
@@ -279,12 +280,123 @@ export function ExpenseSecondaryAction({ children, onClick }: { children: ReactN
   )
 }
 
-export type SplitPreviewShare = {
+export function ExpenseUsedBySelector({
+  value,
+  onChange,
+}: {
+  value: ExpenseUsedBy
+  onChange: (value: ExpenseUsedBy) => void
+}) {
+  const options = [
+    { value: 'SELF_ONLY', title: 'Self Only', icon: User },
+    { value: 'SELECTED_MEMBERS', title: 'Selected', icon: Users },
+    { value: 'ALL_MEMBERS', title: 'All Members', icon: Users },
+    { value: 'MEAL_ON_MEMBERS', title: 'Meal-On', icon: UtensilsCrossed },
+  ] as const
+
+  return (
+    <div className="grid grid-cols-2 gap-2.5 min-[390px]:grid-cols-4">
+      {options.map((option) => (
+        <ExpenseChoiceCard
+          key={option.value}
+          active={value === option.value}
+          icon={option.icon}
+          title={option.title}
+          onClick={() => onChange(option.value)}
+          layout="vertical"
+        />
+      ))}
+    </div>
+  )
+}
+
+export function ExpenseSplitMethodSelector({
+  value,
+  onChange,
+  allowCustom = true,
+}: {
+  value: ExpenseSplitMethod
+  onChange: (value: ExpenseSplitMethod) => void
+  allowCustom?: boolean
+}) {
+  const options = [
+    { value: 'EQUAL', title: 'Equal', icon: Scale },
+    { value: 'MEAL_COUNT', title: 'Meal Count', icon: UtensilsCrossed },
+    ...(allowCustom ? [{ value: 'CUSTOM' as const, title: 'Custom', icon: Scale }] : []),
+  ] as const
+
+  return (
+    <div className={`grid gap-2.5 ${options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      {options.map((option) => (
+        <ExpenseChoiceCard
+          key={option.value}
+          active={value === option.value}
+          icon={option.icon}
+          title={option.title}
+          onClick={() => onChange(option.value)}
+          layout="vertical"
+        />
+      ))}
+    </div>
+  )
+}
+
+export type MemberAllocationShare = {
   memberId: string
   memberName?: string | null
   shareAmount: number
   isPayer?: boolean
 }
+
+export function MemberAllocationList({
+  shares,
+  formatMoney,
+  amountLabel = 'Allocated amount',
+  emptyMessage = 'No member allocations were returned.',
+}: {
+  shares: MemberAllocationShare[]
+  formatMoney: (value?: number | null) => string
+  amountLabel?: string
+  emptyMessage?: string
+}) {
+  return (
+    <div className="overflow-hidden rounded-[15px] border border-[#e4eaec] bg-white">
+      {shares.map((share, index) => {
+        const memberName = share.memberName?.trim() || share.memberId
+
+        return (
+          <div
+            key={share.memberId}
+            className="flex min-h-[68px] items-center gap-3 border-b border-[#e4eaec] px-3 py-3 last:border-b-0"
+          >
+            <MemberInitials name={memberName} accent={index % 2 ? 'blue' : 'teal'} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-label font-bold leading-snug text-[#123748] [overflow-wrap:anywhere]">
+                {memberName}
+              </span>
+              {share.isPayer ? (
+                <span className="mt-1 inline-flex rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-semibold text-[#00777a]">
+                  Payer
+                </span>
+              ) : (
+                <span className="mt-1 block text-caption font-medium text-[#65838b]">Member share</span>
+              )}
+            </span>
+            <span className="min-w-[96px] shrink-0 text-right">
+              <span className="block text-caption font-medium text-[#65838b]">{amountLabel}</span>
+              <span className="ui-mono-number mt-1 block text-body font-bold text-[#00777a]">
+                {formatMoney(share.shareAmount)}
+              </span>
+            </span>
+          </div>
+        )
+      })}
+      {!shares.length ? <div className="expense-empty-state">{emptyMessage}</div> : null}
+    </div>
+  )
+}
+
+export type SplitPreviewShare = MemberAllocationShare
 
 export function SplitPreviewContent({
   title,
@@ -341,23 +453,16 @@ export function SplitPreviewContent({
         </div>
       </ExpenseSurface>
 
-      <ExpenseSurface title="Member Allocation">
-        <div className="-mx-3 overflow-hidden rounded-[15px] border border-[#edf1f4]">
-          {shares.map((share, index) => (
-            <div key={share.memberId} className="flex items-center gap-3 border-b border-[#edf1f4] bg-white px-3 py-3 last:border-b-0">
-              <MemberInitials name={share.memberName ?? share.memberId} accent={index % 2 ? 'blue' : 'teal'} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-label font-semibold text-[#1d3a42]">{share.memberName ?? share.memberId}</span>
-                {share.isPayer ? <span className="mt-0.5 inline-flex rounded-full bg-[#e6f7f6] px-2 py-0.5 text-caption font-semibold text-[#008d8c]">Paid by</span> : null}
-              </span>
-              <span className="text-right">
-                <span className="block text-caption font-medium text-[#65838b]">Added cost</span>
-                <span className="mt-0.5 block text-body font-semibold text-[#00777a]">{formatMoney(share.shareAmount)}</span>
-              </span>
-            </div>
-          ))}
-          {!shares.length ? <div className="expense-empty-state">No member shares were returned.</div> : null}
-        </div>
+      <ExpenseSurface
+        title="Member Allocation"
+        aside={<span className="ui-badge ui-badge--info">{shares.length} {shares.length === 1 ? 'member' : 'members'}</span>}
+      >
+        <MemberAllocationList
+          shares={shares}
+          formatMoney={formatMoney}
+          amountLabel="Added cost"
+          emptyMessage="No member shares were returned."
+        />
       </ExpenseSurface>
 
       <ExpenseSurface title="Allocation Summary">

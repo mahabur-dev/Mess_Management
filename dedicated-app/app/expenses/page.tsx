@@ -1,14 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
+  CalendarDays,
+  ChevronDown,
   CircleDollarSign,
   CookingPot,
   House,
   Landmark,
   Plus,
   Search,
+  SlidersHorizontal,
   UserRound,
   UsersRound,
   WalletCards,
@@ -26,6 +29,11 @@ import {
   ExpenseSurface,
   MemberInitials,
 } from '@/components/mobile/expense-ui'
+import {
+  normalizeExpenseApprovalStatus,
+  type ExpenseApprovalStatus,
+} from '@/components/mobile/expense-approval'
+import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
@@ -71,6 +79,80 @@ type FundBalances = {
 type ViewMode = 'MY' | 'MANAGER'
 type MemberFilter = 'ALL' | 'DUE' | 'PAID'
 type MessageTone = 'SUCCESS' | 'ERROR'
+type ApprovalFilter = 'ALL' | ExpenseApprovalStatus
+type MonthFilter = 'ALL' | string
+
+const MONTH_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
+const APPROVAL_FILTER_OPTIONS: Array<MobileSelectOption<ApprovalFilter>> = [
+  { value: 'ALL', label: 'All' },
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'REJECTED', label: 'Rejected' },
+]
+
+function monthKey(value?: string | null) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value.slice(0, 7)
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+function monthLabel(value: string) {
+  if (value === 'ALL') return 'All Months'
+  const date = new Date(`${value}-01T00:00:00Z`)
+  return Number.isNaN(date.getTime()) ? value : MONTH_FORMATTER.format(date)
+}
+
+function getExpenseMonth(expense: ExpenseListRecord) {
+  return monthKey(expense.billingMonth ?? expense.billing_month ?? expense.expenseDate ?? expense.expense_date)
+}
+
+function ExpenseFilterSelect<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  icon,
+}: {
+  label: string
+  value: T
+  options: Array<MobileSelectOption<T>>
+  onChange: (value: T) => void
+  icon: ReactNode
+}) {
+  return (
+    <MobileSelectSheet
+      label={label}
+      value={value}
+      options={options}
+      onChange={onChange}
+      renderTrigger={({ open, selectedLabel, buttonProps }) => (
+        <button
+          {...buttonProps}
+          className="flex h-12 min-w-0 items-center gap-2.5 rounded-[15px] border border-[#dce5ec] bg-white px-3 text-left shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition focus:border-[#008d8c] focus:outline-none focus:ring-4 focus:ring-[#008d8c]/10"
+        >
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] bg-[#e8f8f7] text-[#008d8c]" aria-hidden="true">
+            {icon}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-caption font-semibold leading-tight text-[#65838b]">{label}</span>
+            <span className="mt-0.5 block truncate text-label font-bold leading-tight text-[#123748]">{selectedLabel}</span>
+          </span>
+          <ChevronDown
+            size={16}
+            strokeWidth={2.4}
+            className={`shrink-0 text-[#4f6375] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          />
+        </button>
+      )}
+    />
+  )
+}
 
 function getStatus(member: ManagerMember) {
   if (Number(member.due ?? 0) <= 0) return 'PAID'
@@ -87,6 +169,83 @@ function MemberStatus({ member }: { member: ManagerMember }) {
   } as const
   const label = status === 'PAID' ? 'Paid' : status === 'PARTIAL' ? 'Partial' : 'Due'
   return <span className={`rounded-full px-2.5 py-1 text-caption font-bold ${styles[status]}`}>{label}</span>
+}
+
+function ExpenseRecordsSection({
+  expenses,
+  loading,
+  messId,
+  statusFilter,
+  onStatusFilterChange,
+  monthFilter,
+  onMonthFilterChange,
+  title,
+}: {
+  expenses: ExpenseListRecord[]
+  loading: boolean
+  messId: string
+  statusFilter: ApprovalFilter
+  onStatusFilterChange: (filter: ApprovalFilter) => void
+  monthFilter: MonthFilter
+  onMonthFilterChange: (filter: MonthFilter) => void
+  title: string
+}) {
+  const monthOptions = useMemo<Array<MobileSelectOption<MonthFilter>>>(() => {
+    const months = new Set<string>([new Date().toISOString().slice(0, 7)])
+    expenses.forEach((expense) => {
+      const value = getExpenseMonth(expense)
+      if (value) months.add(value)
+    })
+
+    return [
+      { value: 'ALL', label: 'All Months' },
+      ...Array.from(months)
+        .sort((a, b) => b.localeCompare(a))
+        .map((value) => ({ value, label: monthLabel(value) })),
+    ]
+  }, [expenses])
+
+  const filtered = expenses.filter((expense) => {
+    const matchesStatus =
+      statusFilter === 'ALL' ||
+      normalizeExpenseApprovalStatus(expense.approvalStatus, expense.status) === statusFilter
+    const matchesMonth = monthFilter === 'ALL' || getExpenseMonth(expense) === monthFilter
+    return matchesStatus && matchesMonth
+  })
+
+  return (
+    <ExpenseSurface title={title} aside={<span className="text-caption font-bold text-[#65838b]">{filtered.length} shown</span>}>
+      <div className="mb-3 grid grid-cols-2 gap-2.5">
+        <ExpenseFilterSelect
+          label="Status"
+          value={statusFilter}
+          options={APPROVAL_FILTER_OPTIONS}
+          onChange={onStatusFilterChange}
+          icon={<SlidersHorizontal size={16} strokeWidth={2.35} />}
+        />
+        <ExpenseFilterSelect
+          label="Month"
+          value={monthFilter}
+          options={monthOptions}
+          onChange={onMonthFilterChange}
+          icon={<CalendarDays size={16} strokeWidth={2.35} />}
+        />
+      </div>
+
+      <div className="flush-list flush-list--home-panel">
+        {filtered.map((item) => (
+          <ExpenseListItem
+            key={item.id}
+            item={item}
+            href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
+            variant="horizontal"
+          />
+        ))}
+        {loading ? <LoadingIndicator variant="card" label="Loading expenses" /> : null}
+        {!loading && !filtered.length ? <div className="expense-empty-state mx-3">No matching expenses found.</div> : null}
+      </div>
+    </ExpenseSurface>
+  )
 }
 
 export default function ExpensesPage() {
@@ -106,6 +265,10 @@ export default function ExpensesPage() {
   const [collectedAmount, setCollectedAmount] = useState('')
   const [collectedNote, setCollectedNote] = useState('')
   const [fundBusy, setFundBusy] = useState(false)
+  const [expenses, setExpenses] = useState<ExpenseListRecord[]>([])
+  const [recordsLoading, setRecordsLoading] = useState(false)
+  const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>('ALL')
+  const [recordsMonthFilter, setRecordsMonthFilter] = useState<MonthFilter>('ALL')
 
   useEffect(() => {
     if (!messId) return
@@ -130,6 +293,31 @@ export default function ExpensesPage() {
       active = false
     }
   }, [messId, month])
+
+  useEffect(() => {
+    if (!messId) return
+    let active = true
+    setRecordsLoading(true)
+
+    api
+      .getExpensesByMess(messId, { limit: 100, sortBy: 'expense_date', sortOrder: 'desc' })
+      .then((response) => {
+        if (active) setExpenses(Array.isArray(response.data) ? (response.data as ExpenseListRecord[]) : [])
+      })
+      .catch((error) => {
+        if (!active) return
+        setExpenses([])
+        setMessageTone('ERROR')
+        setMessage(error instanceof Error ? error.message : 'Failed to load expenses.')
+      })
+      .finally(() => {
+        if (active) setRecordsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [messId])
 
   useEffect(() => {
     if (!messId || !isManager || view !== 'MANAGER' || managerData) return
@@ -255,30 +443,13 @@ export default function ExpensesPage() {
               <ExpenseDetailsCta href="/monthly-bill" title="Total Expenses This Month" subtitle="Food, utility and rent" buttonLabel="Details" />
             </ExpenseSurface>
 
-            <ExpenseSurface
-              title="Recent Expenses"
-              aside={<span className="text-caption font-bold text-[#65838b]">This month</span>}
-            >
-              <div className="flush-list flush-list--home-panel">
-                {(summary?.recentExpenses ?? []).map((item) => (
-                  <ExpenseListItem
-                    key={item.id}
-                    item={item}
-                    href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-                    variant="horizontal"
-                  />
-                ))}
-                {!loading && !summary?.recentExpenses?.length ? <div className="expense-empty-state mx-3">No expenses found for this month.</div> : null}
-              </div>
-            </ExpenseSurface>
-
             {!isManager ? (
               <div className="grid grid-cols-2 gap-3">
                 <Link href="/add-expense" className="expense-primary-action">
-                  <Plus size={18} /> Add Personal Expense
+                  <Plus size={18} /> Add Expense
                 </Link>
                 <Link href="/add-utility" className="expense-secondary-action">
-                  <Zap size={18} /> Add Personal Utility
+                  <Zap size={18} /> Add Utility
                 </Link>
               </div>
             ) : null}
@@ -398,6 +569,17 @@ export default function ExpensesPage() {
             </div>
           </>
         )}
+
+        <ExpenseRecordsSection
+          expenses={expenses}
+          loading={recordsLoading}
+          messId={messId}
+          statusFilter={approvalFilter}
+          onStatusFilterChange={setApprovalFilter}
+          monthFilter={recordsMonthFilter}
+          onMonthFilterChange={setRecordsMonthFilter}
+          title={isManager && view === 'MANAGER' ? 'Expense Submissions' : 'All Expenses'}
+        />
       </div>
     </MobileShell>
   )

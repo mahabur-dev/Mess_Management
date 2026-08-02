@@ -6,10 +6,10 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
 } from 'react'
-import { createPortal } from 'react-dom'
-import { Check, X } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useNativeBackAction } from '@/components/native-back-actions'
 
 export type MobileSelectOption<T extends string = string> = {
@@ -49,8 +49,7 @@ export function MobileSelectSheet<T extends string>({
   renderTrigger,
 }: MobileSelectSheetProps<T>) {
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [portalElement, setPortalElement] = useState<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const sheetId = useId()
   const titleId = `${sheetId}-title`
   const selectedOption = useMemo(
@@ -60,24 +59,15 @@ export function MobileSelectSheet<T extends string>({
   const selectedLabel = selectedOption?.label ?? 'Select option'
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    if (!open) return
 
-  useEffect(() => {
-    if (!mounted) return
-
-    const element = document.createElement('div')
-    element.setAttribute('data-mobile-select-portal', '')
-    document.body.appendChild(element)
-    setPortalElement(element)
-
-    return () => {
-      setPortalElement(null)
-      if (document.body.contains(element)) {
-        document.body.removeChild(element)
-      }
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
     }
-  }, [mounted])
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [open])
 
   useNativeBackAction(open, () => {
     setOpen(false)
@@ -91,12 +81,9 @@ export function MobileSelectSheet<T extends string>({
       if (event.key === 'Escape') setOpen(false)
     }
 
-    const originalOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     document.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.body.style.overflow = originalOverflow
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [open])
@@ -107,92 +94,8 @@ export function MobileSelectSheet<T extends string>({
     setOpen(false)
   }
 
-  const sheet = open && portalElement
-    ? createPortal(
-        <div
-          className="fixed left-1/2 top-0 z-[120] flex h-[100dvh] w-[min(430px,100vw)] -translate-x-1/2 items-end justify-center bg-[#062b35]/45 px-3 pb-[calc(14px+env(safe-area-inset-bottom))] pt-6 backdrop-blur-[3px]"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setOpen(false)
-          }}
-        >
-          <section
-            id={sheetId}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="w-full overflow-hidden rounded-t-[24px] border border-white/80 bg-white shadow-[0_26px_70px_rgba(6,43,53,0.24)]"
-          >
-            <div className="px-4 pt-3.5">
-              <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-[#d8e9e9]" />
-              <div className="flex items-center justify-between gap-3 border-b border-[#e4eeee] pb-3">
-                <h2 id={titleId} className="min-w-0 truncate text-body font-bold text-[#062b35]">
-                  {title ?? `Select ${label}`}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  aria-label={`Close ${label} selection`}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#d7ebeb] text-[#65838b] transition hover:border-[#008d8c] hover:bg-[#effafa] hover:text-[#008d8c] active:scale-95"
-                >
-                  <X size={18} strokeWidth={2.35} />
-                </button>
-              </div>
-            </div>
-
-            <div className="max-h-[min(58dvh,390px)] space-y-2 overflow-y-auto overscroll-contain px-3 py-3">
-              {options.length ? (
-                options.map((option) => {
-                  const selected = option.value === value
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      disabled={option.disabled}
-                      onClick={() => handleSelect(option)}
-                      className={`flex min-h-[54px] w-full items-center gap-3 rounded-[16px] border px-3.5 py-3 text-left transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        selected
-                          ? 'border-[#008d8c] bg-[#edfafa] shadow-[0_8px_24px_rgba(0,141,140,0.10)]'
-                          : 'border-[#deecec] bg-white hover:border-[#9ed6d4] hover:bg-[#f8fdfd]'
-                      }`}
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-body font-semibold leading-snug text-[#1d3a42] [overflow-wrap:anywhere]">
-                          {option.label}
-                        </span>
-                        {option.description ? (
-                          <span className="mt-0.5 block text-caption font-medium leading-snug text-[#789096] [overflow-wrap:anywhere]">
-                            {option.description}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span
-                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border ${
-                          selected
-                            ? 'border-[#008d8c] bg-[#008d8c] text-white'
-                            : 'border-[#c9dfdf] text-transparent'
-                        }`}
-                        aria-hidden="true"
-                      >
-                        <Check size={15} strokeWidth={3} />
-                      </span>
-                    </button>
-                  )
-                })
-              ) : (
-                <div className="rounded-[16px] border border-[#deecec] bg-[#f8fdfd] px-4 py-5 text-center text-label font-semibold text-[#65838b]">
-                  {emptyMessage}
-                </div>
-              )}
-            </div>
-          </section>
-        </div>,
-        portalElement,
-      )
-    : null
-
   return (
-    <>
+    <div ref={containerRef} className="relative min-w-0">
       {renderTrigger({
         open,
         disabled,
@@ -201,15 +104,70 @@ export function MobileSelectSheet<T extends string>({
         buttonProps: {
           type: 'button',
           disabled,
-          'aria-haspopup': 'dialog',
+          'aria-haspopup': 'listbox',
           'aria-expanded': open,
           'aria-controls': open ? sheetId : undefined,
           onClick: () => {
-            if (!disabled) setOpen(true)
+            if (!disabled) setOpen((current) => !current)
           },
         },
       })}
-      {sheet}
-    </>
+      {open ? (
+        <section
+          id={sheetId}
+          role="listbox"
+          aria-labelledby={title ? titleId : undefined}
+          className="mt-2 w-full overflow-hidden rounded-[15px] border border-[#dce5ec] bg-white shadow-[0_10px_26px_rgba(18,55,72,0.08)]"
+        >
+          {title ? (
+            <div id={titleId} className="border-b border-[#edf1f4] px-4 py-3 text-label font-bold text-[#123748]">
+              {title}
+            </div>
+          ) : null}
+
+          <div className="max-h-[260px] overflow-y-auto overscroll-contain py-1">
+            {options.length ? (
+              options.map((option) => {
+                const selected = option.value === value
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    disabled={option.disabled}
+                    onClick={() => handleSelect(option)}
+                    className={`flex min-h-[50px] w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-160 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      selected ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white text-[#1d3a42] hover:bg-[#f8fdfd]'
+                    }`}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body font-semibold leading-snug [overflow-wrap:anywhere]">
+                        {option.label}
+                      </span>
+                      {option.description ? (
+                        <span className="mt-1 block text-caption font-medium leading-snug text-[#65838b] [overflow-wrap:anywhere]">
+                          {option.description}
+                        </span>
+                      ) : null}
+                    </span>
+                    {selected ? (
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#008d8c] text-white" aria-hidden="true">
+                        <Check size={14} strokeWidth={3} />
+                      </span>
+                    ) : null}
+                  </button>
+                )
+              })
+            ) : (
+              <div className="px-4 py-5 text-center text-label font-semibold text-[#65838b]">
+                {emptyMessage}
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
+    </div>
   )
 }

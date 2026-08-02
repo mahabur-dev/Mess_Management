@@ -133,3 +133,21 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
 export type ComplaintCategory = (typeof COMPLAINT_CATEGORIES)[number]
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number]
+
+export const GENERAL_EXPENSE_CATEGORIES = EXPENSE_CATEGORIES.filter(
+  (category): category is Extract<ExpenseCategory, 'GROCERY' | 'FOOD' | 'RENT' | 'MAINTENANCE' | 'OTHER'> =>
+    ['GROCERY', 'FOOD', 'RENT', 'MAINTENANCE', 'OTHER'].includes(category),
+)
+
+export const UTILITY_FORM_OPTIONS: ReadonlyArray<{
+  category: ExpenseCategory
+  utilityType: string
+  label: string
+}> = [
+  { category: 'ELECTRICITY', utilityType: 'ELECTRICITY', label: 'Electricity' },
+  { category: 'GAS', utilityType: 'GAS', label: 'Gas' },
+  { category: 'WATER', utilityType: 'WATER', label: 'Water' },
+  { category: 'WIFI', utilityType: 'WIFI', label: 'Wifi' },
+  { category: 'CLEANER', utilityType: 'CLEANING', label: 'Cleaning' },
+  { category: 'UTILITY', utilityType: 'OTHER', label: 'Other' },
+]

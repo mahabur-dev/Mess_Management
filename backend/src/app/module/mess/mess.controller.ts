@@ -90,6 +90,18 @@ export class MessController {
     };
   }
 
+  @Get(':id/member-options')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Get active member options for an accessible mess' })
+  async getMemberOptions(@Param('id') messId: string, @Req() req: Request) {
+    const data = await this.messService.getMemberOptions(
+      messId,
+      req.user!.id,
+      req.user!.role,
+    );
+    return { message: 'Member options fetched successfully', data };
+  }
+
   // Get single mess by ID (Admin or member)
   @Get(':id')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))

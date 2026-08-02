@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ReceiptText } from 'lucide-react'
+import { ReceiptText, Save, Zap } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import {
   DesignedInput,
@@ -13,15 +13,23 @@ import {
   FormSection,
   FormStatusMessage,
   PaymentTypeSelector,
-  SubmitGradientButton,
   UploadField,
   expenseFormIcons,
 } from '@/components/mobile/expense-design'
 import { LoadingIndicator } from '@/components/loading-indicator'
-import { api } from '@/lib/api'
+import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
+import { ExpensePrimaryAction, ExpenseSplitMethodSelector, ExpenseUsedBySelector } from '@/components/mobile/expense-ui'
 import {
-  EXPENSE_CATEGORIES,
+  ExpenseCustomShareFields,
+  buildCustomShares,
+  type ExpenseCustomShare,
+} from '@/components/mobile/expense-custom-shares'
+import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
+import {
+  GENERAL_EXPENSE_CATEGORIES,
   LABELS,
+  UTILITY_FORM_OPTIONS,
   type ExpenseCategory,
   type ExpensePaymentType,
   type ExpenseSplitMethod,
@@ -30,11 +38,6 @@ import {
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
-
-type CustomShare = {
-  memberId: string
-  amount: string
-}
 
 type ExpenseRecord = {
   id: string
@@ -53,11 +56,14 @@ type ExpenseRecord = {
   paymentType?: ExpensePaymentType | null
   usedBy?: ExpenseUsedBy | null
   splitMethod?: ExpenseSplitMethod | null
+  createdById?: string | null
+  creator?: { id?: string | null } | null
   shares?: Array<{ memberId: string; shareAmount: number }>
 }
 
 type FormState = {
   category: ExpenseCategory
+  utilityType: string
   purchasedBy: string
   amount: string
   itemName: string
@@ -70,28 +76,15 @@ type FormState = {
   usedBy: ExpenseUsedBy
   splitMethod: ExpenseSplitMethod
   selectedMemberIds: string[]
-  customShares: CustomShare[]
+  customShares: ExpenseCustomShare[]
 }
 
-const UTILITY_CATEGORY_SET = new Set<ExpenseCategory>([
-  'UTILITY',
-  'ELECTRICITY',
-  'GAS',
-  'WIFI',
-  'WATER',
-  'CLEANER',
+const UTILITY_CATEGORY_SET = new Set<ExpenseCategory>(UTILITY_FORM_OPTIONS.map((option) => option.category))
+const LEGACY_UTILITY_CATEGORY_SET = new Set<ExpenseCategory>([
+  ...UTILITY_CATEGORY_SET,
   'MAINTENANCE',
   'BUABILL',
 ])
-
-const UTILITY_TYPE_BY_CATEGORY: Partial<Record<ExpenseCategory, string>> = {
-  ELECTRICITY: 'ELECTRICITY',
-  GAS: 'GAS',
-  WATER: 'WATER',
-  WIFI: 'WIFI',
-  CLEANER: 'CLEANING',
-  UTILITY: 'OTHER',
-}
 
 function dateValue(value?: string | null) {
   return value?.slice(0, 10) || new Date().toISOString().slice(0, 10)
@@ -103,6 +96,7 @@ function monthValue(value?: string | null) {
 
 const INITIAL_FORM: FormState = {
   category: 'FOOD',
+  utilityType: 'ELECTRICITY',
   purchasedBy: '',
   amount: '',
   itemName: '',
@@ -124,11 +118,13 @@ export default function EditExpensePage() {
   const { user } = useAuth()
   const expenseId = searchParams.get('expenseId') ?? ''
   const messId = searchParams.get('messId') ?? user?.memberships?.[0]?.mess_id ?? ''
+  const isManager = canManageMess(user)
   const members = useMessMemberOptions(messId, user)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [existingReceiptUrl, setExistingReceiptUrl] = useState<string | null>(null)
   const [removeReceipt, setRemoveReceipt] = useState(false)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
+  const [recordType, setRecordType] = useState<'EXPENSE' | 'UTILITY'>('EXPENSE')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -148,11 +144,22 @@ export default function EditExpensePage() {
           setMessage('Expense not found.')
           return
         }
+        const createdById = found.createdById ?? found.creator?.id
+        if (!isManager && createdById !== user?.id) {
+          router.replace(`/expense-details?expenseId=${encodeURIComponent(expenseId)}&messId=${encodeURIComponent(messId)}`)
+          return
+        }
 
         const shares = found.shares ?? []
+        const foundType = found.type ?? (LEGACY_UTILITY_CATEGORY_SET.has(found.category) ? 'UTILITY' : 'EXPENSE')
+        setRecordType(foundType)
         setExistingReceiptUrl(found.receiptUrl ?? null)
         setForm({
           category: found.category ?? 'FOOD',
+          utilityType:
+            found.utilityType ??
+            UTILITY_FORM_OPTIONS.find((option) => option.category === found.category)?.utilityType ??
+            'OTHER',
           purchasedBy: found.purchasedBy ?? '',
           amount: String(found.amount ?? ''),
           itemName: found.itemName ?? '',
@@ -181,7 +188,7 @@ export default function EditExpensePage() {
     return () => {
       alive = false
     }
-  }, [expenseId, messId])
+  }, [expenseId, isManager, messId, router, user?.id])
 
   const affectedMemberIds = useMemo(() => {
     if (form.usedBy === 'SELF_ONLY') return form.purchasedBy ? [form.purchasedBy] : []
@@ -194,15 +201,6 @@ export default function EditExpensePage() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  function toggleMember(memberId: string) {
-    update(
-      'selectedMemberIds',
-      form.selectedMemberIds.includes(memberId)
-        ? form.selectedMemberIds.filter((id) => id !== memberId)
-        : [...form.selectedMemberIds, memberId]
-    )
-  }
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setMessage('')
@@ -210,31 +208,34 @@ export default function EditExpensePage() {
     if (form.usedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) {
       return setMessage('Select at least one affected member.')
     }
+    if (form.splitMethod === 'CUSTOM' && !affectedMemberIds.length) {
+      return setMessage('Select members before custom split.')
+    }
 
     const customShares =
       form.splitMethod === 'CUSTOM'
-        ? affectedMemberIds.map((memberId) => ({
-            memberId,
-            amount: Number(form.customShares.find((share) => share.memberId === memberId)?.amount ?? 0),
-          }))
+        ? buildCustomShares(affectedMemberIds, form.customShares)
         : undefined
 
-    const isUtilityExpense = UTILITY_CATEGORY_SET.has(form.category)
+    const isUtilityExpense = recordType === 'UTILITY'
     const payload = {
       type: isUtilityExpense ? 'UTILITY' : 'EXPENSE',
-      utilityType: isUtilityExpense ? UTILITY_TYPE_BY_CATEGORY[form.category] ?? 'OTHER' : null,
-      purchasedBy: form.purchasedBy || undefined,
+      utilityType: isUtilityExpense ? form.utilityType : null,
+      purchasedBy: isManager ? form.purchasedBy || undefined : undefined,
       category: form.category,
       amount: Number(form.amount),
-      itemName: form.itemName.trim() || null,
-      quantity: form.quantity ? Number(form.quantity) : null,
-      unit: form.unit.trim() || null,
+      itemName: isUtilityExpense
+        ? UTILITY_FORM_OPTIONS.find((option) => option.utilityType === form.utilityType)?.label ??
+          LABELS.EXPENSE_CATEGORIES[form.category]
+        : form.itemName.trim() || null,
+      quantity: isUtilityExpense ? null : form.quantity ? Number(form.quantity) : null,
+      unit: isUtilityExpense ? null : form.unit.trim() || null,
       expenseDate: form.expenseDate,
       billingMonth: `${form.billingMonth}-01`,
       description: form.description.trim() || null,
       paymentType: form.paymentType,
       usedBy: form.usedBy,
-      splitMethod: form.usedBy === 'SELF_ONLY' ? 'EQUAL' : form.splitMethod,
+      splitMethod: form.usedBy !== 'SELF_ONLY' ? form.splitMethod : 'EQUAL',
       selectedMemberIds: form.usedBy === 'SELECTED_MEMBERS' ? form.selectedMemberIds : undefined,
       customShares,
       receiptUrl: removeReceipt && !receiptFile ? null : undefined,
@@ -269,130 +270,118 @@ export default function EditExpensePage() {
     }
   }
 
-  const isUtilityExpense = UTILITY_CATEGORY_SET.has(form.category)
+  const isUtilityExpense = recordType === 'UTILITY'
 
   return (
     <MobileShell>
       <form onSubmit={handleSubmit}>
-        <FormPageShell title={isUtilityExpense ? 'Edit Utility' : 'Edit Expense'} icon={ReceiptText} backHref="/expenses">
+        <FormPageShell title={isUtilityExpense ? 'Edit Utility' : 'Edit Expense'} icon={isUtilityExpense ? Zap : ReceiptText} backHref="/expenses">
           {loading ? <LoadingIndicator variant="card" label="Loading expense" /> : null}
 
           <FormSection title="Paid From">
             <PaymentTypeSelector value={form.paymentType} onChange={(paymentType) => update('paymentType', paymentType)} showHeading={false} />
           </FormSection>
 
-          <FormSection title="Allocation">
-            <DesignedSelect
-              label="Used By"
-              icon={expenseFormIcons.member}
+          <FormSection title="Used By">
+            <ExpenseUsedBySelector
               value={form.usedBy}
-              onChange={(event) => {
-                const usedBy = event.target.value as ExpenseUsedBy
+              onChange={(usedBy) => {
                 update('usedBy', usedBy)
                 if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
                 if (usedBy === 'MEAL_ON_MEMBERS' && form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT')
               }}
-            >
-              <option value="SELF_ONLY">Self Only</option>
-              <option value="SELECTED_MEMBERS">Selected Members</option>
-              <option value="ALL_MEMBERS">All Members</option>
-              <option value="MEAL_ON_MEMBERS">Meal-On Members</option>
-            </DesignedSelect>
+            />
 
             {form.usedBy === 'SELECTED_MEMBERS' ? (
-              <div className="grid grid-cols-2 gap-2">
-                {members.map((member) => {
-                  const selected = form.selectedMemberIds.includes(member.id)
-                  return (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => toggleMember(member.id)}
-                      className={`rounded-[13px] border px-3 py-2.5 text-left text-label font-bold ${
-                        selected ? 'border-[#008d8c] bg-[#edfafa] text-[#008d8c]' : 'border-[#dce5ec] bg-white text-[#123748]'
-                      }`}
-                    >
-                      {member.name}
-                    </button>
-                  )
-                })}
-              </div>
+              <MemberMultiSelect members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} />
             ) : null}
+          </FormSection>
 
-            {form.usedBy !== 'SELF_ONLY' ? (
-              <DesignedSelect
-                label="Split Method"
-                icon={expenseFormIcons.amount}
+          {form.usedBy !== 'SELF_ONLY' ? (
+            <FormSection title="Split Method">
+              <ExpenseSplitMethodSelector
                 value={form.splitMethod}
-                onChange={(event) => update('splitMethod', event.target.value as ExpenseSplitMethod)}
+                onChange={(splitMethod) => update('splitMethod', splitMethod)}
+                allowCustom={form.usedBy !== 'MEAL_ON_MEMBERS'}
+              />
+              {form.splitMethod === 'CUSTOM' ? (
+                <ExpenseCustomShareFields
+                  members={members}
+                  memberIds={affectedMemberIds}
+                  shares={form.customShares}
+                  onChange={(shares) => update('customShares', shares)}
+                />
+              ) : null}
+            </FormSection>
+          ) : null}
+
+          {isUtilityExpense ? (
+            <FormSection title="Utility Details">
+              <DesignedSelect
+                label="Utility Type"
+                icon={expenseFormIcons.category}
+                value={form.utilityType}
+                onChange={(event) => {
+                  const option =
+                    UTILITY_FORM_OPTIONS.find((item) => item.utilityType === event.target.value) ??
+                    UTILITY_FORM_OPTIONS[0]
+                  update('utilityType', option.utilityType)
+                  update('category', option.category)
+                }}
               >
-                <option value="EQUAL">Equal</option>
-                <option value="MEAL_COUNT">Meal Count</option>
-                {form.usedBy !== 'MEAL_ON_MEMBERS' ? <option value="CUSTOM">Custom Split</option> : null}
-              </DesignedSelect>
-            ) : null}
-
-            {form.splitMethod === 'CUSTOM' && form.usedBy !== 'SELF_ONLY' ? (
-              <div className="space-y-2">
-                {affectedMemberIds.map((memberId) => (
-                  <DesignedInput
-                    key={memberId}
-                    label={members.find((member) => member.id === memberId)?.name ?? memberId}
-                    icon={expenseFormIcons.amount}
-                    value={form.customShares.find((share) => share.memberId === memberId)?.amount ?? ''}
-                    onChange={(event) => {
-                      const amount = event.target.value
-                      update('customShares', [
-                        ...form.customShares.filter((share) => share.memberId !== memberId),
-                        { memberId, amount },
-                      ])
-                    }}
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    required
-                  />
+                {UTILITY_FORM_OPTIONS.map((option) => (
+                  <option key={option.utilityType} value={option.utilityType}>
+                    {option.label}
+                  </option>
                 ))}
-              </div>
-            ) : null}
-          </FormSection>
-
-          <FormSection title="Expense Details">
-            <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
-              {EXPENSE_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {LABELS.EXPENSE_CATEGORIES[category]}
-                </option>
-              ))}
-            </DesignedSelect>
-
-            <DesignedInput label="Item Name" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => update('itemName', event.target.value)} placeholder="Rice" />
-
-            {form.category === 'FOOD' || form.category === 'GROCERY' ? (
+              </DesignedSelect>
               <FormFieldGrid>
-                <DesignedInput label="Quantity (Optional)" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => update('quantity', event.target.value)} placeholder="0" type="number" min="0" />
-                <DesignedInput label="Unit (Optional)" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => update('unit', event.target.value)} placeholder="kg" />
+                <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />
+                <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
               </FormFieldGrid>
-            ) : null}
-
-            <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
-
-            <FormFieldGrid>
-              <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
-              <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />
-            </FormFieldGrid>
-
-            <DesignedSelect label={form.paymentType === 'PERSONAL' ? 'Paid By' : 'Purchased By'} icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
-              <option value="">Select member</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </DesignedSelect>
-
-            <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
-          </FormSection>
+              <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
+              {isManager ? (
+                <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
+                  <option value="">Select member</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>{member.name}</option>
+                  ))}
+                </DesignedSelect>
+              ) : null}
+              <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
+            </FormSection>
+          ) : (
+            <FormSection title="Expense Details">
+              <FormFieldGrid>
+                <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
+                  {GENERAL_EXPENSE_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>{LABELS.EXPENSE_CATEGORIES[category]}</option>
+                  ))}
+                </DesignedSelect>
+                <DesignedInput label="Item" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => update('itemName', event.target.value)} placeholder="Expense item" />
+              </FormFieldGrid>
+              {form.category === 'FOOD' || form.category === 'GROCERY' ? (
+                <FormFieldGrid>
+                  <DesignedInput label="Quantity (Optional)" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => update('quantity', event.target.value)} placeholder="0" type="number" />
+                  <DesignedInput label="Unit (Optional)" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => update('unit', event.target.value)} placeholder="kg" />
+                </FormFieldGrid>
+              ) : null}
+              <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
+              <FormFieldGrid>
+                <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
+                <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />
+              </FormFieldGrid>
+              {isManager ? (
+                <DesignedSelect label={form.paymentType === 'PERSONAL' ? 'Paid By' : 'Purchased By'} icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
+                  <option value="">Select member</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>{member.name}</option>
+                  ))}
+                </DesignedSelect>
+              ) : null}
+              <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
+            </FormSection>
+          )}
 
           <FormSection title="Attachment">
             {existingReceiptUrl && !removeReceipt ? (
@@ -409,7 +398,10 @@ export default function EditExpensePage() {
           </FormSection>
 
           <FormStatusMessage message={message} />
-          <SubmitGradientButton busy={busy}>Save Changes</SubmitGradientButton>
+          <ExpensePrimaryAction type="submit" disabled={busy}>
+            <Save size={17} />
+            {busy ? 'Saving...' : 'Save Changes'}
+          </ExpensePrimaryAction>
         </FormPageShell>
       </form>
     </MobileShell>

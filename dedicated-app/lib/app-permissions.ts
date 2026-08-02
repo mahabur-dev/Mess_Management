@@ -62,12 +62,13 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/request-mess', label: 'Request Mess', icon: DoorOpen, access: 'public', exact: true },
   { href: '/members', label: 'Members', icon: Users, access: 'manager' },
   { href: '/add-member', label: 'Add Member', icon: Users, access: 'manager', exact: true },
+  { href: '/member-details', label: 'Member Details', icon: User, access: 'manager', exact: true },
   { href: '/edit-member', label: 'Edit Member', icon: Users, access: 'manager' },
   { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
   { href: '/add-expense', label: 'Add Expense', icon: ReceiptText, access: 'mess', exact: true },
   { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'mess', exact: true },
   { href: '/expense-details', label: 'Expense Details', icon: ReceiptText, access: 'mess' },
-  { href: '/edit-expense', label: 'Edit Expense', icon: ReceiptText, access: 'manager' },
+  { href: '/edit-expense', label: 'Edit Expense', icon: ReceiptText, access: 'mess' },
   { href: '/deposits', label: 'Deposits', icon: Landmark, access: 'manager' },
   { href: '/edit-deposit', label: 'Edit Deposit', icon: Landmark, access: 'manager' },
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
@@ -102,7 +103,7 @@ export const managerQuickActions: AppRouteItem[] = [
 
 export const memberQuickActions: AppRouteItem[] = [
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
-  { href: '/monthly-bill', label: 'My Bill', icon: ClipboardList, access: 'mess' },
+  { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
   { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
@@ -127,7 +128,7 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
 
   const primary: AppRouteItem = canManageMess(user)
     ? { href: '/members', label: 'Members', icon: Users, access: 'manager' }
-    : { href: '/monthly-bill', label: 'Bills', icon: ClipboardList, access: 'mess' }
+    : { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' }
 
   const tabs: AppRouteItem[] = [
     { href: '/', label: 'Home', icon: House, access: 'public', exact: true },
@@ -194,6 +195,7 @@ export function canAccessAppPath(user: AuthUser | null | undefined, pathname: st
 const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean }> = [
   { href: '/more', fallback: '/', exact: true },
   { href: '/add-member', fallback: '/members', exact: true },
+  { href: '/member-details', fallback: '/members', exact: true },
   { href: '/edit-member', fallback: '/members', exact: true },
   { href: '/add-expense', fallback: '/expenses', exact: true },
   { href: '/add-utility', fallback: '/expenses', exact: true },

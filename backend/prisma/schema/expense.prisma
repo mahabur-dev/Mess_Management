@@ -65,6 +65,9 @@ model Expense {
   used_by      ExpenseUsedBy      @default(ALL_MEMBERS)
   split_method ExpenseSplitMethod @default(MEAL_COUNT)
   status       ExpenseStatus      @default(CONFIRMED)
+  reviewed_by  String?            @db.Uuid
+  reviewed_at  DateTime?          @db.Timestamptz
+  review_note  String?            @db.VarChar(500)
   created_at   DateTime           @default(now()) @db.Timestamptz
   updated_at   DateTime           @updatedAt @db.Timestamptz
 

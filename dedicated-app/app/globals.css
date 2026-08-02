@@ -347,8 +347,7 @@ textarea {
 }
 
 .expense-top::after,
-.detail-hero::after,
-.member-overview-modal::after {
+.detail-hero::after {
   content: "";
   position: absolute;
   right: -54px;
@@ -368,8 +367,7 @@ textarea {
 .expense-action-card,
 .expense-stat-card,
 .expense-list-item,
-.detail-card,
-.member-overview-card {
+.detail-card {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.76);
   box-shadow: 0 12px 28px rgba(18, 55, 72, 0.08);
@@ -1127,22 +1125,6 @@ textarea {
 
 .detail-row:last-child {
   border-bottom: 0;
-}
-
-.member-overview-modal {
-  position: relative;
-  overflow: hidden;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  background: rgba(255, 255, 255, 0.96);
-  padding: 16px 14px 14px;
-  box-shadow: 0 28px 70px rgba(18, 55, 72, 0.24);
-}
-
-.member-overview-card {
-  min-height: 62px;
-  border-radius: 14px;
-  padding: 10px;
 }
 
 .nav-bar {

@@ -9,6 +9,7 @@ import {
   IsUrl,
   Min,
   IsArray,
+  MaxLength,
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -359,6 +360,18 @@ export class RequestPriceReviewDto {
   message: string;
 }
 
+export class ReviewExpenseDto {
+  @ApiProperty({ enum: ['APPROVED', 'REJECTED'] })
+  @IsIn(['APPROVED', 'REJECTED'])
+  status: 'APPROVED' | 'REJECTED';
+
+  @ApiPropertyOptional({ example: 'Receipt and amount verified.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}
+
 export class ExpenseFilterDto {
   @ApiPropertyOptional({ description: 'Filter by mess ID' })
   @IsOptional()
@@ -369,6 +382,11 @@ export class ExpenseFilterDto {
   @IsOptional()
   @IsIn(Object.values(ExpenseCategory))
   category?: ExpenseCategory;
+
+  @ApiPropertyOptional({ enum: ['PENDING', 'APPROVED', 'REJECTED'] })
+  @IsOptional()
+  @IsIn(['PENDING', 'APPROVED', 'REJECTED'])
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
 
   @ApiPropertyOptional({ example: 'John' })
   @IsOptional()

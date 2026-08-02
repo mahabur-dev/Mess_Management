@@ -4,7 +4,7 @@ import { Search, UserPlus, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { FloatingActionLink } from '@/components/mobile/floating-action-link'
 import { IconInput } from '@/components/mobile/icon-input'
-import { MemberCard, MemberDetailsModal, type MobileMember } from '@/components/mobile/member-card'
+import { MemberCard, type MobileMember } from '@/components/mobile/member-card'
 import { MemberJoinRequestsPanel } from '@/components/mobile/member-join-requests'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
@@ -27,7 +27,6 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [viewingMember, setViewingMember] = useState<MobileMember | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false)
   const [joinRequestFeedback, setJoinRequestFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
@@ -212,10 +211,6 @@ export default function MembersPage() {
                 menuOpen={openMenuId === member.id}
                 deleting={deletingId === member.id}
                 onToggleMenu={() => setOpenMenuId((current) => (current === member.id ? null : member.id))}
-                onView={() => {
-                  setOpenMenuId(null)
-                  setViewingMember(member)
-                }}
                 onDelete={() => void deleteMember(member)}
               />
             ))
@@ -230,7 +225,6 @@ export default function MembersPage() {
       </div>
 
       <FloatingActionLink href="/add-member" label="Add member" icon={<UserPlus size={24} strokeWidth={2.4} />} />
-      {viewingMember ? <MemberDetailsModal member={viewingMember} onClose={() => setViewingMember(null)} /> : null}
     </MobileShell>
   )
 }

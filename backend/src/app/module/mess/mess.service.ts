@@ -1531,4 +1531,36 @@ export class MessService {
       meta: buildMeta(total, page, limit),
     };
   }
+
+  async getMemberOptions(messId: string, userId: string, role: string) {
+    const mess = await this.prisma.mess.findUnique({
+      where: { id: messId },
+      select: { id: true, created_by: true },
+    });
+    if (!mess) throw new HttpException('Mess not found', 404);
+
+    if (role !== 'ADMIN' && mess.created_by !== userId) {
+      const membership = await this.prisma.messMembership.findUnique({
+        where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+        select: { is_active: true },
+      });
+      if (!membership?.is_active) {
+        throw new HttpException('Forbidden: Not a member of this mess', 403);
+      }
+    }
+
+    const memberships = await this.prisma.messMembership.findMany({
+      where: {
+        mess_id: messId,
+        is_active: true,
+        user: { is_active: true },
+      },
+      orderBy: { user: { name: 'asc' } },
+      select: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return memberships.map(({ user }) => user);
+  }
 }

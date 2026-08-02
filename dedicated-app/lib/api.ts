@@ -26,6 +26,11 @@ type ApiResponse<T> = {
   data: T
   meta?: Record<string, unknown>
   totalAmount?: number
+  billing?: {
+    status: 'DIRTY' | 'PROCESSING' | 'READY' | 'FAILED'
+    requestedAt?: string | null
+    calculatedAt?: string | null
+  } | null
 }
 
 class Api {
@@ -182,8 +187,10 @@ class Api {
     })
   }
 
-  getMessDashboard(messId: string) {
-    return this.request<any>(`/dashboard/mess/${messId}`)
+  getMessDashboard(messId: string, month?: string) {
+    return this.request<any>(`/dashboard/mess/${messId}`, {
+      params: month ? { month } : undefined,
+    })
   }
 
   getMonthlyOverview(messId: string, month?: string) {

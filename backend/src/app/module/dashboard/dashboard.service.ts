@@ -7,6 +7,12 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import {
+  billingMonthRange,
+  currentDhakaDate,
+  currentDhakaMonth,
+} from '../monthly-bill/billing-period';
+import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 
 // ─── Constants ──────────────────────────────────────────────
 const MEAL_BASE_VALUE: Record<MealName, number> = {
@@ -38,27 +44,61 @@ function calculateTotalMeals(
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billReconciliation: MonthlyBillReconciliationService,
+  ) {}
 
   private getMonthRange(month?: string) {
-    const source = month ? new Date(month) : new Date();
-    if (Number.isNaN(source.getTime())) {
+    try {
+      return billingMonthRange(month ?? currentDhakaMonth());
+    } catch {
       throw new HttpException('Invalid dashboard month', 400);
     }
-    const year = source.getUTCFullYear();
-    const monthIndex = source.getUTCMonth();
-    const start = new Date(Date.UTC(year, monthIndex, 1));
-    const end = new Date(Date.UTC(year, monthIndex + 1, 1));
-    return { start, end };
   }
 
   private getUtcDayRange(date: Date = new Date()) {
-    const start = new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-    );
+    const start = currentDhakaDate(date);
     const end = new Date(start);
     end.setUTCDate(end.getUTCDate() + 1);
     return { start, end };
+  }
+
+  private async getMealTotals(
+    messId: string,
+    monthStart: Date,
+    monthEnd: Date,
+    today: Date,
+    tomorrow: Date,
+  ) {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ today_total: number; month_total: number }>
+    >(Prisma.sql`
+      SELECT
+        COALESCE(SUM(
+          CASE WHEN m."scheduled_date" >= ${today} AND m."scheduled_date" < ${tomorrow}
+            THEN (CASE WHEN m."name" = 'BREAKFAST' THEN 0.5 ELSE 1 END) + ma."guests"
+            ELSE 0 END
+        ), 0)::float8 AS "today_total",
+        COALESCE(SUM(
+          CASE WHEN m."scheduled_date" >= ${monthStart} AND m."scheduled_date" < ${monthEnd}
+            THEN (CASE WHEN m."name" = 'BREAKFAST' THEN 0.5 ELSE 1 END) + ma."guests"
+            ELSE 0 END
+        ), 0)::float8 AS "month_total"
+      FROM "meal_attendances" ma
+      INNER JOIN "meals" m ON m."id" = ma."meal_id"
+      WHERE m."mess_id" = ${messId}::uuid
+        AND ma."status" = 'ON'
+        AND m."status" <> 'CANCELLED'
+        AND (
+          (m."scheduled_date" >= ${monthStart} AND m."scheduled_date" < ${monthEnd})
+          OR (m."scheduled_date" >= ${today} AND m."scheduled_date" < ${tomorrow})
+        )
+    `);
+    return {
+      todayTotalMeals: Number(rows[0]?.today_total ?? 0),
+      totalMeals: Number(rows[0]?.month_total ?? 0),
+    };
   }
 
   private async verifyMessMember(messId: string, userId: string, role: string) {
@@ -82,35 +122,27 @@ export class DashboardService {
     await this.verifyMessMember(messId, userId, role);
     const { start, end } = this.getMonthRange(month);
     const { start: today, end: tomorrow } = this.getUtcDayRange();
+    const previousMonth = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() - 1, 1),
+    );
 
     const [
-      todayAttendances,
+      billingState,
+      mealTotals,
       monthlyExpenses,
       monthlyExtraExpenses,
       personalExpenseCredits,
-      monthlyAttendances,
       totalPayment,
       directDeposits,
       billsAgg,
+      previousBillsAgg,
       activeMembers,
       pendingPayments,
       notices,
       complaints,
     ] = await Promise.all([
-      // Today's meal attendances with meal name for fractional calculation
-      this.prisma.mealAttendance.findMany({
-        where: {
-          status: 'ON',
-          meal: {
-            mess_id: messId,
-            scheduled_date: { gte: today, lt: tomorrow },
-            status: { not: 'CANCELLED' },
-          },
-        },
-        include: {
-          meal: { select: { name: true } },
-        },
-      }),
+      this.billReconciliation.ensureScheduled(messId, start),
+      this.getMealTotals(messId, start, end, today, tomorrow),
       this.prisma.expense.aggregate({
         where: {
           mess_id: messId,
@@ -119,6 +151,10 @@ export class DashboardService {
           },
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          NOT: {
+            payment_type: ExpensePaymentType.PERSONAL,
+            used_by: 'SELF_ONLY',
+          },
           billing_month: start,
         },
         _sum: { amount: true },
@@ -132,6 +168,10 @@ export class DashboardService {
           },
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          NOT: {
+            payment_type: ExpensePaymentType.PERSONAL,
+            used_by: 'SELF_ONLY',
+          },
           billing_month: start,
         },
         _sum: { amount: true },
@@ -149,20 +189,6 @@ export class DashboardService {
           },
         },
         _sum: { amount: true },
-      }),
-      // Monthly meal attendances with meal name for fractional calculation
-      this.prisma.mealAttendance.findMany({
-        where: {
-          status: 'ON',
-          meal: {
-            mess_id: messId,
-            scheduled_date: { gte: start, lt: end },
-            status: { not: 'CANCELLED' },
-          },
-        },
-        include: {
-          meal: { select: { name: true } },
-        },
       }),
       this.prisma.payment.aggregate({
         where: {
@@ -195,13 +221,26 @@ export class DashboardService {
         _count: { _all: true },
         _sum: {
           final_due: true,
+          credit_balance: true,
+          balance: true,
+          food_bill: true,
+          utility_share: true,
+          seat_rent: true,
           paid_amount: true,
           prev_balance: true,
           deposit_total: true,
         },
       }),
+      this.prisma.monthlyBill.aggregate({
+        where: { mess_id: messId, month: previousMonth },
+        _sum: { balance: true },
+      }),
       this.prisma.messMembership.findMany({
-        where: { mess_id: messId, is_active: true },
+        where: {
+          mess_id: messId,
+          joined_at: { lt: end },
+          OR: [{ is_active: true }, { left_at: { gte: start } }],
+        },
         select: { monthly_rent: true, room_no: true },
       }),
       this.prisma.payment.count({
@@ -225,22 +264,13 @@ export class DashboardService {
     ]);
 
     // Calculate today's total meals using base value + guests per meal type
-    const todayTotalMeals = todayAttendances.reduce((sum, att) => {
-      return (
-        sum +
-        calculateTotalMeals(AttendanceStatus.ON, att.meal.name, att.guests)
-      );
-    }, 0);
+    const { todayTotalMeals, totalMeals } = mealTotals;
 
     // Calculate monthly total meals using base value + guests per meal type
-    const totalMeals = monthlyAttendances.reduce((sum, att) => {
-      return (
-        sum +
-        calculateTotalMeals(AttendanceStatus.ON, att.meal.name, att.guests)
-      );
-    }, 0);
-
-    const totalBazar = Number(monthlyExpenses._sum.amount ?? 0);
+    const hasGeneratedBills = billsAgg._count._all > 0;
+    const totalBazar = hasGeneratedBills
+      ? Number(billsAgg._sum.food_bill ?? 0)
+      : Number(monthlyExpenses._sum.amount ?? 0);
     const currentMealRate =
       totalMeals > 0 ? Number((totalBazar / totalMeals).toFixed(2)) : 0;
     const personalExpenseCreditAmount = Number(
@@ -248,7 +278,9 @@ export class DashboardService {
     );
 
     const activeMembersCount = activeMembers.length;
-    const extraExpenses = Number(monthlyExtraExpenses._sum.amount ?? 0);
+    const extraExpenses = hasGeneratedBills
+      ? Number(billsAgg._sum.utility_share ?? 0)
+      : Number(monthlyExtraExpenses._sum.amount ?? 0);
     const perExtraExpenses =
       activeMembersCount > 0
         ? Number((extraExpenses / activeMembersCount).toFixed(2))
@@ -258,8 +290,9 @@ export class DashboardService {
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     const rooms = Array.isArray(mess?.rooms) ? mess.rooms : [];
 
-    const totalRoomRent =
-      activeMembersCount > 0
+    const totalRoomRent = hasGeneratedBills
+      ? Number(billsAgg._sum.seat_rent ?? 0)
+      : activeMembersCount > 0
         ? activeMembers.reduce((sum, member) => {
             const roomRent = this.getRoomRentPerMember(
               rooms,
@@ -273,7 +306,7 @@ export class DashboardService {
     const totalCost = totalBazar + extraExpenses + totalRoomRent;
 
     // ── Prev-balance logic (carry-over from previous month) ────────────────────
-    const prevBalanceTotal = Number(billsAgg._sum.prev_balance ?? 0);
+    const prevBalanceTotal = Number(previousBillsAgg._sum.balance ?? 0);
 
     // If the mess was registered THIS month, there are no previous bills,
     // so prev_balance is 0 for all members (they start fresh).
@@ -281,36 +314,33 @@ export class DashboardService {
       mess && mess.created_at >= start && mess.created_at < end;
     const effectivePrevBalance = messRegisteredThisMonth ? 0 : prevBalanceTotal;
 
-    // Negative prev_balance = members overpaid/credit carried forward (available funds)
-    const creditFromPrevBalance = Math.abs(Math.min(effectivePrevBalance, 0));
-    // Positive prev_balance = outstanding dues from last month
-    const dueFromPrevBalance = Math.max(effectivePrevBalance, 0);
-
-    const totalDepositAmount =
+    const currentPaidAmount =
       Number(totalPayment._sum.amount ?? 0) +
       Number(directDeposits._sum.amount ?? 0) +
-      personalExpenseCreditAmount +
-      creditFromPrevBalance;
+      personalExpenseCreditAmount;
+    const totalDepositAmount = Number(currentPaidAmount.toFixed(2));
 
     const billedTotalDue = Number(billsAgg._sum.final_due ?? 0);
-    const hasGeneratedBills = billsAgg._count._all > 0;
-    const estimatedTotalDue = Math.max(
-      totalCost -
-        (Number(totalPayment._sum.amount ?? 0) +
-          Number(directDeposits._sum.amount ?? 0) +
-          personalExpenseCreditAmount +
-          creditFromPrevBalance),
-      0,
+    const billedRemainingAmount = Number(billsAgg._sum.credit_balance ?? 0);
+    const estimatedBalance = Number(
+      (totalCost - currentPaidAmount + effectivePrevBalance).toFixed(2),
     );
 
-    // When bills exist: final_due ALREADY includes prev_balance (see monthly-bill.service.ts).
-    // When no bills yet: estimate and explicitly add dueFromPrevBalance.
+    // Generated bills preserve per-member due and credit. The fallback is only
+    // used during the first background calculation.
     const totalDue = Number(
       (hasGeneratedBills
         ? billedTotalDue
-        : estimatedTotalDue + dueFromPrevBalance
+        : Math.max(estimatedBalance, 0)
       ).toFixed(2),
     );
+    const remainingAmount = Number(
+      (hasGeneratedBills
+        ? billedRemainingAmount
+        : Math.max(-estimatedBalance, 0)
+      ).toFixed(2),
+    );
+    const netBalance = Number((totalDue - remainingAmount).toFixed(2));
 
     return {
       todayTotalMeals: +todayTotalMeals.toFixed(2),
@@ -320,6 +350,8 @@ export class DashboardService {
       perExtraExpenses,
       currentMealRate,
       totalDue,
+      remainingAmount,
+      netBalance,
       totalDepositAmount,
       paidAmount:
         Number(totalPayment._sum.amount ?? 0) +
@@ -330,6 +362,9 @@ export class DashboardService {
       notices,
       totalRoomRent,
       totalCost,
+      billingStatus: billingState?.status ?? 'DIRTY',
+      billingCalculatedAt: billingState?.calculated_at ?? null,
+      billingDataFresh: billingState?.status === 'READY',
     };
   }
 
@@ -443,7 +478,7 @@ export class DashboardService {
         mess_id: messId,
         status: 'CONFIRMED',
         payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
-        expense_date: { gte: start, lt: end },
+        billing_month: start,
       },
       _sum: { amount: true },
       orderBy: { _sum: { amount: 'desc' } },

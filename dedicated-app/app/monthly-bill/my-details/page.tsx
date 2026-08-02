@@ -100,12 +100,27 @@ function MyMonthlyDetailsContent() {
   useEffect(() => {
     if (!messId || !user?.id) return
     let alive = true
+    let billingTimer: ReturnType<typeof setTimeout> | null = null
+
+    const refreshBill = () => {
+      api
+        .getBillsByMess(messId, { month: `${month}-01`, memberId: user.id, limit: 1 })
+        .then((response) => {
+          if (!alive) return
+          const bills = Array.isArray(response.data) ? (response.data as BillItem[]) : []
+          setBill(bills[0] ?? null)
+          if (response.billing && response.billing.status !== 'READY' && response.billing.status !== 'FAILED') {
+            billingTimer = setTimeout(refreshBill, 1500)
+          }
+        })
+        .catch(() => undefined)
+    }
 
     setLoading(true)
     setMessage('')
 
     Promise.all([
-      api.getBillsByMess(messId, { month: `${month}-01`, memberId: user.id, limit: 1 }).catch(() => ({ data: [] })),
+      api.getBillsByMess(messId, { month: `${month}-01`, memberId: user.id, limit: 1 }).catch(() => ({ data: [], billing: null })),
       api.getMealsByMess(messId, { startDate: range.startDate, endDate: range.endDate, limit: 300 }).catch(() => ({ data: [] })),
       api.getMyExpenseDetails(messId, `${month}-01`).catch(() => ({ data: null })),
       api
@@ -123,6 +138,9 @@ function MyMonthlyDetailsContent() {
         setDetails((detailRes.data ?? null) as MyExpenseDetails | null)
         setDeposits(Array.isArray(depositRes.data) ? (depositRes.data as DepositListRecord[]) : [])
         setPayments(Array.isArray(paymentRes.data) ? (paymentRes.data as PaymentItem[]) : [])
+        if (billRes.billing && billRes.billing.status !== 'READY' && billRes.billing.status !== 'FAILED') {
+          billingTimer = setTimeout(refreshBill, 1500)
+        }
       })
       .catch((error) => {
         if (!alive) return
@@ -134,6 +152,7 @@ function MyMonthlyDetailsContent() {
 
     return () => {
       alive = false
+      if (billingTimer) clearTimeout(billingTimer)
     }
   }, [messId, month, range.endDate, range.startDate, user?.id])
 

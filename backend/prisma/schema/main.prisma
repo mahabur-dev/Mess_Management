@@ -89,6 +89,13 @@ enum BillStatus {
   PARTIAL
 }
 
+enum BillingCalculationStatus {
+  DIRTY
+  PROCESSING
+  READY
+  FAILED
+}
+
 // ─── ShoppingList ──────────────────────────────────────────
 enum ShoppingListStatus {
   OPEN

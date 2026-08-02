@@ -23,6 +23,9 @@ model Payment {
   approver     User? @relation("PaymentApprover", fields: [approved_by], references: [id])
 
   @@index([mess_id, member_id])
+  @@index([mess_id, status, payment_date])
+  @@index([mess_id, status, created_at])
+  @@index([monthly_bill_id])
   @@index([status, created_at])
   @@map("payments")
 }

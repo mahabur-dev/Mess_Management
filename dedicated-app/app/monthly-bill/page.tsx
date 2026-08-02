@@ -198,6 +198,20 @@ export default function MonthlyBillPage() {
   useEffect(() => {
     if (!messId) return
     let alive = true
+    let billingTimer: ReturnType<typeof setTimeout> | null = null
+
+    const refreshBills = () => {
+      api
+        .getBillsByMess(messId, { month: `${month}-01`, limit: 500, sortBy: 'generated_at', sortOrder: 'desc' })
+        .then((response) => {
+          if (!alive) return
+          setBills(Array.isArray(response.data) ? (response.data as BillItem[]) : [])
+          if (response.billing && response.billing.status !== 'READY' && response.billing.status !== 'FAILED') {
+            billingTimer = setTimeout(refreshBills, 1500)
+          }
+        })
+        .catch(() => undefined)
+    }
 
     setLoading(true)
     setMessage('')
@@ -207,7 +221,7 @@ export default function MonthlyBillPage() {
         if (alive) setMessage(error instanceof Error ? error.message : 'Failed to load your bill overview.')
         return { data: null }
       }),
-      api.getBillsByMess(messId, { month: `${month}-01`, limit: 500, sortBy: 'generated_at', sortOrder: 'desc' }).catch(() => ({ data: [] })),
+      api.getBillsByMess(messId, { month: `${month}-01`, limit: 500, sortBy: 'generated_at', sortOrder: 'desc' }).catch(() => ({ data: [], billing: null })),
       api.getAllMembers({ limit: 500 }).catch(() => ({ data: [] })),
     ])
       .then(([detailRes, billRes, memberRes]) => {
@@ -217,6 +231,9 @@ export default function MonthlyBillPage() {
         setDetails((detailRes.data ?? null) as MyExpenseDetails | null)
         setBills(billList)
         setMembers(memberList.filter((member) => member.mess_id === messId || member.mess?.id === messId))
+        if (billRes.billing && billRes.billing.status !== 'READY' && billRes.billing.status !== 'FAILED') {
+          billingTimer = setTimeout(refreshBills, 1500)
+        }
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -224,6 +241,7 @@ export default function MonthlyBillPage() {
 
     return () => {
       alive = false
+      if (billingTimer) clearTimeout(billingTimer)
     }
   }, [messId, month])
 

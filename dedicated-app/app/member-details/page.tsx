@@ -66,16 +66,20 @@ export default function MemberDetailsPage() {
     if (!memberId || !messId || !/^\d{4}-\d{2}$/.test(month)) return
 
     let active = true
+    let billingTimer: ReturnType<typeof setTimeout> | null = null
     setBillLoading(true)
     setBillMessage('')
 
-    api
+    const loadBill = () => api
       .getBillsByMess(messId, { month: `${month}-01`, memberId, limit: 1 })
       .then((response) => {
         if (!active) return
         const list = Array.isArray(response.data) ? (response.data as BillRecord[]) : []
         setBill(list[0] ?? null)
         if (!list[0]) setBillMessage('No monthly bill found for this member.')
+        if (response.billing && response.billing.status !== 'READY' && response.billing.status !== 'FAILED') {
+          billingTimer = setTimeout(loadBill, 1500)
+        }
       })
       .catch((error) => {
         if (!active) return
@@ -86,8 +90,11 @@ export default function MemberDetailsPage() {
         if (active) setBillLoading(false)
       })
 
+    loadBill()
+
     return () => {
       active = false
+      if (billingTimer) clearTimeout(billingTimer)
     }
   }, [memberId, messId, month])
 

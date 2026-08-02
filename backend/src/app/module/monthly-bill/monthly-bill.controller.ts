@@ -18,16 +18,22 @@ import {
   UpdateBillStatusDto,
 } from './dto/monthly-bill.dto';
 import AuthGuard from '../../middlewares/auth.guard';
+import { MonthlyBillReconciliationService } from './monthly-bill-reconciliation.service';
 
 @ApiTags('Monthly Bill')
 @ApiBearerAuth('access-token')
 @Controller('monthly-bill')
 export class MonthlyBillController {
-  constructor(private readonly monthlyBillService: MonthlyBillService) {}
+  constructor(
+    private readonly monthlyBillService: MonthlyBillService,
+    private readonly billReconciliation: MonthlyBillReconciliationService,
+  ) {}
 
   @Post('generate')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
-  @ApiOperation({ summary: 'Generate monthly bills for a mess (Manager/Admin)' })
+  @ApiOperation({
+    summary: 'Generate monthly bills for a mess (Manager/Admin)',
+  })
   async generate(@Req() req: Request, @Body() dto: GenerateBillDto) {
     const data = await this.monthlyBillService.generate(
       req.user!.id,
@@ -78,10 +84,20 @@ export class MonthlyBillController {
       req.user!.role,
       query,
     );
+    const billing = query.month
+      ? await this.billReconciliation.ensureScheduled(messId, query.month)
+      : null;
     return {
       message: 'Monthly bills fetched successfully',
       meta: result.meta,
       data: result.data,
+      billing: billing
+        ? {
+            status: billing.status,
+            requestedAt: billing.requested_at,
+            calculatedAt: billing.calculated_at,
+          }
+        : null,
     };
   }
 

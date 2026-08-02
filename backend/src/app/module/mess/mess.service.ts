@@ -14,7 +14,7 @@ import { MembershipRole, NotificationType, Prisma, RequestStatus } from '@prisma
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
+import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 import { NotificationService } from '../notification/notification.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 
@@ -24,22 +24,13 @@ type MessMembershipReader = Pick<PrismaService, 'messMembership'> | Prisma.Trans
 export class MessService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly monthlyBillService: MonthlyBillService,
+    private readonly billReconciliation: MonthlyBillReconciliationService,
     private readonly notificationService: NotificationService,
     private readonly subscriptionService: SubscriptionService,
   ) { }
 
   private async recalculateCurrentMonthBillIfPossible(messId: string) {
-    const activeMembers = await this.prisma.messMembership.count({
-      where: {
-        mess_id: messId,
-        is_active: true,
-      },
-    });
-
-    if (!activeMembers) return;
-
-    await this.monthlyBillService.recalculateMonthlyBills(messId, new Date());
+    await this.billReconciliation.reconcile(messId, new Date());
   }
 
   private async ensureUserHasNoActiveMess(
@@ -1066,7 +1057,7 @@ export class MessService {
       return mess;
     });
 
-    await this.monthlyBillService.recalculateMonthlyBills(messId, new Date());
+    await this.recalculateCurrentMonthBillIfPossible(messId);
 
     return updatedMess;
   }
@@ -1222,6 +1213,8 @@ export class MessService {
         user: { select: { id: true, name: true, email: true } },
       },
     });
+
+    await this.recalculateCurrentMonthBillIfPossible(messId);
 
     return member;
   }
@@ -1380,7 +1373,7 @@ export class MessService {
       }
     }
 
-    return this.prisma.messMembership.update({
+    const updatedMember = await this.prisma.messMembership.update({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
       data: {
         role: dto.role,
@@ -1396,6 +1389,8 @@ export class MessService {
         mess: { select: { id: true, name: true } },
       },
     });
+    await this.recalculateCurrentMonthBillIfPossible(messId);
+    return updatedMember;
   }
 
   async assignManager(messId: string, userId: string, role: MembershipRole, managerId: string) {

@@ -6,16 +6,22 @@ import {
 } from './dto/monthly-bill.dto';
 import {
   AttendanceStatus,
-  BillStatus,
   DepositLedgerType,
   ExpenseCategory,
   ExpensePaymentType,
+  ExpenseSplitMethod,
+  ExpenseUsedBy,
   MealName,
   Prisma,
 } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import {
+  allocateAmountByWeight,
+  calculateMemberBalance,
+} from './billing-calculator';
+import { billingMonthRange } from './billing-period';
 
 // ─── Constants ──────────────────────────────────────────────
 /**
@@ -69,6 +75,7 @@ export class MonthlyBillService {
     deposit_total: true,
     paid_amount: true,
     final_due: true,
+    credit_balance: true,
     prev_balance: true,
     balance: true,
     status: true,
@@ -79,16 +86,12 @@ export class MonthlyBillService {
   } as const;
 
   private getBillMonthRange(monthInput: string | Date) {
-    // Normalize to first day of month consistently in UTC to avoid timezone mismatches
-    const month = new Date(monthInput);
-    if (Number.isNaN(month.getTime())) {
+    try {
+      const { start: month, end: nextMonth } = billingMonthRange(monthInput);
+      return { month, nextMonth };
+    } catch {
       throw new HttpException('Invalid billing month', 400);
     }
-    const year = month.getUTCFullYear();
-    const monthIndex = month.getUTCMonth();
-    const utcMonth = new Date(Date.UTC(year, monthIndex, 1));
-    const nextMonth = new Date(Date.UTC(year, monthIndex + 1, 1));
-    return { month: utcMonth, nextMonth };
   }
 
   private toFixedNumber(value: unknown) {
@@ -232,7 +235,8 @@ export class MonthlyBillService {
     const activeMembers = await this.prisma.messMembership.findMany({
       where: {
         mess_id: messId,
-        is_active: true,
+        joined_at: { lt: nextMonth },
+        OR: [{ is_active: true }, { left_at: { gte: month } }],
       },
       select: {
         user_id: true,
@@ -242,7 +246,10 @@ export class MonthlyBillService {
     });
 
     if (!activeMembers.length) {
-      throw new HttpException('No active members in this mess', 400);
+      await this.prisma.monthlyBill.deleteMany({
+        where: { mess_id: messId, month },
+      });
+      return [];
     }
 
     const rooms = Array.isArray(mess.rooms) ? mess.rooms : [];
@@ -263,10 +270,7 @@ export class MonthlyBillService {
       this.prisma.expense.aggregate({
         where: {
           mess_id: messId,
-          expense_date: {
-            gte: month,
-            lt: nextMonth,
-          },
+          billing_month: month,
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
           shares: { none: {} },
@@ -282,10 +286,7 @@ export class MonthlyBillService {
       this.prisma.expense.aggregate({
         where: {
           mess_id: messId,
-          expense_date: {
-            gte: month,
-            lt: nextMonth,
-          },
+          billing_month: month,
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
           shares: { none: {} },
@@ -299,10 +300,7 @@ export class MonthlyBillService {
       this.prisma.expense.aggregate({
         where: {
           mess_id: messId,
-          expense_date: {
-            gte: month,
-            lt: nextMonth,
-          },
+          billing_month: month,
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
           shares: { none: {} },
@@ -316,10 +314,7 @@ export class MonthlyBillService {
       this.prisma.expense.aggregate({
         where: {
           mess_id: messId,
-          expense_date: {
-            gte: month,
-            lt: nextMonth,
-          },
+          billing_month: month,
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
           shares: { none: {} },
@@ -333,10 +328,7 @@ export class MonthlyBillService {
       this.prisma.expense.aggregate({
         where: {
           mess_id: messId,
-          expense_date: {
-            gte: month,
-            lt: nextMonth,
-          },
+          billing_month: month,
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
           shares: { none: {} },
@@ -350,10 +342,7 @@ export class MonthlyBillService {
       this.prisma.expense.aggregate({
         where: {
           mess_id: messId,
-          expense_date: {
-            gte: month,
-            lt: nextMonth,
-          },
+          billing_month: month,
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
           shares: { none: {} },
@@ -446,11 +435,16 @@ export class MonthlyBillService {
           },
         },
         select: {
+          expense_id: true,
           member_id: true,
           share_amount: true,
           expense: {
             select: {
               category: true,
+              amount: true,
+              split_method: true,
+              used_by: true,
+              payment_type: true,
             },
           },
         },
@@ -511,25 +505,57 @@ export class MonthlyBillService {
     const allocatedUtilityByUser: Record<string, number> = {};
     const allocatedRentByUser: Record<string, number> = {};
 
+    const sharesByExpense = new Map<string, typeof expenseShares>();
     for (const share of expenseShares) {
-      const value = this.toFixedNumber(share.share_amount);
-      const category = share.expense.category;
+      const rows = sharesByExpense.get(share.expense_id) ?? [];
+      rows.push(share);
+      sharesByExpense.set(share.expense_id, rows);
+    }
 
+    for (const shares of sharesByExpense.values()) {
+      const expense = shares[0].expense;
       if (
-        category === ExpenseCategory.FOOD ||
-        category === ExpenseCategory.GROCERY
+        expense.payment_type === ExpensePaymentType.PERSONAL &&
+        expense.used_by === ExpenseUsedBy.SELF_ONLY
       ) {
-        allocatedFoodByUser[share.member_id] = this.toFixedNumber(
-          (allocatedFoodByUser[share.member_id] ?? 0) + value,
+        continue;
+      }
+
+      let allocated = new Map(
+        shares.map((share) => [
+          share.member_id,
+          this.toFixedNumber(share.share_amount),
+        ]),
+      );
+      if (expense.split_method === ExpenseSplitMethod.MEAL_COUNT) {
+        const weighted = allocateAmountByWeight(
+          Number(expense.amount),
+          shares.map((share) => ({
+            memberId: share.member_id,
+            weight: mealCountByUser[share.member_id] ?? 0,
+          })),
         );
-      } else if (category === ExpenseCategory.RENT) {
-        allocatedRentByUser[share.member_id] = this.toFixedNumber(
-          (allocatedRentByUser[share.member_id] ?? 0) + value,
-        );
-      } else {
-        allocatedUtilityByUser[share.member_id] = this.toFixedNumber(
-          (allocatedUtilityByUser[share.member_id] ?? 0) + value,
-        );
+        if (weighted.size) allocated = weighted;
+      }
+
+      for (const [memberId, value] of allocated) {
+        const category = expense.category;
+        if (
+          category === ExpenseCategory.FOOD ||
+          category === ExpenseCategory.GROCERY
+        ) {
+          allocatedFoodByUser[memberId] = this.toFixedNumber(
+            (allocatedFoodByUser[memberId] ?? 0) + value,
+          );
+        } else if (category === ExpenseCategory.RENT) {
+          allocatedRentByUser[memberId] = this.toFixedNumber(
+            (allocatedRentByUser[memberId] ?? 0) + value,
+          );
+        } else {
+          allocatedUtilityByUser[memberId] = this.toFixedNumber(
+            (allocatedUtilityByUser[memberId] ?? 0) + value,
+          );
+        }
       }
     }
 
@@ -591,10 +617,13 @@ export class MonthlyBillService {
         const allocatedUtility = allocatedUtilityByUser[user_id] ?? 0;
 
         // deposit_total already includes auto-created deposits from PERSONAL expenses
-        const effectiveDepositTotal = this.toFixedNumber(depositTotal);
-        const totalPaid = this.toFixedNumber(
-          effectiveDepositTotal + paidAmount,
-        );
+        const memberBalance = calculateMemberBalance({
+          currentCost:
+            foodBill + seatRent + utilityPerMember + allocatedUtility,
+          deposits: depositTotal,
+          payments: paidAmount,
+          previousBalance: prevBalance,
+        });
 
         // Include previous month's balance in the current month's calculation
         // prevBalance from DB: Positive (+) = due/baki from last month → gets added to current costs
@@ -603,25 +632,8 @@ export class MonthlyBillService {
         // When prevBalance is +500 (due): costs - payments + 500 → increases due ✓
         // When prevBalance is -200 (extra): costs - payments - 200 → decreases due (credit) ✓
 
-        const rawDue =
-          foodBill +
-          seatRent +
-          utilityPerMember +
-          allocatedUtility -
-          totalPaid +
-          prevBalance;
-
-        const finalDue = this.toFixedNumber(Math.max(rawDue, 0));
         // balance stores the actual net position (can be negative for overpayments)
         // This ensures prev_balance carries forward properly as credit
-        const balance = this.toFixedNumber(rawDue);
-
-        const billStatus =
-          finalDue <= 0
-            ? BillStatus.PAID
-            : totalPaid > 0
-              ? BillStatus.PARTIAL
-              : BillStatus.PENDING;
 
         const billData = {
           total_meals: memberMeals,
@@ -641,10 +653,12 @@ export class MonthlyBillService {
           deposit_total: depositTotal,
           paid_amount: paidAmount,
           prev_balance: prevBalance,
-          final_due: finalDue,
-          balance,
+          final_due: memberBalance.finalDue,
+          credit_balance: memberBalance.creditBalance,
+          balance: memberBalance.balance,
           due_date: dueDate,
-          status: billStatus,
+          status: memberBalance.status,
+          generated_at: new Date(),
         };
 
         return {
@@ -667,24 +681,29 @@ export class MonthlyBillService {
       },
     );
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        type MonthlyBillResult = Awaited<
-          ReturnType<typeof tx.monthlyBill.upsert>
-        >;
-        const bills: MonthlyBillResult[] = [];
-
-        for (const billWrite of billWrites) {
-          bills.push(await tx.monthlyBill.upsert(billWrite));
-        }
-
-        return bills;
-      },
-      {
-        maxWait: 5_000,
-        timeout: 20_000,
-      },
+    await this.prisma.$transaction(
+      [
+        this.prisma.monthlyBill.deleteMany({
+          where: {
+            mess_id: messId,
+            month,
+            member_id: {
+              notIn: activeMembers.map((member) => member.user_id),
+            },
+          },
+        }),
+        ...billWrites.map((billWrite) =>
+          this.prisma.monthlyBill.upsert(billWrite),
+        ),
+      ],
+      { maxWait: 5_000, timeout: 20_000 },
     );
+
+    return this.prisma.monthlyBill.findMany({
+      where: { mess_id: messId, month },
+      orderBy: { member: { name: 'asc' } },
+      select: this.billSelect,
+    });
   }
 
   async findAll(query: BillFilterDto) {
@@ -734,15 +753,6 @@ export class MonthlyBillService {
       if (!membership?.is_active && mess.created_by !== userId) {
         throw new HttpException('Forbidden: Not a member of this mess', 403);
       }
-    }
-
-    // Auto-recalculate bills when fetching for a specific mess to ensure utility costs are current
-    if (query.month) {
-      // Parse YYYY-MM or YYYY-MM-DD consistently to first day of month in UTC
-      const monthStr = query.month.substring(0, 7);
-      const [year, month] = monthStr.split('-').map(Number);
-      const billMonth = new Date(Date.UTC(year, month - 1, 1));
-      await this.recalculateMonthlyBills(messId, billMonth);
     }
 
     return this.findAll({ ...query, messId });

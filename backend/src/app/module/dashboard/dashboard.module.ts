@@ -3,9 +3,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
+import { MonthlyBillModule } from '../monthly-bill/monthly-bill.module';
 
 @Module({
-  imports: [PrismaModule, JwtModule.register({})],
+  imports: [PrismaModule, JwtModule.register({}), MonthlyBillModule],
   controllers: [DashboardController],
   providers: [DashboardService],
 })

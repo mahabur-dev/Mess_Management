@@ -41,6 +41,8 @@ type DashboardSummary = {
   perExtraExpenses?: number
   currentMealRate?: number
   totalDue?: number
+  remainingAmount?: number
+  netBalance?: number
   totalDepositAmount?: number
   paidAmount?: number
   activeMembers?: number
@@ -48,6 +50,9 @@ type DashboardSummary = {
   openComplaints?: number
   totalRoomRent?: number
   totalCost?: number
+  billingStatus?: 'DIRTY' | 'PROCESSING' | 'READY' | 'FAILED'
+  billingCalculatedAt?: string | null
+  billingDataFresh?: boolean
   notices?: DashboardNotice[]
 }
 
@@ -82,21 +87,36 @@ export default function HomePage() {
     }
 
     let cancelled = false
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null
     setSummaryLoading(true)
-    api
-      .getMessDashboard(activeMess.id)
-      .then((res) => {
-        if (!cancelled) setSummary(res.data)
-      })
-      .catch(() => {
-        if (!cancelled) setSummary(null)
-      })
-      .finally(() => {
-        if (!cancelled) setSummaryLoading(false)
-      })
+
+    const loadSummary = (initialLoad: boolean) => {
+      api
+        .getMessDashboard(activeMess.id)
+        .then((res) => {
+          if (cancelled) return
+          const nextSummary = res.data as DashboardSummary
+          setSummary(nextSummary)
+          if (
+            nextSummary.billingDataFresh === false &&
+            nextSummary.billingStatus !== 'FAILED'
+          ) {
+            refreshTimer = setTimeout(() => loadSummary(false), 1500)
+          }
+        })
+        .catch(() => {
+          if (!cancelled && initialLoad) setSummary(null)
+        })
+        .finally(() => {
+          if (!cancelled && initialLoad) setSummaryLoading(false)
+        })
+    }
+
+    loadSummary(true)
 
     return () => {
       cancelled = true
+      if (refreshTimer) clearTimeout(refreshTimer)
     }
   }, [activeMess?.id])
 
@@ -142,7 +162,7 @@ export default function HomePage() {
     { label: 'Due Amount', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading due amount" /> : formatMoney(summary?.totalDue), icon: MessageSquareWarning, color: '#00777a' },
     {
       label: 'Remaining Amount',
-      value: summaryLoading ? <LoadingIndicator size="sm" label="Loading remaining amount" /> : formatMoney((summary?.totalDepositAmount ?? 0) - (summary?.totalDue ?? 0)),
+      value: summaryLoading ? <LoadingIndicator size="sm" label="Loading remaining amount" /> : formatMoney(summary?.remainingAmount),
       icon: Shield,
       color: '#008d8c',
     },

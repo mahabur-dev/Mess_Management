@@ -45,13 +45,13 @@ export default function MemberDetailsPage() {
               item.user_id === memberId && (item.mess_id === messId || item.mess?.id === messId),
           ) ?? null
 
-        setMember(found)
-        if (!found) setMessage('Member not found.')
+        if (found || !month) setMember(found)
+        if (!found && !month) setMessage('Member not found.')
       })
       .catch((error) => {
         if (!active) return
-        setMember(null)
-        setMessage(error instanceof Error ? error.message : 'Failed to load member details.')
+        if (!month) setMember(null)
+        setMessage(month ? '' : error instanceof Error ? error.message : 'Failed to load member details.')
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -60,7 +60,7 @@ export default function MemberDetailsPage() {
     return () => {
       active = false
     }
-  }, [memberId, messId])
+  }, [memberId, messId, month])
 
   useEffect(() => {
     if (!memberId || !messId || !/^\d{4}-\d{2}$/.test(month)) return
@@ -75,8 +75,25 @@ export default function MemberDetailsPage() {
       .then((response) => {
         if (!active) return
         const list = Array.isArray(response.data) ? (response.data as BillRecord[]) : []
-        setBill(list[0] ?? null)
-        if (!list[0]) setBillMessage('No monthly bill found for this member.')
+        const nextBill = list[0] ?? null
+        const billMember = nextBill?.member
+        setBill(nextBill)
+        if (billMember) {
+          setMember((current) => current ?? {
+            id: `${messId}:${billMember.id}`,
+            user_id: billMember.id,
+            mess_id: messId,
+            role: 'MEMBER',
+            is_active: true,
+            user: {
+              id: billMember.id,
+              name: billMember.name || 'Member',
+              email: billMember.email || '',
+              avatar_url: billMember.avatar_url ?? null,
+            },
+          })
+        }
+        if (!nextBill) setBillMessage('No monthly bill found for this member.')
         if (response.billing && response.billing.status !== 'READY' && response.billing.status !== 'FAILED') {
           billingTimer = setTimeout(loadBill, 1500)
         }
@@ -145,6 +162,12 @@ export default function MemberDetailsPage() {
 type BillRecord = {
   id: string
   month: string
+  member?: {
+    id: string
+    name?: string | null
+    email?: string | null
+    avatar_url?: string | null
+  }
   total_meals?: string | number | null
   food_bill?: string | number | null
   seat_rent?: string | number | null

@@ -133,6 +133,12 @@ export function currentMonthValue() {
   return todayIsoDate().slice(0, 7)
 }
 
+export function shiftMonthValue(month: string, offset: number) {
+  const { month: normalizedMonth } = monthBounds(month)
+  const [year, monthIndex] = normalizedMonth.split('-').map(Number)
+  return formatLocalIsoDate(new Date(year, monthIndex - 1 + offset, 1)).slice(0, 7)
+}
+
 export function monthBounds(month: string) {
   const normalizedMonth = /^\d{4}-\d{2}$/.test(month) ? month : currentMonthValue()
   const [year, monthIndex] = normalizedMonth.split('-').map(Number)
@@ -331,19 +337,41 @@ export function MealMonthSelector({
   month: string
   onChange: (month: string) => void
 }) {
+  const selectMonth = (nextMonth: string) => {
+    if (/^\d{4}-\d{2}$/.test(nextMonth)) onChange(nextMonth)
+  }
+
   return (
-    <label className="relative mx-auto flex h-14 w-fit min-w-[210px] items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-6 text-[#123748] shadow-[0_12px_24px_rgba(18,55,72,0.12)]">
-      <CalendarDays size={19} className="shrink-0 text-[#008d8c]" />
-      <span className="text-body font-semibold">{formatMonthLabel(month)}</span>
-      <ChevronDown size={18} className="shrink-0 text-[#123748]" />
-      <input
-        aria-label="Select month"
-        type="month"
-        value={month}
-        onChange={(event) => onChange(event.target.value)}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-      />
-    </label>
+    <div className="mx-auto flex h-14 w-fit min-w-[238px] items-center justify-center overflow-hidden rounded-full bg-white text-[#123748] shadow-[0_12px_24px_rgba(18,55,72,0.12)]">
+      <button
+        type="button"
+        aria-label="Previous month"
+        onClick={() => onChange(shiftMonthValue(month, -1))}
+        className="grid h-full w-11 shrink-0 place-items-center text-[#008d8c] transition active:scale-[0.97]"
+      >
+        <ChevronLeft size={18} />
+      </button>
+      <label className="relative flex h-full min-w-[156px] items-center justify-center gap-2 overflow-hidden px-2">
+        <CalendarDays size={19} className="shrink-0 text-[#008d8c]" />
+        <span className="text-body font-semibold">{formatMonthLabel(month)}</span>
+        <ChevronDown size={18} className="shrink-0 text-[#123748]" />
+        <input
+          aria-label="Select month"
+          type="month"
+          value={month}
+          onChange={(event) => selectMonth(event.target.value)}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </label>
+      <button
+        type="button"
+        aria-label="Next month"
+        onClick={() => onChange(shiftMonthValue(month, 1))}
+        className="grid h-full w-11 shrink-0 place-items-center text-[#008d8c] transition active:scale-[0.97]"
+      >
+        <ChevronRight size={18} />
+      </button>
+    </div>
   )
 }
 

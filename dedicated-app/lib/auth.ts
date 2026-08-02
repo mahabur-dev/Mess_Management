@@ -1,8 +1,10 @@
 'use client'
 
+import { appHref } from './routes'
+
 export const AUTH_TOKEN_KEY = 'authToken'
 
-export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER' | 'ORGANIZER'
+export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER'
 export type MembershipRole = 'MANAGER' | 'MEMBER'
 
 export type MessMembership = {
@@ -58,8 +60,9 @@ export function isAuthPath(pathname: string) {
 }
 
 export function buildLoginPath(nextPath: string) {
-  if (!nextPath || nextPath === '/' || isAuthPath(nextPath)) return '/login'
-  return `/login?next=${encodeURIComponent(nextPath)}`
+  const canonicalNextPath = appHref(nextPath)
+  if (!canonicalNextPath || canonicalNextPath === '/' || isAuthPath(canonicalNextPath)) return '/login'
+  return `/login?next=${encodeURIComponent(canonicalNextPath)}`
 }
 
 export function currentPathWithSearch(fallback: string) {
@@ -71,5 +74,5 @@ export function readPostLoginPath(fallback = '/') {
   if (typeof window === 'undefined') return fallback
   const nextPath = new URLSearchParams(window.location.search).get('next')
   if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//') || isAuthPath(nextPath)) return fallback
-  return nextPath
+  return appHref(nextPath)
 }

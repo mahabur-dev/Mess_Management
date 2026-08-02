@@ -84,8 +84,8 @@ export default function SettingsPage() {
     <MobileShell>
       <TopScreen title="Settings" subtitle="Profile and security" backHref="/more" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="section-title">Profile</div>
+        <div className="ui-card space-y-4">
+          <div className="ui-section-title">Profile</div>
           <TextField label="Full Name" value={form.fullName} onChange={(fullName) => setForm((prev) => ({ ...prev, fullName }))} placeholder="Manager Name" />
           <TextField label="Email" value={form.email} onChange={(email) => setForm((prev) => ({ ...prev, email }))} placeholder="manager@example.com" type="email" />
           <TextField label="Phone Number" value={form.phoneNumber} onChange={(phoneNumber) => setForm((prev) => ({ ...prev, phoneNumber }))} placeholder="017xxxxxxxx" />
@@ -98,18 +98,18 @@ export default function SettingsPage() {
           <FieldCard label="Profile Image" hint="Optional">
             <input className="field py-3" type="file" accept="image/*" onChange={(event) => setProfileImage(event.target.files?.[0] ?? null)} />
           </FieldCard>
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+          {message ? <div className="ui-notice ui-notice--success">{message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSave}>
             Save Profile
           </SubmitButton>
         </div>
 
-        <div className="glass rounded-[28px] p-4 space-y-4">
-          <div className="section-title">Security</div>
+        <div className="ui-card space-y-4">
+          <div className="ui-section-title">Security</div>
           <TextField label="Old Password" value={password.oldPassword} onChange={(oldPassword) => setPassword((prev) => ({ ...prev, oldPassword }))} placeholder="********" type="password" />
           <TextField label="New Password" value={password.newPassword} onChange={(newPassword) => setPassword((prev) => ({ ...prev, newPassword }))} placeholder="********" type="password" />
-          {passwordMessage ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{passwordMessage}</div> : null}
-          <button className="primary-btn flex w-full items-center justify-center gap-2" type="button" onClick={handleChangePassword}>
+          {passwordMessage ? <div className="ui-notice ui-notice--success">{passwordMessage}</div> : null}
+          <button className="ui-btn ui-btn--primary w-full" type="button" onClick={handleChangePassword}>
             <ShieldCheck size={18} /> Change Password
           </button>
         </div>

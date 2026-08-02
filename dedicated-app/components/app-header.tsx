@@ -15,6 +15,7 @@ type AppHeaderProps = {
   leading?: ReactNode
   trailing?: ReactNode
   hasUnreadNotices?: boolean
+  variant?: 'default' | 'onboarding'
 }
 
 function getInitials(name?: string | null) {
@@ -87,6 +88,7 @@ export function AppHeader({
   leading,
   trailing,
   hasUnreadNotices = false,
+  variant = 'default',
 }: AppHeaderProps) {
   const router = useRouter()
   const headerRef = useRef<HTMLElement>(null)
@@ -129,12 +131,12 @@ export function AppHeader({
   }, [])
 
   return (
-    <header ref={headerRef} className="app-header top-hero px-4 pb-3">
-      <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
+    <header ref={headerRef} className="app-header top-hero px-4 pb-3" data-variant={variant}>
+      <div className={`grid items-center gap-2 ${variant === 'onboarding' ? 'grid-cols-[52px_minmax(0,1fr)_52px]' : 'grid-cols-[44px_minmax(0,1fr)_44px]'}`}>
         <div className="flex justify-start">{leadingContent}</div>
         <div className="min-w-0 text-center">
-          <h1 className="truncate text-title-sm font-bold text-white">{title}</h1>
-          {subtitle ? <p className="mt-0.5 truncate text-caption text-white/80">{subtitle}</p> : null}
+          <h1 className={`ui-header-title truncate ${variant === 'onboarding' ? 'text-title' : 'text-title-sm'}`}>{title}</h1>
+          {subtitle ? <p className={`${variant === 'onboarding' ? 'mt-1 text-label' : 'mt-0.5 text-caption'} truncate text-white/82`}>{subtitle}</p> : null}
         </div>
         <div className="flex justify-end">{trailing ?? <NotificationLink hasUnreadNotices={hasUnreadNotices} />}</div>
       </div>

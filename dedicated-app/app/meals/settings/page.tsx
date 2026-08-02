@@ -6,6 +6,8 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { FieldCard, ToggleField } from '@/components/mobile/form-controls'
 import { InlineNotice, MealCard } from '@/components/mobile/meals-design'
+import { api } from '@/lib/api'
+import { useAuth } from '@/app/providers'
 
 type MealPreferenceState = {
   defaultStatus: 'TAKE' | 'NO'
@@ -32,22 +34,82 @@ const DEFAULT_SETTINGS: MealPreferenceState = {
 }
 
 export default function MealSettingsPage() {
+  const { user } = useAuth()
+  const messId = user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? ''
   const [settings, setSettings] = useState<MealPreferenceState>(DEFAULT_SETTINGS)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
+    let alive = true
     const saved = window.localStorage.getItem(STORAGE_KEY)
-    if (!saved) return
-    try {
-      setSettings({ ...DEFAULT_SETTINGS, ...(JSON.parse(saved) as Partial<MealPreferenceState>) })
-    } catch {
-      setSettings(DEFAULT_SETTINGS)
-    }
-  }, [])
+    const localPrefs = saved ? (JSON.parse(saved) as Partial<MealPreferenceState>) : {}
 
-  function saveSettings() {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
-    setMessage('Meal preferences saved successfully.')
+    async function loadSettings() {
+      if (!messId) {
+        if (!alive) return
+        setSettings({ ...DEFAULT_SETTINGS, ...localPrefs })
+        return
+      }
+
+      try {
+        const response = await api.getMealSettings(messId)
+        if (!alive) return
+
+        const data = (response.data ?? {}) as {
+          defaultStatus?: 'ON' | 'OFF'
+          allowNoMeal?: boolean
+          windowNotificationEnabled?: boolean
+          deadlineNotificationEnabled?: boolean
+        }
+
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...localPrefs,
+          defaultStatus: data.defaultStatus === 'OFF' ? 'NO' : 'TAKE',
+          allowNoMeal: data.allowNoMeal ?? DEFAULT_SETTINGS.allowNoMeal,
+          mealReminder: data.windowNotificationEnabled ?? DEFAULT_SETTINGS.mealReminder,
+          deadlineReminder: data.deadlineNotificationEnabled ?? DEFAULT_SETTINGS.deadlineReminder,
+        })
+      } catch {
+        if (!alive) return
+        setSettings({ ...DEFAULT_SETTINGS, ...localPrefs })
+      }
+    }
+
+    void loadSettings()
+
+    return () => {
+      alive = false
+    }
+  }, [messId])
+
+  async function saveSettings() {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        reminderTiming: settings.reminderTiming,
+        deadlineTiming: settings.deadlineTiming,
+        timeFormat: settings.timeFormat,
+        language: settings.language,
+      }),
+    )
+
+    if (!messId) {
+      setMessage('Meal preferences saved successfully.')
+      return
+    }
+
+    try {
+      await api.updateMealSettings(messId, {
+        defaultStatus: settings.defaultStatus === 'TAKE' ? 'ON' : 'OFF',
+        allowNoMeal: settings.allowNoMeal,
+        windowNotificationEnabled: settings.mealReminder,
+        deadlineNotificationEnabled: settings.deadlineReminder,
+      })
+      setMessage('Meal preferences saved successfully.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to save meal preferences.')
+    }
   }
 
   return (

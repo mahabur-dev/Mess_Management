@@ -25,7 +25,9 @@ import { ExpenseService } from './expense.service';
 import {
   CreateExpenseDto,
   ExpenseFilterDto,
+  ExpensePreviewDto,
   RequestPriceReviewDto,
+  ReviewExpenseDto,
   UpdateExpenseDto,
 } from './dto/expense.dto';
 import AuthGuard from '../../middlewares/auth.guard';
@@ -37,10 +39,79 @@ import { uploadConfig } from 'src/app/helpers/fileUploder';
 export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
+  @Post('preview')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Preview expense split without saving' })
+  async preview(@Req() req: Request, @Body() dto: ExpensePreviewDto) {
+    const data = await this.expenseService.preview(
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return { message: 'Expense split preview calculated successfully', data };
+  }
+
+  @Get('summary')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({
+    summary: 'Expense & Utility Center summary for current user',
+  })
+  async summary(
+    @Req() req: Request,
+    @Query('messId') messId: string,
+    @Query('month') month?: string,
+  ) {
+    const data = await this.expenseService.getSummary(
+      messId,
+      req.user!.id,
+      req.user!.role,
+      month ?? new Date().toISOString().slice(0, 10),
+    );
+    return { message: 'Expense summary fetched successfully', data };
+  }
+
+  @Get('my-details')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({
+    summary: 'Logged-in member monthly allocated expense details',
+  })
+  async myDetails(
+    @Req() req: Request,
+    @Query('messId') messId: string,
+    @Query('month') month?: string,
+  ) {
+    const data = await this.expenseService.getMyDetails(
+      messId,
+      req.user!.id,
+      req.user!.role,
+      month ?? new Date().toISOString().slice(0, 10),
+    );
+    return { message: 'My expense details fetched successfully', data };
+  }
+
+  @Get('manager/members')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @ApiOperation({ summary: 'Manager member-wise monthly expense overview' })
+  async managerMembers(
+    @Req() req: Request,
+    @Query('messId') messId: string,
+    @Query('month') month?: string,
+  ) {
+    const data = await this.expenseService.getManagerMemberExpenses(
+      messId,
+      req.user!.id,
+      req.user!.role,
+      month ?? new Date().toISOString().slice(0, 10),
+    );
+    return { message: 'Member expense overview fetched successfully', data };
+  }
+
   @Post()
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @UseInterceptors(FileInterceptor('receipt', uploadConfig))
-  @ApiOperation({ summary: 'Create an expense with optional receipt image/PDF' })
+  @ApiOperation({
+    summary: 'Create an expense with optional receipt image/PDF',
+  })
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({
     schema: {
@@ -58,6 +129,25 @@ export class ExpenseController {
         expenseDate: { type: 'string', format: 'date' },
         description: { type: 'string' },
         receiptUrl: { type: 'string' },
+        paidFrom: {
+          type: 'string',
+          enum: ['PERSONAL', 'MESS_DEPOSIT', 'FROM_DEPOSIT', 'COLLECTED_FUND'],
+        },
+        usedBy: {
+          type: 'string',
+          enum: [
+            'SELF_ONLY',
+            'SELECTED_MEMBERS',
+            'ALL_MEMBERS',
+            'MEAL_ON_MEMBERS',
+          ],
+        },
+        splitMethod: {
+          type: 'string',
+          enum: ['EQUAL', 'MEAL_COUNT', 'CUSTOM'],
+        },
+        selectedMemberIds: { type: 'array', items: { type: 'string' } },
+        customShares: { type: 'array', items: { type: 'object' } },
         receipt: { type: 'string', format: 'binary' },
       },
     },
@@ -140,10 +230,32 @@ export class ExpenseController {
     return { message: 'Price review request sent successfully', data };
   }
 
+  @Patch(':id/approval')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Approve or reject a submitted expense' })
+  async review(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Body() dto: ReviewExpenseDto,
+  ) {
+    const data = await this.expenseService.review(
+      id,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return {
+      message: `Expense ${dto.status === 'APPROVED' ? 'approved' : 'rejected'} successfully`,
+      data,
+    };
+  }
+
   @Patch(':id')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @UseInterceptors(FileInterceptor('receipt', uploadConfig))
-  @ApiOperation({ summary: 'Update an expense with optional receipt image/PDF' })
+  @ApiOperation({
+    summary: 'Update an expense with optional receipt image/PDF',
+  })
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({
     schema: {

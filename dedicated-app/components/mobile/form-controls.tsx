@@ -15,8 +15,8 @@ export function FieldCard({ label, hint, className, children }: BaseFieldProps) 
   return (
     <label className={`block w-full ${className ?? ''}`}>
       <div className="mb-2 flex items-end justify-between gap-3">
-        <div className="text-label font-bold text-[#123748]">{label}</div>
-        {hint ? <div className="text-caption font-medium text-[#65838b]">{hint}</div> : null}
+        <div className="ui-field-label">{label}</div>
+        {hint ? <div className="ui-field-hint">{hint}</div> : null}
       </div>
       {children}
     </label>

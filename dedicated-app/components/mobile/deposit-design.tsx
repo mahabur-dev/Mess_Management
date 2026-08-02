@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import { LABELS, PAYMENT_METHODS, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
+import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
 
 type IconType = ComponentType<LucideProps>
 
@@ -131,7 +132,7 @@ export function DepositSectionTitle({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="text-title-sm font-bold leading-tight text-[#123748]">{title}</h2>
+      <h2 className="text-title-sm font-semibold leading-tight text-[#1d3a42]">{title}</h2>
       {action}
     </div>
   )
@@ -164,7 +165,7 @@ export function DepositStatCard({
       className={joinClasses(
         'border bg-white text-center',
         compact
-          ? 'grid min-h-[84px] place-items-center rounded-[15px] px-1.5 py-2.5 shadow-none'
+          ? 'grid min-h-[68px] place-items-center rounded-[10px] px-1.5 py-2 shadow-none'
           : 'min-h-[108px] rounded-[18px] px-2.5 py-3.5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]'
       )}
       style={{ borderColor: selected.border }}
@@ -177,7 +178,7 @@ export function DepositStatCard({
       <div className="text-caption font-bold leading-tight" style={{ color: selected.fg }}>
         {title}
       </div>
-      <div className={joinClasses('mt-2 truncate font-bold leading-none text-[#123748]', compact ? 'text-title-sm' : 'text-headline')}>{value}</div>
+      <div className={joinClasses('truncate font-semibold leading-none text-[#1d3a42]', compact ? 'mt-1 text-body' : 'mt-2 text-headline')}>{value}</div>
       {caption ? <div className="mt-2 text-caption font-semibold leading-tight text-[#65838b]">{caption}</div> : null}
     </section>
   )
@@ -185,7 +186,7 @@ export function DepositStatCard({
 
 export function DepositStatPanel({ children }: { children: ReactNode }) {
   return (
-    <section className="rounded-[20px] border border-[#cfeeed] bg-white/96 p-2 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
+    <section className="rounded-[14px] border border-[#cfeeed] bg-white p-1.5 shadow-[0_6px_18px_rgba(0,119,122,0.06)]">
       <div className="grid grid-cols-3 gap-1.5">{children}</div>
     </section>
   )
@@ -308,7 +309,7 @@ export function DepositAggregateSummary({
         </div>
         <div>
           <div className="text-caption font-semibold text-[#65838b]">Total Entries</div>
-          <div className="mt-2 text-title font-bold leading-none text-[#123748]">{entries}</div>
+          <div className="mt-2 text-title font-semibold leading-none text-[#1d3a42]">{entries}</div>
           <div className="mt-2 text-caption font-semibold text-[#65838b]">This month</div>
         </div>
       </div>
@@ -319,7 +320,7 @@ export function DepositAggregateSummary({
         </div>
         <div>
           <div className="text-caption font-semibold text-[#65838b]">Total Amount</div>
-          <div className="mt-2 text-title font-bold leading-none text-[#123748]">{formatDepositMoney(amount)}</div>
+          <div className="mt-2 text-title font-semibold leading-none text-[#1d3a42]">{formatDepositMoney(amount)}</div>
           <div className="mt-2 text-caption font-semibold text-[#65838b]">This month</div>
         </div>
       </div>
@@ -410,7 +411,7 @@ export function DepositListItem({
         {initials(name)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-label font-bold text-[#123748]">{name}</div>
+        <div className="truncate text-label font-semibold text-[#1d3a42]">{name}</div>
         <div className="mt-1 flex min-w-0 items-center gap-1.5 text-caption font-bold">
           <span style={{ color: amountTone }}>{formatDepositMoney(item.amount)}</span>
           <span className="text-[#789096]">.</span>
@@ -506,22 +507,33 @@ export function DepositCompactFilters({
   onMonthChange: (value: string) => void
   showLabels?: boolean
 }) {
+  const statusOptions: Array<MobileSelectOption<PaymentStatus | 'ALL'>> = [
+    { value: 'ALL', label: 'All Status' },
+    { value: 'APPROVED', label: 'Approved' },
+    { value: 'PENDING', label: 'Pending' },
+    { value: 'REJECTED', label: 'Rejected' },
+  ]
+
   return (
     <div className="grid grid-cols-2 gap-3">
-      <label className="relative block">
+      <div className="relative block">
         {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Status</span> : null}
-        <select
-          className="h-12 w-full appearance-none rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+        <MobileSelectSheet
+          label="Status"
           value={status}
-          onChange={(event) => onStatusChange(event.target.value as PaymentStatus | 'ALL')}
-        >
-          <option value="ALL">All Status</option>
-          <option value="APPROVED">Approved</option>
-          <option value="PENDING">Pending</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
-        <ChevronDown className="pointer-events-none absolute bottom-3.5 right-3 text-[#65838b]" size={16} />
-      </label>
+          options={statusOptions}
+          onChange={onStatusChange}
+          renderTrigger={({ open, selectedLabel, buttonProps }) => (
+            <button
+              {...buttonProps}
+              className="flex h-12 w-full items-center rounded-[15px] border border-[#cfeeed] bg-white px-3 text-left text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)] outline-none transition focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
+            >
+              <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+              <ChevronDown className={`shrink-0 text-[#65838b] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} size={16} />
+            </button>
+          )}
+        />
+      </div>
 
       <label className="relative block">
         {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Month</span> : null}
@@ -550,7 +562,7 @@ export function PaymentMethodGrid({
 }) {
   return (
     <section>
-      <h2 className="mb-3 text-title-sm font-bold text-[#123748]">Deposit Method</h2>
+      <h2 className="mb-3 text-title-sm font-semibold text-[#1d3a42]">Deposit Method</h2>
       <div className="grid grid-cols-2 gap-3">
         {PAYMENT_METHODS.map((method) => {
           const active = value === method
@@ -591,7 +603,7 @@ export function DepositInfoRow({
         <Icon size={19} strokeWidth={2.3} />
       </div>
       <div className="min-w-0 text-label font-bold text-[#65838b]">{label}</div>
-      <div className="min-w-0 text-right text-label font-bold leading-5 text-[#123748]">{value}</div>
+      <div className="min-w-0 text-right text-label font-semibold leading-5 text-[#1d3a42]">{value}</div>
     </div>
   )
 }
@@ -613,7 +625,7 @@ export function DepositDetailsSummary({
           <div className="grid h-16 w-16 place-items-center rounded-full" style={{ backgroundColor: status.bg, color: status.fg }}>
             <StatusIcon size={30} strokeWidth={2.25} />
           </div>
-          <div className="mt-3 text-display font-bold leading-none text-[#123748]">{formatDepositMoney(item?.amount)}</div>
+          <div className="mt-3 text-display font-semibold leading-none text-[#1d3a42]">{formatDepositMoney(item?.amount)}</div>
           <div className="mt-3"><DepositStatusBadge status={item?.status} /></div>
         </div>
         <div className="bg-[#e0ecef]" />
@@ -641,7 +653,7 @@ function MiniFact({
     <div className="grid grid-cols-[22px_minmax(0,1fr)_minmax(76px,auto)] items-center gap-2">
       <Icon size={17} className="text-[#00777a]" />
       <div className="text-caption font-bold text-[#65838b]">{label}</div>
-      <div className="truncate text-right text-caption font-bold text-[#123748]">{value}</div>
+      <div className="truncate text-right text-caption font-semibold text-[#1d3a42]">{value}</div>
     </div>
   )
 }

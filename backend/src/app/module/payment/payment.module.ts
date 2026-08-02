@@ -7,7 +7,12 @@ import { MonthlyBillModule } from '../monthly-bill/monthly-bill.module';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [PrismaModule, JwtModule.register({}), MonthlyBillModule, NotificationModule],
+  imports: [
+    PrismaModule,
+    JwtModule.register({}),
+    MonthlyBillModule,
+    NotificationModule,
+  ],
   controllers: [PaymentController],
   providers: [PaymentService],
   // imports: [MonthlyBillModule],

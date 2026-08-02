@@ -6,6 +6,7 @@ import { TopScreen } from '@/components/top-screen'
 import { FieldCard, SelectField, SubmitButton, TextField } from '@/components/mobile/form-controls'
 import { GuestMealCountInput, MEAL_META, MealOptionRow } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
 import { LABELS, MEAL_NAMES, type MealName } from '@/lib/form-options'
 import { useAuth } from '../providers'
 
@@ -40,6 +41,7 @@ function normalizeGuestMealCount(value: string) {
 export default function AddMealPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
+  const isManager = canManageMess(user)
   const [members, setMembers] = useState<MemberOption[]>([])
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [message, setMessage] = useState('')
@@ -50,6 +52,18 @@ export default function AddMealPage() {
 
     let alive = true
     const currentUser = user ? { id: user.id, name: user.name, email: user.email } : null
+
+    if (!isManager) {
+      setMembers(currentUser ? [currentUser] : [])
+      setForm((prev) => ({
+        ...prev,
+        memberId: currentUser?.id ?? '',
+      }))
+      return () => {
+        alive = false
+      }
+    }
+
     api
       .getAllMembers({ limit: 200 })
       .then((res) => {
@@ -68,7 +82,7 @@ export default function AddMealPage() {
     return () => {
       alive = false
     }
-  }, [messId, user])
+  }, [isManager, messId, user])
 
   const mealChoice = form.status === 'OFF' ? 'NO' : Number(form.guests || 0) > 0 ? 'GUEST' : 'TAKE'
   const guestMeals = mealChoice === 'GUEST' ? normalizeGuestMealCount(form.guests) : 0
@@ -125,10 +139,10 @@ export default function AddMealPage() {
 
           <SelectField
             label="Member"
-            hint="Optional for manager entry"
+            hint={isManager ? 'Optional for manager entry' : 'Your own meal only'}
             value={form.memberId}
             onChange={(memberId) => setForm((prev) => ({ ...prev, memberId }))}
-            options={['', ...members.map((member) => member.id)] as string[]}
+            options={(isManager ? ['', ...members.map((member) => member.id)] : members.map((member) => member.id)) as string[]}
             getLabel={(value) => {
               if (!value) return 'Select member'
               const member = members.find((item) => item.id === value)

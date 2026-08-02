@@ -5,8 +5,10 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { GlobalRole } from '@prisma/client';
 
 // ─────────────────────────────────────────
@@ -14,18 +16,23 @@ import { GlobalRole } from '@prisma/client';
 // ─────────────────────────────────────────
 export class RegisterDto {
   @ApiProperty({ example: 'Rakib Khan' })
+  @Transform(({ value }) => String(value ?? '').trim())
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   name: string;
 
   @ApiProperty({ example: 'rakib@example.com' })
+  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
+  @MaxLength(255)
   email: string;
 
   @ApiProperty({ example: 'secret123' })
   @IsString()
   @MinLength(6, { message: 'Password must be at least 6 characters' })
+  @MaxLength(128)
   password: string;
 
   @ApiPropertyOptional({ enum: GlobalRole, default: GlobalRole.MEMBER })
@@ -35,7 +42,12 @@ export class RegisterDto {
 
   @ApiPropertyOptional({ example: '01711234567' })
   @IsOptional()
+  @Transform(({ value }) => {
+    const phone = String(value ?? '').trim();
+    return phone || undefined;
+  })
   @IsString()
+  @MaxLength(40)
   phone?: string;
 }
 
@@ -44,13 +56,16 @@ export class RegisterDto {
 // ─────────────────────────────────────────
 export class LoginDto {
   @ApiProperty({ example: 'rakib@example.com' })
+  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
+  @MaxLength(255)
   email: string;
 
   @ApiProperty({ example: 'secret123' })
   @IsString()
   @MinLength(6, { message: 'Password must be at least 6 characters' })
+  @MaxLength(128)
   password: string;
 }
 
@@ -59,8 +74,10 @@ export class LoginDto {
 // ─────────────────────────────────────────
 export class ForgotPasswordDto {
   @ApiProperty({ example: 'rakib@example.com' })
+  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
+  @MaxLength(255)
   email: string;
 }
 
@@ -69,13 +86,17 @@ export class ForgotPasswordDto {
 // ─────────────────────────────────────────
 export class VerifyOtpDto {
   @ApiProperty({ example: 'rakib@example.com' })
+  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
+  @MaxLength(255)
   email: string;
 
   @ApiProperty({ example: '123456' })
+  @Transform(({ value }) => String(value ?? '').trim())
   @IsString()
   @IsNotEmpty()
+  @MaxLength(6)
   otp: string;
 }
 
@@ -84,13 +105,16 @@ export class VerifyOtpDto {
 // ─────────────────────────────────────────
 export class ResetPasswordDto {
   @ApiProperty({ example: 'rakib@example.com' })
+  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
+  @MaxLength(255)
   email: string;
 
   @ApiProperty({ example: 'newSecret123' })
   @IsString()
   @MinLength(6, { message: 'Password must be at least 6 characters' })
+  @MaxLength(128)
   newPassword: string;
 }
 
@@ -101,10 +125,12 @@ export class ChangePasswordDto {
   @ApiProperty({ example: 'oldSecret123' })
   @IsString()
   @MinLength(6, { message: 'Password must be at least 6 characters' })
+  @MaxLength(128)
   oldPassword: string;
 
   @ApiProperty({ example: 'newSecret123' })
   @IsString()
   @MinLength(6, { message: 'Password must be at least 6 characters' })
+  @MaxLength(128)
   newPassword: string;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Users } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   EmptyMealsState,
@@ -91,7 +92,7 @@ export default function MemberMealsPage() {
         <MealCard className="space-y-3">
           <SearchBox value={search} onChange={setSearch} />
           {message ? <InlineNotice tone="danger">{message}</InlineNotice> : null}
-          {loading ? <InlineNotice>Loading member meals...</InlineNotice> : null}
+          {loading ? <LoadingIndicator variant="card" label="Loading member meals" /> : null}
         </MealCard>
 
         <section className="space-y-2.5">

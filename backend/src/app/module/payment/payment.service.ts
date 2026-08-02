@@ -3,8 +3,20 @@ import { NotificationType, PaymentStatus, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreatePaymentDto, PaymentFilterDto, ReviewPaymentDto } from './dto/payment.dto';
-import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
+import {
+  CreatePaymentDto,
+  PaymentFilterDto,
+  ReviewPaymentDto,
+  UpdatePaymentDto,
+} from './dto/payment.dto';
+import {
+  canEditPayment,
+  statusForPaymentWrite,
+} from './payment-approval.policy';
+import {
+  type BillingSyncStatus,
+  MonthlyBillReconciliationService,
+} from '../monthly-bill/monthly-bill-reconciliation.service';
 import sendMailer from 'src/app/helpers/sendMailer';
 import { NotificationService } from '../notification/notification.service';
 
@@ -12,12 +24,13 @@ import { NotificationService } from '../notification/notification.service';
 export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly monthlyBillService: MonthlyBillService,
+    private readonly billReconciliation: MonthlyBillReconciliationService,
     private readonly notificationService: NotificationService,
-  ) { }
+  ) {}
 
   private async getPaymentRecalculateDate(payment: {
     monthly_bill_id: string | null;
+    payment_date: Date | null;
     created_at: Date;
   }) {
     if (payment.monthly_bill_id) {
@@ -29,15 +42,12 @@ export class PaymentService {
       if (bill) return bill.month;
     }
 
-    return payment.created_at;
-  }
-
-  private async recalculatePaymentMonthBill(messId: string, date: Date) {
-    await this.monthlyBillService.recalculateMonthlyBills(messId, date);
+    return payment.payment_date ?? payment.created_at;
   }
 
   private readonly paymentSelect = {
     id: true,
+    monthly_bill_id: true,
     amount: true,
     method: true,
     status: true,
@@ -45,12 +55,15 @@ export class PaymentService {
     transaction_id: true,
     screenshot_url: true,
     note: true,
+    payment_date: true,
     approved_at: true,
     created_at: true,
     mess: { select: { id: true, name: true } },
     member: { select: { id: true, name: true, email: true } },
     creator: { select: { id: true, name: true, email: true } },
-    monthly_bill: { select: { id: true, month: true, final_due: true, status: true } },
+    monthly_bill: {
+      select: { id: true, month: true, final_due: true, status: true },
+    },
     approver: { select: { id: true, name: true, email: true } },
   } as const;
 
@@ -62,7 +75,8 @@ export class PaymentService {
     const membership = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-    if (!membership?.is_active) throw new HttpException('Forbidden: Not a member of this mess', 403);
+    if (!membership?.is_active)
+      throw new HttpException('Forbidden: Not a member of this mess', 403);
   }
 
   private async ensureActiveMessMember(messId: string, userId: string) {
@@ -75,20 +89,34 @@ export class PaymentService {
     });
 
     if (!membership?.is_active) {
-      throw new HttpException('Forbidden: Selected member is not active in this mess', 403);
+      throw new HttpException(
+        'Forbidden: Selected member is not active in this mess',
+        403,
+      );
     }
   }
 
-  private async verifyManager(messId: string, userId: string, role: string) {
-    if (role === 'ADMIN') return;
+  private async hasManagerAccess(
+    messId: string,
+    userId: string,
+    role: string,
+  ) {
+    if (role === 'ADMIN') return true;
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
-    if (mess.created_by === userId) return;
+    if (mess.created_by === userId) return true;
     const membership = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-    if (membership?.is_active && membership.role === 'MANAGER') return;
-    throw new HttpException('Forbidden: Only managers can approve payments', 403);
+    return Boolean(membership?.is_active && membership.role === 'MANAGER');
+  }
+
+  private async verifyManager(messId: string, userId: string, role: string) {
+    if (await this.hasManagerAccess(messId, userId, role)) return;
+    throw new HttpException(
+      'Forbidden: Only managers can approve payments',
+      403,
+    );
   }
 
   private async ensureActiveSubscription(messId: string, role: string) {
@@ -115,12 +143,37 @@ export class PaymentService {
     await this.verifyMessMember(dto.messId, userId, role);
     await this.ensureActiveSubscription(dto.messId, role);
 
+    const canManage = await this.hasManagerAccess(dto.messId, userId, role);
+
     const purchasedById = dto.purchasedBy?.trim() || userId;
-    if (purchasedById !== userId) {
-      await this.verifyManager(dto.messId, userId, role);
+    if (purchasedById !== userId && !canManage) {
+      throw new HttpException(
+        'Forbidden: Members can submit deposits only for themselves',
+        403,
+      );
     }
     await this.ensureActiveMessMember(dto.messId, purchasedById);
 
+    if (dto.monthlyBillId) {
+      const monthlyBill = await this.prisma.monthlyBill.findUnique({
+        where: { id: dto.monthlyBillId },
+        select: { mess_id: true, member_id: true },
+      });
+      if (!monthlyBill) {
+        throw new HttpException('Monthly bill not found', 404);
+      }
+      if (
+        monthlyBill.mess_id !== dto.messId ||
+        monthlyBill.member_id !== purchasedById
+      ) {
+        throw new HttpException(
+          'Monthly bill must belong to the selected member and mess',
+          400,
+        );
+      }
+    }
+
+    const status = statusForPaymentWrite(canManage);
     const payment = await this.prisma.payment.create({
       data: {
         mess_id: dto.messId,
@@ -134,9 +187,19 @@ export class PaymentService {
         screenshot_url: dto.screenshotUrl,
         note: dto.note,
         payment_date: dto.paymentDate ? new Date(dto.paymentDate) : undefined,
+        status,
+        approved_by: canManage ? userId : null,
+        approved_at: canManage ? new Date() : null,
       },
       select: this.paymentSelect,
     });
+
+    const billingSync = canManage
+      ? await this.billReconciliation.reconcile(
+          dto.messId,
+          await this.getPaymentRecalculateDate(payment),
+        )
+      : null;
 
     await this.notificationService
       .createForMess(
@@ -157,24 +220,53 @@ export class PaymentService {
         // Payment submission should not fail if notification delivery fails.
       });
 
-    return payment;
+    return { ...payment, billingSync };
   }
 
   async findAll(query: PaymentFilterDto) {
-    const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
-    const { page, limit, skip, sortBy, sortOrder } = paginationHelper(paginationOptions);
+    const paginationOptions = pick(query, [
+      'page',
+      'limit',
+      'sortBy',
+      'sortOrder',
+    ]);
+    const { page, limit, skip, sortBy, sortOrder } =
+      paginationHelper(paginationOptions);
+    const safeSortBy = [
+      'payment_date',
+      'created_at',
+      'amount',
+      'status',
+    ].includes(sortBy)
+      ? sortBy
+      : 'created_at';
     const where = this.buildWhere(query);
 
     const [total, payments, aggregate] = await Promise.all([
       this.prisma.payment.count({ where }),
-      this.prisma.payment.findMany({ where, skip, take: limit, orderBy: { [sortBy]: sortOrder }, select: this.paymentSelect }),
+      this.prisma.payment.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [safeSortBy]: sortOrder },
+        select: this.paymentSelect,
+      }),
       this.prisma.payment.aggregate({ where, _sum: { amount: true } }),
     ]);
 
-    return { data: payments, meta: buildMeta(total, page, limit), totalAmount: aggregate._sum.amount ?? 0 };
+    return {
+      data: payments,
+      meta: buildMeta(total, page, limit),
+      totalAmount: aggregate._sum.amount ?? 0,
+    };
   }
 
-  async findByMess(messId: string, userId: string, role: string, query: PaymentFilterDto) {
+  async findByMess(
+    messId: string,
+    userId: string,
+    role: string,
+    query: PaymentFilterDto,
+  ) {
     await this.verifyMessMember(messId, userId, role);
     return this.findAll({ ...query, messId });
   }
@@ -183,7 +275,83 @@ export class PaymentService {
     return this.findAll({ ...query, memberId: userId });
   }
 
-  async review(id: string, userId: string, role: string, dto: ReviewPaymentDto) {
+  async findOne(id: string, userId: string, role: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      select: this.paymentSelect,
+    });
+    if (!payment) throw new HttpException('Payment not found', 404);
+    await this.verifyMessMember(payment.mess.id, userId, role);
+    return payment;
+  }
+
+  async update(
+    id: string,
+    userId: string,
+    role: string,
+    dto: UpdatePaymentDto,
+  ) {
+    const existing = await this.prisma.payment.findUnique({ where: { id } });
+    if (!existing) throw new HttpException('Payment not found', 404);
+
+    await this.verifyMessMember(existing.mess_id, userId, role);
+    await this.ensureActiveSubscription(existing.mess_id, role);
+    const canManage = await this.hasManagerAccess(
+      existing.mess_id,
+      userId,
+      role,
+    );
+    if (!canEditPayment(canManage, userId, existing.created_by)) {
+      throw new HttpException(
+        'Forbidden: Members can edit only deposits they submitted',
+        403,
+      );
+    }
+
+    const previousDate = await this.getPaymentRecalculateDate(existing);
+    const status = statusForPaymentWrite(canManage);
+    const updated = await this.prisma.payment.update({
+      where: { id },
+      data: {
+        amount: dto.amount,
+        method: dto.method,
+        transaction_id:
+          dto.transactionId === undefined
+            ? undefined
+            : dto.transactionId.trim() || null,
+        screenshot_url:
+          dto.screenshotUrl === undefined
+            ? undefined
+            : dto.screenshotUrl.trim() || null,
+        note: dto.note === undefined ? undefined : dto.note.trim() || null,
+        payment_date: dto.paymentDate ? new Date(dto.paymentDate) : undefined,
+        categories: dto.categories,
+        status,
+        approved_by: canManage ? userId : null,
+        approved_at: canManage ? new Date() : null,
+      },
+      select: this.paymentSelect,
+    });
+
+    const billingSync =
+      existing.status === PaymentStatus.APPROVED ||
+      updated.status === PaymentStatus.APPROVED
+        ? await this.billReconciliation.reconcile(
+            existing.mess_id,
+            previousDate,
+            await this.getPaymentRecalculateDate(updated),
+          )
+        : null;
+
+    return { ...updated, billingSync };
+  }
+
+  async review(
+    id: string,
+    userId: string,
+    role: string,
+    dto: ReviewPaymentDto,
+  ) {
     const payment = await this.prisma.payment.findUnique({
       where: { id },
     });
@@ -210,16 +378,16 @@ export class PaymentService {
       select: this.paymentSelect,
     });
 
+    let billingSync: BillingSyncStatus = 'SYNCED';
     if (dto.status === PaymentStatus.APPROVED) {
       const recalculateDate = await this.getPaymentRecalculateDate(payment);
-
-      await this.recalculatePaymentMonthBill(
+      billingSync = await this.billReconciliation.reconcile(
         payment.mess_id,
         recalculateDate,
       );
     }
 
-    return updatedPayment;
+    return { ...updatedPayment, billingSync };
   }
 
   async remove(id: string, userId: string, role: string) {
@@ -233,25 +401,32 @@ export class PaymentService {
     if (!payment) throw new HttpException('Payment not found', 404);
 
     const isOwn = payment.member_id === userId;
-    const isManager = role === 'ADMIN' || role === 'MANAGER' || role === 'ORGANIZER';
-
-    // Member can only delete own payment
-    if (role === 'MEMBER' && !isOwn) {
-      throw new HttpException('Forbidden: You can only delete your own payment', 403);
-    }
-
-    // Manager check
-    if (role === 'MANAGER') {
-      const mess = await this.prisma.mess.findUnique({
-        where: { id: payment.mess_id },
-      });
-      if (mess?.created_by !== userId) {
-        throw new HttpException('Forbidden: Not your mess', 403);
+    const isOwnSubmission = payment.created_by === userId;
+    const isMember = role === 'MEMBER';
+    if (isMember) {
+      const canManage = await this.hasManagerAccess(
+        payment.mess_id,
+        userId,
+        role,
+      );
+      if (!canManage && !isOwnSubmission) {
+        throw new HttpException(
+          'Forbidden: Members can delete only deposits they submitted',
+          403,
+        );
       }
+      if (!canManage && payment.status !== PaymentStatus.PENDING) {
+        throw new HttpException(
+          'Reviewed payments can only be deleted by a manager',
+          400,
+        );
+      }
+    } else {
+      await this.verifyManager(payment.mess_id, userId, role);
     }
 
     // If manager deletes someone else's payment, send email
-    if (isManager && !isOwn && payment.member?.email) {
+    if (!isMember && !isOwn && payment.member?.email) {
       try {
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fafcff; border-radius: 12px;">
@@ -276,14 +451,28 @@ export class PaymentService {
             </div>
           </div>
         `;
-        await sendMailer(payment.member.email, `Payment Deleted - ${payment.mess.name}`, html);
+        await sendMailer(
+          payment.member.email,
+          `Payment Deleted - ${payment.mess.name}`,
+          html,
+        );
       } catch (e) {
         console.error('Failed to send deletion email:', e);
       }
     }
 
+    const recalculateDate =
+      payment.status === PaymentStatus.APPROVED
+        ? await this.getPaymentRecalculateDate(payment)
+        : null;
     await this.prisma.payment.delete({ where: { id } });
-    return { message: 'Payment deleted successfully' };
+    const billingSync = recalculateDate
+      ? await this.billReconciliation.reconcile(
+          payment.mess_id,
+          recalculateDate,
+        )
+      : 'SYNCED';
+    return { message: 'Payment deleted successfully', billingSync };
   }
 
   private buildWhere(query: PaymentFilterDto): Prisma.PaymentWhereInput {
@@ -292,10 +481,14 @@ export class PaymentService {
     if (query.memberId) where.member_id = query.memberId;
     if (query.status) where.status = query.status;
     if (query.startDate || query.endDate) {
-      where.created_at = {
+      const dateFilter = {
         ...(query.startDate && { gte: new Date(query.startDate) }),
         ...(query.endDate && { lte: new Date(query.endDate) }),
       };
+      where.OR = [
+        { payment_date: dateFilter },
+        { payment_date: null, created_at: dateFilter },
+      ];
     }
     return where;
   }

@@ -1,7 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsArray,
+  IsEnum,
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Min,
+} from 'class-validator';
 
 export class CreatePaymentDto {
   @ApiProperty({ example: 'uuid-mess-id' })
@@ -14,7 +25,10 @@ export class CreatePaymentDto {
   @IsString()
   monthlyBillId?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-member-id', description: 'Member who made this payment' })
+  @ApiPropertyOptional({
+    example: 'uuid-member-id',
+    description: 'Member who made this payment',
+  })
   @IsOptional()
   @IsString()
   purchasedBy?: string;
@@ -49,21 +63,65 @@ export class CreatePaymentDto {
   @IsDateString()
   paymentDate?: string;
 
-  @ApiPropertyOptional({ example: ['WATER', 'WIFI', 'RENT'], description: 'Payment categories (expense categories)' })
+  @ApiPropertyOptional({
+    example: ['WATER', 'WIFI', 'RENT'],
+    description: 'Payment categories (expense categories)',
+  })
   @IsOptional()
+  @IsArray()
   @IsString({ each: true })
   categories?: string[];
 }
 
 export class ReviewPaymentDto {
   @ApiProperty({ enum: [PaymentStatus.APPROVED, PaymentStatus.REJECTED] })
-  @IsEnum(PaymentStatus)
+  @IsIn([PaymentStatus.APPROVED, PaymentStatus.REJECTED])
   status: 'APPROVED' | 'REJECTED';
 
   @ApiPropertyOptional({ example: 'Transaction matched' })
   @IsOptional()
   @IsString()
   note?: string;
+}
+
+export class UpdatePaymentDto {
+  @ApiPropertyOptional({ example: 2500 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(1)
+  amount?: number;
+
+  @ApiPropertyOptional({ enum: PaymentMethod, example: PaymentMethod.BKASH })
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  method?: PaymentMethod;
+
+  @ApiPropertyOptional({ example: 'TXN123456' })
+  @IsOptional()
+  @IsString()
+  transactionId?: string;
+
+  @ApiPropertyOptional({ example: 'https://res.cloudinary.com/payment.jpg' })
+  @IsOptional()
+  @IsUrl()
+  screenshotUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Paid for May bill' })
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-15' })
+  @IsOptional()
+  @IsDateString()
+  paymentDate?: string;
+
+  @ApiPropertyOptional({ example: ['WATER', 'WIFI', 'RENT'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  categories?: string[];
 }
 
 export class PaymentFilterDto {

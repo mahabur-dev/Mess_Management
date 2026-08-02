@@ -136,7 +136,7 @@ export default function ComplaintsPage() {
               <div key={item.id} className="rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-label font-extrabold text-[#123748]">{item.title}</div>
+                    <div className="truncate text-label font-semibold text-[#1d3a42]">{item.title}</div>
                     <div className="mt-1 text-caption text-[#65838b]">{LABELS.COMPLAINT_CATEGORIES[item.category]}</div>
                   </div>
                   <div className="flex items-center gap-2">

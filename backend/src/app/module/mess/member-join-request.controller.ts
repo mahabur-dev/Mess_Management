@@ -27,7 +27,7 @@ export class MemberJoinRequestController {
   constructor(private readonly messService: MessService) {}
 
   @Post()
-  @UseGuards(AuthGuard('MEMBER', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Request to join an active mess as a member' })
   async requestJoin(@Req() req: Request, @Body() dto: RequestMemberJoinDto) {
     const data = await this.messService.requestMemberJoin(req.user!.id, dto);
@@ -35,7 +35,7 @@ export class MemberJoinRequestController {
   }
 
   @Get('my')
-  @UseGuards(AuthGuard('MEMBER', 'MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'List my member join requests' })
   async findMine(@Req() req: Request, @Query() query: MessFilterDto) {
     const result = await this.messService.findMyMemberJoinRequests(req.user!.id, query);
@@ -47,7 +47,7 @@ export class MemberJoinRequestController {
   }
 
   @Get('managed')
-  @UseGuards(AuthGuard('MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'List member join requests for messes I manage' })
   async findManaged(@Req() req: Request, @Query() query: MemberJoinRequestFilterDto) {
     const result = await this.messService.findManagedMemberJoinRequests(req.user!.id, query);
@@ -59,7 +59,7 @@ export class MemberJoinRequestController {
   }
 
   @Patch(':requestId/review')
-  @UseGuards(AuthGuard('MANAGER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Approve or reject a member join request' })
   async review(
     @Param('requestId') requestId: string,

@@ -57,18 +57,16 @@ export function useMessMemberOptions(messId: string, currentUser?: CurrentUserOp
     const fallbackMembers = getCurrentUserOption(fallbackUser)
 
     api
-      .getAllMembers({ limit: 200 })
+      .getMessMemberOptions(messId)
       .then((res) => {
         if (!alive) return
 
         const list = Array.isArray(res.data) ? res.data : []
-        const messMembers = list
-          .filter((item: any) => (item.mess?.id ?? item.mess_id) === messId && item.user?.id)
-          .map((item: any) => ({
-            id: item.user.id,
-            name: item.user.name || 'Unnamed member',
-            email: item.user.email || '',
-          }))
+        const messMembers = list.map((item) => ({
+          id: item.id,
+          name: item.name || 'Unnamed member',
+          email: item.email || '',
+        }))
 
         setMembers(uniqueMembers(messMembers.length ? messMembers : fallbackMembers))
       })

@@ -101,6 +101,14 @@ export class MessService {
     _count: { select: { memberships: true, deposits: true, meals: true } },
   } as const;
 
+  private readonly activeMessForJoinSelect = {
+    ...this.messSelect,
+    memberships: {
+      where: { is_active: true },
+      select: { room_no: true, is_active: true },
+    },
+  } as const satisfies Prisma.MessSelect;
+
   private readonly memberJoinRequestInclude = {
     requester: { select: { id: true, name: true, email: true, phone: true, role: true } },
     reviewer: { select: { id: true, name: true, email: true } },
@@ -143,6 +151,13 @@ export class MessService {
       ...mess,
       rooms,
     };
+  }
+
+  private getCollectionMessage(
+    total: number,
+    messages: { empty: string; found: string },
+  ) {
+    return total > 0 ? messages.found : messages.empty;
   }
 
   private async verifyManagerAccess(messId: string, userId: string, role: string) {
@@ -459,14 +474,7 @@ export class MessService {
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        include: {
-          creator: { select: { id: true, name: true, email: true } },
-          memberships: {
-            where: { is_active: true },
-            select: { room_no: true, is_active: true },
-          },
-          _count: { select: { memberships: true, deposits: true, meals: true } },
-        },
+        select: this.activeMessForJoinSelect,
       }),
     ]);
 
@@ -476,7 +484,14 @@ export class MessService {
       return rest;
     });
 
-    return { data, meta: buildMeta(total, page, limit) };
+    return {
+      message: this.getCollectionMessage(total, {
+        found: 'Active messes fetched successfully',
+        empty: 'No active messes are available right now',
+      }),
+      data,
+      meta: buildMeta(total, page, limit),
+    };
   }
 
   async requestMemberJoin(userId: string, dto: RequestMemberJoinDto) {
@@ -527,7 +542,7 @@ export class MessService {
           messId: dto.messId,
         },
         managerUserIds,
-        '/dashboard/member_management',
+        '/members',
         `member-join-request-${request.id}`,
       ).catch(() => undefined);
     }
@@ -1456,19 +1471,44 @@ export class MessService {
     })
   }
 
-  async getAllMembers(managerId: string, query: MessFilterDto) {
+  async getAllMembers(managerId: string, role: string, query: MessFilterDto) {
     const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
     const { page, limit, skip, sortOrder = 'desc' } = paginationHelper(paginationOptions);
 
-    console.log(managerId);
-    const manager = await this.prisma.user.findUnique({ where: { id: managerId } })
-    console.log(manager);
-    
+    const managedMessWhere: Prisma.MessWhereInput =
+      role === 'ADMIN'
+        ? { is_active: true }
+        : {
+            is_active: true,
+            OR: [
+              { created_by: managerId },
+              {
+                memberships: {
+                  some: {
+                    user_id: managerId,
+                    role: MembershipRole.MANAGER,
+                    is_active: true,
+                  },
+                },
+              },
+            ],
+          };
+
+    if (role !== 'ADMIN') {
+      const managedMessCount = await this.prisma.mess.count({
+        where: managedMessWhere,
+      });
+
+      if (managedMessCount === 0) {
+        throw new HttpException(
+          'Forbidden: Only mess managers can view members',
+          403,
+        );
+      }
+    }
+
     const where: Prisma.MessMembershipWhereInput = {
-      mess: {
-        created_by: managerId,   // Only messes owned by this manager
-        is_active: true,
-      },
+      mess: managedMessWhere,
       is_active: true,
     };
 
@@ -1515,5 +1555,37 @@ export class MessService {
       data: members,
       meta: buildMeta(total, page, limit),
     };
+  }
+
+  async getMemberOptions(messId: string, userId: string, role: string) {
+    const mess = await this.prisma.mess.findUnique({
+      where: { id: messId },
+      select: { id: true, created_by: true },
+    });
+    if (!mess) throw new HttpException('Mess not found', 404);
+
+    if (role !== 'ADMIN' && mess.created_by !== userId) {
+      const membership = await this.prisma.messMembership.findUnique({
+        where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+        select: { is_active: true },
+      });
+      if (!membership?.is_active) {
+        throw new HttpException('Forbidden: Not a member of this mess', 403);
+      }
+    }
+
+    const memberships = await this.prisma.messMembership.findMany({
+      where: {
+        mess_id: messId,
+        is_active: true,
+        user: { is_active: true },
+      },
+      orderBy: { user: { name: 'asc' } },
+      select: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return memberships.map(({ user }) => user);
   }
 }

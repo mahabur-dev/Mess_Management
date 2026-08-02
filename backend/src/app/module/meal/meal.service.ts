@@ -1,157 +1,88 @@
-import { HttpException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import {
-  SetMealDeadlineDto,
+  AttendanceStatus,
+  MealName,
+  MealStatus,
+  MembershipRole,
+  Prisma,
+} from '@prisma/client';
+import pick from 'src/app/helpers/pick';
+import paginationHelper, {
+  buildMeta,
+} from 'src/app/helpers/pagenation';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
+import { NotificationService } from '../notification/notification.service';
+import {
   CreateMealDto,
   MealFilterDto,
+  SetMealDeadlineDto,
   UpdateMealDto,
+  UpdateMealSettingsDto,
 } from './dto/meal.dto';
-import { AttendanceStatus, MealName, MealStatus, MembershipRole, Prisma } from '@prisma/client';
-import pick from 'src/app/helpers/pick';
-import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
-import { NotificationService } from '../notification/notification.service';
+import {
+  assertValidMealWindow,
+  DEFAULT_MEAL_WINDOW_END,
+  DEFAULT_MEAL_WINDOW_START,
+  getDhakaDateKey,
+  getMealBaseValue,
+  getMealDecisionWindow,
+  MEAL_TIME_ZONE,
+  normalizeMealAttendance,
+  parseMealDate,
+  shiftDateKey,
+} from './meal-policy';
 
-// ─── Constants ──────────────────────────────────────────────
-const DEFAULT_DEADLINE_START = '22:00'; // 10 PM - meal window opens
-const DEFAULT_DEADLINE_END = '11:00';   // 11 AM next day - meal window closes
-const MEAL_DEADLINE_REMINDER_LEAD_MINUTES = 60;
-const ONE_HOUR_IN_MS = 60 * 60 * 1000;
-const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
-const EXACT_HOUR_TIME_REGEX = /^([01]\d|2[0-3]):00$/;
+const REMINDER_POLL_MINUTES = 5;
+const REMINDER_POLL_MS = REMINDER_POLL_MINUTES * 60 * 1000;
+const MEAL_LIST_SORT_FIELDS = new Set([
+  'created_at',
+  'updated_at',
+  'scheduled_date',
+  'name',
+  'status',
+]);
 
-/**
- * Base meal value per meal type when attendance is ON.
- * BREAKFAST = 0.5 meal, LUNCH = 1 meal, DINNER = 1 meal.
- */
-const MEAL_BASE_VALUE: Record<MealName, number> = {
-  [MealName.BREAKFAST]: 0.5,
-  [MealName.LUNCH]: 1,
-  [MealName.DINNER]: 1,
-};
+const mealInclude = Prisma.validator<Prisma.MealInclude>()({
+  creator: { select: { id: true, name: true } },
+  mess: { select: { id: true, name: true } },
+  attendances: {
+    include: {
+      member: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar_url: true,
+        },
+      },
+    },
+    orderBy: { member: { name: 'asc' } },
+  },
+});
 
-/**
- * Get the base meal value for a given meal name.
- * A meal that is ON contributes this base value *before* any guest additions.
- */
-function getMealBaseValue(mealName: MealName): number {
-  return MEAL_BASE_VALUE[mealName] ?? 1;
-}
-
-/**
- * Parse "HH:mm" string into total minutes since midnight.
- */
-function parseTimeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  if (isNaN(h) || isNaN(m)) throw new Error(`Invalid time format: ${time}`);
-  return h * 60 + m;
-}
-
-function isExactHourTime(time: string): boolean {
-  return EXACT_HOUR_TIME_REGEX.test(time);
-}
-
-function buildDateAtTime(date: Date, time: string): Date {
-  const minutes = parseTimeToMinutes(time);
-  const next = new Date(date);
-  next.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-  return next;
-}
-
-function isWithinReminderWindow(
-  now: Date,
-  deadlineTime: Date,
-  leadMinutes: number,
-): boolean {
-  const reminderStart = new Date(deadlineTime.getTime() - leadMinutes * 60 * 1000);
-  const reminderEnd = new Date(reminderStart.getTime() + ONE_HOUR_IN_MS);
-
-  return now >= reminderStart && now < reminderEnd;
-}
-
-function formatLocalDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function parseUtcDateStart(value: string | Date): Date {
-  const date = new Date(value);
-  return new Date(Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-  ));
-}
-
-function parseUtcDateExclusiveEnd(value: string | Date): Date {
-  const date = parseUtcDateStart(value);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date;
-}
-
-/**
- * Calculate the total meal count from attendance status, meal name, and guests.
- * - OFF       → 0
- * - ON        → baseMealValue(mealName) + guests
- * - guests are stored as Decimal and represent fractional meal additions (e.g. 0.5)
- */
-function calculateTotalMeals(
-  status: AttendanceStatus,
-  mealName: MealName,
-  guests: Prisma.Decimal | number,
-): number {
-  if (status === AttendanceStatus.OFF) return 0;
-  const baseValue = getMealBaseValue(mealName);
-  const guestValue = Number(guests ?? 0);
-  return +(baseValue + guestValue).toFixed(2);
-}
-
-function isSameOrAfterToday(targetDate: Date, now: Date = new Date()): boolean {
-  const current = new Date(now);
-  current.setHours(0, 0, 0, 0);
-
-  const target = new Date(targetDate);
-  target.setHours(0, 0, 0, 0);
-
-  return target.getTime() >= current.getTime();
-}
-
-function isSameDay(targetDate: Date, now: Date = new Date()): boolean {
-  const current = new Date(now);
-  current.setHours(0, 0, 0, 0);
-
-  const target = new Date(targetDate);
-  target.setHours(0, 0, 0, 0);
-
-  return target.getTime() === current.getTime();
-}
-
-function isWithinMealWindow(
-  targetDate: Date,
-  startTime: string,
-  endTime: string,
-  now: Date = new Date(),
-): boolean {
-  if (!isSameOrAfterToday(targetDate, now)) return false;
-  if (!isSameDay(targetDate, now)) return true;
-
-  const startMinutes = parseTimeToMinutes(startTime);
-  const endMinutes = parseTimeToMinutes(endTime);
-
-  const windowStart = new Date(now);
-  windowStart.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
-
-  const windowEnd = new Date(now);
-  windowEnd.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
-
-  if (endMinutes <= startMinutes) {
-    windowEnd.setDate(windowEnd.getDate() + 1);
-  }
-
-  return now >= windowStart && now <= windowEnd;
+interface MessAccessContext {
+  mess: {
+    id: string;
+    name: string;
+    created_by: string;
+    meal_deadline_start: string;
+    meal_deadline_end: string;
+    meal_default_status: AttendanceStatus;
+    meal_allow_no_meal: boolean;
+    meal_window_notification_enabled: boolean;
+    meal_deadline_notification_enabled: boolean;
+    meal_deadline_reminder_minutes: number;
+  };
+  canManage: boolean;
 }
 
 @Injectable()
@@ -160,399 +91,237 @@ export class MealService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly monthlyBillService: MonthlyBillService,
+    private readonly billReconciliation: MonthlyBillReconciliationService,
     private readonly notificationService: NotificationService,
   ) {}
 
-  // ─── Cron / Scheduled Tasks ────────────────────────────────
-
-  /**
-   * Hourly check for meal deadlines that are one hour away.
-   *
-   * Meal deadline end times must be exact hours (HH:00). This keeps reminder
-   * checks cheap for serverless databases while avoiding missed reminders.
-   */
-  @Cron('0 * * * *')
-  async checkUpcomingDeadlines() {
+  @Cron(`*/${REMINDER_POLL_MINUTES} * * * *`, {
+    timeZone: MEAL_TIME_ZONE,
+  })
+  async sendMealDecisionReminders(): Promise<void> {
     const now = new Date();
-
-    // Find all active messes with their deadline config
+    const targetDate = shiftDateKey(getDhakaDateKey(now), 1);
     const messes = await this.prisma.mess.findMany({
       where: { is_active: true },
       select: {
         id: true,
         name: true,
+        created_by: true,
         meal_deadline_start: true,
         meal_deadline_end: true,
+        meal_window_notification_enabled: true,
+        meal_deadline_notification_enabled: true,
+        meal_deadline_reminder_minutes: true,
       },
     });
 
     for (const mess of messes) {
-      const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
-      const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
-
-      if (!isExactHourTime(endTime)) {
-        this.logger.warn(
-          `Skipping meal deadline reminder for mess ${mess.id}: end time "${endTime}" is not an exact hour`,
+      try {
+        const window = getMealDecisionWindow(
+          targetDate,
+          mess.meal_deadline_start ?? DEFAULT_MEAL_WINDOW_START,
+          mess.meal_deadline_end ?? DEFAULT_MEAL_WINDOW_END,
+          now,
         );
-        continue;
-      }
 
-      // Get today and tomorrow dates
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+        if (
+          mess.meal_window_notification_enabled &&
+          this.isWithinPollInterval(now, window.windowStart)
+        ) {
+          await this.sendWindowOpenedNotification(
+            mess.id,
+            mess.name,
+            mess.created_by,
+            window.targetDate,
+            window.startTime,
+            window.endTime,
+          );
+        }
 
-      // Check if the deadline is ending soon for today (if endTime applies to today)
-      // or for tomorrow (if endTime applies to tomorrow)
-      const todayEnd = buildDateAtTime(today, endTime);
-      const tomorrowEnd = buildDateAtTime(tomorrow, endTime);
-
-      // Check one-hour warning for today's deadline.
-      if (isWithinReminderWindow(now, todayEnd, MEAL_DEADLINE_REMINDER_LEAD_MINUTES)) {
-        await this.sendDeadlineWarningNotification(mess.id, mess.name, today, endTime);
-      }
-
-      // Check one-hour warning for tomorrow's deadline.
-      if (isWithinReminderWindow(now, tomorrowEnd, MEAL_DEADLINE_REMINDER_LEAD_MINUTES)) {
-        await this.sendDeadlineWarningNotification(mess.id, mess.name, tomorrow, endTime);
-      }
-
-      // Check if the meal window just opened (now is within 1 minute of window start)
-      const windowStartToday = new Date(today);
-      windowStartToday.setDate(windowStartToday.getDate() - 1);
-      windowStartToday.setHours(
-        Math.floor(parseTimeToMinutes(startTime) / 60),
-        parseTimeToMinutes(startTime) % 60,
-        0, 0,
-      );
-
-      if (Math.abs(now.getTime() - windowStartToday.getTime()) < 60000) {
-        await this.sendMealWindowOpenedNotification(mess.id, mess.name, today, startTime, endTime);
-      }
-    }
-  }
-
-  private async sendDeadlineWarningNotification(
-    messId: string,
-    messName: string,
-    date: Date,
-    endTime: string,
-  ) {
-    try {
-      const dateStr = date.toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric',
-      });
-      const targetUserIds = await this.resolveMealNotificationUserIds(messId);
-      const dedupeKey = `meal:deadline-warning:${messId}:${formatLocalDateKey(date)}:${endTime}`;
-
-      await this.notificationService.createForMess(
-        null,
-        messId,
-        'MEAL_UPDATE',
-        `⏰ Meal deadline closing soon - ${messName}`,
-        `Meal time will close in 1 hour at ${endTime} for ${dateStr}. Please add/update your meals now!`,
-        { type: 'MEAL_DEADLINE_WARNING', date: date.toISOString(), endTime },
-        targetUserIds,
-        '/dashboard/meals',
-        dedupeKey,
-      );
-    } catch (error) {
-      this.logger.error(`Failed to send deadline warning for mess ${messId}:`, error);
-    }
-  }
-
-  private async sendMealWindowOpenedNotification(
-    messId: string,
-    messName: string,
-    date: Date,
-    startTime: string,
-    endTime: string,
-  ) {
-    try {
-      const dateStr = date.toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric',
-      });
-      const targetUserIds = await this.resolveMealNotificationUserIds(messId);
-      const dedupeKey = `meal:window-opened:${messId}:${formatLocalDateKey(date)}:${startTime}:${endTime}`;
-
-      await this.notificationService.createForMess(
-        null,
-        messId,
-        'MEAL_UPDATE',
-        `🍽️ Meal time is now open - ${messName}`,
-        `You can now add your meals for ${dateStr}. Deadline: ${endTime}.`,
-        {
-          type: 'MEAL_WINDOW_OPENED',
-          date: date.toISOString(),
-          startTime,
-          endTime,
-        },
-        targetUserIds,
-        '/dashboard/meals',
-        dedupeKey,
-      );
-    } catch (error) {
-      this.logger.error(`Failed to send meal window notification for mess ${messId}:`, error);
-    }
-  }
-
-  private async resolveMealNotificationUserIds(messId: string) {
-    const memberships = await this.prisma.messMembership.findMany({
-      where: {
-        mess_id: messId,
-        is_active: true,
-        role: { in: [MembershipRole.MANAGER, MembershipRole.MEMBER] },
-      },
-      select: {
-        user_id: true,
-        user: {
-          select: {
-            id: true,
-            role: true,
-            is_active: true,
-          },
-        },
-      },
-    });
-
-    return [...new Set(
-      memberships
-        .filter((membership) => membership.user.is_active && membership.user.role !== 'ADMIN')
-        .map((membership) => membership.user_id),
-    )];
-  }
-
-  // ─── Private Helpers ───────────────────────────────────────
-
-  private async recalculateMealMonthBill(messId: string, date: Date) {
-    await this.monthlyBillService.recalculateMonthlyBills(messId, date);
-  }
-
-  private async verifyMessAccess(
-    messId: string,
-    userId: string,
-    role: string,
-  ): Promise<void> {
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    if (!mess) throw new HttpException('Mess not found', 404);
-
-    if (role === 'ADMIN') return;
-    if (role === 'MANAGER' && mess.created_by === userId) return;
-
-    const membership = await this.prisma.messMembership.findUnique({
-      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
-    });
-    if (!membership?.is_active) {
-      throw new HttpException(
-        'Forbidden: You are not a member of this mess',
-        403,
-      );
-    }
-  }
-
-  private async ensureActiveSubscription(messId: string, role: string): Promise<void> {
-    if (role === 'ADMIN') return;
-
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { mess_id: messId },
-      select: { status: true, end_date: true },
-    });
-
-    const isActive =
-      subscription?.status === 'ACTIVE' &&
-      (!subscription.end_date || subscription.end_date.getTime() >= Date.now());
-
-    if (!isActive) {
-      throw new HttpException(
-        'Your subscription has expired. Please renew it to continue using meal features.',
-        403,
-      );
-    }
-  }
-
-  private async canManageMeal(
-    messId: string,
-    userId: string,
-    role: string,
-  ): Promise<boolean> {
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    if (!mess) throw new HttpException('Mess not found', 404);
-    if (role === 'MANAGER' && mess.created_by === userId) return true;
-
-    const membership = await this.prisma.messMembership.findUnique({
-      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
-    });
-
-    return Boolean(membership?.is_active && membership.role === MembershipRole.MANAGER);
-  }
-
-  /**
-   * Check if the current time is within the meal deadline window for the given date.
-   * Managers bypass this check; members must stay inside the configured window.
-   */
-  private async checkMealDeadline(
-    messId: string,
-    date: Date,
-    userId: string,
-    role: string,
-  ): Promise<void> {
-    const isManager = await this.canManageMeal(messId, userId, role);
-    if (isManager) return;
-
-    if (role === 'ADMIN') {
-      throw new HttpException('Forbidden: Admin cannot modify meal entries', 403);
-    }
-
-    if (!isSameOrAfterToday(date)) {
-      throw new HttpException(
-        'Forbidden: You can only add or update meals for today or future dates',
-        400,
-      );
-    }
-
-    if (isSameDay(date)) {
-      const mess = await this.prisma.mess.findUnique({
-        where: { id: messId },
-        select: { meal_deadline_start: true, meal_deadline_end: true },
-      });
-      if (!mess) throw new HttpException('Mess not found', 404);
-
-      const startTime = mess.meal_deadline_start ?? DEFAULT_DEADLINE_START;
-      const endTime = mess.meal_deadline_end ?? DEFAULT_DEADLINE_END;
-
-      if (!isWithinMealWindow(date, startTime, endTime)) {
-        throw new HttpException(
-          `Meal deadline has passed. Meal window is ${startTime} - ${endTime} (next day). Only managers can modify meals now.`,
-          400,
+        const warningAt = new Date(
+          window.windowEnd.getTime() -
+            mess.meal_deadline_reminder_minutes * 60 * 1000,
+        );
+        if (
+          mess.meal_deadline_notification_enabled &&
+          this.isWithinPollInterval(now, warningAt)
+        ) {
+          await this.sendDeadlineWarningNotification(
+            mess.id,
+            mess.name,
+            mess.created_by,
+            window.targetDate,
+            window.endTime,
+            mess.meal_deadline_reminder_minutes,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `Meal reminder processing failed for mess ${mess.id}`,
+          error instanceof Error ? error.stack : String(error),
         );
       }
     }
   }
-
-  /**
-   * Get the effective deadline times for a mess.
-   */
-  async getMessDeadlineConfig(messId: string) {
-    const mess = await this.prisma.mess.findUnique({
-      where: { id: messId },
-      select: {
-        meal_deadline_start: true,
-        meal_deadline_end: true,
-      },
-    });
-    if (!mess) throw new HttpException('Mess not found', 404);
-
-    return {
-      startTime: mess.meal_deadline_start ?? DEFAULT_DEADLINE_START,
-      endTime: mess.meal_deadline_end ?? DEFAULT_DEADLINE_END,
-    };
-  }
-
-  /**
-   * Check if a specific meal date/time is still within the window for members.
-   */
-  async isMealWindowOpen(messId: string, date: string): Promise<boolean> {
-    const targetDate = new Date(date);
-    const deadlineConfig = await this.getMessDeadlineConfig(messId);
-
-    return isWithinMealWindow(
-      targetDate,
-      deadlineConfig.startTime,
-      deadlineConfig.endTime,
-    );
-  }
-
-  // ─── CRUD Operations ──────────────────────────────────────
 
   async create(userId: string, role: string, dto: CreateMealDto) {
-    await this.verifyMessAccess(dto.messId, userId, role);
+    const context = await this.getMessAccessContext(
+      dto.messId,
+      userId,
+      role,
+    );
     await this.ensureActiveSubscription(dto.messId, role);
 
-    const date = parseUtcDateStart(dto.date ?? new Date());
-    const mealName = dto.mealName ?? MealName.LUNCH;
+    const targetMemberId = dto.memberId ?? userId;
+    if (targetMemberId !== userId && !context.canManage) {
+      throw new ForbiddenException(
+        'Members can only add or edit their own meal attendance',
+      );
+    }
+    await this.assertActiveMealMember(dto.messId, targetMemberId, context);
 
-    // Check meal deadline (bypasses for managers/admin)
-    await this.checkMealDeadline(dto.messId, date, userId, role);
-
-    const meal = await this.prisma.meal.findFirst({
-      where: { mess_id: dto.messId, name: mealName, scheduled_date: date },
-    });
-
-    if (meal?.is_locked || meal?.status === MealStatus.LOCKED) {
-      const canManage = await this.canManageMeal(dto.messId, userId, role);
-      if (!canManage) {
-        throw new HttpException(
-          'Meal is locked by manager and cannot be changed by members',
-          400,
-        );
-      }
+    const scheduledDate = this.parseDate(dto.date);
+    const dateKey = scheduledDate.toISOString().slice(0, 10);
+    if (!context.canManage) {
+      this.assertMemberWindow(context, dateKey);
     }
 
-    const savedMeal = meal ?? await this.prisma.meal.create({
-      data: {
-        mess_id: dto.messId,
-        created_by: userId,
-        name: mealName,
-        scheduled_date: date,
-        status: 'CONFIRMED',
-      },
-    });
-
-    const targetMemberId = role === 'MEMBER' ? userId : (dto.memberId ?? userId);
-
-    // Determine status: if mealCount === 0 → OFF; if mealCount > 0 → ON
-    // mealCount is the total meal count desired by the user.
-    // For fractional support, mealCount = 0 means OFF, > 0 means ON.
-    const status: AttendanceStatus =
-      dto.status ?? (dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON);
-
-    // Guests field stores the *additional* fractional meals beyond the base value.
-    // If the user explicitly provides guests, use it.
-    // Otherwise, if mealCount is provided, derive guests = mealCount - baseValue (when status is ON).
-    let guestsDecimal: number;
-    if (dto.guests !== undefined) {
-      guestsDecimal = dto.guests;
-    } else if (status === AttendanceStatus.ON) {
-      // mealCount is the total desired meal count, so guests = total - baseValue
-      const base = getMealBaseValue(mealName);
-      guestsDecimal = Math.max(0, +(dto.mealCount - base).toFixed(2));
-    } else {
-      guestsDecimal = 0;
+    const normalized = this.normalizeAttendance(dto, context);
+    if (
+      !context.canManage &&
+      !context.mess.meal_allow_no_meal &&
+      normalized.status === AttendanceStatus.OFF
+    ) {
+      throw new ForbiddenException(
+        'No-meal selection is disabled by the mess manager',
+      );
     }
 
-    const attendance = await this.prisma.mealAttendance.upsert({
-      where: {
-        meal_id_member_id: {
-          meal_id: savedMeal.id,
-          member_id: targetMemberId,
-        },
-      },
-      update: {
-        status,
-        guests: guestsDecimal,
-      },
-      create: {
-        meal_id: savedMeal.id,
-        member_id: targetMemberId,
-        status,
-        guests: guestsDecimal,
-      },
-      include: {
-        meal: {
-          include: {
-            creator: { select: { id: true, name: true } },
-            mess: { select: { id: true, name: true } },
+    const attendance = await this.prisma.$transaction(
+      async (tx) => {
+        const uniqueMeal = {
+          mess_id_name_scheduled_date: {
+            mess_id: dto.messId,
+            name: dto.mealName,
+            scheduled_date: scheduledDate,
           },
-        },
-        member: { select: { id: true, name: true, email: true } },
+        };
+        const existingMeal = await tx.meal.findUnique({
+          where: uniqueMeal,
+        });
+
+        if (
+          !context.canManage &&
+          (existingMeal?.is_locked ||
+            existingMeal?.status === MealStatus.LOCKED)
+        ) {
+          throw new ForbiddenException(
+            'This meal is locked and can only be changed by a manager',
+          );
+        }
+        if (
+          !context.canManage &&
+          existingMeal?.status === MealStatus.CANCELLED
+        ) {
+          throw new ForbiddenException(
+            'This meal is cancelled and can only be restored by a manager',
+          );
+        }
+
+        const meal = await tx.meal.upsert({
+          where: uniqueMeal,
+          update: {
+            status: existingMeal?.is_locked
+              ? MealStatus.LOCKED
+              : MealStatus.CONFIRMED,
+          },
+          create: {
+            mess_id: dto.messId,
+            created_by: userId,
+            name: dto.mealName,
+            scheduled_date: scheduledDate,
+            status: MealStatus.CONFIRMED,
+          },
+        });
+
+        const previousAttendance = await tx.mealAttendance.findUnique({
+          where: {
+            meal_id_member_id: {
+              meal_id: meal.id,
+              member_id: targetMemberId,
+            },
+          },
+          select: { id: true, status: true, guests: true },
+        });
+        const savedAttendance = await tx.mealAttendance.upsert({
+          where: {
+            meal_id_member_id: {
+              meal_id: meal.id,
+              member_id: targetMemberId,
+            },
+          },
+          update: {
+            status: normalized.status,
+            guests: normalized.guests,
+          },
+          create: {
+            meal_id: meal.id,
+            member_id: targetMemberId,
+            status: normalized.status,
+            guests: normalized.guests,
+          },
+          include: {
+            meal: {
+              include: {
+                creator: { select: { id: true, name: true } },
+                mess: { select: { id: true, name: true } },
+              },
+            },
+            member: {
+              select: { id: true, name: true, email: true, avatar_url: true },
+            },
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            mess_id: dto.messId,
+            actor_id: userId,
+            action: previousAttendance
+              ? 'MEAL_ATTENDANCE_UPDATED'
+              : 'MEAL_ATTENDANCE_CREATED',
+            entity_type: 'MealAttendance',
+            entity_id: savedAttendance.id,
+            diff: {
+              targetMemberId,
+              mealId: meal.id,
+              date: dateKey,
+              mealName: dto.mealName,
+              before: previousAttendance
+                ? {
+                    status: previousAttendance.status,
+                    guests: Number(previousAttendance.guests),
+                  }
+                : null,
+              after: {
+                status: normalized.status,
+                guests: normalized.guests,
+                mealCount: normalized.mealCount,
+              },
+            },
+          },
+        });
+
+        return savedAttendance;
       },
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
-    // await this.recalculateMealMonthBill(dto.messId, savedMeal.scheduled_date);
-
-    return attendance;
+    const billingSync = await this.billReconciliation.reconcile(
+      dto.messId,
+      scheduledDate,
+    );
+    return { ...attendance, billingSync };
   }
 
   async findAll(query: MealFilterDto) {
@@ -562,30 +331,26 @@ export class MealService {
       'sortBy',
       'sortOrder',
     ]);
-    const { page, limit, skip, sortBy, sortOrder } =
-      paginationHelper(paginationOptions);
-
+    const pagination = paginationHelper(paginationOptions);
+    const sortBy = MEAL_LIST_SORT_FIELDS.has(pagination.sortBy)
+      ? pagination.sortBy
+      : 'scheduled_date';
     const where = this.buildWhere(query);
+
     const [total, meals] = await Promise.all([
       this.prisma.meal.count({ where }),
       this.prisma.meal.findMany({
         where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          creator: { select: { id: true, name: true } },
-          mess: { select: { id: true, name: true } },
-          attendances: {
-            include: { member: { select: { id: true, name: true, email: true } } },
-          },
-        },
+        skip: pagination.skip,
+        take: pagination.limit,
+        orderBy: { [sortBy]: pagination.sortOrder },
+        include: mealInclude,
       }),
     ]);
 
     return {
       data: meals,
-      meta: buildMeta(total, page, limit),
+      meta: buildMeta(total, pagination.page, pagination.limit),
       totalMealCount: total,
     };
   }
@@ -596,176 +361,228 @@ export class MealService {
     role: string,
     query: MealFilterDto,
   ) {
-    await this.verifyMessAccess(messId, userId, role);
+    await this.getMessAccessContext(messId, userId, role);
     return this.findAll({ ...query, messId });
   }
 
   async findOne(id: string, userId: string, role: string) {
     const meal = await this.prisma.meal.findUnique({
       where: { id },
-      include: {
-        creator: { select: { id: true, name: true } },
-        mess: { select: { id: true, name: true } },
-        attendances: {
-          include: { member: { select: { id: true, name: true, email: true } } },
-        },
-      },
+      include: mealInclude,
     });
+    if (!meal) throw new NotFoundException('Meal entry not found');
 
-    if (!meal) throw new HttpException('Meal entry not found', 404);
-    await this.verifyMessAccess(meal.mess_id, userId, role);
+    await this.getMessAccessContext(meal.mess_id, userId, role);
     return meal;
   }
 
   async update(id: string, userId: string, role: string, dto: UpdateMealDto) {
     const meal = await this.prisma.meal.findUnique({ where: { id } });
-    if (!meal) throw new HttpException('Meal entry not found', 404);
+    if (!meal) throw new NotFoundException('Meal entry not found');
 
-    const canManage = await this.canManageMeal(meal.mess_id, userId, role);
-    if ((meal.is_locked || meal.status === MealStatus.LOCKED) && !canManage) {
-      throw new HttpException(
-        'Meal is locked by manager and cannot be changed by members',
-        400,
-      );
-    }
-
-    // Check meal deadline (bypasses for managers/admin)
-    const date = dto.date ? parseUtcDateStart(dto.date) : meal.scheduled_date;
-    await this.checkMealDeadline(meal.mess_id, date, userId, role);
-
-    if (role === 'MEMBER' && meal.created_by !== userId) {
-      throw new HttpException('Forbidden: Not your meal entry', 403);
-    }
-
-    const membership = await this.prisma.messMembership.findUnique({
-      where: { mess_id_user_id: { mess_id: meal.mess_id, user_id: userId } },
-    });
-    if (role === 'MANAGER' && membership?.role !== MembershipRole.MANAGER) {
-      const mess = await this.prisma.mess.findUnique({ where: { id: meal.mess_id } });
-      if (mess?.created_by !== userId) throw new HttpException('Forbidden: Not your mess', 403);
-    }
-
+    const context = await this.getMessAccessContext(
+      meal.mess_id,
+      userId,
+      role,
+    );
+    this.assertManager(context);
     await this.ensureActiveSubscription(meal.mess_id, role);
 
-    const oldMessId = meal.mess_id;
-    const oldDate = meal.scheduled_date;
-
-    const updatedMeal = await this.prisma.meal.update({
-      where: { id },
-      data: {
-        scheduled_date: dto.date ? parseUtcDateStart(dto.date) : undefined,
-        status: dto.mealStatus,
-        is_locked: dto.mealStatus !== undefined ? dto.mealStatus === MealStatus.LOCKED : undefined,
-      },
-      include: { creator: { select: { id: true, name: true } } },
-    });
-
-    // Update attendance if status, guests, or mealCount is provided
-    if (dto.status !== undefined || dto.guests !== undefined || dto.mealCount !== undefined) {
-      // Fetch existing attendance for fallback logic
-      const existingAttendance = await this.prisma.mealAttendance.findUnique({
-        where: {
-          meal_id_member_id: {
-            meal_id: id,
-            member_id: userId,
+    const newDate = dto.date ? this.parseDate(dto.date) : meal.scheduled_date;
+    try {
+      const updatedMeal = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.meal.update({
+          where: { id },
+          data: {
+            scheduled_date: dto.date ? newDate : undefined,
+            status: dto.mealStatus,
+            is_locked:
+              dto.mealStatus === undefined
+                ? undefined
+                : dto.mealStatus === MealStatus.LOCKED,
+            note: dto.note,
           },
-        },
+          include: mealInclude,
+        });
+
+        await tx.auditLog.create({
+          data: {
+            mess_id: meal.mess_id,
+            actor_id: userId,
+            action: 'MEAL_AGGREGATE_UPDATED',
+            entity_type: 'Meal',
+            entity_id: meal.id,
+            diff: {
+              before: {
+                date: meal.scheduled_date.toISOString().slice(0, 10),
+                status: meal.status,
+                isLocked: meal.is_locked,
+                note: meal.note,
+              },
+              after: {
+                date: updated.scheduled_date.toISOString().slice(0, 10),
+                status: updated.status,
+                isLocked: updated.is_locked,
+                note: updated.note,
+              },
+            },
+          },
+        });
+        return updated;
       });
 
-      // Determine new status
-      // Priority: dto.status > derived from mealCount > existing status > ON
-      let newStatus: AttendanceStatus;
-      if (dto.status !== undefined) {
-        newStatus = dto.status;
-      } else if (dto.mealCount !== undefined) {
-        newStatus = dto.mealCount === 0 ? AttendanceStatus.OFF : AttendanceStatus.ON;
-      } else {
-        newStatus = existingAttendance?.status ?? AttendanceStatus.ON;
+      const billingSync = await this.billReconciliation.reconcile(
+        meal.mess_id,
+        meal.scheduled_date,
+        updatedMeal.scheduled_date,
+      );
+      return { ...updatedMeal, billingSync };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'A meal with the same name already exists on the target date',
+        );
       }
+      throw error;
+    }
+  }
 
-      // Determine new guests value stored in DB
-      // Priority: dto.guests > derived from mealCount > existing guests
-      let newGuests: number;
-      if (dto.guests !== undefined) {
-        // If guests is explicitly provided, use it directly (it represents additional meals beyond base)
-        newGuests = dto.guests;
-      } else if (dto.mealCount !== undefined) {
-        if (newStatus === AttendanceStatus.ON) {
-          // mealCount = baseValue + guests, so guests = mealCount - baseValue
-          const base = getMealBaseValue(meal.name);
-          newGuests = Math.max(0, +(dto.mealCount - base).toFixed(2));
-        } else {
-          // Status is OFF, so guests = 0
-          newGuests = 0;
-        }
-      } else {
-        // No changes to guests or mealCount — keep existing
-        newGuests = Number(existingAttendance?.guests ?? 0);
-      }
+  async setMealLock(
+    messId: string,
+    date: string,
+    rawMealName: string,
+    locked: boolean,
+    userId: string,
+    role: string,
+  ) {
+    const context = await this.getMessAccessContext(messId, userId, role);
+    this.assertManager(context);
+    await this.ensureActiveSubscription(messId, role);
 
-      await this.prisma.mealAttendance.upsert({
+    const mealName = this.parseMealName(rawMealName);
+    const scheduledDate = this.parseDate(date);
+    const meal = await this.prisma.$transaction(async (tx) => {
+      const saved = await tx.meal.upsert({
         where: {
-          meal_id_member_id: {
-            meal_id: id,
-            member_id: userId,
+          mess_id_name_scheduled_date: {
+            mess_id: messId,
+            name: mealName,
+            scheduled_date: scheduledDate,
           },
         },
         update: {
-          status: newStatus,
-          guests: newGuests,
+          is_locked: locked,
+          status: locked ? MealStatus.LOCKED : MealStatus.CONFIRMED,
         },
         create: {
-          meal_id: id,
-          member_id: userId,
-          status: newStatus,
-          guests: newGuests,
+          mess_id: messId,
+          created_by: userId,
+          name: mealName,
+          scheduled_date: scheduledDate,
+          is_locked: locked,
+          status: locked ? MealStatus.LOCKED : MealStatus.CONFIRMED,
+        },
+        include: mealInclude,
+      });
+      await tx.auditLog.create({
+        data: {
+          mess_id: messId,
+          actor_id: userId,
+          action: locked ? 'MEAL_LOCKED' : 'MEAL_UNLOCKED',
+          entity_type: 'Meal',
+          entity_id: saved.id,
+          diff: {
+            date,
+            mealName,
+            isLocked: locked,
+          },
         },
       });
-    }
+      return saved;
+    });
 
-    // await this.recalculateMealMonthBill(oldMessId, oldDate);
-
-    // if (dto.date) {
-    //   await this.recalculateMealMonthBill(updatedMeal.mess_id, updatedMeal.scheduled_date);
-    // }
-
-    return updatedMeal;
+    const billingSync = await this.billReconciliation.reconcile(
+      messId,
+      scheduledDate,
+    );
+    return { ...meal, billingSync };
   }
 
-  /**
-   * Set the meal deadline window for a mess.
-   * This replaces the old "close meal time" functionality.
-   * The deadline is a time window (e.g. 22:00 -> 11:00) during which
-   * members can add/update meals. After the window closes, only managers can modify.
-   */
+  async remove(id: string, userId: string, role: string) {
+    const meal = await this.prisma.meal.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        mess_id: true,
+        name: true,
+        scheduled_date: true,
+        status: true,
+        is_locked: true,
+        _count: { select: { attendances: true } },
+      },
+    });
+    if (!meal) throw new NotFoundException('Meal entry not found');
+
+    const context = await this.getMessAccessContext(
+      meal.mess_id,
+      userId,
+      role,
+    );
+    this.assertManager(context);
+    await this.ensureActiveSubscription(meal.mess_id, role);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          mess_id: meal.mess_id,
+          actor_id: userId,
+          action: 'MEAL_DELETED',
+          entity_type: 'Meal',
+          entity_id: meal.id,
+          diff: {
+            date: meal.scheduled_date.toISOString().slice(0, 10),
+            mealName: meal.name,
+            status: meal.status,
+            isLocked: meal.is_locked,
+            deletedAttendances: meal._count.attendances,
+          },
+        },
+      });
+      await tx.meal.delete({ where: { id } });
+    });
+
+    const billingSync = await this.billReconciliation.reconcile(
+      meal.mess_id,
+      meal.scheduled_date,
+    );
+    return { deletedMealId: meal.id, billingSync };
+  }
+
   async setMealDeadline(
     messId: string,
     userId: string,
     role: string,
     dto: SetMealDeadlineDto,
   ) {
-    // Only managers can set meal deadlines
-    const canManage = await this.canManageMeal(messId, userId, role);
-    if (!canManage) {
-      throw new HttpException(
-        'Forbidden: Only managers can set meal deadlines',
-        403,
-      );
-    }
+    const context = await this.getMessAccessContext(messId, userId, role);
+    this.assertManager(context);
     await this.ensureActiveSubscription(messId, role);
 
-    // Validate time format. The end time must stay hourly because the reminder
-    // cron runs hourly to reduce Neon compute usage.
-    if (!TIME_FORMAT_REGEX.test(dto.startTime)) {
-      throw new HttpException('startTime must be in HH:mm format (e.g. 22:00)', 400);
-    }
-    if (!isExactHourTime(dto.endTime)) {
-      throw new HttpException('endTime must be an exact hour in HH:00 format (e.g. 11:00)', 400);
+    try {
+      assertValidMealWindow(dto.startTime, dto.endTime);
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid meal decision window',
+      );
     }
 
-    const updatedMess = await this.prisma.mess.update({
+    const updated = await this.prisma.mess.update({
       where: { id: messId },
       data: {
+        meal_off_deadline: dto.endTime,
         meal_deadline_start: dto.startTime,
         meal_deadline_end: dto.endTime,
       },
@@ -776,62 +593,95 @@ export class MealService {
         meal_deadline_end: true,
       },
     });
-
     return {
-      message: 'Meal deadline updated successfully',
-      data: {
-        messId: updatedMess.id,
-        messName: updatedMess.name,
-        startTime: updatedMess.meal_deadline_start,
-        endTime: updatedMess.meal_deadline_end,
-      },
+      messId: updated.id,
+      messName: updated.name,
+      startTime: updated.meal_deadline_start,
+      endTime: updated.meal_deadline_end,
+      rule: 'Members decide the next-day meals during this window on the previous day',
     };
   }
 
-  /**
-   * Get the current meal deadline configuration for a mess.
-   */
-  async getMealDeadlineInfo(messId: string, date?: string) {
-    const deadlineConfig = await this.getMessDeadlineConfig(messId);
-    const targetDate = date ? new Date(date) : new Date();
-
-    return {
-      startTime: deadlineConfig.startTime,
-      endTime: deadlineConfig.endTime,
-      isWindowOpen: isWithinMealWindow(
+  async getMealDeadlineInfo(
+    messId: string,
+    userId: string,
+    role: string,
+    date?: string,
+  ) {
+    const context = await this.getMessAccessContext(messId, userId, role);
+    const targetDate =
+      date?.slice(0, 10) ?? shiftDateKey(getDhakaDateKey(), 1);
+    let window;
+    try {
+      window = getMealDecisionWindow(
         targetDate,
-        deadlineConfig.startTime,
-        deadlineConfig.endTime,
-      ),
-      windowStartTime: deadlineConfig.startTime,
-      windowEndTime: deadlineConfig.endTime,
+        context.mess.meal_deadline_start ?? DEFAULT_MEAL_WINDOW_START,
+        context.mess.meal_deadline_end ?? DEFAULT_MEAL_WINDOW_END,
+      );
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid target date',
+      );
+    }
+
+    return {
+      ...window,
+      windowStart: window.windowStart.toISOString(),
+      windowEnd: window.windowEnd.toISOString(),
+      windowStartTime: window.windowStart.toISOString(),
+      windowEndTime: window.windowEnd.toISOString(),
+      canManage: context.canManage,
+      canEdit: context.canManage || window.isWindowOpen,
+      timeZone: MEAL_TIME_ZONE,
+      rule: 'Submit the meal decision during the configured previous-day window',
     };
   }
 
-  async remove(id: string, userId: string, role: string) {
-    const meal = await this.prisma.meal.findUnique({ where: { id } });
-    if (!meal) throw new HttpException('Meal entry not found', 404);
+  async getMealSettings(messId: string, userId: string, role: string) {
+    const context = await this.getMessAccessContext(messId, userId, role);
+    return this.mapMealSettings(context);
+  }
 
-    if (role === 'MEMBER' && meal.created_by !== userId) {
-      throw new HttpException('Forbidden: Not your meal entry', 403);
-    }
+  async updateMealSettings(
+    messId: string,
+    userId: string,
+    role: string,
+    dto: UpdateMealSettingsDto,
+  ) {
+    const context = await this.getMessAccessContext(messId, userId, role);
+    this.assertManager(context);
+    await this.ensureActiveSubscription(messId, role);
 
-    if (role === 'MANAGER') {
-      const mess = await this.prisma.mess.findUnique({
-        where: { id: meal.mess_id },
-      });
-      if (mess?.created_by !== userId) {
-        throw new HttpException('Forbidden: Not your mess', 403);
-      }
-    }
+    const mess = await this.prisma.mess.update({
+      where: { id: messId },
+      data: {
+        meal_default_status: dto.defaultStatus,
+        meal_allow_no_meal: dto.allowNoMeal,
+        meal_window_notification_enabled: dto.windowNotificationEnabled,
+        meal_deadline_notification_enabled:
+          dto.deadlineNotificationEnabled,
+        meal_deadline_reminder_minutes: dto.deadlineReminderMinutes,
+      },
+      select: {
+        id: true,
+        name: true,
+        created_by: true,
+        meal_deadline_start: true,
+        meal_deadline_end: true,
+        meal_default_status: true,
+        meal_allow_no_meal: true,
+        meal_window_notification_enabled: true,
+        meal_deadline_notification_enabled: true,
+        meal_deadline_reminder_minutes: true,
+      },
+    });
+    return this.mapMealSettings({ mess, canManage: true });
+  }
 
-    await this.ensureActiveSubscription(meal.mess_id, role);
-
-    await this.prisma.meal.delete({ where: { id } });
-
-    // await this.recalculateMealMonthBill(meal.mess_id, meal.scheduled_date);
-
-    return { message: 'Meal entry deleted successfully' };
+  async getMealMembers(messId: string, userId: string, role: string) {
+    const context = await this.getMessAccessContext(messId, userId, role);
+    this.assertManager(context);
+    return this.loadActiveMealMembers(messId, context.mess.created_by);
   }
 
   async getMealSummaryByMess(
@@ -841,100 +691,453 @@ export class MealService {
     startDate?: string,
     endDate?: string,
   ) {
-    await this.verifyMessAccess(messId, userId, role);
-
-    const dateFilter: { gte?: Date; lt?: Date } = {};
-    if (startDate) dateFilter.gte = parseUtcDateStart(startDate);
-    if (endDate) dateFilter.lt = parseUtcDateExclusiveEnd(endDate);
-
-    const members = await this.prisma.messMembership.findMany({
-      where: { mess_id: messId, is_active: true },
-      include: {
-        user: { select: { id: true, name: true, avatar_url: true } },
-      },
-    });
-
-    const summary = await Promise.all(
-      members.map(async (member) => {
-        const [attendances, depositTotal] = await Promise.all([
-          this.prisma.mealAttendance.findMany({
-            where: {
-              member_id: member.user_id,
-              status: 'ON',
-              meal: {
-                mess_id: messId,
-                ...(Object.keys(dateFilter).length
-                  ? { scheduled_date: dateFilter }
-                  : {}),
-              },
-            },
-            include: {
-              meal: { select: { name: true } },
-            },
-          }),
-          this.prisma.deposit.aggregate({
-            where: {
-              mess_id: messId,
-              member_id: member.user_id,
-              ...(Object.keys(dateFilter).length
-                ? { created_at: dateFilter }
-                : {}),
-            },
-            _sum: { amount: true },
-          }),
-        ]);
-
-        // Calculate total meals using base meal value + guests
-        const totalMeals = attendances.reduce((sum, att) => {
-          return sum + calculateTotalMeals(
-            AttendanceStatus.ON,
-            att.meal.name as MealName,
-            att.guests,
-          );
-        }, 0);
-
-        return {
-          user: member.user,
-          totalMeals: +totalMeals.toFixed(2),
-          totalDeposit: depositTotal._sum.amount ?? 0,
-        };
-      }),
+    const context = await this.getMessAccessContext(messId, userId, role);
+    const dateFilter = this.buildDateFilter(startDate, endDate);
+    const members = await this.loadActiveMealMembers(
+      messId,
+      context.mess.created_by,
     );
 
-    const expenseTotal = await this.prisma.expense.aggregate({
-      where: {
-        mess_id: messId,
-        ...(Object.keys(dateFilter).length ? { expense_date: dateFilter } : {}),
-      },
-      _sum: { amount: true },
-    });
+    const [attendances, deposits, expenseTotal] = await Promise.all([
+      this.prisma.mealAttendance.findMany({
+        where: {
+          member_id: { in: members.map((member) => member.user_id) },
+          status: AttendanceStatus.ON,
+          meal: {
+            mess_id: messId,
+            status: { not: MealStatus.CANCELLED },
+            ...(dateFilter ? { scheduled_date: dateFilter } : {}),
+          },
+        },
+        select: {
+          member_id: true,
+          guests: true,
+          meal: { select: { name: true } },
+        },
+      }),
+      this.prisma.deposit.groupBy({
+        by: ['member_id'],
+        where: {
+          mess_id: messId,
+          member_id: { in: members.map((member) => member.user_id) },
+          confirmed_by: { not: null },
+          ...(dateFilter ? { deposit_date: dateFilter } : {}),
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.expense.aggregate({
+        where: {
+          mess_id: messId,
+          status: 'CONFIRMED',
+          category: { in: ['FOOD', 'GROCERY'] },
+          ...(dateFilter ? { expense_date: dateFilter } : {}),
+        },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const mealsByMember = new Map<string, number>();
+    for (const attendance of attendances) {
+      const mealCount =
+        getMealBaseValue(attendance.meal.name) + Number(attendance.guests);
+      mealsByMember.set(
+        attendance.member_id,
+        (mealsByMember.get(attendance.member_id) ?? 0) + mealCount,
+      );
+    }
+    const depositsByMember = new Map(
+      deposits.map((deposit) => [
+        deposit.member_id,
+        Number(deposit._sum.amount ?? 0),
+      ]),
+    );
 
     const totalBazarCost = Number(expenseTotal._sum.amount ?? 0);
-    const totalMeals = summary.reduce((sum, s) => sum + Number(s.totalMeals), 0);
+    const totalMeals = [...mealsByMember.values()].reduce(
+      (sum, count) => sum + count,
+      0,
+    );
     const mealRate = totalMeals > 0 ? totalBazarCost / totalMeals : 0;
 
     return {
-      summary: summary.map((s) => ({
-        ...s,
-        mealCost: Number(s.totalMeals) * mealRate,
-        balance: Number(s.totalDeposit) - Number(s.totalMeals) * mealRate,
-      })),
+      summary: members.map((member) => {
+        const memberMeals = mealsByMember.get(member.user_id) ?? 0;
+        const totalDeposit = depositsByMember.get(member.user_id) ?? 0;
+        const mealCost = memberMeals * mealRate;
+        return {
+          user: member.user,
+          totalMeals: Number(memberMeals.toFixed(2)),
+          totalDeposit,
+          mealCost: Number(mealCost.toFixed(2)),
+          balance: Number((totalDeposit - mealCost).toFixed(2)),
+        };
+      }),
       totalBazarCost,
-      totalMeals: +totalMeals.toFixed(2),
-      mealRate: parseFloat(mealRate.toFixed(2)),
+      totalMeals: Number(totalMeals.toFixed(2)),
+      mealRate: Number(mealRate.toFixed(2)),
+    };
+  }
+
+  private async getMessAccessContext(
+    messId: string,
+    userId: string,
+    role: string,
+  ): Promise<MessAccessContext> {
+    const [mess, membership] = await Promise.all([
+      this.prisma.mess.findUnique({
+        where: { id: messId },
+        select: {
+          id: true,
+          name: true,
+          created_by: true,
+          meal_deadline_start: true,
+          meal_deadline_end: true,
+          meal_default_status: true,
+          meal_allow_no_meal: true,
+          meal_window_notification_enabled: true,
+          meal_deadline_notification_enabled: true,
+          meal_deadline_reminder_minutes: true,
+        },
+      }),
+      this.prisma.messMembership.findUnique({
+        where: {
+          mess_id_user_id: { mess_id: messId, user_id: userId },
+        },
+        select: { role: true, is_active: true },
+      }),
+    ]);
+    if (!mess) throw new NotFoundException('Mess not found');
+
+    const isCreator = mess.created_by === userId;
+    const hasMembership = Boolean(membership?.is_active);
+    const isAdmin = role === 'ADMIN';
+    if (!isAdmin && !isCreator && !hasMembership) {
+      throw new ForbiddenException('You are not an active member of this mess');
+    }
+
+    return {
+      mess,
+      canManage:
+        isAdmin ||
+        isCreator ||
+        (role === 'MANAGER' && hasMembership) ||
+        (hasMembership && membership?.role === MembershipRole.MANAGER),
+    };
+  }
+
+  private assertManager(context: MessAccessContext): void {
+    if (!context.canManage) {
+      throw new ForbiddenException(
+        'Only a mess manager or admin can perform this action',
+      );
+    }
+  }
+
+  private async ensureActiveSubscription(
+    messId: string,
+    role: string,
+  ): Promise<void> {
+    if (role === 'ADMIN') return;
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { mess_id: messId },
+      select: { status: true, end_date: true },
+    });
+    const active =
+      subscription?.status === 'ACTIVE' &&
+      (!subscription.end_date ||
+        subscription.end_date.getTime() >= Date.now());
+    if (!active) {
+      throw new ForbiddenException(
+        'The mess subscription must be active to change meal data',
+      );
+    }
+  }
+
+  private assertMemberWindow(
+    context: MessAccessContext,
+    targetDate: string,
+  ): void {
+    let window;
+    try {
+      window = getMealDecisionWindow(
+        targetDate,
+        context.mess.meal_deadline_start,
+        context.mess.meal_deadline_end,
+      );
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid meal date',
+      );
+    }
+
+    if (!window.isWindowOpen) {
+      throw new ForbiddenException(
+        `Member meal editing is available from ${this.formatMealWindowMoment(window.windowStart)} to ${this.formatMealWindowMoment(window.windowEnd)}.`,
+      );
+    }
+  }
+
+  private async assertActiveMealMember(
+    messId: string,
+    targetMemberId: string,
+    context: MessAccessContext,
+  ): Promise<void> {
+    const [user, membership] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: targetMemberId },
+        select: { is_active: true },
+      }),
+      this.prisma.messMembership.findUnique({
+        where: {
+          mess_id_user_id: {
+            mess_id: messId,
+            user_id: targetMemberId,
+          },
+        },
+        select: { is_active: true },
+      }),
+    ]);
+    const isCreator = context.mess.created_by === targetMemberId;
+    if (!user?.is_active || (!isCreator && !membership?.is_active)) {
+      throw new BadRequestException(
+        'Target member is not active in this mess',
+      );
+    }
+  }
+
+  private normalizeAttendance(
+    dto: CreateMealDto,
+    context: MessAccessContext,
+  ) {
+    try {
+      const normalized = normalizeMealAttendance({
+        mealName: dto.mealName,
+        status: dto.status,
+        mealCount: dto.mealCount,
+        guests: dto.guests,
+        defaultStatus: context.mess.meal_default_status,
+      });
+      return {
+        ...normalized,
+        status: normalized.status as AttendanceStatus,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid meal attendance',
+      );
+    }
+  }
+
+  private parseDate(value: string): Date {
+    try {
+      return parseMealDate(value);
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid meal date',
+      );
+    }
+  }
+
+  private parseMealName(value: string): MealName {
+    const mealName = value.toUpperCase() as MealName;
+    if (!Object.values(MealName).includes(mealName)) {
+      throw new BadRequestException('mealName must be BREAKFAST, LUNCH, or DINNER');
+    }
+    return mealName;
+  }
+
+  private formatMealWindowMoment(date: Date): string {
+    return new Intl.DateTimeFormat('en-GB', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: MEAL_TIME_ZONE,
+    }).format(date);
+  }
+
+  private mapMealSettings(context: MessAccessContext) {
+    return {
+      messId: context.mess.id,
+      defaultStatus: context.mess.meal_default_status,
+      allowNoMeal: context.mess.meal_allow_no_meal,
+      windowNotificationEnabled:
+        context.mess.meal_window_notification_enabled,
+      deadlineNotificationEnabled:
+        context.mess.meal_deadline_notification_enabled,
+      deadlineReminderMinutes:
+        context.mess.meal_deadline_reminder_minutes,
+      canManage: context.canManage,
+    };
+  }
+
+  private async loadActiveMealMembers(
+    messId: string,
+    creatorId: string,
+  ) {
+    const [memberships, creator] = await Promise.all([
+      this.prisma.messMembership.findMany({
+        where: {
+          mess_id: messId,
+          is_active: true,
+          user: { is_active: true },
+        },
+        select: {
+          id: true,
+          user_id: true,
+          role: true,
+          is_active: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar_url: true,
+            },
+          },
+        },
+        orderBy: { user: { name: 'asc' } },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: creatorId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar_url: true,
+          is_active: true,
+        },
+      }),
+    ]);
+
+    if (
+      creator?.is_active &&
+      !memberships.some((membership) => membership.user_id === creator.id)
+    ) {
+      memberships.unshift({
+        id: creator.id,
+        user_id: creator.id,
+        role: MembershipRole.MANAGER,
+        is_active: true,
+        user: {
+          id: creator.id,
+          name: creator.name,
+          email: creator.email,
+          avatar_url: creator.avatar_url,
+        },
+      });
+    }
+    return memberships;
+  }
+
+  private buildDateFilter(
+    startDate?: string,
+    endDate?: string,
+  ): Prisma.DateTimeFilter | undefined {
+    if (!startDate && !endDate) return undefined;
+    return {
+      ...(startDate ? { gte: this.parseDate(startDate) } : {}),
+      ...(endDate
+        ? { lt: this.parseDate(shiftDateKey(endDate.slice(0, 10), 1)) }
+        : {}),
     };
   }
 
   private buildWhere(query: MealFilterDto): Prisma.MealWhereInput {
     const where: Prisma.MealWhereInput = {};
     if (query.messId) where.mess_id = query.messId;
-    if (query.userId) where.created_by = query.userId;
-    if (query.startDate || query.endDate) {
-      where.scheduled_date = {
-        ...(query.startDate && { gte: parseUtcDateStart(query.startDate) }),
-        ...(query.endDate && { lt: parseUtcDateExclusiveEnd(query.endDate) }),
-      };
+    if (query.userId) {
+      where.attendances = { some: { member_id: query.userId } };
     }
+    const dateFilter = this.buildDateFilter(query.startDate, query.endDate);
+    if (dateFilter) where.scheduled_date = dateFilter;
     return where;
+  }
+
+  private isWithinPollInterval(now: Date, eventTime: Date): boolean {
+    return (
+      now.getTime() >= eventTime.getTime() &&
+      now.getTime() < eventTime.getTime() + REMINDER_POLL_MS
+    );
+  }
+
+  private async resolveNotificationUserIds(
+    messId: string,
+    creatorId: string,
+  ): Promise<string[]> {
+    const memberships = await this.prisma.messMembership.findMany({
+      where: {
+        mess_id: messId,
+        is_active: true,
+        user: { is_active: true },
+      },
+      select: { user_id: true },
+    });
+    return [
+      ...new Set([
+        creatorId,
+        ...memberships.map((membership) => membership.user_id),
+      ]),
+    ];
+  }
+
+  private async sendWindowOpenedNotification(
+    messId: string,
+    messName: string,
+    creatorId: string,
+    targetDate: string,
+    startTime: string,
+    endTime: string,
+  ): Promise<void> {
+    const targetUserIds = await this.resolveNotificationUserIds(
+      messId,
+      creatorId,
+    );
+    await this.notificationService.createForMess(
+      null,
+      messId,
+      'MEAL_UPDATE',
+      `Meal decision window is open — ${messName}`,
+      `Choose meals for ${targetDate} by ${endTime} today.`,
+      {
+        type: 'MEAL_WINDOW_OPENED',
+        targetDate,
+        startTime,
+        endTime,
+        timeZone: MEAL_TIME_ZONE,
+      },
+      targetUserIds,
+      '/meals',
+      `meal:window-opened:${messId}:${targetDate}:${startTime}:${endTime}`,
+    );
+  }
+
+  private async sendDeadlineWarningNotification(
+    messId: string,
+    messName: string,
+    creatorId: string,
+    targetDate: string,
+    endTime: string,
+    leadMinutes: number,
+  ): Promise<void> {
+    const targetUserIds = await this.resolveNotificationUserIds(
+      messId,
+      creatorId,
+    );
+    await this.notificationService.createForMess(
+      null,
+      messId,
+      'MEAL_UPDATE',
+      `Meal decision deadline approaching — ${messName}`,
+      `You have ${leadMinutes} minutes to choose meals for ${targetDate}. The window closes at ${endTime}.`,
+      {
+        type: 'MEAL_DEADLINE_WARNING',
+        targetDate,
+        endTime,
+        leadMinutes,
+        timeZone: MEAL_TIME_ZONE,
+      },
+      targetUserIds,
+      '/meals',
+      `meal:deadline-warning:${messId}:${targetDate}:${endTime}:${leadMinutes}`,
+    );
   }
 }

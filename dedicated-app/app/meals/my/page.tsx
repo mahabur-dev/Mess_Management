@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Info, UtensilsCrossed } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
@@ -123,7 +124,7 @@ function MyMealContent() {
   const locked = mealIsLocked(selectedMeal)
   const windowOpen = Boolean(deadline?.isWindowOpen)
   const datePosition = compareIsoDate(date)
-  const memberWindowOpen = datePosition === 'future' || (datePosition === 'today' && windowOpen)
+  const memberWindowOpen = windowOpen
   const closedForMember = locked || !memberWindowOpen
   const canSave = Boolean(messId) && (isManager || !closedForMember)
   const statusClosed = !isManager && closedForMember
@@ -132,13 +133,13 @@ function MyMealContent() {
     ? isManager
       ? 'This meal is locked, but managers can still update it.'
       : 'This meal is locked by manager.'
-    : datePosition === 'past' && !isManager
-      ? 'Previous date meals can only be updated by manager.'
-      : datePosition === 'future'
-        ? 'Future date meals can be added anytime.'
-        : windowOpen || isManager
-          ? 'Choose how you want to take this meal.'
-          : 'Meal updating time is over.'
+    : isManager
+      ? 'Managers can update meals anytime.'
+      : windowOpen
+        ? 'Choose how you want to take this meal.'
+        : datePosition === 'past'
+          ? 'Previous date meals can only be updated by manager.'
+          : 'Meal updating time is over for this date.'
   const guestMeals = choice === 'GUEST' ? normalizeGuestMealCount(guestCount) : 0
   const mealCount = choice === 'NO' ? 0 : Number((MEAL_META[mealName].baseValue + guestMeals).toFixed(2))
 
@@ -197,7 +198,7 @@ function MyMealContent() {
 
         {message ? <InlineNotice tone={message.includes('successfully') ? 'success' : 'danger'}>{message}</InlineNotice> : null}
 
-        {loading ? <InlineNotice>Loading current meal preference...</InlineNotice> : null}
+        {loading ? <LoadingIndicator variant="card" label="Loading meal preference" /> : null}
 
         <MealCard className="space-y-2">
           <MealOptionRow
@@ -221,7 +222,7 @@ function MyMealContent() {
         </MealCard>
 
         {canSave ? (
-          <SaveConfirmNote>{isManager ? 'Manager can update meals even after the member deadline.' : datePosition === 'future' ? 'Future date meals can be added or updated anytime.' : 'You can update your meal until the deadline.'}</SaveConfirmNote>
+          <SaveConfirmNote>{isManager ? 'Manager can update meals anytime.' : 'You can update your meal until the deadline.'}</SaveConfirmNote>
         ) : (
           <InlineNotice tone="warning">
             <Info size={15} className="mr-2 inline align-[-2px]" />
@@ -240,7 +241,7 @@ function MyMealContent() {
 
 export default function MyMealPage() {
   return (
-    <Suspense fallback={<div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>}>
+    <Suspense fallback={<LoadingIndicator variant="screen" label="Loading meal preference" />}>
       <MyMealContent />
     </Suspense>
   )

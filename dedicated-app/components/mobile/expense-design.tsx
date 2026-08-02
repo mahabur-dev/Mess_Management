@@ -8,12 +8,12 @@ import {
   type ChangeEvent,
   type ComponentType,
   type InputHTMLAttributes,
+  type MouseEvent,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
 import {
-  BadgeInfo,
   Banknote,
   Bed,
   CalendarDays,
@@ -35,6 +35,7 @@ import {
   Trash2,
   UploadCloud,
   User,
+  UsersRound,
   UserPlus,
   UtensilsCrossed,
   WalletCards,
@@ -43,6 +44,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
+import { ExpenseApprovalBadge } from '@/components/mobile/expense-approval'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
 
 type IconType = ComponentType<LucideProps>
@@ -51,10 +53,10 @@ function joinClasses(...classes: Array<string | undefined | false>) {
   return classes.filter(Boolean).join(' ')
 }
 
-const formLabelClass = 'mb-2 block text-label font-semibold text-[#123748]'
+const formLabelClass = 'mb-2 block text-label font-semibold text-[#1d3a42] ui-field-label'
 const formIconClass = 'absolute left-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[11px] bg-[#e8f8f7] text-[#008d8c]'
 const formControlClass =
-  'h-[52px] w-full rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 pl-[54px] text-body font-medium text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10'
+  'h-[52px] w-full rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 pl-[54px] text-body font-medium text-[#1d3a42] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10'
 
 export function formatBDT(value?: string | number | null) {
   const amount = Number(value ?? 0)
@@ -64,8 +66,8 @@ export function formatBDT(value?: string | number | null) {
 
 export function formatTaka(value?: string | number | null) {
   const amount = Number(value ?? 0)
-  if (!Number.isFinite(amount)) return '৳ 0'
-  return `৳ ${amount.toLocaleString('en-US')}`
+  const safeAmount = Number.isFinite(amount) ? amount : 0
+  return `${String.fromCodePoint(0x09f3)} ${safeAmount.toLocaleString('en-US')}`
 }
 
 export function formatDate(value?: string | null) {
@@ -111,10 +113,10 @@ export function categoryIcon(category?: string | null): IconType {
 
 export function categoryTone(category?: string | null) {
   const key = String(category ?? '').toUpperCase()
-  if (key === 'FOOD') return { bg: '#e8fbfa', fg: '#008d8c' }
-  if (key === 'ELECTRICITY') return { bg: '#fff1e9', fg: '#f04438' }
-  if (key === 'RENT') return { bg: '#f0edff', fg: '#6e65c7' }
-  if (key === 'GROCERY' || key === 'UTILITY' || key === 'CLEANER') return { bg: '#e8fbfa', fg: '#008d8c' }
+  if (key === 'FOOD') return { bg: '#dff4f3', fg: '#008d8c' }
+  if (key === 'ELECTRICITY') return { bg: '#edfafa', fg: '#0aa0a0' }
+  if (key === 'RENT') return { bg: '#dff4f3', fg: '#00777a' }
+  if (key === 'GROCERY' || key === 'UTILITY' || key === 'CLEANER') return { bg: '#edfafa', fg: '#4bbfc0' }
   return { bg: '#edfafa', fg: '#008d8c' }
 }
 
@@ -324,11 +326,11 @@ export function ExpenseActionCard({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-label font-bold text-[#061638]">
+        <span className="block truncate text-label font-semibold text-[#1d3a42]">
           {title}
         </span>
 
-        <span className="mt-1 block truncate text-caption font-medium text-[#758893]">
+        <span className="mt-1 block truncate text-caption font-normal text-[#758893]">
           {subtitle}
         </span>
       </span>
@@ -411,12 +413,12 @@ export function ExpenseStatCard({
   </div>
 
   <div className="flex-1">
-    <p className="whitespace-nowrap text-caption font-semibold text-[#94a3b8]">
+    <p className="whitespace-nowrap text-caption font-medium text-[#94a3b8]">
       {title}
     </p>
 
     <h3
-      className="mt-1 whitespace-nowrap text-title font-bold leading-none"
+      className="mt-1 whitespace-nowrap text-title font-semibold leading-none"
       style={{ color }}
     >
       {value}
@@ -630,8 +632,12 @@ export type ExpenseListRecord = {
   amount?: string | number | null
   expenseDate?: string | null
   expense_date?: string | null
+  billingMonth?: string | null
+  billing_month?: string | null
   paymentType?: string | null
   payment_method?: string | null
+  status?: string | null
+  approvalStatus?: string | null
 }
 
 // export function ExpenseListItem({ item, href }: { item: ExpenseListRecord; href: string }) {
@@ -663,7 +669,7 @@ export function ExpenseListItem({
   variant = 'card',
 }: {
   item: ExpenseListRecord
-  href: string
+  href?: string
   variant?: 'card' | 'horizontal'
 }) {
   const Icon = categoryIcon(item.category)
@@ -680,21 +686,8 @@ export function ExpenseListItem({
       : item.payment_method ||
         paymentLabel(item.paymentType)
 
-  return (
-    <Link
-      href={href}
-      className={joinClasses(
-        `
-        group relative flex min-h-[76px]
-        items-center gap-3 overflow-hidden bg-white/95
-        transition-all duration-200
-        active:scale-[0.995]
-        `,
-        isHorizontal
-          ? 'border-y border-x-0 border-[#cfeeed] py-3 shadow-none'
-          : 'rounded-[17px] border border-white/90 px-3 py-3 shadow-[0_10px_26px_rgba(18,55,72,0.065)] hover:-translate-y-0.5 hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]'
-      )}
-    >
+  const content = (
+    <>
       {!isHorizontal ? (
         <span
           className="
@@ -722,18 +715,18 @@ export function ExpenseListItem({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span
-          className="
-            block truncate
-            text-label font-bold
-            uppercase tracking-[-0.01em]
-            text-[#061638]
-          "
-        >
-          {label}
-        </span>
+      <span
+        className="
+          block truncate
+          text-label font-semibold
+          uppercase
+          text-[#1d3a42]
+        "
+      >
+        {label}
+      </span>
 
-        <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
+        <span className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="truncate text-caption font-medium text-[#667d87]">
             {formatDate(
               item.expenseDate ??
@@ -752,6 +745,7 @@ export function ExpenseListItem({
           >
             {payment}
           </span>
+          <ExpenseApprovalBadge status={item.approvalStatus} recordStatus={item.status} />
         </span>
       </span>
 
@@ -759,28 +753,50 @@ export function ExpenseListItem({
         className="
           shrink-0 whitespace-nowrap
           text-right text-body
-          font-bold tracking-[-0.02em]
+          font-semibold
         "
         style={{ color: tone.fg }}
       >
         {formatTaka(item.amount)}
       </span>
 
-      <span
-        className="
-          grid h-8 w-8 shrink-0
-          place-items-center
-          rounded-full
-          bg-[#f4f7f8]
-          text-[#123748]
-          transition-all duration-200
-          group-hover:bg-[#edfafa]
-          group-hover:text-[#008d8c]
-        "
-      >
-        <ChevronRight size={16} strokeWidth={2.7} />
-      </span>
+      {href ? (
+        <span
+          className="
+            grid h-8 w-8 shrink-0
+            place-items-center
+            rounded-full
+            bg-[#f4f7f8]
+            text-[#123748]
+            transition-all duration-200
+            group-hover:bg-[#edfafa]
+            group-hover:text-[#008d8c]
+          "
+        >
+          <ChevronRight size={16} strokeWidth={2.7} />
+        </span>
+      ) : null}
+    </>
+  )
+
+  const className = joinClasses(
+        `
+        group relative flex min-h-[76px]
+        items-center gap-3 overflow-hidden bg-white/95
+        transition-all duration-200
+        active:scale-[0.995]
+        `,
+        isHorizontal
+          ? 'border-y border-x-0 border-[#cfeeed] py-3 shadow-none'
+          : 'rounded-[17px] border border-white/90 px-3 py-3 shadow-[0_10px_26px_rgba(18,55,72,0.065)] hover:-translate-y-0.5 hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]'
+  )
+
+  return href ? (
+    <Link href={href} className={className}>
+      {content}
     </Link>
+  ) : (
+    <div className={className}>{content}</div>
   )
 }
 
@@ -792,7 +808,7 @@ export function FormPageShell({
   children,
 }: {
   title: string
-  description: string
+  description?: string
   icon: IconType
   backHref: string
   children: ReactNode
@@ -818,7 +834,7 @@ export function FormPageShell({
 export function FormSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="expense-form-card">
-      {title ? <h2 className="mb-3 text-caption font-bold uppercase leading-tight text-[#008d8c]">{title}</h2> : null}
+      {title ? <h2 className="section-title mb-3!">{title}</h2> : null}
       <div className="space-y-3.5">{children}</div>
     </section>
   )
@@ -872,19 +888,22 @@ export function FormSummaryCard({
 export function PaymentTypeSelector({
   value,
   onChange,
+  showHeading = true,
 }: {
   value: ExpensePaymentType
   onChange: (value: ExpensePaymentType) => void
+  showHeading?: boolean
 }) {
   const choices: Array<{ value: ExpensePaymentType; label: string; icon: IconType }> = [
-    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
     { value: 'PERSONAL', label: 'Personal', icon: User },
+    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
+    { value: 'COLLECTED_FUND', label: 'Collected Fund', icon: UsersRound },
   ]
 
   return (
     <div>
-      <h2 className="mb-3 text-caption font-bold uppercase leading-tight text-[#008d8c]">Deposit Type</h2>
-      <div className="grid grid-cols-2 gap-2.5">
+      {showHeading ? <h2 className="mb-3 text-body font-semibold leading-tight text-[#1d3a42]">Paid From</h2> : null}
+      <div className="grid grid-cols-3 gap-2.5">
         {choices.map((choice) => {
           const selected = value === choice.value
           const Icon = choice.icon
@@ -893,31 +912,27 @@ export function PaymentTypeSelector({
               key={choice.value}
               type="button"
               onClick={() => onChange(choice.value)}
-              className={`relative grid min-h-[58px] grid-cols-[34px_minmax(0,1fr)_22px] items-center gap-2 rounded-[14px] border px-2.5 text-left transition ${
-                selected
-                  ? 'border-[#008d8c] bg-[#f7ffff] text-[#061638] shadow-[0_12px_24px_rgba(0,141,140,0.10)]'
-                  : 'border-[#dce5ec] bg-white text-[#061638] shadow-[0_8px_18px_rgba(18,55,72,0.04)]'
-              }`}
+              className="expense-choice-card"
+              data-active={selected}
+              data-compact={false}
+              data-layout="vertical"
+              aria-pressed={selected}
             >
-              <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[12px] bg-[#e8f8f7] text-[#008d8c]">
-                <Icon size={17} strokeWidth={2.25} />
+              <span className="expense-choice-card__icon bg-[#e8f8f7] text-[#008d8c]">
+                <Icon size={21} strokeWidth={2.2} />
               </span>
-              <span className="min-w-0 text-label font-semibold">{choice.label}</span>
               {selected ? (
-                <span className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,141,140,0.22)]">
-                  <Check size={13} strokeWidth={3} />
+                <span className="expense-choice-card__check" aria-hidden="true">
+                  <Check size={12} strokeWidth={3} />
                 </span>
-              ) : (
-                <span aria-hidden="true" />
-              )}
+              ) : null}
+              <span className="min-w-0">
+                <span className="expense-choice-card__title">{choice.label}</span>
+              </span>
             </button>
           )
         })}
       </div>
-      <p className="mt-3 flex items-center gap-2 rounded-[13px] bg-[#edfafa] px-3.5 py-3 text-label font-medium text-[#52727b]">
-        <BadgeInfo className="shrink-0 text-[#65838b]" size={16} />
-        Amount will be split among all members in monthly bill calculation.
-      </p>
     </div>
   )
 }
@@ -927,7 +942,20 @@ type DesignedFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   icon: IconType
 }
 
-export function DesignedInput({ label, icon: Icon, className = '', ...props }: DesignedFieldProps) {
+export function DesignedInput({ label, icon: Icon, className = '', type, onClick, ...props }: DesignedFieldProps) {
+  const opensPicker = type === 'date' || type === 'month'
+
+  function handleClick(event: MouseEvent<HTMLInputElement>) {
+    onClick?.(event)
+    if (!opensPicker || event.defaultPrevented) return
+
+    try {
+      event.currentTarget.showPicker()
+    } catch {
+      // Browsers without showPicker still retain their native field interaction.
+    }
+  }
+
   return (
     <label className="block">
       <span className={formLabelClass}>{label}</span>
@@ -936,7 +964,9 @@ export function DesignedInput({ label, icon: Icon, className = '', ...props }: D
           <Icon size={16} strokeWidth={2.35} />
         </span>
         <input
-          className={joinClasses(formControlClass, className)}
+          type={type}
+          onClick={handleClick}
+          className={joinClasses(formControlClass, opensPicker && 'designed-picker-input', className)}
           {...props}
         />
       </span>
@@ -1009,9 +1039,6 @@ export function DesignedSelect({
         {label}
       </label>
       <span className="relative block">
-        <span className={`${formIconClass} z-10`}>
-          <Icon size={16} strokeWidth={2.35} />
-        </span>
         <MobileSelectSheet
           label={label}
           value={selectedValue}
@@ -1023,10 +1050,13 @@ export function DesignedSelect({
               {...buttonProps}
               id={id}
               className={joinClasses(
-                `${formControlClass} flex items-center pr-10 text-left disabled:cursor-not-allowed disabled:opacity-60`,
+                `${formControlClass} relative flex items-center pr-10 text-left disabled:cursor-not-allowed disabled:opacity-60`,
                 className,
               )}
             >
+              <span className={`${formIconClass} z-10`}>
+                <Icon size={16} strokeWidth={2.35} />
+              </span>
               <span className={joinClasses('min-w-0 flex-1 truncate', selectedValue ? 'text-[#123748]' : 'text-[#65838b]')}>
                 {selectedLabel}
               </span>
@@ -1081,7 +1111,7 @@ export function UploadField({ onChange, fileName, label = 'Receipt (Optional)' }
         </span>
         <span className="min-w-0">
           <span className="block truncate text-label font-semibold text-[#123748]">{fileName || 'Upload receipt image'}</span>
-          <span className="mt-1 block text-caption font-semibold text-[#65838b]">JPG, PNG, PDF up to 5MB</span>
+          <span className="mt-1 block text-caption font-semibold text-[#65838b]">JPG, PNG, PDF up to 10MB</span>
         </span>
         <input className="sr-only" type="file" accept="image/*,application/pdf" onChange={(event) => onChange(event.target.files?.[0] ?? null)} />
       </span>

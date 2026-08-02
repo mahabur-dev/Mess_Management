@@ -10,6 +10,7 @@ model Deposit {
   amount       Decimal       @db.Decimal(12, 2)
   method       PaymentMethod
   note         String?       @db.Text
+  deposit_date DateTime      @default(now()) @db.Date
   confirmed_by String?       @db.Uuid
   confirmed_at DateTime?     @db.Timestamptz
   created_at   DateTime      @default(now()) @db.Timestamptz
@@ -20,5 +21,44 @@ model Deposit {
   confirmer User? @relation("DepositConfirmer", fields: [confirmed_by], references: [id])
 
   @@index([mess_id, member_id])
+  @@index([mess_id, deposit_date])
   @@map("deposits")
+}
+
+enum DepositLedgerType {
+  MEMBER_DEPOSIT
+  PERSONAL_EXPENSE_CREDIT
+  MESS_EXPENSE_DEBIT
+  COLLECTED_FUND_IN
+  COLLECTED_FUND_OUT
+  ADJUSTMENT
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+model DepositLedger {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id    String            @db.Uuid
+  member_id  String?           @db.Uuid
+  expense_id String?           @db.Uuid
+  type       DepositLedgerType
+  direction  LedgerDirection
+  amount     Decimal           @db.Decimal(12, 2)
+  note       String?           @db.Text
+  effective_date DateTime      @default(now()) @db.Date
+  created_at DateTime          @default(now()) @db.Timestamptz
+
+  mess    Mess     @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  member  User?    @relation("DepositLedgerMember", fields: [member_id], references: [id])
+  expense Expense? @relation(fields: [expense_id], references: [id], onDelete: Cascade)
+
+  @@index([mess_id, created_at])
+  @@index([mess_id, effective_date])
+  @@index([mess_id, member_id])
+  @@index([expense_id])
+  @@unique([expense_id, type])
+  @@map("deposit_ledgers")
 }

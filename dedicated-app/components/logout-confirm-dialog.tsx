@@ -81,7 +81,7 @@ export function LogoutConfirmDialog({
 
         <h2
           id="logout-confirm-title"
-          className="mt-4 text-center text-title font-bold text-[#123748]"
+          className="mt-4 text-center text-title font-semibold text-[#1d3a42]"
         >
           Log out of Messzen?
         </h2>

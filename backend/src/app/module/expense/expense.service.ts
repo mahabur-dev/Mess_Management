@@ -1,65 +1,102 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import {
-  CreateExpenseDto,
-  ExpenseFilterDto,
-  RequestPriceReviewDto,
-  UpdateExpenseDto,
-} from './dto/expense.dto';
-import { ExpenseCategory, ExpensePaymentType, NotificationType, Prisma } from '@prisma/client';
+  DepositLedgerType,
+  ExpenseCategory,
+  ExpensePaymentType,
+  ExpenseRecordType,
+  ExpenseSplitMethod,
+  ExpenseStatus,
+  ExpenseUsedBy,
+  LedgerDirection,
+  NotificationType,
+  Prisma,
+  UtilityType,
+} from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { MonthlyBillService } from '../monthly-bill/monthly-bill.service';
+import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 import { NotificationService } from '../notification/notification.service';
-import { uploadToCloudinary } from 'src/app/helpers/fileUploder';
-import sendMailer from 'src/app/helpers/sendMailer';
+import { FundLedgerService } from '../fund-ledger/fund-ledger.service';
+import {
+  type CloudinaryResourceType,
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from 'src/app/helpers/fileUploder';
+import {
+  CreateExpenseDto,
+  ExpenseFilterDto,
+  ExpensePreviewDto,
+  RequestPriceReviewDto,
+  ReviewExpenseDto,
+  UpdateExpenseDto,
+} from './dto/expense.dto';
+import {
+  calculateSplit,
+  ExpenseCalculationError,
+  roundMoney,
+  type CalculatedShare,
+  type SplitMember,
+} from './expense-calculator';
+import {
+  canEditExpense,
+  statusForExpenseWrite,
+  toApprovalStatus,
+} from './expense-approval.policy';
+
+type AuthRole = string;
+type NormalizedPaidFrom = ExpensePaymentType;
+
+type PreparedExpense = {
+  messId: string;
+  type: ExpenseRecordType;
+  category: ExpenseCategory;
+  utilityType?: UtilityType | null;
+  amount: number;
+  paidFrom: NormalizedPaidFrom;
+  usedBy: ExpenseUsedBy;
+  splitMethod: ExpenseSplitMethod;
+  purchasedByMemberId: string;
+  addedByUserId: string;
+  expenseDate: Date;
+  billingMonth: Date;
+  itemName: string | null;
+  quantity: number | null;
+  unit: string | null;
+  description: string | null;
+  receiptUrl: string | null;
+  receiptPublicId: string | null;
+  receiptResourceType: CloudinaryResourceType | null;
+  affectedMembers: SplitMember[];
+  shares: CalculatedShare[];
+  payerCredit: number;
+  totalSharedCost: number;
+  personalHistoryAmount: number;
+  requiresApproval: boolean;
+};
+
+const utilityCategoryMap: Partial<Record<ExpenseCategory, UtilityType>> = {
+  [ExpenseCategory.ELECTRICITY]: UtilityType.ELECTRICITY,
+  [ExpenseCategory.GAS]: UtilityType.GAS,
+  [ExpenseCategory.WATER]: UtilityType.WATER,
+  [ExpenseCategory.WIFI]: UtilityType.WIFI,
+  [ExpenseCategory.CLEANER]: UtilityType.CLEANING,
+};
 
 @Injectable()
 export class ExpenseService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly monthlyBillService: MonthlyBillService,
+    private readonly billReconciliation: MonthlyBillReconciliationService,
     private readonly notificationService: NotificationService,
+    private readonly fundLedgerService: FundLedgerService,
   ) {}
-
-  // private async recalculateExpenseMonthBill(messId: string, date: Date) {
-  //   await this.monthlyBillService.recalculateMonthlyBills(messId, date);
-  // }
-
-  private isSameBillMonth(dateA: Date, dateB: Date) {
-    return (
-      dateA.getFullYear() === dateB.getFullYear() &&
-      dateA.getMonth() === dateB.getMonth()
-    );
-  }
-
-  /**
-   * When an expense is marked as PERSONAL, auto-create a deposit entry
-   * for the creator so their personal contribution is tracked in the deposit system.
-   */
-  private async handlePersonalPaymentExpense(
-    messId: string,
-    userId: string,
-    amount: number,
-    expenseId: string,
-    expenseDate: Date,
-  ) {
-    await this.prisma.deposit.create({
-      data: {
-        mess_id: messId,
-        member_id: userId,
-        amount,
-        note: `Personal expense contribution (expense: ${expenseId})`,
-        method: 'CASH',
-        confirmed_by: userId,
-        confirmed_at: new Date(),
-      },
-    });
-  }
 
   private readonly expenseSelect = {
     id: true,
+    type: true,
     category: true,
+    utility_type: true,
     amount: true,
     description: true,
     receipt_url: true,
@@ -69,36 +106,180 @@ export class ExpenseService {
     quantity: true,
     unit: true,
     expense_date: true,
+    billing_month: true,
     payment_type: true,
+    used_by: true,
+    split_method: true,
+    status: true,
+    reviewed_by: true,
+    reviewed_at: true,
+    review_note: true,
     created_at: true,
+    updated_at: true,
     mess: { select: { id: true, name: true } },
     creator: { select: { id: true, name: true, email: true } },
     purchaser: { select: { id: true, name: true, email: true } },
+    shares: {
+      orderBy: { created_at: 'asc' as const },
+      select: {
+        id: true,
+        member_id: true,
+        member_name: true,
+        meal_count: true,
+        share_amount: true,
+        is_payer: true,
+        member: { select: { id: true, name: true, email: true } },
+      },
+    },
+    ledger_entries: {
+      select: {
+        id: true,
+        member_id: true,
+        type: true,
+        direction: true,
+        amount: true,
+        note: true,
+        created_at: true,
+      },
+    },
   } as const;
+
+  private monthStart(input: string | Date) {
+    const date = new Date(input);
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+  }
+
+  private monthRange(input: string | Date) {
+    const start = this.monthStart(input);
+    const end = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1),
+    );
+    return { start, end };
+  }
+
+  private normalizePaidFrom(
+    dto: Pick<CreateExpenseDto | UpdateExpenseDto, 'paidFrom' | 'paymentType'>,
+  ) {
+    const value = String(
+      dto.paidFrom ?? dto.paymentType ?? ExpensePaymentType.FROM_DEPOSIT,
+    ).toUpperCase();
+    if (value === 'MESS_DEPOSIT') return ExpensePaymentType.FROM_DEPOSIT;
+    if (
+      Object.values(ExpensePaymentType).includes(value as ExpensePaymentType)
+    ) {
+      return value as ExpensePaymentType;
+    }
+    throw new HttpException('Invalid paid from value', 400);
+  }
+
+  private normalizeIdList(value?: string[] | string | null) {
+    if (!value) return [];
+    const raw = Array.isArray(value) ? value : String(value).split(',');
+    const ids = raw.map((id) => id.trim()).filter(Boolean);
+    return [...new Set(ids)];
+  }
+
+  private normalizeCustomShares(value: unknown) {
+    if (!value) return [];
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value) as Array<{
+          memberId: string;
+          amount: number;
+        }>;
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        throw new HttpException('Invalid custom share payload', 400);
+      }
+    }
+    return Array.isArray(value)
+      ? (value as Array<{ memberId: string; amount: number }>)
+      : [];
+  }
+
+  private hasOwn<T extends object>(value: T, key: PropertyKey) {
+    return Object.prototype.hasOwnProperty.call(value, key);
+  }
+
+  private normalizeOptionalText(value: string | null | undefined) {
+    const normalized = value?.trim();
+    return normalized ? normalized : null;
+  }
+
+  private getExpenseDate(
+    dto: Pick<CreateExpenseDto | UpdateExpenseDto, 'expenseDate'>,
+    fallback?: Date,
+  ) {
+    if (dto.expenseDate) return new Date(dto.expenseDate);
+    if (fallback) return fallback;
+    return new Date();
+  }
+
+  private inferRecordType(
+    category: ExpenseCategory,
+    explicit?: ExpenseRecordType,
+  ) {
+    if (explicit) return explicit;
+    const utilityCategories = new Set<ExpenseCategory>([
+      ExpenseCategory.UTILITY,
+      ExpenseCategory.ELECTRICITY,
+      ExpenseCategory.GAS,
+      ExpenseCategory.WIFI,
+      ExpenseCategory.CLEANER,
+      ExpenseCategory.MAINTENANCE,
+      ExpenseCategory.BUABILL,
+      ExpenseCategory.WATER,
+    ]);
+    return utilityCategories.has(category)
+      ? ExpenseRecordType.UTILITY
+      : ExpenseRecordType.EXPENSE;
+  }
+
+  private inferUtilityType(
+    category: ExpenseCategory,
+    explicit?: UtilityType | null,
+  ) {
+    if (explicit) return explicit;
+    return (
+      utilityCategoryMap[category] ??
+      (category === ExpenseCategory.UTILITY ? UtilityType.OTHER : null)
+    );
+  }
+
+  private async hasManagerAccess(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+  ): Promise<boolean> {
+    if (role === 'ADMIN') return true;
+
+    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
+    if (!mess) throw new HttpException('Mess not found', 404);
+    if (mess.created_by === userId) return true;
+
+    const membership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+    });
+    return Boolean(membership?.is_active && membership.role === 'MANAGER');
+  }
 
   private async verifyManagerAccess(
     messId: string,
     userId: string,
-    role: string,
+    role: AuthRole,
   ): Promise<void> {
-    if (role === 'ADMIN') return;
+    if (await this.hasManagerAccess(messId, userId, role)) return;
 
-    const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    if (!mess) throw new HttpException('Mess not found', 404);
-
-    if (role === 'MANAGER' && mess.created_by === userId) return;
-    const membership = await this.prisma.messMembership.findUnique({
-      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
-    });
-    if (membership?.is_active && membership.role === 'MANAGER') return;
-
-    throw new HttpException('Forbidden: Only managers can manage expenses', 403);
+    throw new HttpException(
+      'Forbidden: Only managers can manage shared expenses',
+      403,
+    );
   }
 
   private async verifyMessMemberAccess(
     messId: string,
     userId: string,
-    role: string,
+    role: AuthRole,
   ): Promise<void> {
     if (role === 'ADMIN') return;
 
@@ -109,7 +290,6 @@ export class ExpenseService {
     const membership = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-
     if (membership?.is_active) return;
 
     throw new HttpException('Forbidden: Not a member of this mess', 403);
@@ -125,29 +305,14 @@ export class ExpenseService {
     });
 
     if (!membership?.is_active) {
-      throw new HttpException('Forbidden: Selected member is not active in this mess', 403);
-    }
-  }
-
-  private verifyExpenseOwner(
-    expense: { created_by: string; purchased_by?: string | null },
-    userId: string,
-    role: string,
-  ) {
-    // Manager can edit all
-    if (role === 'MANAGER') return;
-
-    // Member can edit only own expense
-    const ownerId = expense.purchased_by ?? expense.created_by;
-    if (ownerId !== userId) {
       throw new HttpException(
-        'Forbidden: You can edit only your own expenses',
+        'Forbidden: Selected member is not active in this mess',
         403,
       );
     }
   }
 
-  private async ensureActiveSubscription(messId: string, role: string) {
+  private async ensureActiveSubscription(messId: string, role: AuthRole) {
     if (role === 'ADMIN') return;
 
     const subscription = await this.prisma.subscription.findUnique({
@@ -167,135 +332,733 @@ export class ExpenseService {
     }
   }
 
-  async create(
-    userId: string,
-    role: string,
-    dto: CreateExpenseDto,
-    receipt?: Express.Multer.File,
+  private async getActiveMembers(messId: string) {
+    const memberships = await this.prisma.messMembership.findMany({
+      where: { mess_id: messId, is_active: true },
+      orderBy: { joined_at: 'asc' },
+      select: {
+        user_id: true,
+        user: {
+          select: { id: true, name: true, email: true, is_active: true },
+        },
+      },
+    });
+
+    return memberships
+      .filter((membership) => membership.user.is_active)
+      .map((membership) => ({
+        id: membership.user_id,
+        name: membership.user.name,
+      }));
+  }
+
+  private async getMealCounts(
+    messId: string,
+    memberIds: string[],
+    month: Date,
   ) {
-    await this.verifyMessMemberAccess(dto.messId, userId, role);
-    await this.ensureActiveSubscription(dto.messId, role);
+    if (!memberIds.length) return new Map<string, number>();
+    const { start, end } = this.monthRange(month);
 
-    const purchasedById = dto.purchasedBy?.trim() || userId;
-    if (purchasedById !== userId) {
-      await this.verifyManagerAccess(dto.messId, userId, role);
+    const attendances = await this.prisma.mealAttendance.findMany({
+      where: {
+        member_id: { in: memberIds },
+        status: 'ON',
+        meal: {
+          mess_id: messId,
+          scheduled_date: { gte: start, lt: end },
+          status: { not: 'CANCELLED' },
+        },
+      },
+      select: {
+        member_id: true,
+        guests: true,
+        meal: { select: { name: true } },
+      },
+    });
+
+    const baseValueByMeal = { BREAKFAST: 0.5, LUNCH: 1, DINNER: 1 } as Record<
+      string,
+      number
+    >;
+    const counts = new Map<string, number>();
+    for (const attendance of attendances) {
+      const value =
+        (baseValueByMeal[attendance.meal.name] ?? 1) +
+        Number(attendance.guests ?? 0);
+      counts.set(
+        attendance.member_id,
+        roundMoney((counts.get(attendance.member_id) ?? 0) + value),
+      );
     }
-    await this.ensureActiveMessMember(dto.messId, purchasedById);
+    return counts;
+  }
 
-    const receiptUrl = receipt
-      ? (
-          await uploadToCloudinary(receipt, 'mess_management/expenses', {
-            allowedTypes: ['image', 'pdf'],
-            maxSizeBytes: 10 * 1024 * 1024,
-          })
-        ).url
-      : dto.receiptUrl;
+  private async getMealOnMemberIds(messId: string, expenseDate: Date) {
+    const dayStart = new Date(
+      Date.UTC(
+        expenseDate.getUTCFullYear(),
+        expenseDate.getUTCMonth(),
+        expenseDate.getUTCDate(),
+      ),
+    );
+    const dayEnd = new Date(dayStart);
+    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
 
-    const paymentType = dto.paymentType ?? ExpensePaymentType.FROM_DEPOSIT;
+    const attendances = await this.prisma.mealAttendance.findMany({
+      where: {
+        status: 'ON',
+        meal: {
+          mess_id: messId,
+          scheduled_date: { gte: dayStart, lt: dayEnd },
+          status: { not: 'CANCELLED' },
+        },
+      },
+      select: {
+        member_id: true,
+      },
+    });
 
-    // Validate deposit balance before creating FROM_DEPOSIT expense
-    if (paymentType === ExpensePaymentType.FROM_DEPOSIT) {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return [...new Set(attendances.map((attendance) => attendance.member_id))];
+  }
 
-      const [deposit, allPayments, foodExpenses, utilityExpenses] = await Promise.all([
-        this.prisma.deposit.aggregate({
-          where: { mess_id: dto.messId, member_id: purchasedById },
-          _sum: { amount: true },
-        }),
-        this.prisma.payment.aggregate({
-          where: { mess_id: dto.messId, status: "APPROVED", created_at: { gte: start, lt: end } },
-          _sum: { amount: true },
-        }),
-        this.prisma.expense.aggregate({
-          where: {
-            mess_id: dto.messId,
-            category: { in: ['FOOD', 'GROCERY'] },
-            expense_date: { gte: start, lt: end },
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.expense.aggregate({
-          where: {
-            mess_id: dto.messId,
-            category: { notIn: ['FOOD', 'GROCERY'] },
-            expense_date: { gte: start, lt: end },
-          },
-          _sum: { amount: true },
-        }),
-      ]);
+  private async resolveAffectedMembers(params: {
+    messId: string;
+    usedBy: ExpenseUsedBy;
+    purchasedByMemberId: string;
+    selectedMemberIds: string[];
+    expenseDate: Date;
+    billingMonth: Date;
+    splitMethod: ExpenseSplitMethod;
+  }): Promise<SplitMember[]> {
+    const {
+      messId,
+      usedBy,
+      purchasedByMemberId,
+      selectedMemberIds,
+      expenseDate,
+      billingMonth,
+      splitMethod,
+    } = params;
+    let memberIds: string[];
 
-      const currentBalance = Number(deposit._sum.amount ?? 0);
-      const payments = Number(allPayments._sum.amount ?? 0);
-      const totalFoodExpenses = Number(foodExpenses._sum.amount ?? 0);
-      const totalUtilityExpenses = Number(utilityExpenses._sum.amount ?? 0);
-
-      const totalDeposit = currentBalance + payments;
-      const remainingBalance = totalDeposit - totalFoodExpenses - totalUtilityExpenses;
-      // console.log(totalDeposit, totalFoodExpenses, totalUtilityExpenses, remainingBalance, dto.amount);
-
-      if (remainingBalance < dto.amount) {
+    if (usedBy === ExpenseUsedBy.SELF_ONLY) {
+      memberIds = [purchasedByMemberId];
+    } else if (usedBy === ExpenseUsedBy.SELECTED_MEMBERS) {
+      if (!selectedMemberIds.length) {
+        throw new HttpException('Selected members are required', 400);
+      }
+      memberIds = selectedMemberIds;
+    } else if (usedBy === ExpenseUsedBy.MEAL_ON_MEMBERS) {
+      memberIds = await this.getMealOnMemberIds(messId, expenseDate);
+      if (!memberIds.length) {
         throw new HttpException(
-          `Insufficient deposit balance. Required: ${dto.amount}, Available: ${remainingBalance}`,
+          'No meal-on members found for the expense date',
           400,
         );
       }
-    }
-
-    const expense = await this.prisma.expense.create({
-      data: {
-        mess_id: dto.messId,
-        created_by: userId,
-        purchased_by: purchasedById,
-        category: dto.category as ExpenseCategory,
-        amount: dto.amount,
-        expense_date: new Date(dto.expenseDate),
-        description: dto.description,
-        receipt_url: receiptUrl,
-        buyer_id: dto.buyerId,
-        item_name: dto.itemName,
-        quantity: dto.quantity,
-        unit: dto.unit,
-        payment_type: paymentType,
-      },
-      select: this.expenseSelect,
-    });
-
-    // Handle personal payment: auto-create deposit entry
-    if (paymentType === ExpensePaymentType.PERSONAL) {
-      await this.handlePersonalPaymentExpense(
-        dto.messId,
-        purchasedById,
-        dto.amount,
-        expense.id,
-        expense.expense_date,
+    } else {
+      memberIds = (await this.getActiveMembers(messId)).map(
+        (member) => member.id,
       );
     }
 
-    // Recalculate monthly bills for both FROM_DEPOSIT and PERSONAL expenses
-    // await this.recalculateExpenseMonthBill(dto.messId, expense.expense_date);
+    memberIds = [...new Set(memberIds)];
 
+    const activeMembers = await this.getActiveMembers(messId);
+    const activeById = new Map(
+      activeMembers.map((member) => [member.id, member]),
+    );
+    const invalidId = memberIds.find((id) => !activeById.has(id));
+    if (invalidId) {
+      throw new HttpException(
+        'Selected members must be active members of this mess',
+        400,
+      );
+    }
+
+    const mealCounts =
+      splitMethod === ExpenseSplitMethod.MEAL_COUNT
+        ? await this.getMealCounts(messId, memberIds, billingMonth)
+        : new Map<string, number>();
+
+    return memberIds.map((id) => ({
+      id,
+      name: activeById.get(id)?.name,
+      mealCount: mealCounts.get(id) ?? 0,
+    }));
+  }
+
+  private async prepareExpense(
+    userId: string,
+    role: AuthRole,
+    dto: CreateExpenseDto | UpdateExpenseDto,
+    existing?: {
+      mess_id: string;
+      category: ExpenseCategory;
+      type: ExpenseRecordType;
+      utility_type: UtilityType | null;
+      amount: Prisma.Decimal;
+      payment_type: ExpensePaymentType;
+      used_by: ExpenseUsedBy;
+      split_method: ExpenseSplitMethod;
+      purchased_by: string | null;
+      created_by: string;
+      expense_date: Date;
+      billing_month: Date | null;
+      item_name: string | null;
+      quantity: Prisma.Decimal | null;
+      unit: string | null;
+      description: string | null;
+      receipt_url: string | null;
+      receipt_public_id: string | null;
+      receipt_resource_type: string | null;
+      shares?: Array<{
+        member_id: string;
+        share_amount: Prisma.Decimal;
+      }>;
+    },
+    uploadedReceipt?: {
+      url: string;
+      publicId: string;
+      resourceType: CloudinaryResourceType;
+    },
+  ): Promise<PreparedExpense> {
+    const messId =
+      'messId' in dto && dto.messId ? dto.messId : existing?.mess_id;
+    if (!messId) throw new HttpException('Mess ID is required', 400);
+
+    await this.verifyMessMemberAccess(messId, userId, role);
+    await this.ensureActiveSubscription(messId, role);
+    const canManage = await this.hasManagerAccess(messId, userId, role);
+
+    const amount = Number(dto.amount ?? existing?.amount ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new HttpException('Amount must be greater than zero', 400);
+    }
+
+    const category =
+      dto.category ?? existing?.category ?? ExpenseCategory.OTHER;
+    const categoryChanged =
+      dto.category !== undefined && dto.category !== existing?.category;
+    const type = this.inferRecordType(
+      category,
+      dto.type ?? (categoryChanged ? undefined : existing?.type),
+    );
+    const utilityType = this.inferUtilityType(
+      category,
+      dto.utilityType ?? (categoryChanged ? undefined : existing?.utility_type),
+    );
+    let paidFrom = this.normalizePaidFrom({
+      paidFrom: dto.paidFrom ?? undefined,
+      paymentType: dto.paymentType ?? existing?.payment_type,
+    });
+    let usedBy = dto.usedBy ?? existing?.used_by ?? ExpenseUsedBy.ALL_MEMBERS;
+    let splitMethod =
+      dto.splitMethod ??
+      existing?.split_method ??
+      (category === ExpenseCategory.FOOD || category === ExpenseCategory.GROCERY
+        ? ExpenseSplitMethod.MEAL_COUNT
+        : ExpenseSplitMethod.EQUAL);
+    const expenseDate = this.getExpenseDate(dto, existing?.expense_date);
+    const billingMonth = this.monthStart(
+      dto.billingMonth ?? existing?.billing_month ?? expenseDate,
+    );
+    let purchasedByMemberId =
+      dto.purchasedBy?.trim() ||
+      existing?.purchased_by ||
+      existing?.created_by ||
+      userId;
+
+    if (!canManage) {
+      purchasedByMemberId = userId;
+    }
+    await this.ensureActiveMessMember(messId, purchasedByMemberId);
+
+    const selectedMemberIds =
+      dto.selectedMemberIds !== undefined
+        ? this.normalizeIdList(
+            dto.selectedMemberIds as string[] | string | undefined,
+          )
+        : [...new Set(existing?.shares?.map((share) => share.member_id) ?? [])];
+    const affectedMembers = await this.resolveAffectedMembers({
+      messId,
+      usedBy,
+      purchasedByMemberId,
+      selectedMemberIds,
+      expenseDate,
+      billingMonth,
+      splitMethod,
+    });
+
+    const customShares =
+      dto.customShares !== undefined
+        ? this.normalizeCustomShares(dto.customShares)
+        : splitMethod === ExpenseSplitMethod.CUSTOM
+          ? (existing?.shares ?? []).map((share) => ({
+              memberId: share.member_id,
+              amount: Number(share.share_amount),
+            }))
+          : [];
+
+    let impact;
+    try {
+      impact = calculateSplit({
+        amount,
+        paidFrom,
+        usedBy,
+        splitMethod,
+        members: affectedMembers,
+        customShares,
+      });
+    } catch (error) {
+      if (error instanceof ExpenseCalculationError) {
+        throw new HttpException(error.message, 400);
+      }
+      throw error;
+    }
+
+    return {
+      messId,
+      type,
+      category,
+      utilityType,
+      amount: roundMoney(amount),
+      paidFrom,
+      usedBy,
+      splitMethod,
+      purchasedByMemberId,
+      addedByUserId: existing?.created_by ?? userId,
+      expenseDate,
+      billingMonth,
+      itemName: this.hasOwn(dto, 'itemName')
+        ? this.normalizeOptionalText(dto.itemName)
+        : (existing?.item_name ?? null),
+      quantity: this.hasOwn(dto, 'quantity')
+        ? dto.quantity == null
+          ? null
+          : Number(dto.quantity)
+        : existing?.quantity == null
+          ? null
+          : Number(existing.quantity),
+      unit: this.hasOwn(dto, 'unit')
+        ? this.normalizeOptionalText(dto.unit)
+        : (existing?.unit ?? null),
+      description: this.hasOwn(dto, 'description')
+        ? this.normalizeOptionalText(dto.description)
+        : (existing?.description ?? null),
+      receiptUrl: uploadedReceipt
+        ? uploadedReceipt.url
+        : this.hasOwn(dto, 'receiptUrl')
+          ? (dto.receiptUrl ?? null)
+          : (existing?.receipt_url ?? null),
+      receiptPublicId: uploadedReceipt
+        ? uploadedReceipt.publicId
+        : this.hasOwn(dto, 'receiptUrl')
+          ? null
+          : (existing?.receipt_public_id ?? null),
+      receiptResourceType: uploadedReceipt
+        ? uploadedReceipt.resourceType
+        : this.hasOwn(dto, 'receiptUrl')
+          ? null
+          : ((existing?.receipt_resource_type as CloudinaryResourceType | null) ??
+            null),
+      affectedMembers,
+      shares: impact.shares,
+      payerCredit: impact.payerCredit,
+      totalSharedCost: impact.totalSharedCost,
+      personalHistoryAmount: impact.personalHistoryAmount,
+      requiresApproval: !canManage,
+    };
+  }
+
+  private previewResponse(prepared: PreparedExpense) {
+    return {
+      title: prepared.itemName || prepared.utilityType || prepared.category,
+      amount: prepared.amount,
+      type: prepared.type,
+      category: prepared.category,
+      utilityType: prepared.utilityType,
+      paidFrom:
+        prepared.paidFrom === ExpensePaymentType.FROM_DEPOSIT
+          ? 'MESS_DEPOSIT'
+          : prepared.paidFrom,
+      paymentType: prepared.paidFrom,
+      usedBy: prepared.usedBy,
+      splitMethod: prepared.splitMethod,
+      purchasedByMemberId: prepared.purchasedByMemberId,
+      affectedMemberCount: prepared.affectedMembers.length,
+      payerCredit: prepared.payerCredit,
+      personalHistoryAmount: prepared.personalHistoryAmount,
+      totalSharedCost: prepared.totalSharedCost,
+      shares: prepared.shares,
+      validation: {
+        isValid:
+          roundMoney(prepared.totalSharedCost) ===
+            roundMoney(prepared.amount) ||
+          prepared.personalHistoryAmount === prepared.amount,
+        message: 'Split preview calculated successfully',
+      },
+    };
+  }
+
+  private approvalStatus(status: string) {
+    return toApprovalStatus(status as 'DRAFT' | 'CONFIRMED' | 'CANCELLED');
+  }
+
+  private mapExpense(expense: any) {
+    const amount = Number(expense.amount ?? 0);
+    const shares = (expense.shares ?? []).map((share: any) => ({
+      id: share.id,
+      memberId: share.member_id,
+      memberName: share.member_name ?? share.member?.name,
+      mealCount: share.meal_count == null ? null : Number(share.meal_count),
+      shareAmount: Number(share.share_amount ?? 0),
+      isPayer: Boolean(share.is_payer),
+      member: share.member,
+    }));
+    const payerCredit = (expense.ledger_entries ?? [])
+      .filter(
+        (entry: any) =>
+          entry.type === DepositLedgerType.PERSONAL_EXPENSE_CREDIT,
+      )
+      .reduce((sum: number, entry: any) => sum + Number(entry.amount ?? 0), 0);
+    const sharedCost = shares.reduce(
+      (sum: number, share: any) => sum + share.shareAmount,
+      0,
+    );
+
+    return {
+      ...expense,
+      messId: expense.mess?.id,
+      type: expense.type,
+      category: expense.category,
+      utilityType: expense.utility_type,
+      amount,
+      description: expense.description,
+      receiptUrl: expense.receipt_url,
+      buyerId: expense.buyer_id,
+      purchasedBy: expense.purchased_by,
+      itemName: expense.item_name,
+      quantity: expense.quantity == null ? null : Number(expense.quantity),
+      unit: expense.unit,
+      expenseDate: expense.expense_date,
+      billingMonth: expense.billing_month,
+      paymentType: expense.payment_type,
+      paidFrom:
+        expense.payment_type === ExpensePaymentType.FROM_DEPOSIT
+          ? 'MESS_DEPOSIT'
+          : expense.payment_type,
+      usedBy: expense.used_by,
+      splitMethod: expense.split_method,
+      status: expense.status,
+      approvalStatus: this.approvalStatus(expense.status),
+      reviewedBy: expense.reviewed_by,
+      reviewedAt: expense.reviewed_at,
+      reviewNote: expense.review_note,
+      createdAt: expense.created_at,
+      updatedAt: expense.updated_at,
+      creator: expense.creator,
+      createdById: expense.creator?.id,
+      purchaser: expense.purchaser,
+      purchased_by: expense.purchaser,
+      created_by: expense.creator,
+      shares,
+      impactSummary: {
+        payerCredit: roundMoney(Number(payerCredit)),
+        sharedCost: roundMoney(Number(sharedCost)),
+        includedInMonthlyBill:
+          expense.payment_type !== ExpensePaymentType.COLLECTED_FUND,
+      },
+    };
+  }
+
+  async preview(userId: string, role: AuthRole, dto: ExpensePreviewDto) {
+    const prepared = await this.prepareExpense(userId, role, dto);
+    if (!prepared.requiresApproval) {
+      await this.fundLedgerService.assertSufficientBalance(
+        this.prisma,
+        prepared.messId,
+        prepared.paidFrom,
+        prepared.amount,
+      );
+    }
+    return this.previewResponse(prepared);
+  }
+
+  private async runSerializableTransaction<T>(
+    operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(operation, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          maxWait: 5_000,
+          timeout: 20_000,
+        });
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2034';
+        if (!isWriteConflict || attempt === maxAttempts) throw error;
+      }
+    }
+    throw new Error('Serializable transaction retry limit exceeded');
+  }
+
+  async create(
+    userId: string,
+    role: AuthRole,
+    dto: CreateExpenseDto,
+    receipt?: Express.Multer.File,
+  ) {
+    const uploaded = receipt
+      ? await uploadToCloudinary(receipt, 'mess_management/expenses', {
+          allowedTypes: ['image', 'pdf'],
+          maxSizeBytes: 10 * 1024 * 1024,
+        })
+      : null;
+
+    try {
+      const prepared = await this.prepareExpense(
+        userId,
+        role,
+        dto,
+        undefined,
+        uploaded
+          ? {
+              url: uploaded.url,
+              publicId: uploaded.public_id,
+              resourceType: uploaded.resource_type,
+            }
+          : undefined,
+      );
+
+      const expense = await this.runSerializableTransaction(async (tx) => {
+        if (!prepared.requiresApproval) {
+          await this.fundLedgerService.assertSufficientBalance(
+            tx,
+            prepared.messId,
+            prepared.paidFrom,
+            prepared.amount,
+          );
+        }
+
+        const created = await tx.expense.create({
+          data: {
+            mess_id: prepared.messId,
+            created_by: prepared.addedByUserId,
+            purchased_by: prepared.purchasedByMemberId,
+            type: prepared.type,
+            category: prepared.category,
+            utility_type: prepared.utilityType,
+            amount: prepared.amount,
+            expense_date: prepared.expenseDate,
+            billing_month: prepared.billingMonth,
+            description: prepared.description,
+            receipt_url: prepared.receiptUrl,
+            receipt_public_id: prepared.receiptPublicId,
+            receipt_resource_type: prepared.receiptResourceType,
+            buyer_id: dto.buyerId,
+            item_name: prepared.itemName,
+            quantity: prepared.quantity,
+            unit: prepared.unit,
+            payment_type: prepared.paidFrom,
+            used_by: prepared.usedBy,
+            split_method: prepared.splitMethod,
+            status: statusForExpenseWrite(!prepared.requiresApproval),
+            reviewed_by: prepared.requiresApproval ? null : userId,
+            reviewed_at: prepared.requiresApproval ? null : new Date(),
+            review_note: null,
+          },
+        });
+
+        if (prepared.shares.length) {
+          await tx.expenseShare.createMany({
+            data: prepared.shares.map((share) => ({
+              expense_id: created.id,
+              member_id: share.memberId,
+              member_name: share.memberName,
+              meal_count: share.mealCount,
+              share_amount: share.shareAmount,
+              is_payer: share.memberId === prepared.purchasedByMemberId,
+            })),
+          });
+        }
+
+        if (!prepared.requiresApproval) {
+          const ledgers = this.buildLedgerRows(created.id, prepared);
+          if (ledgers.length) {
+            await tx.depositLedger.createMany({ data: ledgers });
+          }
+        }
+
+        return tx.expense.findUniqueOrThrow({
+          where: { id: created.id },
+          select: this.expenseSelect,
+        });
+      });
+
+      const billingSync = prepared.requiresApproval
+        ? null
+        : await this.billReconciliation.reconcile(
+            prepared.messId,
+            prepared.billingMonth,
+          );
+      await this.sendExpenseNotification(userId, prepared, expense.id);
+
+      return { ...this.mapExpense(expense), billingSync };
+    } catch (error) {
+      if (uploaded) {
+        await deleteFromCloudinary(uploaded.public_id, uploaded.resource_type);
+      }
+      throw error;
+    }
+  }
+
+  private buildLedgerRows(
+    expenseId: string,
+    prepared: PreparedExpense,
+  ): Prisma.DepositLedgerCreateManyInput[] {
+    if (
+      prepared.paidFrom === ExpensePaymentType.PERSONAL &&
+      prepared.payerCredit > 0
+    ) {
+      return [
+        {
+          mess_id: prepared.messId,
+          member_id: prepared.purchasedByMemberId,
+          expense_id: expenseId,
+          type: DepositLedgerType.PERSONAL_EXPENSE_CREDIT,
+          direction: LedgerDirection.CREDIT,
+          amount: prepared.payerCredit,
+          effective_date: prepared.billingMonth,
+          note: 'Personal expense credit',
+        },
+      ];
+    }
+
+    if (prepared.paidFrom === ExpensePaymentType.FROM_DEPOSIT) {
+      return [
+        {
+          mess_id: prepared.messId,
+          expense_id: expenseId,
+          type: DepositLedgerType.MESS_EXPENSE_DEBIT,
+          direction: LedgerDirection.DEBIT,
+          amount: prepared.amount,
+          effective_date: prepared.billingMonth,
+          note: 'Mess deposit funded expense',
+        },
+      ];
+    }
+
+    if (prepared.paidFrom === ExpensePaymentType.COLLECTED_FUND) {
+      return [
+        {
+          mess_id: prepared.messId,
+          expense_id: expenseId,
+          type: DepositLedgerType.COLLECTED_FUND_OUT,
+          direction: LedgerDirection.DEBIT,
+          amount: prepared.amount,
+          effective_date: prepared.billingMonth,
+          note: 'Collected fund expense',
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  private buildStoredExpenseLedgerRows(expense: {
+    id: string;
+    mess_id?: string;
+    mess: { id: string };
+    purchased_by: string | null;
+    creator: { id: string };
+    amount: Prisma.Decimal;
+    payment_type: ExpensePaymentType;
+    used_by: ExpenseUsedBy;
+    billing_month: Date | null;
+    expense_date: Date;
+  }): Prisma.DepositLedgerCreateManyInput[] {
+    const effectiveDate = expense.billing_month ?? expense.expense_date;
+
+    if (
+      expense.payment_type === ExpensePaymentType.PERSONAL &&
+      expense.used_by !== ExpenseUsedBy.SELF_ONLY
+    ) {
+      return [
+        {
+          mess_id: expense.mess.id,
+          member_id: expense.purchased_by ?? expense.creator.id,
+          expense_id: expense.id,
+          type: DepositLedgerType.PERSONAL_EXPENSE_CREDIT,
+          direction: LedgerDirection.CREDIT,
+          amount: expense.amount,
+          effective_date: effectiveDate,
+          note: 'Personal expense credit',
+        },
+      ];
+    }
+
+    if (expense.payment_type === ExpensePaymentType.FROM_DEPOSIT) {
+      return [
+        {
+          mess_id: expense.mess.id,
+          expense_id: expense.id,
+          type: DepositLedgerType.MESS_EXPENSE_DEBIT,
+          direction: LedgerDirection.DEBIT,
+          amount: expense.amount,
+          effective_date: effectiveDate,
+          note: 'Mess deposit funded expense',
+        },
+      ];
+    }
+
+    if (expense.payment_type === ExpensePaymentType.COLLECTED_FUND) {
+      return [
+        {
+          mess_id: expense.mess.id,
+          expense_id: expense.id,
+          type: DepositLedgerType.COLLECTED_FUND_OUT,
+          direction: LedgerDirection.DEBIT,
+          amount: expense.amount,
+          effective_date: effectiveDate,
+          note: 'Collected fund expense',
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  private async sendExpenseNotification(
+    userId: string,
+    prepared: PreparedExpense,
+    expenseId: string,
+  ) {
     await this.notificationService
       .createForMess(
         userId,
-        dto.messId,
+        prepared.messId,
         NotificationType.EXPENSE_ADDED,
-        `New Expense Added - ${expense.mess.name}`,
-        `${expense.item_name || expense.category} - ${expense.amount} [${paymentType}]`,
+        prepared.requiresApproval
+          ? `${prepared.type === ExpenseRecordType.UTILITY ? 'Utility' : 'Expense'} Submitted for Approval`
+          : `New ${prepared.type === ExpenseRecordType.UTILITY ? 'Utility' : 'Expense'} Added`,
+        `${prepared.itemName || prepared.category} - ${prepared.amount} [${prepared.paidFrom}]`,
         {
           source: 'EXPENSE',
-          expenseId: expense.id,
-          paymentType,
+          expenseId,
+          paymentType: prepared.paidFrom,
+          usedBy: prepared.usedBy,
+          splitMethod: prepared.splitMethod,
+          approvalStatus: prepared.requiresApproval ? 'PENDING' : 'APPROVED',
         },
         undefined,
-        '/dashboard/finance',
+        '/expenses',
       )
-      .catch(() => {
-        // Silently fail if notification delivery fails.
-      });
-
-    return expense;
+      .catch(() => undefined);
   }
 
   async findAll(query: ExpenseFilterDto) {
@@ -305,9 +1068,7 @@ export class ExpenseService {
       'sortBy',
       'sortOrder',
     ]);
-    const { page, limit, skip, sortBy, sortOrder } =
-      paginationHelper(paginationOptions);
-
+    const { page, limit, skip } = paginationHelper(paginationOptions);
     const where = this.buildWhere(query);
 
     const [total, expenses, aggregate] = await Promise.all([
@@ -316,16 +1077,14 @@ export class ExpenseService {
         where,
         skip,
         take: limit,
-        orderBy: {
-          created_at: 'desc',
-        },
+        orderBy: { expense_date: 'desc' },
         select: this.expenseSelect,
       }),
       this.prisma.expense.aggregate({ where, _sum: { amount: true } }),
     ]);
 
     return {
-      data: expenses,
+      data: expenses.map((expense) => this.mapExpense(expense)),
       meta: buildMeta(total, page, limit),
       totalAmount: aggregate._sum.amount ?? 0,
     };
@@ -334,202 +1093,300 @@ export class ExpenseService {
   async findByMess(
     messId: string,
     userId: string,
-    role: string,
+    role: AuthRole,
     query: ExpenseFilterDto,
   ) {
-    if (role !== 'ADMIN') {
-      const membership = await this.prisma.messMembership.findUnique({
-        where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
-      });
-      const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-      if (!mess) throw new HttpException('Mess not found', 404);
-      if (!membership?.is_active && mess.created_by !== userId) {
-        throw new HttpException('Forbidden: Not a member of this mess', 403);
-      }
-    }
-
+    await this.verifyMessMemberAccess(messId, userId, role);
     return this.findAll({ ...query, messId });
   }
 
-  async findOne(id: string, userId: string, role: string) {
+  async findOne(id: string, userId: string, role: AuthRole) {
     const expense = await this.prisma.expense.findUnique({
       where: { id },
       select: this.expenseSelect,
     });
 
     if (!expense) throw new HttpException('Expense not found', 404);
+    await this.verifyMessMemberAccess(expense.mess.id, userId, role);
 
-    if (role !== 'ADMIN') {
-      const membership = await this.prisma.messMembership.findUnique({
-        where: {
-          mess_id_user_id: { mess_id: expense.mess.id, user_id: userId },
-        },
-      });
-      const mess = await this.prisma.mess.findUnique({
-        where: { id: expense.mess.id },
-      });
-      if (!membership?.is_active && mess?.created_by !== userId) {
-        throw new HttpException('Forbidden: Not a member of this mess', 403);
-      }
-    }
-
-    return expense;
+    return this.mapExpense(expense);
   }
 
   async update(
     id: string,
     userId: string,
-    role: string,
+    role: AuthRole,
     dto: UpdateExpenseDto,
     receipt?: Express.Multer.File,
   ) {
-    const expense = await this.prisma.expense.findUnique({
+    const existing = await this.prisma.expense.findUnique({
       where: { id },
-    });
-
-    // console.log('Updating expense:', { id, userId, role, dto, receipt });
-
-    if (!expense) {
-      throw new HttpException('Expense not found', 404);
-    }
-
-    await this.verifyMessMemberAccess(expense.mess_id, userId, role);
-    this.verifyExpenseOwner(expense, userId, role);
-    await this.ensureActiveSubscription(expense.mess_id, role);
-
-    const oldPaymentType = expense.payment_type;
-    const oldAmount = expense.amount;
-    const oldPurchasedBy = expense.purchased_by ?? expense.created_by;
-    const nextPurchasedBy = dto.purchasedBy?.trim() || oldPurchasedBy;
-
-    if (nextPurchasedBy !== oldPurchasedBy) {
-      await this.verifyManagerAccess(expense.mess_id, userId, role);
-    }
-    await this.ensureActiveMessMember(expense.mess_id, nextPurchasedBy);
-
-    const receiptUrl = receipt
-      ? (
-          await uploadToCloudinary(receipt, 'mess_management/expenses', {
-            allowedTypes: ['image', 'pdf'],
-            maxSizeBytes: 10 * 1024 * 1024,
-          })
-        ).url
-      : dto.receiptUrl;
-
-    const paymentType = dto.paymentType as ExpensePaymentType | undefined;
-
-    // Validate deposit balance when updating FROM_DEPOSIT expense
-    if ((paymentType ?? oldPaymentType) === ExpensePaymentType.FROM_DEPOSIT) {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const newAmount = dto.amount ?? Number(oldAmount);
-
-      const [deposit, allPayments, foodExpenses, utilityExpenses] = await Promise.all([
-        this.prisma.deposit.aggregate({
-          where: { mess_id: expense.mess_id, member_id: nextPurchasedBy },
-          _sum: { amount: true },
-        }),
-        this.prisma.payment.aggregate({
-          where: { mess_id: expense.mess_id, status: "APPROVED", created_at: { gte: start, lt: end } },
-          _sum: { amount: true },
-        }),
-        this.prisma.expense.aggregate({
-          where: {
-            mess_id: expense.mess_id,
-            category: { in: ['FOOD', 'GROCERY'] },
-            expense_date: { gte: start, lt: end },
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.expense.aggregate({
-          where: {
-            mess_id: expense.mess_id,
-            category: { notIn: ['FOOD', 'GROCERY'] },
-            expense_date: { gte: start, lt: end },
-          },
-          _sum: { amount: true },
-        }),
-      ]);
-
-      const currentBalance = Number(deposit._sum.amount ?? 0);
-      const payments = Number(allPayments._sum.amount ?? 0);
-      const totalFoodExpenses = Number(foodExpenses._sum.amount ?? 0);
-      const totalUtilityExpenses = Number(utilityExpenses._sum.amount ?? 0);
-
-      // If old was FROM_DEPOSIT, the old amount goes back to available balance
-      // const oldDeduction = oldPaymentType === ExpensePaymentType.FROM_DEPOSIT ? Number(oldAmount) : 0;
-      const totalDeposit = currentBalance + payments + Number(oldAmount);
-      const remainingBalance = totalDeposit - totalFoodExpenses - totalUtilityExpenses;
-
-      // console.log(totalDeposit, totalFoodExpenses, totalUtilityExpenses, remainingBalance, dto.amount);
-      // console.log(remainingBalance, newAmount);
-      if (remainingBalance < newAmount) {
-        throw new HttpException(
-          `Insufficient deposit balance. Required: ${newAmount}, Available: ${remainingBalance}`,
-          400,
-        );
-      }
-    }
-
-    const updatedExpense = await this.prisma.expense.update({
-      where: { id },
-      data: {
-        category: dto.category,
-        amount: dto.amount,
-        expense_date: dto.expenseDate ? new Date(dto.expenseDate) : undefined,
-        description: dto.description,
-        receipt_url: receiptUrl,
-        buyer_id: dto.buyerId,
-        purchased_by: nextPurchasedBy,
-        item_name: dto.itemName,
-        quantity: dto.quantity,
-        unit: dto.unit,
-        payment_type: paymentType,
-      },
-      select: this.expenseSelect,
-    });
-
-    // Handle personal payment deposit changes
-    const wasPersonal = oldPaymentType === ExpensePaymentType.PERSONAL;
-    const isNowPersonal = paymentType === ExpensePaymentType.PERSONAL;
-
-    if (wasPersonal) {
-      await this.prisma.deposit.deleteMany({
-        where: {
-          mess_id: expense.mess_id,
-          member_id: oldPurchasedBy,
-          note: { contains: `expense: ${id}` },
+      include: {
+        shares: {
+          select: { member_id: true, share_amount: true },
         },
-      });
-    }
+      },
+    });
+    if (!existing) throw new HttpException('Expense not found', 404);
 
-    if (isNowPersonal) {
-      await this.handlePersonalPaymentExpense(
-        expense.mess_id,
-        nextPurchasedBy,
-        dto.amount ?? Number(oldAmount),
-        id,
-        updatedExpense.expense_date,
+    await this.verifyMessMemberAccess(existing.mess_id, userId, role);
+    const canManage = await this.hasManagerAccess(
+      existing.mess_id,
+      userId,
+      role,
+    );
+    if (!canEditExpense(canManage, userId, existing.created_by)) {
+      throw new HttpException(
+        'Forbidden: Members can edit only expenses they submitted',
+        403,
       );
     }
 
-    // Recalculate monthly bills for any payment type change
-    // await this.recalculateExpenseMonthBill(expense.mess_id, oldExpenseDate);
-    // if (!this.isSameBillMonth(oldExpenseDate, updatedExpense.expense_date)) {
-    //   await this.recalculateExpenseMonthBill(
-    //     expense.mess_id,
-    //     updatedExpense.expense_date,
-    //   );
-    // }
+    const uploaded = receipt
+      ? await uploadToCloudinary(receipt, 'mess_management/expenses', {
+          allowedTypes: ['image', 'pdf'],
+          maxSizeBytes: 10 * 1024 * 1024,
+        })
+      : null;
 
-    return updatedExpense;
+    let prepared: PreparedExpense;
+    try {
+      prepared = await this.prepareExpense(
+        userId,
+        role,
+        dto,
+        existing,
+        uploaded
+          ? {
+              url: uploaded.url,
+              publicId: uploaded.public_id,
+              resourceType: uploaded.resource_type,
+            }
+          : undefined,
+      );
+    } catch (error) {
+      if (uploaded) {
+        await deleteFromCloudinary(uploaded.public_id, uploaded.resource_type);
+      }
+      throw error;
+    }
+    const previousMonth = this.monthStart(
+      existing.billing_month ?? existing.expense_date,
+    );
+
+    let updated;
+    try {
+      updated = await this.runSerializableTransaction(async (tx) => {
+        await tx.depositLedger.deleteMany({ where: { expense_id: id } });
+        if (canManage) {
+          await this.fundLedgerService.assertSufficientBalance(
+            tx,
+            prepared.messId,
+            prepared.paidFrom,
+            prepared.amount,
+          );
+        }
+        await tx.expenseShare.deleteMany({ where: { expense_id: id } });
+
+        await tx.expense.update({
+          where: { id },
+          data: {
+            purchased_by: prepared.purchasedByMemberId,
+            type: prepared.type,
+            category: prepared.category,
+            utility_type: prepared.utilityType,
+            amount: prepared.amount,
+            expense_date: prepared.expenseDate,
+            billing_month: prepared.billingMonth,
+            description: prepared.description,
+            receipt_url: prepared.receiptUrl,
+            receipt_public_id: prepared.receiptPublicId,
+            receipt_resource_type: prepared.receiptResourceType,
+            buyer_id: dto.buyerId ?? existing.buyer_id,
+            item_name: prepared.itemName,
+            quantity: prepared.quantity,
+            unit: prepared.unit,
+            payment_type: prepared.paidFrom,
+            used_by: prepared.usedBy,
+            split_method: prepared.splitMethod,
+            status: statusForExpenseWrite(canManage),
+            reviewed_by: canManage ? userId : null,
+            reviewed_at: canManage ? new Date() : null,
+            review_note: null,
+          },
+        });
+
+        if (prepared.shares.length) {
+          await tx.expenseShare.createMany({
+            data: prepared.shares.map((share) => ({
+              expense_id: id,
+              member_id: share.memberId,
+              member_name: share.memberName,
+              meal_count: share.mealCount,
+              share_amount: share.shareAmount,
+              is_payer: share.memberId === prepared.purchasedByMemberId,
+            })),
+          });
+        }
+
+        if (canManage) {
+          const ledgers = this.buildLedgerRows(id, prepared);
+          if (ledgers.length) {
+            await tx.depositLedger.createMany({ data: ledgers });
+          }
+        }
+
+        return tx.expense.findUniqueOrThrow({
+          where: { id },
+          select: this.expenseSelect,
+        });
+      });
+    } catch (error) {
+      if (uploaded) {
+        await deleteFromCloudinary(uploaded.public_id, uploaded.resource_type);
+      }
+      throw error;
+    }
+
+    if (
+      existing.receipt_public_id &&
+      existing.receipt_public_id !== prepared.receiptPublicId
+    ) {
+      await deleteFromCloudinary(
+        existing.receipt_public_id,
+        (existing.receipt_resource_type as CloudinaryResourceType | null) ??
+          'image',
+      );
+    }
+
+    const billingSync = await this.billReconciliation.reconcile(
+      existing.mess_id,
+      previousMonth,
+      prepared.billingMonth,
+    );
+
+    return {
+      ...this.mapExpense(updated),
+      billingSync,
+    };
+  }
+
+  async review(
+    id: string,
+    userId: string,
+    role: AuthRole,
+    dto: ReviewExpenseDto,
+  ) {
+    const existing = await this.prisma.expense.findUnique({
+      where: { id },
+      select: this.expenseSelect,
+    });
+    if (!existing) throw new HttpException('Expense not found', 404);
+
+    await this.verifyManagerAccess(existing.mess.id, userId, role);
+    if (existing.status !== 'DRAFT') {
+      throw new HttpException(
+        'Only pending expenses can be approved or rejected',
+        409,
+      );
+    }
+
+    const approving = dto.status === 'APPROVED';
+    const nextStatus = approving ? 'CONFIRMED' : 'CANCELLED';
+    const updated = await this.runSerializableTransaction(async (tx) => {
+      await tx.depositLedger.deleteMany({ where: { expense_id: id } });
+      if (approving) {
+        await this.fundLedgerService.assertSufficientBalance(
+          tx,
+          existing.mess.id,
+          existing.payment_type,
+          Number(existing.amount),
+        );
+      }
+
+      const reviewed = await tx.expense.update({
+        where: { id },
+        data: {
+          status: nextStatus,
+          reviewed_by: userId,
+          reviewed_at: new Date(),
+          review_note: this.normalizeOptionalText(dto.note),
+        },
+        select: this.expenseSelect,
+      });
+
+      if (approving) {
+        const ledgers = this.buildStoredExpenseLedgerRows(existing);
+        if (ledgers.length) await tx.depositLedger.createMany({ data: ledgers });
+      }
+
+      return reviewed;
+    });
+
+    const billingSync = await this.billReconciliation.reconcile(
+      existing.mess.id,
+      existing.billing_month ?? existing.expense_date,
+    );
+
+    await this.notificationService
+      .sendPushToUser(existing.creator.id, {
+        title: `Expense ${dto.status === 'APPROVED' ? 'approved' : 'rejected'}`,
+        body: `${existing.item_name || existing.category} was ${dto.status.toLowerCase()}.`,
+        url: `/expense-details?expenseId=${encodeURIComponent(id)}&messId=${encodeURIComponent(existing.mess.id)}`,
+        data: {
+          type: 'EXPENSE_REVIEWED',
+          expenseId: id,
+          messId: existing.mess.id,
+          approvalStatus: dto.status,
+        },
+      })
+      .catch(() => undefined);
+
+    return { ...this.mapExpense(updated), billingSync };
+  }
+
+  async remove(id: string, userId: string, role: AuthRole) {
+    const expense = await this.prisma.expense.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        mess_id: true,
+        expense_date: true,
+        billing_month: true,
+        receipt_public_id: true,
+        receipt_resource_type: true,
+      },
+    });
+    if (!expense) throw new HttpException('Expense not found', 404);
+
+    await this.verifyManagerAccess(expense.mess_id, userId, role);
+    const month = this.monthStart(
+      expense.billing_month ?? expense.expense_date,
+    );
+
+    await this.runSerializableTransaction(async (tx) => {
+      await tx.depositLedger.deleteMany({ where: { expense_id: id } });
+      await tx.expense.delete({ where: { id } });
+    });
+    if (expense.receipt_public_id) {
+      await deleteFromCloudinary(
+        expense.receipt_public_id,
+        (expense.receipt_resource_type as CloudinaryResourceType | null) ??
+          'image',
+      );
+    }
+    const billingSync = await this.billReconciliation.reconcile(
+      expense.mess_id,
+      month,
+    );
+
+    return { message: 'Expense deleted successfully', billingSync };
   }
 
   async requestPriceReview(
     id: string,
     userId: string,
-    role: string,
+    role: AuthRole,
     dto: RequestPriceReviewDto,
   ) {
     const expense = await this.prisma.expense.findUnique({
@@ -537,150 +1394,269 @@ export class ExpenseService {
       select: {
         id: true,
         mess_id: true,
-        created_by: true,
-        purchased_by: true,
         item_name: true,
         category: true,
         amount: true,
+        purchased_by: true,
+        created_by: true,
         mess: { select: { id: true, name: true } },
-        creator: { select: { id: true, name: true, email: true } },
-        purchaser: { select: { id: true, name: true, email: true } },
       },
     });
 
-    if (!expense) {
-      throw new HttpException('Expense not found', 404);
-    }
-
+    if (!expense) throw new HttpException('Expense not found', 404);
     await this.verifyManagerAccess(expense.mess_id, userId, role);
-    await this.ensureActiveSubscription(expense.mess_id, role);
 
-    const message = dto.message.trim();
-    const itemLabel = expense.item_name || expense.category;
-    const targetUserId = expense.purchased_by ?? expense.created_by;
-
-    const result = await this.notificationService.sendPushToUser(
-      targetUserId,
+    return this.notificationService.sendPushToUser(
+      expense.purchased_by ?? expense.created_by,
       {
         title: `Price review requested - ${expense.mess.name}`,
-        body: message,
-        url: '/dashboard/finance',
+        body: dto.message.trim(),
+        url: '/expenses',
         data: {
           messId: expense.mess.id,
           expenseId: expense.id,
-          itemName: itemLabel,
+          itemName: expense.item_name || expense.category,
           amount: String(expense.amount),
           type: 'EXPENSE_PRICE_REVIEW',
         },
       },
     );
+  }
+
+  async getSummary(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+    month: string,
+  ) {
+    await this.verifyMessMemberAccess(messId, userId, role);
+    const { start } = this.monthRange(month);
+    const isManager = role === 'ADMIN' || role === 'MANAGER';
+
+    const shareWhere: Prisma.ExpenseShareWhereInput = {
+      member_id: userId,
+      expense: {
+        mess_id: messId,
+        status: 'CONFIRMED',
+        billing_month: start,
+        payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+        NOT: {
+          payment_type: ExpensePaymentType.PERSONAL,
+          used_by: ExpenseUsedBy.SELF_ONLY,
+        },
+      },
+    };
+
+    const [myShares, personalSelf, recent, allExpenses] = await Promise.all([
+      this.prisma.expenseShare.findMany({
+        where: shareWhere,
+        include: { expense: true },
+      }),
+      this.prisma.expense.findMany({
+        where: {
+          mess_id: messId,
+          purchased_by: userId,
+          payment_type: ExpensePaymentType.PERSONAL,
+          used_by: ExpenseUsedBy.SELF_ONLY,
+          billing_month: start,
+          status: 'CONFIRMED',
+        },
+      }),
+      this.prisma.expense.findMany({
+        where: {
+          mess_id: messId,
+          ...(isManager
+            ? {}
+            : {
+                OR: [
+                  { purchased_by: userId },
+                  { shares: { some: { member_id: userId } } },
+                ],
+              }),
+          billing_month: start,
+          status: 'CONFIRMED',
+        },
+        take: 4,
+        orderBy: { expense_date: 'desc' },
+        select: this.expenseSelect,
+      }),
+      isManager
+        ? this.prisma.expense.aggregate({
+            where: {
+              mess_id: messId,
+              billing_month: start,
+              status: 'CONFIRMED',
+            },
+            _sum: { amount: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    const foodCategories = new Set<ExpenseCategory>([
+      ExpenseCategory.FOOD,
+      ExpenseCategory.GROCERY,
+    ]);
+    const utilityExclusions = new Set<ExpenseCategory>([
+      ExpenseCategory.FOOD,
+      ExpenseCategory.GROCERY,
+      ExpenseCategory.RENT,
+    ]);
+
+    const foodBill = myShares
+      .filter((share) => foodCategories.has(share.expense.category))
+      .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
+    const utilityBill = myShares
+      .filter((share) => !utilityExclusions.has(share.expense.category))
+      .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
+    const roomRent = myShares
+      .filter((share) => share.expense.category === ExpenseCategory.RENT)
+      .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
+    const personalAmount = personalSelf.reduce(
+      (sum, expense) => sum + Number(expense.amount ?? 0),
+      0,
+    );
 
     return {
-      expenseId: expense.id,
-      targetUserId,
-      ...result,
+      month: start,
+      myView: {
+        foodBill: roundMoney(foodBill),
+        utilityBill: roundMoney(utilityBill),
+        roomRent: roundMoney(roomRent),
+        total: roundMoney(foodBill + utilityBill + roomRent),
+        personalExpenseAmount: roundMoney(personalAmount),
+        transactionCount: myShares.length + personalSelf.length,
+      },
+      managerView: isManager
+        ? {
+            totalExpenses: Number(allExpenses?._sum.amount ?? 0),
+            transactionCount: allExpenses?._count._all ?? 0,
+          }
+        : null,
+      recentExpenses: recent.map((expense) => this.mapExpense(expense)),
     };
   }
 
-  async remove(id: string, userId: string, role: string) {
-    const expense = await this.prisma.expense.findUnique({
-      where: { id },
-      include: {
-        creator: { select: { id: true, name: true, email: true } },
-        purchaser: { select: { id: true, name: true, email: true } },
-        mess: { select: { id: true, name: true } },
+  async getMyDetails(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+    month: string,
+  ) {
+    const summary = await this.getSummary(messId, userId, role, month);
+    const { start } = this.monthRange(month);
+    const history = await this.prisma.expense.findMany({
+      where: {
+        mess_id: messId,
+        billing_month: start,
+        OR: [
+          { purchased_by: userId },
+          { shares: { some: { member_id: userId } } },
+        ],
+      },
+      take: 20,
+      orderBy: { expense_date: 'desc' },
+      select: this.expenseSelect,
+    });
+
+    return {
+      ...summary.myView,
+      month: summary.month,
+      history: history.map((expense) => this.mapExpense(expense)),
+    };
+  }
+
+  async getManagerMemberExpenses(
+    messId: string,
+    userId: string,
+    role: AuthRole,
+    month: string,
+  ) {
+    await this.verifyManagerAccess(messId, userId, role);
+    const { start } = this.monthRange(month);
+    const billingSync = await this.billReconciliation.reconcile(messId, start);
+
+    const bills = await this.prisma.monthlyBill.findMany({
+      where: { mess_id: messId, month: start },
+      orderBy: { member: { name: 'asc' } },
+      select: {
+        member_id: true,
+        food_bill: true,
+        seat_rent: true,
+        utility_share: true,
+        deposit_total: true,
+        paid_amount: true,
+        final_due: true,
+        status: true,
+        member: { select: { id: true, name: true, email: true } },
       },
     });
 
-    if (!expense) {
-      throw new HttpException('Expense not found', 404);
-    }
-
-    await this.verifyManagerAccess(expense.mess_id, userId, role);
-    await this.ensureActiveSubscription(expense.mess_id, role);
-    const targetUser = expense.purchaser ?? expense.creator;
-
-    // If manager deletes someone else's expense, send email
-    if (targetUser.id !== userId && targetUser.email) {
-      try {
-        const html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fafcff; border-radius: 12px;">
-            <div style="background: linear-gradient(135deg, #2f80ed, #3b8cff); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
-              <h2 style="color: #fff; margin: 0; font-size: 20px;">Expense Deleted</h2>
-            </div>
-            <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #e6ebf4;">
-              <p style="color: #172554; font-size: 16px; font-weight: 600;">Hello ${targetUser.name},</p>
-              <p style="color: #53617d; font-size: 14px; line-height: 1.6;">
-                Your expense of <strong style="color: #dc2626;">৳ ${Number(expense.amount).toLocaleString()}</strong> 
-                for <strong>${expense.item_name || expense.category}</strong> in <strong>${expense.mess.name}</strong> has been deleted by a manager.
-              </p>
-              <div style="background: #f8faff; border-radius: 8px; padding: 16px; margin: 16px 0;">
-                <p style="margin: 4px 0; color: #6b7a99; font-size: 13px;">Amount: <strong style="color: #172554;">৳ ${Number(expense.amount).toLocaleString()}</strong></p>
-                <p style="margin: 4px 0; color: #6b7a99; font-size: 13px;">Category: <strong style="color: #172554;">${expense.category}</strong></p>
-                <p style="margin: 4px 0; color: #6b7a99; font-size: 13px;">Date: <strong style="color: #172554;">${new Date(expense.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong></p>
-              </div>
-              <p style="color: #53617d; font-size: 14px;">If you have any questions, please contact your mess manager.</p>
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/finance" 
-                 style="display: inline-block; background: linear-gradient(135deg, #2f80ed, #3b8cff); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                View All Expenses
-              </a>
-            </div>
-          </div>
-        `;
-        await sendMailer(targetUser.email, `Expense Deleted - ${expense.mess.name}`, html);
-      } catch (e) {
-        console.error('Failed to send expense deletion email:', e);
-      }
-    }
-
-    // If personal expense, remove the associated deposit entry first
-    if (expense.payment_type === ExpensePaymentType.PERSONAL) {
-      await this.prisma.deposit.deleteMany({
-        where: {
-          mess_id: expense.mess_id,
-          member_id: expense.purchased_by ?? expense.created_by,
-          note: { contains: `expense: ${id}` },
-        },
-      });
-    }
-
-    await this.prisma.expense.delete({
-      where: { id },
-    });
-
-    // Recalculate monthly bills for both FROM_DEPOSIT and PERSONAL
-    // const shouldRecalculate = expense.payment_type === ExpensePaymentType.FROM_DEPOSIT || expense.payment_type === ExpensePaymentType.PERSONAL;
-
-    // if (shouldRecalculate) {
-    //   await this.recalculateExpenseMonthBill(
-    //     expense.mess_id,
-    //     expense.expense_date,
-    //   );
-    // }
-
-    return { message: 'Expense deleted successfully' };
+    return {
+      month: start,
+      billingSync,
+      totals: {
+        totalExpenses: roundMoney(
+          bills.reduce(
+            (sum, bill) =>
+              sum +
+              Number(bill.food_bill) +
+              Number(bill.seat_rent) +
+              Number(bill.utility_share),
+            0,
+          ),
+        ),
+        totalUtility: roundMoney(
+          bills.reduce((sum, bill) => sum + Number(bill.utility_share), 0),
+        ),
+        fromDeposit: roundMoney(
+          bills.reduce(
+            (sum, bill) =>
+              sum + Number(bill.deposit_total) + Number(bill.paid_amount),
+            0,
+          ),
+        ),
+        members: bills.length,
+      },
+      members: bills.map((bill) => {
+        const totalCost = roundMoney(
+          Number(bill.food_bill) +
+            Number(bill.seat_rent) +
+            Number(bill.utility_share),
+        );
+        const depositPaid = roundMoney(
+          Number(bill.deposit_total) + Number(bill.paid_amount),
+        );
+        return {
+          member: bill.member,
+          totalCost,
+          depositPaid,
+          due: Number(bill.final_due),
+          status: bill.status,
+        };
+      }),
+    };
   }
 
   private buildWhere(query: ExpenseFilterDto): Prisma.ExpenseWhereInput {
     const where: Prisma.ExpenseWhereInput = {};
     if (query.messId) where.mess_id = query.messId;
     if (query.category) where.category = query.category;
+    if (query.approvalStatus) {
+      where.status = {
+        PENDING: ExpenseStatus.DRAFT,
+        APPROVED: ExpenseStatus.CONFIRMED,
+        REJECTED: ExpenseStatus.CANCELLED,
+      }[query.approvalStatus];
+    }
     if (query.userName) {
       where.OR = [
         {
-          creator: {
-            name: {
-              contains: query.userName,
-              mode: 'insensitive',
-            },
-          },
+          creator: { name: { contains: query.userName, mode: 'insensitive' } },
         },
         {
           purchaser: {
-            name: {
-              contains: query.userName,
-              mode: 'insensitive',
-            },
+            name: { contains: query.userName, mode: 'insensitive' },
           },
         },
       ];

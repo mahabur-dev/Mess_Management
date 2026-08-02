@@ -28,7 +28,7 @@ export class DepositController {
 
   @Post()
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
-  @ApiOperation({ summary: 'Add a deposit (all roles)' })
+  @ApiOperation({ summary: 'Record a direct member deposit (Manager/Admin)' })
   async create(@Req() req: Request, @Body() dto: CreateDepositDto) {
     const data = await this.depositService.create(
       req.user!.id,

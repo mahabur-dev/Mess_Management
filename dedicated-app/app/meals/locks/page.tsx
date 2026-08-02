@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Lock, Unlock } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
@@ -116,7 +117,7 @@ export default function LockMealsPage() {
         </MealCard>
 
         {message ? <InlineNotice tone={message.includes('successfully') ? 'success' : 'danger'}>{message}</InlineNotice> : null}
-        {loading ? <InlineNotice>Loading lock states...</InlineNotice> : null}
+        {loading ? <LoadingIndicator variant="card" label="Loading meal lock status" /> : null}
 
         <InlineNotice tone={selectedMeal ? 'info' : 'warning'}>
           {selectedMeal ? 'Locked meals cannot be changed by members.' : 'This meal has no record yet. Add at least one member meal before locking it.'}

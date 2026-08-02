@@ -13,7 +13,10 @@ export const EXPENSE_CATEGORIES = [
   'WATER',
   'OTHER',
 ] as const
-export const EXPENSE_PAYMENT_TYPES = ['FROM_DEPOSIT', 'PERSONAL'] as const
+export const EXPENSE_PAYMENT_TYPES = ['FROM_DEPOSIT', 'PERSONAL', 'COLLECTED_FUND'] as const
+export const EXPENSE_PAID_FROM = ['PERSONAL', 'MESS_DEPOSIT', 'COLLECTED_FUND'] as const
+export const EXPENSE_USED_BY = ['SELF_ONLY', 'SELECTED_MEMBERS', 'ALL_MEMBERS', 'MEAL_ON_MEMBERS'] as const
+export const EXPENSE_SPLIT_METHODS = ['EQUAL', 'MEAL_COUNT', 'CUSTOM'] as const
 export const MEAL_NAMES = ['BREAKFAST', 'LUNCH', 'DINNER'] as const
 export const NOTICE_TYPES = ['MEAL', 'PAYMENT', 'EMERGENCY', 'MEETING', 'RULE_UPDATE', 'GENERAL'] as const
 export const BILL_STATUSES = ['PENDING', 'PAID', 'PARTIAL'] as const
@@ -52,6 +55,23 @@ export const LABELS = {
   EXPENSE_PAYMENT_TYPES: {
     FROM_DEPOSIT: 'From Deposit',
     PERSONAL: 'Personal',
+    COLLECTED_FUND: 'Collected Fund',
+  },
+  EXPENSE_PAID_FROM: {
+    PERSONAL: 'Personal',
+    MESS_DEPOSIT: 'From Deposit',
+    COLLECTED_FUND: 'Collected Fund',
+  },
+  EXPENSE_USED_BY: {
+    SELF_ONLY: 'Self Only',
+    SELECTED_MEMBERS: 'Selected Members',
+    ALL_MEMBERS: 'All Members',
+    MEAL_ON_MEMBERS: 'Meal-On Members',
+  },
+  EXPENSE_SPLIT_METHODS: {
+    EQUAL: 'Equal',
+    MEAL_COUNT: 'Meal Count',
+    CUSTOM: 'Custom Split',
   },
   MEAL_NAMES: {
     BREAKFAST: 'Breakfast',
@@ -103,6 +123,9 @@ export const LABELS = {
 export type MemberRole = (typeof MEMBER_ROLES)[number]
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number]
 export type ExpensePaymentType = (typeof EXPENSE_PAYMENT_TYPES)[number]
+export type ExpensePaidFrom = (typeof EXPENSE_PAID_FROM)[number]
+export type ExpenseUsedBy = (typeof EXPENSE_USED_BY)[number]
+export type ExpenseSplitMethod = (typeof EXPENSE_SPLIT_METHODS)[number]
 export type MealName = (typeof MEAL_NAMES)[number]
 export type NoticeType = (typeof NOTICE_TYPES)[number]
 export type BillStatus = (typeof BILL_STATUSES)[number]
@@ -110,3 +133,21 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
 export type ComplaintCategory = (typeof COMPLAINT_CATEGORIES)[number]
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number]
+
+export const GENERAL_EXPENSE_CATEGORIES = EXPENSE_CATEGORIES.filter(
+  (category): category is Extract<ExpenseCategory, 'GROCERY' | 'FOOD' | 'RENT' | 'MAINTENANCE' | 'OTHER'> =>
+    ['GROCERY', 'FOOD', 'RENT', 'MAINTENANCE', 'OTHER'].includes(category),
+)
+
+export const UTILITY_FORM_OPTIONS: ReadonlyArray<{
+  category: ExpenseCategory
+  utilityType: string
+  label: string
+}> = [
+  { category: 'ELECTRICITY', utilityType: 'ELECTRICITY', label: 'Electricity' },
+  { category: 'GAS', utilityType: 'GAS', label: 'Gas' },
+  { category: 'WATER', utilityType: 'WATER', label: 'Water' },
+  { category: 'WIFI', utilityType: 'WIFI', label: 'Wifi' },
+  { category: 'CLEANER', utilityType: 'CLEANING', label: 'Cleaning' },
+  { category: 'UTILITY', utilityType: 'OTHER', label: 'Other' },
+]

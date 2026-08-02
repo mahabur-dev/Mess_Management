@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   DepositAggregateSummary,
@@ -112,7 +113,7 @@ export default function AllDepositsPage() {
 
         <section className="space-y-3">
           <DepositSectionTitle title={`Deposits (${visibleItems.length})`} />
-          {loading ? <div className="rounded-[18px] bg-white p-5 text-label font-semibold text-[#65838b]">Loading deposits...</div> : null}
+          {loading ? <LoadingIndicator variant="card" label="Loading deposits" /> : null}
           {!loading && visibleItems.length ? (
             <div className="flush-list">
               {visibleItems.map((item, index) => (
@@ -128,14 +129,6 @@ export default function AllDepositsPage() {
           ) : null}
           {!loading && !visibleItems.length ? <div className="rounded-[18px] bg-white p-5 text-label font-semibold text-[#65838b]">No deposits found.</div> : null}
         </section>
-
-        <div className="flex items-center gap-3 rounded-[18px] border border-[#cfeeed] bg-[#f3ffff] px-4 py-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#008d8c] text-title-sm font-bold text-white">i</div>
-          <div className="min-w-0">
-            <div className="text-label font-bold text-[#123748]">Showing deposits for {range.label}.</div>
-            <div className="mt-1 text-label text-[#65838b]">Use search and filters to find specific deposits.</div>
-          </div>
-        </div>
       </div>
     </MobileShell>
   )

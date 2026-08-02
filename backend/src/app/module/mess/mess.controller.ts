@@ -31,7 +31,7 @@ export class MessController {
   constructor(private readonly messService: MessService) { }
 
   @Post()
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Create a new mess with a trial subscription' })
   async create(@Req() req: Request, @Body() dto: CreateMessDto) {
     const data = await this.messService.create(req.user!.id, dto);
@@ -62,14 +62,18 @@ export class MessController {
 
   // Get ALL members across all messes owned by the manager
   @Get('members')
-  @UseGuards(AuthGuard('MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get all members from all my messes' })
   async getAllMyMembers(
     @Query() query: MessFilterDto,
     @Req() req: any,           // or use @CurrentUser()
   ) {
     const managerId = req.user.id;
-    const result = await this.messService.getAllMembers(managerId, query);
+    const result = await this.messService.getAllMembers(
+      managerId,
+      req.user.role,
+      query,
+    );
 
     return {
       message: 'All members fetched successfully',
@@ -79,15 +83,27 @@ export class MessController {
   }
 
   @Get('active')
-  @UseGuards(AuthGuard('ORGANIZER', 'MANAGER', 'MEMBER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get all active messes for member join requests' })
   async findActiveForJoin(@Query() query: MessFilterDto) {
     const result = await this.messService.findActiveMessesForJoin(query);
     return {
-      message: 'Active messes fetched successfully',
+      message: result.message,
       meta: result.meta,
       data: result.data,
     };
+  }
+
+  @Get(':id/member-options')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Get active member options for an accessible mess' })
+  async getMemberOptions(@Param('id') messId: string, @Req() req: Request) {
+    const data = await this.messService.getMemberOptions(
+      messId,
+      req.user!.id,
+      req.user!.role,
+    );
+    return { message: 'Member options fetched successfully', data };
   }
 
   // Get single mess by ID (Admin or member)

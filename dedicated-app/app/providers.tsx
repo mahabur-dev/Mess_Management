@@ -2,9 +2,11 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { BrowserRuntimeGuard } from '@/components/browser-runtime-guard'
 import { LogoutConfirmDialog } from '@/components/logout-confirm-dialog'
 import { NativeBackActionsProvider } from '@/components/native-back-actions'
 import { NativeBackHandler } from '@/components/native-back-handler'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
 import {
   buildLoginPath,
@@ -42,11 +44,16 @@ export function Providers({ children }: { children: ReactNode }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [hasMounted, setHasMounted] = useState(false)
 
   const clearSession = useCallback(() => {
     clearStoredToken()
     setToken(null)
     setUser(null)
+  }, [])
+
+  useEffect(() => {
+    setHasMounted(true)
   }, [])
 
   useEffect(() => {
@@ -159,8 +166,17 @@ export function Providers({ children }: { children: ReactNode }) {
     [user, token, isLoading, isSubmitting, login, register, logout, refresh]
   )
 
+  if (!hasMounted) {
+    return (
+      <AuthContext.Provider value={value}>
+        <LoadingIndicator variant="screen" label="Loading application" />
+      </AuthContext.Provider>
+    )
+  }
+
   return (
     <AuthContext.Provider value={value}>
+      <BrowserRuntimeGuard />
       <NativeBackActionsProvider>
         <NativeBackHandler
           user={user}

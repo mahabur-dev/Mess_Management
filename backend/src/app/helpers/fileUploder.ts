@@ -79,6 +79,7 @@ import { HttpException } from '@nestjs/common';
 import config from '../config';
 
 type AllowedUploadType = 'image' | 'pdf';
+export type CloudinaryResourceType = 'image' | 'raw';
 
 type UploadOptions = {
   allowedTypes?: AllowedUploadType[];
@@ -93,13 +94,21 @@ cloudinary.config({
 
 export const uploadConfig = {
   storage: memoryStorage(),
+  limits: {
+    files: 1,
+    fileSize: 10 * 1024 * 1024,
+  },
 };
 
 export const uploadToCloudinary = async (
   file: Express.Multer.File,
   folder = 'mess_management',
   options: UploadOptions = {},
-): Promise<{ url: string; public_id: string }> => {
+): Promise<{
+  url: string;
+  public_id: string;
+  resource_type: CloudinaryResourceType;
+}> => {
   if (!file || !file.buffer?.length) {
     throw new HttpException('No valid file provided', 400);
   }
@@ -138,17 +147,26 @@ export const uploadToCloudinary = async (
         }
         if (!result)
           return reject(new Error('Upload failed - no result returned'));
-        resolve({ url: result.secure_url, public_id: result.public_id });
+        resolve({
+          url: result.secure_url,
+          public_id: result.public_id,
+          resource_type: isPdf ? 'raw' : 'image',
+        });
       },
     );
     streamifier.createReadStream(file.buffer).pipe(uploadStream);
   });
 };
 
-export const deleteFromCloudinary = async (publicId: string): Promise<void> => {
+export const deleteFromCloudinary = async (
+  publicId: string,
+  resourceType: CloudinaryResourceType = 'image',
+): Promise<void> => {
   if (!publicId) return;
   try {
-    await cloudinary.uploader.destroy(publicId);
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
   } catch (error) {
     console.error('Cloudinary delete failed:', error);
   }

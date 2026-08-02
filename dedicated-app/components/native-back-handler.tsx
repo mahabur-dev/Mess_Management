@@ -5,7 +5,7 @@ import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { usePathname, useRouter } from 'next/navigation'
 import { useNativeBackActions } from '@/components/native-back-actions'
-import { getAppBackFallback } from '@/lib/app-permissions'
+import { getAppBackFallback, hasActiveMess } from '@/lib/app-permissions'
 import { isAuthPath, normalizePathname, type AuthUser } from '@/lib/auth'
 import { appHref } from '@/lib/routes'
 
@@ -61,6 +61,14 @@ export function NativeBackHandler({
         }
 
         onHomeBack?.()
+        return
+      }
+
+      // A no-mess user navigates within a small, known onboarding graph. Use
+      // its deterministic parent route instead of browser history, which may
+      // still contain login redirects inside a Capacitor WebView.
+      if (!hasActiveMess(user)) {
+        router.replace(appHref(getAppBackFallback(user, normalizedPathname)))
         return
       }
 

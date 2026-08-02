@@ -4,6 +4,7 @@ import type { ComponentType } from 'react'
 import {
   Bell,
   ClipboardList,
+  DoorOpen,
   House,
   Landmark,
   LayoutGrid,
@@ -30,7 +31,7 @@ export type AppRouteItem = {
   exact?: boolean
 }
 
-const managerGlobalRoles = new Set(['ADMIN', 'MANAGER', 'ORGANIZER'])
+const managerGlobalRoles = new Set(['ADMIN', 'MANAGER'])
 
 function normalizeRole(role?: string | null) {
   return String(role ?? '').toUpperCase()
@@ -57,14 +58,17 @@ export function canAccessLevel(user: AuthUser | null | undefined, access: Access
 }
 
 const protectedRoutes: AppRouteItem[] = [
+  { href: '/create-mess', label: 'Create Mess', icon: House, access: 'public', exact: true },
+  { href: '/request-mess', label: 'Request Mess', icon: DoorOpen, access: 'public', exact: true },
   { href: '/members', label: 'Members', icon: Users, access: 'manager' },
   { href: '/add-member', label: 'Add Member', icon: Users, access: 'manager', exact: true },
+  { href: '/member-details', label: 'Member Details', icon: User, access: 'manager', exact: true },
   { href: '/edit-member', label: 'Edit Member', icon: Users, access: 'manager' },
-  { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'manager' },
-  { href: '/add-expense', label: 'Add Expense', icon: ReceiptText, access: 'manager', exact: true },
-  { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'manager', exact: true },
-  { href: '/expense-details', label: 'Expense Details', icon: ReceiptText, access: 'manager' },
-  { href: '/edit-expense', label: 'Edit Expense', icon: ReceiptText, access: 'manager' },
+  { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
+  { href: '/add-expense', label: 'Add Expense', icon: ReceiptText, access: 'mess', exact: true },
+  { href: '/add-utility', label: 'Add Utility', icon: Zap, access: 'mess', exact: true },
+  { href: '/expense-details', label: 'Expense Details', icon: ReceiptText, access: 'mess' },
+  { href: '/edit-expense', label: 'Edit Expense', icon: ReceiptText, access: 'mess' },
   { href: '/deposits', label: 'Deposits', icon: Landmark, access: 'manager' },
   { href: '/edit-deposit', label: 'Edit Deposit', icon: Landmark, access: 'manager' },
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
@@ -99,11 +103,11 @@ export const managerQuickActions: AppRouteItem[] = [
 
 export const memberQuickActions: AppRouteItem[] = [
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
-  { href: '/monthly-bill', label: 'My Bill', icon: ClipboardList, access: 'mess' },
+  { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
   { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
-  { href: '/profile', label: 'Profile', icon: User, access: 'public' },
+  { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
 ]
 
 export function getHomeQuickActions(user: AuthUser | null | undefined) {
@@ -124,7 +128,7 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
 
   const primary: AppRouteItem = canManageMess(user)
     ? { href: '/members', label: 'Members', icon: Users, access: 'manager' }
-    : { href: '/monthly-bill', label: 'Bills', icon: ClipboardList, access: 'mess' }
+    : { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' }
 
   const tabs: AppRouteItem[] = [
     { href: '/', label: 'Home', icon: House, access: 'public', exact: true },
@@ -136,11 +140,23 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
   return tabs.filter((item) => canAccessLevel(user, item.access))
 }
 
+const onboardingTabPaths = new Set(['/', '/profile', '/settings', '/more'])
+
+/**
+ * Keeps primary onboarding navigation available while a user has no active
+ * mess. Connected users retain each screen's explicit navigation choice.
+ */
+export function shouldShowDefaultBottomNavigation(user: AuthUser | null | undefined, pathname: string) {
+  const normalizedPathname = normalizePathname(pathname)
+  if (normalizedPathname === '/' || normalizedPathname === '/more') return true
+  return !hasActiveMess(user) && onboardingTabPaths.has(normalizedPathname)
+}
+
 export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] {
   const managerLinks: AppRouteItem[] = [
     { href: '/members', label: 'Members', icon: Users, access: 'manager' },
     { href: '/meals', label: 'Meal Sheet', icon: UtensilsCrossed, access: 'mess' },
-    { href: '/expenses', label: 'Bazar/Expenses', icon: ReceiptText, access: 'manager' },
+    { href: '/expenses', label: 'Bazar/Expenses', icon: ReceiptText, access: 'mess' },
     { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
     { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
     { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
@@ -150,6 +166,7 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
 
   const memberLinks: AppRouteItem[] = [
     { href: '/meals', label: 'My Meals', icon: UtensilsCrossed, access: 'mess' },
+    { href: '/expenses', label: 'My Expenses', icon: ReceiptText, access: 'mess' },
     { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
     { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
     { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
@@ -176,7 +193,9 @@ export function canAccessAppPath(user: AuthUser | null | undefined, pathname: st
 }
 
 const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean }> = [
+  { href: '/more', fallback: '/', exact: true },
   { href: '/add-member', fallback: '/members', exact: true },
+  { href: '/member-details', fallback: '/members', exact: true },
   { href: '/edit-member', fallback: '/members', exact: true },
   { href: '/add-expense', fallback: '/expenses', exact: true },
   { href: '/add-utility', fallback: '/expenses', exact: true },
@@ -197,6 +216,8 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/edit-complaint', fallback: '/complaints', exact: true },
   { href: '/profile', fallback: '/more', exact: true },
   { href: '/settings', fallback: '/more', exact: true },
+  { href: '/create-mess', fallback: '/', exact: true },
+  { href: '/request-mess', fallback: '/', exact: true },
 ]
 
 export function getAppBackFallback(user: AuthUser | null | undefined, pathname: string) {

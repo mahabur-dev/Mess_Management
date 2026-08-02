@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { UserRound, UtensilsCrossed } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
@@ -156,7 +157,7 @@ function EditMemberMealContent() {
         </MealCard>
 
         {message ? <InlineNotice tone={message.includes('successfully') ? 'success' : 'danger'}>{message}</InlineNotice> : null}
-        {loading ? <InlineNotice>Loading current status...</InlineNotice> : null}
+        {loading ? <LoadingIndicator variant="card" label="Loading meal status" /> : null}
 
         <MealCard className="space-y-2">
           <div className="mb-2 text-body font-bold text-[#123748]">Update Meal</div>
@@ -187,7 +188,7 @@ function EditMemberMealContent() {
 
 export default function EditMemberMealPage() {
   return (
-    <Suspense fallback={<div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Loading...</div>}>
+    <Suspense fallback={<LoadingIndicator variant="screen" label="Loading member meal" />}>
       <EditMemberMealContent />
     </Suspense>
   )

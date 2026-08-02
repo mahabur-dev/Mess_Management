@@ -547,7 +547,7 @@ export default function SubscriptionsPage() {
                 onChange={(event) => setFilterStatus(event.target.value as '' | SubscriptionStatus)}
                 className="h-11 w-full appearance-none rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-4 text-sm font-semibold text-[#53617d] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
               >
-                <option value="">All statuses</option>
+                <option value="">All</option>
                 <option value="ACTIVE">Active</option>
                 <option value="EXPIRED">Expired</option>
                 <option value="CANCELLED">Cancelled</option>

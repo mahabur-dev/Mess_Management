@@ -19,7 +19,7 @@ export class DashboardController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Mess dashboard summary' })
   @ApiQuery({ name: 'month', required: false, example: '2026-05-01' })
   async messDashboard(@Param('messId') messId: string, @Req() req: Request, @Query('month') month?: string) {
@@ -28,7 +28,7 @@ export class DashboardController {
   }
 
   @Get('mess/:messId/monthly-overview')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Daily income & expense data for monthly overview chart' })
   @ApiQuery({ name: 'month', required: false, example: '2026-05-01' })
   async getMonthlyOverview(@Param('messId') messId: string, @Req() req: Request, @Query('month') month?: string) {
@@ -37,7 +37,7 @@ export class DashboardController {
   }
 
   @Get('mess/:messId/expense-breakdown')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Expense breakdown by category for pie chart' })
   @ApiQuery({ name: 'month', required: false, example: '2026-05-01' })
   async getExpenseBreakdown(@Param('messId') messId: string, @Req() req: Request, @Query('month') month?: string) {
@@ -46,7 +46,7 @@ export class DashboardController {
   }
 
   @Get('mess/:messId/weekly-meals')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER', 'ORGANIZER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Weekly meal counts (Mon-Sun) for bar chart' })
   @ApiQuery({ name: 'date', required: false, example: '2026-06-22' })
   async getWeeklyMealCount(@Param('messId') messId: string, @Req() req: Request, @Query('date') date?: string) {

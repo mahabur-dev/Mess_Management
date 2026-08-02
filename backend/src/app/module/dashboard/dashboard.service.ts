@@ -1,5 +1,11 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { AttendanceStatus, MealName, Prisma } from '@prisma/client';
+import {
+  AttendanceStatus,
+  DepositLedgerType,
+  ExpensePaymentType,
+  MealName,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 // ─── Constants ──────────────────────────────────────────────
@@ -36,19 +42,20 @@ export class DashboardService {
 
   private getMonthRange(month?: string) {
     const source = month ? new Date(month) : new Date();
-    const year = source.getFullYear();
-    const monthIndex = source.getMonth();
+    if (Number.isNaN(source.getTime())) {
+      throw new HttpException('Invalid dashboard month', 400);
+    }
+    const year = source.getUTCFullYear();
+    const monthIndex = source.getUTCMonth();
     const start = new Date(Date.UTC(year, monthIndex, 1));
     const end = new Date(Date.UTC(year, monthIndex + 1, 1));
     return { start, end };
   }
 
   private getUtcDayRange(date: Date = new Date()) {
-    const start = new Date(Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-    ));
+    const start = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    );
     const end = new Date(start);
     end.setUTCDate(end.getUTCDate() + 1);
     return { start, end };
@@ -62,10 +69,16 @@ export class DashboardService {
     const membership = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-    if (!membership?.is_active) throw new HttpException('Forbidden: Not a member of this mess', 403);
+    if (!membership?.is_active)
+      throw new HttpException('Forbidden: Not a member of this mess', 403);
   }
 
-  async getMessDashboard(messId: string, userId: string, role: string, month?: string) {
+  async getMessDashboard(
+    messId: string,
+    userId: string,
+    role: string,
+    month?: string,
+  ) {
     await this.verifyMessMember(messId, userId, role);
     const { start, end } = this.getMonthRange(month);
     const { start: today, end: tomorrow } = this.getUtcDayRange();
@@ -74,9 +87,10 @@ export class DashboardService {
       todayAttendances,
       monthlyExpenses,
       monthlyExtraExpenses,
-      personalUtilityExpenses,
+      personalExpenseCredits,
       monthlyAttendances,
       totalPayment,
+      directDeposits,
       billsAgg,
       activeMembers,
       pendingPayments,
@@ -101,12 +115,11 @@ export class DashboardService {
         where: {
           mess_id: messId,
           category: {
-            in: ['FOOD', 'GROCERY']
+            in: ['FOOD', 'GROCERY'],
           },
-          expense_date: {
-            gte: start,
-            lt: end,
-          },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          billing_month: start,
         },
         _sum: { amount: true },
       }),
@@ -117,17 +130,23 @@ export class DashboardService {
           category: {
             notIn: ['FOOD', 'GROCERY', 'RENT'],
           },
-          expense_date: { gte: start, lt: end },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          billing_month: start,
         },
         _sum: { amount: true },
       }),
-      this.prisma.expense.aggregate({
+      this.prisma.depositLedger.aggregate({
         where: {
           mess_id: messId,
-          payment_type: {
-            notIn: ['FROM_DEPOSIT']
+          type: DepositLedgerType.PERSONAL_EXPENSE_CREDIT,
+          direction: 'CREDIT',
+          expense: {
+            is: {
+              status: 'CONFIRMED',
+              billing_month: start,
+            },
           },
-          expense_date: { gte: start, lt: end },
         },
         _sum: { amount: true },
       }),
@@ -146,62 +165,111 @@ export class DashboardService {
         },
       }),
       this.prisma.payment.aggregate({
-        where: { mess_id: messId, status: "APPROVED", created_at: { gte: start, lt: end } },
-        _sum: { amount: true }
+        where: {
+          mess_id: messId,
+          status: 'APPROVED',
+          OR: [
+            { monthly_bill: { month: start } },
+            {
+              monthly_bill_id: null,
+              payment_date: { gte: start, lt: end },
+            },
+            {
+              monthly_bill_id: null,
+              payment_date: null,
+              created_at: { gte: start, lt: end },
+            },
+          ],
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.deposit.aggregate({
+        where: {
+          mess_id: messId,
+          deposit_date: { gte: start, lt: end },
+        },
+        _sum: { amount: true },
       }),
       this.prisma.monthlyBill.aggregate({
         where: { mess_id: messId, month: start },
         _count: { _all: true },
-        _sum: { final_due: true, paid_amount: true, prev_balance: true, deposit_total: true },
+        _sum: {
+          final_due: true,
+          paid_amount: true,
+          prev_balance: true,
+          deposit_total: true,
+        },
       }),
       this.prisma.messMembership.findMany({
         where: { mess_id: messId, is_active: true },
         select: { monthly_rent: true, room_no: true },
       }),
-      this.prisma.payment.count({ where: { mess_id: messId, status: 'PENDING' } }),
+      this.prisma.payment.count({
+        where: { mess_id: messId, status: 'PENDING' },
+      }),
       this.prisma.notice.findMany({
         where: { mess_id: messId },
         take: 5,
         orderBy: [{ is_pinned: 'desc' }, { created_at: 'desc' }],
-        select: { id: true, title: true, type: true, is_pinned: true, created_at: true },
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          is_pinned: true,
+          created_at: true,
+        },
       }),
-      this.prisma.complaint.count({ where: { mess_id: messId, status: { in: ['PENDING', 'PROCESSING'] } } }),
+      this.prisma.complaint.count({
+        where: { mess_id: messId, status: { in: ['PENDING', 'PROCESSING'] } },
+      }),
     ]);
 
     // Calculate today's total meals using base value + guests per meal type
     const todayTotalMeals = todayAttendances.reduce((sum, att) => {
-      return sum + calculateTotalMeals(
-        AttendanceStatus.ON,
-        att.meal.name as MealName,
-        att.guests,
+      return (
+        sum +
+        calculateTotalMeals(AttendanceStatus.ON, att.meal.name, att.guests)
       );
     }, 0);
 
     // Calculate monthly total meals using base value + guests per meal type
     const totalMeals = monthlyAttendances.reduce((sum, att) => {
-      return sum + calculateTotalMeals(
-        AttendanceStatus.ON,
-        att.meal.name as MealName,
-        att.guests,
+      return (
+        sum +
+        calculateTotalMeals(AttendanceStatus.ON, att.meal.name, att.guests)
       );
     }, 0);
 
     const totalBazar = Number(monthlyExpenses._sum.amount ?? 0);
-    const currentMealRate = totalMeals > 0 ? Number((totalBazar / totalMeals).toFixed(2)) : 0;
-    const personalUtilityExpensesAmount = Number(personalUtilityExpenses._sum.amount ?? 0);
+    const currentMealRate =
+      totalMeals > 0 ? Number((totalBazar / totalMeals).toFixed(2)) : 0;
+    const personalExpenseCreditAmount = Number(
+      personalExpenseCredits._sum.amount ?? 0,
+    );
 
     const activeMembersCount = activeMembers.length;
     const extraExpenses = Number(monthlyExtraExpenses._sum.amount ?? 0);
-    const perExtraExpenses = activeMembersCount > 0 ? Number((extraExpenses / activeMembersCount).toFixed(2)) : 0;
+    const perExtraExpenses =
+      activeMembersCount > 0
+        ? Number((extraExpenses / activeMembersCount).toFixed(2))
+        : 0;
 
     // Calculate total room rent same way as monthly bills
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
-    const rooms = Array.isArray(mess?.rooms) ? mess!.rooms : [];
+    const rooms = Array.isArray(mess?.rooms) ? mess.rooms : [];
 
-    const totalRoomRent = activeMembersCount > 0 ? activeMembers.reduce((sum, member) => {
-      const roomRent = this.getRoomRentPerMember(rooms, member.room_no, Number(member.monthly_rent), Number(mess?.monthly_rent));
-      return sum + (roomRent || 0);
-    }, 0) : 0;
+    const totalRoomRent =
+      activeMembersCount > 0
+        ? activeMembers.reduce((sum, member) => {
+            const roomRent = this.getRoomRentPerMember(
+              rooms,
+              member.room_no,
+              Number(member.monthly_rent),
+              Number(mess?.monthly_rent),
+            );
+            return sum + (roomRent || 0);
+          }, 0)
+        : 0;
     const totalCost = totalBazar + extraExpenses + totalRoomRent;
 
     // ── Prev-balance logic (carry-over from previous month) ────────────────────
@@ -220,22 +288,28 @@ export class DashboardService {
 
     const totalDepositAmount =
       Number(totalPayment._sum.amount ?? 0) +
-      personalUtilityExpensesAmount +
+      Number(directDeposits._sum.amount ?? 0) +
+      personalExpenseCreditAmount +
       creditFromPrevBalance;
 
     const billedTotalDue = Number(billsAgg._sum.final_due ?? 0);
     const hasGeneratedBills = billsAgg._count._all > 0;
-    const paidAmount = Number(billsAgg._sum.paid_amount ?? 0);
-
     const estimatedTotalDue = Math.max(
-      totalCost - (Number(totalPayment._sum.amount ?? 0) + personalUtilityExpensesAmount + creditFromPrevBalance),
+      totalCost -
+        (Number(totalPayment._sum.amount ?? 0) +
+          Number(directDeposits._sum.amount ?? 0) +
+          personalExpenseCreditAmount +
+          creditFromPrevBalance),
       0,
     );
 
     // When bills exist: final_due ALREADY includes prev_balance (see monthly-bill.service.ts).
     // When no bills yet: estimate and explicitly add dueFromPrevBalance.
     const totalDue = Number(
-      (hasGeneratedBills ? billedTotalDue : estimatedTotalDue + dueFromPrevBalance).toFixed(2),
+      (hasGeneratedBills
+        ? billedTotalDue
+        : estimatedTotalDue + dueFromPrevBalance
+      ).toFixed(2),
     );
 
     return {
@@ -247,7 +321,9 @@ export class DashboardService {
       currentMealRate,
       totalDue,
       totalDepositAmount,
-      paidAmount: Number(totalPayment._sum.amount ?? 0),
+      paidAmount:
+        Number(totalPayment._sum.amount ?? 0) +
+        Number(directDeposits._sum.amount ?? 0),
       activeMembers: activeMembersCount,
       pendingPayments,
       openComplaints: complaints,
@@ -260,7 +336,12 @@ export class DashboardService {
   /**
    * Get daily expense and payment (income) data for the monthly overview chart
    */
-  async getMonthlyOverview(messId: string, userId: string, role: string, month?: string) {
+  async getMonthlyOverview(
+    messId: string,
+    userId: string,
+    role: string,
+    month?: string,
+  ) {
     await this.verifyMessMember(messId, userId, role);
     const { start, end } = this.getMonthRange(month);
 
@@ -268,7 +349,9 @@ export class DashboardService {
     const expenses = await this.prisma.expense.findMany({
       where: {
         mess_id: messId,
-        expense_date: { gte: start, lt: end },
+        status: 'CONFIRMED',
+        payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+        billing_month: start,
       },
       select: {
         amount: true,
@@ -282,13 +365,20 @@ export class DashboardService {
       where: {
         mess_id: messId,
         status: 'APPROVED',
-        created_at: { gte: start, lt: end },
+        OR: [
+          { payment_date: { gte: start, lt: end } },
+          {
+            payment_date: null,
+            created_at: { gte: start, lt: end },
+          },
+        ],
       },
       select: {
         amount: true,
+        payment_date: true,
         created_at: true,
       },
-      orderBy: { created_at: 'asc' },
+      orderBy: [{ payment_date: 'asc' }, { created_at: 'asc' }],
     });
 
     // Build a map of dates within the month range
@@ -311,7 +401,9 @@ export class DashboardService {
 
     // Aggregate payments by date
     for (const pay of payments) {
-      const key = pay.created_at.toISOString().slice(0, 10);
+      const key = (pay.payment_date ?? pay.created_at)
+        .toISOString()
+        .slice(0, 10);
       const entry = dailyMap.get(key);
       if (entry) {
         entry.income += Number(pay.amount);
@@ -336,7 +428,12 @@ export class DashboardService {
   /**
    * Get expense breakdown by category for the pie chart
    */
-  async getExpenseBreakdown(messId: string, userId: string, role: string, month?: string) {
+  async getExpenseBreakdown(
+    messId: string,
+    userId: string,
+    role: string,
+    month?: string,
+  ) {
     await this.verifyMessMember(messId, userId, role);
     const { start, end } = this.getMonthRange(month);
 
@@ -344,6 +441,8 @@ export class DashboardService {
       by: ['category'],
       where: {
         mess_id: messId,
+        status: 'CONFIRMED',
+        payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
         expense_date: { gte: start, lt: end },
       },
       _sum: { amount: true },
@@ -365,11 +464,19 @@ export class DashboardService {
       OTHER: '#94a3b8',
     };
 
-    const totalAmount = expenses.reduce((sum, e) => sum + Number(e._sum.amount ?? 0), 0);
+    const totalAmount = expenses.reduce(
+      (sum, e) => sum + Number(e._sum.amount ?? 0),
+      0,
+    );
 
     const data = expenses.map((e) => ({
       name: e.category.charAt(0) + e.category.slice(1).toLowerCase(), // Capitalize first letter
-      value: totalAmount > 0 ? Number((((Number(e._sum.amount ?? 0) / totalAmount) * 100).toFixed(1))) : 0,
+      value:
+        totalAmount > 0
+          ? Number(
+              ((Number(e._sum.amount ?? 0) / totalAmount) * 100).toFixed(1),
+            )
+          : 0,
       amount: Number(e._sum.amount ?? 0),
       color: categoryColors[e.category] || '#94a3b8',
     }));
@@ -380,7 +487,12 @@ export class DashboardService {
   /**
    * Get weekly meal counts (Mon-Sun) for the bar chart
    */
-  async getWeeklyMealCount(messId: string, userId: string, role: string, date?: string) {
+  async getWeeklyMealCount(
+    messId: string,
+    userId: string,
+    role: string,
+    date?: string,
+  ) {
     await this.verifyMessMember(messId, userId, role);
 
     // Determine the week range (Mon-Sun)
@@ -416,11 +528,18 @@ export class DashboardService {
     });
 
     // Initialize daily counts
-    const dailyData: Record<string, { breakfast: number; lunch: number; dinner: number }> = {};
+    const dailyData: Record<
+      string,
+      { breakfast: number; lunch: number; dinner: number }
+    > = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      dailyData[d.toISOString().slice(0, 10)] = { breakfast: 0, lunch: 0, dinner: 0 };
+      dailyData[d.toISOString().slice(0, 10)] = {
+        breakfast: 0,
+        lunch: 0,
+        dinner: 0,
+      };
     }
 
     // Aggregate meals by day and meal name using fractional calculation
@@ -428,11 +547,13 @@ export class DashboardService {
       const key = meal.scheduled_date.toISOString().slice(0, 10);
       const entry = dailyData[key];
       if (!entry) continue;
-      const mealName = meal.name as MealName;
+      const mealName = meal.name;
 
       // Sum up total meals using base meal value + guests per attendee
       const count = meal.attendances.reduce((sum, a) => {
-        return sum + calculateTotalMeals(AttendanceStatus.ON, mealName, a.guests);
+        return (
+          sum + calculateTotalMeals(AttendanceStatus.ON, mealName, a.guests)
+        );
       }, 0);
 
       if (mealName === MealName.BREAKFAST) entry.breakfast += count;
@@ -441,9 +562,14 @@ export class DashboardService {
     }
 
     // Format for chart
-    const data: Array<{ day: string; breakfast: number; lunch: number; dinner: number }> = [];
+    const data: Array<{
+      day: string;
+      breakfast: number;
+      lunch: number;
+      dinner: number;
+    }> = [];
     let idx = 0;
-    for (const [dateStr, counts] of Object.entries(dailyData).sort()) {
+    for (const counts of Object.values(dailyData)) {
       data.push({
         day: dayNames[idx % 7],
         breakfast: +counts.breakfast.toFixed(2),
@@ -469,11 +595,16 @@ export class DashboardService {
     }
 
     const roomConfig = rooms.find((room) => {
-      if (!room || typeof room !== 'object' || Array.isArray(room)) return false;
+      if (!room || typeof room !== 'object' || Array.isArray(room))
+        return false;
       return (room as Record<string, unknown>)['roomName'] === roomNo;
     });
 
-    if (!roomConfig || typeof roomConfig !== 'object' || Array.isArray(roomConfig)) {
+    if (
+      !roomConfig ||
+      typeof roomConfig !== 'object' ||
+      Array.isArray(roomConfig)
+    ) {
       if (memberMonthlyRent && memberMonthlyRent > 0) return memberMonthlyRent;
       if (messMonthlyRent && messMonthlyRent > 0) return messMonthlyRent;
       return 0;
@@ -506,7 +637,9 @@ export class DashboardService {
       this.prisma.messRequest.count({ where: { status: 'PENDING' } }),
       this.prisma.messRequest.count({ where: { status: 'APPROVED' } }),
       this.prisma.mess.count(),
-      this.prisma.complaint.count({ where: { status: { in: ['PENDING', 'PROCESSING'] } } }),
+      this.prisma.complaint.count({
+        where: { status: { in: ['PENDING', 'PROCESSING'] } },
+      }),
       this.prisma.payment.count({ where: { status: 'PENDING' } }),
       this.prisma.expense.findMany({
         where: { receipt_url: { not: null } },

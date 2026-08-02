@@ -4,7 +4,15 @@ import {
   GenerateBillDto,
   UpdateBillStatusDto,
 } from './dto/monthly-bill.dto';
-import { AttendanceStatus, BillStatus, ExpenseCategory, MealName, Prisma } from '@prisma/client';
+import {
+  AttendanceStatus,
+  BillStatus,
+  DepositLedgerType,
+  ExpenseCategory,
+  ExpensePaymentType,
+  MealName,
+  Prisma,
+} from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -43,7 +51,7 @@ function calculateTotalMeals(
 
 @Injectable()
 export class MonthlyBillService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private readonly billSelect = {
     id: true,
@@ -72,12 +80,15 @@ export class MonthlyBillService {
 
   private getBillMonthRange(monthInput: string | Date) {
     // Normalize to first day of month consistently in UTC to avoid timezone mismatches
-    const month = new Date(monthInput)
-    const year = month.getFullYear()
-    const monthIndex = month.getMonth()
-    const utcMonth = new Date(Date.UTC(year, monthIndex, 1))
-    const nextMonth = new Date(Date.UTC(year, monthIndex + 1, 1))
-    return { month: utcMonth, nextMonth }
+    const month = new Date(monthInput);
+    if (Number.isNaN(month.getTime())) {
+      throw new HttpException('Invalid billing month', 400);
+    }
+    const year = month.getUTCFullYear();
+    const monthIndex = month.getUTCMonth();
+    const utcMonth = new Date(Date.UTC(year, monthIndex, 1));
+    const nextMonth = new Date(Date.UTC(year, monthIndex + 1, 1));
+    return { month: utcMonth, nextMonth };
   }
 
   private toFixedNumber(value: unknown) {
@@ -103,7 +114,11 @@ export class MonthlyBillService {
       return (room as Record<string, unknown>)['roomName'] === roomNo;
     });
 
-    if (!roomConfig || typeof roomConfig !== 'object' || Array.isArray(roomConfig)) {
+    if (
+      !roomConfig ||
+      typeof roomConfig !== 'object' ||
+      Array.isArray(roomConfig)
+    ) {
       return null;
     }
 
@@ -242,6 +257,8 @@ export class MonthlyBillService {
       mealAttendances,
       depositGroups,
       paymentGroups,
+      expenseShares,
+      personalCreditGroups,
     ] = await Promise.all([
       this.prisma.expense.aggregate({
         where: {
@@ -250,6 +267,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: {
             in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
           },
@@ -266,6 +286,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: ExpenseCategory.ELECTRICITY,
         },
         _sum: {
@@ -280,6 +303,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: ExpenseCategory.GAS,
         },
         _sum: {
@@ -294,6 +320,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: ExpenseCategory.WIFI,
         },
         _sum: {
@@ -308,6 +337,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: ExpenseCategory.CLEANER,
         },
         _sum: {
@@ -322,6 +354,9 @@ export class MonthlyBillService {
             gte: month,
             lt: nextMonth,
           },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          shares: { none: {} },
           category: {
             in: [
               ExpenseCategory.UTILITY,
@@ -332,7 +367,7 @@ export class MonthlyBillService {
               ExpenseCategory.ELECTRICITY,
               ExpenseCategory.CLEANER,
               ExpenseCategory.WIFI,
-              ExpenseCategory.GAS
+              ExpenseCategory.GAS,
             ],
           },
         },
@@ -345,6 +380,7 @@ export class MonthlyBillService {
         where: {
           meal: {
             mess_id: messId,
+            status: { not: 'CANCELLED' },
             scheduled_date: {
               gte: month,
               lt: nextMonth,
@@ -367,7 +403,7 @@ export class MonthlyBillService {
         by: ['member_id'],
         where: {
           mess_id: messId,
-          created_at: {
+          deposit_date: {
             gte: month,
             lt: nextMonth,
           },
@@ -382,9 +418,57 @@ export class MonthlyBillService {
         where: {
           mess_id: messId,
           status: 'APPROVED',
-          created_at: {
-            gte: month,
-            lt: nextMonth,
+          OR: [
+            { monthly_bill: { month } },
+            {
+              monthly_bill_id: null,
+              payment_date: { gte: month, lt: nextMonth },
+            },
+            {
+              monthly_bill_id: null,
+              payment_date: null,
+              created_at: { gte: month, lt: nextMonth },
+            },
+          ],
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
+
+      this.prisma.expenseShare.findMany({
+        where: {
+          expense: {
+            mess_id: messId,
+            billing_month: month,
+            status: 'CONFIRMED',
+            payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          },
+        },
+        select: {
+          member_id: true,
+          share_amount: true,
+          expense: {
+            select: {
+              category: true,
+            },
+          },
+        },
+      }),
+
+      this.prisma.depositLedger.groupBy({
+        by: ['member_id'],
+        where: {
+          mess_id: messId,
+          type: DepositLedgerType.PERSONAL_EXPENSE_CREDIT,
+          direction: 'CREDIT',
+          member_id: { not: null },
+          expense: {
+            is: {
+              mess_id: messId,
+              billing_month: month,
+              status: 'CONFIRMED',
+            },
           },
         },
         _sum: {
@@ -411,20 +495,50 @@ export class MonthlyBillService {
 
     const totalFoodExpense = this.toFixedNumber(foodExpenses._sum.amount);
 
-    const perMealRate =
-      totalMeals > 0 ? totalFoodExpense / totalMeals : 0;
+    const perMealRate = totalMeals > 0 ? totalFoodExpense / totalMeals : 0;
 
     const depositByUser = this.makeAmountMap(depositGroups);
     const paymentByUser = this.makeAmountMap(paymentGroups);
+    const personalCreditByUser = personalCreditGroups.reduce<
+      Record<string, number>
+    >((acc, row) => {
+      if (row.member_id)
+        acc[row.member_id] = this.toFixedNumber(row._sum.amount);
+      return acc;
+    }, {});
+
+    const allocatedFoodByUser: Record<string, number> = {};
+    const allocatedUtilityByUser: Record<string, number> = {};
+    const allocatedRentByUser: Record<string, number> = {};
+
+    for (const share of expenseShares) {
+      const value = this.toFixedNumber(share.share_amount);
+      const category = share.expense.category;
+
+      if (
+        category === ExpenseCategory.FOOD ||
+        category === ExpenseCategory.GROCERY
+      ) {
+        allocatedFoodByUser[share.member_id] = this.toFixedNumber(
+          (allocatedFoodByUser[share.member_id] ?? 0) + value,
+        );
+      } else if (category === ExpenseCategory.RENT) {
+        allocatedRentByUser[share.member_id] = this.toFixedNumber(
+          (allocatedRentByUser[share.member_id] ?? 0) + value,
+        );
+      } else {
+        allocatedUtilityByUser[share.member_id] = this.toFixedNumber(
+          (allocatedUtilityByUser[share.member_id] ?? 0) + value,
+        );
+      }
+    }
 
     const splitByMember = (value: unknown) =>
       activeMembers.length > 0
         ? this.toFixedNumber(Number(value ?? 0) / activeMembers.length)
         : 0;
 
-    const electricityShare = splitByMember(
-      electricityExpenses._sum.amount,
-    );
+    const electricityShare = splitByMember(electricityExpenses._sum.amount);
     const gasShare = splitByMember(gasExpenses._sum.amount);
     const wifiShare = splitByMember(wifiExpenses._sum.amount);
     const cleanerShare = splitByMember(cleanerExpenses._sum.amount);
@@ -433,107 +547,131 @@ export class MonthlyBillService {
     // console.log("perMember : ", utilityPerMember);
 
     // Fetch previous month's bills to get balances carried forward
-    const prevMonthStart = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1))
+    const prevMonthStart = new Date(
+      Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1),
+    );
     const prevBills = await this.prisma.monthlyBill.findMany({
       where: {
         mess_id: messId,
         month: prevMonthStart,
-        member_id: { in: activeMembers.map(m => m.user_id) },
+        member_id: { in: activeMembers.map((m) => m.user_id) },
       },
       select: { member_id: true, balance: true },
-    })
-    const prevBalanceByMember: Record<string, number> = {}
+    });
+    const prevBalanceByMember: Record<string, number> = {};
     for (const pb of prevBills) {
-      prevBalanceByMember[pb.member_id] = this.toFixedNumber(pb.balance)
+      prevBalanceByMember[pb.member_id] = this.toFixedNumber(pb.balance);
     }
 
     const dueDate = new Date(month);
     dueDate.setDate(mess.payment_deadline_day ?? 10);
 
-    const billWrites: Prisma.MonthlyBillUpsertArgs[] = activeMembers.map(({ user_id, monthly_rent, room_no }) => {
-      const prevBalance = prevBalanceByMember[user_id] ?? 0;
-      const memberMeals = mealCountByUser[user_id] ?? 0;
+    const billWrites: Prisma.MonthlyBillUpsertArgs[] = activeMembers.map(
+      ({ user_id, monthly_rent, room_no }) => {
+        const prevBalance = prevBalanceByMember[user_id] ?? 0;
+        const memberMeals = mealCountByUser[user_id] ?? 0;
 
-      const foodBill = this.toFixedNumber(memberMeals * perMealRate);
-      // console.log("food bill : ", foodBill)
-      const seatRent = this.calculateSeatRent(
-        rooms,
-        room_no,
-        monthly_rent,
-        mess.monthly_rent,
-      );
+        const foodBill = this.toFixedNumber(
+          memberMeals * perMealRate + (allocatedFoodByUser[user_id] ?? 0),
+        );
+        // console.log("food bill : ", foodBill)
+        const seatRent = this.toFixedNumber(
+          this.calculateSeatRent(
+            rooms,
+            room_no,
+            monthly_rent,
+            mess.monthly_rent,
+          ) + (allocatedRentByUser[user_id] ?? 0),
+        );
 
-      const depositTotal = depositByUser[user_id] ?? 0;
-      const paidAmount = paymentByUser[user_id] ?? 0;
+        const depositTotal = this.toFixedNumber(
+          (depositByUser[user_id] ?? 0) + (personalCreditByUser[user_id] ?? 0),
+        );
+        const paidAmount = paymentByUser[user_id] ?? 0;
+        const allocatedUtility = allocatedUtilityByUser[user_id] ?? 0;
 
-      // deposit_total already includes auto-created deposits from PERSONAL expenses
-      const effectiveDepositTotal = this.toFixedNumber(depositTotal);
-      const totalPaid = this.toFixedNumber(effectiveDepositTotal + paidAmount);
+        // deposit_total already includes auto-created deposits from PERSONAL expenses
+        const effectiveDepositTotal = this.toFixedNumber(depositTotal);
+        const totalPaid = this.toFixedNumber(
+          effectiveDepositTotal + paidAmount,
+        );
 
-      // Include previous month's balance in the current month's calculation
-      // prevBalance from DB: Positive (+) = due/baki from last month → gets added to current costs
-      //                     Negative (-) = extra/overpaid from last month → gets subtracted from costs (credit)
-      // Formula: due = max(0, totalCost - totalPaid + prevBalance)
-      // When prevBalance is +500 (due): costs - payments + 500 → increases due ✓
-      // When prevBalance is -200 (extra): costs - payments - 200 → decreases due (credit) ✓
+        // Include previous month's balance in the current month's calculation
+        // prevBalance from DB: Positive (+) = due/baki from last month → gets added to current costs
+        //                     Negative (-) = extra/overpaid from last month → gets subtracted from costs (credit)
+        // Formula: due = max(0, totalCost - totalPaid + prevBalance)
+        // When prevBalance is +500 (due): costs - payments + 500 → increases due ✓
+        // When prevBalance is -200 (extra): costs - payments - 200 → decreases due (credit) ✓
 
-      const rawDue =
-        foodBill + seatRent + utilityPerMember - totalPaid + prevBalance;
+        const rawDue =
+          foodBill +
+          seatRent +
+          utilityPerMember +
+          allocatedUtility -
+          totalPaid +
+          prevBalance;
 
-      const finalDue = this.toFixedNumber(Math.max(rawDue, 0));
-      // balance stores the actual net position (can be negative for overpayments)
-      // This ensures prev_balance carries forward properly as credit
-      const balance = this.toFixedNumber(rawDue);
+        const finalDue = this.toFixedNumber(Math.max(rawDue, 0));
+        // balance stores the actual net position (can be negative for overpayments)
+        // This ensures prev_balance carries forward properly as credit
+        const balance = this.toFixedNumber(rawDue);
 
-      const billStatus =
-        finalDue <= 0
-          ? BillStatus.PAID
-          : totalPaid > 0
-            ? BillStatus.PARTIAL
-            : BillStatus.PENDING;
+        const billStatus =
+          finalDue <= 0
+            ? BillStatus.PAID
+            : totalPaid > 0
+              ? BillStatus.PARTIAL
+              : BillStatus.PENDING;
 
-      const billData = {
-        total_meals: memberMeals,
-        meal_charge: foodBill,
-        food_bill: foodBill,
-        seat_rent: seatRent,
-        electricity_bill: electricityShare,
-        gas_bill: gasShare,
-        wifi_bill: wifiShare,
-        cleaner_bill: cleanerShare,
-        extra_cost: utilityExpensesAmount,
-        utility_share: utilityPerMember,
-        deposit_total: depositTotal,
-        paid_amount: paidAmount,
-        prev_balance: prevBalance,
-        final_due: finalDue,
-        balance,
-        due_date: dueDate,
-        status: billStatus,
-      };
+        const billData = {
+          total_meals: memberMeals,
+          meal_charge: foodBill,
+          food_bill: foodBill,
+          seat_rent: seatRent,
+          electricity_bill: electricityShare,
+          gas_bill: gasShare,
+          wifi_bill: wifiShare,
+          cleaner_bill: cleanerShare,
+          extra_cost: this.toFixedNumber(
+            utilityExpensesAmount + allocatedUtility,
+          ),
+          utility_share: this.toFixedNumber(
+            utilityPerMember + allocatedUtility,
+          ),
+          deposit_total: depositTotal,
+          paid_amount: paidAmount,
+          prev_balance: prevBalance,
+          final_due: finalDue,
+          balance,
+          due_date: dueDate,
+          status: billStatus,
+        };
 
-      return {
-        where: {
-          mess_id_member_id_month: {
+        return {
+          where: {
+            mess_id_member_id_month: {
+              mess_id: messId,
+              member_id: user_id,
+              month,
+            },
+          },
+          update: billData,
+          create: {
             mess_id: messId,
             member_id: user_id,
             month,
+            ...billData,
           },
-        },
-        update: billData,
-        create: {
-          mess_id: messId,
-          member_id: user_id,
-          month,
-          ...billData,
-        },
-        select: this.billSelect,
-      };
-    });
+          select: this.billSelect,
+        };
+      },
+    );
 
     return this.prisma.$transaction(
       async (tx) => {
-        type MonthlyBillResult = Awaited<ReturnType<typeof tx.monthlyBill.upsert>>;
+        type MonthlyBillResult = Awaited<
+          ReturnType<typeof tx.monthlyBill.upsert>
+        >;
         const bills: MonthlyBillResult[] = [];
 
         for (const billWrite of billWrites) {
@@ -601,10 +739,10 @@ export class MonthlyBillService {
     // Auto-recalculate bills when fetching for a specific mess to ensure utility costs are current
     if (query.month) {
       // Parse YYYY-MM or YYYY-MM-DD consistently to first day of month in UTC
-      const monthStr = query.month.substring(0, 7)
-      const [year, month] = monthStr.split('-').map(Number)
-      const billMonth = new Date(Date.UTC(year, month - 1, 1))
-      await this.recalculateMonthlyBills(messId, billMonth)
+      const monthStr = query.month.substring(0, 7);
+      const [year, month] = monthStr.split('-').map(Number);
+      const billMonth = new Date(Date.UTC(year, month - 1, 1));
+      await this.recalculateMonthlyBills(messId, billMonth);
     }
 
     return this.findAll({ ...query, messId });
@@ -671,9 +809,9 @@ export class MonthlyBillService {
     if (query.status) where.status = query.status;
     if (query.month) {
       // Match the UTC normalization used in getBillMonthRange
-      const monthStr = query.month.substring(0, 7)
-      const [year, month] = monthStr.split('-').map(Number)
-      where.month = new Date(Date.UTC(year, month - 1, 1))
+      const monthStr = query.month.substring(0, 7);
+      const [year, month] = monthStr.split('-').map(Number);
+      where.month = new Date(Date.UTC(year, month - 1, 1));
     }
     return where;
   }

@@ -62,7 +62,7 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/request-mess', label: 'Request Mess', icon: DoorOpen, access: 'public', exact: true },
   { href: '/members', label: 'Members', icon: Users, access: 'manager' },
   { href: '/add-member', label: 'Add Member', icon: Users, access: 'manager', exact: true },
-  { href: '/member-details', label: 'Member Details', icon: User, access: 'manager', exact: true },
+  { href: '/member-details', label: 'Member Details', icon: User, access: 'mess', exact: true },
   { href: '/edit-member', label: 'Edit Member', icon: Users, access: 'manager' },
   { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
   { href: '/add-expense', label: 'Add Expense', icon: ReceiptText, access: 'mess', exact: true },

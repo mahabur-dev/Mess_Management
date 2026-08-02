@@ -113,6 +113,7 @@ export function AppHeader({
     ) : (
       <ProfileAvatarLink />
     ))
+  const titleAlignment = !backHref && !leading ? 'text-left' : 'text-center'
 
   useEffect(() => {
     const header = headerRef.current
@@ -134,7 +135,7 @@ export function AppHeader({
     <header ref={headerRef} className="app-header top-hero px-4 pb-3" data-variant={variant}>
       <div className={`grid items-center gap-2 ${variant === 'onboarding' ? 'grid-cols-[52px_minmax(0,1fr)_52px]' : 'grid-cols-[44px_minmax(0,1fr)_44px]'}`}>
         <div className="flex justify-start">{leadingContent}</div>
-        <div className="min-w-0 text-center">
+        <div className={`min-w-0 ${titleAlignment}`}>
           <h1 className={`ui-header-title truncate ${variant === 'onboarding' ? 'text-title' : 'text-title-sm'}`}>{title}</h1>
           {subtitle ? <p className={`${variant === 'onboarding' ? 'mt-1 text-label' : 'mt-0.5 text-caption'} truncate text-white/82`}>{subtitle}</p> : null}
         </div>

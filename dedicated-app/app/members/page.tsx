@@ -14,8 +14,6 @@ import { canManageMess } from '@/lib/app-permissions'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from '@/lib/member-join-requests'
 import { useAuth } from '../providers'
 
-type MemberFilter = 'ALL' | 'ACTIVE' | 'INACTIVE'
-
 export default function MembersPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
@@ -23,7 +21,6 @@ export default function MembersPage() {
   const [members, setMembers] = useState<MobileMember[]>([])
   const [joinRequests, setJoinRequests] = useState<MemberJoinRequest[]>([])
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<MemberFilter>('ALL')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
@@ -108,11 +105,10 @@ export default function MembersPage() {
   const filteredMembers = useMemo(() => {
     const term = search.trim().toLowerCase()
     return members.filter((member) => {
-      const matchesFilter = filter === 'ALL' || (filter === 'ACTIVE' ? member.is_active : !member.is_active)
       const text = `${member.user?.name ?? ''} ${member.user?.email ?? ''} ${member.user?.phone ?? ''} ${member.room_no ?? ''}`.toLowerCase()
-      return matchesFilter && (!term || text.includes(term))
+      return !term || text.includes(term)
     })
-  }, [filter, members, search])
+  }, [members, search])
 
   async function deleteMember(member: MobileMember) {
     setOpenMenuId(null)
@@ -155,46 +151,23 @@ export default function MembersPage() {
     }
   }
 
-  const counts = {
-    all: members.length,
-    active: members.filter((member) => member.is_active).length,
-    inactive: members.filter((member) => !member.is_active).length,
-  }
-
   return (
     <MobileShell hasFloatingAction>
       <TopScreen title="Members" subtitle="All members in your mess" backHref="/" />
       <div className="screen space-y-4">
-        {canReviewRequests ? (
-          <MemberJoinRequestsPanel
-            requests={joinRequests}
-            loading={joinRequestsLoading}
-            feedback={joinRequestFeedback}
-            reviewInProgress={reviewInProgress}
-            onReview={(request, status) => void reviewJoinRequest(request, status)}
-          />
-        ) : null}
-
         <section className="rounded-[20px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
           <IconInput icon={Search} placeholder="Search member..." value={search} onChange={(event) => setSearch(event.target.value)} />
-          <div className="mt-4 grid grid-cols-3 gap-2 text-caption font-bold">
-            {[
-              ['ALL', `All (${counts.all})`],
-              ['ACTIVE', `Active (${counts.active})`],
-              ['INACTIVE', `Inactive (${counts.inactive})`],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setFilter(value as MemberFilter)}
-                className={`h-9 rounded-full transition active:scale-[0.98] ${
-                  filter === value ? 'bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,119,122,0.18)]' : 'bg-[#edfafa] text-[#008d8c]'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          {canReviewRequests ? (
+            <div className="mt-4">
+              <MemberJoinRequestsPanel
+                requests={joinRequests}
+                loading={joinRequestsLoading}
+                feedback={joinRequestFeedback}
+                reviewInProgress={reviewInProgress}
+                onReview={(request, status) => void reviewJoinRequest(request, status)}
+              />
+            </div>
+          ) : null}
         </section>
 
         {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}

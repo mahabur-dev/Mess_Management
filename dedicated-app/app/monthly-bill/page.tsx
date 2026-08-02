@@ -19,7 +19,7 @@ import { InlineNotice, MealMonthSelector, formatMonthLabel } from '@/components/
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
-import { LABELS, type BillStatus } from '@/lib/form-options'
+import type { BillStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
 
@@ -29,6 +29,13 @@ type MyExpenseDetails = {
   roomRent?: number
   total?: number
   transactionCount?: number
+}
+
+type MemberSummary = {
+  id: string
+  name: string
+  email?: string | null
+  avatar_url?: string | null
 }
 
 type BillItem = {
@@ -45,7 +52,7 @@ type BillItem = {
   final_due?: string | number | null
   prev_balance?: string | number | null
   balance?: string | number | null
-  member?: { id: string; name: string; email?: string | null }
+  member?: MemberSummary
 }
 
 type MemberRecord = {
@@ -118,6 +125,10 @@ function OverviewCard({
   )
 }
 
+function memberAvatarUrl(bill: BillItem, member?: MemberRecord) {
+  return bill.member?.avatar_url ?? member?.user?.avatar_url ?? null
+}
+
 function MemberPhoto({
   avatarUrl,
   size = 'md',
@@ -127,17 +138,26 @@ function MemberPhoto({
 }) {
   const [imageFailed, setImageFailed] = useState(false)
   const normalizedUrl = avatarUrl?.trim()
-  const className = size === 'sm'
-    ? 'grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#edfafa] text-[#00777a]'
-    : 'grid h-12 w-12 place-items-center overflow-hidden rounded-full bg-[#edfafa] text-caption font-bold text-[#00777a] ring-1 ring-[#cfeeed]'
+
+  if (!normalizedUrl || imageFailed) {
+    return (
+      <span
+        className={size === 'sm'
+          ? 'grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#edfafa] text-[#00777a]'
+          : 'grid h-12 w-12 place-items-center overflow-hidden rounded-full bg-[#edfafa] text-caption font-bold text-[#00777a] ring-1 ring-[#cfeeed]'}
+      >
+        <UserRound size={size === 'sm' ? 20 : 22} strokeWidth={2.35} />
+      </span>
+    )
+  }
 
   return (
-    <span className={className}>
-      {normalizedUrl && !imageFailed ? (
-        <img src={normalizedUrl} alt="" className="h-full w-full object-cover" onError={() => setImageFailed(true)} />
-      ) : (
-        <UserRound size={size === 'sm' ? 20 : 22} strokeWidth={2.35} />
-      )}
+    <span
+      className={size === 'sm'
+        ? 'block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-[#edfafa] ring-1 ring-[#cfeeed]'
+        : 'block h-12 w-12 overflow-hidden rounded-full bg-[#edfafa] ring-1 ring-[#cfeeed]'}
+    >
+      <img src={normalizedUrl} alt="" className="h-full w-full object-cover" onError={() => setImageFailed(true)} />
     </span>
   )
 }
@@ -159,7 +179,7 @@ function MemberAvatar({
       className="grid min-w-[62px] justify-items-center gap-1.5 text-center active:scale-[0.98]"
       aria-label={`View ${name} monthly bill details`}
     >
-      <MemberPhoto avatarUrl={member?.user?.avatar_url} />
+      <MemberPhoto avatarUrl={memberAvatarUrl(bill, member)} />
       <span className="w-[62px] truncate text-caption font-bold text-[#123748]">{name.split(' ')[0] || memberInitials(name)}</span>
     </Link>
   )
@@ -238,7 +258,7 @@ export default function MonthlyBillPage() {
             <div className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-[#008d8c]" />
             <CircleIcon icon={CalendarDays} size="lg" className="!rounded-[16px]" />
             <div className="min-w-0 flex-1">
-              <div className="max-w-[160px] text-caption font-semibold uppercase leading-[15px] text-[#55727b]">My End to End View Details</div>
+              <div className="max-w-[160px] text-caption font-bold uppercase leading-[15px] tracking-[0.08em] text-[#00777a]">My Bill Summary</div>
               <div className="mt-1 truncate text-label font-semibold text-[#1d3a42]">
                 Meals, deposits, expenses and utility
               </div>
@@ -258,9 +278,6 @@ export default function MonthlyBillPage() {
               <h2 className="text-label font-bold text-[#123748]">Member Wise Summary</h2>
               <p className="mt-1 text-caption font-semibold text-[#65838b]">{bills.length} members for {formatMonthLabel(month)}</p>
             </div>
-            <span className="inline-flex items-center gap-1 text-caption font-bold text-[#008d8c]">
-              See All <ChevronRight size={13} />
-            </span>
           </div>
 
           {loading ? <LoadingIndicator variant="card" label="Loading member bills" /> : null}
@@ -277,29 +294,6 @@ export default function MonthlyBillPage() {
             </div>
           ) : null}
 
-          {!loading && bills.length ? (
-            <div className="mt-4 flush-list flush-list--home-card">
-              {bills.slice(0, 6).map((bill) => {
-                const member = memberByUserId.get(bill.member?.id ?? '')
-                const name = bill.member?.name || member?.user?.name || 'Member'
-                return (
-                  <Link
-                    key={`${bill.id}-row`}
-                    href={appHref(`/member-details?memberId=${encodeURIComponent(bill.member?.id ?? '')}&messId=${encodeURIComponent(member?.mess_id ?? messId)}&month=${encodeURIComponent(month)}`)}
-                    className="flex min-h-[68px] items-center gap-3 border-y border-[#cfeeed] bg-white py-3 active:scale-[0.995]"
-                  >
-                    <MemberPhoto avatarUrl={member?.user?.avatar_url} size="sm" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-label font-bold text-[#123748]">{name}</span>
-                      <span className="mt-1 block truncate text-caption font-semibold text-[#65838b]">{LABELS.BILL_STATUSES[bill.status]}</span>
-                    </span>
-                    <span className="shrink-0 text-right text-label font-bold text-[#008d8c]">{formatTaka(bill.final_due)}</span>
-                    <ChevronRight size={17} className="shrink-0 text-[#789096]" />
-                  </Link>
-                )
-              })}
-            </div>
-          ) : null}
         </section>
 
         <div className="pb-2" />

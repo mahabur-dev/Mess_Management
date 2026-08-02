@@ -1,7 +1,8 @@
 import { clearStoredToken, getStoredToken, type AuthUser, type GlobalRole } from './auth'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from './member-join-requests'
 
-const DEFAULT_API_URL = 'http://localhost:5001/api/v1'
+// const DEFAULT_API_URL = 'http://localhost:5001/api/v1'
+const DEFAULT_API_URL = 'https://didactic-bassoon-j679jrxvxrwfp4j-5001.app.github.dev/api/v1'
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/+$/, '')
 const SERVICE_UNAVAILABLE_MESSAGE = 'Messzen is temporarily unavailable. Please try again in a few moments.'

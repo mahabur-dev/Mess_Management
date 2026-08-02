@@ -75,7 +75,7 @@ export class MonthlyBillService {
     due_date: true,
     generated_at: true,
     mess: { select: { id: true, name: true } },
-    member: { select: { id: true, name: true, email: true } },
+    member: { select: { id: true, name: true, email: true, avatar_url: true } },
   } as const;
 
   private getBillMonthRange(monthInput: string | Date) {

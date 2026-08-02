@@ -27,7 +27,7 @@ export class DepositController {
   constructor(private readonly depositService: DepositService) {}
 
   @Post()
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Record a direct member deposit (Manager/Admin)' })
   async create(@Req() req: Request, @Body() dto: CreateDepositDto) {
     const data = await this.depositService.create(
@@ -52,7 +52,7 @@ export class DepositController {
   }
 
   @Get('mess/:messId')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get deposits for a specific mess' })
   async findByMess(
     @Param('messId') messId: string,
@@ -74,7 +74,7 @@ export class DepositController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get a deposit by ID' })
   async findOne(@Param('id') id: string, @Req() req: Request) {
     const data = await this.depositService.findOne(
@@ -86,7 +86,7 @@ export class DepositController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Update a deposit' })
   async update(
     @Param('id') id: string,
@@ -103,7 +103,7 @@ export class DepositController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Delete a deposit' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.depositService.remove(

@@ -413,6 +413,17 @@ class Api {
     return this.request(`/payments/mess/${messId}`, { params })
   }
 
+  getPaymentById(id: string) {
+    return this.request(`/payments/${id}`)
+  }
+
+  updatePayment(id: string, data: Record<string, unknown>) {
+    return this.request(`/payments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
   reviewPayment(id: string, data: Record<string, unknown>) {
     return this.request(`/payments/${id}/review`, {
       method: 'PATCH',

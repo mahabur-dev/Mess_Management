@@ -62,14 +62,18 @@ export class MessController {
 
   // Get ALL members across all messes owned by the manager
   @Get('members')
-  @UseGuards(AuthGuard('MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get all members from all my messes' })
   async getAllMyMembers(
     @Query() query: MessFilterDto,
     @Req() req: any,           // or use @CurrentUser()
   ) {
     const managerId = req.user.id;
-    const result = await this.messService.getAllMembers(managerId, query);
+    const result = await this.messService.getAllMembers(
+      managerId,
+      req.user.role,
+      query,
+    );
 
     return {
       message: 'All members fetched successfully',

@@ -84,6 +84,46 @@ export class ReviewPaymentDto {
   note?: string;
 }
 
+export class UpdatePaymentDto {
+  @ApiPropertyOptional({ example: 2500 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(1)
+  amount?: number;
+
+  @ApiPropertyOptional({ enum: PaymentMethod, example: PaymentMethod.BKASH })
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  method?: PaymentMethod;
+
+  @ApiPropertyOptional({ example: 'TXN123456' })
+  @IsOptional()
+  @IsString()
+  transactionId?: string;
+
+  @ApiPropertyOptional({ example: 'https://res.cloudinary.com/payment.jpg' })
+  @IsOptional()
+  @IsUrl()
+  screenshotUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Paid for May bill' })
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-15' })
+  @IsOptional()
+  @IsDateString()
+  paymentDate?: string;
+
+  @ApiPropertyOptional({ example: ['WATER', 'WIFI', 'RENT'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  categories?: string[];
+}
+
 export class PaymentFilterDto {
   @ApiPropertyOptional()
   @IsOptional()

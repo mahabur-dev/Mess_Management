@@ -17,6 +17,7 @@ import {
   CreatePaymentDto,
   PaymentFilterDto,
   ReviewPaymentDto,
+  UpdatePaymentDto,
 } from './dto/payment.dto';
 import { PaymentService } from './payment.service';
 
@@ -109,8 +110,37 @@ export class PaymentController {
     };
   }
 
+  @Get(':id')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Get a payment by ID' })
+  async findOne(@Param('id') id: string, @Req() req: Request) {
+    const data = await this.paymentService.findOne(
+      id,
+      req.user!.id,
+      req.user!.role,
+    );
+    return { message: 'Payment fetched successfully', data };
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Update an own payment or any payment as manager' })
+  async update(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Body() dto: UpdatePaymentDto,
+  ) {
+    const data = await this.paymentService.update(
+      id,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return { message: 'Payment updated successfully', data };
+  }
+
   @Patch(':id/review')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Approve or reject a payment' })
   async review(
     @Param('id') id: string,

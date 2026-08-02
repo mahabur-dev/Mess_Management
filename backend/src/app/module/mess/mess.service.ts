@@ -1471,19 +1471,44 @@ export class MessService {
     })
   }
 
-  async getAllMembers(managerId: string, query: MessFilterDto) {
+  async getAllMembers(managerId: string, role: string, query: MessFilterDto) {
     const paginationOptions = pick(query, ['page', 'limit', 'sortBy', 'sortOrder']);
     const { page, limit, skip, sortOrder = 'desc' } = paginationHelper(paginationOptions);
 
-    console.log(managerId);
-    const manager = await this.prisma.user.findUnique({ where: { id: managerId } })
-    console.log(manager);
-    
+    const managedMessWhere: Prisma.MessWhereInput =
+      role === 'ADMIN'
+        ? { is_active: true }
+        : {
+            is_active: true,
+            OR: [
+              { created_by: managerId },
+              {
+                memberships: {
+                  some: {
+                    user_id: managerId,
+                    role: MembershipRole.MANAGER,
+                    is_active: true,
+                  },
+                },
+              },
+            ],
+          };
+
+    if (role !== 'ADMIN') {
+      const managedMessCount = await this.prisma.mess.count({
+        where: managedMessWhere,
+      });
+
+      if (managedMessCount === 0) {
+        throw new HttpException(
+          'Forbidden: Only mess managers can view members',
+          403,
+        );
+      }
+    }
+
     const where: Prisma.MessMembershipWhereInput = {
-      mess: {
-        created_by: managerId,   // Only messes owned by this manager
-        is_active: true,
-      },
+      mess: managedMessWhere,
       is_active: true,
     };
 

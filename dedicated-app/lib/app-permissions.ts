@@ -107,7 +107,7 @@ export const memberQuickActions: AppRouteItem[] = [
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
   { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
-  { href: '/profile', label: 'Profile', icon: User, access: 'public' },
+  { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
 ]
 
 export function getHomeQuickActions(user: AuthUser | null | undefined) {

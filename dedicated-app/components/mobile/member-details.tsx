@@ -77,7 +77,13 @@ function MemberDetailSection({ title, items }: { title: string; items: DetailIte
   )
 }
 
-export function MemberDetailsView({ member }: { member: MobileMember }) {
+export function MemberDetailsView({
+  member,
+  showActions = true,
+}: {
+  member: MobileMember
+  showActions?: boolean
+}) {
   const [imageFailed, setImageFailed] = useState(false)
   const name = member.user?.name?.trim() || 'Member'
   const email = member.user?.email?.trim() || 'Not provided'
@@ -151,18 +157,20 @@ export function MemberDetailsView({ member }: { member: MobileMember }) {
       <MemberDetailSection title="Financial Details" items={financialItems} />
       <MemberDetailSection title="Activity" items={activityItems} />
 
-      <div className={`grid gap-3 pb-2 ${phone ? 'grid-cols-2' : 'grid-cols-1'}`}>
-        <Link href={appHref(memberEditHref(member))} className="ui-btn ui-btn--primary min-w-0 px-3">
-          <Pencil size={17} strokeWidth={2.3} aria-hidden="true" />
-          Edit member
-        </Link>
-        {phone ? (
-          <a href={`tel:${phone}`} className="ui-btn ui-btn--secondary min-w-0 px-3">
-            <Phone size={17} strokeWidth={2.3} aria-hidden="true" />
-            Call member
-          </a>
-        ) : null}
-      </div>
+      {showActions ? (
+        <div className={`grid gap-3 pb-2 ${phone ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <Link href={appHref(memberEditHref(member))} className="ui-btn ui-btn--primary min-w-0 px-3">
+            <Pencil size={17} strokeWidth={2.3} aria-hidden="true" />
+            Edit member
+          </Link>
+          {phone ? (
+            <a href={`tel:${phone}`} className="ui-btn ui-btn--secondary min-w-0 px-3">
+              <Phone size={17} strokeWidth={2.3} aria-hidden="true" />
+              Call member
+            </a>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }

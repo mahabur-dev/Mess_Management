@@ -15,8 +15,6 @@ import {
   DepositSectionTitle,
   DepositStatCard,
   DepositStatPanel,
-  DepositSubmitIntro,
-  DepositWorkCard,
   PaymentMethodGrid,
   formatDepositMoney,
   type DepositListRecord,
@@ -40,15 +38,18 @@ type PaymentItem = {
 }
 
 type FormState = {
-  monthlyBillId: string
   purchasedBy: string
   amount: string
   method: PaymentMethod
   transactionId: string
-  screenshotUrl: string
   note: string
   paymentDate: string
-  statusFilter: PaymentStatus | 'ALL'
+}
+
+type DepositSummary = {
+  approved: number
+  myApproved: number
+  pending: number
 }
 
 function todayDateValue() {
@@ -57,15 +58,12 @@ function todayDateValue() {
 
 function createInitialForm(paymentDate = ''): FormState {
   return {
-    monthlyBillId: '',
     purchasedBy: '',
     amount: '',
     method: 'BKASH',
     transactionId: '',
-    screenshotUrl: '',
     note: '',
     paymentDate,
-    statusFilter: 'ALL',
   }
 }
 
@@ -80,29 +78,32 @@ export default function PaymentsPage() {
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [totalAmount, setTotalAmount] = useState(0)
+  const [summary, setSummary] = useState<DepositSummary>({ approved: 0, myApproved: 0, pending: 0 })
 
   useEffect(() => {
     if (!messId) return
     let alive = true
     setLoading(true)
 
-    api
-      .getPaymentsByMess(messId, {
-        status: form.statusFilter === 'ALL' ? undefined : form.statusFilter,
-        limit: 20,
-        sortBy: 'created_at',
-        sortOrder: 'desc',
-      })
-      .then((res) => {
+    Promise.all([
+      api.getPaymentsByMess(messId, { limit: 20, sortBy: 'created_at', sortOrder: 'desc' }),
+      api.getPaymentsByMess(messId, { status: 'APPROVED', limit: 1 }),
+      api.getPaymentsByMess(messId, { status: 'PENDING', limit: 1 }),
+      api.getPaymentsByMess(messId, { status: 'APPROVED', memberId: user?.id, limit: 1 }),
+    ])
+      .then(([recentRes, approvedRes, pendingRes, myApprovedRes]) => {
         if (!alive) return
-        setItems(Array.isArray(res.data) ? res.data : [])
-        setTotalAmount(Number((res as any).totalAmount ?? 0))
+        setItems(Array.isArray(recentRes.data) ? recentRes.data : [])
+        setSummary({
+          approved: Number((approvedRes as { totalAmount?: number }).totalAmount ?? 0),
+          pending: Number((pendingRes as { totalAmount?: number }).totalAmount ?? 0),
+          myApproved: Number((myApprovedRes as { totalAmount?: number }).totalAmount ?? 0),
+        })
       })
       .catch(() => {
         if (!alive) return
         setItems([])
-        setTotalAmount(0)
+        setSummary({ approved: 0, myApproved: 0, pending: 0 })
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -111,7 +112,7 @@ export default function PaymentsPage() {
     return () => {
       alive = false
     }
-  }, [messId, form.statusFilter, busy])
+  }, [messId, user?.id, busy])
 
   async function handleSubmit() {
     setMessage('')
@@ -122,33 +123,22 @@ export default function PaymentsPage() {
     try {
       await api.createPayment({
         messId,
-        monthlyBillId: form.monthlyBillId || undefined,
         purchasedBy: form.purchasedBy || undefined,
         amount: Number(form.amount),
         method: form.method,
         transactionId: form.transactionId.trim() || undefined,
-        screenshotUrl: form.screenshotUrl.trim() || undefined,
         note: form.note.trim() || undefined,
         paymentDate: form.paymentDate,
       })
       setForm(createInitialForm())
       setShowForm(false)
-      setMessage('Deposit submitted successfully.')
+      setMessage(isManager ? 'Deposit added and approved.' : 'Deposit submitted for manager approval.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to submit deposit.')
     } finally {
       setBusy(false)
     }
   }
-
-  const myTotal = useMemo(
-    () => items.filter((item) => item.member?.id === user?.id).reduce((total, item) => total + Number(item.amount ?? 0), 0),
-    [items, user?.id]
-  )
-  const pendingTotal = useMemo(
-    () => items.filter((item) => item.status === 'PENDING').reduce((total, item) => total + Number(item.amount ?? 0), 0),
-    [items]
-  )
 
   function openDepositForm() {
     setForm((current) => (current.paymentDate ? current : { ...current, paymentDate: todayDateValue() }))
@@ -162,12 +152,10 @@ export default function PaymentsPage() {
         {!showForm ? (
           <>
             <DepositStatPanel>
-              <DepositStatCard title="My Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading my deposit" /> : formatDepositMoney(myTotal)} compact />
-              <DepositStatCard title="Total Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading total deposit" /> : formatDepositMoney(totalAmount)} tone="blue" compact />
-              <DepositStatCard title="Pending Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading pending deposit" /> : formatDepositMoney(pendingTotal)} tone="orange" compact />
+              <DepositStatCard title="My Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading my deposit" /> : formatDepositMoney(summary.myApproved)} compact />
+              <DepositStatCard title="Total Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading total deposit" /> : formatDepositMoney(summary.approved)} tone="blue" compact />
+              <DepositStatCard title="Pending Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading pending deposit" /> : formatDepositMoney(summary.pending)} tone="orange" compact />
             </DepositStatPanel>
-
-            <DepositWorkCard />
           </>
         ) : null}
 
@@ -183,7 +171,6 @@ export default function PaymentsPage() {
             onOpen={openDepositForm}
             onClose={() => setShowForm(false)}
           >
-            <DepositSubmitIntro />
             <PaymentMethodGrid value={form.method} onChange={(method) => setForm((prev) => ({ ...prev, method }))} />
             <div className="grid grid-cols-2 gap-3">
               <TextField label="Amount" value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="2500" type="number" />
@@ -204,15 +191,7 @@ export default function PaymentsPage() {
                 ))}
               </DesignedSelect>
             ) : null}
-            <TextField
-              label="Monthly Bill ID"
-              hint="Optional"
-              value={form.monthlyBillId}
-              onChange={(monthlyBillId) => setForm((prev) => ({ ...prev, monthlyBillId }))}
-              placeholder="Bill UUID"
-            />
             <TextField label="Transaction ID" hint="Optional" value={form.transactionId} onChange={(transactionId) => setForm((prev) => ({ ...prev, transactionId }))} placeholder="TXN123456" />
-            <TextField label="Screenshot URL" hint="Optional" value={form.screenshotUrl} onChange={(screenshotUrl) => setForm((prev) => ({ ...prev, screenshotUrl }))} placeholder="https://..." />
             <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Deposit for May bill" rows={3} />
             <DepositManualNotice compact />
             {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}

@@ -7,7 +7,12 @@ import {
   CreatePaymentDto,
   PaymentFilterDto,
   ReviewPaymentDto,
+  UpdatePaymentDto,
 } from './dto/payment.dto';
+import {
+  canEditPayment,
+  statusForPaymentWrite,
+} from './payment-approval.policy';
 import {
   type BillingSyncStatus,
   MonthlyBillReconciliationService,
@@ -42,6 +47,7 @@ export class PaymentService {
 
   private readonly paymentSelect = {
     id: true,
+    monthly_bill_id: true,
     amount: true,
     method: true,
     status: true,
@@ -90,15 +96,23 @@ export class PaymentService {
     }
   }
 
-  private async verifyManager(messId: string, userId: string, role: string) {
-    if (role === 'ADMIN') return;
+  private async hasManagerAccess(
+    messId: string,
+    userId: string,
+    role: string,
+  ) {
+    if (role === 'ADMIN') return true;
     const mess = await this.prisma.mess.findUnique({ where: { id: messId } });
     if (!mess) throw new HttpException('Mess not found', 404);
-    if (mess.created_by === userId) return;
+    if (mess.created_by === userId) return true;
     const membership = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-    if (membership?.is_active && membership.role === 'MANAGER') return;
+    return Boolean(membership?.is_active && membership.role === 'MANAGER');
+  }
+
+  private async verifyManager(messId: string, userId: string, role: string) {
+    if (await this.hasManagerAccess(messId, userId, role)) return;
     throw new HttpException(
       'Forbidden: Only managers can approve payments',
       403,
@@ -129,9 +143,14 @@ export class PaymentService {
     await this.verifyMessMember(dto.messId, userId, role);
     await this.ensureActiveSubscription(dto.messId, role);
 
+    const canManage = await this.hasManagerAccess(dto.messId, userId, role);
+
     const purchasedById = dto.purchasedBy?.trim() || userId;
-    if (purchasedById !== userId) {
-      await this.verifyManager(dto.messId, userId, role);
+    if (purchasedById !== userId && !canManage) {
+      throw new HttpException(
+        'Forbidden: Members can submit deposits only for themselves',
+        403,
+      );
     }
     await this.ensureActiveMessMember(dto.messId, purchasedById);
 
@@ -154,6 +173,7 @@ export class PaymentService {
       }
     }
 
+    const status = statusForPaymentWrite(canManage);
     const payment = await this.prisma.payment.create({
       data: {
         mess_id: dto.messId,
@@ -167,9 +187,19 @@ export class PaymentService {
         screenshot_url: dto.screenshotUrl,
         note: dto.note,
         payment_date: dto.paymentDate ? new Date(dto.paymentDate) : undefined,
+        status,
+        approved_by: canManage ? userId : null,
+        approved_at: canManage ? new Date() : null,
       },
       select: this.paymentSelect,
     });
+
+    const billingSync = canManage
+      ? await this.billReconciliation.reconcile(
+          dto.messId,
+          await this.getPaymentRecalculateDate(payment),
+        )
+      : null;
 
     await this.notificationService
       .createForMess(
@@ -190,7 +220,7 @@ export class PaymentService {
         // Payment submission should not fail if notification delivery fails.
       });
 
-    return payment;
+    return { ...payment, billingSync };
   }
 
   async findAll(query: PaymentFilterDto) {
@@ -243,6 +273,77 @@ export class PaymentService {
 
   async findMyPayments(userId: string, query: PaymentFilterDto) {
     return this.findAll({ ...query, memberId: userId });
+  }
+
+  async findOne(id: string, userId: string, role: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      select: this.paymentSelect,
+    });
+    if (!payment) throw new HttpException('Payment not found', 404);
+    await this.verifyMessMember(payment.mess.id, userId, role);
+    return payment;
+  }
+
+  async update(
+    id: string,
+    userId: string,
+    role: string,
+    dto: UpdatePaymentDto,
+  ) {
+    const existing = await this.prisma.payment.findUnique({ where: { id } });
+    if (!existing) throw new HttpException('Payment not found', 404);
+
+    await this.verifyMessMember(existing.mess_id, userId, role);
+    await this.ensureActiveSubscription(existing.mess_id, role);
+    const canManage = await this.hasManagerAccess(
+      existing.mess_id,
+      userId,
+      role,
+    );
+    if (!canEditPayment(canManage, userId, existing.created_by)) {
+      throw new HttpException(
+        'Forbidden: Members can edit only deposits they submitted',
+        403,
+      );
+    }
+
+    const previousDate = await this.getPaymentRecalculateDate(existing);
+    const status = statusForPaymentWrite(canManage);
+    const updated = await this.prisma.payment.update({
+      where: { id },
+      data: {
+        amount: dto.amount,
+        method: dto.method,
+        transaction_id:
+          dto.transactionId === undefined
+            ? undefined
+            : dto.transactionId.trim() || null,
+        screenshot_url:
+          dto.screenshotUrl === undefined
+            ? undefined
+            : dto.screenshotUrl.trim() || null,
+        note: dto.note === undefined ? undefined : dto.note.trim() || null,
+        payment_date: dto.paymentDate ? new Date(dto.paymentDate) : undefined,
+        categories: dto.categories,
+        status,
+        approved_by: canManage ? userId : null,
+        approved_at: canManage ? new Date() : null,
+      },
+      select: this.paymentSelect,
+    });
+
+    const billingSync =
+      existing.status === PaymentStatus.APPROVED ||
+      updated.status === PaymentStatus.APPROVED
+        ? await this.billReconciliation.reconcile(
+            existing.mess_id,
+            previousDate,
+            await this.getPaymentRecalculateDate(updated),
+          )
+        : null;
+
+    return { ...updated, billingSync };
   }
 
   async review(
@@ -300,15 +401,21 @@ export class PaymentService {
     if (!payment) throw new HttpException('Payment not found', 404);
 
     const isOwn = payment.member_id === userId;
+    const isOwnSubmission = payment.created_by === userId;
     const isMember = role === 'MEMBER';
     if (isMember) {
-      if (!isOwn) {
+      const canManage = await this.hasManagerAccess(
+        payment.mess_id,
+        userId,
+        role,
+      );
+      if (!canManage && !isOwnSubmission) {
         throw new HttpException(
-          'Forbidden: You can only delete your own payment',
+          'Forbidden: Members can delete only deposits they submitted',
           403,
         );
       }
-      if (payment.status !== PaymentStatus.PENDING) {
+      if (!canManage && payment.status !== PaymentStatus.PENDING) {
         throw new HttpException(
           'Reviewed payments can only be deleted by a manager',
           400,

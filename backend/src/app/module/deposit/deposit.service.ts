@@ -222,8 +222,8 @@ export class DepositService {
     if (query.userId) where.member_id = query.userId;
     if (query.startDate || query.endDate) {
       where.deposit_date = {
-        ...(query.startDate && { gte: new Date(query.startDate) }),
-        ...(query.endDate && { lte: new Date(query.endDate) }),
+        ...(query.startDate && { gte: new Date(`${query.startDate}T00:00:00.000Z`) }),
+        ...(query.endDate && { lte: new Date(`${query.endDate}T23:59:59.999Z`) }),
       };
     }
     return where;

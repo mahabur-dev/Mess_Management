@@ -80,7 +80,7 @@ type ViewMode = 'MY' | 'MANAGER'
 type MemberFilter = 'ALL' | 'DUE' | 'PAID'
 type MessageTone = 'SUCCESS' | 'ERROR'
 type ApprovalFilter = 'ALL' | ExpenseApprovalStatus
-type MonthFilter = 'ALL' | string
+type MonthFilter = string
 
 const MONTH_FORMATTER = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -190,26 +190,11 @@ function ExpenseRecordsSection({
   onMonthFilterChange: (filter: MonthFilter) => void
   title: string
 }) {
-  const monthOptions = useMemo<Array<MobileSelectOption<MonthFilter>>>(() => {
-    const months = new Set<string>([new Date().toISOString().slice(0, 7)])
-    expenses.forEach((expense) => {
-      const value = getExpenseMonth(expense)
-      if (value) months.add(value)
-    })
-
-    return [
-      { value: 'ALL', label: 'All Months' },
-      ...Array.from(months)
-        .sort((a, b) => b.localeCompare(a))
-        .map((value) => ({ value, label: monthLabel(value) })),
-    ]
-  }, [expenses])
-
   const filtered = expenses.filter((expense) => {
     const matchesStatus =
       statusFilter === 'ALL' ||
       normalizeExpenseApprovalStatus(expense.approvalStatus, expense.status) === statusFilter
-    const matchesMonth = monthFilter === 'ALL' || getExpenseMonth(expense) === monthFilter
+    const matchesMonth = getExpenseMonth(expense) === monthFilter
     return matchesStatus && matchesMonth
   })
 
@@ -223,13 +208,15 @@ function ExpenseRecordsSection({
           onChange={onStatusFilterChange}
           icon={<SlidersHorizontal size={16} strokeWidth={2.35} />}
         />
-        <ExpenseFilterSelect
-          label="Month"
-          value={monthFilter}
-          options={monthOptions}
-          onChange={onMonthFilterChange}
-          icon={<CalendarDays size={16} strokeWidth={2.35} />}
-        />
+        <label className="flex h-12 items-center gap-2 rounded-[15px] border border-[#dce5ec] bg-white px-3 text-label font-semibold text-[#123748]">
+          <CalendarDays size={16} strokeWidth={2.35} className="text-[#008d8c]" />
+          <input
+            type="month"
+            value={monthFilter}
+            onChange={(event) => onMonthFilterChange(event.target.value)}
+            className="min-w-0 flex-1 bg-transparent outline-none"
+          />
+        </label>
       </div>
 
       <div className="flush-list flush-list--home-panel">
@@ -252,7 +239,7 @@ export default function ExpensesPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
-  const [month] = useState(new Date().toISOString().slice(0, 7))
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
   const [view, setView] = useState<ViewMode>('MY')
   const [summary, setSummary] = useState<ExpenseSummary | null>(null)
   const [managerData, setManagerData] = useState<ManagerOverview | null>(null)
@@ -268,7 +255,13 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<ExpenseListRecord[]>([])
   const [recordsLoading, setRecordsLoading] = useState(false)
   const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>('ALL')
-  const [recordsMonthFilter, setRecordsMonthFilter] = useState<MonthFilter>('ALL')
+  const [recordsMonthFilter, setRecordsMonthFilter] = useState<MonthFilter>(month)
+
+  function monthRange(value: string) {
+    const [year, monthIndex] = value.split('-').map(Number)
+    const lastDay = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate()
+    return { startDate: `${value}-01`, endDate: `${value}-${String(lastDay).padStart(2, '0')}` }
+  }
 
   useEffect(() => {
     if (!messId) return
@@ -300,7 +293,7 @@ export default function ExpensesPage() {
     setRecordsLoading(true)
 
     api
-      .getExpensesByMess(messId, { limit: 100, sortBy: 'expense_date', sortOrder: 'desc' })
+      .getExpensesByMess(messId, { ...monthRange(month), limit: 100, sortBy: 'expense_date', sortOrder: 'desc' })
       .then((response) => {
         if (active) setExpenses(Array.isArray(response.data) ? (response.data as ExpenseListRecord[]) : [])
       })
@@ -317,10 +310,10 @@ export default function ExpensesPage() {
     return () => {
       active = false
     }
-  }, [messId])
+  }, [messId, month])
 
   useEffect(() => {
-    if (!messId || !isManager || view !== 'MANAGER' || managerData) return
+    if (!messId || !isManager || view !== 'MANAGER') return
     let active = true
     setLoading(true)
 
@@ -355,7 +348,7 @@ export default function ExpensesPage() {
     return () => {
       active = false
     }
-  }, [isManager, managerData, messId, month, view])
+  }, [isManager, messId, month, view])
 
   async function addCollectedFund() {
     setMessage('')
@@ -577,7 +570,10 @@ export default function ExpensesPage() {
           statusFilter={approvalFilter}
           onStatusFilterChange={setApprovalFilter}
           monthFilter={recordsMonthFilter}
-          onMonthFilterChange={setRecordsMonthFilter}
+          onMonthFilterChange={(value) => {
+            setRecordsMonthFilter(value)
+            setMonth(value)
+          }}
           title={isManager && view === 'MANAGER' ? 'Expense Submissions' : 'All Expenses'}
         />
       </div>

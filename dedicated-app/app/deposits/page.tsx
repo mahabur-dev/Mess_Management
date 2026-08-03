@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Coins, ListChecks, PlusCircle } from 'lucide-react'
+import { CalendarDays, Coins, ListChecks, PlusCircle } from 'lucide-react'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
@@ -53,13 +53,20 @@ export default function DepositsPage() {
   const [totalAmount, setTotalAmount] = useState(0)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
+
+  function monthRange(value: string) {
+    const [year, monthIndex] = value.split('-').map(Number)
+    const lastDay = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate()
+    return { startDate: `${value}-01`, endDate: `${value}-${String(lastDay).padStart(2, '0')}` }
+  }
 
   useEffect(() => {
     if (!messId) return
 
     let alive = true
     api
-      .getDepositsByMess(messId, { limit: 20, sortBy: 'date', sortOrder: 'desc' })
+      .getDepositsByMess(messId, { ...monthRange(month), limit: 100, sortBy: 'date', sortOrder: 'desc' })
       .then((res) => {
         if (!alive) return
         setItems(Array.isArray(res.data) ? res.data : [])
@@ -74,7 +81,7 @@ export default function DepositsPage() {
     return () => {
       alive = false
     }
-  }, [messId, busy])
+  }, [messId, busy, month])
 
   async function handleSubmit() {
     setMessage('')
@@ -180,6 +187,10 @@ export default function DepositsPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search member or note..."
           />
+          <label className="mt-3 flex h-12 items-center gap-2 rounded-[15px] border border-[#dce9ec] bg-white px-4 text-body font-semibold text-[#123748]">
+            <CalendarDays size={18} className="text-[#008d8c]" />
+            <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} className="flex-1 bg-transparent outline-none" />
+          </label>
           <div className="flush-list flush-list--panel mt-3">
             {visibleItems.map((item, index) => (
               <DepositListItem

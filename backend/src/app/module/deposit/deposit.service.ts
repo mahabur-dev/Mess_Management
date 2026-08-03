@@ -17,6 +17,16 @@ export class DepositService {
     private readonly billReconciliation: MonthlyBillReconciliationService,
   ) {}
 
+  private monthRange(monthInput: string) {
+    const match = /^(\d{4})-(\d{2})/.exec(monthInput);
+    if (!match) throw new HttpException('Invalid bill month', 400);
+    const start = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
+    const end = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1),
+    );
+    return { start, end };
+  }
+
   private async verifyMessAccess(
     messId: string,
     userId: string,
@@ -220,7 +230,10 @@ export class DepositService {
     const where: Prisma.DepositWhereInput = {};
     if (query.messId) where.mess_id = query.messId;
     if (query.userId) where.member_id = query.userId;
-    if (query.startDate || query.endDate) {
+    if (query.billMonth) {
+      const { start, end } = this.monthRange(query.billMonth);
+      where.deposit_date = { gte: start, lt: end };
+    } else if (query.startDate || query.endDate) {
       where.deposit_date = {
         ...(query.startDate && { gte: new Date(`${query.startDate}T00:00:00.000Z`) }),
         ...(query.endDate && { lte: new Date(`${query.endDate}T23:59:59.999Z`) }),

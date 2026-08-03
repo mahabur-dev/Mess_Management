@@ -124,10 +124,10 @@ function MyMonthlyDetailsContent() {
       api.getMealsByMess(messId, { startDate: range.startDate, endDate: range.endDate, limit: 300 }).catch(() => ({ data: [] })),
       api.getMyExpenseDetails(messId, `${month}-01`).catch(() => ({ data: null })),
       api
-        .getDepositsByMess(messId, { userId: user.id, startDate: range.startDate, endDate: range.endDate, limit: 50, sortBy: 'date', sortOrder: 'desc' })
+        .getDepositsByMess(messId, { userId: user.id, billMonth: `${month}-01`, limit: 50, sortBy: 'date', sortOrder: 'desc' })
         .catch(() => ({ data: [] })),
       api
-        .getPaymentsByMess(messId, { memberId: user.id, startDate: range.startDate, endDate: range.endDate, limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
+        .getPaymentsByMess(messId, { memberId: user.id, billMonth: `${month}-01`, limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
         .catch(() => ({ data: [] })),
     ])
       .then(([billRes, mealRes, detailRes, depositRes, paymentRes]) => {

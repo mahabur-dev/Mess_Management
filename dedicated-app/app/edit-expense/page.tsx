@@ -18,6 +18,7 @@ import {
 } from '@/components/mobile/expense-design'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
+import { currentMonthValue } from '@/components/mobile/meals-design'
 import { ExpensePrimaryAction, ExpenseSplitMethodSelector, ExpenseUsedBySelector } from '@/components/mobile/expense-ui'
 import {
   ExpenseCustomShareFields,
@@ -91,7 +92,7 @@ function dateValue(value?: string | null) {
 }
 
 function monthValue(value?: string | null) {
-  return value?.slice(0, 7) || new Date().toISOString().slice(0, 7)
+  return value?.slice(0, 7) || currentMonthValue()
 }
 
 const INITIAL_FORM: FormState = {
@@ -103,7 +104,7 @@ const INITIAL_FORM: FormState = {
   quantity: '',
   unit: '',
   expenseDate: new Date().toISOString().slice(0, 10),
-  billingMonth: new Date().toISOString().slice(0, 7),
+  billingMonth: currentMonthValue(),
   description: '',
   paymentType: 'FROM_DEPOSIT',
   usedBy: 'ALL_MEMBERS',

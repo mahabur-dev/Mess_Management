@@ -9,6 +9,7 @@ import { TopScreen } from '@/components/top-screen'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
 import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-design'
+import { MealMonthSelector, currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
 import {
   DepositListItem,
   DepositManualNotice,
@@ -79,6 +80,7 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [summary, setSummary] = useState<DepositSummary>({ approved: 0, myApproved: 0, pending: 0 })
+  const [month, setMonth] = useState(currentMonthValue())
 
   useEffect(() => {
     if (!messId) return
@@ -86,10 +88,10 @@ export default function PaymentsPage() {
     setLoading(true)
 
     Promise.all([
-      api.getPaymentsByMess(messId, { limit: 20, sortBy: 'created_at', sortOrder: 'desc' }),
-      api.getPaymentsByMess(messId, { status: 'APPROVED', limit: 1 }),
-      api.getPaymentsByMess(messId, { status: 'PENDING', limit: 1 }),
-      api.getPaymentsByMess(messId, { status: 'APPROVED', memberId: user?.id, limit: 1 }),
+      api.getPaymentsByMess(messId, { billMonth: `${month}-01`, limit: 20, sortBy: 'payment_date', sortOrder: 'desc' }),
+      api.getPaymentsByMess(messId, { billMonth: `${month}-01`, status: 'APPROVED', limit: 1 }),
+      api.getPaymentsByMess(messId, { billMonth: `${month}-01`, status: 'PENDING', limit: 1 }),
+      api.getPaymentsByMess(messId, { billMonth: `${month}-01`, status: 'APPROVED', memberId: user?.id, limit: 1 }),
     ])
       .then(([recentRes, approvedRes, pendingRes, myApprovedRes]) => {
         if (!alive) return
@@ -112,7 +114,7 @@ export default function PaymentsPage() {
     return () => {
       alive = false
     }
-  }, [messId, user?.id, busy])
+  }, [messId, user?.id, busy, month])
 
   async function handleSubmit() {
     setMessage('')
@@ -151,6 +153,8 @@ export default function PaymentsPage() {
       <div className="screen space-y-4">
         {!showForm ? (
           <>
+            <MealMonthSelector month={month} onChange={setMonth} />
+
             <DepositStatPanel>
               <DepositStatCard title="My Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading my deposit" /> : formatDepositMoney(summary.myApproved)} compact />
               <DepositStatCard title="Total Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading total deposit" /> : formatDepositMoney(summary.approved)} tone="blue" compact />
@@ -204,9 +208,9 @@ export default function PaymentsPage() {
         {!showForm ? (
           <div className="rounded-[22px] border border-[#dce9ec] bg-white/96 p-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
             <DepositSectionTitle
-              title="Recent Deposits"
+              title={`Recent Deposits (${formatMonthLabel(month)})`}
               action={
-                <Link href={appHref('/payments/all')} className="text-label font-semibold text-[#008d8c]">
+                <Link href={appHref(`/payments/all?month=${encodeURIComponent(month)}`)} className="text-label font-semibold text-[#008d8c]">
                   View All Deposit
                 </Link>
               }

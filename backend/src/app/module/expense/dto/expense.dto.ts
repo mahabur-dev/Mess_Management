@@ -403,6 +403,14 @@ export class ExpenseFilterDto {
   @IsDateString()
   endDate?: string;
 
+  @ApiPropertyOptional({
+    example: '2026-08-01',
+    description: 'Filter by billing month instead of expense date',
+  })
+  @IsOptional()
+  @IsDateString()
+  billingMonth?: string;
+
   @ApiPropertyOptional({ example: '1' })
   @IsOptional()
   @Transform(({ value }) => value?.toString())

@@ -17,11 +17,13 @@ const WORKER_BATCH_SIZE = 12;
 const WORKER_CONCURRENCY = 4;
 const STALE_JOB_MS = 5 * 60 * 1_000;
 const MAX_ATTEMPTS = 5;
+const CONNECTION_RETRY_MS = 30_000;
 
 @Injectable()
 export class MonthlyBillReconciliationService {
   private readonly logger = new Logger(MonthlyBillReconciliationService.name);
   private workerRunning = false;
+  private nextWorkerAttemptAt = 0;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -121,6 +123,7 @@ export class MonthlyBillReconciliationService {
 
   @Interval(WORKER_INTERVAL_MS)
   async processQueuedBilling() {
+    if (Date.now() < this.nextWorkerAttemptAt) return;
     if (this.workerRunning) return;
     this.workerRunning = true;
 
@@ -191,6 +194,14 @@ export class MonthlyBillReconciliationService {
         );
       }
     } catch (error) {
+      if (this.isDatabaseConnectionError(error)) {
+        this.nextWorkerAttemptAt = Date.now() + CONNECTION_RETRY_MS;
+        this.logger.warn(
+          `Monthly billing worker paused for ${CONNECTION_RETRY_MS / 1000}s: database is not reachable`,
+        );
+        return;
+      }
+
       this.logger.error(
         'Monthly billing worker failed',
         error instanceof Error ? error.stack : String(error),
@@ -283,5 +294,20 @@ export class MonthlyBillReconciliationService {
         next_attempt_at: new Date(),
       },
     });
+  }
+
+  private isDatabaseConnectionError(error: unknown) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P1001'
+    ) {
+      return true;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    return (
+      message.includes("Can't reach database server") ||
+      message.includes('DatabaseNotReachable')
+    );
   }
 }

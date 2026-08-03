@@ -150,6 +150,15 @@ export class PaymentFilterDto {
   @IsDateString()
   endDate?: string;
 
+  @ApiPropertyOptional({
+    example: '2026-05-01',
+    description:
+      'Filter payments by bill month, including payments linked to that monthly bill',
+  })
+  @IsOptional()
+  @IsDateString()
+  billMonth?: string;
+
   @ApiPropertyOptional({ example: '1' })
   @IsOptional()
   @Transform(({ value }) => value?.toString())

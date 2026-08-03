@@ -1302,6 +1302,55 @@ textarea {
   line-height: var(--text-caption--line-height);
 }
 
+.home-month-pill {
+  position: relative;
+  display: inline-flex;
+  min-height: 34px;
+  min-width: 118px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid #d8eeee;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 7px 12px;
+  color: #1d3a42;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: var(--text-caption--line-height);
+  box-shadow: 0 8px 18px rgba(18, 55, 72, 0.04);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.home-month-pill svg {
+  flex-shrink: 0;
+  color: #008d8c;
+}
+
+.home-month-pill span {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.home-month-pill input {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.home-month-pill:active {
+  transform: scale(0.98);
+}
+
+.home-month-pill:focus-within {
+  border-color: #9edddc;
+}
+
 .home-quick-actions-card {
   padding: 8px;
 }

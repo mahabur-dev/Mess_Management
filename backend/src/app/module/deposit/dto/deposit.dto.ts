@@ -78,6 +78,14 @@ export class DepositFilterDto {
   @IsDateString()
   endDate?: string;
 
+  @ApiPropertyOptional({
+    example: '2026-05-01',
+    description: 'Filter direct deposits by billing month',
+  })
+  @IsOptional()
+  @IsDateString()
+  billMonth?: string;
+
   @ApiPropertyOptional({ example: '1' })
   @IsOptional()
   @Transform(({ value }) => value?.toString())

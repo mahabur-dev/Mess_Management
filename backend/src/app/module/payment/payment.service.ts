@@ -45,6 +45,16 @@ export class PaymentService {
     return payment.payment_date ?? payment.created_at;
   }
 
+  private monthRange(monthInput: string) {
+    const match = /^(\d{4})-(\d{2})/.exec(monthInput);
+    if (!match) throw new HttpException('Invalid bill month', 400);
+    const start = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
+    const end = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1),
+    );
+    return { start, end };
+  }
+
   private readonly paymentSelect = {
     id: true,
     monthly_bill_id: true,
@@ -480,10 +490,28 @@ export class PaymentService {
     if (query.messId) where.mess_id = query.messId;
     if (query.memberId) where.member_id = query.memberId;
     if (query.status) where.status = query.status;
-    if (query.startDate || query.endDate) {
+    if (query.billMonth) {
+      const { start, end } = this.monthRange(query.billMonth);
+      where.OR = [
+        { monthly_bill: { month: start } },
+        {
+          monthly_bill_id: null,
+          payment_date: { gte: start, lt: end },
+        },
+        {
+          monthly_bill_id: null,
+          payment_date: null,
+          created_at: { gte: start, lt: end },
+        },
+      ];
+    } else if (query.startDate || query.endDate) {
       const dateFilter = {
-        ...(query.startDate && { gte: new Date(query.startDate) }),
-        ...(query.endDate && { lte: new Date(query.endDate) }),
+        ...(query.startDate && {
+          gte: new Date(`${query.startDate}T00:00:00.000Z`),
+        }),
+        ...(query.endDate && {
+          lte: new Date(`${query.endDate}T23:59:59.999Z`),
+        }),
       };
       where.OR = [
         { payment_date: dateFilter },

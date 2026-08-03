@@ -119,6 +119,8 @@ export default function MemberDetailsPage() {
     ? new Date(`${month}-01T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : ''
   const totalCost = bill ? toNumber(bill.food_bill) + toNumber(bill.seat_rent) + toNumber(bill.utility_share) : 0
+  const totalDeposit = bill ? toNumber(bill.deposit_total) + toNumber(bill.paid_amount) : 0
+  const currentMonthBalance = Number((totalCost - totalDeposit).toFixed(2))
 
   return (
     <MobileShell>
@@ -137,7 +139,7 @@ export default function MemberDetailsPage() {
                 <div className="expense-summary-grid">
                   <ExpenseSummaryCard icon={UtensilsCrossed} label="Total Meals" value={toNumber(bill.total_meals)} />
                   <ExpenseSummaryCard icon={ReceiptText} label="Total Cost" value={formatTaka(totalCost)} accent="blue" />
-                  <ExpenseSummaryCard icon={CircleDollarSign} label="Deposit" value={formatTaka(toNumber(bill.deposit_total) + toNumber(bill.paid_amount))} accent="green" />
+                  <ExpenseSummaryCard icon={CircleDollarSign} label="Deposit" value={formatTaka(totalDeposit)} accent="green" />
                   <ExpenseSummaryCard icon={WalletCards} label="Final Due" value={formatTaka(bill.final_due)} accent="violet" />
                 </div>
                 <ExpenseBreakdownList
@@ -147,7 +149,8 @@ export default function MemberDetailsPage() {
                     { icon: WalletCards, label: 'Room rent', value: formatTaka(bill.seat_rent), accent: 'violet' },
                     { icon: Zap, label: 'Utility share', value: formatTaka(bill.utility_share), accent: 'blue' },
                     { icon: CircleDollarSign, label: 'Previous balance', value: formatTaka(bill.prev_balance), accent: 'green' },
-                    { icon: WalletCards, label: 'Current balance', value: formatTaka(bill.balance), accent: 'orange' },
+                    { icon: WalletCards, label: 'Current month balance', value: formatTaka(currentMonthBalance), accent: 'orange' },
+                    { icon: WalletCards, label: 'Carry-forward balance', value: formatTaka(bill.balance), accent: 'violet' },
                   ]}
                 />
               </div>

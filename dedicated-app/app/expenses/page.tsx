@@ -39,6 +39,7 @@ import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
+import { currentMonthValue } from '@/components/mobile/meals-design'
 import { useAuth } from '../providers'
 
 type ExpenseSummary = {
@@ -62,6 +63,11 @@ type ManagerMember = {
 }
 
 type ManagerOverview = {
+  billing?: {
+    status: 'DIRTY' | 'PROCESSING' | 'READY' | 'FAILED'
+    requestedAt?: string | null
+    calculatedAt?: string | null
+  } | null
   totals?: {
     totalExpenses?: number
     totalUtility?: number
@@ -239,7 +245,7 @@ export default function ExpensesPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [month, setMonth] = useState(currentMonthValue())
   const [view, setView] = useState<ViewMode>('MY')
   const [summary, setSummary] = useState<ExpenseSummary | null>(null)
   const [managerData, setManagerData] = useState<ManagerOverview | null>(null)
@@ -256,12 +262,6 @@ export default function ExpensesPage() {
   const [recordsLoading, setRecordsLoading] = useState(false)
   const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>('ALL')
   const [recordsMonthFilter, setRecordsMonthFilter] = useState<MonthFilter>(month)
-
-  function monthRange(value: string) {
-    const [year, monthIndex] = value.split('-').map(Number)
-    const lastDay = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate()
-    return { startDate: `${value}-01`, endDate: `${value}-${String(lastDay).padStart(2, '0')}` }
-  }
 
   useEffect(() => {
     if (!messId) return
@@ -293,7 +293,7 @@ export default function ExpensesPage() {
     setRecordsLoading(true)
 
     api
-      .getExpensesByMess(messId, { ...monthRange(month), limit: 100, sortBy: 'expense_date', sortOrder: 'desc' })
+      .getExpensesByMess(messId, { billingMonth: `${month}-01`, limit: 100, sortBy: 'expense_date', sortOrder: 'desc' })
       .then((response) => {
         if (active) setExpenses(Array.isArray(response.data) ? (response.data as ExpenseListRecord[]) : [])
       })
@@ -315,38 +315,53 @@ export default function ExpensesPage() {
   useEffect(() => {
     if (!messId || !isManager || view !== 'MANAGER') return
     let active = true
-    setLoading(true)
+    let billingTimer: ReturnType<typeof setTimeout> | null = null
 
-    Promise.allSettled([
-      api.getManagerMemberExpenses(messId, `${month}-01`),
-      api.getFundBalances(messId),
-    ])
-      .then(([memberResult, balanceResult]) => {
-        if (!active) return
-        if (memberResult.status === 'fulfilled') {
-          setManagerData(memberResult.value.data as ManagerOverview)
-        }
-        if (balanceResult.status === 'fulfilled') {
-          setFundBalances(balanceResult.value.data)
-        }
-        const errors = [memberResult, balanceResult]
-          .filter((result) => result.status === 'rejected')
-          .map((result) =>
-            result.status === 'rejected' && result.reason instanceof Error
-              ? result.reason.message
-              : 'Part of the manager expense overview could not be loaded.',
-          )
-        if (errors.length) {
-          setMessageTone('ERROR')
-          setMessage(errors.join(' '))
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+    const loadManagerOverview = (initialLoad: boolean) => {
+      if (initialLoad) setLoading(true)
+
+      Promise.allSettled([
+        api.getManagerMemberExpenses(messId, `${month}-01`),
+        api.getFundBalances(messId),
+      ])
+        .then(([memberResult, balanceResult]) => {
+          if (!active) return
+          if (memberResult.status === 'fulfilled') {
+            const nextManagerData = memberResult.value.data as ManagerOverview
+            setManagerData(nextManagerData)
+            if (
+              nextManagerData.billing &&
+              nextManagerData.billing.status !== 'READY' &&
+              nextManagerData.billing.status !== 'FAILED'
+            ) {
+              billingTimer = setTimeout(() => loadManagerOverview(false), 1500)
+            }
+          }
+          if (balanceResult.status === 'fulfilled') {
+            setFundBalances(balanceResult.value.data)
+          }
+          const errors = [memberResult, balanceResult]
+            .filter((result) => result.status === 'rejected')
+            .map((result) =>
+              result.status === 'rejected' && result.reason instanceof Error
+                ? result.reason.message
+                : 'Part of the manager expense overview could not be loaded.',
+            )
+          if (errors.length) {
+            setMessageTone('ERROR')
+            setMessage(errors.join(' '))
+          }
+        })
+        .finally(() => {
+          if (active && initialLoad) setLoading(false)
+        })
+    }
+
+    loadManagerOverview(true)
 
     return () => {
       active = false
+      if (billingTimer) clearTimeout(billingTimer)
     }
   }, [isManager, messId, month, view])
 

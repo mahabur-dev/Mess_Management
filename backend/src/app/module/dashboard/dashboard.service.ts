@@ -318,29 +318,32 @@ export class DashboardService {
       Number(totalPayment._sum.amount ?? 0) +
       Number(directDeposits._sum.amount ?? 0) +
       personalExpenseCreditAmount;
-    const totalDepositAmount = Number(currentPaidAmount.toFixed(2));
+    const billedCurrentPaidAmount =
+      Number(billsAgg._sum.deposit_total ?? 0) +
+      Number(billsAgg._sum.paid_amount ?? 0);
+    const effectiveCurrentPaidAmount = hasGeneratedBills
+      ? billedCurrentPaidAmount
+      : currentPaidAmount;
+    const totalDepositAmount = Number(effectiveCurrentPaidAmount.toFixed(2));
 
-    const billedTotalDue = Number(billsAgg._sum.final_due ?? 0);
-    const billedRemainingAmount = Number(billsAgg._sum.credit_balance ?? 0);
-    const estimatedBalance = Number(
-      (totalCost - currentPaidAmount + effectivePrevBalance).toFixed(2),
+    // Dashboard overview is current-month only. Monthly bills still carry
+    // prev_balance for per-member settlement, but Home cards should not show
+    // last month's credit as this month's remaining amount.
+    const currentMonthBalance = Number(
+      (totalCost - effectiveCurrentPaidAmount).toFixed(2),
     );
 
-    // Generated bills preserve per-member due and credit. The fallback is only
-    // used during the first background calculation.
-    const totalDue = Number(
-      (hasGeneratedBills
-        ? billedTotalDue
-        : Math.max(estimatedBalance, 0)
-      ).toFixed(2),
-    );
+    const totalDue = Number(Math.max(currentMonthBalance, 0).toFixed(2));
     const remainingAmount = Number(
-      (hasGeneratedBills
-        ? billedRemainingAmount
-        : Math.max(-estimatedBalance, 0)
-      ).toFixed(2),
+      Math.max(-currentMonthBalance, 0).toFixed(2),
     );
-    const netBalance = Number((totalDue - remainingAmount).toFixed(2));
+    const netBalance = Number(currentMonthBalance.toFixed(2));
+    const carryForwardDueAmount = Number(
+      Math.max(effectivePrevBalance, 0).toFixed(2),
+    );
+    const carryForwardRemainingAmount = Number(
+      Math.max(-effectivePrevBalance, 0).toFixed(2),
+    );
 
     return {
       todayTotalMeals: +todayTotalMeals.toFixed(2),
@@ -352,6 +355,9 @@ export class DashboardService {
       totalDue,
       remainingAmount,
       netBalance,
+      carryForwardBalance: Number(effectivePrevBalance.toFixed(2)),
+      carryForwardDueAmount,
+      carryForwardRemainingAmount,
       totalDepositAmount,
       paidAmount:
         Number(totalPayment._sum.amount ?? 0) +

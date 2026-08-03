@@ -1549,6 +1549,7 @@ export class ExpenseService {
       where: {
         mess_id: messId,
         billing_month: start,
+        status: 'CONFIRMED',
         OR: [
           { purchased_by: userId },
           { shares: { some: { member_id: userId } } },
@@ -1574,7 +1575,10 @@ export class ExpenseService {
   ) {
     await this.verifyManagerAccess(messId, userId, role);
     const { start } = this.monthRange(month);
-    const billingSync = await this.billReconciliation.reconcile(messId, start);
+    const billingState = await this.billReconciliation.ensureScheduled(
+      messId,
+      start,
+    );
 
     const bills = await this.prisma.monthlyBill.findMany({
       where: { mess_id: messId, month: start },
@@ -1594,7 +1598,13 @@ export class ExpenseService {
 
     return {
       month: start,
-      billingSync,
+      billing: billingState
+        ? {
+            status: billingState.status,
+            requestedAt: billingState.requested_at,
+            calculatedAt: billingState.calculated_at,
+          }
+        : null,
       totals: {
         totalExpenses: roundMoney(
           bills.reduce(
@@ -1660,6 +1670,9 @@ export class ExpenseService {
           },
         },
       ];
+    }
+    if (query.billingMonth) {
+      where.billing_month = this.monthStart(query.billingMonth);
     }
     if (query.startDate || query.endDate) {
       where.expense_date = {

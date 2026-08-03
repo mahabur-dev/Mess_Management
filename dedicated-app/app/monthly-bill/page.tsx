@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { CircleIcon, formatTaka } from '@/components/mobile/expense-design'
-import { InlineNotice, MealMonthSelector, formatMonthLabel } from '@/components/mobile/meals-design'
+import { InlineNotice, MealMonthSelector, currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
@@ -66,10 +66,6 @@ type MemberRecord = {
     avatar_url?: string | null
   }
   mess?: { id: string }
-}
-
-function currentMonthValue() {
-  return new Date().toISOString().slice(0, 7)
 }
 
 function toNumber(value?: string | number | null) {

@@ -12,29 +12,14 @@ import {
   DepositSectionTitle,
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
+import { currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
 import { type PaymentStatus } from '@/lib/form-options'
+import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '@/app/providers'
 
 type PaymentItem = DepositListRecord & {
   status: PaymentStatus
-}
-
-function currentMonthValue() {
-  return new Date().toISOString().slice(0, 7)
-}
-
-function monthBounds(month: string) {
-  const safeMonth = /^\d{4}-\d{2}$/.test(month) ? month : currentMonthValue()
-  const [year, monthIndex] = safeMonth.split('-').map(Number)
-  const start = new Date(year, monthIndex - 1, 1)
-  const end = new Date(year, monthIndex, 0)
-
-  return {
-    label: new Date(`${safeMonth}-01T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-    startDate: start.toISOString().slice(0, 10),
-    endDate: end.toISOString().slice(0, 10),
-  }
 }
 
 function categoryLabel(item: PaymentItem) {
@@ -43,14 +28,21 @@ function categoryLabel(item: PaymentItem) {
 
 export default function AllDepositsPage() {
   const { user } = useAuth()
+  const searchParams = useQueryParams()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const [items, setItems] = useState<PaymentItem[]>([])
-  const [month, setMonth] = useState(currentMonthValue())
+  const [month, setMonth] = useState(() => {
+    const queryMonth = searchParams.get('month')
+    return /^\d{4}-\d{2}$/.test(queryMonth ?? '') ? queryMonth as string : currentMonthValue()
+  })
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'ALL'>('ALL')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const range = useMemo(() => monthBounds(month), [month])
+  useEffect(() => {
+    const queryMonth = searchParams.get('month')
+    if (/^\d{4}-\d{2}$/.test(queryMonth ?? '')) setMonth(queryMonth as string)
+  }, [searchParams])
 
   useEffect(() => {
     if (!messId) return
@@ -59,11 +51,10 @@ export default function AllDepositsPage() {
     setLoading(true)
     api
       .getPaymentsByMess(messId, {
+        billMonth: `${month}-01`,
         limit: 500,
         sortBy: 'created_at',
         sortOrder: 'desc',
-        startDate: range.startDate,
-        endDate: range.endDate,
       })
       .then((res) => {
         if (!alive) return
@@ -80,7 +71,7 @@ export default function AllDepositsPage() {
     return () => {
       alive = false
     }
-  }, [messId, range.endDate, range.startDate])
+  }, [messId, month])
 
   const visibleItems = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -97,7 +88,7 @@ export default function AllDepositsPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="All Deposits" subtitle={range.label} backHref="/payments" />
+      <TopScreen title="All Deposits" subtitle={formatMonthLabel(month)} backHref="/payments" />
       <div className="screen space-y-4">
         <DepositAggregateSummary entries={visibleItems.length} amount={totalAmount} />
 

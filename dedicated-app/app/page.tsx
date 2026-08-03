@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ClipboardList,
+  CalendarDays,
+  ChevronDown,
   ChevronRight,
   CreditCard,
   Landmark,
@@ -20,6 +22,7 @@ import { HomeCard, HomeEmptyState, HomeMetricCard, HomeQuickAction } from '@/com
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { ExpenseListItem, type ExpenseListRecord } from '@/components/mobile/expense-design'
+import { currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { useActiveMess } from '@/hooks/use-active-mess'
 import { api } from '@/lib/api'
@@ -61,9 +64,34 @@ function formatMoney(value?: number | null) {
   return `${String.fromCodePoint(0x09f3)} ${Number(value).toLocaleString('en-US')}`
 }
 
+function HomeMonthPill({
+  month,
+  onChange,
+}: {
+  month: string
+  onChange: (month: string) => void
+}) {
+  return (
+    <label className="home-month-pill">
+      <CalendarDays size={15} strokeWidth={2.35} aria-hidden="true" />
+      <span>{formatMonthLabel(month)}</span>
+      <ChevronDown size={15} strokeWidth={2.35} aria-hidden="true" />
+      <input
+        aria-label="Select overview month"
+        type="month"
+        value={month}
+        onChange={(event) => {
+          if (/^\d{4}-\d{2}$/.test(event.target.value)) onChange(event.target.value)
+        }}
+      />
+    </label>
+  )
+}
+
 export default function HomePage() {
   const router = useRouter()
   const { user, isLoading } = useAuth()
+  const [month, setMonth] = useState(currentMonthValue())
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [recentExpenses, setRecentExpenses] = useState<ExpenseListRecord[]>([])
   const [summaryLoading, setSummaryLoading] = useState(false)
@@ -92,7 +120,7 @@ export default function HomePage() {
 
     const loadSummary = (initialLoad: boolean) => {
       api
-        .getMessDashboard(activeMess.id)
+        .getMessDashboard(activeMess.id, `${month}-01`)
         .then((res) => {
           if (cancelled) return
           const nextSummary = res.data as DashboardSummary
@@ -118,7 +146,7 @@ export default function HomePage() {
       cancelled = true
       if (refreshTimer) clearTimeout(refreshTimer)
     }
-  }, [activeMess?.id])
+  }, [activeMess?.id, month])
 
   useEffect(() => {
     if (!activeMess?.id) {
@@ -129,7 +157,7 @@ export default function HomePage() {
     let cancelled = false
     setExpensesLoading(true)
     api
-      .getExpensesByMess(activeMess.id, { limit: 3, sortBy: 'expense_date', sortOrder: 'desc' })
+      .getExpensesByMess(activeMess.id, { billingMonth: `${month}-01`, approvalStatus: 'APPROVED', limit: 3, sortBy: 'expense_date', sortOrder: 'desc' })
       .then((res: any) => {
         if (!cancelled) setRecentExpenses(Array.isArray(res.data) ? res.data.slice(0, 3) : [])
       })
@@ -143,7 +171,7 @@ export default function HomePage() {
     return () => {
       cancelled = true
     }
-  }, [activeMess?.id])
+  }, [activeMess?.id, month])
 
   const cards = [
     { label: 'Total Member', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading total members" /> : summary?.activeMembers ?? '--', icon: Users, color: '#008d8c' },
@@ -217,7 +245,11 @@ export default function HomePage() {
 
         {hasWorkspace ? (
           <>
-            <HomeCard title="Overview" className="mt-3.5">
+            <HomeCard
+              title="Overview"
+              className="mt-3.5"
+              action={<HomeMonthPill month={month} onChange={setMonth} />}
+            >
               <div className="grid grid-cols-2 gap-2">
                 {cards.map((card) => (
                   <HomeMetricCard key={card.label} label={card.label} value={card.value} icon={card.icon} accent={card.color} />
@@ -227,7 +259,7 @@ export default function HomePage() {
 
             <HomeCard
               title="Recent Expenses"
-              caption="Latest 3 entries"
+              caption={`Latest 3 entries in ${formatMonthLabel(month)}`}
               className="mt-3.5"
               action={
                 <button

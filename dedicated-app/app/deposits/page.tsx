@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, Coins, ListChecks, PlusCircle } from 'lucide-react'
+import { Coins, ListChecks, PlusCircle } from 'lucide-react'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SubmitButton, TextField } from '@/components/mobile/form-controls'
+import { MealMonthSelector, currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
 import {
   DepositListItem,
   DepositManualNotice,
@@ -53,20 +54,14 @@ export default function DepositsPage() {
   const [totalAmount, setTotalAmount] = useState(0)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
-
-  function monthRange(value: string) {
-    const [year, monthIndex] = value.split('-').map(Number)
-    const lastDay = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate()
-    return { startDate: `${value}-01`, endDate: `${value}-${String(lastDay).padStart(2, '0')}` }
-  }
+  const [month, setMonth] = useState(currentMonthValue())
 
   useEffect(() => {
     if (!messId) return
 
     let alive = true
     api
-      .getDepositsByMess(messId, { ...monthRange(month), limit: 100, sortBy: 'date', sortOrder: 'desc' })
+      .getDepositsByMess(messId, { billMonth: `${month}-01`, limit: 100, sortBy: 'date', sortOrder: 'desc' })
       .then((res) => {
         if (!alive) return
         setItems(Array.isArray(res.data) ? res.data : [])
@@ -118,9 +113,11 @@ export default function DepositsPage() {
     <MobileShell>
       <TopScreen title="Deposits" subtitle="Contribution tracking" backHref="/" />
       <div className="screen space-y-4">
+        <MealMonthSelector month={month} onChange={setMonth} />
+
         <div className="grid grid-cols-2 gap-3">
-          <DepositStatCard title="Total Deposit" value={formatDepositMoney(totalAmount)} caption="All entries" icon={Coins} />
-          <DepositStatCard title="Recent" value={items.length} caption="Loaded entries" icon={ListChecks} tone="blue" />
+          <DepositStatCard title="Total Deposit" value={formatDepositMoney(totalAmount)} caption={formatMonthLabel(month)} icon={Coins} />
+          <DepositStatCard title="Entries" value={items.length} caption={formatMonthLabel(month)} icon={ListChecks} tone="blue" />
         </div>
 
         {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
@@ -178,7 +175,7 @@ export default function DepositsPage() {
 
         <section className="rounded-[22px] border border-[#dce9ec] bg-white/96 p-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
           <DepositSectionTitle
-            title="Recent Deposits"
+            title={`Deposits (${formatMonthLabel(month)})`}
             action={<button type="button" onClick={() => setShowForm(true)} className="text-label font-semibold text-[#008d8c]">Add</button>}
           />
           <input
@@ -187,10 +184,6 @@ export default function DepositsPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search member or note..."
           />
-          <label className="mt-3 flex h-12 items-center gap-2 rounded-[15px] border border-[#dce9ec] bg-white px-4 text-body font-semibold text-[#123748]">
-            <CalendarDays size={18} className="text-[#008d8c]" />
-            <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} className="flex-1 bg-transparent outline-none" />
-          </label>
           <div className="flush-list flush-list--panel mt-3">
             {visibleItems.map((item, index) => (
               <DepositListItem

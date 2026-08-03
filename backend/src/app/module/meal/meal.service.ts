@@ -99,21 +99,41 @@ export class MealService {
     timeZone: MEAL_TIME_ZONE,
   })
   async sendMealDecisionReminders(): Promise<void> {
-    const now = new Date();
-    const targetDate = shiftDateKey(getDhakaDateKey(now), 1);
-    const messes = await this.prisma.mess.findMany({
-      where: { is_active: true },
-      select: {
-        id: true,
-        name: true,
-        created_by: true,
-        meal_deadline_start: true,
-        meal_deadline_end: true,
-        meal_window_notification_enabled: true,
-        meal_deadline_notification_enabled: true,
-        meal_deadline_reminder_minutes: true,
-      },
-    });
+    let now: Date;
+    let targetDate: string;
+    let messes: Array<{
+      id: string;
+      name: string;
+      created_by: string;
+      meal_deadline_start: string | null;
+      meal_deadline_end: string | null;
+      meal_window_notification_enabled: boolean;
+      meal_deadline_notification_enabled: boolean;
+      meal_deadline_reminder_minutes: number;
+    }>;
+
+    try {
+      now = new Date();
+      targetDate = shiftDateKey(getDhakaDateKey(now), 1);
+      messes = await this.prisma.mess.findMany({
+        where: { is_active: true },
+        select: {
+          id: true,
+          name: true,
+          created_by: true,
+          meal_deadline_start: true,
+          meal_deadline_end: true,
+          meal_window_notification_enabled: true,
+          meal_deadline_notification_enabled: true,
+          meal_deadline_reminder_minutes: true,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Meal reminder job skipped: ${this.schedulerErrorMessage(error)}`,
+      );
+      return;
+    }
 
     for (const mess of messes) {
       try {
@@ -1139,5 +1159,23 @@ export class MealService {
       '/meals',
       `meal:deadline-warning:${messId}:${targetDate}:${endTime}:${leadMinutes}`,
     );
+  }
+
+  private schedulerErrorMessage(error: unknown) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P1001'
+    ) {
+      return 'database is not reachable';
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("Can't reach database server") ||
+      message.includes('DatabaseNotReachable')
+    ) {
+      return 'database is not reachable';
+    }
+    return message;
   }
 }

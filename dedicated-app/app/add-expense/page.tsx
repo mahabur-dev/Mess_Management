@@ -27,6 +27,7 @@ import {
   type ExpenseCustomShare,
 } from '@/components/mobile/expense-custom-shares'
 import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
+import { currentMonthValue } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import {
@@ -85,7 +86,7 @@ const INITIAL_FORM: FormState = {
   quantity: '',
   unit: '',
   expenseDate: new Date().toISOString().slice(0, 10),
-  billingMonth: new Date().toISOString().slice(0, 7),
+  billingMonth: currentMonthValue(),
   description: '',
   paymentType: 'FROM_DEPOSIT',
   usedBy: 'ALL_MEMBERS',

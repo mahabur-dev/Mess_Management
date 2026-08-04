@@ -211,7 +211,7 @@ export default function PaymentsPage() {
               title={`Recent Deposits (${formatMonthLabel(month)})`}
               action={
                 <Link href={appHref(`/payments/all?month=${encodeURIComponent(month)}`)} className="text-label font-semibold text-[#008d8c]">
-                  View All Deposit
+                  View All
                 </Link>
               }
             />

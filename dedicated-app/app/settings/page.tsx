@@ -1,118 +1,57 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronRight, KeyRound, ShieldCheck, UserRound } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
-import { FieldCard, SubmitButton, TextField, ToggleField } from '@/components/mobile/form-controls'
-import { api } from '@/lib/api'
-import { useAuth } from '../providers'
-
-type FormState = {
-  fullName: string
-  email: string
-  phoneNumber: string
-  country: string
-  city: string
-  address: string
-  dateOfBirth: string
-  stripeAccountId: string
-  verifiedForget: boolean
-}
+import { appHref } from '@/lib/routes'
 
 export default function SettingsPage() {
-  const { user, refresh } = useAuth()
-  const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
-  const [passwordMessage, setPasswordMessage] = useState('')
-  const [profileImage, setProfileImage] = useState<File | null>(null)
-  const [password, setPassword] = useState({ oldPassword: '', newPassword: '' })
-  const [form, setForm] = useState<FormState>({
-    fullName: user?.name ?? '',
-    email: user?.email ?? '',
-    phoneNumber: user?.phone ?? '',
-    country: '',
-    city: '',
-    address: '',
-    dateOfBirth: '',
-    stripeAccountId: '',
-    verifiedForget: false,
-  })
-
-  useEffect(() => {
-    if (!user) return
-    setForm((prev) => ({
-      ...prev,
-      fullName: user.name ?? prev.fullName,
-      email: user.email ?? prev.email,
-      phoneNumber: user.phone ?? prev.phoneNumber,
-    }))
-  }, [user])
-
-  async function handleSave() {
-    setMessage('')
-    setBusy(true)
-    try {
-      const data = new FormData()
-      data.append('name', form.fullName.trim())
-      if (form.phoneNumber.trim()) data.append('phone', form.phoneNumber.trim())
-      if (profileImage) data.append('profileImage', profileImage)
-
-      await api.updateProfile(data)
-      await refresh()
-      setMessage('Profile updated successfully.')
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update profile.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function handleChangePassword() {
-    setPasswordMessage('')
-    if (!password.oldPassword || !password.newPassword) return setPasswordMessage('Both password fields are required.')
-    try {
-      await api.changePassword(password.oldPassword, password.newPassword)
-      setPassword({ oldPassword: '', newPassword: '' })
-      setPasswordMessage('Password updated successfully.')
-    } catch (error) {
-      setPasswordMessage(error instanceof Error ? error.message : 'Failed to change password.')
-    }
-  }
-
   return (
     <MobileShell>
-      <TopScreen title="Settings" subtitle="Profile and security" backHref="/more" />
+      <TopScreen title="Settings" subtitle="Account preferences" backHref="/more" />
       <div className="screen space-y-4">
-        <div className="ui-card space-y-4">
-          <div className="ui-section-title">Profile</div>
-          <TextField label="Full Name" value={form.fullName} onChange={(fullName) => setForm((prev) => ({ ...prev, fullName }))} placeholder="Manager Name" />
-          <TextField label="Email" value={form.email} onChange={(email) => setForm((prev) => ({ ...prev, email }))} placeholder="manager@example.com" type="email" />
-          <TextField label="Phone Number" value={form.phoneNumber} onChange={(phoneNumber) => setForm((prev) => ({ ...prev, phoneNumber }))} placeholder="017xxxxxxxx" />
-          <TextField label="Country" value={form.country} onChange={(country) => setForm((prev) => ({ ...prev, country }))} placeholder="Bangladesh" />
-          <TextField label="City" value={form.city} onChange={(city) => setForm((prev) => ({ ...prev, city }))} placeholder="Dhaka" />
-          <TextField label="Address" value={form.address} onChange={(address) => setForm((prev) => ({ ...prev, address }))} placeholder="House / Road / Area" />
-          <TextField label="Date of Birth" value={form.dateOfBirth} onChange={(dateOfBirth) => setForm((prev) => ({ ...prev, dateOfBirth }))} type="date" />
-          <TextField label="Stripe Account ID" value={form.stripeAccountId} onChange={(stripeAccountId) => setForm((prev) => ({ ...prev, stripeAccountId }))} placeholder="acct_..." />
-          <ToggleField label="Verified Forget" hint="Backend boolean flag" checked={form.verifiedForget} onChange={(verifiedForget) => setForm((prev) => ({ ...prev, verifiedForget }))} />
-          <FieldCard label="Profile Image" hint="Optional">
-            <input className="field py-3" type="file" accept="image/*" onChange={(event) => setProfileImage(event.target.files?.[0] ?? null)} />
-          </FieldCard>
-          {message ? <div className="ui-notice ui-notice--success">{message}</div> : null}
-          <SubmitButton busy={busy} onClick={handleSave}>
-            Save Profile
-          </SubmitButton>
-        </div>
+        <section className="ui-card overflow-hidden" style={{ padding: 0 }}>
+          <div className="flex items-center gap-3 border-b border-[#e4eaec] px-4 py-3.5">
+            <div className="ui-icon-tile ui-icon-tile--lg bg-[#dff4f3] text-[#008d8c]" aria-hidden="true">
+              <ShieldCheck size={24} />
+            </div>
+            <div>
+              <div className="ui-body font-bold">Account & Security</div>
+              <div className="ui-caption mt-0.5">Manage your profile and password</div>
+            </div>
+          </div>
 
-        <div className="ui-card space-y-4">
-          <div className="ui-section-title">Security</div>
-          <TextField label="Old Password" value={password.oldPassword} onChange={(oldPassword) => setPassword((prev) => ({ ...prev, oldPassword }))} placeholder="********" type="password" />
-          <TextField label="New Password" value={password.newPassword} onChange={(newPassword) => setPassword((prev) => ({ ...prev, newPassword }))} placeholder="********" type="password" />
-          {passwordMessage ? <div className="ui-notice ui-notice--success">{passwordMessage}</div> : null}
-          <button className="ui-btn ui-btn--primary w-full" type="button" onClick={handleChangePassword}>
-            <ShieldCheck size={18} /> Change Password
-          </button>
-        </div>
+          <Link
+            href={appHref('/edit-profile')}
+            className="flex items-center gap-3 border-b border-[#e4eaec] px-4 py-3.5 transition-colors last:border-b-0 active:bg-[#edfafa]"
+            aria-label="Edit profile"
+          >
+            <div className="ui-icon-tile ui-icon-tile--md bg-[#edfafa] text-[#008d8c]" aria-hidden="true">
+              <UserRound size={19} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="ui-label">Profile</div>
+              <div className="ui-caption mt-0.5">Name, email, phone and profile photo</div>
+            </div>
+            <ChevronRight size={18} className="shrink-0 text-[#78a4a9]" aria-hidden="true" />
+          </Link>
+
+          <Link
+            href={appHref('/change-password')}
+            className="flex items-center gap-3 px-4 py-3.5 transition-colors last:border-b-0 active:bg-[#edfafa]"
+            aria-label="Change password"
+          >
+            <div className="ui-icon-tile ui-icon-tile--md bg-[#edfafa] text-[#008d8c]" aria-hidden="true">
+              <KeyRound size={19} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="ui-label">Password</div>
+              <div className="ui-caption mt-0.5">Update your account password</div>
+            </div>
+            <ChevronRight size={18} className="shrink-0 text-[#78a4a9]" aria-hidden="true" />
+          </Link>
+        </section>
       </div>
     </MobileShell>
   )

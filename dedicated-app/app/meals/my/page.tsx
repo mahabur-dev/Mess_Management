@@ -2,28 +2,24 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Info, UtensilsCrossed } from 'lucide-react'
+import { Minus, Plus, UtensilsCrossed } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
-  GuestMealCountInput,
   MealCard,
   MealDateCard,
   MEAL_LABELS,
   MEAL_META,
   MEAL_ORDER,
-  MealOptionRow,
-  MealStatusPill,
-  MealStateIllustration,
-  MealTabs,
-  SaveConfirmNote,
+  attendanceMealCount,
   deadlineLabel,
   findAttendanceForMember,
   findMeal,
   formatLocalIsoDate,
   mealIsLocked,
+  MealStateIllustration,
   normalizeMeals,
   todayIsoDate,
   type MealDeadlineInfo,
@@ -34,27 +30,10 @@ import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { useAuth } from '@/app/providers'
 
-type MealChoice = 'GUEST' | 'NO' | 'TAKE'
+type MealCountMap = Record<MealName, string>
 
 function isMealName(value: string | null): value is MealName {
   return MEAL_ORDER.includes(value as MealName)
-}
-
-function choiceFromAttendance(status?: string, guests?: number | string | null): MealChoice {
-  if (status === 'OFF') return 'NO'
-  if (Number(guests ?? 0) > 0) return 'GUEST'
-  return 'TAKE'
-}
-
-function guestValueFromAttendance(guests?: number | string | null) {
-  const value = Number(guests ?? 0)
-  return value > 0 ? String(value) : '1'
-}
-
-function normalizeGuestMealCount(value: string) {
-  const count = Number(value)
-  if (!Number.isFinite(count)) return 1
-  return Math.min(20, Math.max(1, Number(count.toFixed(1))))
 }
 
 function shiftIsoDate(date: string, days: number) {
@@ -69,6 +48,106 @@ function compareIsoDate(date: string, compareWith = todayIsoDate()) {
   return 'today'
 }
 
+function formatMealCount(value: number) {
+  return Number(value.toFixed(2)).toString()
+}
+
+function defaultMealCounts(): MealCountMap {
+  return MEAL_ORDER.reduce((counts, mealName) => {
+    counts[mealName] = formatMealCount(MEAL_META[mealName].baseValue)
+    return counts
+  }, {} as MealCountMap)
+}
+
+function mealCountsFromRecords(meals: MealRecord[], memberId?: string | null): MealCountMap {
+  return MEAL_ORDER.reduce((counts, mealName) => {
+    const meal = findMeal(meals, mealName)
+    const attendance = findAttendanceForMember(meal, memberId)
+    const count = attendance ? attendanceMealCount(mealName, attendance) : MEAL_META[mealName].baseValue
+    counts[mealName] = formatMealCount(count)
+    return counts
+  }, {} as MealCountMap)
+}
+
+function normalizeMealCount(mealName: MealName, value: string) {
+  const baseValue = MEAL_META[mealName].baseValue
+  const rawCount = Number(value)
+  if (!Number.isFinite(rawCount) || rawCount <= 0) return 0
+  const rounded = Number((Math.round(rawCount * 2) / 2).toFixed(2))
+  return Math.min(21, Math.max(baseValue, rounded))
+}
+
+function nextMealCount(mealName: MealName, value: string, direction: 1 | -1) {
+  const baseValue = MEAL_META[mealName].baseValue
+  const current = normalizeMealCount(mealName, value)
+  if (direction === 1 && current === 0) return baseValue
+  if (direction === -1 && current <= baseValue) return 0
+  return normalizeMealCount(mealName, formatMealCount(current + direction * 0.5))
+}
+
+function SimpleMealInputCard({
+  mealName,
+  value,
+  disabled,
+  onChange,
+  onStep,
+}: {
+  mealName: MealName
+  value: string
+  disabled: boolean
+  onChange: (value: string) => void
+  onStep: (direction: 1 | -1) => void
+}) {
+  return (
+    <div className="relative min-h-[118px] overflow-hidden rounded-[15px] border border-[#cfeeed] bg-[linear-gradient(145deg,#ffffff_0%,#fbffff_58%,#f1fbfb_100%)] px-2.5 py-2.5 shadow-[0_8px_18px_rgba(0,119,122,0.065)]">
+      <div className="flex flex-col items-center text-center">
+        <label htmlFor={`meal-count-${mealName}`} className="block max-w-full truncate text-caption font-bold text-[#123748]">
+          {MEAL_LABELS[mealName]}
+        </label>
+      </div>
+
+      <div className="mt-1.5">
+        <input
+          id={`meal-count-${mealName}`}
+          aria-label={`${MEAL_LABELS[mealName]} meal count`}
+          className="h-9 w-full min-w-0 rounded-[12px] border border-[#bfe7e6] bg-white px-1 text-center text-body font-bold tabular-nums text-[#123748] outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_6px_14px_rgba(0,119,122,0.04)] transition focus:border-[#008d8c] focus:shadow-[0_0_0_4px_rgba(0,141,140,0.1)] disabled:opacity-60"
+          type="number"
+          inputMode="decimal"
+          min="0"
+          max="21"
+          step="0.5"
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={(event) => onChange(formatMealCount(normalizeMealCount(mealName, event.target.value)))}
+        />
+      </div>
+
+      <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+        <button
+          type="button"
+          aria-label={`Decrease ${MEAL_LABELS[mealName]} meal`}
+          onClick={() => onStep(-1)}
+          disabled={disabled}
+          className="grid h-8 min-w-0 place-items-center rounded-[11px] border border-[#ffd8d8] bg-[#fff3f3] text-[#ee1f2f] shadow-[0_6px_12px_rgba(238,31,47,0.055)] transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Minus size={16} />
+        </button>
+
+        <button
+          type="button"
+          aria-label={`Increase ${MEAL_LABELS[mealName]} meal`}
+          onClick={() => onStep(1)}
+          disabled={disabled}
+          className="grid h-8 min-w-0 place-items-center rounded-[11px] border border-[#9edddc] bg-[#edfafa] text-[#008d8c] shadow-[0_6px_12px_rgba(0,119,122,0.06)] transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function MyMealContent() {
   const params = useSearchParams()
   const { user } = useAuth()
@@ -76,9 +155,11 @@ function MyMealContent() {
   const isManager = canManageMess(user)
   const initialMeal = params.get('meal')
   const [date, setDate] = useState(params.get('date') || todayIsoDate())
-  const [mealName, setMealName] = useState<MealName>(isMealName(initialMeal) ? initialMeal : 'LUNCH')
-  const [choice, setChoice] = useState<MealChoice>('TAKE')
-  const [guestCount, setGuestCount] = useState('1')
+  const [mealCounts, setMealCounts] = useState<MealCountMap>(() => {
+    const defaults = defaultMealCounts()
+    if (isMealName(initialMeal)) defaults[initialMeal] = formatMealCount(MEAL_META[initialMeal].baseValue)
+    return defaults
+  })
   const [meals, setMeals] = useState<MealRecord[]>([])
   const [deadline, setDeadline] = useState<MealDeadlineInfo | null>(null)
   const [loading, setLoading] = useState(false)
@@ -98,17 +179,15 @@ function MyMealContent() {
       .then(([mealRes, deadlineRes]) => {
         if (!alive) return
         const mealList = normalizeMeals(mealRes.data)
-        const currentMeal = findMeal(mealList, mealName)
-        const attendance = findAttendanceForMember(currentMeal, user?.id)
         setMeals(mealList)
         setDeadline((deadlineRes.data ?? null) as MealDeadlineInfo | null)
-        setChoice(attendance ? choiceFromAttendance(attendance.status, attendance.guests) : 'TAKE')
-        setGuestCount(guestValueFromAttendance(attendance?.guests))
+        setMealCounts(mealCountsFromRecords(mealList, user?.id))
       })
       .catch((error) => {
         if (!alive) return
         setMeals([])
         setDeadline(null)
+        setMealCounts(defaultMealCounts())
         setMessage(error instanceof Error ? error.message : 'Failed to load your meal.')
       })
       .finally(() => {
@@ -118,18 +197,18 @@ function MyMealContent() {
     return () => {
       alive = false
     }
-  }, [date, mealName, messId, user?.id])
+  }, [date, messId, user?.id])
 
-  const selectedMeal = findMeal(meals, mealName)
-  const locked = mealIsLocked(selectedMeal)
+  const hasLockedMeal = MEAL_ORDER.some((mealName) => mealIsLocked(findMeal(meals, mealName)))
+  const statusMealName: MealName = isMealName(initialMeal) ? initialMeal : 'LUNCH'
   const windowOpen = Boolean(deadline?.isWindowOpen)
-  const datePosition = compareIsoDate(date)
   const memberWindowOpen = windowOpen
-  const closedForMember = locked || !memberWindowOpen
+  const closedForMember = hasLockedMeal || !memberWindowOpen
   const canSave = Boolean(messId) && (isManager || !closedForMember)
+  const datePosition = compareIsoDate(date)
   const statusClosed = !isManager && closedForMember
   const statusText = statusClosed ? 'closed' : 'open'
-  const statusDescription = locked
+  const statusDescription = hasLockedMeal
     ? isManager
       ? 'This meal is locked, but managers can still update it.'
       : 'This meal is locked by manager.'
@@ -140,12 +219,16 @@ function MyMealContent() {
         : datePosition === 'past'
           ? 'Previous date meals can only be updated by manager.'
           : 'Meal updating time is over for this date.'
-  const guestMeals = choice === 'GUEST' ? normalizeGuestMealCount(guestCount) : 0
-  const mealCount = choice === 'NO' ? 0 : Number((MEAL_META[mealName].baseValue + guestMeals).toFixed(2))
 
-  function selectGuestMeal() {
-    setChoice('GUEST')
-    setGuestCount((current) => (Number(current) > 0 ? current : '1'))
+  function updateMealCount(mealName: MealName, value: string) {
+    setMealCounts((current) => ({ ...current, [mealName]: value }))
+  }
+
+  function stepMealCount(mealName: MealName, direction: 1 | -1) {
+    setMealCounts((current) => ({
+      ...current,
+      [mealName]: formatMealCount(nextMealCount(mealName, current[mealName], direction)),
+    }))
   }
 
   async function saveMeal() {
@@ -154,21 +237,32 @@ function MyMealContent() {
     setMessage('')
 
     try {
-      await api.createMeal({
-        messId,
-        mealName,
-        status: choice === 'NO' ? 'OFF' : 'ON',
-        guests: guestMeals,
-        mealCount,
-        date,
-      })
+      await Promise.all(
+        MEAL_ORDER.map((mealName) => {
+          const baseValue = MEAL_META[mealName].baseValue
+          const mealCount = normalizeMealCount(mealName, mealCounts[mealName])
+          const status = mealCount === 0 ? 'OFF' : 'ON'
+          const guests = status === 'OFF' ? 0 : Number((mealCount - baseValue).toFixed(2))
+
+          return api.createMeal({
+            messId,
+            mealName,
+            status,
+            guests,
+            mealCount,
+            date,
+          })
+        })
+      )
 
       const [mealRes, deadlineRes] = await Promise.all([
         api.getMealsByMess(messId, { startDate: date, endDate: date, limit: 20 }),
         api.getMealDeadline(messId, date),
       ])
-      setMeals(normalizeMeals(mealRes.data))
+      const mealList = normalizeMeals(mealRes.data)
+      setMeals(mealList)
       setDeadline((deadlineRes.data ?? null) as MealDeadlineInfo | null)
+      setMealCounts(mealCountsFromRecords(mealList, user?.id))
       setMessage('Meal saved successfully.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save meal.')
@@ -180,15 +274,14 @@ function MyMealContent() {
   return (
     <MobileShell>
       <TopScreen title="My Meal" subtitle="Add or update your meal" backHref="/meals" />
-      <div className="screen space-y-4">
+      <div className="screen space-y-3">
         <MealDateCard date={date} onChange={setDate} onPrevious={() => setDate((current) => shiftIsoDate(current, -1))} onNext={() => setDate((current) => shiftIsoDate(current, 1))} />
-        <MealTabs value={mealName} onChange={setMealName} meals={meals} />
 
         <MealCard className="text-center">
-          <MealStateIllustration state={statusClosed ? 'locked' : 'open'} mealName={mealName} />
+          <MealStateIllustration state={statusClosed ? 'locked' : 'open'} mealName={statusMealName} />
 
           <h2 className={`mt-5 text-title font-bold ${statusClosed ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
-            {MEAL_LABELS[mealName]} meal is {statusText}
+            Yours meal is {statusText}
           </h2>
           <p className="mt-2 text-label font-semibold text-[#65838b]">{statusDescription}</p>
           <div className="mt-3 inline-flex items-center rounded-full bg-[#edfafa] px-4 py-2 text-caption font-bold text-[#123748]">
@@ -200,40 +293,32 @@ function MyMealContent() {
 
         {loading ? <LoadingIndicator variant="card" label="Loading meal preference" /> : null}
 
-        <MealCard className="space-y-2">
-          <MealOptionRow
-            selected={choice === 'GUEST'}
-            title="Guest Meal"
-            hint="Adds guest meals with yours"
-            rightText="Optional"
-            rightSlot={
-              choice === 'GUEST' ? (
-                <GuestMealCountInput value={guestCount} onChange={setGuestCount} disabled={!canSave || saving} />
-              ) : undefined
-            }
-            onClick={selectGuestMeal}
-          />
-          <MealOptionRow selected={choice === 'NO'} title="No Meal" hint="You will not take this meal" onClick={() => setChoice('NO')} />
-          <MealOptionRow selected={choice === 'TAKE'} title="I will take meal" hint="Your regular meal count" onClick={() => setChoice('TAKE')} />
-
-          <button type="button" className="primary-btn mt-3 flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60" onClick={saveMeal} disabled={!canSave || saving}>
-            <UtensilsCrossed size={18} /> {saving ? 'Saving...' : 'Save'}
-          </button>
-        </MealCard>
-
-        {canSave ? (
-          <SaveConfirmNote>{isManager ? 'Manager can update meals anytime.' : 'You can update your meal until the deadline.'}</SaveConfirmNote>
-        ) : (
+        {!canSave ? (
           <InlineNotice tone="warning">
-            <Info size={15} className="mr-2 inline align-[-2px]" />
-            {datePosition === 'past' ? 'Previous date meals can only be changed by manager.' : 'You can no longer add or update this meal.'}
+            {hasLockedMeal
+              ? 'This meal is locked by manager.'
+              : datePosition === 'past'
+                ? 'Previous date meals can only be changed by manager.'
+                : 'You can no longer add or update this meal.'}
           </InlineNotice>
-        )}
+        ) : null}
 
-        <MealCard>
-          <div className="mb-2 text-label font-semibold text-[#123748]">Your Meal</div>
-          <MealStatusPill tone={choice === 'NO' ? 'closed' : 'open'}>{choice === 'NO' ? 'No Meal' : 'I will take meal'}</MealStatusPill>
-        </MealCard>
+        <div className="grid grid-cols-3 gap-2">
+          {MEAL_ORDER.map((mealName) => (
+            <SimpleMealInputCard
+              key={mealName}
+              mealName={mealName}
+              value={mealCounts[mealName]}
+              disabled={!canSave || saving || loading}
+              onChange={(value) => updateMealCount(mealName, value)}
+              onStep={(direction) => stepMealCount(mealName, direction)}
+            />
+          ))}
+        </div>
+
+        <button type="button" className="primary-btn flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60" onClick={saveMeal} disabled={!canSave || saving || loading}>
+          <UtensilsCrossed size={18} /> {saving ? 'Saving...' : 'Save'}
+        </button>
       </div>
     </MobileShell>
   )

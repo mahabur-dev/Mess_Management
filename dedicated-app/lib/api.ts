@@ -154,6 +154,23 @@ class Api {
     return this.request<any[]>('/messes/my-mess')
   }
 
+  getMessSubscription(messId: string) {
+    return this.request<{
+      mess_id: string
+      plan: string
+      status: string
+      start_date: string
+      end_date: string | null
+    }>(`/subscriptions/mess/${messId}`)
+  }
+
+  updateMessSetup(messId: string, data: Record<string, unknown>) {
+    return this.request(`/messes/${messId}/setup`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
   createMess(data: Record<string, unknown>) {
     return this.request('/messes', {
       method: 'POST',

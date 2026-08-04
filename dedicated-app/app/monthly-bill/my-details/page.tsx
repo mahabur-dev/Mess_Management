@@ -15,7 +15,7 @@ import {
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { DepositListItem, type DepositListRecord } from '@/components/mobile/deposit-design'
 import { ExpenseListItem, formatTaka, type ExpenseListRecord } from '@/components/mobile/expense-design'
-import { ExpenseBreakdownList, ExpenseSurface, ExpenseSummaryCard } from '@/components/mobile/expense-ui'
+import { ExpenseBreakdownList, ExpenseSurface } from '@/components/mobile/expense-ui'
 import {
   InlineNotice,
   MealHistoryStats,
@@ -70,11 +70,6 @@ function initialMonth(value: string | null) {
 function toNumber(value?: string | number | null) {
   const amount = Number(value ?? 0)
   return Number.isFinite(amount) ? amount : 0
-}
-
-function currentCost(bill?: BillItem | null) {
-  if (!bill) return 0
-  return toNumber(bill.food_bill) + toNumber(bill.seat_rent) + toNumber(bill.utility_share)
 }
 
 function mealRate(bill?: BillItem | null) {
@@ -176,13 +171,6 @@ function MyMonthlyDetailsContent() {
         {!loading ? (
           <>
             <MealHistoryStats totalMeals={mealSummary.totalMeals} days={mealSummary.days} averagePerDay={mealSummary.averagePerDay} />
-
-            <div className="expense-summary-grid">
-              <ExpenseSummaryCard icon={UtensilsCrossed} label="Total Meals" value={billMeals} />
-              <ExpenseSummaryCard icon={WalletCards} label="Meal Rate" value={formatTaka(billMealRate)} accent="green" />
-              <ExpenseSummaryCard icon={ReceiptText} label="Meal Cost" value={formatTaka(billFoodCost)} accent="blue" />
-              <ExpenseSummaryCard icon={CircleDollarSign} label="Total Cost" value={formatTaka(bill ? currentCost(bill) : details?.total)} accent="violet" />
-            </div>
 
             <ExpenseSurface
               title="Meal Details"

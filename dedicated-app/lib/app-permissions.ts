@@ -11,6 +11,7 @@ import {
   MessageSquareWarning,
   ReceiptText,
   Settings,
+  ShieldCheck,
   User,
   Users,
   UtensilsCrossed,
@@ -90,6 +91,9 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/edit-complaint', label: 'Edit Complaint', icon: MessageSquareWarning, access: 'manager' },
   { href: '/profile', label: 'Profile', icon: User, access: 'public' },
   { href: '/settings', label: 'Settings', icon: Settings, access: 'public' },
+  { href: '/edit-profile', label: 'Edit Profile', icon: User, access: 'public', exact: true },
+  { href: '/change-password', label: 'Change Password', icon: ShieldCheck, access: 'public', exact: true },
+  { href: '/mess-management', label: 'Mess Management', icon: Settings, access: 'manager' },
 ]
 
 export const managerQuickActions: AppRouteItem[] = [
@@ -140,7 +144,7 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
   return tabs.filter((item) => canAccessLevel(user, item.access))
 }
 
-const onboardingTabPaths = new Set(['/', '/profile', '/settings', '/more'])
+const onboardingTabPaths = new Set(['/', '/profile', '/settings', '/edit-profile', '/change-password', '/more'])
 
 /**
  * Keeps primary onboarding navigation available while a user has no active
@@ -161,7 +165,8 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
     { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
     { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
     { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
-    { href: '/settings', label: 'Mess Management', icon: Settings, access: 'public' },
+    { href: '/mess-management', label: 'Mess Management', icon: Settings, access: 'manager' },
+    { href: '/settings', label: 'Settings', icon: ShieldCheck, access: 'public' },
   ]
 
   const memberLinks: AppRouteItem[] = [
@@ -172,7 +177,7 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
     { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
     { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
     { href: '/profile', label: 'Profile', icon: User, access: 'public' },
-    { href: '/settings', label: 'Settings', icon: Settings, access: 'public' },
+    { href: '/settings', label: 'Settings', icon: ShieldCheck, access: 'public' },
   ]
 
   const links = canManageMess(user) ? managerLinks : hasActiveMess(user) ? memberLinks : [{ href: '/profile', label: 'Profile', icon: User, access: 'public' as const }]
@@ -216,6 +221,9 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/edit-complaint', fallback: '/complaints', exact: true },
   { href: '/profile', fallback: '/more', exact: true },
   { href: '/settings', fallback: '/more', exact: true },
+  { href: '/edit-profile', fallback: '/settings', exact: true },
+  { href: '/change-password', fallback: '/settings', exact: true },
+  { href: '/mess-management', fallback: '/more', exact: true },
   { href: '/create-mess', fallback: '/', exact: true },
   { href: '/request-mess', fallback: '/', exact: true },
 ]

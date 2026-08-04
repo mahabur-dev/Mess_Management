@@ -183,7 +183,7 @@ export default function ProfilePage() {
             </div>
           ) : null}
 
-          <Link href={appHref('/settings')} className="ui-btn ui-btn--primary mt-5 w-full">
+          <Link href={appHref('/edit-profile')} className="ui-btn ui-btn--primary mt-5 w-full">
             <Pencil size={17} strokeWidth={2.3} aria-hidden="true" />
             Edit profile
           </Link>

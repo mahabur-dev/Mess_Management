@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, UserPlus, Users } from 'lucide-react'
+import { Search, UserPlus, UserRoundPlus, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { FloatingActionLink } from '@/components/mobile/floating-action-link'
 import { IconInput } from '@/components/mobile/icon-input'
@@ -14,6 +14,8 @@ import { canManageMess } from '@/lib/app-permissions'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from '@/lib/member-join-requests'
 import { useAuth } from '../providers'
 
+type MemberView = 'members' | 'requests'
+
 export default function MembersPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
@@ -23,6 +25,7 @@ export default function MembersPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [activeView, setActiveView] = useState<MemberView>('members')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false)
@@ -110,6 +113,14 @@ export default function MembersPage() {
     })
   }, [members, search])
 
+  const filteredJoinRequests = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    return joinRequests.filter((request) => {
+      const text = `${request.requester.name ?? ''} ${request.requester.email ?? ''} ${request.mess?.name ?? ''}`.toLowerCase()
+      return !term || text.includes(term)
+    })
+  }, [joinRequests, search])
+
   async function deleteMember(member: MobileMember) {
     setOpenMenuId(null)
     if (!window.confirm(`Delete ${member.user?.name ?? 'this member'} from this mess?`)) return
@@ -154,47 +165,92 @@ export default function MembersPage() {
   return (
     <MobileShell hasFloatingAction>
       <TopScreen title="Members" subtitle="All members in your mess" backHref="/" />
-      <div className="screen space-y-4">
-        <section className="rounded-[20px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
-          <IconInput icon={Search} placeholder="Search member..." value={search} onChange={(event) => setSearch(event.target.value)} />
-          {canReviewRequests ? (
-            <div className="mt-4">
-              <MemberJoinRequestsPanel
-                requests={joinRequests}
-                loading={joinRequestsLoading}
-                feedback={joinRequestFeedback}
-                reviewInProgress={reviewInProgress}
-                onReview={(request, status) => void reviewJoinRequest(request, status)}
-              />
-            </div>
-          ) : null}
+      <div className="screen space-y-3">
+        <section className="rounded-[18px] border border-[#bfe7e6] bg-white/95 p-2.5 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
+          <IconInput
+            icon={Search}
+            placeholder={activeView === 'members' ? 'Search member...' : 'Search join request...'}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="h-12 rounded-[15px] border-[#bfe7e6] bg-[#fbffff] py-3 text-label font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.92)]"
+          />
+        </section>
+
+        <section className="ui-card p-3">
+          <div className="grid grid-cols-2 gap-1.5 rounded-[18px] bg-[#edfafa] p-1.5" role="tablist" aria-label="Member view">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeView === 'members'}
+              onClick={() => setActiveView('members')}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-[14px] px-3 text-label font-bold transition active:scale-[0.98] ${
+                activeView === 'members'
+                  ? 'bg-white text-[#00777a] shadow-[0_8px_18px_rgba(0,119,122,0.12)]'
+                  : 'text-[#65838b]'
+              }`}
+            >
+              <Users size={16} />
+              Member
+              <span className={`rounded-full px-2 py-0.5 text-caption font-bold ${activeView === 'members' ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white/70 text-[#65838b]'}`}>
+                {filteredMembers.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeView === 'requests'}
+              onClick={() => setActiveView('requests')}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-[14px] px-3 text-label font-bold transition active:scale-[0.98] ${
+                activeView === 'requests'
+                  ? 'bg-white text-[#00777a] shadow-[0_8px_18px_rgba(0,119,122,0.12)]'
+                  : 'text-[#65838b]'
+              }`}
+            >
+              <UserRoundPlus size={16} />
+              Join Request
+              <span className={`rounded-full px-2 py-0.5 text-caption font-bold ${activeView === 'requests' ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white/70 text-[#65838b]'}`}>
+                {filteredJoinRequests.length}
+              </span>
+            </button>
+          </div>
         </section>
 
         {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
-        <section className="flush-list">
-          {loading ? (
-            <LoadingIndicator variant="card" label="Loading members" />
-          ) : (
-            filteredMembers.map((member) => (
-              <MemberCard
-                key={member.id}
-                member={member}
-                variant="horizontal"
-                menuOpen={openMenuId === member.id}
-                deleting={deletingId === member.id}
-                onToggleMenu={() => setOpenMenuId((current) => (current === member.id ? null : member.id))}
-                onDelete={() => void deleteMember(member)}
-              />
-            ))
-          )}
-          {!loading && !filteredMembers.length ? (
-            <div className="rounded-[20px] bg-white/90 p-6 text-center text-label text-[#65838b]">
-              <Users size={32} className="mx-auto mb-2 text-[#9edddc]" />
-              No members found.
-            </div>
-          ) : null}
-        </section>
+        {activeView === 'members' ? (
+          <section className="flush-list">
+            {loading ? (
+              <LoadingIndicator variant="card" label="Loading members" />
+            ) : (
+              filteredMembers.map((member) => (
+                <MemberCard
+                  key={member.id}
+                  member={member}
+                  variant="horizontal"
+                  menuOpen={openMenuId === member.id}
+                  deleting={deletingId === member.id}
+                  onToggleMenu={() => setOpenMenuId((current) => (current === member.id ? null : member.id))}
+                  onDelete={() => void deleteMember(member)}
+                />
+              ))
+            )}
+            {!loading && !filteredMembers.length ? (
+              <div className="rounded-[20px] bg-white/90 p-6 text-center text-label text-[#65838b]">
+                <Users size={32} className="mx-auto mb-2 text-[#9edddc]" />
+                No members found.
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <MemberJoinRequestsPanel
+            requests={filteredJoinRequests}
+            loading={canReviewRequests ? joinRequestsLoading : false}
+            feedback={canReviewRequests ? joinRequestFeedback : null}
+            reviewInProgress={reviewInProgress}
+            onReview={(request, status) => void reviewJoinRequest(request, status)}
+          />
+        )}
       </div>
 
       <FloatingActionLink href="/add-member" label="Add member" icon={<UserPlus size={24} strokeWidth={2.4} />} />

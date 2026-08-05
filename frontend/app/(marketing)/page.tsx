@@ -19,6 +19,7 @@ import {
   Zap,
   Sparkles,
   Clock,
+  Download,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
@@ -145,6 +146,32 @@ function SystemFeaturesSection() {
               </div>
             </article>
           ))}
+        </div>
+
+        {/* App Download CTA */}
+        <div className="mt-12 flex flex-col items-center justify-between gap-6 overflow-hidden rounded-2xl bg-gradient-to-r from-[#073735] to-[#006b63] px-6 py-8 sm:px-8 lg:flex-row lg:px-10">
+          <div className="text-center lg:text-left">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#25d7c8]">
+              Android App
+            </p>
+            <h3 className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">
+              Get the Mess Management app on your phone
+            </h3>
+            <p className="mt-2 max-w-lg text-sm font-semibold leading-6 text-white/78">
+              Install the Android app and run your mess from anywhere — meals, bills, members, and bazar in one place.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-center gap-2.5 sm:flex-row sm:gap-4">
+            <a
+              href="/app-debug.apk"
+              download="mess-management-app.apk"
+              className="inline-flex h-12 items-center gap-2.5 rounded-xl bg-white px-7 font-black text-[#006b63] shadow-[0_14px_32px_rgba(0,0,0,0.22)] transition hover:bg-[#f0f6ff]"
+            >
+              <Download size={16} />
+              Download App
+            </a>
+            <span className="text-xs font-bold text-[#cffffb]/80">Android · ~4.6 MB</span>
+          </div>
         </div>
       </div>
     </section>

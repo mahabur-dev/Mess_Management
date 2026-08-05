@@ -114,14 +114,7 @@ export class SubscriptionService {
             currency: defaults.currency,
             features: defaults.features,
           },
-          update: plan === 'TRIAL'
-            ? {
-                label: defaults.label,
-                days: defaults.days,
-                description: defaults.description,
-                features: defaults.features,
-              }
-            : {},
+          update: {},
         }),
       ),
     );

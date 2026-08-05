@@ -381,12 +381,15 @@ export default function SubscriptionsPage() {
 
     setPlanEditSaving(true)
     try {
+      const label = planEditForm.label.trim()
+      const description = planEditForm.description.trim()
+      const currency = planEditForm.currency.trim()
       const payload: SubscriptionPlanUpdate = {
-        label: planEditForm.label.trim(),
+        label: label || undefined,
         price: planEditForm.price ? Number(planEditForm.price) : undefined,
         days: planEditForm.days ? Number(planEditForm.days) : undefined,
-        description: planEditForm.description.trim(),
-        currency: planEditForm.currency.trim() || 'BDT',
+        description: description || undefined,
+        currency: currency || undefined,
         features: planEditForm.features.filter((f) => f.trim() !== ''),
       }
 

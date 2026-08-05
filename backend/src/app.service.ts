@@ -1,65 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { SubscriptionPlan } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { SubscriptionService } from './app/module/subscription/subscription.service';
 
 @Injectable()
 export class AppService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private readonly defaultPlanSettings: Record<SubscriptionPlan, {
-    price: number
-    label: string
-    days: number
-    description: string
-    currency: string
-  }> = {
-    TRIAL: {
-      price: 0,
-      label: '30 Days Free',
-      days: 30,
-      description: 'Get started with a free trial. No credit card required.',
-      currency: 'BDT',
-    },
-    MONTHLY: {
-      price: 499,
-      label: '1 Month',
-      days: 30,
-      description: 'Perfect for active messes needing full features monthly.',
-      currency: 'BDT',
-    },
-    YEARLY: {
-      price: 4999,
-      label: '1 Year',
-      days: 365,
-      description: 'Best value for long-term mess management.',
-      currency: 'BDT',
-    },
-  };
-
-  private async ensurePlanSettings() {
-    await Promise.all(
-      Object.entries(this.defaultPlanSettings).map(([plan, defaults]) =>
-        this.prisma.subscriptionPlanSetting.upsert({
-          where: { plan: plan as SubscriptionPlan },
-          create: {
-            plan: plan as SubscriptionPlan,
-            label: defaults.label,
-            price: defaults.price,
-            days: defaults.days,
-            description: defaults.description,
-            currency: defaults.currency,
-          },
-          update: plan === 'TRIAL'
-            ? {
-                label: defaults.label,
-                days: defaults.days,
-                description: defaults.description,
-              }
-            : {},
-        }),
-      ),
-    );
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly subscriptionService: SubscriptionService,
+  ) {}
 
   getHello() {
     return {
@@ -143,26 +91,6 @@ export class AppService {
   }
 
   async getSubscriptionPlans() {
-    await this.ensurePlanSettings();
-    const plans = await this.prisma.subscriptionPlanSetting.findMany({
-      orderBy: { plan: 'asc' },
-    });
-   
-    return plans.reduce<Record<string, {
-      price: number
-      label: string
-      days: number
-      description: string
-      currency: string
-    }>>((acc, plan) => {
-      acc[plan.plan] = {
-        price: Number(plan.price),
-        label: plan.label,
-        days: plan.days,
-        description: plan.description,
-        currency: plan.currency,
-      };
-      return acc;
-    }, {});
+    return this.subscriptionService.getAllPlanInfo();
   }
 }

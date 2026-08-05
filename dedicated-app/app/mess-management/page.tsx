@@ -43,6 +43,13 @@ type SubscriptionSummary = {
   end_date: string | null
 }
 
+type SubscriptionPlanInfo = {
+  label: string
+  price: number
+  days: number
+  currency?: string
+}
+
 const createRoomDraft = (room?: Partial<RoomDraft>): RoomDraft => ({
   id: room?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   roomName: room?.roomName ?? '',
@@ -92,7 +99,8 @@ function getDaysRemaining(endDate?: string | null) {
   return Math.max(days, 0)
 }
 
-function planLabel(plan?: string) {
+function planLabel(plan?: string, planInfo?: SubscriptionPlanInfo) {
+  if (planInfo?.label) return planInfo.label
   if (!plan) return 'N/A'
   if (plan === 'MONTHLY') return 'Monthly'
   if (plan === 'YEARLY') return 'Yearly'
@@ -124,6 +132,7 @@ export default function MessManagementPage() {
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const [setup, setSetup] = useState<SetupState>(createEmptySetup)
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null)
+  const [subscriptionPlans, setSubscriptionPlans] = useState<Record<string, SubscriptionPlanInfo>>({})
 
   useEffect(() => {
     let alive = true
@@ -132,63 +141,77 @@ export default function MessManagementPage() {
       return
     }
 
-    setLoading(true)
-    setMessage(null)
+    async function loadMessSettings(showLoader = true) {
+      if (showLoader) setLoading(true)
+      setMessage(null)
 
-    api
-      .getMesses()
-      .then((response) => {
-        if (!alive) return
-        const list = Array.isArray(response.data) ? response.data : []
+      const [messesResult, subscriptionResult, plansResult] = await Promise.allSettled([
+        api.getMesses(),
+        api.getMessSubscription(messId),
+        api.getSubscriptionPlans(),
+      ])
+
+      if (!alive) return
+
+      if (messesResult.status === 'fulfilled') {
+        const list = Array.isArray(messesResult.value.data) ? messesResult.value.data : []
         const mess = list.find((item) => item?.id === messId) ?? list[0]
-        if (!mess) {
+
+        if (mess) {
+          setSetup({
+            messName: mess?.name ?? '',
+            address: mess?.address ?? '',
+            totalSeats: mess?.total_seats !== undefined && mess?.total_seats !== null ? String(mess.total_seats) : '',
+            monthlyRent: mess?.monthly_rent !== undefined && mess?.monthly_rent !== null ? String(mess.monthly_rent) : '',
+            messCategory: mess?.mess_category ?? '',
+            paymentDeadlineDay: String(mess?.payment_deadline_day ?? 10),
+            mealOffDeadline: mess?.meal_off_deadline ?? '22:00',
+            bazarRules: mess?.bazar_rules ?? '',
+            rooms: normalizeRooms(mess?.rooms),
+          })
+        } else {
           setSetup(createEmptySetup())
-          setSubscription(null)
-          return
         }
+      } else {
+        setSetup(createEmptySetup())
+      }
 
-        setSetup({
-          messName: mess?.name ?? '',
-          address: mess?.address ?? '',
-          totalSeats: mess?.total_seats !== undefined && mess?.total_seats !== null ? String(mess.total_seats) : '',
-          monthlyRent: mess?.monthly_rent !== undefined && mess?.monthly_rent !== null ? String(mess.monthly_rent) : '',
-          messCategory: mess?.mess_category ?? '',
-          paymentDeadlineDay: String(mess?.payment_deadline_day ?? 10),
-          mealOffDeadline: mess?.meal_off_deadline ?? '22:00',
-          bazarRules: mess?.bazar_rules ?? '',
-          rooms: normalizeRooms(mess?.rooms),
-        })
-
-        api
-          .getMessSubscription(messId)
-          .then((subscriptionResponse) => {
-            if (!alive) return
-            const data = subscriptionResponse?.data
-            if (data && typeof data === 'object') {
-              setSubscription({
-                plan: data.plan ?? 'TRIAL',
-                status: data.status ?? 'ACTIVE',
-                start_date: data.start_date ?? '',
-                end_date: data.end_date ?? null,
-              })
-            }
+      if (subscriptionResult.status === 'fulfilled') {
+        const data = subscriptionResult.value?.data
+        if (data && typeof data === 'object') {
+          setSubscription({
+            plan: data.plan ?? 'TRIAL',
+            status: data.status ?? 'ACTIVE',
+            start_date: data.start_date ?? '',
+            end_date: data.end_date ?? null,
           })
-          .catch(() => {
-            if (alive) setSubscription(null)
-          })
-      })
-      .catch(() => {
-        if (alive) {
-          setSetup(createEmptySetup())
+        } else {
           setSubscription(null)
         }
-      })
-      .finally(() => {
-        if (alive) setLoading(false)
-      })
+      } else {
+        setSubscription(null)
+      }
+
+      if (plansResult.status === 'fulfilled' && plansResult.value?.data) {
+        setSubscriptionPlans(plansResult.value.data)
+      }
+
+      if (showLoader) setLoading(false)
+    }
+
+    void loadMessSettings()
+
+    const refreshVisibleData = () => {
+      if (document.visibilityState !== 'hidden') void loadMessSettings(false)
+    }
+
+    window.addEventListener('focus', refreshVisibleData)
+    document.addEventListener('visibilitychange', refreshVisibleData)
 
     return () => {
       alive = false
+      window.removeEventListener('focus', refreshVisibleData)
+      document.removeEventListener('visibilitychange', refreshVisibleData)
     }
   }, [messId])
 
@@ -293,7 +316,7 @@ export default function MessManagementPage() {
               <div className="mt-5 grid grid-cols-3 gap-2">
                 <div className="rounded-xl bg-white/10 p-3 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset]">
                   <p className="text-caption font-semibold text-white/70">Plan</p>
-                  <p className="mt-1 text-body font-bold text-white">{planLabel(subscription?.plan)}</p>
+                  <p className="mt-1 text-body font-bold text-white">{planLabel(subscription?.plan, subscription?.plan ? subscriptionPlans[subscription.plan] : undefined)}</p>
                 </div>
                 <div className="rounded-xl bg-white/10 p-3 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset]">
                   <p className="text-caption font-semibold text-white/70">Days Left</p>
@@ -322,7 +345,7 @@ export default function MessManagementPage() {
                       </div>
                       <div>
                         <p className="ui-label">Plan</p>
-                        <p className="ui-caption mt-0.5">{planLabel(subscription.plan)}</p>
+                        <p className="ui-caption mt-0.5">{planLabel(subscription.plan, subscriptionPlans[subscription.plan])}</p>
                       </div>
                     </div>
                     <StatusPill status={subscription.status} />

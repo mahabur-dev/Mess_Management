@@ -1,8 +1,7 @@
 import { clearStoredToken, getStoredToken, type AuthUser, type GlobalRole } from './auth'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from './member-join-requests'
 
-// const DEFAULT_API_URL = 'http://localhost:5001/api/v1'
-const DEFAULT_API_URL = 'https://didactic-bassoon-j679jrxvxrwfp4j-5001.app.github.dev/api/v1'
+const DEFAULT_API_URL = 'http://localhost:5001/api/v1'
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/+$/, '')
 const SERVICE_UNAVAILABLE_MESSAGE = 'Messzen is temporarily unavailable. Please try again in a few moments.'
@@ -161,7 +160,18 @@ class Api {
       status: string
       start_date: string
       end_date: string | null
-    }>(`/subscriptions/mess/${messId}`)
+    }>(`/subscriptions/mess/${messId}`, { cache: 'no-store' })
+  }
+
+  getSubscriptionPlans() {
+    return this.request<Record<string, {
+      price: number
+      label: string
+      days: number
+      description?: string
+      currency?: string
+      features?: string[]
+    }>>('/subscriptions/plans', { cache: 'no-store' })
   }
 
   updateMessSetup(messId: string, data: Record<string, unknown>) {

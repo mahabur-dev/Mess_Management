@@ -41,6 +41,8 @@ import {
   shiftDateKey,
 } from './meal-policy';
 
+
+
 const REMINDER_POLL_MINUTES = 5;
 const REMINDER_POLL_MS = REMINDER_POLL_MINUTES * 60 * 1000;
 const MEAL_LIST_SORT_FIELDS = new Set([
@@ -183,7 +185,29 @@ export class MealService {
       }
     }
   }
+   private async runTransactionWithRetry<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    options: { isolationLevel?: Prisma.TransactionIsolationLevel } = {},
+    retries = 3,
+  ): Promise<T> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        return await this.prisma.$transaction(fn, options);
+      } catch (error) {
+        const isRetriable =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          (error.code === 'P2034' || // write conflict / deadlock
+            error.message?.includes('write conflict or a deadlock'));
 
+        if (isRetriable && attempt < retries) {
+          await new Promise((r) => setTimeout(r, 30 * attempt)); // small backoff
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('Transaction retry limit exceeded');
+  }
   async create(userId: string, role: string, dto: CreateMealDto) {
     const context = await this.getMessAccessContext(
       dto.messId,
@@ -217,7 +241,7 @@ export class MealService {
       );
     }
 
-    const attendance = await this.prisma.$transaction(
+    const attendance = await this.runTransactionWithRetry(
       async (tx) => {
         const uniqueMeal = {
           mess_id_name_scheduled_date: {
@@ -334,7 +358,7 @@ export class MealService {
 
         return savedAttendance;
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
     );
 
     const billingSync = await this.billReconciliation.reconcile(

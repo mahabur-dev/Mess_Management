@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
   IsInt,
+  IsArray,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -115,5 +116,7 @@ export class UpdateSubscriptionPlanDto {
 
   @ApiPropertyOptional({ example: ['All features included', 'Unlimited members', 'Priority support'] })
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   features?: string[];
 }

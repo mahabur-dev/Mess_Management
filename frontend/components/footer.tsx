@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { BrandLogo } from '@/components/brand-logo'
-import { Mail, Phone, ExternalLink } from 'lucide-react'
+import { Mail, Phone, ExternalLink, Download, Smartphone } from 'lucide-react'
 
 export function Footer() {
   return (
@@ -113,6 +113,29 @@ export function Footer() {
               </a>
             </div>
           </div>
+        </div>
+
+        {/* App Download CTA */}
+        <div className="mb-10 flex flex-col items-center rounded-2xl border border-[#dbe8ea] bg-gradient-to-b from-[#f7fbfb] to-white px-6 py-10 text-center shadow-[0_18px_46px_rgba(11,90,95,0.08)]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#d8e8e7] bg-[#fbfdfd] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#008b80]">
+            <Smartphone size={13} />
+            Android App
+          </span>
+          <h3 className="mt-4 text-2xl font-black tracking-tight text-[#07143d]">
+            Take Mess Management with you
+          </h3>
+          <p className="mt-2 max-w-md text-sm font-semibold leading-6 text-[#667085]">
+            Download the Android app and manage meals, bills, and members right from your phone — anywhere, anytime.
+          </p>
+          <a
+            href="/app-debug.apk"
+            download="mess-management-app.apk"
+            className="mt-6 inline-flex h-12 items-center gap-2.5 rounded-xl bg-gradient-to-r from-[#006b63] to-[#008b80] px-7 font-black text-white shadow-[0_12px_30px_rgba(0,107,99,0.22)] transition hover:from-[#00574f] hover:to-[#006b63]"
+          >
+            <Download size={16} />
+            Download Android App
+          </a>
+          <p className="mt-3 text-[11px] font-bold text-[#9aa8a6]">APK file · ~4.6 MB · Free download</p>
         </div>
 
         {/* Bottom Bar */}

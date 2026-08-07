@@ -63,9 +63,9 @@ export function SignupPage() {
 
   return (
     <AuthShell
-      title="Create your account"
+      // title="Create your account"
       variant="reference"
-      // description="Join your mess workspace and manage meals, payments, and notices from your phone."
+      description="Join your mess workspace and manage meals, payments, and notices from your phone."
       footer={<AuthFooterLink text="Already have an account?" href="/login" action="Sign in" />}
     >
       {error ? <AuthMessage>{error}</AuthMessage> : null}
@@ -168,7 +168,7 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      title="Forgot password"
+      // title="Forgot password"
       variant="reference"
       description="Enter your email address and we will send a verification code."
       footer={
@@ -473,7 +473,7 @@ export function VerifyOtpPage() {
 
   return (
     <AuthShell
-      title="Verify OTP"
+      // title="Verify OTP"
       variant="reference"
       description="Enter the 6-digit code sent to your email address."
       footer={
@@ -654,7 +654,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell
-      title="Reset password"
+      // title="Reset password"
       variant="reference"
       description="Create a new password to secure your Mess Management account."
       footer={

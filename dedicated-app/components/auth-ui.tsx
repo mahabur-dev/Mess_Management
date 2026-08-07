@@ -30,39 +30,45 @@ export function AuthShell({
   children,
   footer,
   maxWidth = 'max-w-md',
+  variant = 'default',
 }: {
   title: string
   description?: string
   children: ReactNode
   footer?: ReactNode
   maxWidth?: string
+  variant?: 'default' | 'reference'
 }) {
-  return (
-    <div className="min-h-screen px-4 py-6">
-      <div
-        className={`mx-auto flex min-h-[calc(100vh-3rem)] w-full ${maxWidth} flex-col`}
-      >
-        <main className="flex flex-1 items-center py-4">
-          <section className="w-full rounded-[20px] border border-white/80 bg-white/94 p-4 shadow-[0_28px_70px_rgba(18,55,72,0.18)] backdrop-blur min-[360px]:p-5">
-            <div className="mb-5 text-center">
-              <Image
-                src="/icon.svg"
-                alt="Messzen logo"
-                width={80}
-                height={80}
-                className="mx-auto h-[64px] w-[64px] object-contain"
-                priority
-              />
+  const reference = variant === 'reference'
 
-              <div className="mt-1 text-display font-bold text-[#008d8c]">
+  return (
+    <div className={reference ? 'auth-reference' : 'min-h-screen px-4 py-6'}>
+      {reference ? (
+        <div className="auth-reference__art" aria-hidden="true">
+          <img src="/login-reference-art.png" alt="" />
+        </div>
+      ) : null}
+      <div
+        className={reference ? 'auth-reference__inner' : `mx-auto flex min-h-[calc(100vh-3rem)] w-full ${maxWidth} flex-col`}
+      >
+        <main className={reference ? 'auth-reference__main' : 'flex flex-1 items-center py-4'}>
+          <section className="w-full rounded-[20px] border border-white/80 bg-white/94 p-4 shadow-[0_28px_70px_rgba(18,55,72,0.18)] backdrop-blur min-[360px]:p-5">
+            <div className={reference ? 'auth-reference__heading' : 'mb-5 text-center'}>
+              {reference ? (
+                <div className="auth-reference__logo-wrap">
+                  <Image src="/app-logo.webp.png" alt="Messzen logo" width={250} height={250} className="auth-reference__logo" priority />
+                </div>
+              ) : (
+                <Image src="/icon.svg" alt="Messzen logo" width={80} height={80} className="mx-auto h-[64px] w-[64px] object-contain" priority />
+              )}
+
+              <div className={reference ? 'auth-reference__brand' : 'mt-1 text-display font-bold text-[#008d8c]'}>
                 Messzen
               </div>
 
-              <h1 className="mt-5 text-headline font-bold text-[#062b35]">
-                {title}
-              </h1>
+              <h1 className={reference ? 'auth-reference__title' : 'mt-5 text-headline font-bold text-[#062b35]'}>{title}</h1>
 
-              {description ? (
+              {reference && description ? <p className="auth-reference__description">{description}</p> : !reference && description ? (
                 <p className="mx-auto mt-2 max-w-[310px] text-label text-[#65838b]">
                   {description}
                 </p>
@@ -71,11 +77,11 @@ export function AuthShell({
 
             {children}
 
-            <div className="mt-5 flex items-center gap-3 text-[#65838b]">
+            <div className={reference ? 'auth-reference__protected' : 'mt-5 flex items-center gap-3 text-[#65838b]'}>
               <span className="h-px flex-1 bg-[#cbd8e1]" />
 
               <span className="inline-flex items-center gap-1.5 text-caption font-semibold">
-                <ShieldCheck size={14} className="text-[#008d8c]" />
+                <ShieldCheck size={reference ? 22 : 14} className="text-[#008d8c]" />
                 Protected access
               </span>
 

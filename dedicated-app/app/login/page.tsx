@@ -41,7 +41,9 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      title="Login to Messzen"
+      title="Welcome back!"
+      description="Sign in to continue to your account"
+      variant="reference"
       footer={
         <AuthFooterLink
           text="Don't have an account?"

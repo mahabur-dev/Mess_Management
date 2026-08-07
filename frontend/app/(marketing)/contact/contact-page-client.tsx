@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { apiClient, type ContactRequestSource, type SubscriptionPlan } from '@/lib/api-client'
-import { Send } from 'lucide-react'
+import { Send, Download, Smartphone } from 'lucide-react'
 
 function successMessage(source: ContactRequestSource, plan?: SubscriptionPlan | null) {
   if (source === 'UPGRADE') {
@@ -191,6 +191,34 @@ export function ContactPageClient({
               )}
             </div>
           </Card>
+
+          {/* App Download CTA */}
+          <div className="mt-8 overflow-hidden rounded-2xl border border-[#d8e8e7] shadow-[0_24px_70px_rgba(0,107,99,0.12)]">
+            <div className="flex flex-col items-center gap-6 bg-gradient-to-r from-[#073735] to-[#006b63] px-6 py-8 text-center sm:flex-row sm:px-8 sm:text-left">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/12 ring-1 ring-white/20">
+                <Smartphone size={26} className="text-[#25d7c8]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#25d7c8]">
+                  Android App
+                </p>
+                <h2 className="mt-1 text-lg font-black tracking-tight text-white">
+                  Get the Mess Management app
+                </h2>
+                <p className="mt-1 text-sm font-semibold leading-6 text-white/78">
+                  Skip the browser — download the Android app and manage meals, bills, and members right from your phone.
+                </p>
+              </div>
+              <a
+                href="/app-debug.apk"
+                download="mess-management-app.apk"
+                className="inline-flex h-12 shrink-0 items-center gap-2.5 rounded-xl bg-white px-6 font-black text-[#006b63] shadow-[0_14px_32px_rgba(0,0,0,0.22)] transition hover:bg-[#f0f6ff]"
+              >
+                <Download size={16} />
+                Download App
+              </a>
+            </div>
+          </div>
         </div>
       </section>
     </main>

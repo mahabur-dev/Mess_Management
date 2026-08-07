@@ -70,20 +70,20 @@ export class SubscriptionController {
     return { message: 'Subscription fetched successfully', data };
   }
 
-  @Patch(':id')
-  @UseGuards(AuthGuard('ADMIN'))
-  @ApiOperation({ summary: '[ADMIN] Update a subscription' })
-  async update(@Param('id') id: string, @Body() dto: UpdateSubscriptionDto) {
-    const data = await this.subscriptionService.update(id, dto);
-    return { message: 'Subscription updated successfully', data };
-  }
-
   @Patch('plans/:plan')
   @UseGuards(AuthGuard('ADMIN'))
   @ApiOperation({ summary: '[ADMIN] Update subscription plan settings' })
   async updatePlan(@Param('plan') plan: string, @Body() dto: UpdateSubscriptionPlanDto) {
     const data = await this.subscriptionService.updatePlan(plan as any, dto);
     return { message: 'Subscription plan updated successfully', data };
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard('ADMIN'))
+  @ApiOperation({ summary: '[ADMIN] Update a subscription' })
+  async update(@Param('id') id: string, @Body() dto: UpdateSubscriptionDto) {
+    const data = await this.subscriptionService.update(id, dto);
+    return { message: 'Subscription updated successfully', data };
   }
 
   @Delete(':id')

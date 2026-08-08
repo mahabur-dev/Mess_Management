@@ -20,6 +20,7 @@ import {
   formatLocalIsoDate,
   mealIsLocked,
   MealStateIllustration,
+  MealIconBadge,
   normalizeMeals,
   todayIsoDate,
   type MealDeadlineInfo,
@@ -99,18 +100,27 @@ function SimpleMealInputCard({
   onStep: (direction: 1 | -1) => void
 }) {
   return (
-    <div className="relative min-h-[118px] overflow-hidden rounded-[15px] border border-[#cfeeed] bg-[linear-gradient(145deg,#ffffff_0%,#fbffff_58%,#f1fbfb_100%)] px-2.5 py-2.5 shadow-[0_8px_18px_rgba(0,119,122,0.065)]">
-      <div className="flex flex-col items-center text-center">
-        <label htmlFor={`meal-count-${mealName}`} className="block max-w-full truncate text-caption font-bold text-[#123748]">
-          {MEAL_LABELS[mealName]}
-        </label>
-      </div>
+    <div className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-3 py-3 last:border-b-0">
+      <MealIconBadge mealName={mealName} size="sm" />
+      <label htmlFor={`meal-count-${mealName}`} className="min-w-0 flex-1 text-left">
+        <span className="block text-label font-bold text-[#123748]">{MEAL_LABELS[mealName]}</span>
+        <span className="block text-caption text-[#65838b]">{mealName === 'BREAKFAST' ? 'Morning meal' : mealName === 'LUNCH' ? 'Midday meal' : 'Evening meal'}</span>
+      </label>
 
-      <div className="mt-1.5">
+      <div className="flex h-9 shrink-0 items-center overflow-hidden border border-[#9edddc] bg-[#f8fbfb]">
+        <button
+          type="button"
+          aria-label={`Decrease ${MEAL_LABELS[mealName]} meal`}
+          onClick={() => onStep(-1)}
+          disabled={disabled}
+          className="grid h-full w-8 place-items-center text-[#00777a] transition hover:bg-[#dff4f3] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Minus size={16} />
+        </button>
         <input
           id={`meal-count-${mealName}`}
           aria-label={`${MEAL_LABELS[mealName]} meal count`}
-          className="h-9 w-full min-w-0 rounded-[12px] border border-[#bfe7e6] bg-white px-1 text-center text-body font-bold tabular-nums text-[#123748] outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_6px_14px_rgba(0,119,122,0.04)] transition focus:border-[#008d8c] focus:shadow-[0_0_0_4px_rgba(0,141,140,0.1)] disabled:opacity-60"
+          className="h-full w-12 border-x border-[#bfe7e6] bg-transparent px-1 text-center text-label font-semibold tabular-nums text-[#245d66] outline-none disabled:opacity-60"
           type="number"
           inputMode="decimal"
           min="0"
@@ -121,25 +131,13 @@ function SimpleMealInputCard({
           onChange={(event) => onChange(event.target.value)}
           onBlur={(event) => onChange(formatMealCount(normalizeMealCount(mealName, event.target.value)))}
         />
-      </div>
-
-      <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-        <button
-          type="button"
-          aria-label={`Decrease ${MEAL_LABELS[mealName]} meal`}
-          onClick={() => onStep(-1)}
-          disabled={disabled}
-          className="grid h-8 min-w-0 place-items-center rounded-[11px] border border-[#ffd8d8] bg-[#fff3f3] text-[#ee1f2f] shadow-[0_6px_12px_rgba(238,31,47,0.055)] transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Minus size={16} />
-        </button>
-
+        
         <button
           type="button"
           aria-label={`Increase ${MEAL_LABELS[mealName]} meal`}
           onClick={() => onStep(1)}
           disabled={disabled}
-          className="grid h-8 min-w-0 place-items-center rounded-[11px] border border-[#9edddc] bg-[#edfafa] text-[#008d8c] shadow-[0_6px_12px_rgba(0,119,122,0.06)] transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+          className="grid h-full w-8 place-items-center bg-[#008d8c] text-white transition hover:bg-[#00777a] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={16} />
         </button>
@@ -303,7 +301,7 @@ function MyMealContent() {
           </InlineNotice>
         ) : null}
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="overflow-hidden rounded-[12px] border border-[#dce8e9] bg-white">
           {MEAL_ORDER.map((mealName) => (
             <SimpleMealInputCard
               key={mealName}

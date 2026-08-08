@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateMealPatternDto, UpdateMealPatternDto } from './dto/meal-pattern.dto';
 import { dateKey, normalizeSchedule, parseDate, scheduleForDate } from './meal-pattern.policy';
+import { getMealBaseValue } from '../meal/meal-policy';
 
 const WINDOW_DAYS = 14;
 const patternInclude = {
@@ -96,11 +97,17 @@ export class MealPatternService {
   private async generateDate(pattern: any, scheduledDate: Date) {
     const schedule = scheduleForDate(pattern, scheduledDate);
     for (const mealName of Object.keys(schedule) as MealName[]) {
-      if (!schedule[mealName]) continue;
+      if (schedule[mealName] <= 0) continue;
       await this.prisma.$transaction(async (tx) => {
         const meal = await tx.meal.upsert({ where: { mess_id_name_scheduled_date: { mess_id: pattern.membership.mess_id, name: mealName, scheduled_date: scheduledDate } }, update: {}, create: { mess_id: pattern.membership.mess_id, name: mealName, scheduled_date: scheduledDate, created_by: pattern.created_by, status: 'CONFIRMED' } });
         if (meal.is_locked || meal.status === 'LOCKED' || meal.status === 'CANCELLED') return;
-        await tx.mealAttendance.createMany({ data: [{ meal_id: meal.id, member_id: pattern.membership.user_id, status: 'ON', source: MealAttendanceSource.PATTERN, pattern_id: pattern.id }], skipDuplicates: true });
+        const guests = Number((schedule[mealName] - getMealBaseValue(mealName)).toFixed(2));
+        const existing = await tx.mealAttendance.findUnique({ where: { meal_id_member_id: { meal_id: meal.id, member_id: pattern.membership.user_id } } });
+        if (existing?.source === MealAttendanceSource.PATTERN) {
+          await tx.mealAttendance.update({ where: { id: existing.id }, data: { status: 'ON', guests, pattern_id: pattern.id } });
+        } else if (!existing) {
+          await tx.mealAttendance.create({ data: { meal_id: meal.id, member_id: pattern.membership.user_id, status: 'ON', guests, source: MealAttendanceSource.PATTERN, pattern_id: pattern.id } });
+        }
       });
     }
   }

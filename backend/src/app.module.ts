@@ -22,6 +22,7 @@ import { ComplaintModule } from './app/module/complaint/complaint.module';
 import { DashboardModule } from './app/module/dashboard/dashboard.module';
 import { SubscriptionModule } from './app/module/subscription/subscription.module';
 import { ContactRequestModule } from './app/module/contact-request/contact-request.module';
+import { MealPatternModule } from './app/module/meal-pattern/meal-pattern.module';
 
 // ✅ Import Prisma Module
 
@@ -47,6 +48,7 @@ import { ContactRequestModule } from './app/module/contact-request/contact-reque
     DashboardModule,
     SubscriptionModule,
     ContactRequestModule,
+    MealPatternModule,
   ],
 
   controllers: [AppController],

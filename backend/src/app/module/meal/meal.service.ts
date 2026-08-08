@@ -9,6 +9,7 @@ import {
 import { Cron } from '@nestjs/schedule';
 import {
   AttendanceStatus,
+  MealAttendanceSource,
   MealName,
   MealStatus,
   MembershipRole,
@@ -307,12 +308,15 @@ export class MealService {
           update: {
             status: normalized.status,
             guests: normalized.guests,
+            source: MealAttendanceSource.MANUAL,
+            pattern_id: null,
           },
           create: {
             meal_id: meal.id,
             member_id: targetMemberId,
             status: normalized.status,
             guests: normalized.guests,
+            source: MealAttendanceSource.MANUAL,
           },
           include: {
             meal: {

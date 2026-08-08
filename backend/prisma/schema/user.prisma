@@ -23,6 +23,7 @@ model User {
   memberships              MessMembership[]
   created_meals            Meal[]             @relation("MealCreator")
   meal_attendances         MealAttendance[]    @relation("AttendanceMember")
+  created_meal_patterns    MealPattern[]      @relation("MealPatternCreator")
   expenses_created         Expense[]          @relation("ExpenseCreator")
   expenses_purchased       Expense[]          @relation("ExpensePurchaser")
   expense_shares           ExpenseShare[]     @relation("ExpenseShareMember")

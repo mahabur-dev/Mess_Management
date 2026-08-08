@@ -15,6 +15,7 @@ model MessMembership {
 
   mess Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  meal_patterns MealPattern[]
 
   @@unique([mess_id, user_id])
   @@index([mess_id])

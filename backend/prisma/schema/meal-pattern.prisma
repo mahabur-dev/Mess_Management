@@ -1,0 +1,27 @@
+// Versioned member meal-pattern definitions.
+// A row represents one immutable version of a pattern. New schedules create
+// a new version in the same series instead of rewriting history.
+model MealPattern {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  series_id       String            @db.Uuid
+  version         Int               @default(1)
+  membership_id   String            @db.Uuid
+  pattern_type    MealPatternType
+  status          MealPatternStatus @default(DRAFT)
+  start_date      DateTime          @db.Date
+  end_date        DateTime?         @db.Date
+  daily_schedule  Json?
+  weekly_schedule Json?
+  created_by      String            @db.Uuid
+  created_at      DateTime          @default(now()) @db.Timestamptz
+  updated_at      DateTime          @updatedAt @db.Timestamptz
+
+  membership  MessMembership  @relation(fields: [membership_id], references: [id], onDelete: Cascade)
+  creator     User            @relation("MealPatternCreator", fields: [created_by], references: [id])
+  attendances MealAttendance[]
+
+  @@unique([series_id, version])
+  @@index([membership_id, status])
+  @@index([start_date, end_date])
+  @@map("meal_patterns")
+}

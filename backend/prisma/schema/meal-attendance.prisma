@@ -9,15 +9,19 @@ model MealAttendance {
   member_id  String           @db.Uuid
   guests     Decimal          @default(0) @db.Decimal(10, 2)
   status     AttendanceStatus @default(ON)
+  source     MealAttendanceSource @default(MANUAL)
+  pattern_id String?          @db.Uuid
   created_at DateTime         @default(now()) @db.Timestamptz
   updated_at DateTime         @updatedAt @db.Timestamptz
 
   // ─── Relations ─────────────────────────────────────────
   meal   Meal @relation(fields: [meal_id], references: [id], onDelete: Cascade)
   member User @relation("AttendanceMember", fields: [member_id], references: [id], onDelete: Cascade)
+  pattern MealPattern? @relation(fields: [pattern_id], references: [id], onDelete: SetNull)
 
   @@unique([meal_id, member_id])
   @@index([meal_id])
   @@index([member_id])
+  @@index([pattern_id])
   @@map("meal_attendances")
 }

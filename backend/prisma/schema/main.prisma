@@ -51,6 +51,24 @@ enum AttendanceStatus {
   OFF
 }
 
+enum MealAttendanceSource {
+  MANUAL
+  PATTERN
+}
+
+enum MealPatternType {
+  DAILY
+  WEEKLY
+}
+
+enum MealPatternStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+  CANCELLED
+}
+
 // ─── Expense ───────────────────────────────────────────────
 enum ExpenseCategory {
   GROCERY

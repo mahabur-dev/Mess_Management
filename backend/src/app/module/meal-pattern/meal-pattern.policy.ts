@@ -5,11 +5,11 @@ export const WEEKDAYS = [
   'SATURDAY', 'SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY',
 ] as const;
 export type Weekday = (typeof WEEKDAYS)[number];
-export type MealSchedule = Record<MealName, boolean>;
+export type MealSchedule = Record<MealName, number>;
 export type WeeklySchedule = Record<Weekday, MealSchedule>;
 
 export const EMPTY_SCHEDULE: MealSchedule = {
-  BREAKFAST: false, LUNCH: false, DINNER: false,
+  BREAKFAST: 0, LUNCH: 0, DINNER: 0,
 };
 
 export function dateKey(value: Date | string): string {
@@ -28,8 +28,12 @@ function normalizeMealSchedule(value: unknown, label: string): MealSchedule {
   const input = value as Record<string, unknown>;
   const result = { ...EMPTY_SCHEDULE };
   for (const meal of Object.keys(result) as MealName[]) {
-    if (input[meal] !== undefined && typeof input[meal] !== 'boolean') throw new BadRequestException(`${label}.${meal} must be boolean`);
-    result[meal] = input[meal] === true;
+    const raw = input[meal];
+    if (raw === undefined || raw === null || raw === false) { result[meal] = 0; continue; }
+    const value = raw === true ? (meal === 'BREAKFAST' ? 0.5 : 1) : Number(raw);
+    const step = meal === 'BREAKFAST' ? 0.5 : 1;
+    if (!Number.isFinite(value) || value < 0 || value > 20 || Math.round(value / step) !== value / step) throw new BadRequestException(`${label}.${meal} must use increments of ${step}`);
+    result[meal] = Number(value.toFixed(2));
   }
   return result;
 }

@@ -56,7 +56,7 @@ export function AuthShell({
             <div className={reference ? 'auth-reference__heading' : 'mb-5 text-center'}>
               {reference ? (
                 <div className="auth-reference__logo-wrap">
-                  <Image src="/logo5.webp" alt="Messzen logo" width={250} height={250} className="auth-reference__logo" priority />
+                  <Image src="/messZen-150.webp" alt="Messzen logo" width={250} height={250} className="auth-reference__logo" priority />
                 </div>
               ) : (
                 <Image src="/icon.svg" alt="Messzen logo" width={80} height={80} className="mx-auto h-[64px] w-[64px] object-contain" priority />

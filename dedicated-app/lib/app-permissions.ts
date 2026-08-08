@@ -15,6 +15,7 @@ import {
   User,
   Users,
   UtensilsCrossed,
+  CalendarClock,
   Wallet2,
   Zap,
   type LucideProps,
@@ -82,6 +83,7 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/meals/details', label: 'Meal Details', icon: UtensilsCrossed, access: 'mess' },
   { href: '/meals/my', label: 'My Meal', icon: UtensilsCrossed, access: 'mess' },
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
+  { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
   { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, access: 'mess', exact: true },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
   { href: '/edit-monthly-bill', label: 'Edit Bill', icon: ClipboardList, access: 'manager' },
@@ -137,7 +139,7 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
   const tabs: AppRouteItem[] = [
     { href: '/', label: 'Home', icon: House, access: 'public', exact: true },
     primary,
-    { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
+    { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
     { href: '/more', label: 'More', icon: LayoutGrid, access: 'public', exact: true },
   ]
 
@@ -170,7 +172,7 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
   ]
 
   const memberLinks: AppRouteItem[] = [
-    { href: '/meals', label: 'My Meals', icon: UtensilsCrossed, access: 'mess' },
+    { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
     { href: '/expenses', label: 'My Expenses', icon: ReceiptText, access: 'mess' },
     { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
     { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
@@ -208,6 +210,7 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/edit-expense', fallback: '/expenses', exact: true },
   { href: '/edit-deposit', fallback: '/deposits', exact: true },
   { href: '/meals/my', fallback: '/meals', exact: true },
+  { href: '/meal-pattern', fallback: '/', exact: true },
   { href: '/meals/time', fallback: '/meals/manager', exact: true },
   { href: '/meals/members', fallback: '/meals/manager', exact: true },
   { href: '/meals/member-meal', fallback: '/meals/members', exact: true },

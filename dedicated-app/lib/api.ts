@@ -415,6 +415,36 @@ class Api {
     })
   }
 
+  getMealPatterns(membershipId?: string) {
+    return this.request('/meal-patterns', { params: membershipId ? { membershipId } : undefined })
+  }
+
+  createMealPattern(data: Record<string, unknown>) {
+    return this.request('/meal-patterns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  updateMealPattern(id: string, data: Record<string, unknown>) {
+    return this.request(`/meal-patterns/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  pauseMealPattern(id: string) {
+    return this.request(`/meal-patterns/${id}/pause`, { method: 'POST' })
+  }
+
+  resumeMealPattern(id: string) {
+    return this.request(`/meal-patterns/${id}/resume`, { method: 'POST' })
+  }
+
+  cancelMealPattern(id: string) {
+    return this.request(`/meal-patterns/${id}/cancel`, { method: 'POST' })
+  }
+
   generateMonthlyBills(data: { messId: string; month: string }) {
     return this.request('/monthly-bill/generate', {
       method: 'POST',

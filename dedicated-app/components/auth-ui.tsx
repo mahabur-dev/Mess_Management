@@ -43,11 +43,6 @@ export function AuthShell({
 
   return (
     <div className={reference ? 'auth-reference' : 'min-h-screen px-4 py-6'}>
-      {reference ? (
-        <div className="auth-reference__art" aria-hidden="true">
-          <img src="/login-reference-art.png" alt="" />
-        </div>
-      ) : null}
       <div
         className={reference ? 'auth-reference__inner' : `mx-auto flex min-h-[calc(100vh-3rem)] w-full ${maxWidth} flex-col`}
       >
@@ -55,24 +50,39 @@ export function AuthShell({
           <section className="w-full rounded-[20px] border border-white/80 bg-white/94 p-4 shadow-[0_28px_70px_rgba(18,55,72,0.18)] backdrop-blur min-[360px]:p-5">
             <div className={reference ? 'auth-reference__heading' : 'mb-5 text-center'}>
               {reference ? (
-                <div className="auth-reference__logo-wrap">
-                  <Image src="/messZen-150.webp" alt="Messzen logo" width={250} height={250} className="auth-reference__logo" priority />
+                <div className="auth-reference__intro">
+                  <div className="auth-reference__content">
+                    <div className="auth-reference__identity">
+                      <div className="auth-reference__logo-wrap">
+                        <Image src="/messZen-100.webp" alt="Messzen logo" width={100} height={100} className="auth-reference__logo" priority />
+                      </div>
+
+                      <div>
+                        <div className="auth-reference__brand">Messzen</div>
+                        <div className="auth-reference__eyebrow">Smart mess management</div>
+                      </div>
+                    </div>
+
+                    <h1 className="auth-reference__title">{title}</h1>
+                    {description ? <p className="auth-reference__description">{description}</p> : null}
+                  </div>
+
+                  <div className="auth-reference__art" aria-hidden="true">
+                    <img src="/login-side-art.png" alt="" />
+                  </div>
                 </div>
               ) : (
-                <Image src="/icon.svg" alt="Messzen logo" width={80} height={80} className="mx-auto h-[64px] w-[64px] object-contain" priority />
+                <>
+                  <Image src="/icon.svg" alt="Messzen logo" width={80} height={80} className="mx-auto h-[64px] w-[64px] object-contain" priority />
+                  <div className="mt-0 text-display font-bold text-[#008d8c]">Messzen</div>
+                  <h1 className="mt-5 text-headline font-bold text-[#062b35]">{title}</h1>
+                  {description ? (
+                    <p className="mx-auto mt-10 max-w-[310px] text-label text-[#65838b]">
+                      {description}
+                    </p>
+                  ) : null}
+                </>
               )}
-
-              <div className={reference ? 'auth-reference__brand' : 'mt-0 text-display font-bold text-[#008d8c]'}>
-                Messzen
-              </div>
-
-              <h1 className={reference ? 'auth-reference__title' : 'mt-5 text-headline font-bold text-[#062b35]'}>{title}</h1>
-
-              {reference && description ? <p className="auth-reference__description mt-5">{description}</p> : !reference && description ? (
-                <p className="mx-auto mt-10 max-w-[310px] text-label text-[#65838b]">
-                  {description}
-                </p>
-              ) : null}
             </div>
 
             {children}
@@ -136,7 +146,7 @@ export function AuthField({
   ...props
 }: AuthFieldProps) {
   return (
-    <label className="block mt-15">
+    <label className="block">
       <div className="mb-2 text-label font-bold text-[#062b35] ">
         {label}
       </div>
@@ -254,18 +264,30 @@ export function AuthSubmitButton({
 }) {
   return (
     <button
-     className="primary-btn relative flex min-h-[40px] w-full items-center justify-center py-3 text-body disabled:cursor-not-allowed disabled:opacity-70"
+      className="primary-btn group relative flex min-h-[52px] w-full items-center justify-center py-3 text-body disabled:cursor-not-allowed disabled:opacity-70"
       type="submit"
       disabled={busy}
     >
       <span>{busy ? busyLabel : children}</span>
 
-      {/* <ArrowRight
-        className="absolute right-5"
+      <ArrowRight
+        className="absolute right-5 transition-transform duration-200 group-hover:translate-x-0.5"
         size={20}
         strokeWidth={2.2}
-      /> */}
+        aria-hidden="true"
+      />
     </button>
+  )
+}
+
+export function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.53h3.24c1.9-1.75 2.98-4.32 2.98-7.39Z" />
+      <path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.38l-3.24-2.53c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.61A10 10 0 0 0 12 22Z" />
+      <path fill="#FBBC05" d="M6.39 13.92A6.02 6.02 0 0 1 6.07 12c0-.67.12-1.32.32-1.92V7.47H3.04A10 10 0 0 0 2 12c0 1.61.39 3.14 1.04 4.53l3.35-2.61Z" />
+      <path fill="#EA4335" d="M12 5.95c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.62 9.62 0 0 0 12 2a10 10 0 0 0-8.96 5.47l3.35 2.61C7.18 7.71 9.39 5.95 12 5.95Z" />
+    </svg>
   )
 }
 

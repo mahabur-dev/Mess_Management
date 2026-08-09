@@ -71,7 +71,6 @@ export default function QuickAddPage() {
   const { activeMess, isLoading: messLoading, status: messStatus } = useActiveMess(user)
   const members = useMessMemberOptions(activeMess?.id ?? '', user)
   const [locale, setLocale] = useState<AiLocale>('en')
-  const [speechLanguage, setSpeechLanguage] = useState<AiLocale>('bn')
   const [text, setText] = useState('')
   const [command, setCommand] = useState<AiCommand | null>(null)
   const [payload, setPayload] = useState<Record<string, unknown>>({})
@@ -82,21 +81,24 @@ export default function QuickAddPage() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem('messzen:ai-locale')
-    if (stored === 'bn' || stored === 'en') setLocale(stored)
+    if (stored === 'bn' || stored === 'en') {
+      setLocale(stored)
+      return
+    }
+
+    // Keep the previous voice preference when upgrading to the single
+    // language selector.
     const storedSpeechLanguage = window.localStorage.getItem('messzen:ai-speech-language')
     if (storedSpeechLanguage === 'bn' || storedSpeechLanguage === 'en') {
-      setSpeechLanguage(storedSpeechLanguage)
+      setLocale(storedSpeechLanguage)
     }
   }, [])
 
   useEffect(() => {
     window.localStorage.setItem('messzen:ai-locale', locale)
+    window.localStorage.setItem('messzen:ai-speech-language', locale)
     api.getAiCapabilities(locale).then((response) => setEnabled(response.data.enabled)).catch(() => setEnabled(null))
   }, [locale])
-
-  useEffect(() => {
-    window.localStorage.setItem('messzen:ai-speech-language', speechLanguage)
-  }, [speechLanguage])
 
   const receiveCommand = useCallback((next: AiCommand) => {
     setCommand(next)
@@ -113,7 +115,7 @@ export default function QuickAddPage() {
         messId: activeMess.id,
         audio: blob,
         locale,
-        speechLanguage,
+        speechLanguage: locale,
         idempotencyKey: crypto.randomUUID(),
       })
       receiveCommand(response.data)
@@ -122,7 +124,7 @@ export default function QuickAddPage() {
     } finally {
       setBusy(false)
     }
-  }, [activeMess?.id, locale, receiveCommand, speechLanguage])
+  }, [activeMess?.id, locale, receiveCommand])
 
   const recorder = useAudioRecorder(sendVoice, 60)
 
@@ -182,9 +184,17 @@ export default function QuickAddPage() {
   return (
     <MobileShell>
       <AppHeader title={copy.title} subtitle={copy.subtitle} backHref="/" trailing={(
-        <button type="button" className="app-header-action text-caption font-bold" onClick={() => setLocale((value) => value === 'en' ? 'bn' : 'en')} aria-label="Change language">
-          {copy.language}
-        </button>
+        <div className="quick-add-language-select">
+          <select
+            value={locale}
+            onChange={(event) => setLocale(event.target.value as AiLocale)}
+            disabled={busy || recorder.isRecording}
+            aria-label="Choose language"
+          >
+            <option value="bn">বাং</option>
+            <option value="en">En</option>
+          </select>
+        </div>
       )} />
 
       <div className="screen space-y-3.5 pb-8">
@@ -217,12 +227,12 @@ export default function QuickAddPage() {
                 />
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {copy.examples.map((example) => (
-                    <button key={example} type="button" className="rounded-full bg-[#edfafa] px-2.5 py-1.5 text-caption font-semibold text-[#00777a]" onClick={() => setText(example)}>
+                    <button key={example} type="button" className="quick-add-example" onClick={() => setText(example)}>
                       {example}
                     </button>
                   ))}
                 </div>
-                <button type="submit" className="primary-btn mt-4 w-full" disabled={!text.trim() || busy || enabled === false}>
+                <button type="submit" className="ui-btn ui-btn--primary quick-add-button mt-4 w-full" disabled={!text.trim() || busy || enabled === false}>
                   <Sparkles size={18} /> {busy ? copy.generating : copy.generate}
                 </button>
               </HomeCard>
@@ -232,37 +242,13 @@ export default function QuickAddPage() {
               <span className="h-px flex-1 bg-[#d6e5e8]" /><span>OR</span><span className="h-px flex-1 bg-[#d6e5e8]" />
             </div>
 
-            <div className="rounded-2xl border border-[#cfeeed] bg-white p-2">
-              <p className="mb-2 px-1 text-caption font-bold text-[#65838b]">{copy.speechLanguage}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {([
-                  { value: 'bn' as const, label: copy.banglaVoice },
-                  { value: 'en' as const, label: copy.englishVoice },
-                ]).map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setSpeechLanguage(option.value)}
-                    disabled={busy || recorder.isRecording}
-                    className={`min-h-11 rounded-xl text-label font-bold transition ${
-                      speechLanguage === option.value
-                        ? 'bg-[#008d8c] text-white shadow-[0_8px_18px_rgba(0,141,140,0.2)]'
-                        : 'bg-[#edfafa] text-[#00777a]'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <button
               type="button"
               onClick={() => recorder.isRecording ? recorder.stop() : void recorder.start()}
               disabled={!recorder.supported || busy || enabled === false}
-              className={`flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl border font-bold transition disabled:opacity-55 ${recorder.isRecording ? 'border-[#d46868] bg-[#fff3f3] text-[#a83d3d]' : 'border-[#9edddc] bg-white text-[#00777a]'}`}
+              className={`ui-btn quick-add-button w-full ${recorder.isRecording ? 'quick-add-button--recording' : 'ui-btn--secondary'}`}
             >
-              {recorder.isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={21} />}
+              {recorder.isRecording ? <Square size={16} fill="currentColor" /> : <Mic size={18} />}
               {recorder.isRecording ? `${copy.stop} · ${recorder.seconds}s` : copy.record}
             </button>
             {!recorder.supported ? <Notice tone="info">{copy.unsupportedVoice}</Notice> : null}

@@ -16,6 +16,7 @@ import {
   UtensilsCrossed,
   Wallet2,
   Coins,
+  Sparkles,
 } from 'lucide-react'
 import { AppHeader } from '@/components/app-header'
 import { HomeCard, HomeEmptyState, HomeMetricCard, HomeQuickAction } from '@/components/home-card'
@@ -245,6 +246,21 @@ export default function HomePage() {
 
         {hasWorkspace ? (
           <>
+            <button
+              type="button"
+              onClick={() => router.push(appHref('/quick-add'))}
+              className="mb-3.5 flex w-full items-center gap-3 rounded-2xl border border-[#bfe7e6] bg-[linear-gradient(120deg,#ffffff,#e8f8f7)] p-3.5 text-left shadow-[0_10px_24px_rgba(18,55,72,0.06)] transition active:scale-[0.99]"
+            >
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#008d8c] text-white">
+                <Sparkles size={21} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-body font-bold text-[#123748]">Quick Add with AI</span>
+                <span className="mt-0.5 block text-caption text-[#65838b]">বাংলা, English বা voice দিয়ে add করুন</span>
+              </span>
+              <ChevronRight size={18} className="text-[#008d8c]" />
+            </button>
+
             <HomeCard
               title="Overview"
               className="mt-3.5"

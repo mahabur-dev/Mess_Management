@@ -1,5 +1,6 @@
 import { clearStoredToken, getStoredToken, type AuthUser, type GlobalRole } from './auth'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from './member-join-requests'
+import type { AiCapabilities, AiCommand, AiLocale } from './ai-automation'
 
 const DEFAULT_API_URL = 'http://localhost:5001/api/v1'
 
@@ -512,6 +513,42 @@ class Api {
       method: 'PATCH',
       body: JSON.stringify(data),
     })
+  }
+
+  getAiCapabilities(locale: AiLocale = 'en') {
+    return this.request<AiCapabilities>('/ai/commands/capabilities', {
+      params: { locale },
+      cache: 'no-store',
+    })
+  }
+
+  createAiTextCommand(data: { messId: string; text: string; locale: AiLocale; idempotencyKey: string }) {
+    return this.request<AiCommand>('/ai/commands/text', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  createAiVoiceCommand(data: { messId: string; audio: Blob; locale: AiLocale; speechLanguage: AiLocale; idempotencyKey: string }) {
+    const form = new FormData()
+    const extension = data.audio.type.includes('mp4') ? 'm4a' : data.audio.type.includes('ogg') ? 'ogg' : 'webm'
+    form.append('messId', data.messId)
+    form.append('locale', data.locale)
+    form.append('speechLanguage', data.speechLanguage)
+    form.append('idempotencyKey', data.idempotencyKey)
+    form.append('audio', data.audio, `messzen-command.${extension}`)
+    return this.request<AiCommand>('/ai/commands/voice', { method: 'POST', body: form })
+  }
+
+  confirmAiCommand(commandId: string, payload: Record<string, unknown>) {
+    return this.request<AiCommand>(`/ai/commands/${commandId}/confirm`, {
+      method: 'POST',
+      body: JSON.stringify({ payload }),
+    })
+  }
+
+  cancelAiCommand(commandId: string) {
+    return this.request<AiCommand>(`/ai/commands/${commandId}/cancel`, { method: 'POST' })
   }
 
   createNotice(data: Record<string, unknown>) {

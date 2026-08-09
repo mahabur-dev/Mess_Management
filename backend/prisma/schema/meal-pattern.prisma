@@ -16,8 +16,8 @@ model MealPattern {
   created_at      DateTime          @default(now()) @db.Timestamptz
   updated_at      DateTime          @updatedAt @db.Timestamptz
 
-  membership  MessMembership  @relation(fields: [membership_id], references: [id], onDelete: Cascade)
-  creator     User            @relation("MealPatternCreator", fields: [created_by], references: [id])
+  membership  MessMembership   @relation(fields: [membership_id], references: [id], onDelete: Cascade)
+  creator     User             @relation("MealPatternCreator", fields: [created_by], references: [id])
   attendances MealAttendance[]
 
   @@unique([series_id, version])

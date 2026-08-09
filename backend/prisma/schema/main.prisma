@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 // ─── User ──────────────────────────────────────────────────
@@ -171,4 +171,27 @@ enum ContactRequestStatus {
   PENDING
   CONTACTED
   RESOLVED
+}
+
+enum AiCommandSourceType {
+  TEXT
+  VOICE
+}
+
+enum AiCommandIntent {
+  EXPENSE_CREATE
+  UTILITY_CREATE
+  DEPOSIT_CREATE
+  MEAL_CREATE
+  UNKNOWN
+  NEEDS_CLARIFICATION
+}
+
+enum AiCommandStatus {
+  PENDING
+  NEEDS_CLARIFICATION
+  PROCESSING
+  CONFIRMED
+  CANCELLED
+  FAILED
 }

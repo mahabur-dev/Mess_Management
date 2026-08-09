@@ -2,7 +2,7 @@ model Notice {
   id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   mess_id    String     @db.Uuid
   created_by String     @db.Uuid
-  type       NoticeType  @default(GENERAL)
+  type       NoticeType @default(GENERAL)
   title      String     @db.VarChar(200)
   body       String     @db.Text
   is_pinned  Boolean    @default(false)

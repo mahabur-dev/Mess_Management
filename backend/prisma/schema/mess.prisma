@@ -4,57 +4,58 @@
 // ============================================================
 
 model Mess {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @db.VarChar(100)
-  description String?  @db.Text
-  address     String?  @db.Text
-  mess_category String? @db.VarChar(50)
-  rooms       Json?    @db.JsonB
-  meal_rate   Decimal  @db.Decimal(10, 2)
-  currency    String   @default("BDT") @db.VarChar(10)
-  created_by  String   @db.Uuid
-  is_active   Boolean  @default(true)
-  total_seats  Int?
-  monthly_rent Decimal? @db.Decimal(12, 2)
-  electricity_bill Decimal? @db.Decimal(12, 2)
-  gas_bill Decimal? @db.Decimal(12, 2)
-  wifi_bill Decimal? @db.Decimal(12, 2)
-  cleaner_bill Decimal? @db.Decimal(12, 2)
-  extra_cost Decimal? @db.Decimal(12, 2)
-  meal_types Json? @db.JsonB
-  meal_rate_method String @default("EXPENSE_DIVIDED_BY_MEAL_COUNT") @db.VarChar(80)
-  bazar_rules String? @db.Text
-  payment_deadline_day Int @default(10)
-  meal_off_deadline String? @default("17:00") @db.VarChar(5)
-  meal_deadline_start String @default("09:00") @db.VarChar(5)
-  meal_deadline_end String @default("17:00") @db.VarChar(5)
-  meal_default_status AttendanceStatus @default(ON)
-  meal_allow_no_meal Boolean @default(true)
-  meal_window_notification_enabled Boolean @default(true)
-  meal_deadline_notification_enabled Boolean @default(true)
-  meal_deadline_reminder_minutes Int @default(60)
-  settings_completed Boolean @default(false)
-  approved_at DateTime? @db.Timestamptz
-  created_at  DateTime @default(now()) @db.Timestamptz
+  id                                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                               String           @db.VarChar(100)
+  description                        String?          @db.Text
+  address                            String?          @db.Text
+  mess_category                      String?          @db.VarChar(50)
+  rooms                              Json?            @db.JsonB
+  meal_rate                          Decimal          @db.Decimal(10, 2)
+  currency                           String           @default("BDT") @db.VarChar(10)
+  created_by                         String           @db.Uuid
+  is_active                          Boolean          @default(true)
+  total_seats                        Int?
+  monthly_rent                       Decimal?         @db.Decimal(12, 2)
+  electricity_bill                   Decimal?         @db.Decimal(12, 2)
+  gas_bill                           Decimal?         @db.Decimal(12, 2)
+  wifi_bill                          Decimal?         @db.Decimal(12, 2)
+  cleaner_bill                       Decimal?         @db.Decimal(12, 2)
+  extra_cost                         Decimal?         @db.Decimal(12, 2)
+  meal_types                         Json?            @db.JsonB
+  meal_rate_method                   String           @default("EXPENSE_DIVIDED_BY_MEAL_COUNT") @db.VarChar(80)
+  bazar_rules                        String?          @db.Text
+  payment_deadline_day               Int              @default(10)
+  meal_off_deadline                  String?          @default("17:00") @db.VarChar(5)
+  meal_deadline_start                String           @default("09:00") @db.VarChar(5)
+  meal_deadline_end                  String           @default("17:00") @db.VarChar(5)
+  meal_default_status                AttendanceStatus @default(ON)
+  meal_allow_no_meal                 Boolean          @default(true)
+  meal_window_notification_enabled   Boolean          @default(true)
+  meal_deadline_notification_enabled Boolean          @default(true)
+  meal_deadline_reminder_minutes     Int              @default(60)
+  settings_completed                 Boolean          @default(false)
+  approved_at                        DateTime?        @db.Timestamptz
+  created_at                         DateTime         @default(now()) @db.Timestamptz
 
   // ─── Relations ─────────────────────────────────────────
-  creator        User             @relation("MessCreator", fields: [created_by], references: [id])
-  memberships    MessMembership[]
-  meals          Meal[]
-  expenses       Expense[]
-  deposit_ledgers DepositLedger[]
-  deposits       Deposit[]
-  monthly_bills  MonthlyBill[]
-  billing_states MonthlyBillingState[]
-  shopping_lists ShoppingList[]
-  notifications  Notification[]
-  audit_logs     AuditLog[]
-  requests       MessRequest[]
+  creator              User                  @relation("MessCreator", fields: [created_by], references: [id])
+  memberships          MessMembership[]
+  meals                Meal[]
+  expenses             Expense[]
+  deposit_ledgers      DepositLedger[]
+  deposits             Deposit[]
+  monthly_bills        MonthlyBill[]
+  billing_states       MonthlyBillingState[]
+  shopping_lists       ShoppingList[]
+  notifications        Notification[]
+  audit_logs           AuditLog[]
+  requests             MessRequest[]
   member_join_requests MemberJoinRequest[]
-  payments       Payment[]
-  notices        Notice[]
-  complaints     Complaint[]
-  subscription   Subscription?
+  payments             Payment[]
+  notices              Notice[]
+  complaints           Complaint[]
+  ai_commands          AiCommand[]
+  subscription         Subscription?
 
   @@map("messes")
 }

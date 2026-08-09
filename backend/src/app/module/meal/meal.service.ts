@@ -88,6 +88,18 @@ interface MessAccessContext {
   canManage: boolean;
 }
 
+export interface PreparedMeal {
+  context: MessAccessContext;
+  targetMemberId: string;
+  scheduledDate: Date;
+  dateKey: string;
+  normalized: {
+    status: AttendanceStatus;
+    guests: number;
+    mealCount: number;
+  };
+}
+
 @Injectable()
 export class MealService {
   private readonly logger = new Logger(MealService.name);
@@ -209,7 +221,12 @@ export class MealService {
     }
     throw new Error('Transaction retry limit exceeded');
   }
-  async create(userId: string, role: string, dto: CreateMealDto) {
+  /** Shared validation boundary used by manual and AI workflows. */
+  async prepareCreate(
+    userId: string,
+    role: string,
+    dto: CreateMealDto,
+  ): Promise<PreparedMeal> {
     const context = await this.getMessAccessContext(
       dto.messId,
       userId,
@@ -242,134 +259,155 @@ export class MealService {
       );
     }
 
-    const attendance = await this.runTransactionWithRetry(
-      async (tx) => {
-        const uniqueMeal = {
-          mess_id_name_scheduled_date: {
-            mess_id: dto.messId,
-            name: dto.mealName,
-            scheduled_date: scheduledDate,
-          },
-        };
-        const existingMeal = await tx.meal.findUnique({
-          where: uniqueMeal,
-        });
-
-        if (
-          !context.canManage &&
-          (existingMeal?.is_locked ||
-            existingMeal?.status === MealStatus.LOCKED)
-        ) {
-          throw new ForbiddenException(
-            'This meal is locked and can only be changed by a manager',
-          );
-        }
-        if (
-          !context.canManage &&
-          existingMeal?.status === MealStatus.CANCELLED
-        ) {
-          throw new ForbiddenException(
-            'This meal is cancelled and can only be restored by a manager',
-          );
-        }
-
-        const meal = await tx.meal.upsert({
-          where: uniqueMeal,
-          update: {
-            status: existingMeal?.is_locked
-              ? MealStatus.LOCKED
-              : MealStatus.CONFIRMED,
-          },
-          create: {
-            mess_id: dto.messId,
-            created_by: userId,
-            name: dto.mealName,
-            scheduled_date: scheduledDate,
-            status: MealStatus.CONFIRMED,
-          },
-        });
-
-        const previousAttendance = await tx.mealAttendance.findUnique({
-          where: {
-            meal_id_member_id: {
-              meal_id: meal.id,
-              member_id: targetMemberId,
-            },
-          },
-          select: { id: true, status: true, guests: true },
-        });
-        const savedAttendance = await tx.mealAttendance.upsert({
-          where: {
-            meal_id_member_id: {
-              meal_id: meal.id,
-              member_id: targetMemberId,
-            },
-          },
-          update: {
-            status: normalized.status,
-            guests: normalized.guests,
-            source: MealAttendanceSource.MANUAL,
-            pattern_id: null,
-          },
-          create: {
-            meal_id: meal.id,
-            member_id: targetMemberId,
-            status: normalized.status,
-            guests: normalized.guests,
-            source: MealAttendanceSource.MANUAL,
-          },
-          include: {
-            meal: {
-              include: {
-                creator: { select: { id: true, name: true } },
-                mess: { select: { id: true, name: true } },
-              },
-            },
-            member: {
-              select: { id: true, name: true, email: true, avatar_url: true },
-            },
-          },
-        });
-
-        await tx.auditLog.create({
-          data: {
-            mess_id: dto.messId,
-            actor_id: userId,
-            action: previousAttendance
-              ? 'MEAL_ATTENDANCE_UPDATED'
-              : 'MEAL_ATTENDANCE_CREATED',
-            entity_type: 'MealAttendance',
-            entity_id: savedAttendance.id,
-            diff: {
-              targetMemberId,
-              mealId: meal.id,
-              date: dateKey,
-              mealName: dto.mealName,
-              before: previousAttendance
-                ? {
-                    status: previousAttendance.status,
-                    guests: Number(previousAttendance.guests),
-                  }
-                : null,
-              after: {
-                status: normalized.status,
-                guests: normalized.guests,
-                mealCount: normalized.mealCount,
-              },
-            },
-          },
-        });
-
-        return savedAttendance;
-      },
-    { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
-    );
-
-    const billingSync = await this.billReconciliation.reconcile(
-      dto.messId,
+    return {
+      context,
+      targetMemberId,
       scheduledDate,
+      dateKey,
+      normalized,
+    };
+  }
+
+  /** Shared write boundary. The caller owns the transaction. */
+  async persistCreate(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    dto: CreateMealDto,
+    prepared: PreparedMeal,
+  ) {
+    const { context, targetMemberId, scheduledDate, dateKey, normalized } =
+      prepared;
+    const uniqueMeal = {
+      mess_id_name_scheduled_date: {
+        mess_id: dto.messId,
+        name: dto.mealName,
+        scheduled_date: scheduledDate,
+      },
+    };
+    const existingMeal = await tx.meal.findUnique({ where: uniqueMeal });
+
+    if (
+      !context.canManage &&
+      (existingMeal?.is_locked || existingMeal?.status === MealStatus.LOCKED)
+    ) {
+      throw new ForbiddenException(
+        'This meal is locked and can only be changed by a manager',
+      );
+    }
+    if (!context.canManage && existingMeal?.status === MealStatus.CANCELLED) {
+      throw new ForbiddenException(
+        'This meal is cancelled and can only be restored by a manager',
+      );
+    }
+
+    const meal = await tx.meal.upsert({
+      where: uniqueMeal,
+      update: {
+        status: existingMeal?.is_locked
+          ? MealStatus.LOCKED
+          : MealStatus.CONFIRMED,
+      },
+      create: {
+        mess_id: dto.messId,
+        created_by: userId,
+        name: dto.mealName,
+        scheduled_date: scheduledDate,
+        status: MealStatus.CONFIRMED,
+      },
+    });
+
+    const previousAttendance = await tx.mealAttendance.findUnique({
+      where: {
+        meal_id_member_id: {
+          meal_id: meal.id,
+          member_id: targetMemberId,
+        },
+      },
+      select: { id: true, status: true, guests: true },
+    });
+    const savedAttendance = await tx.mealAttendance.upsert({
+      where: {
+        meal_id_member_id: {
+          meal_id: meal.id,
+          member_id: targetMemberId,
+        },
+      },
+      update: {
+        status: normalized.status,
+        guests: normalized.guests,
+        source: MealAttendanceSource.MANUAL,
+        pattern_id: null,
+      },
+      create: {
+        meal_id: meal.id,
+        member_id: targetMemberId,
+        status: normalized.status,
+        guests: normalized.guests,
+        source: MealAttendanceSource.MANUAL,
+      },
+      include: {
+        meal: {
+          include: {
+            creator: { select: { id: true, name: true } },
+            mess: { select: { id: true, name: true } },
+          },
+        },
+        member: {
+          select: { id: true, name: true, email: true, avatar_url: true },
+        },
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        mess_id: dto.messId,
+        actor_id: userId,
+        action: previousAttendance
+          ? 'MEAL_ATTENDANCE_UPDATED'
+          : 'MEAL_ATTENDANCE_CREATED',
+        entity_type: 'MealAttendance',
+        entity_id: savedAttendance.id,
+        diff: {
+          targetMemberId,
+          mealId: meal.id,
+          date: dateKey,
+          mealName: dto.mealName,
+          before: previousAttendance
+            ? {
+                status: previousAttendance.status,
+                guests: Number(previousAttendance.guests),
+              }
+            : null,
+          after: {
+            status: normalized.status,
+            guests: normalized.guests,
+            mealCount: normalized.mealCount,
+          },
+        },
+      },
+    });
+
+    return savedAttendance;
+  }
+
+  /** Post-commit effects shared by manual and AI creation. */
+  async completeCreate(prepared: PreparedMeal, attendance: any) {
+    const billingSync = await this.billReconciliation.reconcile(
+      prepared.context.mess.id,
+      prepared.scheduledDate,
     );
     return { ...attendance, billingSync };
+  }
+
+  async create(userId: string, role: string, dto: CreateMealDto) {
+    const prepared = await this.prepareCreate(userId, role, dto);
+
+    const attendance = await this.runTransactionWithRetry(
+      (tx) => this.persistCreate(tx, userId, dto, prepared),
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
+
+    return this.completeCreate(prepared, attendance);
   }
 
   async findAll(query: MealFilterDto) {

@@ -47,7 +47,7 @@ import {
 type AuthRole = string;
 type NormalizedPaidFrom = ExpensePaymentType;
 
-type PreparedExpense = {
+export type PreparedExpense = {
   messId: string;
   type: ExpenseRecordType;
   category: ExpenseCategory;
@@ -786,6 +786,96 @@ export class ExpenseService {
     return this.previewResponse(prepared);
   }
 
+  /** Shared validation/calculation boundary used by manual and AI workflows. */
+  async prepareCreate(
+    userId: string,
+    role: AuthRole,
+    dto: CreateExpenseDto,
+  ): Promise<PreparedExpense> {
+    return this.prepareExpense(userId, role, dto);
+  }
+
+  /** Shared write boundary. The caller owns the transaction. */
+  async persistCreate(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    dto: CreateExpenseDto,
+    prepared: PreparedExpense,
+  ) {
+    if (!prepared.requiresApproval) {
+      await this.fundLedgerService.assertSufficientBalance(
+        tx,
+        prepared.messId,
+        prepared.paidFrom,
+        prepared.amount,
+      );
+    }
+
+    const created = await tx.expense.create({
+      data: {
+        mess_id: prepared.messId,
+        created_by: prepared.addedByUserId,
+        purchased_by: prepared.purchasedByMemberId,
+        type: prepared.type,
+        category: prepared.category,
+        utility_type: prepared.utilityType,
+        amount: prepared.amount,
+        expense_date: prepared.expenseDate,
+        billing_month: prepared.billingMonth,
+        description: prepared.description,
+        receipt_url: prepared.receiptUrl,
+        receipt_public_id: prepared.receiptPublicId,
+        receipt_resource_type: prepared.receiptResourceType,
+        buyer_id: dto.buyerId,
+        item_name: prepared.itemName,
+        quantity: prepared.quantity,
+        unit: prepared.unit,
+        payment_type: prepared.paidFrom,
+        used_by: prepared.usedBy,
+        split_method: prepared.splitMethod,
+        status: statusForExpenseWrite(!prepared.requiresApproval),
+        reviewed_by: prepared.requiresApproval ? null : userId,
+        reviewed_at: prepared.requiresApproval ? null : new Date(),
+        review_note: null,
+      },
+    });
+
+    if (prepared.shares.length) {
+      await tx.expenseShare.createMany({
+        data: prepared.shares.map((share) => ({
+          expense_id: created.id,
+          member_id: share.memberId,
+          member_name: share.memberName,
+          meal_count: share.mealCount,
+          share_amount: share.shareAmount,
+          is_payer: share.memberId === prepared.purchasedByMemberId,
+        })),
+      });
+    }
+
+    if (!prepared.requiresApproval) {
+      const ledgers = this.buildLedgerRows(created.id, prepared);
+      if (ledgers.length) await tx.depositLedger.createMany({ data: ledgers });
+    }
+
+    return tx.expense.findUniqueOrThrow({
+      where: { id: created.id },
+      select: this.expenseSelect,
+    });
+  }
+
+  /** Post-commit effects shared by manual and AI creation. */
+  async completeCreate(userId: string, prepared: PreparedExpense, expense: any) {
+    const billingSync = prepared.requiresApproval
+      ? null
+      : await this.billReconciliation.reconcile(
+          prepared.messId,
+          prepared.billingMonth,
+        );
+    await this.sendExpenseNotification(userId, prepared, expense.id);
+    return { ...this.mapExpense(expense), billingSync };
+  }
+
   private async runSerializableTransaction<T>(
     operation: (tx: Prisma.TransactionClient) => Promise<T>,
   ): Promise<T> {
@@ -835,80 +925,11 @@ export class ExpenseService {
           : undefined,
       );
 
-      const expense = await this.runSerializableTransaction(async (tx) => {
-        if (!prepared.requiresApproval) {
-          await this.fundLedgerService.assertSufficientBalance(
-            tx,
-            prepared.messId,
-            prepared.paidFrom,
-            prepared.amount,
-          );
-        }
+      const expense = await this.runSerializableTransaction((tx) =>
+        this.persistCreate(tx, userId, dto, prepared),
+      );
 
-        const created = await tx.expense.create({
-          data: {
-            mess_id: prepared.messId,
-            created_by: prepared.addedByUserId,
-            purchased_by: prepared.purchasedByMemberId,
-            type: prepared.type,
-            category: prepared.category,
-            utility_type: prepared.utilityType,
-            amount: prepared.amount,
-            expense_date: prepared.expenseDate,
-            billing_month: prepared.billingMonth,
-            description: prepared.description,
-            receipt_url: prepared.receiptUrl,
-            receipt_public_id: prepared.receiptPublicId,
-            receipt_resource_type: prepared.receiptResourceType,
-            buyer_id: dto.buyerId,
-            item_name: prepared.itemName,
-            quantity: prepared.quantity,
-            unit: prepared.unit,
-            payment_type: prepared.paidFrom,
-            used_by: prepared.usedBy,
-            split_method: prepared.splitMethod,
-            status: statusForExpenseWrite(!prepared.requiresApproval),
-            reviewed_by: prepared.requiresApproval ? null : userId,
-            reviewed_at: prepared.requiresApproval ? null : new Date(),
-            review_note: null,
-          },
-        });
-
-        if (prepared.shares.length) {
-          await tx.expenseShare.createMany({
-            data: prepared.shares.map((share) => ({
-              expense_id: created.id,
-              member_id: share.memberId,
-              member_name: share.memberName,
-              meal_count: share.mealCount,
-              share_amount: share.shareAmount,
-              is_payer: share.memberId === prepared.purchasedByMemberId,
-            })),
-          });
-        }
-
-        if (!prepared.requiresApproval) {
-          const ledgers = this.buildLedgerRows(created.id, prepared);
-          if (ledgers.length) {
-            await tx.depositLedger.createMany({ data: ledgers });
-          }
-        }
-
-        return tx.expense.findUniqueOrThrow({
-          where: { id: created.id },
-          select: this.expenseSelect,
-        });
-      });
-
-      const billingSync = prepared.requiresApproval
-        ? null
-        : await this.billReconciliation.reconcile(
-            prepared.messId,
-            prepared.billingMonth,
-          );
-      await this.sendExpenseNotification(userId, prepared, expense.id);
-
-      return { ...this.mapExpense(expense), billingSync };
+      return this.completeCreate(userId, prepared, expense);
     } catch (error) {
       if (uploaded) {
         await deleteFromCloudinary(uploaded.public_id, uploaded.resource_type);

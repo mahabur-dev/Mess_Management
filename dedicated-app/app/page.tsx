@@ -17,6 +17,8 @@ import {
   Wallet2,
   Coins,
   Sparkles,
+  Languages,
+  Mic,
 } from 'lucide-react'
 import { AppHeader } from '@/components/app-header'
 import { HomeCard, HomeEmptyState, HomeMetricCard, HomeQuickAction } from '@/components/home-card'
@@ -249,16 +251,32 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => router.push(appHref('/quick-add'))}
-              className="mb-3.5 flex w-full items-center gap-3 rounded-2xl border border-[#bfe7e6] bg-[linear-gradient(120deg,#ffffff,#e8f8f7)] p-3.5 text-left shadow-[0_10px_24px_rgba(18,55,72,0.06)] transition active:scale-[0.99]"
+              className="home-ai-entry"
+              aria-label="Open Quick Add with AI"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#008d8c] text-white">
-                <Sparkles size={21} />
+              <span className="home-ai-entry__glow" aria-hidden="true" />
+              <span className="home-ai-entry__badge">
+                <Sparkles size={12} strokeWidth={2.5} />
+                AI ASSISTED
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-body font-bold text-[#123748]">Quick Add with AI</span>
-                <span className="mt-0.5 block text-caption text-[#65838b]">বাংলা, English বা voice দিয়ে add করুন</span>
+
+              <span className="home-ai-entry__main">
+                <span className="home-ai-entry__icon" aria-hidden="true">
+                  <Sparkles size={22} strokeWidth={2.3} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="home-ai-entry__title">Quick Add with AI</span>
+                  <span className="home-ai-entry__description">Review-ready entries from text or voice</span>
+                </span>
+                <span className="home-ai-entry__arrow" aria-hidden="true">
+                  <ChevronRight size={17} strokeWidth={2.6} />
+                </span>
               </span>
-              <ChevronRight size={18} className="text-[#008d8c]" />
+
+              <span className="home-ai-entry__capabilities" aria-hidden="true">
+                <span><Languages size={13} /> বাংলা + English</span>
+                <span><Mic size={13} /> Voice enabled</span>
+              </span>
             </button>
 
             <HomeCard

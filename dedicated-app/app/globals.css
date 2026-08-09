@@ -2766,6 +2766,100 @@ textarea {
   box-shadow: 0 14px 28px rgba(0, 119, 122, 0.18);
 }
 
+/* AI Quick Add uses one compact language control and standard-height actions. */
+.quick-add-language-select {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 2px rgba(18, 55, 72, 0.08);
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.quick-add-language-select:active {
+  transform: scale(0.97);
+}
+
+.quick-add-language-select:focus-within {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.quick-add-language-select select {
+  width: 100%;
+  height: 100%;
+  appearance: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-align-last: center;
+}
+
+.quick-add-language-select:has(select:disabled) {
+  opacity: 0.55;
+}
+
+.quick-add-language-select select:disabled {
+  cursor: not-allowed;
+}
+
+.quick-add-language-select option {
+  background: var(--semantic-surface);
+  color: var(--semantic-ink);
+}
+
+.quick-add-example {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  border: 1px solid var(--brand-100);
+  border-radius: 10px;
+  background: var(--semantic-surface);
+  padding: 5px 10px;
+  color: var(--brand-700);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: var(--text-caption--line-height);
+  box-shadow: 0 1px 2px rgba(18, 55, 72, 0.04);
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.quick-add-example:active {
+  transform: scale(0.98);
+  background: var(--brand-50);
+}
+
+.quick-add-example:focus-visible,
+.quick-add-button:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+.quick-add-button {
+  min-height: 46px;
+  border-radius: 12px;
+  box-shadow: 0 6px 14px rgba(0, 119, 122, 0.12);
+}
+
+.quick-add-button--recording {
+  border: 1px solid #efb9b9;
+  background: #fff7f7;
+  color: #a83d3d;
+  box-shadow: none;
+}
+
 .section-title {
   margin: 0 0 10px;
   font-size: var(--text-caption);

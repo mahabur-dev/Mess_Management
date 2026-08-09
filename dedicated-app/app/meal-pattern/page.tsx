@@ -104,7 +104,7 @@ function MealScheduleEditor({ schedule, onChange }: { schedule: Schedule; onChan
             <span className="min-w-0 flex-1"><span className="block text-label font-bold text-[#245d66]">{meal.label}</span><span className="block text-caption text-[#65838b]">{meal.hint}</span></span>
             <div className="flex h-9 shrink-0 items-center overflow-hidden border border-[#9edddc] bg-[#f8fbfb]">
               <button type="button" aria-label={`Reduce ${meal.label}`} onClick={() => changeCount(meal.key, -1)} className="grid h-full w-8 place-items-center text-[#00777a] hover:bg-[#dff4f3]">−</button>
-              <input aria-label={`${meal.label} count`} type="number" min="0" step={mealStep(meal)} value={count} onChange={(event) => setCount(meal.key, event.target.value)} className="h-full w-12 border-x border-[#bfe7e6] bg-transparent text-center text-label font-bold text-[#245d66] outline-none" />
+              <input aria-label={`${meal.label} count`} type="number" min="0" step={mealStep(meal.key)} value={count} onChange={(event) => setCount(meal.key, event.target.value)} className="h-full w-12 border-x border-[#bfe7e6] bg-transparent text-center text-label font-bold text-[#245d66] outline-none" />
               <button type="button" aria-label={`Add more ${meal.label}`} onClick={() => changeCount(meal.key, 1)} className="grid h-full w-8 place-items-center bg-[#008d8c] text-white hover:bg-[#00777a]">+</button>
             </div>
           </div>

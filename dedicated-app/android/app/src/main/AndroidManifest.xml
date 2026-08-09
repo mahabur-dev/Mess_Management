@@ -38,5 +38,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Capacitor's WebView requests this together with RECORD_AUDIO. If it is
+         absent, Android denies the whole WebView microphone permission request
+         even when RECORD_AUDIO was granted manually in App settings. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 </manifest>

@@ -39,5 +39,19 @@ export default {
     vapidSubject: process.env.VAPID_SUBJECT as string,
   },
 
+  aiAutomation: {
+    enabled:
+      process.env.AI_AUTOMATION_ENABLED === undefined
+        ? (process.env.NODE_ENV || 'development') !== 'production'
+        : process.env.AI_AUTOMATION_ENABLED.toLowerCase() === 'true',
+    groqApiKey: process.env.GROQ_API_KEY,
+    commandModel: process.env.GROQ_COMMAND_MODEL || 'openai/gpt-oss-20b',
+    speechModel: process.env.GROQ_SPEECH_MODEL || 'whisper-large-v3-turbo',
+    maxAudioBytes: Number(process.env.AI_MAX_AUDIO_BYTES) || 10 * 1024 * 1024,
+    retentionDays: Number(process.env.AI_COMMAND_RETENTION_DAYS) || 30,
+    maxRequestsPerMinute: Number(process.env.AI_MAX_REQUESTS_PER_MINUTE) || 10,
+    maxCommandsPerDay: Number(process.env.AI_MAX_COMMANDS_PER_DAY) || 100,
+  },
+
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 };

@@ -9,9 +9,9 @@ model MemberJoinRequest {
   created_at   DateTime      @default(now()) @db.Timestamptz
   updated_at   DateTime      @updatedAt @db.Timestamptz
 
-  requester User @relation("MemberJoinRequestRequester", fields: [requester_id], references: [id], onDelete: Cascade)
+  requester User  @relation("MemberJoinRequestRequester", fields: [requester_id], references: [id], onDelete: Cascade)
   reviewer  User? @relation("MemberJoinRequestReviewer", fields: [reviewed_by], references: [id], onDelete: SetNull)
-  mess      Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  mess      Mess  @relation(fields: [mess_id], references: [id], onDelete: Cascade)
 
   @@index([mess_id, status])
   @@index([requester_id])

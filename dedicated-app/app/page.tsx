@@ -16,6 +16,9 @@ import {
   UtensilsCrossed,
   Wallet2,
   Coins,
+  Sparkles,
+  Languages,
+  Mic,
 } from 'lucide-react'
 import { AppHeader } from '@/components/app-header'
 import { HomeCard, HomeEmptyState, HomeMetricCard, HomeQuickAction } from '@/components/home-card'
@@ -245,6 +248,37 @@ export default function HomePage() {
 
         {hasWorkspace ? (
           <>
+            <button
+              type="button"
+              onClick={() => router.push(appHref('/quick-add'))}
+              className="home-ai-entry"
+              aria-label="Open Quick Add with AI"
+            >
+              <span className="home-ai-entry__glow" aria-hidden="true" />
+              <span className="home-ai-entry__badge">
+                <Sparkles size={12} strokeWidth={2.5} />
+                AI ASSISTED
+              </span>
+
+              <span className="home-ai-entry__main">
+                <span className="home-ai-entry__icon" aria-hidden="true">
+                  <Sparkles size={22} strokeWidth={2.3} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="home-ai-entry__title">Quick Add with AI</span>
+                  <span className="home-ai-entry__description">Review-ready entries from text or voice</span>
+                </span>
+                <span className="home-ai-entry__arrow" aria-hidden="true">
+                  <ChevronRight size={17} strokeWidth={2.6} />
+                </span>
+              </span>
+
+              <span className="home-ai-entry__capabilities" aria-hidden="true">
+                <span><Languages size={13} /> বাংলা + English</span>
+                <span><Mic size={13} /> Voice enabled</span>
+              </span>
+            </button>
+
             <HomeCard
               title="Overview"
               className="mt-3.5"

@@ -10,6 +10,14 @@ import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 
+export type PreparedDeposit = {
+  messId: string;
+  memberId: string;
+  depositDate: Date;
+  amount: number;
+  note?: string;
+};
+
 @Injectable()
 export class DepositService {
   constructor(
@@ -88,20 +96,38 @@ export class DepositService {
     }
   }
 
-  async create(userId: string, role: string, dto: CreateDepositDto) {
+  /** Shared validation boundary used by manual and AI workflows. */
+  async prepareCreate(
+    userId: string,
+    role: string,
+    dto: CreateDepositDto,
+  ): Promise<PreparedDeposit> {
     await this.verifyManagerAccess(dto.messId, userId, role);
     const memberId = dto.memberId ?? userId;
     await this.ensureActiveMember(dto.messId, memberId);
-    const depositDate = dto.date ? new Date(dto.date) : new Date();
+    return {
+      messId: dto.messId,
+      memberId,
+      depositDate: dto.date ? new Date(dto.date) : new Date(),
+      amount: dto.amount,
+      note: dto.note,
+    };
+  }
 
-    const deposit = await this.prisma.deposit.create({
+  /** Shared write boundary. The caller owns the transaction. */
+  async persistCreate(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    prepared: PreparedDeposit,
+  ) {
+    return tx.deposit.create({
       data: {
-        mess_id: dto.messId,
-        member_id: memberId,
-        amount: dto.amount,
+        mess_id: prepared.messId,
+        member_id: prepared.memberId,
+        amount: prepared.amount,
         method: PaymentMethod.CASH,
-        deposit_date: depositDate,
-        note: dto.note,
+        deposit_date: prepared.depositDate,
+        note: prepared.note,
         confirmed_by: userId,
         confirmed_at: new Date(),
       },
@@ -110,11 +136,23 @@ export class DepositService {
         mess: { select: { id: true, name: true } },
       },
     });
+  }
+
+  /** Post-commit effects shared by manual and AI creation. */
+  async completeCreate(prepared: PreparedDeposit, deposit: any) {
     const billingSync = await this.billReconciliation.reconcile(
-      dto.messId,
-      depositDate,
+      prepared.messId,
+      prepared.depositDate,
     );
     return { ...deposit, date: deposit.deposit_date, billingSync };
+  }
+
+  async create(userId: string, role: string, dto: CreateDepositDto) {
+    const prepared = await this.prepareCreate(userId, role, dto);
+    const deposit = await this.prisma.$transaction((tx) =>
+      this.persistCreate(tx, userId, prepared),
+    );
+    return this.completeCreate(prepared, deposit);
   }
 
   async findAll(query: DepositFilterDto) {

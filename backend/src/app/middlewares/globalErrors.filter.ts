@@ -23,6 +23,7 @@ export interface TErrorResponse {
   message: string;
   errorSources: TErrorSource[];
   stack?: string | null;
+  code?: string;
 }
 
 const handleClassValidatorErrors = (errors: ValidationError[]) => {
@@ -104,6 +105,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let errorSources: TErrorSource[] = [
       { path: '', message: 'Something went wrong' },
     ];
+    let code: string | undefined;
 
     // 1. Raw class-validator ValidationError[]
     if (
@@ -134,6 +136,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode = err.getStatus();
         message =
           typeof res === 'string' ? res : (res?.message ?? 'Request failed');
+        code = typeof res === 'object' && typeof res?.code === 'string' ? res.code : undefined;
         errorSources = [{ path: '', message }];
       }
     }
@@ -162,6 +165,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message,
       errorSources,
       stack: isDev && err instanceof Error ? err.stack : null,
+      ...(code ? { code } : {}),
     };
 
     httpAdapter.reply(response, body, statusCode);

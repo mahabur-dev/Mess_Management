@@ -23,6 +23,7 @@ import { DashboardModule } from './app/module/dashboard/dashboard.module';
 import { SubscriptionModule } from './app/module/subscription/subscription.module';
 import { ContactRequestModule } from './app/module/contact-request/contact-request.module';
 import { MealPatternModule } from './app/module/meal-pattern/meal-pattern.module';
+import { AiAutomationModule } from './app/module/ai-automation/ai-automation.module';
 
 // ✅ Import Prisma Module
 
@@ -49,6 +50,7 @@ import { MealPatternModule } from './app/module/meal-pattern/meal-pattern.module
     SubscriptionModule,
     ContactRequestModule,
     MealPatternModule,
+    AiAutomationModule,
   ],
 
   controllers: [AppController],

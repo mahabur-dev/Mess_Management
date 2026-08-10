@@ -36,6 +36,7 @@ import { ExpenseService, PreparedExpense } from '../expense/expense.service';
 import { CreateMealDto } from '../meal/dto/meal.dto';
 import { MealService, PreparedMeal } from '../meal/meal.service';
 import {
+  inferExpenseCategory,
   normalizeCommandText,
   resolveMemberName,
 } from './normalisers/command-normaliser';
@@ -44,8 +45,10 @@ import {
   AiCommandProvider,
   ParsedAiCommand,
   ParsedCommandData,
+  ParsedExpenseItem,
   SPEECH_TO_TEXT_PROVIDER,
   SpeechToTextProvider,
+  type SpeechLanguage,
 } from './ai-command.types';
 
 type AuthRole = string;
@@ -171,6 +174,7 @@ export class AiAutomationService {
       'memberName',
       'mealName',
       'status',
+      'unit',
     ];
     if (
       nullableStrings.some(
@@ -180,6 +184,23 @@ export class AiAutomationService {
       (value.data.mealCount !== null && !Number.isFinite(value.data.mealCount))
     ) {
       throw new BadRequestException('AI returned invalid command fields');
+    }
+    if (!Array.isArray(value.data.items)) {
+      throw new BadRequestException('AI returned invalid expense items');
+    }
+    for (const item of value.data.items) {
+      if (!item || typeof item !== 'object') throw new BadRequestException('AI returned invalid expense item');
+      const candidate = item as ParsedExpenseItem;
+      if (
+        (candidate.amount !== null && !Number.isFinite(candidate.amount)) ||
+        (candidate.quantity !== null && !Number.isFinite(candidate.quantity)) ||
+        [candidate.date, candidate.category, candidate.utilityType, candidate.itemName,
+          candidate.description, candidate.memberName, candidate.unit].some(
+          (field) => field !== null && typeof field !== 'string',
+        )
+      ) {
+        throw new BadRequestException('AI returned invalid expense item fields');
+      }
     }
     return value;
   }
@@ -233,7 +254,17 @@ export class AiAutomationService {
     members: MemberOption[],
     canManage: boolean,
   ) {
-    const missing = new Set(parsed.missingFields ?? []);
+    const requiredFieldsByIntent: Record<string, Set<string>> = {
+      EXPENSE_CREATE: new Set(['amount', 'category']),
+      UTILITY_CREATE: new Set(['amount']),
+      DEPOSIT_CREATE: new Set(['amount', 'memberName']),
+      MEAL_CREATE: new Set(['mealName']),
+    };
+    const allowedMissing = requiredFieldsByIntent[parsed.intent] ?? new Set<string>();
+    // Models sometimes list every nullable JSON property as "missing". Only
+    // business-required fields may block a command; date defaults to today and
+    // itemName/quantity/unit/description are optional expense metadata.
+    const missing = new Set((parsed.missingFields ?? []).filter((field) => allowedMissing.has(field)));
     const memberMatch = this.resolveMember(parsed.data.memberName, members);
     if (memberMatch.ambiguous) missing.add('memberName');
     const date = parsed.data.date ?? this.todayDhaka();
@@ -241,29 +272,51 @@ export class AiAutomationService {
     let intent = parsed.intent;
 
     if (intent === 'EXPENSE_CREATE' || intent === 'UTILITY_CREATE') {
-      if (!parsed.data.amount || parsed.data.amount <= 0) missing.add('amount');
-      if (intent === 'EXPENSE_CREATE' && !parsed.data.category) missing.add('category');
-      const utility = this.utilityMapping(parsed.data);
-      const category = intent === 'UTILITY_CREATE'
-        ? utility.category
-        : (parsed.data.category as ExpenseCategory);
-      payload = {
-        messId,
-        type: intent === 'UTILITY_CREATE' ? ExpenseRecordType.UTILITY : ExpenseRecordType.EXPENSE,
-        category,
-        utilityType: intent === 'UTILITY_CREATE' ? utility.utilityType : null,
-        amount: parsed.data.amount,
-        expenseDate: date,
-        itemName: parsed.data.itemName,
-        description: parsed.data.description,
-        purchasedBy: memberMatch.member?.id ?? actor.id,
-        paidFrom: ExpensePaymentType.FROM_DEPOSIT,
-        usedBy: ExpenseUsedBy.ALL_MEMBERS,
-        splitMethod:
-          category === ExpenseCategory.GROCERY || category === ExpenseCategory.FOOD
-            ? ExpenseSplitMethod.MEAL_COUNT
-            : ExpenseSplitMethod.EQUAL,
-      };
+      const sourceItems = parsed.data.items.length
+        ? parsed.data.items
+        : [{
+            amount: parsed.data.amount,
+            date: parsed.data.date,
+            category: parsed.data.category,
+            utilityType: parsed.data.utilityType,
+            itemName: parsed.data.itemName,
+            description: parsed.data.description,
+            memberName: parsed.data.memberName,
+            quantity: parsed.data.quantity,
+            unit: parsed.data.unit,
+          }];
+      const resolvedItems = sourceItems.map((item) => {
+        const itemMember = this.resolveMember(item.memberName ?? parsed.data.memberName, members);
+        if (itemMember.ambiguous) missing.add('memberName');
+        if (!item.amount || item.amount <= 0) missing.add('amount');
+        const inferredCategory = inferExpenseCategory(item.itemName, item.description) as ExpenseCategory | null;
+        const aiCategory = item.category as ExpenseCategory | null;
+        const category = intent === 'UTILITY_CREATE'
+          ? this.utilityMapping({ ...parsed.data, ...item }).category
+          : (aiCategory && aiCategory !== ExpenseCategory.OTHER ? aiCategory : inferredCategory ?? aiCategory);
+        if (!category) missing.add('category');
+        const utility = this.utilityMapping({ ...parsed.data, ...item });
+        return {
+          messId,
+          type: intent === 'UTILITY_CREATE' ? ExpenseRecordType.UTILITY : ExpenseRecordType.EXPENSE,
+          category,
+          utilityType: intent === 'UTILITY_CREATE' ? utility.utilityType : null,
+          amount: item.amount,
+          expenseDate: item.date ?? date,
+          itemName: item.itemName,
+          quantity: item.quantity,
+          unit: item.unit,
+          description: item.description,
+          purchasedBy: itemMember.member?.id ?? memberMatch.member?.id ?? actor.id,
+          paidFrom: ExpensePaymentType.FROM_DEPOSIT,
+          usedBy: ExpenseUsedBy.ALL_MEMBERS,
+          splitMethod:
+            category === ExpenseCategory.GROCERY || category === ExpenseCategory.FOOD
+              ? ExpenseSplitMethod.MEAL_COUNT
+              : ExpenseSplitMethod.EQUAL,
+        };
+      });
+      payload = resolvedItems.length === 1 ? resolvedItems[0] : { items: resolvedItems };
     } else if (intent === 'DEPOSIT_CREATE') {
       if (!canManage) throw new ForbiddenException('Only managers can record direct deposits');
       if (!parsed.data.amount || parsed.data.amount <= 0) missing.add('amount');
@@ -293,9 +346,9 @@ export class AiAutomationService {
       intent,
       missingFields: [...missing],
       payload,
-      clarification:
-        parsed.clarification ||
-        (missing.size ? `Please provide: ${[...missing].join(', ')}` : null),
+      clarification: missing.size
+        ? `Please provide: ${[...missing].join(', ')}`
+        : (intent === 'NEEDS_CLARIFICATION' || intent === 'UNKNOWN' ? parsed.clarification : null),
     };
   }
 
@@ -325,13 +378,20 @@ export class AiAutomationService {
       amount: null,
       date: null,
       category: null,
-      utilityType: typeof payload.utilityType === 'string' ? payload.utilityType : null,
+      utilityType:
+        typeof payload.utilityType === 'string' &&
+        Object.values(UtilityType).includes(payload.utilityType as UtilityType)
+          ? (payload.utilityType as UtilityType)
+          : null,
       itemName: null,
       description: null,
       memberName: null,
       mealName: null,
       mealCount: null,
       status: null,
+      quantity: null,
+      unit: null,
+      items: [],
     });
     return {
       ...payload,
@@ -348,6 +408,11 @@ export class AiAutomationService {
     role: AuthRole,
   ) {
     if (intent === 'EXPENSE_CREATE' || intent === 'UTILITY_CREATE') {
+      if (Array.isArray(payload.items)) {
+        return Promise.all(
+          payload.items.map((item) => this.domainPreview(intent, item as Record<string, unknown>, userId, role)),
+        );
+      }
       const dto = await this.validateDto(CreateExpenseDto, payload);
       return this.expenseService.preview(userId, role, dto);
     }
@@ -525,14 +590,15 @@ export class AiAutomationService {
     input: {
       messId: string;
       locale?: Locale;
-      speechLanguage: Locale;
+      speechLanguage?: SpeechLanguage;
       idempotencyKey?: string;
     },
     file?: Express.Multer.File,
   ) {
     this.assertEnabled();
     if (!file) throw new BadRequestException({ code: 'AI_UNSUPPORTED_AUDIO', message: 'Audio recording is required' });
-    if (!AUDIO_TYPES.has(file.mimetype)) {
+    const audioMimeType = file.mimetype.split(';', 1)[0].trim().toLowerCase();
+    if (!AUDIO_TYPES.has(audioMimeType)) {
       throw new BadRequestException({ code: 'AI_UNSUPPORTED_AUDIO', message: 'This audio format is not supported' });
     }
     if (file.size > config.aiAutomation.maxAudioBytes) {
@@ -541,7 +607,7 @@ export class AiAutomationService {
     await this.assertRateLimit(userId);
     const transcript = await this.speechProvider.transcribe(
       file,
-      input.speechLanguage,
+      input.speechLanguage ?? 'auto',
     );
     if (/[\u0900-\u097f\u0a00-\u0d7f]/u.test(transcript)) {
       throw new BadRequestException({
@@ -600,7 +666,12 @@ export class AiAutomationService {
       ...(editedPayload ?? {}),
       messId: command.mess_id,
     });
-    const prepared = await this.prepareDomain(command.intent, payload, userId, role);
+    const itemPayloads = Array.isArray(payload.items)
+      ? payload.items.map((item) => ({ ...(item as Record<string, unknown>), messId: command.mess_id }))
+      : [payload];
+    const preparedCommands = await Promise.all(
+      itemPayloads.map((item) => this.prepareDomain(command.intent, item, userId, role)),
+    );
 
     const committed = await this.runSerializable(async (tx) => {
         const claimed = await tx.aiCommand.updateMany({
@@ -616,25 +687,29 @@ export class AiAutomationService {
         });
         if (claimed.count !== 1) {
           const latest = await tx.aiCommand.findUniqueOrThrow({ where: { id: command.id } });
-          if (latest.status === AiCommandStatus.CONFIRMED) return { command: latest, domain: null };
+          if (latest.status === AiCommandStatus.CONFIRMED) return { command: latest, domains: null };
           throw new ConflictException('AI command is already being processed');
         }
 
-        let domain: any;
-        if (prepared.intent === 'EXPENSE_CREATE' || prepared.intent === 'UTILITY_CREATE') {
-          domain = await this.expenseService.persistCreate(tx, userId, prepared.dto, prepared.prepared);
-        } else if (prepared.intent === 'DEPOSIT_CREATE') {
-          domain = await this.depositService.persistCreate(tx, userId, prepared.prepared);
-        } else {
-          domain = await this.mealService.persistCreate(tx, userId, prepared.dto, prepared.prepared);
+        const domains: any[] = [];
+        for (const prepared of preparedCommands) {
+          if (prepared.intent === 'EXPENSE_CREATE' || prepared.intent === 'UTILITY_CREATE') {
+            domains.push(await this.expenseService.persistCreate(tx, userId, prepared.dto, prepared.prepared));
+          } else if (prepared.intent === 'DEPOSIT_CREATE') {
+            domains.push(await this.depositService.persistCreate(tx, userId, prepared.prepared));
+          } else {
+            domains.push(await this.mealService.persistCreate(tx, userId, prepared.dto, prepared.prepared));
+          }
         }
+        const firstPrepared = preparedCommands[0];
         const result = this.jsonSafe({
-          id: domain.id,
-          intent: prepared.intent,
+          id: domains[0]?.id,
+          ids: domains.map((domain) => domain.id),
+          intent: firstPrepared.intent,
           redirectTo:
-            prepared.intent === 'MEAL_CREATE'
+            firstPrepared.intent === 'MEAL_CREATE'
               ? '/meals'
-              : prepared.intent === 'DEPOSIT_CREATE'
+              : firstPrepared.intent === 'DEPOSIT_CREATE'
                 ? '/payments'
                 : '/expenses',
         });
@@ -650,17 +725,20 @@ export class AiAutomationService {
             error_message: null,
           },
         });
-        return { command: saved, domain };
+        return { command: saved, domains };
       });
 
-    if (committed.domain) {
+    if (committed.domains?.length) {
       try {
-        if (prepared.intent === 'EXPENSE_CREATE' || prepared.intent === 'UTILITY_CREATE') {
-          await this.expenseService.completeCreate(userId, prepared.prepared, committed.domain);
-        } else if (prepared.intent === 'DEPOSIT_CREATE') {
-          await this.depositService.completeCreate(prepared.prepared, committed.domain);
-        } else {
-          await this.mealService.completeCreate(prepared.prepared, committed.domain);
+        for (const [index, prepared] of preparedCommands.entries()) {
+          const domain = committed.domains[index];
+          if (prepared.intent === 'EXPENSE_CREATE' || prepared.intent === 'UTILITY_CREATE') {
+            await this.expenseService.completeCreate(userId, prepared.prepared, domain);
+          } else if (prepared.intent === 'DEPOSIT_CREATE') {
+            await this.depositService.completeCreate(prepared.prepared, domain);
+          } else {
+            await this.mealService.completeCreate(prepared.prepared, domain);
+          }
         }
       } catch {
         // The atomic domain write is complete; reconciliation services can safely retry independently.
@@ -698,7 +776,7 @@ export class AiAutomationService {
       intents: ['EXPENSE_CREATE', 'UTILITY_CREATE', 'DEPOSIT_CREATE', 'MEAL_CREATE'],
       voice: { enabled, maxBytes: config.aiAutomation.maxAudioBytes, maxDurationSeconds: 60 },
       confirmationRequired: true,
-      multiAction: false,
+      multiAction: true,
     };
   }
 

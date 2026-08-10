@@ -321,6 +321,193 @@
   }
 }
 
+/* Reference auth treatment: keep the brand assets, remove the legacy card
+   wrapper, and let the form sit directly on the branded full-screen surface. */
+.auth-reference .auth-reference__main section.auth-reference__surface {
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.auth-reference .auth-reference__heading {
+  margin: 0;
+  padding: 0 0 24px;
+  background: transparent;
+  text-align: center;
+}
+
+.auth-reference .auth-reference__intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.auth-reference .auth-reference__content {
+  width: 100%;
+}
+
+.auth-reference .auth-reference__identity {
+  justify-content: center;
+}
+
+.auth-reference .auth-reference__logo-wrap {
+  width: 68px;
+  height: 68px;
+  flex-basis: 68px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--brand-600), var(--brand-700));
+  box-shadow: 0 12px 26px rgba(0, 119, 122, 0.22);
+}
+
+.auth-reference .auth-reference__logo {
+  width: 68px;
+  height: 68px;
+  padding: 12px;
+  object-fit: contain;
+}
+
+.auth-reference .auth-reference__eyebrow {
+  display: none;
+}
+
+.auth-reference .auth-reference__title {
+  margin-top: 18px;
+  font-size: clamp(24px, 7vw, 29px);
+  text-align: center;
+}
+
+.auth-reference .auth-reference__description {
+  max-width: 285px;
+  margin-right: auto;
+  margin-left: auto;
+  text-align: center;
+}
+
+.auth-reference .auth-reference__art {
+  position: absolute;
+  top: -30px;
+  right: -46px;
+  width: 150px;
+  height: 150px;
+  min-height: 0;
+  margin: 0;
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+.auth-reference .auth-reference__art img {
+  top: 0;
+  width: 150px;
+}
+
+/* Mobile-first auth flow, based on the supplied reference: a single calm
+   brand surface, centered security mark, rounded fields, and no product logo. */
+.auth-reference {
+  --auth-accent: #008783;
+  --auth-accent-deep: #006c69;
+  background:
+    radial-gradient(circle at 96% 5%, rgba(255, 255, 255, 0.42), transparent 26rem),
+    radial-gradient(circle at 3% 96%, rgba(0, 126, 121, 0.14), transparent 24rem),
+    linear-gradient(145deg, #c9eeea 0%, #e1f6f3 48%, #bdeae5 100%);
+}
+
+.auth-reference .auth-reference__main {
+  align-items: center;
+}
+
+.auth-reference .auth-reference__main section.auth-reference__surface {
+  width: 100%;
+  max-width: 390px;
+  margin: 0 auto;
+}
+
+.auth-reference .auth-reference__heading {
+  padding: 6px 0 28px;
+  text-align: center;
+}
+
+.auth-reference .auth-reference__intro,
+.auth-reference .auth-reference__content {
+  display: block;
+}
+
+.auth-reference .auth-reference__hero-icon {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--auth-accent), var(--auth-accent-deep));
+  box-shadow: 0 14px 26px color-mix(in srgb, var(--brand-700) 28%, transparent);
+  color: #fff;
+}
+
+.auth-reference .auth-reference__title {
+  margin-top: 20px;
+  color: var(--brand-800);
+  text-align: center;
+  font-size: clamp(26px, 7.4vw, 31px);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.45px;
+}
+
+.auth-reference .auth-reference__description {
+  max-width: 300px;
+  margin: 9px auto 0;
+  color: var(--brand-700);
+  text-align: center;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.auth-reference .auth-reference__art,
+.auth-reference .auth-reference__identity,
+.auth-reference .auth-reference__logo-wrap {
+  display: none;
+}
+
+.auth-reference form {
+  margin-top: 0;
+}
+
+.auth-reference label > .sr-only {
+  margin: 0;
+}
+
+.auth-reference .field,
+.auth-reference label > div.relative {
+  min-height: 54px;
+  border-radius: 15px;
+  border-color: rgba(0, 108, 105, 0.22);
+  background: rgba(237, 250, 248, 0.88);
+  font-weight: 400;
+}
+
+.auth-reference .primary-btn {
+  min-height: 56px;
+  border-radius: 15px;
+  background: linear-gradient(110deg, var(--auth-accent-deep), var(--auth-accent));
+  font-weight: 500;
+}
+
+.auth-reference .auth-reference__protected {
+  margin-top: 22px;
+}
+
+@media (max-width: 380px) {
+  .auth-reference .auth-reference__heading { padding-bottom: 20px; }
+  .auth-reference .auth-reference__art { top: -20px; right: -32px; width: 112px; height: 112px; }
+  .auth-reference .auth-reference__art img { width: 112px; }
+}
+
 :root {
   /* ============ Brand Color Scale ============ */
   --brand-50: #edfafa;
@@ -2791,10 +2978,9 @@ textarea {
   outline-offset: 2px;
 }
 
-.quick-add-language-select select {
+.quick-add-language-select button {
   width: 100%;
   height: 100%;
-  appearance: none;
   border: 0;
   outline: 0;
   background: transparent;
@@ -2804,20 +2990,14 @@ textarea {
   font-weight: 700;
   line-height: 1;
   text-align: center;
-  text-align-last: center;
 }
 
-.quick-add-language-select:has(select:disabled) {
+.quick-add-language-select:has(button:disabled) {
   opacity: 0.55;
 }
 
-.quick-add-language-select select:disabled {
+.quick-add-language-select button:disabled {
   cursor: not-allowed;
-}
-
-.quick-add-language-select option {
-  background: var(--semantic-surface);
-  color: var(--semantic-ink);
 }
 
 .quick-add-example {

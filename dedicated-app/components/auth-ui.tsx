@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import type {
   ComponentType,
@@ -10,7 +9,6 @@ import type {
 import {
   CircleAlert,
   CircleCheck,
-  ArrowRight,
   Eye,
   EyeOff,
   LockKeyhole,
@@ -22,7 +20,7 @@ import { IconInput } from '@/components/mobile/icon-input'
 type IconType = ComponentType<LucideProps>
 
 export const authLinkClass =
-  'font-bold text-[#008d8c] transition hover:text-[#00777a]'
+  'font-semibold text-[#008d8c] transition hover:text-[#00777a]'
 
 export function AuthShell({
   title,
@@ -31,6 +29,7 @@ export function AuthShell({
   footer,
   maxWidth = 'max-w-md',
   variant = 'default',
+  icon: HeroIcon = ShieldCheck,
 }: {
   title?: string
   description?: string
@@ -38,6 +37,7 @@ export function AuthShell({
   footer?: ReactNode
   maxWidth?: string
   variant?: 'default' | 'reference'
+  icon?: IconType
 }) {
   const reference = variant === 'reference'
 
@@ -47,34 +47,24 @@ export function AuthShell({
         className={reference ? 'auth-reference__inner' : `mx-auto flex min-h-[calc(100vh-3rem)] w-full ${maxWidth} flex-col`}
       >
         <main className={reference ? 'auth-reference__main' : 'flex flex-1 items-center py-4'}>
-          <section className="w-full rounded-[20px] border border-white/80 bg-white/94 p-4 shadow-[0_28px_70px_rgba(18,55,72,0.18)] backdrop-blur min-[360px]:p-5">
+          <section className={reference ? 'auth-reference__surface' : 'w-full rounded-[20px] border border-white/80 bg-white/94 p-4 shadow-[0_28px_70px_rgba(18,55,72,0.18)] backdrop-blur min-[360px]:p-5'}>
             <div className={reference ? 'auth-reference__heading' : 'mb-5 text-center'}>
               {reference ? (
                 <div className="auth-reference__intro">
                   <div className="auth-reference__content">
-                    <div className="auth-reference__identity">
-                      <div className="auth-reference__logo-wrap">
-                        <Image src="/messZen-100.webp" alt="Messzen logo" width={100} height={100} className="auth-reference__logo" priority />
-                      </div>
-
-                      <div>
-                        <div className="auth-reference__brand">Messzen</div>
-                        <div className="auth-reference__eyebrow">Smart mess management</div>
-                      </div>
+                    <div className="auth-reference__hero-icon" aria-hidden="true">
+                      <HeroIcon size={34} strokeWidth={1.8} />
                     </div>
 
                     <h1 className="auth-reference__title">{title}</h1>
                     {description ? <p className="auth-reference__description">{description}</p> : null}
                   </div>
-
-                  <div className="auth-reference__art" aria-hidden="true">
-                    <img src="/login-side-art.png" alt="" />
-                  </div>
                 </div>
               ) : (
                 <>
-                  <Image src="/icon.svg" alt="Messzen logo" width={80} height={80} className="mx-auto h-[64px] w-[64px] object-contain" priority />
-                  <div className="mt-0 text-display font-bold text-[#008d8c]">Messzen</div>
+                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_12px_24px_rgba(0,141,140,0.22)]">
+                    <HeroIcon size={30} strokeWidth={1.8} />
+                  </div>
                   <h1 className="mt-5 text-headline font-bold text-[#062b35]">{title}</h1>
                   {description ? (
                     <p className="mx-auto mt-10 max-w-[310px] text-label text-[#65838b]">
@@ -147,7 +137,7 @@ export function AuthField({
 }: AuthFieldProps) {
   return (
     <label className="block">
-      <div className="mb-2 text-label font-bold text-[#062b35] ">
+      <div className="sr-only">
         {label}
       </div>
 
@@ -180,7 +170,7 @@ export function AuthPasswordField({
 }) {
   return (
     <label className="block">
-      <div className="mb-2 text-label font-bold text-[#062b35]">
+      <div className="sr-only">
         {label}
       </div>
 
@@ -270,12 +260,6 @@ export function AuthSubmitButton({
     >
       <span>{busy ? busyLabel : children}</span>
 
-      <ArrowRight
-        className="absolute right-5 transition-transform duration-200 group-hover:translate-x-0.5"
-        size={20}
-        strokeWidth={2.2}
-        aria-hidden="true"
-      />
     </button>
   )
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useRef, type FormEvent, useState, type ClipboardEvent, type KeyboardEvent, } from 'react'
-import { Mail, Phone, RotateCcw, ShieldCheck, User } from 'lucide-react'
+import { Mail, Phone, RotateCcw, ShieldCheck, User, UserRound } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 import { api } from '@/lib/api'
 import {
@@ -63,8 +63,9 @@ export function SignupPage() {
 
   return (
     <AuthShell
-      // title="Create your account"
+      title="Create an account"
       variant="reference"
+      icon={UserRound}
       description="Join your mess workspace and manage meals, payments, and notices from your phone."
       footer={<AuthFooterLink text="Already have an account?" href="/login" action="Sign in" />}
     >
@@ -168,7 +169,7 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      // title="Forgot password"
+      title="Forgot password?"
       variant="reference"
       description="Enter your email address and we will send a verification code."
       footer={
@@ -473,7 +474,7 @@ export function VerifyOtpPage() {
 
   return (
     <AuthShell
-      // title="Verify OTP"
+      title="Enter OTP"
       variant="reference"
       description="Enter the 6-digit code sent to your email address."
       footer={
@@ -654,7 +655,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell
-      // title="Reset password"
+      title="Create a new password"
       variant="reference"
       description="Create a new password to secure your Mess Management account."
       footer={

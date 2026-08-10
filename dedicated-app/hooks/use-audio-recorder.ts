@@ -48,7 +48,14 @@ export function useAudioRecorder(onRecorded: (audio: Blob) => void, maxSeconds =
     discardRef.current = false
     chunksRef.current = []
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
       streamRef.current = stream
       const mimeType = MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type))
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)

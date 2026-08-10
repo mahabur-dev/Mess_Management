@@ -178,6 +178,17 @@ export default function QuickAddPage() {
   const memberOptions = useMemo(() => members.map((member) => ({ value: member.id, label: member.name })), [members])
   const completed = command?.status === 'CONFIRMED'
   const intentLabel = command ? label(command.intent) : ''
+  const expenseItems = Array.isArray(payload.items)
+    ? payload.items as Array<Record<string, unknown>>
+    : null
+  const updateItem = (index: number, key: string, value: unknown) => {
+    setPayload((current) => ({
+      ...current,
+      items: Array.isArray(current.items)
+        ? current.items.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item)
+        : current.items,
+    }))
+  }
 
   if (messLoading) return <LoadingIndicator variant="screen" label="Loading mess workspace" />
 
@@ -185,15 +196,15 @@ export default function QuickAddPage() {
     <MobileShell>
       <AppHeader title={copy.title} subtitle={copy.subtitle} backHref="/" trailing={(
         <div className="quick-add-language-select">
-          <select
-            value={locale}
-            onChange={(event) => setLocale(event.target.value as AiLocale)}
+          <button
+            type="button"
+            onClick={() => setLocale((current) => current === 'en' ? 'bn' : 'en')}
             disabled={busy || recorder.isRecording}
-            aria-label="Choose language"
+            aria-label={locale === 'en' ? 'Switch to Bangla' : 'Switch to English'}
+            title={locale === 'en' ? 'বাংলা' : 'English'}
           >
-            <option value="bn">বাং</option>
-            <option value="en">En</option>
-          </select>
+            {locale === 'en' ? 'En' : 'বাং'}
+          </button>
         </div>
       )} />
 
@@ -275,18 +286,39 @@ export default function QuickAddPage() {
               {command.clarification ? <Notice tone="warning" className="mb-4">{command.clarification}</Notice> : null}
 
               <div className="grid gap-3">
-                {['EXPENSE_CREATE', 'UTILITY_CREATE', 'DEPOSIT_CREATE'].includes(command.intent) ? (
-                  <InputField label={copy.fields.amount} type="number" value={payload.amount} onChange={(value) => update('amount', value === '' ? '' : Number(value))} />
-                ) : null}
-                {command.intent === 'EXPENSE_CREATE' ? (
-                  <SelectField label={copy.fields.category} value={payload.category} options={CATEGORIES.map((value) => ({ value, label: label(value) }))} onChange={(value) => update('category', value)} />
-                ) : null}
-                {command.intent === 'UTILITY_CREATE' ? (
-                  <SelectField label={copy.fields.utilityType} value={payload.utilityType} options={UTILITY_TYPES.map((value) => ({ value, label: label(value) }))} onChange={(value) => update('utilityType', value)} />
-                ) : null}
-                {['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent) ? (
-                  <InputField label={copy.fields.itemName} value={payload.itemName} onChange={(value) => update('itemName', value)} />
-                ) : null}
+                {expenseItems && ['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent) ? expenseItems.map((item, index) => (
+                  <div key={index} className="grid gap-3 rounded-2xl border border-[#d6e5e8] bg-[#fbfefe] p-3">
+                    <p className="text-label font-bold text-[#00777a]">{copy.fields.itemName} {index + 1}</p>
+                    <InputField label={copy.fields.amount} type="number" value={item.amount} onChange={(value) => updateItem(index, 'amount', value === '' ? '' : Number(value))} />
+                    {command.intent === 'EXPENSE_CREATE' ? (
+                      <SelectField label={copy.fields.category} value={item.category} options={CATEGORIES.map((value) => ({ value, label: label(value) }))} onChange={(value) => updateItem(index, 'category', value)} />
+                    ) : (
+                      <SelectField label={copy.fields.utilityType} value={item.utilityType} options={UTILITY_TYPES.map((value) => ({ value, label: label(value) }))} onChange={(value) => updateItem(index, 'utilityType', value)} />
+                    )}
+                    <InputField label={copy.fields.itemName} value={item.itemName} onChange={(value) => updateItem(index, 'itemName', value)} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <InputField label={locale === 'bn' ? 'পরিমাণ' : 'Quantity'} type="number" value={item.quantity} onChange={(value) => updateItem(index, 'quantity', value === '' ? null : Number(value))} />
+                      <InputField label={locale === 'bn' ? 'ইউনিট' : 'Unit'} value={item.unit} onChange={(value) => updateItem(index, 'unit', value)} />
+                    </div>
+                    <InputField label={copy.fields.date} type="date" value={item.expenseDate ?? item.date} onChange={(value) => updateItem(index, 'expenseDate', value)} />
+                    <InputField label={copy.fields.description} value={item.description} onChange={(value) => updateItem(index, 'description', value)} />
+                  </div>
+                )) : (
+                  <>
+                    {['EXPENSE_CREATE', 'UTILITY_CREATE', 'DEPOSIT_CREATE'].includes(command.intent) ? (
+                      <InputField label={copy.fields.amount} type="number" value={payload.amount} onChange={(value) => update('amount', value === '' ? '' : Number(value))} />
+                    ) : null}
+                    {command.intent === 'EXPENSE_CREATE' ? (
+                      <SelectField label={copy.fields.category} value={payload.category} options={CATEGORIES.map((value) => ({ value, label: label(value) }))} onChange={(value) => update('category', value)} />
+                    ) : null}
+                    {command.intent === 'UTILITY_CREATE' ? (
+                      <SelectField label={copy.fields.utilityType} value={payload.utilityType} options={UTILITY_TYPES.map((value) => ({ value, label: label(value) }))} onChange={(value) => update('utilityType', value)} />
+                    ) : null}
+                    {['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent) ? (
+                      <InputField label={copy.fields.itemName} value={payload.itemName} onChange={(value) => update('itemName', value)} />
+                    ) : null}
+                  </>
+                )}
                 {['DEPOSIT_CREATE', 'MEAL_CREATE'].includes(command.intent) ? (
                   <SelectField label={copy.fields.memberId} value={payload.memberId} options={memberOptions} onChange={(value) => update('memberId', value)} />
                 ) : null}
@@ -300,7 +332,7 @@ export default function QuickAddPage() {
                 {['EXPENSE_CREATE', 'UTILITY_CREATE', 'DEPOSIT_CREATE', 'MEAL_CREATE'].includes(command.intent) ? (
                   <InputField label={copy.fields.date} type="date" value={payload.expenseDate ?? payload.date} onChange={(value) => update(command.intent === 'EXPENSE_CREATE' || command.intent === 'UTILITY_CREATE' ? 'expenseDate' : 'date', value)} />
                 ) : null}
-                {['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent) ? (
+                {!expenseItems && ['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent) ? (
                   <InputField label={copy.fields.description} value={payload.description} onChange={(value) => update('description', value)} />
                 ) : command.intent === 'DEPOSIT_CREATE' ? (
                   <InputField label={copy.fields.description} value={payload.note} onChange={(value) => update('note', value)} />

@@ -60,7 +60,7 @@ export const AI_COPY = {
     fields: {
       amount: 'Amount', date: 'Date', category: 'Category', utilityType: 'Utility type',
       itemName: 'Item', description: 'Note', memberId: 'Member', mealName: 'Meal',
-      mealCount: 'Meal count', status: 'Status',
+      mealCount: 'Meal count', status: 'Status', quantity: 'Quantity', unit: 'Unit',
     },
   },
   bn: {

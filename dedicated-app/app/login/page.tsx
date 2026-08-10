@@ -41,7 +41,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      // title="Welcome back!"
+      title="Welcome back"
       description="Sign in to continue to your account" 
       variant="reference"
       footer={

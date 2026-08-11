@@ -30,8 +30,14 @@ import {
   resolveMemberName,
   type NamedMember,
 } from '../normalisers/command-normaliser';
-
-const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
+import {
+  buildApiUrl,
+  buildResponseFormat,
+  buildTranscriptionPrompt,
+  extractTranscript,
+  resolveCommandResponseFormat,
+  resolveSpeechResponseFormat,
+} from './openai-compatible.helpers';
 
 const nullableString = { type: ['string', 'null'] } as const;
 const nullableNumber = { type: ['number', 'null'], minimum: 0 } as const;
@@ -75,6 +81,39 @@ const expenseItemSchema = {
   },
 } as const;
 
+const mealItemSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'mealName',
+    'mealCount',
+    'status',
+    'date',
+    'startDate',
+    'endDate',
+    'memberName',
+  ],
+  properties: {
+    mealName: {
+      type: ['string', 'null'],
+      enum: [...MEAL_NAMES, null],
+    },
+    mealCount: {
+      ...nullableNumber,
+      description:
+        'Number of servings the user said, before breakfast/lunch/dinner weighting.',
+    },
+    status: {
+      type: ['string', 'null'],
+      enum: [...MEAL_STATUSES, null],
+    },
+    date: nullableString,
+    startDate: nullableString,
+    endDate: nullableString,
+    memberName: nullableString,
+  },
+} as const;
+
 const commandSchema = {
   type: 'object',
   additionalProperties: false,
@@ -90,6 +129,8 @@ const commandSchema = {
       required: [
         'amount',
         'date',
+        'startDate',
+        'endDate',
         'category',
         'utilityType',
         'itemName',
@@ -101,6 +142,7 @@ const commandSchema = {
         'quantity',
         'unit',
         'items',
+        'meals',
       ],
       properties: {
         amount: {
@@ -111,6 +153,14 @@ const commandSchema = {
         date: {
           ...nullableString,
           description: 'Transaction date in YYYY-MM-DD.',
+        },
+        startDate: {
+          ...nullableString,
+          description: 'Inclusive first date for a repeated meal command.',
+        },
+        endDate: {
+          ...nullableString,
+          description: 'Inclusive last date for a repeated meal command.',
         },
         category: {
           type: ['string', 'null'],
@@ -138,6 +188,10 @@ const commandSchema = {
           type: 'array',
           items: expenseItemSchema,
         },
+        meals: {
+          type: 'array',
+          items: mealItemSchema,
+        },
       },
     },
   },
@@ -154,6 +208,15 @@ SOURCE OF TRUTH
 - originalInput is the source of truth.
 - normalizedInput and normalizationHints are helper signals only.
 - Never invent money, quantity, member names, or explicit dates.
+
+NATURAL-LANGUAGE UNDERSTANDING
+- Understand the meaning of the complete utterance; never require an exact trigger phrase, keyword, grammar, tense, script, or word order.
+- Treat filler words, politeness, informal pronunciation, minor speech-to-text spelling errors, and code-switching as normal conversation.
+- Bangla script, English, and romanized Bangla may occur in the same sentence. They carry equal meaning.
+- Convert unambiguous spoken-number expressions in Bangla, Banglish, or English into numbers. For example, দশ/dosh/ten means 10 and পাঁচশ/pachsho/five hundred means 500.
+- Words such as add, যোগ করো, লিখে রাখো, entry koro, কিনছি, কিনেছি, খরচ করেছি, paid, bought, or no explicit action word can all express the same create intent when the transaction meaning is clear.
+- Preserve the user's intended total amount. Quantity and total price may appear before or after the item name.
+- Commas, slashes, pauses, এবং/আর/and, or repeated item-price groups may separate multiple expense items.
 
 DATE RULES
 - Resolve relative dates with context.today and context.timeZone.
@@ -197,9 +260,17 @@ DEPOSIT RULES
 MEAL RULES
 - Meal-count commands are MEAL_CREATE, for example “Rahim dinner 2 ta”, “রহিমের ২টা ডিনার”.
 - BREAKFAST, LUNCH and DINNER are supported.
-- If meal type is clear but count is omitted, one meal is a reasonable default.
+- data.mealCount and every data.meals[].mealCount mean the number of servings the user SAID, before weighting. If count is omitted, use 1.
+- The backend applies billing weights deterministically: each breakfast serving is 0.5 meal; each lunch or dinner serving is 1 meal. Do not apply that weighting yourself.
 - If member is omitted, use context.actorName.
 - A purchased dinner/restaurant meal with a monetary price is a FOOD expense, not a meal-count command.
+- For exactly one meal type on one date, use the top-level mealName, mealCount, status and date; data.meals must be [].
+- If the user names two or more meal types, put one entry per meal type in data.meals and leave top-level meal fields null.
+- A command such as “breakfast 1, lunch 1, dinner 1” is one MEAL_CREATE command containing three data.meals entries. Never return UNKNOWN merely because several meal types are present.
+- For a repeated date range, set startDate and endDate instead of expanding every calendar day. Date ranges are inclusive.
+- “for 5 days from today” means exactly five dates: today through today + 4 days. “today through 5 days later” means six dates: today through today + 5 days.
+- For several meal types over a range, each data.meals entry carries the applicable startDate and endDate.
+- OFF/no-meal commands use status OFF and mealCount 0.
 
 CLARIFICATION
 Use NEEDS_CLARIFICATION only when a required fact cannot be safely inferred.
@@ -215,33 +286,70 @@ CANONICAL EXAMPLES
 6) “Rahim 2000 taka joma dise” => DEPOSIT_CREATE, member Rahim, amount 2000.
 7) “electricity bill 3200 add koro” => UTILITY_CREATE, amount 3200, utilityType ELECTRICITY.
 8) “Rahim dinner 2 ta add koro” => MEAL_CREATE, member Rahim, mealName DINNER, mealCount 2.
+9) “ami 500 tk bazar korchi add koro” => EXPENSE_CREATE, amount 500, category GROCERY, itemName bazar, items [].
+10) “আমি আলু দশ টাকা দিয়ে কিনছি, যোগ করো” => EXPENSE_CREATE, amount 10, category GROCERY, itemName আলু, items [].
+11) “ami 2kg alu 60 tk / piyaj 1kg 40 tk nisi” => EXPENSE_CREATE, two data.items with amounts 60 and 40, top-level amount 100.
+12) “আজ কারেন্ট বিল তিন হাজার দুইশ টাকা দিলাম” => UTILITY_CREATE, amount 3200, utilityType ELECTRICITY.
+13) “ajke amar lunch off kore dao” => MEAL_CREATE, member context.actorName, mealName LUNCH, status OFF, mealCount 0.
+14) “আমার breakfast একটা meal, dinner একটা meal, এবং lunch একটা meal add করো” => MEAL_CREATE with three data.meals entries, each spoken mealCount 1 and date today.
+15) “আজ থেকে পাঁচ দিন breakfast 2 ta, lunch 1 ta add koro” => two data.meals entries, each startDate today and endDate today + 4 days; breakfast spoken mealCount 2, lunch spoken mealCount 1.
+16) “গতকাল dinner 3 ta add koro” => MEAL_CREATE, date yesterday, dinner spoken mealCount 3.
 
 Return only the schema-compliant JSON object.
 `.trim();
 
 @Injectable()
-export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
-  private readonly logger = new Logger(GroqProvider.name);
+export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommandProvider {
+  private readonly logger = new Logger(OpenAiCompatibleProvider.name);
 
-  private get apiKey(): string {
-    const key = config.aiAutomation.groqApiKey?.trim();
+  private get speechApiKey(): string {
+    const key = config.aiAutomation.speechApiKey?.trim();
     if (!key) {
       throw new ServiceUnavailableException({
         code: 'AI_PROVIDER_UNAVAILABLE',
-        message: 'AI provider is not configured',
+        message: 'Speech provider is not configured',
       });
     }
     return key;
   }
 
-  private async request(url: string, init: RequestInit): Promise<Response> {
+  private get commandApiKey(): string {
+    const key = config.aiAutomation.commandApiKey?.trim();
+    if (!key) {
+      throw new ServiceUnavailableException({
+        code: 'AI_PROVIDER_UNAVAILABLE',
+        message: 'AI command provider is not configured',
+      });
+    }
+    return key;
+  }
+
+  private get speechUrl(): string {
+    return buildApiUrl(
+      config.aiAutomation.speechBaseUrl,
+      config.aiAutomation.speechPath,
+    );
+  }
+
+  private get commandUrl(): string {
+    return buildApiUrl(
+      config.aiAutomation.commandBaseUrl,
+      config.aiAutomation.commandPath,
+    );
+  }
+
+  private async request(
+    url: string,
+    init: RequestInit,
+    providerName = 'AI provider',
+  ): Promise<Response> {
     let response: Response;
 
     try {
       response = await fetch(url, init);
     } catch (error) {
       this.logger.warn(
-        `Groq network request failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+        `${providerName} network request failed: ${error instanceof Error ? error.message : 'unknown error'}`,
       );
       throw new ServiceUnavailableException({
         code: 'AI_PROVIDER_UNAVAILABLE',
@@ -268,7 +376,7 @@ export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
       }
 
       this.logger.warn(
-        `Groq request failed with ${response.status}${providerError ? `: ${providerError.slice(0, 500)}` : ''}`,
+        `${providerName} request failed with ${response.status}${providerError ? `: ${providerError.slice(0, 500)}` : ''}`,
       );
 
       throw new BadGatewayException({
@@ -278,20 +386,6 @@ export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
     }
 
     return response;
-  }
-
-  private getTranscriptionPrompt(language: SpeechLanguage): string | null {
-    if (language === 'bn') {
-      return 'এটি মেস ও হোস্টেল ম্যানেজমেন্টের ছোট ভয়েস কমান্ড। সাধারণ শব্দ: বাজার, আলু, পেঁয়াজ, টাকা, কেজি, বিল, ডিপোজিট, জমা, মিল, নাস্তা, লাঞ্চ, ডিনার। কথাগুলো যেমন বলা হয়েছে তেমন লিখুন।';
-    }
-
-    if (language === 'en') {
-      return 'Short mess and hostel management command. Common terms: bazar, grocery, taka, kg, bill, deposit, meal, breakfast, lunch, dinner. Preserve names, numbers and spoken wording.';
-    }
-
-    // For auto/mixed language, omit the prompt so an English or Bangla prompt
-    // does not bias decoding in the wrong direction.
-    return null;
   }
 
   async transcribe(
@@ -316,26 +410,49 @@ export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
       new Blob([Uint8Array.from(file.buffer)], { type: mimeType }),
       file.originalname || 'recording.webm',
     );
-    form.append('model', config.aiAutomation.speechModel || 'whisper-large-v3');
-    form.append('response_format', 'json');
-    form.append('temperature', '0');
-
-    if (language !== 'auto') {
-      form.append('language', language);
-      const prompt = this.getTranscriptionPrompt(language);
-      if (prompt) form.append('prompt', prompt);
+    const responseFormat = resolveSpeechResponseFormat(
+      config.aiAutomation.speechResponseFormat,
+    );
+    form.append('model', config.aiAutomation.speechModel);
+    if (responseFormat !== 'none') {
+      form.append('response_format', responseFormat);
+    }
+    if (config.aiAutomation.speechTemperature.trim()) {
+      form.append('temperature', config.aiAutomation.speechTemperature);
     }
 
-    const response = await this.request(`${GROQ_BASE_URL}/audio/transcriptions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: form,
-    });
+    if (language !== 'auto' && config.aiAutomation.speechSendLanguage) {
+      form.append('language', language);
+    }
 
-    const body = (await response.json()) as { text?: unknown };
-    const transcript = typeof body.text === 'string' ? body.text.trim() : '';
+    if (config.aiAutomation.speechSendPrompt) {
+      form.append(
+        'prompt',
+        buildTranscriptionPrompt(language, config.aiAutomation.speechPrompt),
+      );
+    }
+
+    const response = await this.request(
+      this.speechUrl,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.speechApiKey}`,
+        },
+        body: form,
+      },
+      config.aiAutomation.speechProvider,
+    );
+
+    let transcript = '';
+    try {
+      transcript = extractTranscript(await response.text(), responseFormat);
+    } catch {
+      throw new BadGatewayException({
+        code: 'AI_TRANSCRIPTION_FAILED',
+        message: 'Speech provider returned an invalid response',
+      });
+    }
 
     if (!transcript) {
       throw new BadGatewayException({
@@ -364,29 +481,38 @@ export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
       },
     };
 
-    const response = await this.request(`${GROQ_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: config.aiAutomation.commandModel || 'openai/gpt-oss-20b',
-        temperature: 0,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: JSON.stringify(userPayload) },
-        ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'mess_command',
-            strict: true,
-            schema: commandSchema,
-          },
+    const responseFormatMode = resolveCommandResponseFormat(
+      config.aiAutomation.commandResponseFormat,
+      config.aiAutomation.commandBaseUrl,
+    );
+    const responseFormat = buildResponseFormat(responseFormatMode, commandSchema);
+    const systemPrompt =
+      responseFormatMode === 'json_schema'
+        ? SYSTEM_PROMPT
+        : `${SYSTEM_PROMPT}\n\nOUTPUT JSON SCHEMA\n${JSON.stringify(commandSchema)}`;
+    const requestBody: Record<string, unknown> = {
+      model: config.aiAutomation.commandModel,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: JSON.stringify(userPayload) },
+      ],
+    };
+
+    if (responseFormat) requestBody.response_format = responseFormat;
+
+    const response = await this.request(
+      this.commandUrl,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.commandApiKey}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify(requestBody),
+      },
+      config.aiAutomation.commandProvider,
+    );
 
     const body = (await response.json()) as {
       choices?: Array<{ message?: { content?: unknown } }>;
@@ -426,6 +552,7 @@ export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
       data: {
         ...command.data,
         items: (command.data.items || []).map((item) => ({ ...item })),
+        meals: (command.data.meals || []).map((meal) => ({ ...meal })),
       },
     };
 
@@ -478,34 +605,65 @@ export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
     }
 
     if (result.intent === 'MEAL_CREATE') {
-      if (!result.data.mealName || result.data.mealName === 'OTHER') {
-        result.data.mealName =
-          inferMealName(`${result.data.itemName ?? ''} ${originalText} ${normalizedText}`) ??
-          result.data.mealName;
-      }
+      if (result.data.meals.length > 0) {
+        result.missingFields = result.missingFields.filter(
+          (field) => !['mealName', 'mealCount', 'memberName'].includes(field),
+        );
+        result.data.meals = result.data.meals.map((meal) => {
+          const status = meal.status ?? 'ON';
+          const mealCount = status === 'OFF' ? 0 : (meal.mealCount ?? 1);
+          if (!meal.mealName || meal.mealName === 'OTHER') {
+            this.addMissing(result, 'meals.mealName');
+          }
+          if (
+            status === 'ON' &&
+            !(typeof mealCount === 'number' && Number.isFinite(mealCount) && mealCount > 0)
+          ) {
+            this.addMissing(result, 'meals.mealCount');
+          }
+          return {
+            ...meal,
+            status,
+            mealCount,
+            memberName:
+              meal.memberName?.trim() ||
+              result.data.memberName?.trim() ||
+              context.actorName?.trim() ||
+              null,
+          };
+        });
+      } else {
+        if (!result.data.mealName || result.data.mealName === 'OTHER') {
+          result.data.mealName =
+            inferMealName(`${result.data.itemName ?? ''} ${originalText} ${normalizedText}`) ??
+            result.data.mealName;
+        }
 
-      if (!result.data.mealName || result.data.mealName === 'OTHER') {
-        this.addMissing(result, 'mealName');
-      }
+        if (!result.data.mealName || result.data.mealName === 'OTHER') {
+          this.addMissing(result, 'mealName');
+        }
 
-      if (result.data.mealCount == null) {
-        result.data.mealCount = 1;
-      }
+        if (!result.data.status) {
+          result.data.status = 'ON';
+        }
 
-      if (!(typeof result.data.mealCount === 'number' && result.data.mealCount > 0)) {
-        this.addMissing(result, 'mealCount');
-      }
+        result.data.mealCount =
+          result.data.status === 'OFF' ? 0 : (result.data.mealCount ?? 1);
 
-      if (!result.data.memberName?.trim()) {
-        result.data.memberName = context.actorName?.trim() || null;
-      }
+        if (
+          result.data.status === 'ON' &&
+          !(typeof result.data.mealCount === 'number' && result.data.mealCount > 0)
+        ) {
+          this.addMissing(result, 'mealCount');
+        }
 
-      if (!result.data.memberName) {
-        this.addMissing(result, 'memberName');
-      }
+        if (!result.data.memberName?.trim()) {
+          result.data.memberName = context.actorName?.trim() || null;
+        }
 
-      if (!result.data.status) {
-        result.data.status = 'ON';
+        if (!result.data.memberName) {
+          this.addMissing(result, 'memberName');
+        }
       }
     }
 
@@ -659,257 +817,3 @@ export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
       : `I need a little more information: ${humanFields}.`;
   }
 }
-
-
-
-
-// import {
-//   BadGatewayException,
-//   HttpException,
-//   HttpStatus,
-//   Injectable,
-//   ServiceUnavailableException,
-// } from '@nestjs/common';
-// import config from 'src/app/config';
-// import {
-//   AI_INTENTS,
-//   AiCommandProvider,
-//   AiParseContext,
-//   ParsedAiCommand,
-//   SpeechToTextProvider,
-// } from '../ai-command.types';
-
-// const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
-
-// const commandSchema = {
-//   type: 'object',
-//   additionalProperties: false,
-//   required: ['intent', 'confidence', 'clarification', 'missingFields', 'data'],
-//   properties: {
-//     intent: { type: 'string', enum: AI_INTENTS },
-//     confidence: { type: 'number', minimum: 0, maximum: 1 },
-//     clarification: { type: ['string', 'null'] },
-//     missingFields: { type: 'array', items: { type: 'string' } },
-//     data: {
-//       type: 'object',
-//       additionalProperties: false,
-//       required: [
-//         'amount',
-//         'date',
-//         'category',
-//         'utilityType',
-//         'itemName',
-//         'description',
-//         'memberName',
-//         'mealName',
-//         'mealCount',
-//         'status',
-//         'quantity',
-//         'unit',
-//         'items',
-//       ],
-//       properties: {
-//         amount: { type: ['number', 'null'] },
-//         date: { type: ['string', 'null'] },
-//         category: {
-//           type: ['string', 'null'],
-//           enum: [
-//             'GROCERY', 'UTILITY', 'RENT', 'FOOD', 'GAS', 'ELECTRICITY',
-//             'WIFI', 'CLEANER', 'MAINTENANCE', 'BUABILL', 'WATER', 'OTHER', null,
-//           ],
-//         },
-//         utilityType: {
-//           type: ['string', 'null'],
-//           enum: ['ELECTRICITY', 'GAS', 'WATER', 'WIFI', 'CLEANING', 'OTHER', null],
-//         },
-//         itemName: { type: ['string', 'null'] },
-//         description: { type: ['string', 'null'] },
-//         memberName: { type: ['string', 'null'] },
-//         mealName: {
-//           type: ['string', 'null'],
-//           enum: ['BREAKFAST', 'LUNCH', 'DINNER', 'OTHER', null],
-//         },
-//         mealCount: { type: ['number', 'null'], minimum: 0 },
-//         status: {
-//           type: ['string', 'null'],
-//           enum: ['ON', 'OFF', null],
-//         },
-//         quantity: { type: ['number', 'null'], minimum: 0 },
-//         unit: { type: ['string', 'null'] },
-//         items: {
-//           type: 'array',
-//           items: {
-//             type: 'object',
-//             additionalProperties: false,
-//             required: [
-//               'amount', 'date', 'category', 'utilityType', 'itemName',
-//               'description', 'memberName', 'quantity', 'unit',
-//             ],
-//             properties: {
-//               amount: { type: ['number', 'null'] },
-//               date: { type: ['string', 'null'] },
-//               category: {
-//                 type: ['string', 'null'],
-//                 enum: [
-//                   'GROCERY', 'UTILITY', 'RENT', 'FOOD', 'GAS', 'ELECTRICITY',
-//                   'WIFI', 'CLEANER', 'MAINTENANCE', 'BUABILL', 'WATER', 'OTHER', null,
-//                 ],
-//               },
-//               utilityType: {
-//                 type: ['string', 'null'],
-//                 enum: ['ELECTRICITY', 'GAS', 'WATER', 'WIFI', 'CLEANING', 'OTHER', null],
-//               },
-//               itemName: { type: ['string', 'null'] },
-//               description: { type: ['string', 'null'] },
-//               memberName: { type: ['string', 'null'] },
-//               quantity: { type: ['number', 'null'], minimum: 0 },
-//               unit: { type: ['string', 'null'] },
-//             },
-//           },
-//         },
-//       },
-//     },
-//   },
-// } as const;
-
-// @Injectable()
-// export class GroqProvider implements SpeechToTextProvider, AiCommandProvider {
-//   private get apiKey() {
-//     const key = config.aiAutomation.groqApiKey?.trim();
-//     if (!key) {
-//       throw new ServiceUnavailableException({
-//         code: 'AI_PROVIDER_UNAVAILABLE',
-//         message: 'AI provider is not configured',
-//       });
-//     }
-//     return key;
-//   }
-
-//   private async request(url: string, init: RequestInit) {
-//     let response: Response;
-//     try {
-//       response = await fetch(url, init);
-//     } catch {
-//       throw new ServiceUnavailableException({
-//         code: 'AI_PROVIDER_UNAVAILABLE',
-//         message: 'AI service is temporarily unavailable',
-//       });
-//     }
-//     if (response.status === 429) {
-//       throw new HttpException(
-//         {
-//           code: 'AI_RATE_LIMITED',
-//           message: 'AI request limit reached. Please try again shortly.',
-//         },
-//         HttpStatus.TOO_MANY_REQUESTS,
-//       );
-//     }
-//     if (!response.ok) {
-//       throw new BadGatewayException({
-//         code: 'AI_PROVIDER_UNAVAILABLE',
-//         message: 'AI service could not process the request',
-//       });
-//     }
-//     return response;
-//   }
-
-//   async transcribe(
-//     file: Express.Multer.File,
-//     language: 'en' | 'bn',
-//   ): Promise<string> {
-//     const form = new FormData();
-//     form.append(
-//       'file',
-//       new Blob([Uint8Array.from(file.buffer)], { type: file.mimetype.split(';', 1)[0].trim().toLowerCase() }),
-//       file.originalname || 'recording.webm',
-//     );
-//     form.append('model', config.aiAutomation.speechModel);
-//     form.append('response_format', 'json');
-//     form.append('temperature', '0');
-//     // Do not force the UI language here. Users often speak Bangla while the
-//     // app UI is English (or mix Bangla, Banglish and English in one command).
-//     // Whisper's language auto-detection is more reliable for that real-world
-//     // input than decoding Bangla as English because of a UI toggle.
-//     form.append(
-//       'prompt',
-//       [
-//         'Transcribe the spoken language faithfully. The speaker may use Bangla script, Banglish phonetic Bangla, English, or a mixture.',
-//         'This is a mess-management command about expenses, utilities, deposits, meals, prices, quantities and dates. Preserve item names and numbers exactly; do not translate Bangla into English.',
-//         language === 'bn'
-//           ? 'The UI language hint is Bangla, but still preserve any English words spoken.'
-//           : 'The UI language hint is English, but still preserve any Bangla or Banglish words spoken.',
-//       ].join(' '),
-//     );
-
-//     const response = await this.request(`${GROQ_BASE_URL}/audio/transcriptions`, {
-//       method: 'POST',
-//       headers: { Authorization: `Bearer ${this.apiKey}` },
-//       body: form,
-//     });
-//     const body = (await response.json()) as { text?: unknown };
-//     const transcript = typeof body.text === 'string' ? body.text.trim() : '';
-//     if (!transcript) {
-//       throw new BadGatewayException({
-//         code: 'AI_TRANSCRIPTION_FAILED',
-//         message: 'No speech could be recognized from this recording',
-//       });
-//     }
-//     return transcript;
-//   }
-
-//   async parse(text: string, context: AiParseContext): Promise<ParsedAiCommand> {
-//     const system = [
-//       'You extract exactly one create command for a mess-management application.',
-//       'The user may write Bangla, English, Banglish, or a mixture.',
-//       'Never invent an amount, member, meal type, or date.',
-//       'Resolve relative dates using the supplied today and timezone. Return YYYY-MM-DD.',
-//       'Internet means WIFI. Cleaning/cleaner means category CLEANER and utilityType CLEANING.',
-//       'Only BREAKFAST, LUNCH, and DINNER are supported. OTHER requires clarification.',
-//       'Return memberName exactly as one supplied member when there is a clear match; never output IDs.',
-//       'Set NEEDS_CLARIFICATION and list missingFields when a required value is absent or ambiguous.',
-//       'Deposit creation requires manager access, amount, and a member. Expense requires amount, but infer its category from the item and context; do not ask the user to name a category.',
-//       'Raw ingredients, rice, oil, potato, onion, vegetables, fish, meat, eggs, milk, bazar/market and grocery shopping are GROCERY. Prepared meals, restaurant, snacks and tea are FOOD. Use OTHER only when the item cannot be classified with reasonable confidence.',
-//       'For multiple expenses, put every item in data.items. Each item must have its own amount and may have its own itemName, quantity, unit, date and category. Use an empty items array for non-expense commands.',
-//       'Keep data.items as [] only for deposits and meals. Never merge multiple amounts into one item.',
-//       'Meal requires mealName and date; member defaults to the actor when omitted.',
-//     ].join(' ');
-//     const user = JSON.stringify({ input: text, context });
-//     const response = await this.request(`${GROQ_BASE_URL}/chat/completions`, {
-//       method: 'POST',
-//       headers: {
-//         Authorization: `Bearer ${this.apiKey}`,
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({
-//         model: config.aiAutomation.commandModel,
-//         temperature: 0,
-//         messages: [
-//           { role: 'system', content: system },
-//           { role: 'user', content: user },
-//         ],
-//         response_format: {
-//           type: 'json_schema',
-//           json_schema: { name: 'mess_command', strict: true, schema: commandSchema },
-//         },
-//       }),
-//     });
-//     const body = (await response.json()) as {
-//       choices?: Array<{ message?: { content?: unknown } }>;
-//     };
-//     const content = body.choices?.[0]?.message?.content;
-//     if (typeof content !== 'string') {
-//       throw new BadGatewayException({
-//         code: 'AI_PARSE_FAILED',
-//         message: 'AI response could not be understood',
-//       });
-//     }
-//     try {
-//       return JSON.parse(content) as ParsedAiCommand;
-//     } catch {
-//       throw new BadGatewayException({
-//         code: 'AI_SCHEMA_INVALID',
-//         message: 'AI returned an invalid command',
-//       });
-//     }
-//   }
-// }

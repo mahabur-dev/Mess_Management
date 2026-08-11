@@ -13,6 +13,8 @@ const normalizationCases: Array<[string, string]> = [
   ['i had purchased 2kg alu 100 tk', 'i had purchased 2 kg alu 100 taka'],
   ['আজকে বাজার ৪০০ টাকা', 'today বাজার 400 taka'],
   ['২ কেজি আলু ১০০ টাকা কিনেছি', '2 kg আলু 100 taka কিনেছি'],
+  ['ami 500 tk bazer korchi add koro', 'ami 500 taka bazar korchi add'],
+  ['ami alu dosh taka diye kinchi add koro', 'ami alu dosh taka diye purchased add'],
 ];
 
 test('normalizes supported Bangla, Banglish and mixed-language commands', () => {

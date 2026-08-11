@@ -10,8 +10,8 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Dedicated App | Mess Management',
-  description: 'Mess management app',
+  title: 'Messzen | Mess & Hostel Management',
+  description: 'Manage shared meals, expenses, deposits and monthly accounts with Messzen.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icon.svg',

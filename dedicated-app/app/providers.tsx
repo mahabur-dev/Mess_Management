@@ -10,9 +10,11 @@ import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
 import {
   buildLoginPath,
+  buildOnboardingPath,
   clearStoredToken,
   currentPathWithSearch,
   getStoredToken,
+  hasCompletedOnboarding,
   isAuthPath,
   normalizePathname,
   readPostLoginPath,
@@ -29,6 +31,7 @@ type AuthContextValue = {
   login: (email: string, password: string, redirectTo?: string) => Promise<void>
   register: (name: string, email: string, phone: string, password: string, redirectTo?: string) => Promise<void>
   logout: () => Promise<void>
+  requestLogout: () => void
   refresh: () => Promise<void>
 }
 
@@ -77,7 +80,18 @@ export function Providers({ children }: { children: ReactNode }) {
     if (isLoading) return
 
     if (!user && !isAuthPath(pathname)) {
-      router.replace(buildLoginPath(currentPathWithSearch(pathname)))
+      const nextPath = currentPathWithSearch(pathname)
+      router.replace(hasCompletedOnboarding() ? buildLoginPath(nextPath) : buildOnboardingPath(nextPath))
+      return
+    }
+
+    if (!user && normalizedPathname === '/login' && !hasCompletedOnboarding()) {
+      router.replace(buildOnboardingPath(readPostLoginPath()))
+      return
+    }
+
+    if (user && normalizedPathname === '/onboarding') {
+      router.replace('/')
       return
     }
 
@@ -162,8 +176,8 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, token, isAuthenticated: Boolean(user), isLoading, isSubmitting, login, register, logout, refresh }),
-    [user, token, isLoading, isSubmitting, login, register, logout, refresh]
+    () => ({ user, token, isAuthenticated: Boolean(user), isLoading, isSubmitting, login, register, logout, requestLogout: openLogoutPrompt, refresh }),
+    [user, token, isLoading, isSubmitting, login, register, logout, openLogoutPrompt, refresh]
   )
 
   if (!hasMounted) {

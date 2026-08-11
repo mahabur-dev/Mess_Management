@@ -41,11 +41,16 @@ import {
   resolveMemberName,
 } from './normalisers/command-normaliser';
 import {
+  calculateBillableMealCount,
+  expandMealDateRange,
+} from './ai-meal-command';
+import {
   AI_COMMAND_PROVIDER,
   AiCommandProvider,
   ParsedAiCommand,
   ParsedCommandData,
   ParsedExpenseItem,
+  ParsedMealItem,
   SPEECH_TO_TEXT_PROVIDER,
   SpeechToTextProvider,
   type SpeechLanguage,
@@ -167,6 +172,8 @@ export class AiAutomationService {
     }
     const nullableStrings: Array<keyof ParsedCommandData> = [
       'date',
+      'startDate',
+      'endDate',
       'category',
       'utilityType',
       'itemName',
@@ -185,8 +192,8 @@ export class AiAutomationService {
     ) {
       throw new BadRequestException('AI returned invalid command fields');
     }
-    if (!Array.isArray(value.data.items)) {
-      throw new BadRequestException('AI returned invalid expense items');
+    if (!Array.isArray(value.data.items) || !Array.isArray(value.data.meals)) {
+      throw new BadRequestException('AI returned invalid command items');
     }
     for (const item of value.data.items) {
       if (!item || typeof item !== 'object') throw new BadRequestException('AI returned invalid expense item');
@@ -200,6 +207,25 @@ export class AiAutomationService {
         )
       ) {
         throw new BadRequestException('AI returned invalid expense item fields');
+      }
+    }
+    for (const meal of value.data.meals) {
+      if (!meal || typeof meal !== 'object') {
+        throw new BadRequestException('AI returned invalid meal item');
+      }
+      const candidate = meal as ParsedMealItem;
+      if (
+        (candidate.mealCount !== null && !Number.isFinite(candidate.mealCount)) ||
+        [
+          candidate.mealName,
+          candidate.status,
+          candidate.date,
+          candidate.startDate,
+          candidate.endDate,
+          candidate.memberName,
+        ].some((field) => field !== null && typeof field !== 'string')
+      ) {
+        throw new BadRequestException('AI returned invalid meal item fields');
       }
     }
     return value;
@@ -258,7 +284,13 @@ export class AiAutomationService {
       EXPENSE_CREATE: new Set(['amount', 'category']),
       UTILITY_CREATE: new Set(['amount']),
       DEPOSIT_CREATE: new Set(['amount', 'memberName']),
-      MEAL_CREATE: new Set(['mealName']),
+      MEAL_CREATE: new Set([
+        'mealName',
+        'mealCount',
+        'meals.mealName',
+        'meals.mealCount',
+        'dateRange',
+      ]),
     };
     const allowedMissing = requiredFieldsByIntent[parsed.intent] ?? new Set<string>();
     // Models sometimes list every nullable JSON property as "missing". Only
@@ -329,15 +361,83 @@ export class AiAutomationService {
         note: parsed.data.description,
       };
     } else if (intent === 'MEAL_CREATE') {
-      if (!parsed.data.mealName || parsed.data.mealName === 'OTHER') missing.add('mealName');
-      payload = {
-        messId,
-        memberId: memberMatch.member?.id ?? actor.id,
-        mealName: parsed.data.mealName,
-        date,
-        status: parsed.data.status ?? AttendanceStatus.ON,
-        ...(parsed.data.mealCount == null ? {} : { mealCount: parsed.data.mealCount }),
-      };
+      const sourceMeals: ParsedMealItem[] = parsed.data.meals.length
+        ? parsed.data.meals
+        : [
+            {
+              mealName: parsed.data.mealName,
+              mealCount: parsed.data.mealCount,
+              status: parsed.data.status,
+              date: parsed.data.date,
+              startDate: parsed.data.startDate,
+              endDate: parsed.data.endDate,
+              memberName: parsed.data.memberName,
+            },
+          ];
+      const resolvedMeals: Record<string, unknown>[] = [];
+
+      for (const meal of sourceMeals) {
+        if (
+          !meal.mealName ||
+          meal.mealName === 'OTHER' ||
+          !Object.values(MealName).includes(meal.mealName as MealName)
+        ) {
+          missing.add(sourceMeals.length > 1 ? 'meals.mealName' : 'mealName');
+          continue;
+        }
+
+        const mealMember = this.resolveMember(
+          meal.memberName ?? parsed.data.memberName,
+          members,
+        );
+        if (mealMember.ambiguous) missing.add('memberName');
+        const status =
+          meal.status === AttendanceStatus.OFF
+            ? AttendanceStatus.OFF
+            : AttendanceStatus.ON;
+        let mealCount: number;
+        try {
+          mealCount = calculateBillableMealCount(
+            meal.mealName as Exclude<MealName, 'OTHER'>,
+            meal.mealCount,
+            status,
+          );
+        } catch {
+          missing.add(sourceMeals.length > 1 ? 'meals.mealCount' : 'mealCount');
+          continue;
+        }
+
+        const startDate =
+          meal.startDate ??
+          meal.date ??
+          parsed.data.startDate ??
+          parsed.data.date ??
+          date;
+        const endDate = meal.endDate ?? parsed.data.endDate ?? startDate;
+        let dates: string[];
+        try {
+          dates = expandMealDateRange(startDate, endDate);
+        } catch {
+          missing.add('dateRange');
+          continue;
+        }
+
+        for (const mealDate of dates) {
+          resolvedMeals.push({
+            messId,
+            memberId: mealMember.member?.id ?? memberMatch.member?.id ?? actor.id,
+            mealName: meal.mealName,
+            date: mealDate,
+            status,
+            mealCount,
+          });
+        }
+      }
+
+      payload =
+        resolvedMeals.length === 1
+          ? resolvedMeals[0]
+          : { items: resolvedMeals };
     } else {
       intent = missing.size ? 'NEEDS_CLARIFICATION' : 'UNKNOWN';
     }
@@ -377,6 +477,8 @@ export class AiAutomationService {
     const utility = this.utilityMapping({
       amount: null,
       date: null,
+      startDate: null,
+      endDate: null,
       category: null,
       utilityType:
         typeof payload.utilityType === 'string' &&
@@ -392,6 +494,7 @@ export class AiAutomationService {
       quantity: null,
       unit: null,
       items: [],
+      meals: [],
     });
     return {
       ...payload,
@@ -407,12 +510,15 @@ export class AiAutomationService {
     userId: string,
     role: AuthRole,
   ) {
+    if (Array.isArray(payload.items)) {
+      return Promise.all(
+        payload.items.map((item) =>
+          this.domainPreview(intent, item as Record<string, unknown>, userId, role),
+        ),
+      );
+    }
+
     if (intent === 'EXPENSE_CREATE' || intent === 'UTILITY_CREATE') {
-      if (Array.isArray(payload.items)) {
-        return Promise.all(
-          payload.items.map((item) => this.domainPreview(intent, item as Record<string, unknown>, userId, role)),
-        );
-      }
       const dto = await this.validateDto(CreateExpenseDto, payload);
       return this.expenseService.preview(userId, role, dto);
     }
@@ -554,7 +660,7 @@ export class AiAutomationService {
         original_input: params.sourceType === AiCommandSourceType.TEXT ? params.text : null,
         transcript: params.transcript ?? null,
         normalized_text: normalizedText,
-        provider: 'groq',
+        provider: config.aiAutomation.commandProvider,
         stt_model: params.sourceType === AiCommandSourceType.VOICE ? config.aiAutomation.speechModel : null,
         command_model: config.aiAutomation.commandModel,
         parsed_payload: this.jsonSafe({ ...parsed, preview }),
@@ -767,14 +873,15 @@ export class AiAutomationService {
   }
 
   capabilities(locale: Locale = 'en') {
-    const enabled = config.aiAutomation.enabled && Boolean(config.aiAutomation.groqApiKey);
+    const enabled = config.aiAutomation.enabled && Boolean(config.aiAutomation.commandApiKey);
+    const voiceEnabled = enabled && Boolean(config.aiAutomation.speechApiKey);
     return {
       enabled,
       locale,
       supportedLocales: ['en', 'bn'],
       supportedInputLanguages: ['bn', 'en', 'banglish', 'mixed'],
       intents: ['EXPENSE_CREATE', 'UTILITY_CREATE', 'DEPOSIT_CREATE', 'MEAL_CREATE'],
-      voice: { enabled, maxBytes: config.aiAutomation.maxAudioBytes, maxDurationSeconds: 60 },
+      voice: { enabled: voiceEnabled, maxBytes: config.aiAutomation.maxAudioBytes, maxDurationSeconds: 60 },
       confirmationRequired: true,
       multiAction: true,
     };

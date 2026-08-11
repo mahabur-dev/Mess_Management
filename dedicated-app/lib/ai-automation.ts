@@ -1,4 +1,5 @@
 export type AiLocale = 'en' | 'bn'
+export type AiSpeechLanguage = 'auto' | AiLocale
 export type AiIntent = 'EXPENSE_CREATE' | 'UTILITY_CREATE' | 'DEPOSIT_CREATE' | 'MEAL_CREATE' | 'UNKNOWN' | 'NEEDS_CLARIFICATION'
 export type AiCommandStatus = 'PENDING' | 'NEEDS_CLARIFICATION' | 'PROCESSING' | 'CONFIRMED' | 'CANCELLED' | 'FAILED'
 
@@ -54,6 +55,7 @@ export const AI_COPY = {
     newCommand: 'Add another',
     success: 'Saved successfully',
     disabled: 'AI automation is not enabled on the server.',
+    voiceDisabled: 'Voice transcription is not configured on the server. Add a speech-provider API key.',
     unsupportedVoice: 'Voice recording is not supported on this device. You can still type your command.',
     microphoneDenied: 'Microphone permission was not granted.',
     transcript: 'Transcript',
@@ -83,6 +85,7 @@ export const AI_COPY = {
     newCommand: 'আরেকটি যোগ করুন',
     success: 'সফলভাবে সেভ হয়েছে',
     disabled: 'Server-এ AI automation চালু নেই।',
+    voiceDisabled: 'Server-এ voice transcription configure করা নেই। Speech provider API key যোগ করুন।',
     unsupportedVoice: 'এই device-এ voice recording support নেই। আপনি লিখে command দিতে পারবেন।',
     microphoneDenied: 'Microphone permission দেওয়া হয়নি।',
     transcript: 'ভয়েস থেকে পাওয়া লেখা',

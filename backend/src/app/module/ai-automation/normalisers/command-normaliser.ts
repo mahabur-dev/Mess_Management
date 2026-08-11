@@ -99,12 +99,15 @@ function normalizeCommonBanglish(text: string): string {
     // Action/purchase variants. These are hints only; the original text is
     // still sent to the LLM as the source of truth.
     .replace(/\b(?:kro|koro|korun|add\s+koro|add\s+kro)\b/gi, 'add')
-    .replace(/\b(?:kinlam|kinsi|kinechi|kinechilam|kinechhi)\b/gi, 'purchased')
+    .replace(
+      /\b(?:kinlam|kinchi|kinci|kinsi|kinechi|kinechilam|kinechhi|kintechi|kintechhi)\b/gi,
+      'purchased',
+    )
 
     // Common grocery spellings.
     .replace(/\b(?:aloo|alu)\b/gi, 'alu')
     .replace(/\b(?:piaus|piaj|piyaj|peyaj|piaz|peaj|pyaj)\b/gi, 'piyaj')
-    .replace(/\b(?:bajaar|bajar|bazar)\b/gi, 'bazar');
+    .replace(/\b(?:bajaar|bajar|bazar|bazer|bozar)\b/gi, 'bazar');
 }
 
 export function normalizeCommandText(text: string): string {
@@ -628,6 +631,23 @@ export function inferExpenseCategory(
     return null;
   }
 
+  const utilityType = inferUtilityType(itemName, description);
+  if (utilityType === 'ELECTRICITY') return 'ELECTRICITY';
+  if (utilityType === 'GAS') return 'GAS';
+  if (utilityType === 'WATER') return 'WATER';
+  if (utilityType === 'WIFI') return 'WIFI';
+  if (utilityType === 'CLEANING') return 'CLEANER';
+
+  if (containsAny(text, ['rent', 'house rent', 'room rent', 'ভাড়া', 'ভাড়া'])) {
+    return 'RENT';
+  }
+  if (containsAny(text, ['maintenance', 'repair', 'mistri', 'মেরামত', 'মিস্ত্রি'])) {
+    return 'MAINTENANCE';
+  }
+  if (containsAny(text, ['bua', 'buya', 'maid', 'house help', 'বুয়া', 'বুয়া'])) {
+    return 'BUABILL';
+  }
+
   /*
    * FOOD must be checked before GROCERY.
    *
@@ -771,51 +791,3 @@ export function resolveMemberName<T extends NamedMember>(
 
   return { member: best.member, ambiguous: false };
 }
-
-
-
-
-
-// export type NamedMember = { id: string; name: string };
-
-// export function normalizeCommandText(text: string) {
-//   const banglaDigits = '০১২৩৪৫৬৭৮৯';
-//   return text
-//     .replace(/[০-৯]/g, (digit) => String(banglaDigits.indexOf(digit)))
-//     // Noisy Whisper recordings can turn the Bangla currency word into
-//     // "times". Restore the currency cue when it follows a number.
-//     .replace(/(\d+(?:\.\d+)?)\s*(?:times?|tymes?)\b/gi, '$1 taka')
-//     .replace(/\s+/g, ' ')
-//     .trim();
-// }
-
-// export function inferExpenseCategory(itemName: string | null, description: string | null) {
-//   const text = `${itemName ?? ''} ${description ?? ''}`.toLocaleLowerCase();
-//   if (!text.trim()) return null;
-//   if (/(restaurant|রেস্টুরেন্ট|hotel|হোটেল|snack|নাস্তা|tea|চা|coffee|কফি|খাবার|খাওয়া|খেয়েছি|খেয়েছি|meal)/u.test(text)) {
-//     return 'FOOD' as const;
-//   }
-//   if (/(grocery|market|bazar|বাজার|সবজি|সব্জি|আলু|পটেটো|potato|পেঁয়াজ|পিয়াজ|onion|চাল|rice|ডাল|dal|তেল|oil|মাছ|fish|মাংস|meat|ডিম|egg|দুধ|milk|মসলা|spice)/u.test(text)) {
-//     return 'GROCERY' as const;
-//   }
-//   return null;
-// }
-
-// export function resolveMemberName<T extends NamedMember>(
-//   name: string | null,
-//   members: T[],
-// ): { member: T | null; ambiguous: boolean } {
-//   if (!name?.trim()) return { member: null, ambiguous: false };
-//   const needle = name.trim().toLocaleLowerCase();
-//   const exact = members.filter(
-//     (item) => item.name.trim().toLocaleLowerCase() === needle,
-//   );
-//   if (exact.length === 1) return { member: exact[0], ambiguous: false };
-//   const partial = members.filter((item) => {
-//     const candidate = item.name.trim().toLocaleLowerCase();
-//     return candidate.includes(needle) || needle.includes(candidate);
-//   });
-//   return partial.length === 1
-//     ? { member: partial[0], ambiguous: false }
-//     : { member: null, ambiguous: exact.length > 1 || partial.length > 1 };
-// }

@@ -114,7 +114,7 @@ export default function ProfilePage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Profile" subtitle="Account overview" backHref="/more" />
+      <TopScreen title="Profile" subtitle="Account overview" backHref="/" />
 
       <div className="screen space-y-4">
         <section className="ui-card" aria-labelledby="profile-name">

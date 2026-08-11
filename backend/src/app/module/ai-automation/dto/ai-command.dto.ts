@@ -55,7 +55,7 @@ export class CreateVoiceCommandDto {
   locale?: AppLocale;
 
   /**
-   * Keep this optional. When omitted/auto, Groq detects the spoken language.
+   * Keep this optional. When omitted/auto, the speech provider detects the language.
    * This is important because UI locale and spoken language are not always the same.
    */
   @IsOptional()

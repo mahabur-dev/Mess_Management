@@ -1,7 +1,21 @@
 'use client'
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Mic, Sparkles, Square, WandSparkles } from 'lucide-react'
+import {
+  ArrowRight,
+  AudioLines,
+  BadgeCheck,
+  CheckCircle2,
+  MessageSquareText,
+  Mic,
+  ReceiptText,
+  Sparkles,
+  Square,
+  UtensilsCrossed,
+  WalletCards,
+  WandSparkles,
+  Zap,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { AppHeader } from '@/components/app-header'
@@ -9,65 +23,25 @@ import { HomeCard } from '@/components/home-card'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { MobileShell } from '@/components/mobile-shell'
 import { Notice } from '@/components/ui/notice'
+import { AiMealPreview } from '@/components/mobile/ai-meal-preview'
+import { AiExpensePreview } from '@/components/mobile/ai-expense-preview'
+import { AiDepositPreview } from '@/components/mobile/ai-deposit-preview'
 import { useActiveMess } from '@/hooks/use-active-mess'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { aiCopy, type AiCommand, type AiLocale } from '@/lib/ai-automation'
 import { api } from '@/lib/api'
 import { appHref } from '@/lib/routes'
-
-const CATEGORIES = ['GROCERY', 'FOOD', 'RENT', 'GAS', 'ELECTRICITY', 'WIFI', 'CLEANER', 'MAINTENANCE', 'BUABILL', 'WATER', 'OTHER']
-const UTILITY_TYPES = ['ELECTRICITY', 'GAS', 'WATER', 'WIFI', 'CLEANING', 'OTHER']
-const MEALS = ['BREAKFAST', 'LUNCH', 'DINNER']
+import { canManageMess } from '@/lib/app-permissions'
 
 function label(value: string) {
   return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function InputField({
-  label: fieldLabel,
-  value,
-  onChange,
-  type = 'text',
-}: {
-  label: string
-  value: unknown
-  onChange: (value: string) => void
-  type?: string
-}) {
-  return (
-    <label className="block">
-      <span className="ui-field-label mb-2 block">{fieldLabel}</span>
-      <input className="field min-h-14" type={type} value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />
-    </label>
-  )
-}
-
-function SelectField({
-  label: fieldLabel,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: unknown
-  options: Array<{ value: string; label: string }>
-  onChange: (value: string) => void
-}) {
-  return (
-    <label className="block">
-      <span className="ui-field-label mb-2 block">{fieldLabel}</span>
-      <select className="field min-h-14" value={String(value ?? '')} onChange={(event) => onChange(event.target.value)}>
-        <option value="">—</option>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-    </label>
-  )
-}
-
 export default function QuickAddPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const canManage = canManageMess(user)
   const { activeMess, isLoading: messLoading, status: messStatus } = useActiveMess(user)
   const members = useMessMemberOptions(activeMess?.id ?? '', user)
   const [locale, setLocale] = useState<AiLocale>('en')
@@ -77,7 +51,32 @@ export default function QuickAddPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [enabled, setEnabled] = useState<boolean | null>(null)
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean | null>(null)
   const copy = aiCopy(locale)
+  const experienceCopy = locale === 'bn'
+    ? {
+        assistant: 'MESSZEN AI ASSISTANT',
+        safe: 'আপনি যাচাই করে নিশ্চিত না করা পর্যন্ত কিছুই সেভ হবে না',
+        command: 'কমান্ড লিখুন',
+        tryCommand: 'দ্রুত উদাহরণ',
+        suggestions: 'টি সাজেশন',
+        voiceTitle: 'কথা বলে দ্রুত যোগ করুন',
+        voiceHint: 'বাংলা, English বা Banglish—স্বাভাবিকভাবে বলুন',
+        voiceReady: 'রেকর্ডিং শুরু করতে চাপ দিন',
+        processing: 'AI আপনার কমান্ড বিশ্লেষণ করছে',
+      }
+    : {
+        assistant: 'MESSZEN AI ASSISTANT',
+        safe: 'Nothing is saved until you review and confirm every detail',
+        command: 'Write a command',
+        tryCommand: 'Quick examples',
+        suggestions: 'suggestions',
+        voiceTitle: 'Add faster with your voice',
+        voiceHint: 'Speak naturally in Bangla, English, or Banglish',
+        voiceReady: 'Tap the microphone to start',
+        processing: 'AI is analyzing your command',
+      }
+  const exampleIcons = [ReceiptText, WalletCards, UtensilsCrossed]
 
   useEffect(() => {
     const stored = window.localStorage.getItem('messzen:ai-locale')
@@ -86,18 +85,19 @@ export default function QuickAddPage() {
       return
     }
 
-    // Keep the previous voice preference when upgrading to the single
-    // language selector.
-    const storedSpeechLanguage = window.localStorage.getItem('messzen:ai-speech-language')
-    if (storedSpeechLanguage === 'bn' || storedSpeechLanguage === 'en') {
-      setLocale(storedSpeechLanguage)
-    }
   }, [])
 
   useEffect(() => {
     window.localStorage.setItem('messzen:ai-locale', locale)
-    window.localStorage.setItem('messzen:ai-speech-language', locale)
-    api.getAiCapabilities(locale).then((response) => setEnabled(response.data.enabled)).catch(() => setEnabled(null))
+    api.getAiCapabilities(locale)
+      .then((response) => {
+        setEnabled(response.data.enabled)
+        setVoiceEnabled(response.data.voice.enabled)
+      })
+      .catch(() => {
+        setEnabled(null)
+        setVoiceEnabled(null)
+      })
   }, [locale])
 
   const receiveCommand = useCallback((next: AiCommand) => {
@@ -115,7 +115,7 @@ export default function QuickAddPage() {
         messId: activeMess.id,
         audio: blob,
         locale,
-        speechLanguage: locale,
+        speechLanguage: 'auto',
         idempotencyKey: crypto.randomUUID(),
       })
       receiveCommand(response.data)
@@ -148,8 +148,6 @@ export default function QuickAddPage() {
     }
   }
 
-  const update = (key: string, value: unknown) => setPayload((current) => ({ ...current, [key]: value }))
-
   const confirm = async () => {
     if (!command || busy) return
     setBusy(true)
@@ -178,14 +176,29 @@ export default function QuickAddPage() {
   const memberOptions = useMemo(() => members.map((member) => ({ value: member.id, label: member.name })), [members])
   const completed = command?.status === 'CONFIRMED'
   const intentLabel = command ? label(command.intent) : ''
-  const expenseItems = Array.isArray(payload.items)
+  const payloadItems = Array.isArray(payload.items)
     ? payload.items as Array<Record<string, unknown>>
     : null
-  const updateItem = (index: number, key: string, value: unknown) => {
+  const expenseItems = command && ['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent)
+    ? payloadItems ?? [payload]
+    : null
+  const mealItems = command?.intent === 'MEAL_CREATE'
+    ? payloadItems ?? [payload]
+    : null
+  const patchPayloadItem = (index: number, patch: Record<string, unknown>) => {
+    setPayload((current) => {
+      if (!Array.isArray(current.items)) return { ...current, ...patch }
+      return {
+        ...current,
+        items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item),
+      }
+    })
+  }
+  const removePayloadItem = (index: number) => {
     setPayload((current) => ({
       ...current,
       items: Array.isArray(current.items)
-        ? current.items.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item)
+        ? current.items.filter((_item, itemIndex) => itemIndex !== index)
         : current.items,
     }))
   }
@@ -214,55 +227,113 @@ export default function QuickAddPage() {
 
         {!command ? (
           <>
-            <HomeCard className="overflow-hidden border border-[#cdebea] bg-[linear-gradient(145deg,#ffffff_15%,#edfafa_100%)]">
-              <div className="flex items-start gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#008d8c] text-white shadow-[0_10px_22px_rgba(0,141,140,0.22)]">
-                  <WandSparkles size={21} />
+            <section className="quick-add-hero" aria-labelledby="quick-add-hero-title">
+              <span className="quick-add-hero-glow" aria-hidden="true" />
+              <div className="quick-add-hero-heading">
+                <span className="quick-add-hero-icon" aria-hidden="true">
+                  <WandSparkles size={23} strokeWidth={2.2} />
                 </span>
                 <div>
-                  <p className="text-body font-bold text-[#123748]">{copy.intro}</p>
-                  <p className="mt-1 text-caption leading-5 text-[#65838b]">Nothing is saved until you review and confirm.</p>
+                  <p>{experienceCopy.assistant}</p>
+                  <h2 id="quick-add-hero-title">{copy.intro}</h2>
                 </div>
               </div>
-            </HomeCard>
 
-            <form onSubmit={submitText}>
-              <HomeCard title={copy.inputLabel}>
+              <div className="quick-add-capabilities" aria-label="Supported entry types">
+                <span><ReceiptText size={14} /> Expense</span>
+                <span><Zap size={14} /> Utility</span>
+                <span><WalletCards size={14} /> Deposit</span>
+                <span><UtensilsCrossed size={14} /> Meal</span>
+              </div>
+
+              <div className="quick-add-safety-note">
+                <BadgeCheck size={16} strokeWidth={2.3} aria-hidden="true" />
+                <span>{experienceCopy.safe}</span>
+              </div>
+            </section>
+
+            <form onSubmit={submitText} className="quick-add-composer">
+              <div className="quick-add-composer-heading">
+                <div>
+                  <span className="quick-add-composer-icon" aria-hidden="true"><MessageSquareText size={18} /></span>
+                  <div>
+                    <p>{experienceCopy.command}</p>
+                    <h2>{copy.inputLabel}</h2>
+                  </div>
+                </div>
+                <span className="quick-add-character-count">{text.length}/2000</span>
+              </div>
+
+              <div className="quick-add-textarea-shell" data-has-value={text.trim() ? 'true' : 'false'}>
                 <textarea
-                  className="field min-h-32 resize-none py-3"
                   value={text}
                   onChange={(event) => setText(event.target.value)}
                   placeholder={copy.placeholder}
                   maxLength={2000}
                   disabled={busy || recorder.isRecording}
+                  aria-describedby="quick-add-text-help"
                 />
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {copy.examples.map((example) => (
-                    <button key={example} type="button" className="quick-add-example" onClick={() => setText(example)}>
-                      {example}
-                    </button>
-                  ))}
+                <div id="quick-add-text-help" className="quick-add-input-status">
+                  <Sparkles size={13} aria-hidden="true" />
+                  <span>Bangla · English · Banglish</span>
                 </div>
-                <button type="submit" className="ui-btn ui-btn--primary quick-add-button mt-4 w-full" disabled={!text.trim() || busy || enabled === false}>
-                  <Sparkles size={18} /> {busy ? copy.generating : copy.generate}
-                </button>
-              </HomeCard>
+              </div>
+
+              <div className="quick-add-examples-heading">
+                <span>{experienceCopy.tryCommand}</span>
+                <small>{copy.examples.length} {experienceCopy.suggestions}</small>
+              </div>
+
+              <div className="quick-add-examples">
+                {copy.examples.map((example, index) => {
+                  const ExampleIcon = exampleIcons[index] ?? Sparkles
+                  return (
+                    <button key={example} type="button" className="quick-add-example" onClick={() => setText(example)} disabled={busy || recorder.isRecording}>
+                      <span aria-hidden="true"><ExampleIcon size={15} /></span>
+                      <strong>{example}</strong>
+                      <ArrowRight size={14} aria-hidden="true" />
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button type="submit" className="quick-add-generate" disabled={!text.trim() || busy || enabled === false}>
+                <span className="quick-add-generate-icon" aria-hidden="true"><Sparkles size={18} /></span>
+                <span>{busy ? copy.generating : copy.generate}</span>
+                <ArrowRight size={18} aria-hidden="true" />
+              </button>
             </form>
 
-            <div className="relative flex items-center gap-3 py-1 text-caption font-semibold text-[#7b9299]">
-              <span className="h-px flex-1 bg-[#d6e5e8]" /><span>OR</span><span className="h-px flex-1 bg-[#d6e5e8]" />
-            </div>
+            <section className="quick-add-voice-card" data-recording={recorder.isRecording ? 'true' : 'false'}>
+              <div className="quick-add-voice-copy">
+                <span className="quick-add-voice-label"><AudioLines size={15} /> VOICE COMMAND</span>
+                <h2>{experienceCopy.voiceTitle}</h2>
+                <p>{recorder.isRecording ? `${copy.recording} · ${recorder.seconds}s` : busy ? experienceCopy.processing : experienceCopy.voiceHint}</p>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => recorder.isRecording ? recorder.stop() : void recorder.start()}
-              disabled={!recorder.supported || busy || enabled === false}
-              className={`ui-btn quick-add-button w-full ${recorder.isRecording ? 'quick-add-button--recording' : 'ui-btn--secondary'}`}
-            >
-              {recorder.isRecording ? <Square size={16} fill="currentColor" /> : <Mic size={18} />}
-              {recorder.isRecording ? `${copy.stop} · ${recorder.seconds}s` : copy.record}
-            </button>
+              <button
+                type="button"
+                onClick={() => recorder.isRecording ? recorder.stop() : void recorder.start()}
+                disabled={!recorder.supported || busy || enabled === false || voiceEnabled === false}
+                className="quick-add-voice-trigger"
+                aria-label={recorder.isRecording ? copy.stop : copy.record}
+              >
+                <span className="quick-add-voice-ripple" aria-hidden="true" />
+                <span className="quick-add-voice-orb" aria-hidden="true">
+                  {recorder.isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={23} />}
+                </span>
+                <strong>{recorder.isRecording ? copy.stop : copy.record}</strong>
+                <small>{recorder.isRecording ? `${recorder.seconds}s / 60s` : experienceCopy.voiceReady}</small>
+              </button>
+
+              {recorder.isRecording ? (
+                <div className="quick-add-waveform" aria-hidden="true">
+                  {Array.from({ length: 22 }, (_value, index) => <span key={index} />)}
+                </div>
+              ) : null}
+            </section>
             {!recorder.supported ? <Notice tone="info">{copy.unsupportedVoice}</Notice> : null}
+            {voiceEnabled === false ? <Notice tone="warning">{copy.voiceDisabled}</Notice> : null}
             {recorder.error ? <Notice tone="danger">{copy.microphoneDenied}</Notice> : null}
           </>
         ) : completed ? (
@@ -286,59 +357,42 @@ export default function QuickAddPage() {
               {command.clarification ? <Notice tone="warning" className="mb-4">{command.clarification}</Notice> : null}
 
               <div className="grid gap-3">
-                {expenseItems && ['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent) ? expenseItems.map((item, index) => (
-                  <div key={index} className="grid gap-3 rounded-2xl border border-[#d6e5e8] bg-[#fbfefe] p-3">
-                    <p className="text-label font-bold text-[#00777a]">{copy.fields.itemName} {index + 1}</p>
-                    <InputField label={copy.fields.amount} type="number" value={item.amount} onChange={(value) => updateItem(index, 'amount', value === '' ? '' : Number(value))} />
-                    {command.intent === 'EXPENSE_CREATE' ? (
-                      <SelectField label={copy.fields.category} value={item.category} options={CATEGORIES.map((value) => ({ value, label: label(value) }))} onChange={(value) => updateItem(index, 'category', value)} />
-                    ) : (
-                      <SelectField label={copy.fields.utilityType} value={item.utilityType} options={UTILITY_TYPES.map((value) => ({ value, label: label(value) }))} onChange={(value) => updateItem(index, 'utilityType', value)} />
-                    )}
-                    <InputField label={copy.fields.itemName} value={item.itemName} onChange={(value) => updateItem(index, 'itemName', value)} />
-                    <div className="grid grid-cols-2 gap-2">
-                      <InputField label={locale === 'bn' ? 'পরিমাণ' : 'Quantity'} type="number" value={item.quantity} onChange={(value) => updateItem(index, 'quantity', value === '' ? null : Number(value))} />
-                      <InputField label={locale === 'bn' ? 'ইউনিট' : 'Unit'} value={item.unit} onChange={(value) => updateItem(index, 'unit', value)} />
-                    </div>
-                    <InputField label={copy.fields.date} type="date" value={item.expenseDate ?? item.date} onChange={(value) => updateItem(index, 'expenseDate', value)} />
-                    <InputField label={copy.fields.description} value={item.description} onChange={(value) => updateItem(index, 'description', value)} />
-                  </div>
-                )) : (
-                  <>
-                    {['EXPENSE_CREATE', 'UTILITY_CREATE', 'DEPOSIT_CREATE'].includes(command.intent) ? (
-                      <InputField label={copy.fields.amount} type="number" value={payload.amount} onChange={(value) => update('amount', value === '' ? '' : Number(value))} />
-                    ) : null}
-                    {command.intent === 'EXPENSE_CREATE' ? (
-                      <SelectField label={copy.fields.category} value={payload.category} options={CATEGORIES.map((value) => ({ value, label: label(value) }))} onChange={(value) => update('category', value)} />
-                    ) : null}
-                    {command.intent === 'UTILITY_CREATE' ? (
-                      <SelectField label={copy.fields.utilityType} value={payload.utilityType} options={UTILITY_TYPES.map((value) => ({ value, label: label(value) }))} onChange={(value) => update('utilityType', value)} />
-                    ) : null}
-                    {['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent) ? (
-                      <InputField label={copy.fields.itemName} value={payload.itemName} onChange={(value) => update('itemName', value)} />
-                    ) : null}
-                  </>
-                )}
-                {['DEPOSIT_CREATE', 'MEAL_CREATE'].includes(command.intent) ? (
-                  <SelectField label={copy.fields.memberId} value={payload.memberId} options={memberOptions} onChange={(value) => update('memberId', value)} />
-                ) : null}
-                {command.intent === 'MEAL_CREATE' ? (
-                  <>
-                    <SelectField label={copy.fields.mealName} value={payload.mealName} options={MEALS.map((value) => ({ value, label: label(value) }))} onChange={(value) => update('mealName', value)} />
-                    <SelectField label={copy.fields.status} value={payload.status} options={[{ value: 'ON', label: 'On' }, { value: 'OFF', label: 'Off' }]} onChange={(value) => update('status', value)} />
-                    <InputField label={copy.fields.mealCount} type="number" value={payload.mealCount} onChange={(value) => update('mealCount', value === '' ? undefined : Number(value))} />
-                  </>
-                ) : null}
-                {['EXPENSE_CREATE', 'UTILITY_CREATE', 'DEPOSIT_CREATE', 'MEAL_CREATE'].includes(command.intent) ? (
-                  <InputField label={copy.fields.date} type="date" value={payload.expenseDate ?? payload.date} onChange={(value) => update(command.intent === 'EXPENSE_CREATE' || command.intent === 'UTILITY_CREATE' ? 'expenseDate' : 'date', value)} />
-                ) : null}
-                {!expenseItems && ['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent) ? (
-                  <InputField label={copy.fields.description} value={payload.description} onChange={(value) => update('description', value)} />
-                ) : command.intent === 'DEPOSIT_CREATE' ? (
-                  <InputField label={copy.fields.description} value={payload.note} onChange={(value) => update('note', value)} />
+                {mealItems ? (
+                  <AiMealPreview
+                    items={mealItems}
+                    members={memberOptions}
+                    locale={locale}
+                    onPatchItem={patchPayloadItem}
+                    onRemoveItem={removePayloadItem}
+                  />
                 ) : null}
               </div>
             </HomeCard>
+
+            {expenseItems && (command.intent === 'EXPENSE_CREATE' || command.intent === 'UTILITY_CREATE') ? (
+              <AiExpensePreview
+                key={command.id}
+                intent={command.intent}
+                items={expenseItems}
+                initialPreview={command.preview}
+                members={members}
+                currentUserId={user?.id}
+                canManage={canManage}
+                disabled={busy}
+                onPatchItem={patchPayloadItem}
+                onRemoveItem={removePayloadItem}
+              />
+            ) : null}
+
+            {command.intent === 'DEPOSIT_CREATE' ? (
+              <AiDepositPreview
+                key={command.id}
+                payload={payload}
+                members={members}
+                disabled={busy}
+                onPatch={(patch) => patchPayloadItem(0, patch)}
+              />
+            ) : null}
 
             {error ? <Notice tone="danger">{error}</Notice> : null}
             <div className="grid grid-cols-[0.85fr_1.4fr] gap-2">

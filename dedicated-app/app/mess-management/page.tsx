@@ -287,7 +287,7 @@ export default function MessManagementPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Mess Management" subtitle="Setup, rooms and billing defaults" backHref="/more" />
+      <TopScreen title="Mess Management" subtitle="Setup, rooms and billing defaults" backHref="/" />
 
       <div className="screen space-y-4">
         {loading ? (

@@ -3,6 +3,7 @@
 import { appHref } from './routes'
 
 export const AUTH_TOKEN_KEY = 'authToken'
+export const ONBOARDING_STORAGE_KEY = 'messzen:onboarding-complete:v1'
 
 export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER'
 export type MembershipRole = 'MANAGER' | 'MEMBER'
@@ -32,7 +33,7 @@ export type AuthUser = {
   memberships?: MessMembership[]
 }
 
-const AUTH_PATHS = new Set(['/login', '/signup', '/register', '/forget_password', '/verify_otp', '/reset_password'])
+const AUTH_PATHS = new Set(['/login', '/signup', '/register', '/forget_password', '/verify_otp', '/reset_password', '/onboarding'])
 
 export function normalizePathname(pathname: string) {
   const pathOnly = (pathname || '/').split('?')[0]?.split('#')[0] || '/'
@@ -55,6 +56,16 @@ export function clearStoredToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY)
 }
 
+export function hasCompletedOnboarding() {
+  if (typeof window === 'undefined') return false
+  return localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'complete'
+}
+
+export function completeOnboarding() {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(ONBOARDING_STORAGE_KEY, 'complete')
+}
+
 export function isAuthPath(pathname: string) {
   return AUTH_PATHS.has(normalizePathname(pathname))
 }
@@ -65,12 +76,25 @@ export function buildLoginPath(nextPath: string) {
   return `/login?next=${encodeURIComponent(canonicalNextPath)}`
 }
 
+export function buildOnboardingPath(nextPath: string) {
+  const canonicalNextPath = appHref(nextPath)
+  if (!canonicalNextPath || canonicalNextPath === '/' || isAuthPath(canonicalNextPath)) return '/onboarding'
+  return `/onboarding?next=${encodeURIComponent(canonicalNextPath)}`
+}
+
 export function currentPathWithSearch(fallback: string) {
   if (typeof window === 'undefined') return fallback
   return `${window.location.pathname}${window.location.search}`
 }
 
 export function readPostLoginPath(fallback = '/') {
+  if (typeof window === 'undefined') return fallback
+  const nextPath = new URLSearchParams(window.location.search).get('next')
+  if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//') || isAuthPath(nextPath)) return fallback
+  return appHref(nextPath)
+}
+
+export function readPostOnboardingPath(fallback = '/') {
   if (typeof window === 'undefined') return fallback
   const nextPath = new URLSearchParams(window.location.search).get('next')
   if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//') || isAuthPath(nextPath)) return fallback

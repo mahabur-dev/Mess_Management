@@ -16,6 +16,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import { IconInput } from '@/components/mobile/icon-input'
+import { BrandBuildingArt } from '@/components/brand-building-art'
 
 type IconType = ComponentType<LucideProps>
 
@@ -43,6 +44,7 @@ export function AuthShell({
 
   return (
     <div className={reference ? 'auth-reference' : 'min-h-screen px-4 py-6'}>
+      {reference ? <BrandBuildingArt placement="auth" /> : null}
       <div
         className={reference ? 'auth-reference__inner' : `mx-auto flex min-h-[calc(100vh-3rem)] w-full ${maxWidth} flex-col`}
       >

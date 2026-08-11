@@ -44,9 +44,35 @@ export default {
       process.env.AI_AUTOMATION_ENABLED === undefined
         ? (process.env.NODE_ENV || 'development') !== 'production'
         : process.env.AI_AUTOMATION_ENABLED.toLowerCase() === 'true',
-    groqApiKey: process.env.GROQ_API_KEY,
-    commandModel: process.env.GROQ_COMMAND_MODEL || 'openai/gpt-oss-20b',
-    speechModel: process.env.GROQ_SPEECH_MODEL || 'whisper-large-v3-turbo',
+    commandProvider: process.env.AI_COMMAND_PROVIDER || 'groq',
+    commandApiKey: process.env.AI_COMMAND_API_KEY || process.env.GROQ_API_KEY,
+    commandBaseUrl:
+      process.env.AI_COMMAND_BASE_URL || 'https://api.groq.com/openai/v1',
+    commandPath: process.env.AI_COMMAND_PATH || '/chat/completions',
+    commandModel:
+      process.env.AI_COMMAND_MODEL ||
+      process.env.GROQ_COMMAND_MODEL ||
+      'openai/gpt-oss-20b',
+    commandResponseFormat: process.env.AI_COMMAND_RESPONSE_FORMAT || 'auto',
+    speechProvider: process.env.AI_SPEECH_PROVIDER || 'groq',
+    speechApiKey: process.env.AI_SPEECH_API_KEY || process.env.GROQ_API_KEY,
+    speechBaseUrl:
+      process.env.AI_SPEECH_BASE_URL || 'https://api.groq.com/openai/v1',
+    speechPath: process.env.AI_SPEECH_PATH || '/audio/transcriptions',
+    speechModel:
+      process.env.AI_SPEECH_MODEL ||
+      process.env.GROQ_SPEECH_MODEL ||
+      'whisper-large-v3-turbo',
+    speechResponseFormat: process.env.AI_SPEECH_RESPONSE_FORMAT || 'json',
+    speechTemperature:
+      process.env.AI_SPEECH_TEMPERATURE === undefined
+        ? '0'
+        : process.env.AI_SPEECH_TEMPERATURE,
+    speechSendLanguage:
+      process.env.AI_SPEECH_SEND_LANGUAGE?.toLowerCase() !== 'false',
+    speechSendPrompt:
+      process.env.AI_SPEECH_SEND_PROMPT?.toLowerCase() !== 'false',
+    speechPrompt: process.env.AI_SPEECH_PROMPT?.trim() || undefined,
     maxAudioBytes: Number(process.env.AI_MAX_AUDIO_BYTES) || 10 * 1024 * 1024,
     retentionDays: Number(process.env.AI_COMMAND_RETENTION_DAYS) || 30,
     maxRequestsPerMinute: Number(process.env.AI_MAX_REQUESTS_PER_MINUTE) || 10,

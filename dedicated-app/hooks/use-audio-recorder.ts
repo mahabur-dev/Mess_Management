@@ -50,7 +50,9 @@ export function useAudioRecorder(onRecorded: (audio: Blob) => void, maxSeconds =
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          channelCount: 1,
+          channelCount: { ideal: 1 },
+          sampleRate: { ideal: 48_000 },
+          sampleSize: { ideal: 16 },
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -58,7 +60,10 @@ export function useAudioRecorder(onRecorded: (audio: Blob) => void, maxSeconds =
       })
       streamRef.current = stream
       const mimeType = MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type))
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      const recorder = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+        audioBitsPerSecond: 128_000,
+      })
       recorderRef.current = recorder
       recorder.ondataavailable = (event) => {
         if (event.data.size) chunksRef.current.push(event.data)
@@ -73,7 +78,9 @@ export function useAudioRecorder(onRecorded: (audio: Blob) => void, maxSeconds =
         setError('recording_failed')
         release()
       }
-      recorder.start(250)
+      // A single complete container is more reliable for transcription APIs
+      // than concatenating many short WebM/MP4 fragments.
+      recorder.start()
       setSeconds(0)
       setIsRecording(true)
       timerRef.current = setInterval(() => setSeconds((value) => value + 1), 1000)

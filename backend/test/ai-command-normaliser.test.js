@@ -23,6 +23,21 @@ test('repairs the common Whisper currency artefact in a money command', () => {
   assert.equal(normalizeCommandText('Add grocery shobji 1000 times'), 'Add grocery shobji 1000 taka');
 });
 
+test('normalizes natural Bangla, English, and Banglish purchase phrasing', () => {
+  assert.equal(
+    normalizeCommandText('ami 500 tk bazer korchi add koro'),
+    'ami 500 taka bazar korchi add',
+  );
+  assert.equal(
+    normalizeCommandText('ami alu dosh taka diye kinchi add koro'),
+    'ami alu dosh taka diye purchased add',
+  );
+  assert.equal(
+    normalizeCommandText('আমি ২ কেজি আলু ৬০ টাকা কিনেছি'),
+    'আমি 2 kg আলু 60 taka কিনেছি',
+  );
+});
+
 test('resolves an exact or unambiguous partial member name only inside supplied tenant members', () => {
   const members = [
     { id: '1', name: 'Abdur Rahim' },
@@ -58,4 +73,6 @@ test('infers grocery and food categories from ordinary item language', () => {
   assert.equal(inferExpenseCategory('potato', 'grocery shopping'), 'GROCERY');
   assert.equal(inferExpenseCategory('চা-নাস্তা', 'office snack'), 'FOOD');
   assert.equal(inferExpenseCategory('unknown item', 'miscellaneous'), null);
+  assert.equal(inferExpenseCategory(null, 'current bill 1200 taka'), 'ELECTRICITY');
+  assert.equal(inferExpenseCategory(null, 'wifi bill 800 taka'), 'WIFI');
 });

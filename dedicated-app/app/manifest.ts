@@ -4,11 +4,11 @@ export const dynamic = 'force-static'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Dedicated Mess App',
-    short_name: 'Mess App',
+    name: 'Messzen — Mess & Hostel Management',
+    short_name: 'Messzen',
     start_url: '/',
     display: 'standalone',
-    background_color: '#f7fdfc',
+    background_color: '#c9eeea',
     theme_color: '#008d8c',
     icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }],
   }

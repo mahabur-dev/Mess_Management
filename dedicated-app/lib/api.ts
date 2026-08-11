@@ -1,6 +1,6 @@
 import { clearStoredToken, getStoredToken, type AuthUser, type GlobalRole } from './auth'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from './member-join-requests'
-import type { AiCapabilities, AiCommand, AiLocale } from './ai-automation'
+import type { AiCapabilities, AiCommand, AiLocale, AiSpeechLanguage } from './ai-automation'
 
 const DEFAULT_API_URL = 'http://localhost:5001/api/v1'
 
@@ -529,12 +529,12 @@ class Api {
     })
   }
 
-  createAiVoiceCommand(data: { messId: string; audio: Blob; locale: AiLocale; speechLanguage: AiLocale; idempotencyKey: string }) {
+  createAiVoiceCommand(data: { messId: string; audio: Blob; locale: AiLocale; speechLanguage?: AiSpeechLanguage; idempotencyKey: string }) {
     const form = new FormData()
     const extension = data.audio.type.includes('mp4') ? 'm4a' : data.audio.type.includes('ogg') ? 'ogg' : 'webm'
     form.append('messId', data.messId)
     form.append('locale', data.locale)
-    form.append('speechLanguage', data.speechLanguage)
+    form.append('speechLanguage', data.speechLanguage ?? 'auto')
     form.append('idempotencyKey', data.idempotencyKey)
     form.append('audio', data.audio, `messzen-command.${extension}`)
     return this.request<AiCommand>('/ai/commands/voice', { method: 'POST', body: form })

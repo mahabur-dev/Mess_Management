@@ -9,7 +9,7 @@ import { appHref } from '@/lib/routes'
 export default function SettingsPage() {
   return (
     <MobileShell>
-      <TopScreen title="Settings" subtitle="Account preferences" backHref="/more" />
+      <TopScreen title="Settings" subtitle="Account preferences" backHref="/" />
       <div className="screen space-y-4">
         <section className="ui-card overflow-hidden" style={{ padding: 0 }}>
           <div className="flex items-center gap-3 border-b border-[#e4eaec] px-4 py-3.5">

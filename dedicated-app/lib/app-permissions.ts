@@ -3,8 +3,12 @@
 import type { ComponentType } from 'react'
 import {
   Bell,
+  BookOpenCheck,
   ClipboardList,
+  ContactRound,
+  Crown,
   DoorOpen,
+  FileCheck2,
   House,
   Landmark,
   LayoutGrid,
@@ -12,6 +16,7 @@ import {
   ReceiptText,
   Settings,
   ShieldCheck,
+  ScrollText,
   User,
   Users,
   UtensilsCrossed,
@@ -31,6 +36,16 @@ export type AppRouteItem = {
   icon: AppIcon
   access: AccessLevel
   exact?: boolean
+}
+
+export type MoreMenuItem = AppRouteItem & {
+  description: string
+}
+
+export type MoreMenuGroup = {
+  id: 'account' | 'workspace' | 'support'
+  label: string
+  items: MoreMenuItem[]
 }
 
 const managerGlobalRoles = new Set(['ADMIN', 'MANAGER'])
@@ -97,6 +112,11 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/edit-profile', label: 'Edit Profile', icon: User, access: 'public', exact: true },
   { href: '/change-password', label: 'Change Password', icon: ShieldCheck, access: 'public', exact: true },
   { href: '/mess-management', label: 'Mess Management', icon: Settings, access: 'manager' },
+  { href: '/subscription', label: 'Subscription', icon: Crown, access: 'mess', exact: true },
+  { href: '/how-it-works', label: 'How It Works', icon: BookOpenCheck, access: 'public', exact: true },
+  { href: '/contact-us', label: 'Contact Us', icon: ContactRound, access: 'public', exact: true },
+  { href: '/privacy-policy', label: 'Privacy Policy', icon: ScrollText, access: 'public', exact: true },
+  { href: '/terms-and-conditions', label: 'Terms & Conditions', icon: FileCheck2, access: 'public', exact: true },
 ]
 
 export const managerQuickActions: AppRouteItem[] = [
@@ -133,9 +153,12 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
     return onboardingTabs
   }
 
-  const primary: AppRouteItem = canManageMess(user)
-    ? { href: '/members', label: 'Members', icon: Users, access: 'manager' }
-    : { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' }
+  const primary: AppRouteItem = {
+    href: '/expenses',
+    label: 'Expenses',
+    icon: ReceiptText,
+    access: 'mess',
+  }
 
   const tabs: AppRouteItem[] = [
     { href: '/', label: 'Home', icon: House, access: 'public', exact: true },
@@ -160,31 +183,52 @@ export function shouldShowDefaultBottomNavigation(user: AuthUser | null | undefi
 }
 
 export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] {
-  const managerLinks: AppRouteItem[] = [
-    { href: '/members', label: 'Members', icon: Users, access: 'manager' },
-    { href: '/meals', label: 'Meal Sheet', icon: UtensilsCrossed, access: 'mess' },
-    { href: '/expenses', label: 'Bazar/Expenses', icon: ReceiptText, access: 'mess' },
-    { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
-    { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
-    { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
-    { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
-    { href: '/mess-management', label: 'Mess Management', icon: Settings, access: 'manager' },
-    { href: '/settings', label: 'Settings', icon: ShieldCheck, access: 'public' },
+  return getMoreMenuGroups(user).flatMap((group) => group.items)
+}
+
+/**
+ * The drawer is the secondary navigation surface. Home Quick actions are
+ * removed by href so role-specific Quick changes never create duplicates.
+ */
+export function getMoreMenuGroups(user: AuthUser | null | undefined): MoreMenuGroup[] {
+  const quickHrefs = new Set(getHomeQuickActions(user).map((item) => item.href))
+  const groups: MoreMenuGroup[] = [
+    {
+      id: 'account',
+      label: 'Account',
+      items: [
+        { href: '/profile', label: 'Profile', description: 'Personal details and account', icon: User, access: 'public' },
+        { href: '/settings', label: 'Settings', description: 'Security and preferences', icon: ShieldCheck, access: 'public' },
+      ],
+    },
+    {
+      id: 'workspace',
+      label: 'Workspace',
+      items: [
+        { href: '/meal-pattern', label: 'Meal Pattern', description: 'Review your meal calendar', icon: CalendarClock, access: 'mess' },
+        { href: '/complaints', label: 'Complaints', description: 'Raise and follow up issues', icon: MessageSquareWarning, access: 'mess' },
+        { href: '/mess-management', label: 'Mess Management', description: 'Rooms, rules and billing setup', icon: Settings, access: 'manager' },
+        { href: '/subscription', label: 'Subscription', description: 'Current plan and available plans', icon: Crown, access: 'mess' },
+      ],
+    },
+    {
+      id: 'support',
+      label: 'Help & legal',
+      items: [
+        { href: '/how-it-works', label: 'How It Works', description: 'A quick guide to Messzen', icon: BookOpenCheck, access: 'public' },
+        { href: '/contact-us', label: 'Contact Us', description: 'Get help from our support team', icon: ContactRound, access: 'public' },
+        { href: '/privacy-policy', label: 'Privacy Policy', description: 'How your information is handled', icon: ScrollText, access: 'public' },
+        { href: '/terms-and-conditions', label: 'Terms & Conditions', description: 'Rules for using Messzen', icon: FileCheck2, access: 'public' },
+      ],
+    },
   ]
 
-  const memberLinks: AppRouteItem[] = [
-    { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
-    { href: '/expenses', label: 'My Expenses', icon: ReceiptText, access: 'mess' },
-    { href: '/monthly-bill', label: 'Monthly Bills', icon: ClipboardList, access: 'mess' },
-    { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
-    { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
-    { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
-    { href: '/profile', label: 'Profile', icon: User, access: 'public' },
-    { href: '/settings', label: 'Settings', icon: ShieldCheck, access: 'public' },
-  ]
-
-  const links = canManageMess(user) ? managerLinks : hasActiveMess(user) ? memberLinks : [{ href: '/profile', label: 'Profile', icon: User, access: 'public' as const }]
-  return links.filter((item) => canAccessLevel(user, item.access))
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => canAccessLevel(user, item.access) && !quickHrefs.has(item.href)),
+    }))
+    .filter((group) => group.items.length > 0)
 }
 
 export function canAccessAppPath(user: AuthUser | null | undefined, pathname: string) {
@@ -224,11 +268,16 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/edit-monthly-bill', fallback: '/monthly-bill', exact: true },
   { href: '/edit-payment', fallback: '/payments', exact: true },
   { href: '/edit-complaint', fallback: '/complaints', exact: true },
-  { href: '/profile', fallback: '/more', exact: true },
-  { href: '/settings', fallback: '/more', exact: true },
+  { href: '/profile', fallback: '/', exact: true },
+  { href: '/settings', fallback: '/', exact: true },
   { href: '/edit-profile', fallback: '/settings', exact: true },
   { href: '/change-password', fallback: '/settings', exact: true },
-  { href: '/mess-management', fallback: '/more', exact: true },
+  { href: '/mess-management', fallback: '/', exact: true },
+  { href: '/subscription', fallback: '/', exact: true },
+  { href: '/how-it-works', fallback: '/', exact: true },
+  { href: '/contact-us', fallback: '/', exact: true },
+  { href: '/privacy-policy', fallback: '/', exact: true },
+  { href: '/terms-and-conditions', fallback: '/', exact: true },
   { href: '/create-mess', fallback: '/', exact: true },
   { href: '/request-mess', fallback: '/', exact: true },
 ]
@@ -247,5 +296,5 @@ export function getAppBackFallback(user: AuthUser | null | undefined, pathname: 
 
 export function getDefaultAppPath(user: AuthUser | null | undefined) {
   if (canAccessAppPath(user, '/')) return '/'
-  return getMoreLinks(user)[0]?.href ?? '/more'
+  return getMoreLinks(user)[0]?.href ?? '/profile'
 }

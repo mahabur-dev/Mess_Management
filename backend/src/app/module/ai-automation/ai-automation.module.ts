@@ -8,16 +8,16 @@ import {
   AI_COMMAND_PROVIDER,
   SPEECH_TO_TEXT_PROVIDER,
 } from './ai-command.types';
-import { GroqProvider } from './providers/groq.provider';
+import { OpenAiCompatibleProvider } from './providers/openai-compatible.provider';
 
 @Module({
   imports: [ExpenseModule, DepositModule, MealModule],
   controllers: [AiAutomationController],
   providers: [
     AiAutomationService,
-    GroqProvider,
-    { provide: AI_COMMAND_PROVIDER, useExisting: GroqProvider },
-    { provide: SPEECH_TO_TEXT_PROVIDER, useExisting: GroqProvider },
+    OpenAiCompatibleProvider,
+    { provide: AI_COMMAND_PROVIDER, useExisting: OpenAiCompatibleProvider },
+    { provide: SPEECH_TO_TEXT_PROVIDER, useExisting: OpenAiCompatibleProvider },
   ],
 })
 export class AiAutomationModule {}

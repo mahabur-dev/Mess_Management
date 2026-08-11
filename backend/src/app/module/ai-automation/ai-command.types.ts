@@ -61,9 +61,21 @@ export type ParsedExpenseItem = {
   unit: string | null;
 };
 
+export type ParsedMealItem = {
+  mealName: MealName | null;
+  mealCount: number | null;
+  status: MealStatus | null;
+  date: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  memberName: string | null;
+};
+
 export type ParsedCommandData = {
   amount: number | null;
   date: string | null;
+  startDate: string | null;
+  endDate: string | null;
   category: ExpenseCategory | null;
   utilityType: UtilityType | null;
   itemName: string | null;
@@ -75,6 +87,7 @@ export type ParsedCommandData = {
   quantity: number | null;
   unit: string | null;
   items: ParsedExpenseItem[];
+  meals: ParsedMealItem[];
 };
 
 export type ParsedAiCommand = {

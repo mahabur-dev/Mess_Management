@@ -1,12 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import type { ComponentType, ReactNode } from 'react'
+import { useState, type ComponentType, type ReactNode } from 'react'
 import {
   Banknote,
   Building2,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
   ChevronDown,
   ChevronRight,
   CircleDollarSign,
@@ -49,8 +50,8 @@ export type DepositListRecord = {
   created_at?: string | null
   note?: string | null
   categories?: string[] | null
-  member?: { id?: string; name?: string | null; email?: string | null } | null
-  creator?: { id?: string; name?: string | null; email?: string | null } | null
+  member?: { id?: string; name?: string | null; email?: string | null; avatar_url?: string | null } | null
+  creator?: { id?: string; name?: string | null; email?: string | null; avatar_url?: string | null } | null
 }
 
 const avatarTones = [
@@ -160,14 +161,30 @@ export function DepositStatCard({
   }
   const selected = tones[tone]
 
+  if (compact) {
+    return (
+      <section className="flex min-h-[78px] min-w-0 items-center gap-2.5 rounded-[14px] border border-[#e5ecee] bg-white px-3 py-2.5 text-left shadow-[0_6px_18px_rgba(18,55,72,0.07)]">
+        {Icon ? (
+          <div
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+            style={{ backgroundColor: selected.bg, color: selected.fg }}
+            aria-hidden="true"
+          >
+            <Icon size={17} strokeWidth={2.5} />
+          </div>
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-caption font-semibold leading-tight text-[#789096]">{title}</div>
+          <div className="mt-1 truncate text-label font-extrabold leading-none text-[#1d3a42]">{value}</div>
+          {caption ? <div className="mt-1 truncate text-caption font-semibold leading-tight text-[#789096]">{caption}</div> : null}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section
-      className={joinClasses(
-        'border bg-white text-center',
-        compact
-          ? 'grid min-h-[68px] place-items-center rounded-[10px] px-1.5 py-2 shadow-none'
-          : 'min-h-[108px] rounded-[18px] px-2.5 py-3.5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]'
-      )}
+      className="min-h-[108px] rounded-[18px] border bg-white px-2.5 py-3.5 text-center shadow-[0_10px_24px_rgba(18,55,72,0.07)]"
       style={{ borderColor: selected.border }}
     >
       {Icon ? (
@@ -178,7 +195,7 @@ export function DepositStatCard({
       <div className="text-caption font-bold leading-tight" style={{ color: selected.fg }}>
         {title}
       </div>
-      <div className={joinClasses('truncate font-semibold leading-none text-[#1d3a42]', compact ? 'mt-1 text-body' : 'mt-2 text-headline')}>{value}</div>
+      <div className="mt-2 truncate text-headline font-semibold leading-none text-[#1d3a42]">{value}</div>
       {caption ? <div className="mt-2 text-caption font-semibold leading-tight text-[#65838b]">{caption}</div> : null}
     </section>
   )
@@ -186,8 +203,8 @@ export function DepositStatCard({
 
 export function DepositStatPanel({ children }: { children: ReactNode }) {
   return (
-    <section className="rounded-[14px] border border-[#cfeeed] bg-white p-1.5 shadow-[0_6px_18px_rgba(0,119,122,0.06)]">
-      <div className="grid grid-cols-3 gap-1.5">{children}</div>
+    <section aria-label="Deposit summary">
+      <div className="grid grid-cols-2 gap-2.5">{children}</div>
     </section>
   )
 }
@@ -302,7 +319,7 @@ export function DepositAggregateSummary({
   amount: number
 }) {
   return (
-    <section className="grid grid-cols-[1fr_1px_1fr] items-center rounded-[20px] border border-[#dce9ec] bg-white px-4 py-5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
+    <section className="deposit-aggregate-summary grid grid-cols-[1fr_1px_1fr] items-center rounded-[20px] border border-[#dce9ec] bg-white px-4 py-5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
       <div className="flex items-center gap-4">
         <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#edfafa] text-[#00777a]">
           <ListChecks size={24} />
@@ -399,17 +416,30 @@ export function DepositListItem({
   const amountTone = status.label === 'Pending' ? '#ff6b00' : '#00777a'
   const date = item.payment_date ?? item.date ?? item.created_at ?? null
   const isHorizontal = variant === 'horizontal'
+  const avatarUrl = item.member?.avatar_url || item.creator?.avatar_url || null
   const className = joinClasses(
     'flex min-h-[82px] items-center gap-3 bg-white',
     isHorizontal
       ? 'border-y border-x-0 border-[#dce9ec] py-3 shadow-none'
       : 'rounded-[18px] border border-[#dce9ec] px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.055)]'
   )
-  const content = (
+  const content = isHorizontal ? (
     <>
-      <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-title-sm font-bold ${avatarTones[index % avatarTones.length]}`}>
-        {initials(name)}
-      </div>
+      <DepositAvatar name={name} avatarUrl={avatarUrl} toneClass={avatarTones[index % avatarTones.length]} />
+      <span className="min-w-0 flex-1">
+        <strong className="block truncate text-label font-bold leading-tight text-[#1d3a42]">{name}</strong>
+        <span className="mt-1.5 flex items-center gap-1.5 text-caption font-semibold" style={{ color: status.fg }}>
+          <i className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
+          {status.label}
+        </span>
+      </span>
+      <strong className="shrink-0 text-label font-extrabold tabular-nums" style={{ color: amountTone }}>
+        {formatDepositMoney(item.amount)}
+      </strong>
+    </>
+  ) : (
+    <>
+      <DepositAvatar name={name} avatarUrl={avatarUrl} toneClass={avatarTones[index % avatarTones.length]} large />
       <div className="min-w-0 flex-1">
         <div className="truncate text-label font-semibold text-[#1d3a42]">{name}</div>
         <div className="mt-1 flex min-w-0 items-center gap-1.5 text-caption font-bold">
@@ -435,6 +465,168 @@ export function DepositListItem({
   return <div className={className}>{content}</div>
 }
 
+function DepositAvatar({
+  name,
+  avatarUrl,
+  toneClass,
+  large = false,
+}: {
+  name: string
+  avatarUrl?: string | null
+  toneClass: string
+  large?: boolean
+}) {
+  const [imageFailed, setImageFailed] = useState(false)
+  const normalizedUrl = avatarUrl?.trim()
+
+  return (
+    <span
+      className={joinClasses(
+        'relative grid shrink-0 place-items-center overflow-hidden rounded-full font-bold ring-1 ring-black/[0.04]',
+        large ? 'h-14 w-14 text-title-sm' : 'h-10 w-10 text-caption',
+        toneClass
+      )}
+      aria-hidden="true"
+    >
+      {initials(name)}
+      {normalizedUrl && !imageFailed ? (
+        <img
+          src={normalizedUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : null}
+    </span>
+  )
+}
+
+export function DepositMonthNavigator({
+  month,
+  label,
+  onPrevious,
+  onNext,
+  onChange,
+}: {
+  month: string
+  label: string
+  onPrevious: () => void
+  onNext: () => void
+  onChange: (month: string) => void
+}) {
+  return (
+    <div className="deposit-month-navigator" aria-label="Deposit month">
+      <button type="button" onClick={onPrevious} aria-label="Previous month">
+        <ChevronLeft size={18} strokeWidth={2.4} />
+      </button>
+      <label>
+        <CalendarDays size={18} strokeWidth={2.2} aria-hidden="true" />
+        <span>{label}</span>
+        <ChevronDown size={16} strokeWidth={2.3} aria-hidden="true" />
+        <input
+          type="month"
+          value={month}
+          onChange={(event) => {
+            if (/^\d{4}-\d{2}$/.test(event.target.value)) onChange(event.target.value)
+          }}
+          aria-label="Choose deposit month"
+        />
+      </label>
+      <button type="button" onClick={onNext} aria-label="Next month">
+        <ChevronRight size={18} strokeWidth={2.4} />
+      </button>
+    </div>
+  )
+}
+
+export function DepositOverviewCard({
+  total,
+  entries,
+  average,
+  monthLabel,
+}: {
+  total: number
+  entries: number
+  average: number
+  monthLabel: string
+}) {
+  return (
+    <section className="deposit-overview" aria-labelledby="deposit-overview-title">
+      <div className="deposit-overview__glow" aria-hidden="true" />
+      <div className="deposit-overview__heading">
+        <div>
+          <p>COLLECTION OVERVIEW</p>
+          <h2 id="deposit-overview-title">{monthLabel}</h2>
+        </div>
+        <span className="deposit-overview__icon" aria-hidden="true">
+          <WalletCards size={23} strokeWidth={2.1} />
+        </span>
+      </div>
+      <div className="deposit-overview__total">
+        <span>Total collected</span>
+        <strong>{formatDepositMoney(total)}</strong>
+      </div>
+      <div className="deposit-overview__metrics">
+        <div>
+          <span>Transactions</span>
+          <strong>{entries}</strong>
+        </div>
+        <i aria-hidden="true" />
+        <div>
+          <span>Average deposit</span>
+          <strong>{formatDepositMoney(average)}</strong>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export function DepositLedgerItem({
+  item,
+  href,
+  index = 0,
+}: {
+  item: DepositListRecord
+  href: string
+  index?: number
+}) {
+  const name = depositMemberName(item)
+  const detail = depositCategory(item)
+  const date = item.payment_date ?? item.date ?? item.created_at ?? null
+
+  return (
+    <Link href={appHref(href)} className="deposit-ledger-row">
+      <span className={`deposit-ledger-row__avatar ${avatarTones[index % avatarTones.length]}`} aria-hidden="true">
+        {initials(name)}
+      </span>
+      <span className="deposit-ledger-row__body">
+        <strong>{name}</strong>
+        <small>{detail}</small>
+        <time>{formatDepositDate(date)}</time>
+      </span>
+      <span className="deposit-ledger-row__amount">
+        <strong>{formatDepositMoney(item.amount)}</strong>
+        <small><CheckCircle2 size={12} strokeWidth={2.5} /> Recorded</small>
+      </span>
+      <ChevronRight className="deposit-ledger-row__chevron" size={17} strokeWidth={2.2} aria-hidden="true" />
+    </Link>
+  )
+}
+
+export function DepositLedgerSkeleton() {
+  return (
+    <div className="deposit-ledger-skeleton" aria-label="Loading deposits" role="status">
+      {[0, 1, 2].map((item) => (
+        <div key={item}>
+          <span />
+          <p><i /><i /><i /></p>
+          <strong />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function DepositSearchBar({
   value,
   onChange,
@@ -443,7 +635,7 @@ export function DepositSearchBar({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_52px] gap-3">
+    <div className="deposit-search-bar grid grid-cols-[minmax(0,1fr)_52px] gap-3">
       <label className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#65838b]" size={21} />
         <input
@@ -474,7 +666,7 @@ export function DepositFilterTabs({
   ]
 
   return (
-    <div className="grid grid-cols-3 gap-2 rounded-[18px] bg-white/70 p-1.5 shadow-[0_10px_24px_rgba(18,55,72,0.05)]">
+    <div className="deposit-filter-tabs grid grid-cols-3 gap-2 rounded-[18px] bg-white/70 p-1.5 shadow-[0_10px_24px_rgba(18,55,72,0.05)]">
       {filters.map((filter) => {
         const active = value === filter.value
         const tone = statusTone(filter.value)
@@ -515,7 +707,7 @@ export function DepositCompactFilters({
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="deposit-compact-filters grid grid-cols-2 gap-3">
       <div className="relative block">
         {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Status</span> : null}
         <MobileSelectSheet
@@ -619,7 +811,7 @@ export function DepositDetailsSummary({
   const date = item?.payment_date ?? item?.date ?? item?.created_at ?? null
 
   return (
-    <section className="rounded-[20px] border border-[#dce9ec] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
+    <section className="deposit-details-summary rounded-[20px] border border-[#dce9ec] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
       <div className="grid grid-cols-[minmax(0,0.85fr)_1px_minmax(0,1.15fr)] gap-4">
         <div className="flex flex-col items-center justify-center text-center">
           <div className="grid h-16 w-16 place-items-center rounded-full" style={{ backgroundColor: status.bg, color: status.fg }}>

@@ -125,7 +125,7 @@ export default function RequestMessPage() {
     <MobileShell>
       <TopScreen title="Request Mess" subtitle="Join an existing mess" backHref="/" />
       <div className="screen space-y-4">
-        <section className="glass rounded-[24px] p-4">
+        <section className="app-toolbar">
           <FieldCard label="Search Mess" hint="Name or location">
             <div className="relative">
               <Search className="field-icon field-icon--leading" size={19} strokeWidth={2.4} />
@@ -141,13 +141,13 @@ export default function RequestMessPage() {
 
         {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
 
-        <section className="space-y-3">
+        <section className="app-list">
           {loading ? (
             <LoadingIndicator variant="card" label="Loading messes" />
           ) : null}
 
           {!loading && !messes.length ? (
-            <div className="glass rounded-[22px] px-4 py-5 text-center text-label font-bold text-[#65838b]">No active mess found.</div>
+            <div className="app-empty-state">No active mess found.</div>
           ) : null}
 
           {!loading &&
@@ -158,7 +158,7 @@ export default function RequestMessPage() {
               const disabled = Boolean(existingRequest) || requestingId === mess.id
 
               return (
-                <article key={mess.id} className="glass rounded-[22px] p-4">
+                <article key={mess.id} className="app-list-row py-4">
                   <div className="flex items-start gap-3">
                     <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[#edfafa] text-[#008d8c]">
                       <DoorOpen size={22} strokeWidth={2.4} />

@@ -161,7 +161,7 @@ export default function MealsPage() {
         </MealCard>
 
         {isManager ? (
-          <Link href={appHref('/meals/manager')} className="flex min-h-[78px] items-center gap-3 rounded-[18px] bg-white px-4 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.06)]">
+          <Link href={appHref('/meals/manager')} className="app-action-row flex min-h-[78px] items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-[16px] bg-[#fff8e9] text-[#e29a16]">
               <Settings2 size={21} />
             </div>

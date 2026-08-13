@@ -79,7 +79,7 @@ export default function EditMonthlyBillPage() {
     <MobileShell>
       <TopScreen title="Edit Monthly Bill" subtitle={subtitle} backHref="/monthly-bill" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
+        <section className="app-section app-form-section space-y-4">
           <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
             <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Bill</div>
             <div className="mt-1 text-label font-bold text-[#123748]">{bill?.member?.name ?? billId}</div>
@@ -99,7 +99,7 @@ export default function EditMonthlyBillPage() {
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Changes
           </SubmitButton>
-        </div>
+        </section>
       </div>
     </MobileShell>
   )

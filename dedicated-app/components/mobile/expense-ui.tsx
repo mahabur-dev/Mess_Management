@@ -28,7 +28,7 @@ export function ExpenseSurface({
   className?: string
 }) {
   return (
-    <section className={`ui-card ${className}`}>
+    <section className={`ui-card app-section ${className}`}>
       {title || aside ? (
         <div className="mb-3 flex items-center justify-between gap-3">
           {title ? <h2 className="ui-section-title mb-0!">{title}</h2> : <span />}

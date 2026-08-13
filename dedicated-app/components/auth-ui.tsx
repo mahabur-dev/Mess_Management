@@ -21,7 +21,7 @@ import { BrandBuildingArt } from '@/components/brand-building-art'
 type IconType = ComponentType<LucideProps>
 
 export const authLinkClass =
-  'font-semibold text-[#008d8c] transition hover:text-[#00777a]'
+  'auth-link font-semibold text-[#008d8c] transition hover:text-[#00777a]'
 
 export function AuthShell({
   title,
@@ -48,6 +48,12 @@ export function AuthShell({
       <div
         className={reference ? 'auth-reference__inner' : `mx-auto flex min-h-[calc(100vh-3rem)] w-full ${maxWidth} flex-col`}
       >
+        {reference ? (
+          <header className="auth-reference__brandbar" aria-label="Messzen">
+            <span>MESSZEN</span>
+          </header>
+        ) : null}
+
         <main className={reference ? 'auth-reference__main' : 'flex flex-1 items-center py-4'}>
           <section className={reference ? 'auth-reference__surface' : 'w-full rounded-[20px] border border-white/80 bg-white/94 p-4 shadow-[0_28px_70px_rgba(18,55,72,0.18)] backdrop-blur min-[360px]:p-5'}>
             <div className={reference ? 'auth-reference__heading' : 'mb-5 text-center'}>
@@ -93,7 +99,7 @@ export function AuthShell({
         </main>
 
         {footer ? (
-          <div className="mt-4 text-center text-label font-medium text-[#65838b]">
+          <div className={reference ? 'auth-reference__footer' : 'mt-4 text-center text-label font-medium text-[#65838b]'}>
             {footer}
           </div>
         ) : null}

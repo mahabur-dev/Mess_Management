@@ -69,8 +69,8 @@ export class PaymentService {
     approved_at: true,
     created_at: true,
     mess: { select: { id: true, name: true } },
-    member: { select: { id: true, name: true, email: true } },
-    creator: { select: { id: true, name: true, email: true } },
+    member: { select: { id: true, name: true, email: true, avatar_url: true } },
+    creator: { select: { id: true, name: true, email: true, avatar_url: true } },
     monthly_bill: {
       select: { id: true, month: true, final_due: true, status: true },
     },

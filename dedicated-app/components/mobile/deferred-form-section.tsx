@@ -31,7 +31,7 @@ export function DeferredFormSection({
 
   if (open) {
     return (
-      <div className="glass space-y-4 rounded-[28px] p-4">
+      <section className="app-section app-form-section space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-body font-bold text-[#123748]">{title}</div>
@@ -46,7 +46,7 @@ export function DeferredFormSection({
           </button>
         </div>
         {children}
-      </div>
+      </section>
     )
   }
 
@@ -54,9 +54,9 @@ export function DeferredFormSection({
     <button
       type="button"
       onClick={onOpen}
-      className="glass flex w-full items-center gap-3 rounded-[24px] p-4 text-left transition active:scale-[0.99]"
+      className="app-action-row flex w-full items-center gap-3 text-left transition active:scale-[0.99]"
     >
-      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#008d8c] text-white shadow-[0_12px_24px_rgba(0,119,122,0.22)]">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#edfafa] text-[#008d8c]">
         {icon}
       </span>
       <span className="min-w-0 flex-1">

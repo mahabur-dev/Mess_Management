@@ -49,7 +49,7 @@ export function MemberJoinRequestCard({
   const reviewLocked = reviewInProgress !== null
 
   return (
-    <article className="rounded-[14px] border border-[#dcebea] bg-white p-3 shadow-[0_8px_20px_rgba(18,55,72,0.05)]">
+    <article className="app-list-row py-4">
       <div className="flex items-start gap-3">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#e6f7f6] text-label font-semibold text-[#008d8c]" aria-hidden="true">
           {requesterInitials(request.requester.name)}
@@ -112,7 +112,7 @@ export function MemberJoinRequestsPanel({
   onReview: (request: MemberJoinRequest, status: MemberJoinReviewStatus) => void
 }) {
   return (
-    <section className="rounded-[16px] border border-[#dcebea] bg-[#f8fdfd] p-3 shadow-[0_10px_24px_rgba(0,119,122,0.06)]" aria-labelledby="join-requests-title">
+    <section className="app-section" aria-labelledby="join-requests-title">
       <div className="flex items-center justify-between gap-3 px-1 pb-3">
         <div>
           <h2 id="join-requests-title" className="text-body font-semibold text-[#1d3a42]">Join Requests</h2>
@@ -129,11 +129,11 @@ export function MemberJoinRequestsPanel({
         </div>
       ) : null}
 
-      <div className="space-y-2.5">
+      <div className="app-list">
         {loading ? <LoadingIndicator variant="card" label="Loading join requests" /> : null}
         {!loading ? requests.map((request) => <MemberJoinRequestCard key={request.id} request={request} reviewInProgress={reviewInProgress} onReview={onReview} />) : null}
         {!loading && !requests.length ? (
-          <div className="rounded-[12px] border border-dashed border-[#cfe3e3] bg-white px-4 py-4 text-center text-label font-medium text-[#65838b]">
+          <div className="app-empty-state">
             No pending join requests.
           </div>
         ) : null}

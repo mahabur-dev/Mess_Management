@@ -136,9 +136,10 @@ export default function NoticesPage() {
           </DeferredFormSection>
         ) : null}
 
-        <div className="space-y-3">
+        <section className="app-section" aria-label="Notice list">
+          <div className="app-list">
           {items.map((item) => (
-            <article key={item.id} className="rounded-[20px] border border-[#cfeeed] bg-white px-4 py-4 shadow-[0_8px_22px_rgba(18,55,72,0.07)]">
+            <article key={item.id} className="app-list-row py-4">
               <div className="flex items-start gap-3">
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#edfafa] text-[#008d8c]">
                   <Bell size={17} />
@@ -154,8 +155,9 @@ export default function NoticesPage() {
               </div>
             </article>
           ))}
-          {!items.length ? <div className="rounded-[20px] bg-white/90 p-6 text-center text-label text-[#65838b]">No notices loaded.</div> : null}
-        </div>
+          {!items.length ? <div className="app-empty-state">No notices loaded.</div> : null}
+          </div>
+        </section>
       </div>
     </MobileShell>
   )

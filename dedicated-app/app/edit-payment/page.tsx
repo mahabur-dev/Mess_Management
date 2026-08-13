@@ -18,6 +18,7 @@ import {
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
 import { LABELS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
@@ -73,6 +74,8 @@ export default function EditPaymentPage() {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useAutoDismiss(message, () => setMessage(''))
 
   const depositLabel = useMemo(() => (payment ? LABELS.PAYMENT_STATUSES[payment.status] : 'Deposit'), [payment])
   useEffect(() => {
@@ -169,7 +172,7 @@ export default function EditPaymentPage() {
 
         {payment ? <div>
           <DepositSectionTitle title="Deposit Information" />
-          <section className="mt-3 rounded-[20px] border border-[#dce9ec] bg-white px-4 py-2 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
+          <section className="app-list mt-3">
             <DepositInfoRow icon={depositInfoIcons.submittedBy} label="Submitted By" value={payment?.creator?.name ?? depositMemberName(payment as DepositListRecord | null)} />
             <DepositInfoRow icon={depositInfoIcons.depositFor} label="Deposit For" value={payment?.member?.name ?? 'Self'} />
             <DepositInfoRow
@@ -181,7 +184,7 @@ export default function EditPaymentPage() {
         </div> : null}
 
         {canEdit ? (
-          <div className="rounded-[22px] border border-[#d7e8eb] bg-white p-4 shadow-[0_14px_32px_rgba(18,55,72,0.08)] space-y-4">
+          <section className="app-section app-form-section space-y-4">
             <DepositSectionTitle title="Edit Deposit" />
             <PaymentMethodGrid value={editForm.method} onChange={(method) => setEditForm((prev) => ({ ...prev, method }))} />
             <div className="grid grid-cols-2 gap-3">
@@ -200,11 +203,11 @@ export default function EditPaymentPage() {
                 <Save size={17} /> {busy ? 'Saving...' : 'Save'}
               </button>
             </div>
-          </div>
+          </section>
         ) : null}
 
         {isManager && payment?.status === 'PENDING' ? (
-        <div className="rounded-[22px] border border-[#d7e8eb] bg-white p-4 shadow-[0_14px_32px_rgba(18,55,72,0.08)] space-y-4">
+        <section className="app-section app-form-section space-y-4">
           <DepositSectionTitle title="Review Deposit" />
           <SelectField
             label="Status"
@@ -229,7 +232,7 @@ export default function EditPaymentPage() {
               <Save size={17} /> {busy ? 'Saving...' : 'Save'}
             </button>
           </div>
-        </div>
+        </section>
         ) : null}
       </div>
     </MobileShell>

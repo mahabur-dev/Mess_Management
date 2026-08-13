@@ -19,6 +19,7 @@ import {
 } from '@/components/mobile/expense-design'
 import { api } from '@/lib/api'
 import { LABELS, MEMBER_ROLES, type MemberRole } from '@/lib/form-options'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 
@@ -60,6 +61,8 @@ export default function EditMemberPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+
+  useAutoDismiss(message, () => setMessage(''))
 
   useEffect(() => {
     if (!memberId || !messId) return

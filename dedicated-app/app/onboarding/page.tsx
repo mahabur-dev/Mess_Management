@@ -78,7 +78,7 @@ export default function OnboardingPage() {
         <section className="onboarding-slide" key={slide.id} aria-live="polite">
           <OnboardingVisual visual={slide.visual} />
           <div className="onboarding-copy">
-            <p>{slide.eyebrow}</p>
+            {slide.eyebrow ? <p>{slide.eyebrow}</p> : null}
             <h1>{slide.title}</h1>
             <span>{slide.description}</span>
           </div>

@@ -7,10 +7,10 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "test:expense": "npm run build && node --test test/expense-calculator.test.js test/expense-approval-policy.test.js test/fund-balance-calculator.test.js test/billing-month-sequence.test.js",
+    "test:expense": "npm run build && node --test test/expense-calculator.test.js test/expense-item-calculator.test.js test/expense-approval-policy.test.js test/fund-balance-calculator.test.js test/billing-month-sequence.test.js test/deterministic-order.test.js",
     "test:payment": "npm run build && node --test test/payment-approval-policy.test.js",
     "test:meal": "npm run build && node --test test/meal-policy.test.js",
-    "test:ai": "npm run build && node --test test/ai-command-normaliser.test.js test/ai-provider-config.test.js test/ai-meal-command.test.js test/ai-meal-resolution.test.js",
+    "test:ai": "npm run build && node --test test/ai-command-normaliser.test.js test/ai-provider-config.test.js test/ai-meal-command.test.js test/ai-meal-resolution.test.js test/ai-deposit-resolution.test.js test/ai-language-recovery.test.js test/ai-latency-tracker.test.js",
     "benchmark:stt": "npm run build && node scripts/benchmark-stt.js",
     "test:billing": "npm run build && node --test test/billing-calculator.test.js test/billing-period.test.js test/billing-month-sequence.test.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

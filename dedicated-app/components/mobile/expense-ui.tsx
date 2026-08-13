@@ -406,6 +406,7 @@ export function SplitPreviewContent({
   splitMethod,
   payerCredit,
   totalSharedCost,
+  items,
   shares,
   formatMoney,
   busy,
@@ -419,6 +420,7 @@ export function SplitPreviewContent({
   splitMethod: string
   payerCredit: number
   totalSharedCost: number
+  items?: Array<{ itemName: string; quantity?: number | null; unit?: string | null; amount: number }>
   shares: SplitPreviewShare[]
   formatMoney: (value?: number | null) => string
   busy?: boolean
@@ -452,6 +454,25 @@ export function SplitPreviewContent({
           </div>
         </div>
       </ExpenseSurface>
+
+      {items?.length ? (
+        <ExpenseSurface
+          title="Purchased Items"
+          aside={<span className="ui-badge ui-badge--info">{items.length} {items.length === 1 ? 'item' : 'items'}</span>}
+        >
+          <div className="overflow-hidden rounded-[14px] border border-[#e4eaec] bg-white">
+            {items.map((item, index) => (
+              <div key={`${item.itemName}-${index}`} className="flex items-center justify-between gap-3 border-b border-[#edf1f4] px-3 py-3 last:border-b-0">
+                <div className="min-w-0">
+                  <div className="truncate text-label font-bold text-[#123748]">{item.itemName}</div>
+                  {item.quantity != null ? <div className="mt-0.5 text-caption font-semibold text-[#65838b]">{item.quantity} {item.unit ?? ''}</div> : null}
+                </div>
+                <span className="shrink-0 text-label font-bold text-[#00777a]">{formatMoney(item.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </ExpenseSurface>
+      ) : null}
 
       <ExpenseSurface
         title="Member Allocation"

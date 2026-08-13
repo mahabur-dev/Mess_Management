@@ -14,6 +14,7 @@ import {
 } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
+import { buildDeterministicOrder } from 'src/app/helpers/deterministic-order';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 import { NotificationService } from '../notification/notification.service';
@@ -43,9 +44,21 @@ import {
   statusForExpenseWrite,
   toApprovalStatus,
 } from './expense-approval.policy';
+import {
+  assertExpenseItemsTotal,
+  calculateExpenseItemsTotal,
+} from './expense-item-calculator';
 
 type AuthRole = string;
 type NormalizedPaidFrom = ExpensePaymentType;
+
+export type PreparedExpenseItem = {
+  itemName: string;
+  quantity: number | null;
+  unit: string | null;
+  amount: number;
+  sortOrder: number;
+};
 
 export type PreparedExpense = {
   messId: string;
@@ -60,9 +73,7 @@ export type PreparedExpense = {
   addedByUserId: string;
   expenseDate: Date;
   billingMonth: Date;
-  itemName: string | null;
-  quantity: number | null;
-  unit: string | null;
+  items: PreparedExpenseItem[];
   description: string | null;
   receiptUrl: string | null;
   receiptPublicId: string | null;
@@ -92,6 +103,18 @@ export class ExpenseService {
     private readonly fundLedgerService: FundLedgerService,
   ) {}
 
+  private expenseOrderBy(
+    sort: Pick<ExpenseFilterDto, 'sortBy' | 'sortOrder'> = {},
+  ): Prisma.ExpenseOrderByWithRelationInput[] {
+    return buildDeterministicOrder({
+      requestedField: sort.sortBy,
+      requestedDirection: sort.sortOrder,
+      aliases: { date: 'expense_date' },
+      allowedFields: ['expense_date', 'created_at', 'amount'],
+      businessDateField: 'expense_date',
+    }) as Prisma.ExpenseOrderByWithRelationInput[];
+  }
+
   private readonly expenseSelect = {
     id: true,
     type: true,
@@ -102,9 +125,17 @@ export class ExpenseService {
     receipt_url: true,
     buyer_id: true,
     purchased_by: true,
-    item_name: true,
-    quantity: true,
-    unit: true,
+    items: {
+      orderBy: { sort_order: 'asc' as const },
+      select: {
+        id: true,
+        item_name: true,
+        quantity: true,
+        unit: true,
+        amount: true,
+        sort_order: true,
+      },
+    },
     expense_date: true,
     billing_month: true,
     payment_type: true,
@@ -204,6 +235,147 @@ export class ExpenseService {
   private normalizeOptionalText(value: string | null | undefined) {
     const normalized = value?.trim();
     return normalized ? normalized : null;
+  }
+
+  private defaultItemName(category: ExpenseCategory) {
+    return category
+      .toLowerCase()
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  private expenseItemsTitle(
+    items: Array<{ itemName: string }>,
+    fallback: string,
+  ) {
+    const firstItem = items[0];
+    if (!firstItem) return fallback;
+    return items.length > 1
+      ? `${firstItem.itemName} + ${items.length - 1} more`
+      : firstItem.itemName;
+  }
+
+  private normalizeExpenseItem(
+    item: {
+      itemName: string;
+      amount: number;
+      quantity?: number | null;
+      unit?: string | null;
+    },
+    sortOrder: number,
+  ): PreparedExpenseItem {
+    const itemName = item.itemName?.trim();
+    const amount = Number(item.amount);
+    const quantity = item.quantity == null ? null : Number(item.quantity);
+
+    if (!itemName) {
+      throw new HttpException('Every expense item requires a name', 400);
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new HttpException('Every expense item amount must be greater than zero', 400);
+    }
+    if (quantity !== null && (!Number.isFinite(quantity) || quantity < 0)) {
+      throw new HttpException('Expense item quantity cannot be negative', 400);
+    }
+
+    return {
+      itemName,
+      quantity,
+      unit: this.normalizeOptionalText(item.unit),
+      amount: roundMoney(amount),
+      sortOrder,
+    };
+  }
+
+  private prepareExpenseItems(
+    dto: CreateExpenseDto | UpdateExpenseDto,
+    category: ExpenseCategory,
+    existingItems: Array<{
+      item_name: string;
+      quantity: Prisma.Decimal | null;
+      unit: string | null;
+      amount: Prisma.Decimal;
+      sort_order: number;
+    }> = [],
+  ) {
+    let items: PreparedExpenseItem[];
+
+    if (dto.items !== undefined) {
+      if (!dto.items.length) {
+        throw new HttpException('At least one expense item is required', 400);
+      }
+      items = dto.items.map((item, index) =>
+        this.normalizeExpenseItem(item, index),
+      );
+    } else {
+      const changesLegacyItem =
+        this.hasOwn(dto, 'amount') ||
+        this.hasOwn(dto, 'itemName') ||
+        this.hasOwn(dto, 'quantity') ||
+        this.hasOwn(dto, 'unit');
+
+      if (existingItems.length && !changesLegacyItem) {
+        items = existingItems.map((item, index) =>
+          this.normalizeExpenseItem(
+            {
+              itemName: item.item_name,
+              amount: Number(item.amount),
+              quantity: item.quantity == null ? null : Number(item.quantity),
+              unit: item.unit,
+            },
+            index,
+          ),
+        );
+      } else {
+        if (existingItems.length > 1) {
+          throw new HttpException(
+            'Updating a multi-item expense requires the complete items array',
+            400,
+          );
+        }
+
+        const existingItem = existingItems[0];
+        const amount = dto.amount ??
+          (existingItem ? Number(existingItem.amount) : undefined);
+        if (amount === undefined) {
+          throw new HttpException('Expense items are required', 400);
+        }
+
+        items = [
+          this.normalizeExpenseItem(
+            {
+              itemName:
+                (this.hasOwn(dto, 'itemName')
+                  ? this.normalizeOptionalText(dto.itemName)
+                  : existingItem?.item_name) ?? this.defaultItemName(category),
+              amount,
+              quantity: this.hasOwn(dto, 'quantity')
+                ? dto.quantity
+                : existingItem?.quantity == null
+                  ? null
+                  : Number(existingItem.quantity),
+              unit: this.hasOwn(dto, 'unit') ? dto.unit : existingItem?.unit,
+            },
+            0,
+          ),
+        ];
+      }
+    }
+
+    const amount = calculateExpenseItemsTotal(items);
+    if (dto.items !== undefined && dto.amount !== undefined) {
+      try {
+        assertExpenseItemsTotal(items, dto.amount);
+      } catch (error) {
+        if (error instanceof ExpenseCalculationError) {
+          throw new HttpException(error.message, 400);
+        }
+        throw error;
+      }
+    }
+
+    return { items, amount };
   }
 
   private getExpenseDate(
@@ -441,6 +613,7 @@ export class ExpenseService {
       splitMethod,
     } = params;
     let memberIds: string[];
+    const activeMembers = await this.getActiveMembers(messId);
 
     if (usedBy === ExpenseUsedBy.SELF_ONLY) {
       memberIds = [purchasedByMemberId];
@@ -458,14 +631,11 @@ export class ExpenseService {
         );
       }
     } else {
-      memberIds = (await this.getActiveMembers(messId)).map(
-        (member) => member.id,
-      );
+      memberIds = activeMembers.map((member) => member.id);
     }
 
     memberIds = [...new Set(memberIds)];
 
-    const activeMembers = await this.getActiveMembers(messId);
     const activeById = new Map(
       activeMembers.map((member) => [member.id, member]),
     );
@@ -506,9 +676,13 @@ export class ExpenseService {
       created_by: string;
       expense_date: Date;
       billing_month: Date | null;
-      item_name: string | null;
-      quantity: Prisma.Decimal | null;
-      unit: string | null;
+      items: Array<{
+        item_name: string;
+        quantity: Prisma.Decimal | null;
+        unit: string | null;
+        amount: Prisma.Decimal;
+        sort_order: number;
+      }>;
       description: string | null;
       receipt_url: string | null;
       receipt_public_id: string | null;
@@ -529,16 +703,18 @@ export class ExpenseService {
     if (!messId) throw new HttpException('Mess ID is required', 400);
 
     await this.verifyMessMemberAccess(messId, userId, role);
-    await this.ensureActiveSubscription(messId, role);
-    const canManage = await this.hasManagerAccess(messId, userId, role);
-
-    const amount = Number(dto.amount ?? existing?.amount ?? 0);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new HttpException('Amount must be greater than zero', 400);
-    }
+    const [, canManage] = await Promise.all([
+      this.ensureActiveSubscription(messId, role),
+      this.hasManagerAccess(messId, userId, role),
+    ]);
 
     const category =
       dto.category ?? existing?.category ?? ExpenseCategory.OTHER;
+    const { items, amount } = this.prepareExpenseItems(
+      dto,
+      category,
+      existing?.items,
+    );
     const categoryChanged =
       dto.category !== undefined && dto.category !== existing?.category;
     const type = this.inferRecordType(
@@ -573,7 +749,9 @@ export class ExpenseService {
     if (!canManage) {
       purchasedByMemberId = userId;
     }
-    await this.ensureActiveMessMember(messId, purchasedByMemberId);
+    if (purchasedByMemberId !== userId || role === 'ADMIN') {
+      await this.ensureActiveMessMember(messId, purchasedByMemberId);
+    }
 
     const selectedMemberIds =
       dto.selectedMemberIds !== undefined
@@ -631,19 +809,7 @@ export class ExpenseService {
       addedByUserId: existing?.created_by ?? userId,
       expenseDate,
       billingMonth,
-      itemName: this.hasOwn(dto, 'itemName')
-        ? this.normalizeOptionalText(dto.itemName)
-        : (existing?.item_name ?? null),
-      quantity: this.hasOwn(dto, 'quantity')
-        ? dto.quantity == null
-          ? null
-          : Number(dto.quantity)
-        : existing?.quantity == null
-          ? null
-          : Number(existing.quantity),
-      unit: this.hasOwn(dto, 'unit')
-        ? this.normalizeOptionalText(dto.unit)
-        : (existing?.unit ?? null),
+      items,
       description: this.hasOwn(dto, 'description')
         ? this.normalizeOptionalText(dto.description)
         : (existing?.description ?? null),
@@ -673,9 +839,18 @@ export class ExpenseService {
   }
 
   private previewResponse(prepared: PreparedExpense) {
+    const title = this.expenseItemsTitle(
+      prepared.items,
+      prepared.utilityType || prepared.category,
+    );
+    const itemTotal = roundMoney(
+      prepared.items.reduce((sum, item) => sum + item.amount, 0),
+    );
+
     return {
-      title: prepared.itemName || prepared.utilityType || prepared.category,
+      title,
       amount: prepared.amount,
+      items: prepared.items,
       type: prepared.type,
       category: prepared.category,
       utilityType: prepared.utilityType,
@@ -694,9 +869,10 @@ export class ExpenseService {
       shares: prepared.shares,
       validation: {
         isValid:
-          roundMoney(prepared.totalSharedCost) ===
+          itemTotal === roundMoney(prepared.amount) &&
+          (roundMoney(prepared.totalSharedCost) ===
             roundMoney(prepared.amount) ||
-          prepared.personalHistoryAmount === prepared.amount,
+            prepared.personalHistoryAmount === prepared.amount),
         message: 'Split preview calculated successfully',
       },
     };
@@ -708,6 +884,19 @@ export class ExpenseService {
 
   private mapExpense(expense: any) {
     const amount = Number(expense.amount ?? 0);
+    const items = (expense.items ?? []).map((item: any) => ({
+      id: item.id,
+      itemName: item.item_name,
+      quantity: item.quantity == null ? null : Number(item.quantity),
+      unit: item.unit,
+      amount: Number(item.amount ?? 0),
+      sortOrder: item.sort_order,
+    }));
+    const firstItem = items[0];
+    const itemName = this.expenseItemsTitle(
+      items,
+      this.defaultItemName(expense.category),
+    );
     const shares = (expense.shares ?? []).map((share: any) => ({
       id: share.id,
       memberId: share.member_id,
@@ -739,9 +928,11 @@ export class ExpenseService {
       receiptUrl: expense.receipt_url,
       buyerId: expense.buyer_id,
       purchasedBy: expense.purchased_by,
-      itemName: expense.item_name,
-      quantity: expense.quantity == null ? null : Number(expense.quantity),
-      unit: expense.unit,
+      itemName,
+      quantity: items.length === 1 ? firstItem.quantity : null,
+      unit: items.length === 1 ? firstItem.unit : null,
+      items,
+      item_name: itemName,
       expenseDate: expense.expense_date,
       billingMonth: expense.billing_month,
       paymentType: expense.payment_type,
@@ -827,9 +1018,6 @@ export class ExpenseService {
         receipt_public_id: prepared.receiptPublicId,
         receipt_resource_type: prepared.receiptResourceType,
         buyer_id: dto.buyerId,
-        item_name: prepared.itemName,
-        quantity: prepared.quantity,
-        unit: prepared.unit,
         payment_type: prepared.paidFrom,
         used_by: prepared.usedBy,
         split_method: prepared.splitMethod,
@@ -838,6 +1026,17 @@ export class ExpenseService {
         reviewed_at: prepared.requiresApproval ? null : new Date(),
         review_note: null,
       },
+    });
+
+    await tx.expenseItem.createMany({
+      data: prepared.items.map((item) => ({
+        expense_id: created.id,
+        item_name: item.itemName,
+        quantity: item.quantity,
+        unit: item.unit,
+        amount: item.amount,
+        sort_order: item.sortOrder,
+      })),
     });
 
     if (prepared.shares.length) {
@@ -1067,7 +1266,7 @@ export class ExpenseService {
         prepared.requiresApproval
           ? `${prepared.type === ExpenseRecordType.UTILITY ? 'Utility' : 'Expense'} Submitted for Approval`
           : `New ${prepared.type === ExpenseRecordType.UTILITY ? 'Utility' : 'Expense'} Added`,
-        `${prepared.itemName || prepared.category} - ${prepared.amount} [${prepared.paidFrom}]`,
+        `${this.expenseItemsTitle(prepared.items, prepared.category)} - ${prepared.amount} [${prepared.paidFrom}]`,
         {
           source: 'EXPENSE',
           expenseId,
@@ -1098,7 +1297,7 @@ export class ExpenseService {
         where,
         skip,
         take: limit,
-        orderBy: { expense_date: 'desc' },
+        orderBy: this.expenseOrderBy(query),
         select: this.expenseSelect,
       }),
       this.prisma.expense.aggregate({ where, _sum: { amount: true } }),
@@ -1143,6 +1342,9 @@ export class ExpenseService {
     const existing = await this.prisma.expense.findUnique({
       where: { id },
       include: {
+        items: {
+          orderBy: { sort_order: 'asc' },
+        },
         shares: {
           select: { member_id: true, share_amount: true },
         },
@@ -1208,6 +1410,7 @@ export class ExpenseService {
           );
         }
         await tx.expenseShare.deleteMany({ where: { expense_id: id } });
+        await tx.expenseItem.deleteMany({ where: { expense_id: id } });
 
         await tx.expense.update({
           where: { id },
@@ -1224,9 +1427,6 @@ export class ExpenseService {
             receipt_public_id: prepared.receiptPublicId,
             receipt_resource_type: prepared.receiptResourceType,
             buyer_id: dto.buyerId ?? existing.buyer_id,
-            item_name: prepared.itemName,
-            quantity: prepared.quantity,
-            unit: prepared.unit,
             payment_type: prepared.paidFrom,
             used_by: prepared.usedBy,
             split_method: prepared.splitMethod,
@@ -1235,6 +1435,17 @@ export class ExpenseService {
             reviewed_at: canManage ? new Date() : null,
             review_note: null,
           },
+        });
+
+        await tx.expenseItem.createMany({
+          data: prepared.items.map((item) => ({
+            expense_id: id,
+            item_name: item.itemName,
+            quantity: item.quantity,
+            unit: item.unit,
+            amount: item.amount,
+            sort_order: item.sortOrder,
+          })),
         });
 
         if (prepared.shares.length) {
@@ -1352,7 +1563,10 @@ export class ExpenseService {
     await this.notificationService
       .sendPushToUser(existing.creator.id, {
         title: `Expense ${dto.status === 'APPROVED' ? 'approved' : 'rejected'}`,
-        body: `${existing.item_name || existing.category} was ${dto.status.toLowerCase()}.`,
+        body: `${this.expenseItemsTitle(
+          existing.items.map((item) => ({ itemName: item.item_name })),
+          existing.category,
+        )} was ${dto.status.toLowerCase()}.`,
         url: `/expense-details?expenseId=${encodeURIComponent(id)}&messId=${encodeURIComponent(existing.mess.id)}`,
         data: {
           type: 'EXPENSE_REVIEWED',
@@ -1415,7 +1629,10 @@ export class ExpenseService {
       select: {
         id: true,
         mess_id: true,
-        item_name: true,
+        items: {
+          orderBy: { sort_order: 'asc' },
+          select: { item_name: true },
+        },
         category: true,
         amount: true,
         purchased_by: true,
@@ -1436,7 +1653,10 @@ export class ExpenseService {
         data: {
           messId: expense.mess.id,
           expenseId: expense.id,
-          itemName: expense.item_name || expense.category,
+          itemName: this.expenseItemsTitle(
+            expense.items.map((item) => ({ itemName: item.item_name })),
+            expense.category,
+          ),
           amount: String(expense.amount),
           type: 'EXPENSE_PRICE_REVIEW',
         },
@@ -1498,7 +1718,7 @@ export class ExpenseService {
           status: 'CONFIRMED',
         },
         take: 4,
-        orderBy: { expense_date: 'desc' },
+        orderBy: this.expenseOrderBy(),
         select: this.expenseSelect,
       }),
       isManager
@@ -1577,7 +1797,7 @@ export class ExpenseService {
         ],
       },
       take: 20,
-      orderBy: { expense_date: 'desc' },
+      orderBy: this.expenseOrderBy(),
       select: this.expenseSelect,
     });
 

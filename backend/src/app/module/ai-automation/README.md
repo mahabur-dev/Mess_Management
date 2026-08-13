@@ -18,6 +18,8 @@ AI_COMMAND_PATH=/chat/completions
 AI_COMMAND_API_KEY=gsk_replace_me
 AI_COMMAND_MODEL=openai/gpt-oss-20b
 AI_COMMAND_RESPONSE_FORMAT=auto
+AI_COMMAND_TIMEOUT_MS=20000
+AI_PREVIEW_SLOW_LOG_MS=1000
 
 AI_SPEECH_PROVIDER=groq
 AI_SPEECH_BASE_URL=https://api.groq.com/openai/v1
@@ -25,6 +27,7 @@ AI_SPEECH_PATH=/audio/transcriptions
 AI_SPEECH_API_KEY=gsk_replace_me
 AI_SPEECH_MODEL=whisper-large-v3
 AI_SPEECH_RESPONSE_FORMAT=json
+AI_SPEECH_TIMEOUT_MS=30000
 AI_SPEECH_SEND_LANGUAGE=true
 AI_SPEECH_SEND_PROMPT=true
 AI_SPEECH_PROMPT=
@@ -60,6 +63,13 @@ text responses. Leave `AI_SPEECH_TEMPERATURE` empty to omit that field. Set
 compatible provider/model rejects those optional multipart fields. Endpoint
 paths are configurable for providers that mount the compatible API under a
 different path.
+
+Clear deposit, utility, meal, and priced-expense commands use the local
+deterministic parser before any command-provider request. Ambiguous language
+falls back to the configured model. `AI_COMMAND_TIMEOUT_MS` and
+`AI_SPEECH_TIMEOUT_MS` bound external waits; previews slower than
+`AI_PREVIEW_SLOW_LOG_MS` emit per-stage timing logs without recording command
+text or credentials.
 
 For mixed Bangla, English, and Banglish speech, send `speechLanguage=auto`.
 Auto mode does not force the UI language; it uses a neutral domain vocabulary

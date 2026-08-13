@@ -18,6 +18,11 @@ import {
 } from '@/components/mobile/expense-design'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
+import {
+  ExpenseLineItemsEditor,
+  expenseLineItemsPayload,
+  type ExpenseLineItem,
+} from '@/components/mobile/expense-line-items'
 import { currentMonthValue } from '@/components/mobile/meals-design'
 import { ExpensePrimaryAction, ExpenseSplitMethodSelector, ExpenseUsedBySelector } from '@/components/mobile/expense-ui'
 import {
@@ -50,6 +55,13 @@ type ExpenseRecord = {
   itemName?: string | null
   quantity?: string | number | null
   unit?: string | null
+  items?: Array<{
+    id?: string
+    itemName: string
+    quantity?: string | number | null
+    unit?: string | null
+    amount: string | number
+  }>
   expenseDate?: string | null
   billingMonth?: string | null
   description?: string | null
@@ -66,10 +78,7 @@ type FormState = {
   category: ExpenseCategory
   utilityType: string
   purchasedBy: string
-  amount: string
-  itemName: string
-  quantity: string
-  unit: string
+  items: ExpenseLineItem[]
   expenseDate: string
   billingMonth: string
   description: string
@@ -99,10 +108,7 @@ const INITIAL_FORM: FormState = {
   category: 'FOOD',
   utilityType: 'ELECTRICITY',
   purchasedBy: '',
-  amount: '',
-  itemName: '',
-  quantity: '',
-  unit: '',
+  items: [{ id: 'initial-item', itemName: '', quantity: '', unit: '', amount: '' }],
   expenseDate: new Date().toISOString().slice(0, 10),
   billingMonth: currentMonthValue(),
   description: '',
@@ -162,10 +168,21 @@ export default function EditExpensePage() {
             UTILITY_FORM_OPTIONS.find((option) => option.category === found.category)?.utilityType ??
             'OTHER',
           purchasedBy: found.purchasedBy ?? '',
-          amount: String(found.amount ?? ''),
-          itemName: found.itemName ?? '',
-          quantity: found.quantity == null ? '' : String(found.quantity),
-          unit: found.unit ?? '',
+          items: found.items?.length
+            ? found.items.map((item, index) => ({
+                id: item.id ?? `expense-item-${index}`,
+                itemName: item.itemName,
+                quantity: item.quantity == null ? '' : String(item.quantity),
+                unit: item.unit ?? '',
+                amount: String(item.amount),
+              }))
+            : [{
+                id: 'legacy-item',
+                itemName: found.itemName ?? LABELS.EXPENSE_CATEGORIES[found.category],
+                quantity: found.quantity == null ? '' : String(found.quantity),
+                unit: found.unit ?? '',
+                amount: String(found.amount ?? ''),
+              }],
           expenseDate: dateValue(found.expenseDate),
           billingMonth: monthValue(found.billingMonth ?? found.expenseDate),
           description: found.description ?? '',
@@ -212,6 +229,9 @@ export default function EditExpensePage() {
     if (form.splitMethod === 'CUSTOM' && !affectedMemberIds.length) {
       return setMessage('Select members before custom split.')
     }
+    if (form.items.some((item) => !item.itemName.trim() || !item.amount || Number(item.amount) <= 0)) {
+      return setMessage('Every item requires a name and a valid line amount.')
+    }
 
     const customShares =
       form.splitMethod === 'CUSTOM'
@@ -224,13 +244,7 @@ export default function EditExpensePage() {
       utilityType: isUtilityExpense ? form.utilityType : null,
       purchasedBy: isManager ? form.purchasedBy || undefined : undefined,
       category: form.category,
-      amount: Number(form.amount),
-      itemName: isUtilityExpense
-        ? UTILITY_FORM_OPTIONS.find((option) => option.utilityType === form.utilityType)?.label ??
-          LABELS.EXPENSE_CATEGORIES[form.category]
-        : form.itemName.trim() || null,
-      quantity: isUtilityExpense ? null : form.quantity ? Number(form.quantity) : null,
-      unit: isUtilityExpense ? null : form.unit.trim() || null,
+      items: expenseLineItemsPayload(form.items),
       expenseDate: form.expenseDate,
       billingMonth: `${form.billingMonth}-01`,
       description: form.description.trim() || null,
@@ -340,7 +354,7 @@ export default function EditExpensePage() {
                 <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />
                 <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
               </FormFieldGrid>
-              <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
+              <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
               {isManager ? (
                 <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
                   <option value="">Select member</option>
@@ -353,21 +367,12 @@ export default function EditExpensePage() {
             </FormSection>
           ) : (
             <FormSection title="Expense Details">
-              <FormFieldGrid>
-                <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
-                  {GENERAL_EXPENSE_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>{LABELS.EXPENSE_CATEGORIES[category]}</option>
-                  ))}
-                </DesignedSelect>
-                <DesignedInput label="Item" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => update('itemName', event.target.value)} placeholder="Expense item" />
-              </FormFieldGrid>
-              {form.category === 'FOOD' || form.category === 'GROCERY' ? (
-                <FormFieldGrid>
-                  <DesignedInput label="Quantity (Optional)" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => update('quantity', event.target.value)} placeholder="0" type="number" />
-                  <DesignedInput label="Unit (Optional)" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => update('unit', event.target.value)} placeholder="kg" />
-                </FormFieldGrid>
-              ) : null}
-              <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
+              <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
+                {GENERAL_EXPENSE_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>{LABELS.EXPENSE_CATEGORIES[category]}</option>
+                ))}
+              </DesignedSelect>
+              <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
               <FormFieldGrid>
                 <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
                 <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />

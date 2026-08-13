@@ -7,6 +7,7 @@ import {
 import { PaymentMethod, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
+import { buildDeterministicOrder } from 'src/app/helpers/deterministic-order';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 
@@ -24,6 +25,18 @@ export class DepositService {
     private readonly prisma: PrismaService,
     private readonly billReconciliation: MonthlyBillReconciliationService,
   ) {}
+
+  private depositOrderBy(
+    sort: Pick<DepositFilterDto, 'sortBy' | 'sortOrder'> = {},
+  ): Prisma.DepositOrderByWithRelationInput[] {
+    return buildDeterministicOrder({
+      requestedField: sort.sortBy,
+      requestedDirection: sort.sortOrder,
+      aliases: { date: 'deposit_date' },
+      allowedFields: ['deposit_date', 'created_at', 'amount'],
+      businessDateField: 'deposit_date',
+    }) as Prisma.DepositOrderByWithRelationInput[];
+  }
 
   private monthRange(monthInput: string) {
     const match = /^(\d{4})-(\d{2})/.exec(monthInput);
@@ -162,14 +175,7 @@ export class DepositService {
       'sortBy',
       'sortOrder',
     ]);
-    const { page, limit, skip, sortBy, sortOrder } =
-      paginationHelper(paginationOptions);
-    const safeSortBy =
-      sortBy === 'date'
-        ? 'deposit_date'
-        : ['deposit_date', 'created_at', 'amount'].includes(sortBy)
-          ? sortBy
-          : 'deposit_date';
+    const { page, limit, skip } = paginationHelper(paginationOptions);
 
     const where = this.buildWhere(query);
     const [total, deposits, totalAmount] = await Promise.all([
@@ -178,7 +184,7 @@ export class DepositService {
         where,
         skip,
         take: limit,
-        orderBy: { [safeSortBy]: sortOrder },
+        orderBy: this.depositOrderBy(query),
         include: {
           member: { select: { id: true, name: true } },
           mess: { select: { id: true, name: true } },

@@ -116,13 +116,27 @@ export class ExpenseController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['messId', 'category', 'amount', 'expenseDate'],
+      required: ['messId', 'category', 'expenseDate'],
       properties: {
         messId: { type: 'string' },
         buyerId: { type: 'string' },
         purchasedBy: { type: 'string' },
         category: { type: 'string' },
         amount: { type: 'number' },
+        items: {
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            required: ['itemName', 'amount'],
+            properties: {
+              itemName: { type: 'string' },
+              amount: { type: 'number', minimum: 0.01 },
+              quantity: { type: 'number', minimum: 0 },
+              unit: { type: 'string' },
+            },
+          },
+        },
         itemName: { type: 'string' },
         quantity: { type: 'number' },
         unit: { type: 'string' },
@@ -265,6 +279,20 @@ export class ExpenseController {
         purchasedBy: { type: 'string' },
         category: { type: 'string' },
         amount: { type: 'number' },
+        items: {
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            required: ['itemName', 'amount'],
+            properties: {
+              itemName: { type: 'string' },
+              amount: { type: 'number', minimum: 0.01 },
+              quantity: { type: 'number', minimum: 0 },
+              unit: { type: 'string' },
+            },
+          },
+        },
         itemName: { type: 'string' },
         quantity: { type: 'number' },
         unit: { type: 'string' },

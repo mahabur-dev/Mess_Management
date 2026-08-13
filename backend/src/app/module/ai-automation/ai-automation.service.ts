@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -37,6 +38,7 @@ import { CreateMealDto } from '../meal/dto/meal.dto';
 import { MealService, PreparedMeal } from '../meal/meal.service';
 import {
   inferExpenseCategory,
+  isSelfReference,
   normalizeCommandText,
   resolveMemberName,
 } from './normalisers/command-normaliser';
@@ -55,6 +57,7 @@ import {
   SpeechToTextProvider,
   type SpeechLanguage,
 } from './ai-command.types';
+import { AiLatencyTracker } from './ai-latency-tracker';
 
 type AuthRole = string;
 type Locale = 'en' | 'bn';
@@ -79,6 +82,7 @@ const AUDIO_TYPES = new Set([
 
 @Injectable()
 export class AiAutomationService {
+  private readonly logger = new Logger(AiAutomationService.name);
   private readonly recentAttempts = new Map<string, number[]>();
 
   constructor(
@@ -297,7 +301,12 @@ export class AiAutomationService {
     // business-required fields may block a command; date defaults to today and
     // itemName/quantity/unit/description are optional expense metadata.
     const missing = new Set((parsed.missingFields ?? []).filter((field) => allowedMissing.has(field)));
-    const memberMatch = this.resolveMember(parsed.data.memberName, members);
+    const requestedMemberName = parsed.data.memberName?.trim() || null;
+    const usesActor = !requestedMemberName || isSelfReference(requestedMemberName);
+    const memberMatch = usesActor
+      ? { member: actor, ambiguous: false }
+      : this.resolveMember(requestedMemberName, members);
+    if (usesActor) missing.delete('memberName');
     if (memberMatch.ambiguous) missing.add('memberName');
     const date = parsed.data.date ?? this.todayDhaka();
     let payload: Record<string, unknown> | null = null;
@@ -329,33 +338,64 @@ export class AiAutomationService {
         if (!category) missing.add('category');
         const utility = this.utilityMapping({ ...parsed.data, ...item });
         return {
-          messId,
-          type: intent === 'UTILITY_CREATE' ? ExpenseRecordType.UTILITY : ExpenseRecordType.EXPENSE,
           category,
           utilityType: intent === 'UTILITY_CREATE' ? utility.utilityType : null,
           amount: item.amount,
           expenseDate: item.date ?? date,
-          itemName: item.itemName,
+          itemName:
+            item.itemName?.trim() ||
+            category?.toLowerCase().replaceAll('_', ' ') ||
+            'Expense item',
           quantity: item.quantity,
           unit: item.unit,
           description: item.description,
           purchasedBy: itemMember.member?.id ?? memberMatch.member?.id ?? actor.id,
-          paidFrom: ExpensePaymentType.FROM_DEPOSIT,
-          usedBy: ExpenseUsedBy.ALL_MEMBERS,
-          splitMethod:
-            category === ExpenseCategory.GROCERY || category === ExpenseCategory.FOOD
-              ? ExpenseSplitMethod.MEAL_COUNT
-              : ExpenseSplitMethod.EQUAL,
         };
       });
-      payload = resolvedItems.length === 1 ? resolvedItems[0] : { items: resolvedItems };
+
+      const categories = [...new Set(resolvedItems.map((item) => item.category).filter(Boolean))];
+      const dates = [...new Set(resolvedItems.map((item) => item.expenseDate))];
+      const purchasers = [...new Set(resolvedItems.map((item) => item.purchasedBy))];
+      const utilityTypes = [...new Set(resolvedItems.map((item) => item.utilityType).filter(Boolean))];
+      if (categories.length > 1) missing.add('category');
+      if (dates.length > 1) missing.add('date');
+      if (purchasers.length > 1) missing.add('memberName');
+      if (intent === 'UTILITY_CREATE' && utilityTypes.length > 1) missing.add('utilityType');
+
+      const category = categories[0] ?? parsed.data.category;
+      const description =
+        parsed.data.description ??
+        ([...new Set(resolvedItems.map((item) => item.description?.trim()).filter(Boolean))].join('; ') ||
+          null);
+
+      payload = {
+        messId,
+        type: intent === 'UTILITY_CREATE' ? ExpenseRecordType.UTILITY : ExpenseRecordType.EXPENSE,
+        category,
+        utilityType: intent === 'UTILITY_CREATE' ? (utilityTypes[0] ?? parsed.data.utilityType) : null,
+        expenseDate: dates[0] ?? date,
+        items: resolvedItems.map((item) => ({
+          itemName: item.itemName,
+          amount: item.amount,
+          quantity: item.quantity,
+          unit: item.unit,
+        })),
+        description,
+        purchasedBy: purchasers[0] ?? memberMatch.member?.id ?? actor.id,
+        paidFrom: ExpensePaymentType.FROM_DEPOSIT,
+        usedBy: ExpenseUsedBy.ALL_MEMBERS,
+        splitMethod:
+          category === ExpenseCategory.GROCERY || category === ExpenseCategory.FOOD
+            ? ExpenseSplitMethod.MEAL_COUNT
+            : ExpenseSplitMethod.EQUAL,
+      };
     } else if (intent === 'DEPOSIT_CREATE') {
       if (!canManage) throw new ForbiddenException('Only managers can record direct deposits');
       if (!parsed.data.amount || parsed.data.amount <= 0) missing.add('amount');
-      if (!parsed.data.memberName || !memberMatch.member) missing.add('memberName');
+      if (!memberMatch.member) missing.add('memberName');
       payload = {
         messId,
-        memberId: memberMatch.member?.id,
+        memberId: memberMatch.member?.id ?? actor.id,
         amount: parsed.data.amount,
         date,
         note: parsed.data.description,
@@ -386,11 +426,16 @@ export class AiAutomationService {
           continue;
         }
 
-        const mealMember = this.resolveMember(
-          meal.memberName ?? parsed.data.memberName,
-          members,
-        );
-        if (mealMember.ambiguous) missing.add('memberName');
+        const mealMemberName =
+          meal.memberName?.trim() || requestedMemberName;
+        const mealUsesActor =
+          !mealMemberName || isSelfReference(mealMemberName);
+        const mealMember = mealUsesActor
+          ? { member: actor, ambiguous: false }
+          : this.resolveMember(mealMemberName, members);
+        if (mealMember.ambiguous || (!mealUsesActor && !mealMember.member)) {
+          missing.add('memberName');
+        }
         const status =
           meal.status === AttendanceStatus.OFF
             ? AttendanceStatus.OFF
@@ -510,7 +555,11 @@ export class AiAutomationService {
     userId: string,
     role: AuthRole,
   ) {
-    if (Array.isArray(payload.items)) {
+    if (
+      Array.isArray(payload.items) &&
+      intent !== 'EXPENSE_CREATE' &&
+      intent !== 'UTILITY_CREATE'
+    ) {
       return Promise.all(
         payload.items.map((item) =>
           this.domainPreview(intent, item as Record<string, unknown>, userId, role),
@@ -610,24 +659,37 @@ export class AiAutomationService {
     rateLimitChecked?: boolean;
   }) {
     this.assertEnabled();
+    const latency = new AiLatencyTracker();
     const idempotencyKey = params.idempotencyKey ?? randomUUID();
-    const existing = await this.prisma.aiCommand.findUnique({ where: { idempotency_key: idempotencyKey } });
+    const existing = await latency.measure('idempotency', () =>
+      this.prisma.aiCommand.findUnique({
+        where: { idempotency_key: idempotencyKey },
+      }),
+    );
     if (existing) {
       if (existing.user_id !== params.userId) throw new ConflictException('Idempotency key is already in use');
       return this.mapCommand(existing);
     }
-    const context = await this.accessContext(params.messId, params.userId, params.role);
-    if (!params.rateLimitChecked) await this.assertRateLimit(params.userId);
+    const context = await latency.measure('accessContext', () =>
+      this.accessContext(params.messId, params.userId, params.role),
+    );
+    if (!params.rateLimitChecked) {
+      await latency.measure('rateLimit', () =>
+        this.assertRateLimit(params.userId),
+      );
+    }
     const normalizedText = normalizeCommandText(params.text);
     const parsed = this.validateProviderResult(
-      await this.commandProvider.parse(normalizedText, {
-        today: this.todayDhaka(),
-        timeZone: 'Asia/Dhaka',
-        locale: params.locale,
-        actorName: context.actor.name,
-        canManage: context.canManage,
-        memberNames: context.members.map((item) => item.name),
-      }),
+      await latency.measure('commandParse', () =>
+        this.commandProvider.parse(params.text, {
+          today: this.todayDhaka(),
+          timeZone: 'Asia/Dhaka',
+          locale: params.locale,
+          actorName: context.actor.name,
+          canManage: context.canManage,
+          memberNames: context.members.map((item) => item.name),
+        }),
+      ),
     );
     const resolved = this.resolveParsed(
       parsed,
@@ -641,7 +703,14 @@ export class AiAutomationService {
       resolved.intent !== 'UNKNOWN' &&
       resolved.missingFields.length === 0 &&
       resolved.payload
-        ? await this.domainPreview(resolved.intent, resolved.payload, params.userId, params.role)
+        ? await latency.measure('domainPreview', () =>
+            this.domainPreview(
+              resolved.intent,
+              resolved.payload!,
+              params.userId,
+              params.role,
+            ),
+          )
         : null;
     const status =
       resolved.intent === 'NEEDS_CLARIFICATION' ||
@@ -649,30 +718,45 @@ export class AiAutomationService {
       resolved.missingFields.length > 0
       ? AiCommandStatus.NEEDS_CLARIFICATION
       : AiCommandStatus.PENDING;
-    const command = await this.prisma.aiCommand.create({
-      data: {
-        mess_id: params.messId,
-        user_id: params.userId,
-        source_type: params.sourceType,
-        intent: resolved.intent as AiCommandIntent,
-        status,
-        locale: params.locale,
-        original_input: params.sourceType === AiCommandSourceType.TEXT ? params.text : null,
-        transcript: params.transcript ?? null,
-        normalized_text: normalizedText,
-        provider: config.aiAutomation.commandProvider,
-        stt_model: params.sourceType === AiCommandSourceType.VOICE ? config.aiAutomation.speechModel : null,
-        command_model: config.aiAutomation.commandModel,
-        parsed_payload: this.jsonSafe({ ...parsed, preview }),
-        resolved_payload: resolved.payload
-          ? (this.jsonSafe(resolved.payload) as Prisma.InputJsonValue)
-          : undefined,
-        missing_fields: resolved.missingFields,
-        clarification: resolved.clarification,
-        confidence: parsed.confidence,
-        idempotency_key: idempotencyKey,
-      },
-    });
+    const command = await latency.measure('persistPreview', () =>
+      this.prisma.aiCommand.create({
+        data: {
+          mess_id: params.messId,
+          user_id: params.userId,
+          source_type: params.sourceType,
+          intent: resolved.intent as AiCommandIntent,
+          status,
+          locale: params.locale,
+          original_input:
+            params.sourceType === AiCommandSourceType.TEXT ? params.text : null,
+          transcript: params.transcript ?? null,
+          normalized_text: normalizedText,
+          provider: config.aiAutomation.commandProvider,
+          stt_model:
+            params.sourceType === AiCommandSourceType.VOICE
+              ? config.aiAutomation.speechModel
+              : null,
+          command_model: config.aiAutomation.commandModel,
+          parsed_payload: this.jsonSafe({
+            ...parsed,
+            preview,
+          }) as Prisma.InputJsonValue,
+          resolved_payload: resolved.payload
+            ? (this.jsonSafe(resolved.payload) as Prisma.InputJsonValue)
+            : undefined,
+          missing_fields: resolved.missingFields,
+          clarification: resolved.clarification,
+          confidence: parsed.confidence,
+          idempotency_key: idempotencyKey,
+        },
+      }),
+    );
+    const timing = latency.snapshot();
+    if (timing.totalMs >= config.aiAutomation.previewSlowLogMs) {
+      this.logger.warn(
+        `AI preview latency source=${params.sourceType} intent=${resolved.intent} totalMs=${timing.totalMs} stages=${JSON.stringify(timing.stages)}`,
+      );
+    }
     return this.mapCommand(command);
   }
 
@@ -702,6 +786,7 @@ export class AiAutomationService {
     file?: Express.Multer.File,
   ) {
     this.assertEnabled();
+    const latency = new AiLatencyTracker();
     if (!file) throw new BadRequestException({ code: 'AI_UNSUPPORTED_AUDIO', message: 'Audio recording is required' });
     const audioMimeType = file.mimetype.split(';', 1)[0].trim().toLowerCase();
     if (!AUDIO_TYPES.has(audioMimeType)) {
@@ -710,10 +795,12 @@ export class AiAutomationService {
     if (file.size > config.aiAutomation.maxAudioBytes) {
       throw new BadRequestException({ code: 'AI_UNSUPPORTED_AUDIO', message: 'Audio recording is too large' });
     }
-    await this.assertRateLimit(userId);
-    const transcript = await this.speechProvider.transcribe(
-      file,
-      input.speechLanguage ?? 'auto',
+    await latency.measure('rateLimit', () => this.assertRateLimit(userId));
+    const transcript = await latency.measure('transcription', () =>
+      this.speechProvider.transcribe(
+        file,
+        input.speechLanguage ?? 'auto',
+      ),
     );
     if (/[\u0900-\u097f\u0a00-\u0d7f]/u.test(transcript)) {
       throw new BadRequestException({
@@ -722,16 +809,25 @@ export class AiAutomationService {
           'Only Bangla and English speech are supported. Select the correct voice language and try again.',
       });
     }
-    return this.createFromText({
-      ...input,
-      userId,
-      role,
-      text: transcript,
-      transcript,
-      locale: input.locale ?? 'en',
-      sourceType: AiCommandSourceType.VOICE,
-      rateLimitChecked: true,
-    });
+    const result = await latency.measure('previewAfterTranscription', () =>
+      this.createFromText({
+        ...input,
+        userId,
+        role,
+        text: transcript,
+        transcript,
+        locale: input.locale ?? 'en',
+        sourceType: AiCommandSourceType.VOICE,
+        rateLimitChecked: true,
+      }),
+    );
+    const timing = latency.snapshot();
+    if (timing.totalMs >= config.aiAutomation.previewSlowLogMs) {
+      this.logger.warn(
+        `AI voice latency totalMs=${timing.totalMs} stages=${JSON.stringify(timing.stages)}`,
+      );
+    }
+    return result;
   }
 
   private async prepareDomain(
@@ -772,7 +868,10 @@ export class AiAutomationService {
       ...(editedPayload ?? {}),
       messId: command.mess_id,
     });
-    const itemPayloads = Array.isArray(payload.items)
+    const itemPayloads =
+      Array.isArray(payload.items) &&
+      command.intent !== AiCommandIntent.EXPENSE_CREATE &&
+      command.intent !== AiCommandIntent.UTILITY_CREATE
       ? payload.items.map((item) => ({ ...(item as Record<string, unknown>), messId: command.mess_id }))
       : [payload];
     const preparedCommands = await Promise.all(

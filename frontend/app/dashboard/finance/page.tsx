@@ -82,6 +82,13 @@ type ExpenseItem = {
   item_name?: string | null
   quantity?: string | number | null
   unit?: string | null
+  items?: Array<{
+    id?: string
+    itemName: string
+    quantity?: string | number | null
+    unit?: string | null
+    amount: string | number
+  }>
   expense_date: string
   created_at: string
   mess?: {
@@ -314,6 +321,7 @@ export default function FinancePage() {
   // ── Multi-item helpers ─────────────────────────────────
   function addExpenseItem() {
     const id = rowCounter + 1
+    const template = expenseItems[0]
     setRowCounter(id)
     setExpenseItems((prev) => [
       ...prev,
@@ -322,9 +330,9 @@ export default function FinancePage() {
         itemName: '', 
         quantity: '', 
         amount: '', 
-        category: 'FOOD', 
+        category: template?.category ?? 'FOOD',
         unit: '',
-        description: '',
+        description: template?.description ?? '',
         receipt: null 
       },
     ])
@@ -336,7 +344,13 @@ export default function FinancePage() {
 
   function updateExpenseItem(id: number, field: keyof Omit<ExpenseRow, 'id' | 'receipt'>, value: string) {
     setExpenseItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, [field]: value } : i)),
+      prev.map((i) =>
+        field === 'category' || field === 'description'
+          ? { ...i, [field]: value }
+          : i.id === id
+            ? { ...i, [field]: value }
+            : i,
+      ),
     )
   }
 
@@ -388,40 +402,59 @@ export default function FinancePage() {
     setIsAddModalOpen(true)
   }
 
-  function buildExpensePayload(item: ExpenseRow, includeMessId = true) {
+  function buildExpensePayload(items: ExpenseRow[], includeMessId = true) {
     const isUtilityMode = expenseFormMode === 'utility'
+    const firstItem = items[0]
     const payload: Record<string, unknown> = {
       ...(includeMessId ? { messId: activeMess?.id } : {}),
       purchasedBy: expensePurchasedBy || user?.id,
-      category: item.category,
-      amount: Number(item.amount),
-      itemName: isUtilityMode ? item.category : item.itemName,
-      quantity: !isUtilityMode && item.quantity ? Number(item.quantity) : undefined,
-      unit: !isUtilityMode ? item.unit || undefined : undefined,
-      description: item.description || undefined,
+      category: firstItem.category,
+      items: items.map((item) => ({
+        itemName: isUtilityMode ? item.itemName || item.category : item.itemName,
+        amount: Number(item.amount),
+        quantity: item.quantity ? Number(item.quantity) : undefined,
+        unit: item.unit || undefined,
+      })),
+      description: firstItem.description || undefined,
       expenseDate: sharedDate,
       paymentType: expensePaymentType,
     }
 
-    if (!item.receipt) return payload
+    const receipt = items.find((item) => item.receipt)?.receipt
+    if (!receipt) return payload
 
     const formData = new FormData()
     Object.entries(payload).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        formData.append(key, String(value))
+        formData.append(
+          key,
+          Array.isArray(value) || typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value),
+        )
       }
     })
-    formData.append('receipt', item.receipt)
+    formData.append('receipt', receipt)
 
     return formData
   }
 
   async function submitAllExpenses() {
     if (!activeMess) return
-    const invalid = expenseItems.filter((i) => !i.amount)
+    const invalid = expenseItems.filter(
+      (i) =>
+        (expenseFormMode !== 'utility' && !i.itemName.trim()) ||
+        !i.amount ||
+        Number(i.amount) <= 0,
+    )
     if (invalid.length) {
       setMessageType('error')
-      setMessage('Please fill in the price for all items.')
+      setMessage('Please provide a name and valid line amount for every item.')
+      return
+    }
+    if (expenseItems.filter((item) => item.receipt).length > 1) {
+      setMessageType('error')
+      setMessage('Attach one receipt for the complete purchase transaction.')
       return
     }
 
@@ -432,17 +465,12 @@ export default function FinancePage() {
       const wasUtility = expenseFormMode === 'utility' && !wasEditing
       const submittedCount = expenseItems.length
       if (editingExpense) {
-        const item = expenseItems[0]
         await apiClient.updateExpense(
           editingExpense.id,
-          buildExpensePayload(item, false),
+          buildExpensePayload(expenseItems, false),
         )
       } else {
-        await Promise.all(
-          expenseItems.map((item) =>
-            apiClient.createExpense(buildExpensePayload(item)),
-          ),
-        )
+        await apiClient.createExpense(buildExpensePayload(expenseItems))
       }
       resetForm()
       setIsAddModalOpen(false)
@@ -452,7 +480,7 @@ export default function FinancePage() {
           ? 'Expense updated successfully.'
           : wasUtility
             ? 'Utility added successfully.'
-          : `${submittedCount} expense(s) added successfully.`,
+          : `${submittedCount} item(s) saved in one expense transaction.`,
       )
       await load()
     } catch (error) {
@@ -469,19 +497,25 @@ export default function FinancePage() {
     setEditingExpense(expense)
     setSharedDate(new Date(expense.expense_date).toISOString().slice(0, 10))
     setExpensePurchasedBy(expense.purchased_by ?? expense.creator?.id ?? user?.id ?? '')
-    setExpenseItems([
-      {
-        id: 1,
-        itemName: expense.item_name ?? '',
-        quantity: expense.quantity ? String(expense.quantity) : '',
-        amount: expense.amount ? String(expense.amount) : '',
-        category: expense.category,
-        unit: expense.unit ?? '',
-        description: expense.description ?? '',
-        receipt: null,
-      },
-    ])
-    setRowCounter(1)
+    const existingItems = expense.items?.length
+      ? expense.items
+      : [{
+          itemName: expense.item_name ?? '',
+          quantity: expense.quantity,
+          amount: expense.amount,
+          unit: expense.unit,
+        }]
+    setExpenseItems(existingItems.map((item, index) => ({
+      id: index + 1,
+      itemName: item.itemName,
+      quantity: item.quantity == null ? '' : String(item.quantity),
+      amount: String(item.amount ?? ''),
+      category: expense.category,
+      unit: item.unit ?? '',
+      description: expense.description ?? '',
+      receipt: null,
+    })))
+    setRowCounter(existingItems.length)
     setIsAddModalOpen(true)
   }
 
@@ -1358,7 +1392,7 @@ export default function FinancePage() {
                     Item {idx + 1}
                   </p>
 
-                  {!isEditing && expenseItems.length > 1 && (
+                  {expenseItems.length > 1 && (
                     <button
                       onClick={() => removeExpenseItem(item.id)}
                       className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
@@ -1479,16 +1513,14 @@ export default function FinancePage() {
               ))}
             </div>
 
-            {!isEditing && (
-              <Button
-                variant="outline"
-                onClick={addExpenseItem}
-                className="w-full h-11 border-dashed"
-              >
-                <Plus size={16} className="mr-2" />
-                Add another item
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={addExpenseItem}
+              className="w-full h-11 border-dashed"
+            >
+              <Plus size={16} className="mr-2" />
+              Add another item
+            </Button>
               </>
             )}
 
@@ -1602,13 +1634,25 @@ export default function FinancePage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-[10px] font-black uppercase text-[#6b7a99]">Quantity</p>
-                  <p className="mt-1 text-sm font-bold text-[#172554]">
-                    {viewExpense.quantity ? `${viewExpense.quantity} ${viewExpense.unit ?? ''}` : '-'}
-                  </p>
+              {viewExpense.items?.length ? (
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  <div className="flex items-center justify-between bg-slate-50 px-4 py-3">
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Purchased Items</p>
+                    <span className="text-xs font-bold text-[#6b7a99]">{viewExpense.items.length} {viewExpense.items.length === 1 ? 'item' : 'items'}</span>
+                  </div>
+                  {viewExpense.items.map((item, index) => (
+                    <div key={item.id ?? `${item.itemName}-${index}`} className="flex items-center justify-between gap-4 border-t border-slate-100 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-[#172554]">{item.itemName}</p>
+                        {item.quantity != null ? <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{item.quantity} {item.unit ?? ''}</p> : null}
+                      </div>
+                      <span className="shrink-0 text-sm font-black text-[#008d8c]">{money(item.amount)}</span>
+                    </div>
+                  ))}
                 </div>
+              ) : null}
+
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-[10px] font-black uppercase text-[#6b7a99]">Purchased By</p>
                   <p className="mt-1 text-sm font-bold text-[#172554]">

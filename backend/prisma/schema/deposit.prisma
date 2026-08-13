@@ -21,7 +21,8 @@ model Deposit {
   confirmer User? @relation("DepositConfirmer", fields: [confirmed_by], references: [id])
 
   @@index([mess_id, member_id])
-  @@index([mess_id, deposit_date])
+  @@index([mess_id, deposit_date(sort: Desc), created_at(sort: Desc), id(sort: Desc)])
+  @@index([deposit_date(sort: Desc), created_at(sort: Desc), id(sort: Desc)])
   @@map("deposits")
 }
 

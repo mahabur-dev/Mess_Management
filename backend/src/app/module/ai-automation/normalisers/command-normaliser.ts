@@ -10,6 +10,7 @@ export type CommandNormalizationHints = {
   expenseCategory: ExpenseCategory | null;
   utilityType: UtilityType | null;
   mealName: MealName | null;
+  hasDepositIntent: boolean;
   hasMoney: boolean;
   hasQuantity: boolean;
   mentionsToday: boolean;
@@ -21,6 +22,18 @@ export type CommandNormalizationBundle = {
   original: string;
   normalized: string;
   hints: CommandNormalizationHints;
+};
+
+export type InferredExpenseItem = {
+  amount: number;
+  date: null;
+  category: ExpenseCategory | null;
+  utilityType: null;
+  itemName: string;
+  description: null;
+  memberName: null;
+  quantity: number | null;
+  unit: string | null;
 };
 
 const BANGLA_DIGITS = '০১২৩৪৫৬৭৮৯';
@@ -104,6 +117,12 @@ function normalizeCommonBanglish(text: string): string {
       'purchased',
     )
 
+    // Deposit and dinner variants frequently produced by Banglish typing or STT.
+    .replace(/\b(?:joma|zoma|diposit|depojit|deposite)\b/gi, 'deposit')
+    .replace(/(?:ডিপোজিট|ডেপোজিট|জমা)/gu, ' deposit ')
+    .replace(/\b(?:dinar|diner|dinnar|dinner)\b/gi, 'dinner')
+    .replace(/(?:ডিনার|ডীনার)/gu, ' dinner ')
+
     // Common grocery spellings.
     .replace(/\b(?:aloo|alu)\b/gi, 'alu')
     .replace(/\b(?:piaus|piaj|piyaj|peyaj|piaz|peaj|pyaj)\b/gi, 'piyaj')
@@ -162,6 +181,134 @@ export function inferUtilityType(
   if (/(gas|গ্যাস)/u.test(text)) return 'GAS';
   if (/(water|পানি|জল)/u.test(text)) return 'WATER';
   if (/(cleaner|cleaning|পরিষ্কার|ক্লিনার)/u.test(text)) return 'CLEANING';
+
+  return null;
+}
+
+export function inferUtilityCommandType(text: string | null): UtilityType | null {
+  if (!text?.trim()) return null;
+  const value = normalizeForMatching(normalizeCommandText(text));
+
+  if (
+    containsAny(value, [
+      'electricity bill',
+      'electric bill',
+      'current bill',
+      'current er bill',
+      'biddut bill',
+      'bidyut bill',
+      'বিদ্যুৎ বিল',
+      'কারেন্ট বিল',
+      'ইলেকট্রিসিটি বিল',
+    ])
+  ) {
+    return 'ELECTRICITY';
+  }
+  if (
+    containsAny(value, [
+      'wifi bill',
+      'wi fi bill',
+      'internet bill',
+      'net bill',
+      'broadband bill',
+      'wifi recharge',
+      'internet recharge',
+      'ওয়াইফাই বিল',
+      'ওয়াইফাই বিল',
+      'ইন্টারনেট বিল',
+      'নেট বিল',
+      'ব্রডব্যান্ড বিল',
+    ])
+  ) {
+    return 'WIFI';
+  }
+  if (
+    containsAny(value, [
+      'gas bill',
+      'gas er bill',
+      'গ্যাস বিল',
+      'গ্যাসের বিল',
+    ])
+  ) {
+    return 'GAS';
+  }
+  if (
+    containsAny(value, [
+      'water bill',
+      'pani bill',
+      'panir bill',
+      'পানি বিল',
+      'পানির বিল',
+      'জলের বিল',
+    ])
+  ) {
+    return 'WATER';
+  }
+  if (
+    containsAny(value, [
+      'cleaner bill',
+      'cleaning bill',
+      'cleaner salary',
+      'maid bill',
+      'maid salary',
+      'bua bill',
+      'bua salary',
+      'ক্লিনার বিল',
+      'ক্লিনিং বিল',
+      'বুয়া বিল',
+      'বুয়া বিল',
+      'বুয়ার বেতন',
+      'বুয়ার বেতন',
+    ])
+  ) {
+    return 'CLEANING';
+  }
+
+  const hasAmountSignal =
+    hasExplicitCurrency(value) || /\d+(?:\.\d+)?/u.test(normalizeBanglaDigits(value));
+  if (!hasAmountSignal) return null;
+
+  if (
+    containsAny(value, [
+      'electricity',
+      'electric',
+      'current',
+      'biddut',
+      'bidyut',
+      'বিদ্যুৎ',
+      'কারেন্ট',
+    ])
+  ) {
+    return 'ELECTRICITY';
+  }
+  if (
+    containsAny(value, [
+      'wifi',
+      'wi fi',
+      'internet',
+      'broadband',
+      'net recharge',
+      'ওয়াইফাই',
+      'ওয়াইফাই',
+      'ইন্টারনেট',
+      'ব্রডব্যান্ড',
+    ])
+  ) {
+    return 'WIFI';
+  }
+  if (
+    containsAny(value, [
+      'cleaner',
+      'cleaning',
+      'maid',
+      'bua',
+      'ক্লিনার',
+      'বুয়া',
+      'বুয়া',
+    ])
+  ) {
+    return 'CLEANING';
+  }
 
   return null;
 }
@@ -668,21 +815,306 @@ export function inferExpenseCategory(
   return null;
 }
 
+const GENERIC_EXPENSE_SUMMARY_NAMES = new Set([
+  'bazar',
+  'bajar',
+  'bazaar',
+  'market',
+  'grocery',
+  'groceries',
+  'expense',
+  'total',
+  'mot',
+  'বাজার',
+  'খরচ',
+  'মোট',
+]);
+
+function expenseItemLabel(segment: string): {
+  itemName: string;
+  quantity: number | null;
+  unit: string | null;
+} | null {
+  const parts = normalizeForMatching(segment)
+    .split(/(?:,|;|\/|\b(?:and|ebong|ar)\b|এবং|আর)/u)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  let label = parts.at(-1) ?? '';
+
+  label = label
+    .replace(
+      /\b(?:today|yesterday|tomorrow|ami|amar|i|we|agke|ajke|gotokal|kal)\b/giu,
+      ' ',
+    )
+    .replace(
+      /\b(?:hoice|hoise|hoyeche|hoyese|holo|cost|costs|was|were|is|add|korchi|korechi)\b/giu,
+      ' ',
+    )
+    .replace(/(?:হয়েছে|হইছে|হলো|খরচ হয়েছে|যোগ করো|অ্যাড করো)/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!label) return null;
+
+  const quantityMatch = label.match(
+    /^(\d+(?:\.\d+)?)\s*(kg|g|l|ml|pcs?|কেজি|গ্রাম|লিটার|টা)\s+(.+)$/iu,
+  );
+  if (!quantityMatch) {
+    return { itemName: label, quantity: null, unit: null };
+  }
+
+  return {
+    itemName: quantityMatch[3].trim(),
+    quantity: Number(quantityMatch[1]),
+    unit: normalizeUnit(quantityMatch[2]),
+  };
+}
+
+export function reconcileSummaryExpenseItems<
+  T extends { itemName: string | null; amount: number | null },
+>(items: T[]): T[] {
+  if (items.length < 3) return items;
+  const [first, ...rest] = items;
+  const firstName = normalizeForMatching(first.itemName ?? '');
+  const firstAmount = Number(first.amount);
+  const restAmounts = rest.map((item) => Number(item.amount));
+
+  if (
+    !GENERIC_EXPENSE_SUMMARY_NAMES.has(firstName) ||
+    !Number.isFinite(firstAmount) ||
+    firstAmount <= 0 ||
+    restAmounts.some((amount) => !Number.isFinite(amount) || amount <= 0)
+  ) {
+    return items;
+  }
+
+  const restTotal = restAmounts.reduce((sum, amount) => sum + amount, 0);
+  return Math.abs(firstAmount - restTotal) <= 0.01 ? rest : items;
+}
+
+export function extractPricedExpenseItems(
+  text: string | null,
+): InferredExpenseItem[] {
+  if (!text?.trim()) return [];
+  const normalized = normalizeCommandText(text);
+  const pricePattern = /(\d+(?:\.\d+)?)\s*(?:taka|tk)(?=\s|$|[,.;/])/giu;
+  const matches = [...normalized.matchAll(pricePattern)];
+  if (!matches.length) return [];
+
+  const items: InferredExpenseItem[] = [];
+  let previousEnd = 0;
+  for (const match of matches) {
+    const matchIndex = match.index ?? 0;
+    const label = expenseItemLabel(normalized.slice(previousEnd, matchIndex));
+    previousEnd = matchIndex + match[0].length;
+    const amount = Number(match[1]);
+    if (!label?.itemName || !Number.isFinite(amount) || amount <= 0) continue;
+
+    items.push({
+      amount,
+      date: null,
+      category: inferExpenseCategory(label.itemName, null),
+      utilityType: null,
+      itemName: label.itemName,
+      description: null,
+      memberName: null,
+      quantity: label.quantity,
+      unit: label.unit,
+    });
+  }
+
+  return reconcileSummaryExpenseItems(items);
+}
+
+export function inferMealNames(
+  text: string | null,
+): Array<Exclude<MealName, 'OTHER'>> {
+  const value = normalizeForMatching(text ?? '');
+  if (!value) return [];
+  const matches: Array<Exclude<MealName, 'OTHER'>> = [];
+
+  if (
+    containsAny(value, [
+      'breakfast',
+      'morning meal',
+      'nasta',
+      'nashta',
+      'নাস্তা',
+      'সকালের খাবার',
+      'সকালের মিল',
+    ])
+  ) {
+    matches.push('BREAKFAST');
+  }
+  if (
+    containsAny(value, [
+      'lunch',
+      'noon meal',
+      'dupur',
+      'dupurer',
+      'dupurer khabar',
+      'দুপুর',
+      'দুপুরের খাবার',
+      'দুপুরের মিল',
+    ])
+  ) {
+    matches.push('LUNCH');
+  }
+  if (
+    containsAny(value, [
+      'dinner',
+      'dinar',
+      'diner',
+      'dinnar',
+      'supper',
+      'night meal',
+      'evening meal',
+      'rat',
+      'raat',
+      'rater',
+      'raater',
+      'rater khabar',
+      'raater khabar',
+      'rat er khabar',
+      'raat er khabar',
+      'রাত',
+      'রাতের খাবার',
+      'রাত্রের খাবার',
+      'রাতের মিল',
+      'নৈশভোজ',
+      'ডিনার',
+    ])
+  ) {
+    matches.push('DINNER');
+  }
+
+  return matches;
+}
+
 export function inferMealName(text: string | null): MealName | null {
-  const value = text?.toLocaleLowerCase().trim();
-  if (!value) return null;
+  return inferMealNames(text)[0] ?? null;
+}
 
-  if (/(breakfast|morning\s*meal|nasta|nashta|নাস্তা|সকালের\s*খাবার)/u.test(value)) {
-    return 'BREAKFAST';
-  }
-  if (/(lunch|noon\s*meal|dupur|dupurer|দুপুর|দুপুরের\s*খাবার)/u.test(value)) {
-    return 'LUNCH';
-  }
-  if (/(dinner|night\s*meal|rat|rater|রাত|রাতের\s*খাবার)/u.test(value)) {
-    return 'DINNER';
-  }
+export function hasDepositIntent(text: string | null): boolean {
+  if (!text?.trim()) return false;
+  const value = normalizeForMatching(normalizeCommandText(text));
+  return containsAny(value, [
+    'deposit',
+    'cash deposit',
+    'add balance',
+    'add fund',
+    'add funds',
+    'joma',
+    'zoma',
+    'জমা',
+    'ডিপোজিট',
+    'ডেপোজিট',
+    'ব্যালেন্সে যোগ',
+  ]);
+}
 
-  return null;
+export function hasExplicitCurrency(text: string | null): boolean {
+  if (!text?.trim()) return false;
+  return /(?:৳|\b(?:taka|tk)\b|টাকা)/iu.test(text);
+}
+
+export function hasPurchaseIntent(text: string | null): boolean {
+  if (!text?.trim()) return false;
+  return /(?:\b(?:buy|bought|purchase|purchased|spend|spent|paid|bill|expense)\b|কিন|খরচ|দাম|বিল)/iu.test(
+    text,
+  );
+}
+
+export function isSelfReference(value: string | null): boolean {
+  if (!value?.trim()) return false;
+  const normalized = normalizeForMatching(value);
+  return [
+    'i',
+    'me',
+    'my',
+    'myself',
+    'for me',
+    'my account',
+    'ami',
+    'amar',
+    'amake',
+    'amar jonno',
+    'amar name',
+    'nijer',
+    'nijer jonno',
+    'আমি',
+    'আমার',
+    'আমাকে',
+    'আমার জন্য',
+    'আমার নামে',
+    'নিজে',
+    'নিজের',
+    'নিজের জন্য',
+  ].includes(normalized);
+}
+
+export function inferNumericMoneyAmount(text: string | null): number | null {
+  if (!text?.trim()) return null;
+  const normalized = normalizeCommandText(text);
+  const currencyMatch = normalized.match(
+    /(?:৳\s*)?(\d+(?:\.\d+)?)\s*(?:taka|tk|টাকা|৳)/iu,
+  );
+  if (currencyMatch) return Number(currencyMatch[1]);
+
+  if (!hasDepositIntent(normalized)) return null;
+  const numbers = [
+    ...new Set(
+      [...normalized.matchAll(/\b\d+(?:\.\d+)?\b/gu)].map((match) =>
+        Number(match[0]),
+      ),
+    ),
+  ];
+  return numbers.length === 1 && numbers[0] > 0 ? numbers[0] : null;
+}
+
+export function inferSingleNumericAmount(text: string | null): number | null {
+  if (!text?.trim()) return null;
+  const normalized = normalizeCommandText(text);
+  const numbers = [
+    ...new Set(
+      [...normalized.matchAll(/\b\d+(?:\.\d+)?\b/gu)].map((match) =>
+        Number(match[0]),
+      ),
+    ),
+  ];
+  return numbers.length === 1 && numbers[0] > 0 ? numbers[0] : null;
+}
+
+export function inferMealServings(text: string | null): number | null {
+  if (!text?.trim()) return null;
+  const normalized = normalizeCommandText(text).toLocaleLowerCase();
+  const explicitCount = normalized.match(
+    /(?:^|\s)(\d+(?:\.\d+)?)\s*(?:ta|টি|টা|meal|meals|serving|servings)(?=\s|$|[,.;])/iu,
+  );
+  if (explicitCount) return Number(explicitCount[1]);
+
+  const mealThenCount = normalized.match(
+    /(?:breakfast|lunch|dinner|dinar|diner|ডিনার|নাস্তা|দুপুর|রাত)[^\d]{0,16}(\d+(?:\.\d+)?)/iu,
+  );
+  return mealThenCount ? Number(mealThenCount[1]) : null;
+}
+
+export function inferMealStatus(text: string | null): 'ON' | 'OFF' {
+  const normalized = normalizeForMatching(text ?? '');
+  return containsAny(normalized, [
+    'off',
+    'cancel',
+    'bondho',
+    'bad dao',
+    'khabo na',
+    'lagbe na',
+    'বন্ধ',
+    'বাদ দাও',
+    'খাব না',
+    'লাগবে না',
+  ])
+    ? 'OFF'
+    : 'ON';
 }
 
 export function buildCommandNormalization(text: string): CommandNormalizationBundle {
@@ -696,6 +1128,7 @@ export function buildCommandNormalization(text: string): CommandNormalizationBun
       expenseCategory: inferExpenseCategory(null, normalized),
       utilityType: inferUtilityType(null, normalized),
       mealName: inferMealName(normalized),
+      hasDepositIntent: hasDepositIntent(normalized),
       hasMoney: /(?:৳|\b\d+(?:\.\d+)?\s*(?:taka|tk|টাকা)\b)/iu.test(
         `${original} ${normalized}`,
       ),
@@ -718,6 +1151,129 @@ function normalizeNameForMatch(value: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+const BANGLA_NAME_TRANSLITERATION: Record<string, string> = {
+  অ: 'a',
+  আ: 'a',
+  ই: 'i',
+  ঈ: 'i',
+  উ: 'u',
+  ঊ: 'u',
+  এ: 'e',
+  ঐ: 'oi',
+  ও: 'o',
+  ঔ: 'ou',
+  ক: 'k',
+  খ: 'kh',
+  গ: 'g',
+  ঘ: 'gh',
+  ঙ: 'ng',
+  চ: 'ch',
+  ছ: 'chh',
+  জ: 'j',
+  ঝ: 'jh',
+  ঞ: 'n',
+  ট: 't',
+  ঠ: 'th',
+  ড: 'd',
+  ঢ: 'dh',
+  ণ: 'n',
+  ত: 't',
+  থ: 'th',
+  দ: 'd',
+  ধ: 'dh',
+  ন: 'n',
+  প: 'p',
+  ফ: 'f',
+  ব: 'b',
+  ভ: 'bh',
+  ম: 'm',
+  য: 'j',
+  য়: 'y',
+  র: 'r',
+  ল: 'l',
+  শ: 'sh',
+  ষ: 'sh',
+  স: 's',
+  হ: 'h',
+  ড়: 'r',
+  ঢ়: 'rh',
+  ক্ষ: 'kh',
+  'া': 'a',
+  'ি': 'i',
+  'ী': 'i',
+  'ু': 'u',
+  'ূ': 'u',
+  'ৃ': 'ri',
+  'ে': 'e',
+  'ৈ': 'oi',
+  'ো': 'o',
+  'ৌ': 'ou',
+  'ং': 'ng',
+  'ঃ': 'h',
+  'ঁ': 'n',
+  '্': '',
+};
+
+function phoneticNameTokens(value: string): string[] {
+  const transliterated = [...value.normalize('NFKC')]
+    .map((character) => BANGLA_NAME_TRANSLITERATION[character] ?? character)
+    .join('');
+
+  return normalizeNameForMatch(transliterated)
+    .split(' ')
+    .map((token) => token.replace(/[aeiouy]/g, ''))
+    .filter((token) => token.length >= 2);
+}
+
+export function resolveMemberMention<T extends NamedMember>(
+  text: string | null,
+  members: T[],
+): { member: T | null; ambiguous: boolean } {
+  if (!text?.trim() || !members.length) {
+    return { member: null, ambiguous: false };
+  }
+
+  const commandWords = new Set(normalizeNameForMatch(text).split(' '));
+  const commandPhonetics = new Set(phoneticNameTokens(text));
+  const genericNameTokens = new Set([
+    'md',
+    'mohammad',
+    'mohammed',
+    'muhammad',
+    'sheikh',
+    'sk',
+  ]);
+
+  const candidates = members.filter((member) => {
+    const nameWords = normalizeNameForMatch(member.name)
+      .split(' ')
+      .filter((word) => word.length >= 3 && !genericNameTokens.has(word));
+    if (
+      nameWords.some((word) =>
+        [...commandWords].some(
+          (commandWord) =>
+            commandWord === word || commandWord.startsWith(word),
+        ),
+      )
+    ) {
+      return true;
+    }
+
+    return phoneticNameTokens(member.name).some((token) =>
+      token.length >= 3 &&
+      [...commandPhonetics].some(
+        (commandToken) =>
+          commandToken === token || commandToken.startsWith(token),
+      ),
+    );
+  });
+
+  if (candidates.length === 1) {
+    return { member: candidates[0], ambiguous: false };
+  }
+  return { member: null, ambiguous: candidates.length > 1 };
 }
 
 function levenshtein(a: string, b: string): number {
@@ -772,6 +1328,20 @@ export function resolveMemberName<T extends NamedMember>(
   const partial = prepared.filter(({ key }) => key.includes(needle) || needle.includes(key));
   if (partial.length === 1) return { member: partial[0].member, ambiguous: false };
   if (partial.length > 1) return { member: null, ambiguous: true };
+
+  // Cross-script phonetic matching supports names such as নাজমুল/Najmul and
+  // রহিম/Rahim without allowing a match outside the current mess.
+  const needlePhonetics = phoneticNameTokens(name);
+  if (needlePhonetics.length) {
+    const phonetic = prepared.filter(({ member }) => {
+      const memberPhonetics = phoneticNameTokens(member.name);
+      return needlePhonetics.every((token) => memberPhonetics.includes(token));
+    });
+    if (phonetic.length === 1) {
+      return { member: phonetic[0].member, ambiguous: false };
+    }
+    if (phonetic.length > 1) return { member: null, ambiguous: true };
+  }
 
   // Fuzzy matching helps with small STT spelling errors such as Rahim/Raheem.
   // For very short names, fuzzy matching is intentionally disabled.

@@ -98,7 +98,7 @@ export default function ComplaintsPage() {
     <MobileShell>
       <TopScreen title="Complaints" subtitle="Request and issue board" backHref="/" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
+        <section className="app-section app-form-section space-y-4">
           <SelectField
             label="Category"
             value={form.category}
@@ -118,9 +118,9 @@ export default function ComplaintsPage() {
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Submit Complaint
           </SubmitButton>
-        </div>
+        </section>
 
-        <div className="glass rounded-[28px] p-4">
+        <section className="app-section">
           <div className="flex items-center justify-between gap-3">
             <div className="section-title mb-0">Recent</div>
             <SelectField
@@ -131,9 +131,9 @@ export default function ComplaintsPage() {
               getLabel={(value) => LABELS.COMPLAINT_STATUSES[value]}
             />
           </div>
-          <div className="mt-3 space-y-3">
+          <div className="app-list mt-3">
             {items.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
+              <article key={item.id} className="app-list-row py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-label font-semibold text-[#1d3a42]">{item.title}</div>
@@ -152,11 +152,11 @@ export default function ComplaintsPage() {
                 </div>
                 <p className="mt-2 text-label text-[#65838b]">{item.description}</p>
                 {item.response ? <div className="mt-2 rounded-xl bg-[#edfafa] px-3 py-2 text-label text-[#123748]">{item.response}</div> : null}
-              </div>
+              </article>
             ))}
-            {!items.length ? <div className="py-3 text-label text-[#65838b]">No complaints loaded.</div> : null}
+            {!items.length ? <div className="app-empty-state">No complaints loaded.</div> : null}
           </div>
-        </div>
+        </section>
       </div>
     </MobileShell>
   )

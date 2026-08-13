@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
-import { FieldCard, SelectField, SubmitButton, TextField } from '@/components/mobile/form-controls'
+import { FieldCard, SelectField, SubmitButton } from '@/components/mobile/form-controls'
+import { DatePicker } from '@/components/mobile/date-picker'
 import { GuestMealCountInput, MEAL_META, MealIconBadge, MealOptionRow } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
@@ -149,7 +150,7 @@ export default function AddMealPage() {
     <MobileShell>
       <TopScreen title="Add Meal" subtitle="DTO mapped form" backHref="/" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
+        <section className="app-section app-form-section space-y-4">
           <FieldCard label="Meal Name" hint="Choose a meal and adjust the count manually">
             <div className="overflow-hidden rounded-[12px] border border-[#dce8e9] bg-white px-3">
               {MEAL_NAMES.map((mealName) => {
@@ -208,11 +209,10 @@ export default function AddMealPage() {
             </div>
           </FieldCard>
 
-          <TextField
+          <DatePicker
             label="Date"
             value={form.date}
             onChange={(date) => setForm((prev) => ({ ...prev, date }))}
-            type="date"
           />
 
           <FieldCard label="Calculated Meal Count" hint="Backend `mealCount` payload">
@@ -224,7 +224,7 @@ export default function AddMealPage() {
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Meal
           </SubmitButton>
-        </div>
+        </section>
       </div>
     </MobileShell>
   )

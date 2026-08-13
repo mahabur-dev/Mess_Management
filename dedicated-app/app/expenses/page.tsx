@@ -10,7 +10,6 @@ import {
   House,
   Landmark,
   Plus,
-  Search,
   SlidersHorizontal,
   UserRound,
   UsersRound,
@@ -27,7 +26,6 @@ import {
   ExpenseDetailsCta,
   ExpenseSummaryCard,
   ExpenseSurface,
-  MemberInitials,
 } from '@/components/mobile/expense-ui'
 import {
   normalizeExpenseApprovalStatus,
@@ -55,14 +53,6 @@ type ExpenseSummary = {
   recentExpenses?: ExpenseListRecord[]
 }
 
-type ManagerMember = {
-  member?: { id: string; name?: string; email?: string }
-  totalCost?: number
-  depositPaid?: number
-  due?: number
-  status?: string
-}
-
 type ManagerOverview = {
   billing?: {
     status: 'DIRTY' | 'PROCESSING' | 'READY' | 'FAILED'
@@ -75,7 +65,6 @@ type ManagerOverview = {
     fromDeposit?: number
     members?: number
   }
-  members?: ManagerMember[]
 }
 
 type FundBalances = {
@@ -84,7 +73,6 @@ type FundBalances = {
 }
 
 type ViewMode = 'MY' | 'MANAGER'
-type MemberFilter = 'ALL' | 'DUE' | 'PAID'
 type MessageTone = 'SUCCESS' | 'ERROR'
 type ApprovalFilter = 'ALL' | ExpenseApprovalStatus
 type MonthFilter = string
@@ -159,23 +147,6 @@ function ExpenseFilterSelect<T extends string>({
       )}
     />
   )
-}
-
-function getStatus(member: ManagerMember) {
-  if (Number(member.due ?? 0) <= 0) return 'PAID'
-  if (Number(member.depositPaid ?? 0) > 0) return 'PARTIAL'
-  return 'DUE'
-}
-
-function MemberStatus({ member }: { member: ManagerMember }) {
-  const status = getStatus(member)
-  const styles = {
-    PAID: 'bg-[#eaf7ec] text-[#15953a]',
-    PARTIAL: 'bg-[#fff2e6] text-[#e36c0a]',
-    DUE: 'bg-[#ffebeb] text-[#e02d37]',
-  } as const
-  const label = status === 'PAID' ? 'Paid' : status === 'PARTIAL' ? 'Partial' : 'Due'
-  return <span className={`rounded-full px-2.5 py-1 text-caption font-bold ${styles[status]}`}>{label}</span>
 }
 
 function ExpenseRecordsSection({
@@ -253,8 +224,6 @@ export default function ExpensesPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageTone, setMessageTone] = useState<MessageTone>('ERROR')
-  const [search, setSearch] = useState('')
-  const [memberFilter, setMemberFilter] = useState<MemberFilter>('ALL')
   const [fundBalances, setFundBalances] = useState<FundBalances | null>(null)
   const [collectedAmount, setCollectedAmount] = useState('')
   const [collectedNote, setCollectedNote] = useState('')
@@ -397,16 +366,6 @@ export default function ExpensesPage() {
 
   const my = summary?.myView
   const manager = managerData?.totals
-  const filteredMembers = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return (managerData?.members ?? []).filter((item) => {
-      const status = getStatus(item)
-      const matchesFilter = memberFilter === 'ALL' || (memberFilter === 'DUE' ? status !== 'PAID' : status === 'PAID')
-      const searchable = `${item.member?.name ?? ''} ${item.member?.email ?? ''}`.toLowerCase()
-      return matchesFilter && (!query || searchable.includes(query))
-    })
-  }, [managerData?.members, memberFilter, search])
-
   return (
     <MobileShell showBottomNavigation hasFloatingAction>
       <TopScreen
@@ -456,36 +415,7 @@ export default function ExpensesPage() {
         ) : (
           <>
             <ExpenseSurface>
-              <div>
-                <label className="relative block">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#65838b]" size={18} />
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    className="h-12 w-full rounded-[15px] border border-[#dce5ec] bg-white pl-11 pr-3 text-label font-medium text-[#123748] outline-none placeholder:text-[#8293a5] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
-                    placeholder="Search member by name or email"
-                  />
-                </label>
-              </div>
-
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {([
-                  ['ALL', 'All'],
-                  ['DUE', 'With Due'],
-                  ['PAID', 'Fully Paid'],
-                ] as Array<[MemberFilter, string]>).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setMemberFilter(value)}
-                    className={`h-9 rounded-full border text-caption font-bold ${memberFilter === value ? 'border-[#008d8c] bg-[#008d8c] text-white' : 'border-[#dce5ec] bg-white text-[#65838b]'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2.5">
                 <ExpenseSummaryCard icon={CircleDollarSign} label="Total" value={formatTaka(manager?.totalExpenses)} />
                 <ExpenseSummaryCard icon={Zap} label="Utility" value={formatTaka(manager?.totalUtility)} accent="blue" />
                 <ExpenseSummaryCard icon={Landmark} label="Deposit" value={formatTaka(manager?.fromDeposit)} accent="green" />
@@ -532,29 +462,6 @@ export default function ExpensesPage() {
                 >
                   <Plus size={18} /> {fundBusy ? 'Recording...' : 'Record Collected Fund'}
                 </button>
-              </div>
-            </ExpenseSurface>
-
-            <ExpenseSurface title="Member Overview" aside={<span className="text-caption font-bold text-[#65838b]">{filteredMembers.length} shown</span>}>
-              <div className="-mx-3 overflow-hidden rounded-[16px] border border-[#edf1f4]">
-                {filteredMembers.map((item, index) => (
-                  <div key={item.member?.id ?? index} className="flex items-center gap-3 border-b border-[#edf1f4] bg-white px-3 py-3 last:border-b-0">
-                    <MemberInitials name={item.member?.name} accent={index % 2 ? 'blue' : 'teal'} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-label font-bold text-[#123748]">{item.member?.name ?? 'Member'}</div>
-                      <div className="mt-0.5 truncate text-caption font-medium text-[#65838b]">{item.member?.email ?? 'No email'}</div>
-                    </div>
-                    <div className="hidden text-right min-[380px]:block">
-                      <div className="text-caption font-semibold text-[#65838b]">Total</div>
-                      <div className="text-label font-bold text-[#008d8c]">{formatTaka(item.totalCost)}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-label font-bold ${Number(item.due ?? 0) > 0 ? 'text-[#e02d37]' : 'text-[#65838b]'}`}>{formatTaka(item.due)}</div>
-                      <MemberStatus member={item} />
-                    </div>
-                  </div>
-                ))}
-                {!loading && !filteredMembers.length ? <div className="expense-empty-state">No matching members found.</div> : null}
               </div>
             </ExpenseSurface>
 

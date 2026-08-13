@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CircleDollarSign, PlusCircle } from 'lucide-react'
+import { CircleDollarSign, Hourglass, PlusCircle, UserRound, WalletCards } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
 import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-design'
-import { MealMonthSelector, currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
+import { MealMonthSelector, currentMonthValue } from '@/components/mobile/meals-design'
 import {
   DepositListItem,
   DepositManualNotice,
@@ -23,6 +23,7 @@ import {
 import { api } from '@/lib/api'
 import { type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
@@ -35,7 +36,7 @@ type PaymentItem = {
   payment_date?: string
   categories?: string[] | null
   note?: string | null
-  member?: { id: string; name: string }
+  member?: { id: string; name: string; avatar_url?: string | null }
 }
 
 type FormState = {
@@ -81,6 +82,8 @@ export default function PaymentsPage() {
   const [showForm, setShowForm] = useState(false)
   const [summary, setSummary] = useState<DepositSummary>({ approved: 0, myApproved: 0, pending: 0 })
   const [month, setMonth] = useState(currentMonthValue())
+
+  useAutoDismiss(message, () => setMessage(''))
 
   useEffect(() => {
     if (!messId) return
@@ -156,9 +159,9 @@ export default function PaymentsPage() {
             <MealMonthSelector month={month} onChange={setMonth} />
 
             <DepositStatPanel>
-              <DepositStatCard title="My Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading my deposit" /> : formatDepositMoney(summary.myApproved)} compact />
-              <DepositStatCard title="Total Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading total deposit" /> : formatDepositMoney(summary.approved)} tone="blue" compact />
-              <DepositStatCard title="Pending Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading pending deposit" /> : formatDepositMoney(summary.pending)} tone="orange" compact />
+              <DepositStatCard title="My Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading my deposit" /> : formatDepositMoney(summary.myApproved)} icon={UserRound} compact />
+              <DepositStatCard title="Total Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading total deposit" /> : formatDepositMoney(summary.approved)} icon={WalletCards} tone="blue" compact />
+              <DepositStatCard title="Pending Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading pending deposit" /> : formatDepositMoney(summary.pending)} icon={Hourglass} tone="orange" compact />
             </DepositStatPanel>
           </>
         ) : null}
@@ -206,9 +209,9 @@ export default function PaymentsPage() {
         ) : null}
 
         {!showForm ? (
-          <div className="rounded-[22px] border border-[#dce9ec] bg-white/96 p-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
+          <section className="app-section">
             <DepositSectionTitle
-              title={`Recent Deposits (${formatMonthLabel(month)})`}
+              title="Recent Deposits"
               action={
                 <Link href={appHref(`/payments/all?month=${encodeURIComponent(month)}`)} className="text-label font-semibold text-[#008d8c]">
                   View All
@@ -228,7 +231,7 @@ export default function PaymentsPage() {
               ))}
               {!loading && !items.length ? <div className="mx-4 rounded-[12px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">No deposits found.</div> : null}
             </div>
-          </div>
+          </section>
         ) : null}
 
       </div>

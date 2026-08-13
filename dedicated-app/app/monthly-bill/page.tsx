@@ -9,7 +9,6 @@ import {
   CircleDollarSign,
   ReceiptText,
   ShieldCheck,
-  UserRound,
   WalletCards,
   type LucideIcon,
 } from 'lucide-react'
@@ -63,6 +62,7 @@ type MemberRecord = {
   user?: {
     id?: string
     name?: string | null
+    email?: string | null
     avatar_url?: string | null
   }
   mess?: { id: string }
@@ -127,38 +127,30 @@ function memberAvatarUrl(bill: BillItem, member?: MemberRecord) {
 
 function MemberPhoto({
   avatarUrl,
-  size = 'md',
+  name,
 }: {
   avatarUrl?: string | null
-  size?: 'sm' | 'md'
+  name?: string | null
 }) {
   const [imageFailed, setImageFailed] = useState(false)
   const normalizedUrl = avatarUrl?.trim()
 
   if (!normalizedUrl || imageFailed) {
     return (
-      <span
-        className={size === 'sm'
-          ? 'grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#edfafa] text-[#00777a]'
-          : 'grid h-12 w-12 place-items-center overflow-hidden rounded-full bg-[#edfafa] text-caption font-bold text-[#00777a] ring-1 ring-[#cfeeed]'}
-      >
-        <UserRound size={size === 'sm' ? 20 : 22} strokeWidth={2.35} />
+      <span className="monthly-member-row__avatar monthly-member-row__avatar--fallback" aria-hidden="true">
+        {memberInitials(name)}
       </span>
     )
   }
 
   return (
-    <span
-      className={size === 'sm'
-        ? 'block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-[#edfafa] ring-1 ring-[#cfeeed]'
-        : 'block h-12 w-12 overflow-hidden rounded-full bg-[#edfafa] ring-1 ring-[#cfeeed]'}
-    >
+    <span className="monthly-member-row__avatar">
       <img src={normalizedUrl} alt="" className="h-full w-full object-cover" onError={() => setImageFailed(true)} />
     </span>
   )
 }
 
-function MemberAvatar({
+function MemberBillRow({
   bill,
   member,
   messId,
@@ -168,15 +160,23 @@ function MemberAvatar({
   messId: string
 }) {
   const name = bill.member?.name || member?.user?.name || 'Member'
+  const email = bill.member?.email || member?.user?.email || 'Email not available'
+  const isPaid = bill.status === 'PAID' || toNumber(bill.final_due) <= 0
 
   return (
     <Link
       href={appHref(`/member-details?memberId=${encodeURIComponent(bill.member?.id ?? '')}&messId=${encodeURIComponent(member?.mess_id ?? messId)}&month=${encodeURIComponent(String(bill.month).slice(0, 7))}`)}
-      className="grid min-w-[62px] justify-items-center gap-1.5 text-center active:scale-[0.98]"
+      className="monthly-member-row"
       aria-label={`View ${name} monthly bill details`}
     >
-      <MemberPhoto avatarUrl={memberAvatarUrl(bill, member)} />
-      <span className="w-[62px] truncate text-caption font-bold text-[#123748]">{name.split(' ')[0] || memberInitials(name)}</span>
+      <MemberPhoto avatarUrl={memberAvatarUrl(bill, member)} name={name} />
+      <span className="monthly-member-row__identity">
+        <strong>{name}</strong>
+        <small>{email}</small>
+      </span>
+      <span className="monthly-member-row__status" data-status={isPaid ? 'paid' : 'due'}>
+        {isPaid ? 'Paid' : 'Due'}
+      </span>
     </Link>
   )
 }
@@ -286,24 +286,30 @@ export default function MonthlyBillPage() {
           </div>
         </section>
 
-        <section className="ui-card">
-          <div className="mb-3 flex items-center justify-between gap-3">
+        <section className="monthly-member-overview" aria-labelledby="member-bill-overview-title">
+          <div className="monthly-member-overview__header">
             <div>
-              <h2 className="text-label font-bold text-[#123748]">Member Wise Summary</h2>
-              <p className="mt-1 text-caption font-semibold text-[#65838b]">{bills.length} members for {formatMonthLabel(month)}</p>
+              <p>MEMBER BILLS</p>
+              <h2 id="member-bill-overview-title">Member overview</h2>
             </div>
+            <span>{loading ? '—' : bills.length}</span>
           </div>
 
-          {loading ? <LoadingIndicator variant="card" label="Loading member bills" /> : null}
+          {loading ? (
+            <div className="monthly-member-overview__loading">
+              <LoadingIndicator size="sm" label="Loading member bills" />
+              <span>Loading member bills...</span>
+            </div>
+          ) : null}
           {!loading && bills.length ? (
-            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+            <div className="monthly-member-overview__list">
               {bills.map((bill) => (
-                <MemberAvatar key={bill.id} bill={bill} member={memberByUserId.get(bill.member?.id ?? '')} messId={messId} />
+                <MemberBillRow key={bill.id} bill={bill} member={memberByUserId.get(bill.member?.id ?? '')} messId={messId} />
               ))}
             </div>
           ) : null}
           {!loading && !bills.length ? (
-            <div className="rounded-[16px] bg-[#edfafa] p-5 text-center text-label font-semibold text-[#65838b]">
+            <div className="monthly-member-overview__empty">
               No generated bills for this month.
             </div>
           ) : null}

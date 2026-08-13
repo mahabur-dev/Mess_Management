@@ -102,7 +102,7 @@ export default function AllDepositsPage() {
           showLabels={false}
         />
 
-        <section className="space-y-3">
+        <section className="app-section space-y-3">
           <DepositSectionTitle title={`Deposits (${visibleItems.length})`} />
           {loading ? <LoadingIndicator variant="card" label="Loading deposits" /> : null}
           {!loading && visibleItems.length ? (
@@ -118,7 +118,7 @@ export default function AllDepositsPage() {
               ))}
             </div>
           ) : null}
-          {!loading && !visibleItems.length ? <div className="rounded-[18px] bg-white p-5 text-label font-semibold text-[#65838b]">No deposits found.</div> : null}
+          {!loading && !visibleItems.length ? <div className="app-empty-state">No deposits found.</div> : null}
         </section>
       </div>
     </MobileShell>

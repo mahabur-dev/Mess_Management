@@ -15,6 +15,7 @@ import {
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 
@@ -48,6 +49,8 @@ export default function EditDepositPage() {
   })
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+
+  useAutoDismiss(message, () => setMessage(''))
 
   useEffect(() => {
     if (!depositId || !messId) return
@@ -108,14 +111,14 @@ export default function EditDepositPage() {
 
         <div>
           <DepositSectionTitle title="Deposit Information" />
-          <section className="mt-3 rounded-[20px] border border-[#dce9ec] bg-white px-4 py-2 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
+          <section className="app-list mt-3">
             <DepositInfoRow icon={depositInfoIcons.submittedBy} label="Submitted By" value={depositMemberName(deposit as DepositListRecord | null)} />
             <DepositInfoRow icon={depositInfoIcons.depositFor} label="Deposit For" value={deposit?.member?.name ?? 'Member'} />
             <DepositInfoRow icon={depositInfoIcons.approval} label="Approval Type" value="Auto approved" />
           </section>
         </div>
 
-        <div className="rounded-[22px] border border-[#d7e8eb] bg-white p-4 shadow-[0_14px_32px_rgba(18,55,72,0.08)] space-y-4">
+        <section className="app-section app-form-section space-y-4">
           <DepositSectionTitle title="Edit Deposit" />
           <div className="grid grid-cols-2 gap-3">
             <TextField label="Amount" value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="1500" type="number" />
@@ -139,7 +142,7 @@ export default function EditDepositPage() {
               <Save size={17} /> {busy ? 'Saving...' : 'Save'}
             </button>
           </div>
-        </div>
+        </section>
       </div>
     </MobileShell>
   )

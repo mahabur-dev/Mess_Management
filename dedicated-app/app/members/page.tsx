@@ -11,6 +11,7 @@ import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from '@/lib/member-join-requests'
 import { useAuth } from '../providers'
 
@@ -31,6 +32,9 @@ export default function MembersPage() {
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false)
   const [joinRequestFeedback, setJoinRequestFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const [reviewInProgress, setReviewInProgress] = useState<{ requestId: string; status: MemberJoinReviewStatus } | null>(null)
+
+  useAutoDismiss(message, () => setMessage(''))
+  useAutoDismiss(joinRequestFeedback, () => setJoinRequestFeedback(null))
 
   async function loadMembers() {
     if (!messId) return
@@ -166,7 +170,7 @@ export default function MembersPage() {
     <MobileShell hasFloatingAction>
       <TopScreen title="Members" subtitle="All members in your mess" backHref="/" />
       <div className="screen space-y-3">
-        <section className="rounded-[18px] border border-[#bfe7e6] bg-white/95 p-2.5 shadow-[0_10px_24px_rgba(0,119,122,0.08)]">
+        <section className="app-toolbar">
           <IconInput
             icon={Search}
             placeholder={activeView === 'members' ? 'Search member...' : 'Search join request...'}
@@ -176,8 +180,8 @@ export default function MembersPage() {
           />
         </section>
 
-        <section className="ui-card p-3">
-          <div className="grid grid-cols-2 gap-1.5 rounded-[18px] bg-[#edfafa] p-1.5" role="tablist" aria-label="Member view">
+        <section className="app-section py-0!">
+          <div className="app-tabs grid grid-cols-2 gap-1.5" role="tablist" aria-label="Member view">
             <button
               type="button"
               role="tab"

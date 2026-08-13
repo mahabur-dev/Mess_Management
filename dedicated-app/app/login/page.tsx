@@ -86,10 +86,10 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => setRemember((current) => !current)}
-            className="inline-flex min-w-0 items-center justify-start gap-2 text-left text-label font-medium text-[#65838b]"
+            className="auth-remember inline-flex min-w-0 items-center justify-start gap-2 text-left text-label font-medium text-[#65838b]"
           >
             <span
-              className={`grid h-[22px] w-[22px] place-items-center rounded-md ${remember
+              className={`auth-checkbox grid h-[22px] w-[22px] place-items-center rounded-md ${remember
                   ? 'bg-[#008d8c] text-white'
                   : 'border border-[#bfe7e6] bg-white text-transparent'
                 }`}

@@ -105,7 +105,7 @@ export function AiDepositPreview({
 
       <DepositManualNotice compact />
 
-      <section className="rounded-[22px] border border-[#dce9ec] bg-white/96 p-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
+      <section className="app-section">
         <DepositSectionTitle title="Deposit Preview" />
         <div className="flush-list flush-list--panel mt-3">
           <DepositListItem item={previewItem} variant="horizontal" />

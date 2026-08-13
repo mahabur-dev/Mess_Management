@@ -543,7 +543,7 @@ export function VerifyOtpPage() {
                 onFocus={(event) =>
                   event.currentTarget.select()
                 }
-                className="
+                className="auth-otp-input
                   min-h-14 min-w-0 w-full
                   rounded-[14px]
                   border border-[#c3e4e4]
@@ -582,7 +582,7 @@ export function VerifyOtpPage() {
         type="button"
         onClick={() => void resendOtp()}
         disabled={resending}
-        className="
+        className="auth-secondary-button
           mt-4 flex min-h-12 w-full py-2
           items-center justify-center gap-2
           rounded-2xl

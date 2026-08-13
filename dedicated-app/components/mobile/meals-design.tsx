@@ -277,7 +277,7 @@ export function MealCard({
   children: ReactNode
   className?: string
 }) {
-  return <section className={`ui-card ${className ?? ''}`}>{children}</section>
+  return <section className={`ui-card app-section ${className ?? ''}`}>{children}</section>
 }
 
 export function MealDateCard({
@@ -342,7 +342,7 @@ export function MealMonthSelector({
   }
 
   return (
-    <div className="mx-auto flex h-14 w-fit min-w-[238px] items-center justify-center overflow-hidden rounded-full bg-white text-[#123748] shadow-[0_12px_24px_rgba(18,55,72,0.12)]">
+    <div className="meal-month-selector mx-auto flex h-14 w-fit min-w-[238px] items-center justify-center overflow-hidden rounded-full bg-white text-[#123748] shadow-[0_12px_24px_rgba(18,55,72,0.12)]">
       <button
         type="button"
         aria-label="Previous month"

@@ -61,7 +61,7 @@ export default function AddMemberPage() {
     <MobileShell>
       <TopScreen title="Add Member" subtitle="Backend DTO aligned" backHref="/members" />
       <div className="screen space-y-4">
-        <div className="glass rounded-[28px] p-4 space-y-4">
+        <section className="app-section app-form-section space-y-4">
           <TextField label="Email" value={form.email} onChange={(email) => setForm((prev) => ({ ...prev, email }))} placeholder="member@example.com" />
           <SelectField
             label="Role"
@@ -80,7 +80,7 @@ export default function AddMemberPage() {
           <SubmitButton busy={busy} onClick={handleSubmit}>
             Save Member
           </SubmitButton>
-        </div>
+        </section>
       </div>
     </MobileShell>
   )

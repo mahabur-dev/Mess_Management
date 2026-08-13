@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { api } from '@/lib/api'
 import { getActiveMemberships } from '@/lib/app-permissions'
 import { appHref } from '@/lib/routes'
@@ -71,6 +72,8 @@ export default function ProfilePage() {
   const [imageFailed, setImageFailed] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [avatarNotice, setAvatarNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
+  useAutoDismiss(avatarNotice, () => setAvatarNotice(null))
+
   const avatarUrl = user?.avatar_url?.trim() ?? ''
   const initials = getInitials(user?.name)
   const membership = useMemo(() => getActiveMemberships(user)[0], [user])

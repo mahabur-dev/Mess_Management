@@ -29,7 +29,7 @@ export function HomeCard({
   const Element = as
 
   return (
-    <Element className={classes('home-card ui-card', className)} role={role} aria-label={ariaLabel}>
+    <Element className={classes('home-card ui-card app-section', className)} role={role} aria-label={ariaLabel}>
       {title || caption || action ? (
         <div className="home-card__header">
           <div className="min-w-0 flex-1">

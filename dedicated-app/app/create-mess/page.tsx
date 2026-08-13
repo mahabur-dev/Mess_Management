@@ -85,7 +85,7 @@ export default function CreateMessPage() {
     <MobileShell>
       <TopScreen title="Create Mess" subtitle="Start a new workspace" backHref="/" />
       <div className="screen space-y-4">
-        <section className="glass rounded-[24px] p-4">
+        <section className="app-section">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[#edfafa] text-[#008d8c]">
               <Building2 size={23} strokeWidth={2.35} />
@@ -97,7 +97,7 @@ export default function CreateMessPage() {
           </div>
         </section>
 
-        <section className="glass rounded-[24px] p-4 space-y-4">
+        <section className="app-section app-form-section space-y-4">
           <div className="section-title">Mess Details</div>
           <TextField label="Mess Name" value={form.messName} onChange={(value) => updateField('messName', value)} placeholder="Green House Mess" />
           <TextField label="Location" value={form.messLocation} onChange={(value) => updateField('messLocation', value)} placeholder="Narayanganj, Dhaka" />

@@ -5,6 +5,7 @@ import { Camera, LoaderCircle, UserRound } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SubmitButton, TextField } from '@/components/mobile/form-controls'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { api } from '@/lib/api'
 import { useAuth } from '../providers'
 
@@ -27,6 +28,8 @@ export default function EditProfilePage() {
   const [profileImage, setProfileImage] = useState<File | null>(null)
   const [imageFailed, setImageFailed] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+
+  useAutoDismiss(message, () => setMessage(null))
 
   const avatarUrl = user?.avatar_url?.trim() ?? ''
   const initials = getInitials(user?.name)

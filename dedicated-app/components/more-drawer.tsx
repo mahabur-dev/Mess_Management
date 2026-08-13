@@ -2,7 +2,7 @@
 
 import { useId, useLayoutEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ChevronRight, LogOut, UserRound, X } from 'lucide-react'
+import { LogOut, UserRound, X } from 'lucide-react'
 import { useNativeBackAction } from '@/components/native-back-actions'
 import { getMoreMenuGroups } from '@/lib/app-permissions'
 import type { AuthUser } from '@/lib/auth'
@@ -109,16 +109,14 @@ export function MoreDrawer({
             <section key={group.id} className="more-drawer-group" aria-labelledby={`${titleId}-${group.id}`}>
               <h3 id={`${titleId}-${group.id}`}>{group.label}</h3>
               <div className="more-drawer-list">
-                {group.items.map(({ href, label, description, icon: Icon }) => (
+                {group.items.map(({ href, label, icon: Icon }) => (
                   <Link key={href} href={appHref(href)} className="more-drawer-item" onClick={onClose}>
                     <span className="more-drawer-item-icon" aria-hidden="true">
                       <Icon size={19} strokeWidth={2.25} />
                     </span>
                     <span className="more-drawer-item-copy">
                       <strong>{label}</strong>
-                      <small>{description}</small>
                     </span>
-                    <ChevronRight size={17} strokeWidth={2.3} aria-hidden="true" />
                   </Link>
                 ))}
               </div>

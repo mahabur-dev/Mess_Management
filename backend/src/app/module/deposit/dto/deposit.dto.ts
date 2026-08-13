@@ -96,12 +96,15 @@ export class DepositFilterDto {
   @Transform(({ value }) => value?.toString())
   limit?: string;
 
-  @ApiPropertyOptional({ example: 'date' })
+  @ApiPropertyOptional({
+    enum: ['date', 'deposit_date', 'created_at', 'amount'],
+    default: 'deposit_date',
+  })
   @IsOptional()
   @IsString()
   sortBy?: string;
 
-  @ApiPropertyOptional({ enum: ['asc', 'desc'] })
+  @ApiPropertyOptional({ enum: ['asc', 'desc'], default: 'desc' })
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc';

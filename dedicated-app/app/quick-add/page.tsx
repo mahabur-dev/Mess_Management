@@ -180,7 +180,7 @@ export default function QuickAddPage() {
     ? payload.items as Array<Record<string, unknown>>
     : null
   const expenseItems = command && ['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(command.intent)
-    ? payloadItems ?? [payload]
+    ? payloadItems ?? []
     : null
   const mealItems = command?.intent === 'MEAL_CREATE'
     ? payloadItems ?? [payload]
@@ -193,6 +193,9 @@ export default function QuickAddPage() {
         items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item),
       }
     })
+  }
+  const patchPayload = (patch: Record<string, unknown>) => {
+    setPayload((current) => ({ ...current, ...patch }))
   }
   const removePayloadItem = (index: number) => {
     setPayload((current) => ({
@@ -373,12 +376,14 @@ export default function QuickAddPage() {
               <AiExpensePreview
                 key={command.id}
                 intent={command.intent}
+                payload={payload}
                 items={expenseItems}
                 initialPreview={command.preview}
                 members={members}
                 currentUserId={user?.id}
                 canManage={canManage}
                 disabled={busy}
+                onPatchPayload={patchPayload}
                 onPatchItem={patchPayloadItem}
                 onRemoveItem={removePayloadItem}
               />

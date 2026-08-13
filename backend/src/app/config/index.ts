@@ -3,6 +3,11 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
+function positiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 export default {
   port: process.env.PORT || 5001,
   env: process.env.NODE_ENV || 'development',
@@ -54,6 +59,8 @@ export default {
       process.env.GROQ_COMMAND_MODEL ||
       'openai/gpt-oss-20b',
     commandResponseFormat: process.env.AI_COMMAND_RESPONSE_FORMAT || 'auto',
+    commandTimeoutMs: positiveInteger(process.env.AI_COMMAND_TIMEOUT_MS, 20_000),
+    previewSlowLogMs: positiveInteger(process.env.AI_PREVIEW_SLOW_LOG_MS, 1_000),
     speechProvider: process.env.AI_SPEECH_PROVIDER || 'groq',
     speechApiKey: process.env.AI_SPEECH_API_KEY || process.env.GROQ_API_KEY,
     speechBaseUrl:
@@ -73,6 +80,7 @@ export default {
     speechSendPrompt:
       process.env.AI_SPEECH_SEND_PROMPT?.toLowerCase() !== 'false',
     speechPrompt: process.env.AI_SPEECH_PROMPT?.trim() || undefined,
+    speechTimeoutMs: positiveInteger(process.env.AI_SPEECH_TIMEOUT_MS, 30_000),
     maxAudioBytes: Number(process.env.AI_MAX_AUDIO_BYTES) || 10 * 1024 * 1024,
     retentionDays: Number(process.env.AI_COMMAND_RETENTION_DAYS) || 30,
     maxRequestsPerMinute: Number(process.env.AI_MAX_REQUESTS_PER_MINUTE) || 10,

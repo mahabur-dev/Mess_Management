@@ -1,12 +1,12 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   CalendarDays,
   ChevronDown,
   CircleDollarSign,
   CookingPot,
+  ReceiptText,
   House,
   Landmark,
   Plus,
@@ -36,6 +36,7 @@ import {
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import { FloatingActionMenu } from '@/components/mobile/floating-action-menu'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
@@ -407,7 +408,7 @@ export default function ExpensesPage() {
   }, [managerData?.members, memberFilter, search])
 
   return (
-    <MobileShell showBottomNavigation>
+    <MobileShell showBottomNavigation hasFloatingAction>
       <TopScreen
         title={view === 'MANAGER' ? 'Manage Expenses' : 'Expense Management'}
         subtitle={view === 'MANAGER' ? 'Monitor member costs and dues' : user?.memberships?.[0]?.mess?.name ?? 'Mess expenses'}
@@ -451,16 +452,6 @@ export default function ExpensesPage() {
               <ExpenseDetailsCta href="/monthly-bill" title="Total Expenses This Month" subtitle="Food, utility and rent" buttonLabel="Details" />
             </ExpenseSurface>
 
-            {!isManager ? (
-              <div className="grid grid-cols-2 gap-3">
-                <Link href="/add-expense" className="expense-primary-action">
-                  <Plus size={18} /> Add Expense
-                </Link>
-                <Link href="/add-utility" className="expense-secondary-action">
-                  <Zap size={18} /> Add Utility
-                </Link>
-              </div>
-            ) : null}
           </>
         ) : (
           <>
@@ -567,14 +558,6 @@ export default function ExpensesPage() {
               </div>
             </ExpenseSurface>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Link href="/add-expense" className="expense-primary-action">
-                <Plus size={18} /> Add Expense
-              </Link>
-              <Link href="/add-utility" className="expense-secondary-action">
-                <Zap size={18} /> Add Utility
-              </Link>
-            </div>
           </>
         )}
 
@@ -592,6 +575,22 @@ export default function ExpensesPage() {
           title={isManager && view === 'MANAGER' ? 'Expense Submissions' : 'All Expenses'}
         />
       </div>
+
+      <FloatingActionMenu
+        label="Add expense or utility"
+        items={[
+          {
+            href: '/add-expense',
+            label: 'Add Expense',
+            icon: <ReceiptText size={20} strokeWidth={2.3} />,
+          },
+          {
+            href: '/add-utility',
+            label: 'Add Utility',
+            icon: <Zap size={20} strokeWidth={2.3} />,
+          },
+        ]}
+      />
     </MobileShell>
   )
 }

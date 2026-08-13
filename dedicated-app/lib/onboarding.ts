@@ -18,9 +18,9 @@ export const onboardingSlides: readonly OnboardingSlide[] = [
   },
   {
     id: 'workspace',
-    eyebrow: 'ONE SHARED WORKSPACE',
-    title: 'Run your mess with clarity',
-    description: 'Keep members, meals, bazar expenses, utilities and deposits organized in one place.',
+    eyebrow: 'SMARTER DAILY OPERATIONS',
+    title: 'Simplify your mess or hostel',
+    description: 'Reduce manual work and manage members, meals, expenses, utilities and payments—all from one app.',
     visual: 'workspace',
   },
   {

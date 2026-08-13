@@ -27,6 +27,12 @@ import {
   type ExpenseCustomShare,
 } from '@/components/mobile/expense-custom-shares'
 import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
+import {
+  ExpenseLineItemsEditor,
+  createExpenseLineItem,
+  expenseLineItemsPayload,
+  type ExpenseLineItem,
+} from '@/components/mobile/expense-line-items'
 import { currentMonthValue } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
@@ -45,10 +51,7 @@ import { canManageMess } from '@/lib/app-permissions'
 type FormState = {
   category: ExpenseCategory
   purchasedBy: string
-  amount: string
-  itemName: string
-  quantity: string
-  unit: string
+  items: ExpenseLineItem[]
   expenseDate: string
   billingMonth: string
   description: string
@@ -76,15 +79,13 @@ type PreviewData = {
   personalHistoryAmount: number
   totalSharedCost: number
   shares: PreviewShare[]
+  items: Array<{ itemName: string; quantity?: number | null; unit?: string | null; amount: number }>
 }
 
 const INITIAL_FORM: FormState = {
   category: 'FOOD',
   purchasedBy: '',
-  amount: '',
-  itemName: '',
-  quantity: '',
-  unit: '',
+  items: [{ id: 'initial-item', itemName: '', quantity: '', unit: '', amount: '' }],
   expenseDate: new Date().toISOString().slice(0, 10),
   billingMonth: currentMonthValue(),
   description: '',
@@ -142,10 +143,7 @@ export default function AddExpensePage() {
       customShares,
       purchasedBy: isManager ? form.purchasedBy || undefined : user?.id,
       category: form.category,
-      amount: Number(form.amount),
-      itemName: form.itemName.trim() || LABELS.EXPENSE_CATEGORIES[form.category],
-      quantity: form.quantity ? Number(form.quantity) : undefined,
-      unit: form.unit.trim() || undefined,
+      items: expenseLineItemsPayload(form.items),
       expenseDate: form.expenseDate,
       billingMonth: `${form.billingMonth}-01`,
       description: form.description.trim() || undefined,
@@ -157,7 +155,9 @@ export default function AddExpensePage() {
     setMessage('')
     setSuccess(false)
     if (!messId) return setMessage('No mess selected.')
-    if (!form.amount) return setMessage('Amount is required.')
+    if (form.items.some((item) => !item.itemName.trim() || !item.amount || Number(item.amount) <= 0)) {
+      return setMessage('Every item requires a name and a valid line amount.')
+    }
     if (effectiveUsedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return setMessage('Select at least one member.')
 
     setBusy(true)
@@ -191,7 +191,7 @@ export default function AddExpensePage() {
         await api.createExpense(payload)
       }
 
-      setForm(INITIAL_FORM)
+      setForm({ ...INITIAL_FORM, items: [createExpenseLineItem()] })
       setReceiptFile(null)
       setPreview(null)
       setSuccess(true)
@@ -215,6 +215,7 @@ export default function AddExpensePage() {
             splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}
             payerCredit={preview.payerCredit}
             totalSharedCost={preview.totalSharedCost}
+            items={preview.items}
             shares={preview.shares}
             formatMoney={formatTaka}
             busy={busy}
@@ -268,23 +269,14 @@ export default function AddExpensePage() {
           ) : null}
 
           <FormSection title="Expense Details">
-            <FormFieldGrid>
-              <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
-                {GENERAL_EXPENSE_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {LABELS.EXPENSE_CATEGORIES[category]}
-                  </option>
-                ))}
-              </DesignedSelect>
-              <DesignedInput label="Item" icon={expenseFormIcons.item} value={form.itemName} onChange={(event) => update('itemName', event.target.value)} placeholder="Expense item" />
-            </FormFieldGrid>
-            {form.category === 'FOOD' || form.category === 'GROCERY' ? (
-              <FormFieldGrid>
-                <DesignedInput label="Quantity (Optional)" icon={expenseFormIcons.item} value={form.quantity} onChange={(event) => update('quantity', event.target.value)} placeholder="0" type="number" />
-                <DesignedInput label="Unit (Optional)" icon={expenseFormIcons.item} value={form.unit} onChange={(event) => update('unit', event.target.value)} placeholder="kg" />
-              </FormFieldGrid>
-            ) : null}
-            <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
+            <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
+              {GENERAL_EXPENSE_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {LABELS.EXPENSE_CATEGORIES[category]}
+                </option>
+              ))}
+            </DesignedSelect>
+            <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
             <FormFieldGrid>
               <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
               <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />

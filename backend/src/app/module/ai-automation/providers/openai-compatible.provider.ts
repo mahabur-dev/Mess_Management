@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  GatewayTimeoutException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -23,10 +24,23 @@ import {
 } from '../ai-command.types';
 import {
   buildCommandNormalization,
+  extractPricedExpenseItems,
+  hasDepositIntent,
+  hasExplicitCurrency,
+  hasPurchaseIntent,
   inferExpenseCategory,
   inferMealName,
+  inferMealNames,
+  inferMealServings,
+  inferMealStatus,
+  inferNumericMoneyAmount,
+  inferSingleNumericAmount,
+  inferUtilityCommandType,
   inferUtilityType,
+  isSelfReference,
   normalizeUnit,
+  reconcileSummaryExpenseItems,
+  resolveMemberMention,
   resolveMemberName,
   type NamedMember,
 } from '../normalisers/command-normaliser';
@@ -241,25 +255,32 @@ MULTIPLE EXPENSE ITEMS
 - Put every line in data.items.
 - Each line keeps its own amount, quantity, unit, itemName, category and date.
 - data.amount is the sum of all known line amounts.
+- A leading phrase such as “bazar 500 taka hoyeche” or “total 500” is a transaction summary when the following item prices add up to 500. It is NOT another item and must not be double-counted.
+- Item-price pairs may be adjacent without commas, for example “tel 100 taka chal 100 taka”.
+- Quantity and unit are optional. If the user only says “alu 100 taka”, set quantity and unit to null; never request clarification for them.
 - For a single expense, data.items must be [].
 
 UTILITY RULES
-- Electricity/current/বিদ্যুৎ bill => UTILITY_CREATE + ELECTRICITY.
-- Internet/WiFi/broadband bill => UTILITY_CREATE + WIFI.
-- Gas bill => UTILITY_CREATE + GAS.
-- Water bill => UTILITY_CREATE + WATER.
-- Cleaner/cleaning bill => UTILITY_CREATE + CLEANING.
+- Electricity/current/biddut/bidyut/বিদ্যুৎ/কারেন্ট bill => UTILITY_CREATE + ELECTRICITY.
+- Internet/WiFi/net/broadband/ইন্টারনেট/ওয়াইফাই bill or recharge => UTILITY_CREATE + WIFI.
+- Gas/gas er/গ্যাসের bill => UTILITY_CREATE + GAS.
+- Water/pani/panir/পানির bill => UTILITY_CREATE + WATER.
+- Cleaner/cleaning/bua/maid bill or salary => UTILITY_CREATE + CLEANING.
 - A utility requires amount and utility type. Date defaults to today.
+- Utility quantity and unit are optional and normally null. Never ask for them.
 
 DEPOSIT RULES
 - “Rahim deposit 2000”, “Rahim 2000 taka joma dise”, “রহিম ২০০০ টাকা জমা দিয়েছে” => DEPOSIT_CREATE.
-- Deposit requires amount and memberName.
+- Deposit requires a positive amount. If the member is omitted or the user says me/my/myself, ami/amar/amar jonno, আমি/আমার/আমার জন্য, use context.actorName. Do not request the actor's name.
 - If context.memberNames is non-empty, return the exact supplied member name when there is one clear match. Never output IDs and never invent a member.
+- A member name written phonetically in Bangla or Banglish must be mapped to the matching exact context.memberNames value when the match is unambiguous (for example নাজমুল => Najmul).
+- Treat deposit, joma/zoma, জমা, ডিপোজিট, “balance add”, and natural variants such as জমা করো/জমা দিয়েছে/টাকা রাখো as the same deposit intent.
 - Authorization is handled by the backend; do not change the intent because of context.canManage.
 
 MEAL RULES
 - Meal-count commands are MEAL_CREATE, for example “Rahim dinner 2 ta”, “রহিমের ২টা ডিনার”.
 - BREAKFAST, LUNCH and DINNER are supported.
+- Dinner variants include dinner/dinar/diner/dinnar, supper, rater/raater khabar, রাতের খাবার, রাতের মিল, ডিনার and minor speech-to-text spelling errors.
 - data.mealCount and every data.meals[].mealCount mean the number of servings the user SAID, before weighting. If count is omitted, use 1.
 - The backend applies billing weights deterministically: each breakfast serving is 0.5 meal; each lunch or dinner serving is 1 meal. Do not apply that weighting yourself.
 - If member is omitted, use context.actorName.
@@ -274,7 +295,7 @@ MEAL RULES
 
 CLARIFICATION
 Use NEEDS_CLARIFICATION only when a required fact cannot be safely inferred.
-Examples: expense with no amount; deposit with no amount/member; utility with no identifiable utility type; ambiguous member; ambiguous bare “kal/কাল”.
+Examples: expense with no amount; deposit with no amount; utility with no identifiable utility type; an explicit but unknown/ambiguous member; ambiguous bare “kal/কাল”.
 Do NOT ask for clarification because of informal spelling, Banglish, word order, omitted date, or an inferable category.
 
 CANONICAL EXAMPLES
@@ -294,6 +315,11 @@ CANONICAL EXAMPLES
 14) “আমার breakfast একটা meal, dinner একটা meal, এবং lunch একটা meal add করো” => MEAL_CREATE with three data.meals entries, each spoken mealCount 1 and date today.
 15) “আজ থেকে পাঁচ দিন breakfast 2 ta, lunch 1 ta add koro” => two data.meals entries, each startDate today and endDate today + 4 days; breakfast spoken mealCount 2, lunch spoken mealCount 1.
 16) “গতকাল dinner 3 ta add koro” => MEAL_CREATE, date yesterday, dinner spoken mealCount 3.
+17) “amar jonno 2000 tk joma koro” / “আমার জন্য ২০০০ টাকা জমা করো” => DEPOSIT_CREATE, member context.actorName, amount 2000.
+18) “Najmul er jonno 1000 deposit koro” / “নাজমুলের জন্য ১০০০ টাকা জমা করো” => DEPOSIT_CREATE, exact matching member Najmul, amount 1000.
+19) “amar dinar add koro” / “আমার রাতের খাবার যোগ করো” => MEAL_CREATE, member context.actorName, mealName DINNER, mealCount 1.
+20) “agke bazar 500 tk hoice, alu 100 tk and potol 100 tk and tel 100 tk chal 100 tk sobji 100 tk” => EXPENSE_CREATE with five data.items (alu, potol, tel, chal, sobji), each amount 100, quantity/unit null, top-level amount 500. The leading bazar 500 is only the summary.
+21) “current er bill 1200 tk add koro” / “কারেন্ট বিল ১২০০ টাকা যোগ করো” => UTILITY_CREATE, amount 1200, utilityType ELECTRICITY.
 
 Return only the schema-compliant JSON object.
 `.trim();
@@ -342,12 +368,24 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
     url: string,
     init: RequestInit,
     providerName = 'AI provider',
+    timeoutMs = config.aiAutomation.commandTimeoutMs,
   ): Promise<Response> {
     let response: Response;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const abortFromCaller = () => controller.abort();
+    init.signal?.addEventListener('abort', abortFromCaller, { once: true });
 
     try {
-      response = await fetch(url, init);
+      response = await fetch(url, { ...init, signal: controller.signal });
     } catch (error) {
+      if (controller.signal.aborted && !init.signal?.aborted) {
+        this.logger.warn(`${providerName} timed out after ${timeoutMs}ms`);
+        throw new GatewayTimeoutException({
+          code: 'AI_PROVIDER_TIMEOUT',
+          message: 'AI service took too long to respond. Please try again.',
+        });
+      }
       this.logger.warn(
         `${providerName} network request failed: ${error instanceof Error ? error.message : 'unknown error'}`,
       );
@@ -355,6 +393,9 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
         code: 'AI_PROVIDER_UNAVAILABLE',
         message: 'AI service is temporarily unavailable',
       });
+    } finally {
+      clearTimeout(timeout);
+      init.signal?.removeEventListener('abort', abortFromCaller);
     }
 
     if (response.status === 429) {
@@ -442,6 +483,7 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
         body: form,
       },
       config.aiAutomation.speechProvider,
+      config.aiAutomation.speechTimeoutMs,
     );
 
     let transcript = '';
@@ -466,6 +508,12 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
 
   async parse(text: string, context: AiParseContext): Promise<ParsedAiCommand> {
     const normalized = buildCommandNormalization(text);
+    const local = this.tryParseLocally(
+      normalized.original,
+      normalized.normalized,
+      context,
+    );
+    if (local) return local;
 
     const userPayload = {
       originalInput: normalized.original,
@@ -539,6 +587,134 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
     return this.finalizeCommand(parsed, normalized.original, normalized.normalized, context);
   }
 
+  private tryParseLocally(
+    originalText: string,
+    normalizedText: string,
+    context: AiParseContext,
+  ): ParsedAiCommand | null {
+    const languageText = `${originalText} ${normalizedText}`;
+    const date = this.resolveLocalDate(normalizedText, context.today);
+    if (!date) return null;
+    const utilityType = inferUtilityCommandType(languageText);
+    const amount =
+      inferNumericMoneyAmount(languageText) ??
+      (utilityType ? inferSingleNumericAmount(languageText) : null);
+    const deposit = hasDepositIntent(languageText);
+    const mealNames = inferMealNames(languageText);
+    const mealName = mealNames[0] ?? null;
+    const pricedItems = extractPricedExpenseItems(normalizedText || originalText);
+    const memberOptions: NamedMember[] = context.memberNames.map(
+      (name, index) => ({ id: String(index), name }),
+    );
+    const mentionedMember = resolveMemberMention(originalText, memberOptions);
+
+    let intent: ParsedAiCommand['intent'] | null = null;
+    if (deposit && amount) {
+      if (
+        !this.canUseLocalMemberResolution(
+          normalizedText,
+          mentionedMember.member?.name ?? null,
+          'deposit',
+        )
+      ) {
+        return null;
+      }
+      intent = 'DEPOSIT_CREATE';
+    } else if (utilityType && amount) {
+      intent = 'UTILITY_CREATE';
+    } else if (
+      mealName &&
+      mealNames.length === 1 &&
+      !hasExplicitCurrency(languageText) &&
+      !hasPurchaseIntent(languageText)
+    ) {
+      if (
+        !this.canUseLocalMemberResolution(
+          normalizedText,
+          mentionedMember.member?.name ?? null,
+          'meal',
+        )
+      ) {
+        return null;
+      }
+      intent = 'MEAL_CREATE';
+    } else if (pricedItems.length) {
+      intent = 'EXPENSE_CREATE';
+    }
+    if (!intent) return null;
+
+    const status = inferMealStatus(languageText);
+    const command: ParsedAiCommand = {
+      intent,
+      confidence: 0.98,
+      clarification: null,
+      missingFields: [],
+      data: {
+        amount:
+          intent === 'EXPENSE_CREATE'
+            ? pricedItems.reduce((sum, item) => sum + item.amount, 0)
+            : amount,
+        date,
+        startDate: null,
+        endDate: null,
+        category: null,
+        utilityType: intent === 'UTILITY_CREATE' ? utilityType : null,
+        itemName: null,
+        description: originalText,
+        memberName: mentionedMember.member?.name ?? null,
+        mealName: intent === 'MEAL_CREATE' ? mealName : null,
+        mealCount:
+          intent === 'MEAL_CREATE'
+            ? status === 'OFF'
+              ? 0
+              : (inferMealServings(languageText) ?? 1)
+            : null,
+        status: intent === 'MEAL_CREATE' ? status : null,
+        quantity: null,
+        unit: null,
+        items: intent === 'EXPENSE_CREATE' ? pricedItems : [],
+        meals: [],
+      },
+    };
+
+    return this.finalizeCommand(command, originalText, normalizedText, context);
+  }
+
+  private resolveLocalDate(text: string, today: string): string | null {
+    if (/(?:^|\s)(?:kal|কাল)(?=\s|$|[,.;])/iu.test(text)) return null;
+
+    const explicit = text.match(/\b\d{4}-\d{2}-\d{2}\b/u)?.[0];
+    if (explicit) return explicit;
+
+    const offset = /\byesterday\b/iu.test(text)
+      ? -1
+      : /\btomorrow\b/iu.test(text)
+        ? 1
+        : 0;
+    if (!offset) return today;
+
+    const date = new Date(`${today}T00:00:00.000Z`);
+    date.setUTCDate(date.getUTCDate() + offset);
+    return date.toISOString().slice(0, 10);
+  }
+
+  private canUseLocalMemberResolution(
+    text: string,
+    mentionedMember: string | null,
+    intent: 'deposit' | 'meal',
+  ) {
+    if (mentionedMember) return true;
+    if (/(?:\b(?:ami|amar|amake|me|my|myself)\b|আমি|আমার|আমাকে)/iu.test(text)) {
+      return true;
+    }
+
+    const safeStart =
+      intent === 'deposit'
+        ? /^(?:today|yesterday|tomorrow|deposit|\d|জমা|ডিপোজিট)/iu
+        : /^(?:today|yesterday|tomorrow|breakfast|lunch|dinner|dinar|diner|nasta|dupur|rat|raat|নাস্তা|দুপুর|রাত|ডিনার|\d)/iu;
+    return safeStart.test(text.trim());
+  }
+
   private finalizeCommand(
     command: ParsedAiCommand,
     originalText: string,
@@ -555,6 +731,105 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
         meals: (command.data.meals || []).map((meal) => ({ ...meal })),
       },
     };
+
+    const languageText = `${originalText} ${normalizedText}`;
+    const depositSignal = hasDepositIntent(languageText);
+    const utilitySignal = inferUtilityCommandType(languageText);
+    const numericAmount =
+      inferNumericMoneyAmount(languageText) ??
+      (utilitySignal ? inferSingleNumericAmount(languageText) : null);
+    const pricedExpenseItems = extractPricedExpenseItems(
+      normalizedText || originalText,
+    );
+    const inferredMealName = inferMealName(languageText);
+    const recoverableIntent = ['UNKNOWN', 'NEEDS_CLARIFICATION'].includes(
+      result.intent,
+    );
+    const misclassifiedMealExpense =
+      result.intent === 'EXPENSE_CREATE' &&
+      !hasExplicitCurrency(languageText) &&
+      !hasPurchaseIntent(languageText);
+    const explicitUtilityProductPurchase =
+      /(?:water\s+bottle|gas\s+cylinder|পানির\s+বোতল|গ্যাস\s+সিলিন্ডার)/iu.test(
+        languageText,
+      );
+
+    // Recover strong, deterministic language signals when the model is overly
+    // conservative. Deposit wording is unambiguous enough to also correct an
+    // expense classification; meal recovery is limited to unknown commands so
+    // a priced restaurant dinner remains an expense.
+    if (
+      depositSignal &&
+      (recoverableIntent || result.intent === 'EXPENSE_CREATE')
+    ) {
+      result.intent = 'DEPOSIT_CREATE';
+      result.data.amount = result.data.amount ?? numericAmount;
+      result.missingFields = [];
+      result.clarification = null;
+    } else if (pricedExpenseItems.length >= 2 && recoverableIntent) {
+      result.intent = 'EXPENSE_CREATE';
+      result.data.items = pricedExpenseItems;
+      result.data.amount = pricedExpenseItems.reduce(
+        (sum, item) => sum + item.amount,
+        0,
+      );
+      result.missingFields = [];
+      result.clarification = null;
+    } else if (
+      utilitySignal &&
+      (recoverableIntent || result.intent === 'EXPENSE_CREATE')
+    ) {
+      result.intent = 'UTILITY_CREATE';
+      result.data.utilityType = utilitySignal;
+      result.data.amount = result.data.amount ?? numericAmount;
+      result.missingFields = [];
+      result.clarification = null;
+    } else if (
+      inferredMealName &&
+      (recoverableIntent || misclassifiedMealExpense) &&
+      numericAmount === null
+    ) {
+      const status = inferMealStatus(languageText);
+      result.intent = 'MEAL_CREATE';
+      result.data.mealName = inferredMealName;
+      result.data.status = status;
+      result.data.mealCount =
+        status === 'OFF'
+          ? 0
+          : (result.data.mealCount ?? inferMealServings(languageText) ?? 1);
+      result.missingFields = [];
+      result.clarification = null;
+    }
+
+    if (
+      result.intent === 'UTILITY_CREATE' &&
+      !utilitySignal &&
+      (hasPurchaseIntent(languageText) || explicitUtilityProductPurchase)
+    ) {
+      result.intent = 'EXPENSE_CREATE';
+      result.data.utilityType = null;
+      result.data.category = 'OTHER';
+      result.missingFields = [];
+      result.clarification = null;
+    }
+
+    let mentionedMemberIsAmbiguous = false;
+    if (['DEPOSIT_CREATE', 'MEAL_CREATE'].includes(result.intent)) {
+      if (isSelfReference(result.data.memberName)) {
+        result.data.memberName = context.actorName?.trim() || null;
+      } else if (!result.data.memberName?.trim()) {
+        const members: NamedMember[] = context.memberNames.map((name, index) => ({
+          id: String(index),
+          name,
+        }));
+        const mentioned = resolveMemberMention(originalText, members);
+        mentionedMemberIsAmbiguous = mentioned.ambiguous;
+        result.data.memberName =
+          mentioned.member?.name ||
+          (!mentioned.ambiguous ? context.actorName?.trim() : null) ||
+          null;
+      }
+    }
 
     const isCreateIntent = [
       'EXPENSE_CREATE',
@@ -592,6 +867,8 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
     }
 
     if (result.intent === 'UTILITY_CREATE') {
+      result.data.utilityType = result.data.utilityType ?? utilitySignal;
+      result.data.amount = result.data.amount ?? numericAmount;
       this.finalizeUtility(result, originalText, normalizedText, context);
     }
 
@@ -600,6 +877,9 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
         this.addMissing(result, 'amount');
       }
       if (!result.data.memberName?.trim()) {
+        this.addMissing(result, 'memberName');
+      }
+      if (mentionedMemberIsAmbiguous) {
         this.addMissing(result, 'memberName');
       }
     }
@@ -667,6 +947,8 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
       }
     }
 
+    this.retainBlockingMissingFields(result);
+
     if (result.missingFields.length > 0 && result.intent !== 'UNKNOWN') {
       result.intent = 'NEEDS_CLARIFICATION';
       result.confidence = Math.min(result.confidence, 0.69);
@@ -688,6 +970,13 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
     context: AiParseContext,
   ): void {
     const data = result.data;
+    const extractedItems = extractPricedExpenseItems(
+      normalizedText || originalText,
+    );
+    data.items = reconcileSummaryExpenseItems(data.items);
+    if (extractedItems.length > data.items.length) {
+      data.items = extractedItems;
+    }
 
     if (data.items.length > 0) {
       data.items = data.items.map((item) => {
@@ -756,6 +1045,7 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
 
     data.utilityType =
       data.utilityType ??
+      inferUtilityCommandType(`${originalText} ${normalizedText}`) ??
       inferUtilityType(data.itemName, data.description ?? `${originalText} ${normalizedText}`);
 
     if (!data.utilityType) {
@@ -787,6 +1077,67 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
   private addMissing(result: ParsedAiCommand, field: string): void {
     if (!result.missingFields.includes(field)) {
       result.missingFields.push(field);
+    }
+  }
+
+  private retainBlockingMissingFields(result: ParsedAiCommand): void {
+    const blockingByIntent: Partial<Record<ParsedAiCommand['intent'], Set<string>>> = {
+      EXPENSE_CREATE: new Set(['amount', 'items.amount']),
+      UTILITY_CREATE: new Set(['amount', 'utilityType']),
+      DEPOSIT_CREATE: new Set(['amount', 'memberName']),
+      MEAL_CREATE: new Set([
+        'mealName',
+        'mealCount',
+        'meals.mealName',
+        'meals.mealCount',
+        'memberName',
+        'dateRange',
+      ]),
+    };
+    const allowed = blockingByIntent[result.intent];
+    if (!allowed) return;
+    result.missingFields = result.missingFields.filter(
+      (field) => allowed.has(field) && this.isFieldStillMissing(result, field),
+    );
+  }
+
+  private isFieldStillMissing(
+    result: ParsedAiCommand,
+    field: string,
+  ): boolean {
+    const data = result.data;
+    switch (field) {
+      case 'amount':
+        return !(typeof data.amount === 'number' && data.amount > 0);
+      case 'items.amount':
+        return (
+          !data.items.length ||
+          data.items.some(
+            (item) => !(typeof item.amount === 'number' && item.amount > 0),
+          )
+        );
+      case 'utilityType':
+        return !data.utilityType;
+      case 'memberName':
+        return !data.memberName?.trim();
+      case 'mealName':
+        return !data.mealName || data.mealName === 'OTHER';
+      case 'mealCount':
+        return data.status !== 'OFF' && !(Number(data.mealCount) > 0);
+      case 'meals.mealName':
+        return (
+          !data.meals.length ||
+          data.meals.some((meal) => !meal.mealName || meal.mealName === 'OTHER')
+        );
+      case 'meals.mealCount':
+        return (
+          !data.meals.length ||
+          data.meals.some(
+            (meal) => meal.status !== 'OFF' && !(Number(meal.mealCount) > 0),
+          )
+        );
+      default:
+        return true;
     }
   }
 

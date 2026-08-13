@@ -688,7 +688,16 @@ export class DashboardService {
         orderBy: { created_at: 'desc' },
         select: {
           id: true,
-          item_name: true,
+          items: {
+            orderBy: { sort_order: 'asc' },
+            select: {
+              item_name: true,
+              quantity: true,
+              unit: true,
+              amount: true,
+              sort_order: true,
+            },
+          },
           category: true,
           amount: true,
           receipt_url: true,
@@ -706,7 +715,20 @@ export class DashboardService {
       messes,
       pendingComplaints,
       pendingPayments,
-      recentExpenses,
+      recentExpenses: recentExpenses.map((expense) => ({
+        ...expense,
+        item_name:
+          expense.items.length > 1
+            ? `${expense.items[0].item_name} + ${expense.items.length - 1} more`
+            : expense.items[0]?.item_name ?? expense.category,
+        items: expense.items.map((item) => ({
+          itemName: item.item_name,
+          quantity: item.quantity == null ? null : Number(item.quantity),
+          unit: item.unit,
+          amount: Number(item.amount),
+          sortOrder: item.sort_order,
+        })),
+      })),
     };
   }
 }

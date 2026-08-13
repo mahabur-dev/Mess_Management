@@ -59,6 +59,12 @@ type SplitPreview = {
   payerCredit?: number
   totalSharedCost?: number
   shares?: SplitShare[]
+  items?: Array<{
+    itemName: string
+    quantity?: number | null
+    unit?: string | null
+    amount: number
+  }>
 }
 
 function isOneOf<T extends string>(value: unknown, options: readonly T[]): value is T {
@@ -101,38 +107,38 @@ function monthValue(item: AiExpensePreviewItem) {
   return (billingMonth || expenseDate).slice(0, 7)
 }
 
-function initialPreviews(value: unknown, itemCount: number): SplitPreview[] | null {
-  if (Array.isArray(value)) {
-    const previews = value.filter((item): item is SplitPreview => Boolean(item && typeof item === 'object'))
-    return previews.length === itemCount ? previews : null
-  }
-  if (value && typeof value === 'object' && itemCount === 1) return [value as SplitPreview]
+function initialPreviewValue(value: unknown): SplitPreview | null {
+  if (value && !Array.isArray(value) && typeof value === 'object') return value as SplitPreview
   return null
 }
 
 export function AiExpensePreview({
   intent,
+  payload,
   items,
   initialPreview,
   members,
   currentUserId,
   canManage,
   disabled,
+  onPatchPayload,
   onPatchItem,
   onRemoveItem,
 }: {
   intent: 'EXPENSE_CREATE' | 'UTILITY_CREATE'
+  payload: AiExpensePreviewItem
   items: AiExpensePreviewItem[]
   initialPreview: unknown
   members: MemberOption[]
   currentUserId?: string
   canManage: boolean
   disabled?: boolean
+  onPatchPayload: (patch: Record<string, unknown>) => void
   onPatchItem: (index: number, patch: Record<string, unknown>) => void
   onRemoveItem: (index: number) => void
 }) {
   const isUtility = intent === 'UTILITY_CREATE'
-  const primary = items[0] ?? {}
+  const primary = payload
   const paymentType = paymentTypeOf(primary)
   const usedBy = usedByOf(primary)
   const splitMethod = splitMethodOf(primary)
@@ -146,12 +152,12 @@ export function AiExpensePreview({
           ? [currentUserId]
           : []
         : members.map((member) => member.id)
-  const [previews, setPreviews] = useState<SplitPreview[] | null>(() => initialPreviews(initialPreview, items.length))
+  const [preview, setPreview] = useState<SplitPreview | null>(() => initialPreviewValue(initialPreview))
   const [previewBusy, setPreviewBusy] = useState(false)
   const [previewMessage, setPreviewMessage] = useState('')
 
   const invalidatePreview = () => {
-    setPreviews(null)
+    setPreview(null)
     setPreviewMessage('Details changed. Update the split preview to see the new member allocation.')
   }
 
@@ -162,7 +168,7 @@ export function AiExpensePreview({
 
   const patchAll = (patch: Record<string, unknown>) => {
     invalidatePreview()
-    items.forEach((_item, index) => onPatchItem(index, patch))
+    onPatchPayload(patch)
   }
 
   const removeItem = (index: number) => {
@@ -188,10 +194,10 @@ export function AiExpensePreview({
     setPreviewBusy(true)
     setPreviewMessage('')
     try {
-      const responses = await Promise.all(items.map((item) => api.previewExpense(item)))
-      setPreviews(responses.map((response) => response.data as SplitPreview))
+      const response = await api.previewExpense(payload)
+      setPreview(response.data as SplitPreview)
     } catch (error) {
-      setPreviews(null)
+      setPreview(null)
       setPreviewMessage(error instanceof Error ? error.message : 'Failed to calculate the split preview.')
     } finally {
       setPreviewBusy(false)
@@ -255,12 +261,59 @@ export function AiExpensePreview({
         </FormSection>
       ) : null}
 
-      {items.map((item, index) => {
-        const category = String(item.category ?? (isUtility ? 'ELECTRICITY' : 'OTHER')) as ExpenseCategory
-        const utilityType = String(item.utilityType ?? 'OTHER')
-        const description = String(item.description ?? '')
-        return (
-          <FormSection key={index} title={isUtility ? `Utility Details${items.length > 1 ? ` ${index + 1}` : ''}` : `Expense Details${items.length > 1 ? ` ${index + 1}` : ''}`}>
+      <FormSection title={isUtility ? 'Utility Details' : 'Expense Details'}>
+        {isUtility ? (
+          <DesignedSelect
+            label="Utility Type"
+            icon={expenseFormIcons.category}
+            value={String(primary.utilityType ?? 'OTHER')}
+            onChange={(event) => {
+              const option = UTILITY_FORM_OPTIONS.find((candidate) => candidate.utilityType === event.target.value) ?? UTILITY_FORM_OPTIONS[0]
+              patchAll({ utilityType: option.utilityType, category: option.category })
+            }}
+          >
+            {UTILITY_FORM_OPTIONS.map((option) => <option key={option.utilityType} value={option.utilityType}>{option.label}</option>)}
+          </DesignedSelect>
+        ) : (
+          <DesignedSelect
+            label="Category"
+            icon={expenseFormIcons.category}
+            value={String(primary.category ?? 'OTHER')}
+            onChange={(event) => patchAll({ category: event.target.value })}
+          >
+            {GENERAL_EXPENSE_CATEGORIES.map((option) => <option key={option} value={option}>{LABELS.EXPENSE_CATEGORIES[option]}</option>)}
+          </DesignedSelect>
+        )}
+        <FormFieldGrid>
+          <DesignedInput
+            label={isUtility ? 'Bill Date' : 'Expense Date'}
+            icon={expenseFormIcons.date}
+            value={String(primary.expenseDate ?? '')}
+            onChange={(event) => patchAll({ expenseDate: event.target.value })}
+            type="date"
+            required
+          />
+          <DesignedInput
+            label="Billing Month"
+            icon={expenseFormIcons.date}
+            value={monthValue(primary)}
+            onChange={(event) => patchAll({ billingMonth: event.target.value ? `${event.target.value}-01` : undefined })}
+            type="month"
+            required
+          />
+        </FormFieldGrid>
+        <DesignedTextarea
+          label="Note (Optional)"
+          icon={expenseFormIcons.description}
+          value={String(primary.description ?? '')}
+          onChange={(event) => patchAll({ description: event.target.value.slice(0, 250) })}
+          placeholder="Add a note"
+          count={`${String(primary.description ?? '').length}/250`}
+        />
+      </FormSection>
+
+      {items.map((item, index) => (
+          <FormSection key={index} title={`Purchased Item ${index + 1}`}>
             {items.length > 1 ? (
               <div className="flex justify-end">
                 <button
@@ -274,57 +327,32 @@ export function AiExpensePreview({
               </div>
             ) : null}
 
-            {isUtility ? (
-              <DesignedSelect
-                label="Utility Type"
-                icon={expenseFormIcons.category}
-                value={utilityType}
-                onChange={(event) => {
-                  const option = UTILITY_FORM_OPTIONS.find((candidate) => candidate.utilityType === event.target.value) ?? UTILITY_FORM_OPTIONS[0]
-                  patchItem(index, { utilityType: option.utilityType, category: option.category, itemName: option.label })
-                }}
-              >
-                {UTILITY_FORM_OPTIONS.map((option) => <option key={option.utilityType} value={option.utilityType}>{option.label}</option>)}
-              </DesignedSelect>
-            ) : (
-              <FormFieldGrid>
-                <DesignedSelect
-                  label="Category"
-                  icon={expenseFormIcons.category}
-                  value={category}
-                  onChange={(event) => patchItem(index, { category: event.target.value })}
-                >
-                  {GENERAL_EXPENSE_CATEGORIES.map((option) => <option key={option} value={option}>{LABELS.EXPENSE_CATEGORIES[option]}</option>)}
-                </DesignedSelect>
-                <DesignedInput
-                  label="Item"
-                  icon={expenseFormIcons.item}
-                  value={String(item.itemName ?? '')}
-                  onChange={(event) => patchItem(index, { itemName: event.target.value })}
-                  placeholder="Expense item"
-                />
-              </FormFieldGrid>
-            )}
-
-            {!isUtility && (category === 'FOOD' || category === 'GROCERY') ? (
-              <FormFieldGrid>
-                <DesignedInput
-                  label="Quantity (Optional)"
-                  icon={expenseFormIcons.item}
-                  value={String(item.quantity ?? '')}
-                  onChange={(event) => patchItem(index, { quantity: event.target.value === '' ? null : Number(event.target.value) })}
-                  placeholder="0"
-                  type="number"
-                />
-                <DesignedInput
-                  label="Unit (Optional)"
-                  icon={expenseFormIcons.item}
-                  value={String(item.unit ?? '')}
-                  onChange={(event) => patchItem(index, { unit: event.target.value })}
-                  placeholder="kg"
-                />
-              </FormFieldGrid>
-            ) : null}
+            <DesignedInput
+              label="Item"
+              icon={expenseFormIcons.item}
+              value={String(item.itemName ?? '')}
+              onChange={(event) => patchItem(index, { itemName: event.target.value })}
+              placeholder="Expense item"
+              required
+            />
+            <FormFieldGrid>
+              <DesignedInput
+                label="Quantity (Optional)"
+                icon={expenseFormIcons.item}
+                value={String(item.quantity ?? '')}
+                onChange={(event) => patchItem(index, { quantity: event.target.value === '' ? null : Number(event.target.value) })}
+                placeholder="0"
+                type="number"
+                min="0"
+              />
+              <DesignedInput
+                label="Unit (Optional)"
+                icon={expenseFormIcons.item}
+                value={String(item.unit ?? '')}
+                onChange={(event) => patchItem(index, { unit: event.target.value })}
+                placeholder="kg"
+              />
+            </FormFieldGrid>
 
             <DesignedInput
               label="Amount"
@@ -337,51 +365,28 @@ export function AiExpensePreview({
               step="0.01"
               required
             />
-
-            <FormFieldGrid>
-              <DesignedInput
-                label={isUtility ? 'Bill Date' : 'Expense Date'}
-                icon={expenseFormIcons.date}
-                value={String(item.expenseDate ?? '')}
-                onChange={(event) => patchItem(index, { expenseDate: event.target.value })}
-                type="date"
-                required
-              />
-              <DesignedInput
-                label="Billing Month"
-                icon={expenseFormIcons.date}
-                value={monthValue(item)}
-                onChange={(event) => patchItem(index, { billingMonth: event.target.value ? `${event.target.value}-01` : undefined })}
-                type="month"
-                required
-              />
-            </FormFieldGrid>
-
-            <DesignedTextarea
-              label="Note (Optional)"
-              icon={expenseFormIcons.description}
-              value={description}
-              onChange={(event) => patchItem(index, { description: event.target.value.slice(0, 250) })}
-              placeholder="Add a note"
-              count={`${description.length}/250`}
-            />
           </FormSection>
-        )
-      })}
+      ))}
 
       <FormSection title="Split Preview">
-        {previews ? (
-          <div className="space-y-3">
-            {previews.map((preview, index) => (
-              <div key={index} className="overflow-hidden rounded-[16px] border border-[#e4eaec] bg-[#f8fdfd] p-3">
+        {preview ? (
+          <div className="overflow-hidden rounded-[16px] border border-[#e4eaec] bg-[#f8fdfd] p-3">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-label font-bold text-[#123748]">{preview.title || String(items[index]?.itemName ?? `Item ${index + 1}`)}</p>
+                    <p className="truncate text-label font-bold text-[#123748]">{preview.title || 'Expense total'}</p>
                     <p className="mt-0.5 text-caption font-semibold text-[#65838b]">
                       {LABELS.EXPENSE_USED_BY[preview.usedBy ?? usedBy]} · {LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod ?? splitMethod]}
                     </p>
                   </div>
-                  <span className="shrink-0 text-body font-bold text-[#00777a]">{formatTaka(preview.amount ?? Number(items[index]?.amount ?? 0))}</span>
+                  <span className="shrink-0 text-body font-bold text-[#00777a]">{formatTaka(preview.amount ?? 0)}</span>
+                </div>
+                <div className="mb-3 overflow-hidden rounded-[12px] border border-[#e4eaec] bg-white">
+                  {(preview.items ?? []).map((item, index) => (
+                    <div key={`${item.itemName}-${index}`} className="flex items-center justify-between gap-3 border-b border-[#edf1f4] px-3 py-2.5 last:border-b-0">
+                      <span className="min-w-0 truncate text-label font-semibold text-[#123748]">{item.itemName}</span>
+                      <span className="shrink-0 text-label font-bold text-[#00777a]">{formatTaka(item.amount)}</span>
+                    </div>
+                  ))}
                 </div>
                 <MemberAllocationList shares={preview.shares ?? []} formatMoney={formatTaka} amountLabel="Share" />
                 <div className="mt-3 grid grid-cols-2 gap-2">
@@ -394,8 +399,6 @@ export function AiExpensePreview({
                     <span className="mt-1 block text-label font-bold text-[#00777a]">{formatTaka(preview.totalSharedCost ?? 0)}</span>
                   </div>
                 </div>
-              </div>
-            ))}
           </div>
         ) : (
           <div className="rounded-[15px] border border-[#f5dfab] bg-[#fff8e9] px-3.5 py-3 text-label font-semibold text-[#7a5a13]">
@@ -403,9 +406,9 @@ export function AiExpensePreview({
           </div>
         )}
         <ExpensePrimaryAction onClick={() => void refreshPreview()} disabled={disabled || previewBusy}>
-          <Eye size={17} /> {previewBusy ? 'Calculating...' : previews ? 'Recalculate Split' : 'Update Split Preview'}
+          <Eye size={17} /> {previewBusy ? 'Calculating...' : preview ? 'Recalculate Split' : 'Update Split Preview'}
         </ExpensePrimaryAction>
-        <FormStatusMessage message={previews ? previewMessage : ''} />
+        <FormStatusMessage message={preview ? previewMessage : ''} />
       </FormSection>
     </div>
   )

@@ -37,6 +37,13 @@ type ExpenseRecord = {
   category?: string | null
   amount?: string | number | null
   itemName?: string | null
+  items?: Array<{
+    id?: string
+    itemName: string
+    quantity?: number | null
+    unit?: string | null
+    amount: number
+  }>
   expenseDate?: string | null
   expense_date?: string | null
   createdAt?: string | null
@@ -208,6 +215,27 @@ export default function ExpenseDetailsPage() {
                 </div>
               </div>
             </ExpenseSurface>
+
+            {expense.items?.length ? (
+              <ExpenseSurface
+                title="Purchased Items"
+                aside={<span className="ui-badge ui-badge--info">{expense.items.length} {expense.items.length === 1 ? 'item' : 'items'}</span>}
+              >
+                <div className="overflow-hidden rounded-[14px] border border-[#e4eaec] bg-white">
+                  {expense.items.map((item, index) => (
+                    <div key={item.id ?? `${item.itemName}-${index}`} className="flex items-center justify-between gap-3 border-b border-[#edf1f4] px-3 py-3 last:border-b-0">
+                      <div className="min-w-0">
+                        <div className="truncate text-label font-bold text-[#123748]">{item.itemName}</div>
+                        {item.quantity != null ? (
+                          <div className="mt-0.5 text-caption font-semibold text-[#65838b]">{item.quantity} {item.unit ?? ''}</div>
+                        ) : null}
+                      </div>
+                      <span className="shrink-0 text-label font-bold text-[#00777a]">{formatTaka(item.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </ExpenseSurface>
+            ) : null}
 
             <ExpenseSurface
               title="Approval Status"

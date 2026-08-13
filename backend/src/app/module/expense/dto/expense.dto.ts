@@ -8,8 +8,12 @@ import {
   IsString,
   IsUrl,
   Min,
+  Max,
   IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
   MaxLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -65,6 +69,46 @@ export class CustomExpenseShareDto {
   amount: number;
 }
 
+export class ExpenseItemDto {
+  @ApiProperty({ example: 'Rice', maxLength: 150 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(150)
+  itemName: string;
+
+  @ApiProperty({
+    example: 350,
+    description: 'Final paid amount for this line item, not a unit price',
+  })
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === ''
+      ? undefined
+      : Number(value),
+  )
+  @IsNumber()
+  @Min(0.01)
+  @Max(9_999_999_999.99)
+  amount: number;
+
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === ''
+      ? undefined
+      : Number(value),
+  )
+  @IsNumber()
+  @Min(0)
+  @Max(9_999_999.999)
+  quantity?: number | null;
+
+  @ApiPropertyOptional({ example: 'kg', maxLength: 30 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  unit?: string | null;
+}
+
 export class CreateExpenseDto {
   @ApiProperty({ example: 'uuid-mess-id', description: 'Mess ID' })
   @IsString()
@@ -101,15 +145,46 @@ export class CreateExpenseDto {
   @IsIn(Object.values(UtilityType))
   utilityType?: UtilityType | null;
 
-  @ApiProperty({ example: 1200.5, description: 'Expense amount' })
+  @ApiPropertyOptional({
+    example: 1200.5,
+    description:
+      'Legacy single-item amount. For items[], the backend calculates the expense total.',
+  })
   @Transform(({ value }) =>
     value === undefined || value === null || value === ''
       ? undefined
       : Number(value),
   )
+  @ValidateIf(
+    (dto: CreateExpenseDto, value: unknown) =>
+      value !== undefined || !Array.isArray(dto.items) || dto.items.length === 0,
+  )
   @IsNumber()
   @Min(0.01)
-  amount: number;
+  amount?: number;
+
+  @ApiPropertyOptional({
+    type: [ExpenseItemDto],
+    description: 'Purchased line items. Expense total is calculated from these amounts.',
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => ExpenseItemDto)
+  items?: ExpenseItemDto[];
 
   @ApiPropertyOptional({ example: 'Rice' })
   @IsOptional()
@@ -256,6 +331,29 @@ export class UpdateExpenseDto {
   @IsNumber()
   @Min(0.01)
   amount?: number;
+
+  @ApiPropertyOptional({
+    type: [ExpenseItemDto],
+    description: 'Complete replacement set of purchased line items',
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => ExpenseItemDto)
+  items?: ExpenseItemDto[];
 
   @ApiPropertyOptional({ example: 'Rice' })
   @IsOptional()
@@ -421,12 +519,15 @@ export class ExpenseFilterDto {
   @Transform(({ value }) => value?.toString())
   limit?: string;
 
-  @ApiPropertyOptional({ example: 'expense_date' })
+  @ApiPropertyOptional({
+    enum: ['date', 'expense_date', 'created_at', 'amount'],
+    default: 'expense_date',
+  })
   @IsOptional()
   @IsString()
   sortBy?: string;
 
-  @ApiPropertyOptional({ enum: ['asc', 'desc'] })
+  @ApiPropertyOptional({ enum: ['asc', 'desc'], default: 'desc' })
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc';

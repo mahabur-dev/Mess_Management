@@ -1,81 +1,108 @@
 import Image from 'next/image'
-import {
-  BarChart3,
-  ShieldCheck,
-  UsersRound,
-  Zap,
-} from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, CheckCircle2, Play, Sparkles, Star } from 'lucide-react'
+import { AppScreenshot } from '@/components/app-screenshot'
 
-const heroTrustPoints = [
-  {
-    title: 'Secure & Reliable',
-    icon: ShieldCheck,
-  },
-  {
-    title: 'Save Time',
-    icon: Zap,
-  },
-  {
-    title: 'Data-Driven',
-    icon: BarChart3,
-  },
-  {
-    title: 'Built for Everyone',
-    icon: UsersRound,
-  },
+const people = [
+  { initials: 'MR', color: 'from-teal-500 to-emerald-600' },
+  { initials: 'SA', color: 'from-orange-400 to-rose-500' },
+  { initials: 'NK', color: 'from-sky-500 to-blue-600' },
+  { initials: 'AR', color: 'from-violet-500 to-fuchsia-600' },
 ]
 
-type MarketingHeroProps = {
-  eyebrow?: string
-}
-
-export function MarketingHero({ eyebrow = 'About Messzen' }: MarketingHeroProps) {
+export function MarketingHero() {
   return (
-    <section className="relative overflow-hidden bg-[#002f34] px-4 py-12 text-white sm:px-6 lg:px-8 lg:py-14">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_84%_10%,rgba(0,143,133,0.42),transparent_27rem),linear-gradient(105deg,#00272c_0%,#00373d_48%,#002f34_100%)]" />
-      <div className="absolute right-5 top-10 hidden h-44 w-44 bg-[radial-gradient(circle,#20d7c9_1.25px,transparent_1.25px)] [background-size:17px_17px] opacity-45 lg:block" />
-      <div className="absolute -bottom-10 right-0 hidden h-60 w-60 rounded-full border border-[#20d7c9]/24 lg:block" />
+    <section className="relative overflow-hidden px-4 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-14 lg:pt-16">
+      <div className="pointer-events-none absolute -left-32 top-20 size-80 rounded-full bg-[var(--brand)]/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-28 top-0 size-96 rounded-full bg-[var(--brand-bright)]/10 blur-3xl" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-9 lg:grid-cols-[.92fr_1.08fr]">
-        <div className="text-center lg:text-left">
-          <span className="inline-flex flex-col items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[#25d7c8] lg:items-start">
-            {eyebrow}
-            <span className="h-0.5 w-8 rounded-full bg-[#25d7c8]" />
+      <div className="marketing-container relative grid items-center gap-12 lg:grid-cols-[.82fr_1.18fr] lg:gap-10">
+        <div>
+          <span className="marketing-eyebrow gap-2 normal-case tracking-normal">
+            <Sparkles size={13} /> All-in-one mess management platform
           </span>
-          <h1 className="mx-auto mt-5 max-w-2xl text-3xl font-black leading-[1.14] tracking-tight text-white sm:text-4xl lg:mx-0 lg:text-[2.85rem]">
-            The Complete Solution for Hostel & Mess Management
+
+          <h1 className="mt-6 max-w-xl text-4xl font-black leading-[1.08] tracking-[-0.055em] text-foreground sm:text-5xl lg:text-[3.65rem]">
+            Put your mess
+            <br /> on autopilot.
+            <br />
+            <span className="bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand-bright)] bg-clip-text text-transparent">
+              Live together better.
+            </span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-sm font-medium leading-7 text-white/82 sm:text-base lg:mx-0">
-            Messzen helps hostel owners, mess managers, and members manage meals,
-            expenses, deposits, bills, rooms, and communication in one smart platform.
+
+          <p className="mt-6 max-w-lg text-base font-medium leading-8 text-muted-foreground">
+            Set recurring meal patterns once, use text or voice for changes, and let Messzen keep records, bills, and reminders moving automatically.
           </p>
 
-          <div className="mt-8 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 lg:max-w-xl">
-            {heroTrustPoints.map(({ title, icon: Icon }, index) => (
-              <div
-                key={title}
-                className={`text-center ${index > 0 ? 'sm:border-l sm:border-[#25d7c8]/28' : ''}`}
-              >
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#0b5a5f] text-[#cffffb] shadow-[0_10px_24px_rgba(0,0,0,0.2)] ring-1 ring-[#25d7c8]/20">
-                  <Icon size={20} />
-                </div>
-                <p className="mt-3 text-[11px] font-black leading-4 text-white">{title}</p>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <Link href="/register" className="brand-button h-12 px-6">
+              Start for Free <ArrowRight size={16} />
+            </Link>
+            <Link href="#how-it-works" className="ghost-button h-12 px-6">
+              See How It Works <Play size={15} />
+            </Link>
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <div className="flex -space-x-2.5">
+              {people.map((person) => (
+                <span
+                  key={person.initials}
+                  className={`flex size-9 items-center justify-center rounded-full border-2 border-[var(--marketing-page)] bg-gradient-to-br ${person.color} text-[9px] font-black text-white shadow-sm`}
+                >
+                  {person.initials}
+                </span>
+              ))}
+            </div>
+            <div>
+              <div className="flex items-center gap-0.5 text-amber-400">
+                {Array.from({ length: 5 }).map((_, index) => <Star key={index} size={14} fill="currentColor" />)}
               </div>
-            ))}
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">Trusted by growing mess communities</p>
+            </div>
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-3xl lg:max-w-none">
-          <div className="absolute inset-x-8 bottom-4 h-16 rounded-[100%] bg-black/55 blur-2xl sm:h-20" />
-          <div className="relative mx-auto w-full max-w-[760px] overflow-hidden rounded-[18px] sm:rounded-[24px]">
-            <Image
-              src="/labtop.webp"
-              alt="Messzen dashboard displayed on a laptop"
-              width={1536}
-              height={1024}
-              priority
-              className="w-full object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.38)]"
-            />
+        <div className="relative mx-auto w-full max-w-[780px] pb-8 sm:pr-12">
+          <div className="absolute -inset-5 rounded-[2rem] bg-gradient-to-br from-[var(--brand)]/12 via-transparent to-[var(--brand-bright)]/12 blur-2xl" />
+          <div className="marketing-card relative overflow-hidden rounded-2xl p-2 sm:p-3">
+            <div className="flex items-center gap-2 border-b border-[var(--marketing-line)] px-2 pb-2.5">
+              <div className="flex gap-1.5">
+                <span className="size-2.5 rounded-full bg-rose-400" />
+                <span className="size-2.5 rounded-full bg-amber-400" />
+                <span className="size-2.5 rounded-full bg-emerald-400" />
+              </div>
+              <div className="mx-auto h-6 w-1/2 rounded-md bg-[var(--marketing-subtle)]" />
+            </div>
+            <div className="relative aspect-[1.45/1] overflow-hidden rounded-xl bg-[#eef6f7]">
+              <Image
+                src="/dashboard.webp"
+                alt="Messzen dashboard showing meals, expenses, bills, and member analytics"
+                width={1366}
+                height={1292}
+                priority
+                className="h-full w-full object-cover object-top"
+              />
+            </div>
+          </div>
+
+          <AppScreenshot
+            src="/app-home.webp.jpeg"
+            alt="Messzen dedicated mobile app home screen"
+            priority
+            className="absolute -bottom-4 right-0 hidden w-[24%] min-w-[150px] rotate-[2deg] sm:block"
+            sizes="190px"
+          />
+
+          <div className="marketing-card absolute -bottom-1 -left-3 hidden items-center gap-3 rounded-xl px-4 py-3 sm:flex">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
+              <CheckCircle2 size={18} />
+            </span>
+            <div>
+              <p className="text-xs font-black text-foreground">Bills stay transparent</p>
+              <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">Live calculations for everyone</p>
+            </div>
           </div>
         </div>
       </div>

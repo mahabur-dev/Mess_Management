@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Building2, ShieldCheck, Utensils, UsersRound, type LucideIcon } from 'lucide-react'
+import { Building2, Headphones, ShieldCheck, UsersRound, type LucideIcon } from 'lucide-react'
 
 type MarketingStat = {
   target: number
@@ -11,136 +11,70 @@ type MarketingStat = {
   icon: LucideIcon
 }
 
-const marketingStats: MarketingStat[] = [
-  {
-    target: 1000,
-    suffix: '+',
-    label: 'Hostels & Messes',
-    icon: Building2,
-  },
-  {
-    target: 10000,
-    suffix: '+',
-    compact: true,
-    label: 'Active Users',
-    icon: UsersRound,
-  },
-  {
-    target: 50000,
-    suffix: '+',
-    compact: true,
-    label: 'Meals Managed',
-    icon: Utensils,
-  },
-  {
-    target: 99,
-    suffix: '%',
-    label: 'Customer Satisfaction',
-    icon: ShieldCheck,
-  },
+const stats: MarketingStat[] = [
+  { target: 1000, suffix: '+', label: 'Messes supported', icon: Building2 },
+  { target: 10000, suffix: '+', compact: true, label: 'Community members', icon: UsersRound },
+  { target: 99, suffix: '%', label: 'Reliable uptime', icon: ShieldCheck },
+  { target: 24, suffix: '/7', label: 'Helpful support', icon: Headphones },
 ]
 
-const compactFormatter = new Intl.NumberFormat('en', {
-  notation: 'compact',
-  maximumFractionDigits: 0,
-})
+const compactFormatter = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 0 })
 
-function formatStatValue(value: number, stat: MarketingStat) {
-  const roundedValue = Math.round(value)
-  const displayValue = stat.compact
-    ? compactFormatter.format(roundedValue)
-    : roundedValue.toLocaleString('en')
-
-  return `${displayValue}${stat.suffix ?? ''}`
-}
-
-function useCountUpOnView(target: number) {
+function Stat({ stat }: { stat: MarketingStat }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const [value, setValue] = useState(0)
 
   useEffect(() => {
-    const element = ref.current
-    if (!element) return
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReducedMotion) {
-      setValue(target)
-      return
-    }
-
-    let frameId = 0
-    let hasAnimated = false
-
-    const animate = () => {
-      const duration = 1400
-      const startedAt = performance.now()
-
-      const tick = (now: number) => {
-        const progress = Math.min((now - startedAt) / duration, 1)
-        const easedProgress = 1 - Math.pow(1 - progress, 3)
-
-        setValue(target * easedProgress)
-
-        if (progress < 1) {
-          frameId = requestAnimationFrame(tick)
-        } else {
-          setValue(target)
-        }
+    const node = ref.current
+    if (!node) return
+    let frame = 0
+    let animated = false
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || animated) return
+      animated = true
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setValue(stat.target)
+        return observer.disconnect()
       }
-
-      frameId = requestAnimationFrame(tick)
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting || hasAnimated) return
-
-        hasAnimated = true
-        animate()
-        observer.disconnect()
-      },
-      { threshold: 0.35 },
-    )
-
-    observer.observe(element)
-
+      const start = performance.now()
+      const tick = (now: number) => {
+        const progress = Math.min((now - start) / 1200, 1)
+        setValue(stat.target * (1 - Math.pow(1 - progress, 3)))
+        if (progress < 1) frame = requestAnimationFrame(tick)
+      }
+      frame = requestAnimationFrame(tick)
+      observer.disconnect()
+    }, { threshold: 0.35 })
+    observer.observe(node)
     return () => {
       observer.disconnect()
-      cancelAnimationFrame(frameId)
+      cancelAnimationFrame(frame)
     }
-  }, [target])
+  }, [stat.target])
 
-  return { ref, value }
-}
-
-function AnimatedStatValue({ stat }: { stat: MarketingStat }) {
-  const { ref, value } = useCountUpOnView(stat.target)
+  const rounded = Math.round(value)
+  const shown = stat.compact ? compactFormatter.format(rounded) : rounded.toLocaleString('en')
+  const Icon = stat.icon
 
   return (
-    <div ref={ref}>
-      <p className="min-w-[5ch] font-mono text-2xl font-black leading-none tabular-nums sm:text-3xl">
-        {formatStatValue(value, stat)}
-      </p>
-      <p className="mt-1 text-sm font-medium text-white/90">{stat.label}</p>
+    <div ref={ref} className="flex items-center justify-center gap-4 px-5 py-4 text-left">
+      <Icon size={25} className="shrink-0 text-[var(--brand)]" />
+      <div>
+        <p className="text-xl font-black tabular-nums text-foreground">{shown}{stat.suffix}</p>
+        <p className="mt-0.5 text-xs font-medium text-muted-foreground">{stat.label}</p>
+      </div>
     </div>
   )
 }
 
 export function MarketingStatsBar({ className = '' }: { className?: string }) {
   return (
-    <div
-      className={`grid gap-4 rounded-xl bg-gradient-to-r from-[#00645c] to-[#008f85] p-5 text-white shadow-[0_18px_42px_rgba(0,107,99,0.24)] sm:grid-cols-2 lg:grid-cols-4 ${className}`}
-    >
-      {marketingStats.map((stat) => {
-        const Icon = stat.icon
-
-        return (
-          <div key={stat.label} className="flex items-center justify-center gap-4 text-center sm:text-left">
-            <Icon size={34} className="shrink-0 text-white/80" />
-            <AnimatedStatValue stat={stat} />
-          </div>
-        )
-      })}
+    <div className={`marketing-card grid overflow-hidden rounded-2xl sm:grid-cols-2 lg:grid-cols-4 ${className}`}>
+      {stats.map((stat, index) => (
+        <div key={stat.label} className={`${index ? 'border-t border-[var(--marketing-line)] sm:border-l sm:border-t-0' : ''} ${index === 2 ? 'sm:border-l-0 lg:border-l' : ''}`}>
+          <Stat stat={stat} />
+        </div>
+      ))}
     </div>
   )
 }

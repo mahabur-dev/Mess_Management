@@ -15,6 +15,12 @@
   --brand-border-subtle: #d8e8e7;
   --brand-ring: rgba(0, 139, 128, 0.12);
   --brand-shadow: rgba(0, 107, 99, 0.24);
+  --marketing-page: #ffffff;
+  --marketing-surface: #ffffff;
+  --marketing-subtle: #f6fbfa;
+  --marketing-strong: #073735;
+  --marketing-line: #dfe9e8;
+  --marketing-glow: rgba(0, 139, 128, 0.1);
   --dashboard-ink: #073735;
   --dashboard-muted: #64748b;
   --background: #f8fbff;
@@ -53,6 +59,23 @@
 }
 
 .dark {
+  --brand: #25c7b8;
+  --brand-hover: #4bd7cb;
+  --brand-dark: #009f92;
+  --brand-darker: #00877d;
+  --brand-bright: #54e0d3;
+  --brand-soft: #123b3b;
+  --brand-softer: #0c292b;
+  --brand-border: #286e6a;
+  --brand-border-subtle: #234447;
+  --brand-ring: rgba(37, 199, 184, 0.2);
+  --brand-shadow: rgba(0, 0, 0, 0.36);
+  --marketing-page: #081617;
+  --marketing-surface: #102426;
+  --marketing-subtle: #0c2022;
+  --marketing-strong: #e8fffc;
+  --marketing-line: #234447;
+  --marketing-glow: rgba(37, 199, 184, 0.12);
   --background: #0F172A;
   --foreground: #ffffff;
   --card: #1e293b;
@@ -134,7 +157,31 @@
   }
 
   html {
-    scrollbar-gutter: stable;
+    scrollbar-gutter: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--brand-border) transparent;
+  }
+
+  html::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  html::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-thumb {
+    min-height: 44px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--brand-border);
+    background-clip: padding-box;
+  }
+
+  html::-webkit-scrollbar-thumb:hover {
+    background: var(--brand);
+    background-clip: padding-box;
   }
 
   body {
@@ -143,6 +190,11 @@
       radial-gradient(circle at 8% 18%, rgba(0, 139, 128, 0.08), transparent 28rem),
       radial-gradient(circle at 90% 10%, rgba(0, 169, 157, 0.07), transparent 26rem),
       var(--background);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--brand) 28%, transparent);
+    color: var(--foreground);
   }
 
   button:not(:disabled),
@@ -169,6 +221,148 @@
 }
 
 @layer components {
+  .marketing-page {
+    min-height: 100vh;
+    color: var(--foreground);
+    background:
+      radial-gradient(circle at 8% 8%, var(--marketing-glow), transparent 24rem),
+      radial-gradient(circle at 94% 4%, color-mix(in srgb, var(--brand-bright) 7%, transparent), transparent 26rem),
+      var(--marketing-page);
+  }
+
+  .marketing-section {
+    @apply px-4 py-16 sm:px-6 lg:px-8 lg:py-20;
+  }
+
+  .marketing-container {
+    @apply mx-auto max-w-7xl;
+  }
+
+  .marketing-eyebrow {
+    @apply inline-flex items-center rounded-full border px-3.5 py-1.5 text-[11px] font-black uppercase tracking-[0.16em];
+    border-color: var(--brand-border-subtle);
+    background: var(--brand-softer);
+    color: var(--brand);
+  }
+
+  .marketing-card {
+    border: 1px solid var(--marketing-line);
+    background: color-mix(in srgb, var(--marketing-surface) 94%, transparent);
+    box-shadow: 0 16px 44px color-mix(in srgb, var(--brand-dark) 8%, transparent);
+  }
+
+  .marketing-card-hover {
+    transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  }
+
+  .marketing-card-hover:hover {
+    transform: translateY(-4px);
+    border-color: var(--brand-border);
+    box-shadow: 0 24px 58px color-mix(in srgb, var(--brand-dark) 14%, transparent);
+  }
+
+  .brand-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 text-sm font-black text-white transition;
+    min-height: 2.75rem;
+    background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+    box-shadow: 0 12px 24px var(--brand-shadow);
+  }
+
+  .brand-button:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, var(--brand-darker), var(--brand-dark));
+  }
+
+  .ghost-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border px-5 text-sm font-black transition;
+    min-height: 2.75rem;
+    border-color: var(--marketing-line);
+    background: var(--marketing-surface);
+    color: var(--foreground);
+  }
+
+  .ghost-button:hover {
+    border-color: var(--brand-border);
+    background: var(--brand-softer);
+    color: var(--brand);
+  }
+
+  .icon-tile {
+    @apply inline-flex size-12 shrink-0 items-center justify-center rounded-xl;
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+
+  .legal-copy {
+    @apply space-y-4 text-sm font-medium leading-7 text-muted-foreground;
+  }
+
+  .legal-copy h3 {
+    @apply pt-2 text-base font-black text-foreground;
+  }
+
+  .legal-copy ul,
+  .legal-copy ol {
+    @apply space-y-2 pl-5;
+  }
+
+  .legal-copy ul {
+    list-style: disc;
+  }
+
+  .legal-copy ol {
+    list-style: decimal;
+  }
+
+  .legal-copy li::marker {
+    color: var(--brand);
+    font-weight: 800;
+  }
+
+  .legal-copy strong {
+    color: var(--foreground);
+    font-weight: 800;
+  }
+
+  .legal-copy a {
+    color: var(--brand);
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  html:has(.auth-page),
+  body:has(.auth-page) {
+    overflow: hidden;
+  }
+
+  .auth-page {
+    scrollbar-width: thin;
+    scrollbar-color: var(--brand-border) transparent;
+  }
+
+  .auth-page::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .auth-page::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .auth-page::-webkit-scrollbar-thumb {
+    min-height: 44px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--brand-border);
+    background-clip: padding-box;
+  }
+
+  .auth-page::-webkit-scrollbar-thumb:hover {
+    background: var(--brand);
+    background-clip: padding-box;
+  }
+
   /* .glass-panel {
     @apply border border-border bg-white/90 shadow-[0_18px_50px_rgba(22, 34, 73, 0.08)];
   } */

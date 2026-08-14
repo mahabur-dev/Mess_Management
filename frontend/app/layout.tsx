@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { CSSProperties } from 'react'
 import { AuthProvider } from './context/auth-context'
 import { SWRProvider } from './swr-provider'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 export const viewport: Viewport = {
@@ -57,11 +58,13 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
-        <SWRProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </SWRProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <SWRProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </SWRProvider>
+        </ThemeProvider>
         {process.env.NODE_ENV === 'development' && <Analytics />}
       </body>
     </html>

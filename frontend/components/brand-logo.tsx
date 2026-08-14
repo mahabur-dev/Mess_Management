@@ -15,7 +15,7 @@ export function BrandLogo({ className, imageClassName, subtitle, subtitleClassNa
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <span
         aria-hidden="true"
-        className={cn('relative flex h-9 w-9 shrink-0 items-center justify-center text-[#008b80]', imageClassName)}
+        className={cn('relative flex h-9 w-9 shrink-0 items-center justify-center text-[var(--brand)]', imageClassName)}
       >
         <svg viewBox="0 0 42 42" className="h-full w-full" fill="none">
           <path
@@ -30,9 +30,9 @@ export function BrandLogo({ className, imageClassName, subtitle, subtitleClassNa
           />
         </svg>
       </span>
-      <span className="text-2xl font-black tracking-tight text-[#008b80]">messzen</span>
+      <span className="text-2xl font-black tracking-tight text-[var(--brand)]">messzen</span>
       {subtitle && (
-        <span className={cn('text-[10px] font-bold uppercase tracking-[0.18em] text-[#6b7a99]', subtitleClassName)}>
+        <span className={cn('text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground', subtitleClassName)}>
           {subtitle}
         </span>
       )}

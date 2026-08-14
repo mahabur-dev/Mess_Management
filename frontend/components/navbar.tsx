@@ -2,18 +2,19 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BrandLogo } from '@/components/brand-logo'
-import { Button } from '@/components/ui/button'
-import { Menu, X } from 'lucide-react'
+import { ArrowRight, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { BrandLogo } from '@/components/brand-logo'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { cn } from '@/lib/utils'
 
 const links = [
   { label: 'Home', href: '/' },
+  { label: 'Automation', href: '/#automation' },
+  { label: 'Meal Pattern', href: '/#meal-pattern' },
   { label: 'Features', href: '/#features' },
   { label: 'Pricing', href: '/#pricing' },
   { label: 'About Us', href: '/about' },
-  { label: 'Contact', href: '/contact' },
 ]
 
 export function Navbar() {
@@ -23,46 +24,35 @@ export function Navbar() {
   const [hash, setHash] = useState('')
 
   useEffect(() => {
-    const syncHash = () => {
-      setHash(window.location.hash)
-    }
-
+    const syncHash = () => setHash(window.location.hash)
     syncHash()
     window.addEventListener('hashchange', syncHash)
     return () => window.removeEventListener('hashchange', syncHash)
   }, [pathname])
 
-  const isActiveLink = (href: string) => {
-    const [linkPath, linkHash] = href.split('#')
-
-    if (linkHash) {
-      return pathname === linkPath && hash === `#${linkHash}`
-    }
-
-    if (href === '/') {
-      return pathname === '/' && !hash
-    }
-
-    return pathname === href
+  const isActive = (href: string) => {
+    const [path, linkHash] = href.split('#')
+    if (linkHash) return pathname === path && hash === `#${linkHash}`
+    return href === '/' ? pathname === '/' && !hash : pathname === href
   }
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[#edf3f2] bg-white/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 ">
+    <nav className="sticky top-0 z-50 border-b border-[var(--marketing-line)] bg-[var(--marketing-page)]/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" aria-label="Messzen home">
           <BrandLogo />
         </Link>
 
-        <div className="hidden items-center gap-8 lg:flex">
+        <div className="hidden items-center gap-6 xl:flex">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                'relative py-2 text-sm font-bold text-[#101828] transition after:absolute after:inset-x-0 after:-bottom-1 after:mx-auto after:h-0.5 after:w-0 after:rounded-full after:bg-[#008b80] after:transition-all',
-                isActiveLink(link.href)
-                  ? 'text-[#008b80] after:w-full'
-                  : 'hover:text-[#008b80]'
+                'relative py-2 text-[13px] font-bold text-muted-foreground transition after:absolute after:inset-x-1 after:-bottom-1 after:h-0.5 after:origin-center after:scale-x-0 after:rounded-full after:bg-[var(--brand)] after:transition-transform',
+                isActive(link.href)
+                  ? 'text-foreground after:scale-x-100'
+                  : 'hover:text-[var(--brand)] hover:after:scale-x-100',
               )}
             >
               {link.label}
@@ -70,31 +60,32 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/login')}
-            className="h-10 rounded-md border-[#c9e4e1] bg-white px-6 font-bold text-[#006b63] hover:border-[#008b80] hover:bg-[#e7f7f5] hover:text-[#00574f]"
-          >
-            Login
-          </Button>
-          <Button onClick={() => router.push('/register')} className="h-10 rounded-md bg-[#008b80] px-6 font-bold text-white shadow-[0_10px_22px_rgba(0,139,128,0.18)] hover:bg-[#006b63]">
-            Get Started
-          </Button>
+        <div className="hidden items-center gap-2 md:flex">
+          <button type="button" onClick={() => router.push('/login')} className="ghost-button h-10 min-h-0 px-5">
+            Log in
+          </button>
+          <button type="button" onClick={() => router.push('/register')} className="brand-button h-10 min-h-0 px-5">
+            Get Started <ArrowRight size={15} />
+          </button>
+          <ThemeToggle />
         </div>
 
-        <button
-          type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white lg:hidden"
-          onClick={() => setIsOpen((value) => !value)}
-          aria-label="Toggle navigation"
-        >
-          {isOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-foreground"
+            onClick={() => setIsOpen((value) => !value)}
+            aria-expanded={isOpen}
+            aria-label="Toggle navigation"
+          >
+            {isOpen ? <X size={19} /> : <Menu size={19} />}
+          </button>
+        </div>
       </div>
 
       {isOpen && (
-        <div className="border-t border-border bg-white px-4 py-4 shadow-lg lg:hidden">
+        <div className="border-t border-[var(--marketing-line)] bg-[var(--marketing-page)] px-4 py-4 shadow-xl md:hidden">
           <div className="grid gap-1">
             {links.map((link) => (
               <Link
@@ -103,9 +94,9 @@ export function Navbar() {
                 onClick={() => setIsOpen(false)}
                 className={cn(
                   'rounded-xl px-4 py-3 text-sm font-bold transition',
-                  isActiveLink(link.href)
-                    ? 'bg-[#e7f7f5] text-[#008b80]'
-                    : 'text-[#071821] hover:bg-[#eef8f7]'
+                  isActive(link.href)
+                    ? 'bg-[var(--brand-soft)] text-[var(--brand)]'
+                    : 'text-foreground hover:bg-[var(--marketing-subtle)]',
                 )}
               >
                 {link.label}
@@ -113,14 +104,8 @@ export function Navbar() {
             ))}
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              className="border-[#c9e4e1] bg-white text-[#006b63] hover:bg-[#e7f7f5]"
-              onClick={() => router.push('/login')}
-            >
-              Login
-            </Button>
-            <Button className="bg-[#008b80] text-white hover:bg-[#006b63]" onClick={() => router.push('/register')}>Get Started</Button>
+            <button className="ghost-button" onClick={() => router.push('/login')}>Log in</button>
+            <button className="brand-button" onClick={() => router.push('/register')}>Get Started</button>
           </div>
         </div>
       )}

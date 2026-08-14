@@ -12,6 +12,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
     formats: ['image/avif', 'image/webp'],
+    qualities: [75, 92],
   },
   compress: true,
   poweredByHeader: false,

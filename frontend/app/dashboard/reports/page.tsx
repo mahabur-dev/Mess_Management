@@ -1,38 +1,10 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Card } from '@/components/ui/card'
 import { apiClient, type Mess, type MessDashboard } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
 import { BarChart3, ClipboardList, CreditCard, UtensilsCrossed, WalletCards, TrendingUp, Users, DollarSign, FileText, ArrowUpRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
-
-const CARD_STYLES = [
-  {
-    gradient: 'from-[#2f80ed]/90 to-[#3b8cff]/90',
-    iconBg: 'bg-white/20',
-    label: 'Daily Meal Report',
-    icon: UtensilsCrossed,
-  },
-  {
-    gradient: 'from-[#f59e0b]/90 to-[#fbbf24]/90',
-    iconBg: 'bg-white/20',
-    label: 'Monthly Expense Report',
-    icon: WalletCards,
-  },
-  {
-    gradient: 'from-[#ef4444]/90 to-[#f87171]/90',
-    iconBg: 'bg-white/20',
-    label: 'Member Due Report',
-    icon: ClipboardList,
-  },
-  {
-    gradient: 'from-[#10b981]/90 to-[#34d399]/90',
-    iconBg: 'bg-white/20',
-    label: 'Payment Report',
-    icon: CreditCard,
-  },
-]
 
 export default function ReportsPage() {
   const [mess, setMess] = useState<Mess | null>(null)
@@ -65,15 +37,8 @@ export default function ReportsPage() {
     ['Payment Report', dashboard?.pendingPayments ?? 0, CreditCard, 'payment'],
   ] as const
 
-  const CARD_GRADIENTS: Record<string, string> = {
-    meal: 'from-[#2f80ed] to-[#58d68d]',
-    expense: 'from-[#f59e0b] to-[#f97316]',
-    due: 'from-[#ef4444] to-[#f43f5e]',
-    payment: 'from-[#10b981] to-[#34d399]',
-  }
-
   return (
-    <div className="min-h-screen bg-[#fafcff]">
+    <div className="min-h-screen bg-transparent">
       <DashboardHeader title="Reports" description={mess ? `${mess.name} reporting center` : 'Reports and analytics'} />
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Page Header */}
@@ -90,37 +55,31 @@ export default function ReportsPage() {
         </div>
 
         {/* Report Cards */}
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="dashboard-report-grid grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {cards.map(([label, value, Icon, tone]) => {
-            const gradientClass = CARD_GRADIENTS[tone] || 'from-[#6366f1] to-[#8b5cf6]'
             return (
               <div
                 key={label}
-                className="group relative overflow-hidden rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]"
+                data-tone={tone}
+                className="dashboard-card dashboard-stat-card report-stat-card group relative min-h-[150px] overflow-hidden p-5 hover:-translate-y-0.5"
               >
-                {/* Gradient Background */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${gradientClass}`} />
-                
-                {/* Decorative elements */}
-                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
-                <div className="absolute -bottom-8 -left-8 h-20 w-20 rounded-full bg-white/8 blur-xl" />
-                
-                <div className="relative z-10 p-6">
+                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[var(--card-accent)]/10 blur-2xl transition group-hover:bg-[var(--card-accent)]/16" />
+                <div className="relative z-10">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="text-[11px] font-black uppercase tracking-[0.1em] text-white/80">
+                      <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-muted-foreground">
                         {label}
                       </p>
-                      <p className="mt-3 text-3xl font-black text-white">
+                      <p className="mt-3 text-3xl font-black tracking-tight text-foreground">
                         {value}
                       </p>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                      <Icon size={22} className="text-white" />
+                    <div className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
+                      <Icon size={22} />
                     </div>
                   </div>
                   
-                  <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold text-white/70">
+                  <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
                     <ArrowUpRight size={13} />
                     <span>Live update</span>
                   </div>
@@ -131,28 +90,28 @@ export default function ReportsPage() {
         </div>
 
         {/* Info Card */}
-        <div className="mt-7 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)] transition hover:border-[#a9ccfb] hover:shadow-md">
+        <div className="dashboard-panel mt-7 overflow-hidden">
           <div className="p-6">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/10 to-[#8b5cf6]/10 shadow-sm">
-                <FileText size={22} className="text-[#2f80ed]" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] shadow-sm">
+                <FileText size={22} />
               </div>
               <div>
-                <h3 className="text-base font-black text-[#172554]">PDF/Excel Export Ready</h3>
-                <p className="mt-1.5 text-sm font-semibold leading-relaxed text-[#6b7a99]">
+                <h3 className="text-base font-black text-foreground">PDF/Excel Export Ready</h3>
+                <p className="mt-1.5 text-sm font-semibold leading-relaxed text-muted-foreground">
                   The report dashboard is connected to backend summary data and ready for export buttons.
                   All key metrics—meal counts, expenses, dues, and payments—are pulled from live data.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] px-3 py-1.5 text-[11px] font-bold text-[#2f80ed]">
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)]">
                     <FileText size={13} />
                     PDF Export
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] px-3 py-1.5 text-[11px] font-bold text-[#2f80ed]">
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)]">
                     <FileText size={13} />
                     Excel Export
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] px-3 py-1.5 text-[11px] font-bold text-[#2f80ed]">
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)]">
                     <TrendingUp size={13} />
                     Real-time Data
                   </span>

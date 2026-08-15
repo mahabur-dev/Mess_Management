@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { MemberJoinRequestModal } from '@/components/member-join-request-modal'
+import { DashboardPanel } from '@/components/dashboard/dashboard-panel'
 import { useAuth } from '@/app/context/auth-context'
 import { type Mess } from '@/lib/api-client'
 import { useRouter } from 'next/navigation'
@@ -76,9 +77,9 @@ const adminQuickActions = [
 ] as const
 
 const dashboardQuickActionButtonClass =
-  'group rounded-xl border border-[var(--brand-border-subtle)] bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:shadow-md'
+  'dashboard-subtle-card group rounded-xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--dashboard-hover)]'
 const dashboardQuickActionIconClass =
-  'mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-white text-[var(--brand)] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition group-hover:border-[var(--brand)] group-hover:bg-[var(--brand)] group-hover:text-white group-hover:shadow-[0_10px_22px_var(--brand-shadow)]'
+  'mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--dashboard-surface)] text-[var(--brand)] shadow-sm transition group-hover:bg-[var(--brand)] group-hover:text-white group-hover:shadow-[0_10px_22px_var(--brand-shadow)]'
 
 const mobileQuickActions = [
   {
@@ -176,32 +177,32 @@ const adminMobileQuickActions = [
 
 const mobileActionTones = {
   blue: {
-    shell: 'from-[#e7f1ff] to-[#f4f8ff]',
-    icon: 'bg-[#e7f1ff] text-[#2f80ed]',
-    ring: 'bg-[#2f80ed]/10',
+    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
+    icon: 'bg-[var(--brand-soft)] text-[var(--brand)]',
+    ring: 'bg-[var(--brand)]/10',
   },
   green: {
-    shell: 'from-[#ecfff5] to-[#f8fffb]',
+    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
     icon: 'bg-[#e8fff2] text-[#22b66f]',
     ring: 'bg-[#58d68d]/12',
   },
   orange: {
-    shell: 'from-[#fff5e6] to-[#fffaf3]',
+    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
     icon: 'bg-[#fff3df] text-[#f59e0b]',
     ring: 'bg-[#ffb84d]/14',
   },
   purple: {
-    shell: 'from-[#f1edff] to-[#fbfaff]',
+    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
     icon: 'bg-[#efe9ff] text-[#6f3df4]',
     ring: 'bg-[#6f3df4]/10',
   },
   cyan: {
-    shell: 'from-[#e7f8ff] to-[#f6fcff]',
+    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
     icon: 'bg-[#e0f2fe] text-[#0284c7]',
     ring: 'bg-[#19b6ff]/12',
   },
   rose: {
-    shell: 'from-[#fff0f4] to-[#fff8fa]',
+    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
     icon: 'bg-[#ffe8f0] text-[#f43f7f]',
     ring: 'bg-[#f43f7f]/12',
   },
@@ -243,36 +244,28 @@ function StatCard({
   label,
   value,
   icon: Icon,
-  accent,
 }: {
   label: string
   value: string | number
-  badge: string
   icon: ElementType
-  accent: string
-  iconBg: string
-  iconColor: string
 }) {
   return (
-    <div
-      className={`group relative min-h-[92px] overflow-hidden rounded-xl bg-gradient-to-r ${accent} p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]`}
-    >
-      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15 blur-2xl transition group-hover:bg-white/25" />
-      <div className="absolute -bottom-8 -left-8 h-20 w-20 rounded-full bg-white/8 blur-xl" />
+    <div className="dashboard-card dashboard-stat-card group relative min-h-[112px] overflow-hidden p-5 hover:-translate-y-0.5">
+      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl transition group-hover:bg-[var(--brand)]/12" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-white/80">
+          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-muted-foreground">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-black leading-none tracking-tight text-white">
+          <p className="mt-2 text-2xl font-black leading-none tracking-tight text-foreground">
             {value}
           </p>
-          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-white/60">
+          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
             <ArrowUpRight size={11} />
             <span>Live update</span>
           </div>
         </div>
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-[0_8px_18px_rgba(0,0,0,0.08)]">
+        <span className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
           <Icon size={20} strokeWidth={2.4} />
         </span>
       </div>
@@ -285,30 +278,26 @@ function MiniStatCard({
   label,
   value,
   icon: Icon,
-  tone,
 }: {
   label: string
   value: string | number
   icon: ElementType
-  tone: string
 }) {
   return (
-    <div
-      className={`group relative min-h-[92px] overflow-hidden rounded-xl bg-gradient-to-r ${tone} p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]`}
-    >
-      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+    <div className="dashboard-card dashboard-stat-card group relative min-h-[104px] overflow-hidden p-5 hover:-translate-y-0.5">
+      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-white/80">
+          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-muted-foreground">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-black leading-none">{value}</p>
-          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-white/60">
+          <p className="mt-2 text-2xl font-black leading-none text-foreground">{value}</p>
+          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
             <ArrowUpRight size={11} />
             <span>Live update</span>
           </div>
         </div>
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-[0_8px_18px_rgba(0,0,0,0.08)]">
+        <div className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
           <Icon size={19} />
         </div>
       </div>
@@ -331,7 +320,7 @@ function MobileSection({
   children: ReactNode
 }) {
   return (
-    <section className="relative overflow-hidden rounded-[26px] border border-[#e6ebf4] bg-white p-4 shadow-[0_14px_34px_rgba(65,103,153,0.10)]">
+    <section className="dashboard-panel relative overflow-hidden rounded-[22px] p-4">
       <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[#2f80ed]/8 blur-2xl" />
       <div className="relative">
         <div className="mb-4 flex items-start justify-between gap-3">
@@ -371,9 +360,9 @@ function MobileQuickActions({
   onNavigate: (href: string) => void
 }) {
   return (
-    <section className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#172554] via-[#2f80ed] to-[#3b8cff] p-[1px] shadow-[0_20px_45px_rgba(47,128,237,0.20)]">
+    <section className="dashboard-card relative overflow-hidden rounded-[24px] p-4">
       <div className="absolute -right-8 -top-10 h-24 w-24 rounded-full bg-white/20 blur-xl" />
-      <div className="relative rounded-[29px] bg-white/95 p-4 backdrop-blur">
+      <div className="relative">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">
@@ -396,7 +385,7 @@ function MobileQuickActions({
                 key={label}
                 type="button"
                 onClick={() => onNavigate(href)}
-                className={`group relative min-h-[96px] overflow-hidden rounded-[20px] border border-white bg-gradient-to-br ${palette.shell} p-2.5 text-left shadow-[0_8px_18px_rgba(65,103,153,0.08)] transition active:scale-[0.97]`}
+                className={`group relative min-h-[96px] overflow-hidden rounded-[20px] bg-gradient-to-br ${palette.shell} p-2.5 text-left shadow-[0_8px_18px_rgba(65,103,153,0.08)] transition active:scale-[0.97]`}
               >
                 <span
                   className={`absolute -right-5 -top-5 h-12 w-12 rounded-full ${palette.ring} blur-sm transition group-active:scale-125`}
@@ -427,7 +416,7 @@ function MobileOverviewGrid({ stats }: { stats: readonly MobileStat[] }) {
       {stats.map(([label, value, , Icon, , iconBg, iconColor], index) => (
         <div
           key={label}
-          className={`relative overflow-hidden rounded-[20px] border border-[#e6ebf4] bg-white p-3.5 shadow-[0_10px_24px_rgba(65,103,153,0.08)] ${
+          className={`dashboard-subtle-card relative overflow-hidden rounded-[18px] p-3.5 ${
             index === 0 ? 'col-span-2' : ''
           }`}
         >
@@ -473,7 +462,7 @@ function MobileNoticeList({
           key={notice.id}
           type="button"
           onClick={() => onNavigate('/dashboard/notices')}
-          className="flex w-full items-center gap-3 rounded-[18px] border border-[#e6ebf4] bg-[#fbfdff] p-3 text-left transition active:scale-[0.98]"
+          className="dashboard-subtle-card flex w-full items-center gap-3 rounded-[16px] p-3 text-left transition hover:bg-[var(--dashboard-hover)] active:scale-[0.98]"
         >
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#e7f1ff] text-[#2f80ed]">
             <Bell size={17} />
@@ -544,7 +533,9 @@ export default function DashboardPage() {
   const [memberRequestOpen, setMemberRequestOpen] = useState(false)
 
   // ── SWR data fetching (parallel, cached) ────────────────────
-  const { data: messesData, isLoading: messesLoading } = useMesses()
+  const { data: messesData, isLoading: messesLoading } = useMesses(
+    Boolean(user && user.role !== 'ADMIN'),
+  )
   const { data: adminDashboard } = useAdminDashboard(user?.role === 'ADMIN')
   const { data: messDashboard } = useMessDashboard(
     undefined,
@@ -740,13 +731,13 @@ export default function DashboardPage() {
   const mobileActions =
     user.role === 'ADMIN'
       ? adminMobileQuickActions
-      : user.role === 'MANAGER' || user.role === 'ORGANIZER'
+      : user.role === 'MANAGER'
         ? managerMobileQuickActions
         : mobileQuickActions
   const mobileNotices = (resolvedDashboard?.notices ?? []) as MobileNotice[]
 
   return (
-    <div className="min-h-screen bg-[#fafcff]">
+    <div className="min-h-screen bg-transparent">
       <DashboardHeader
         title={user.role === 'ADMIN' ? 'Super Admin Dashboard' : 'Dashboard'}
         description={
@@ -848,7 +839,7 @@ export default function DashboardPage() {
                       href={expense.receipt_url ?? '#'}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-3 rounded-[18px] border border-[#e6ebf4] bg-[#fbfdff] p-3 transition active:scale-[0.98]"
+                      className="dashboard-subtle-card flex items-center gap-3 rounded-[18px] p-3 transition hover:bg-[var(--dashboard-hover)] active:scale-[0.98]"
                     >
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#e7f1ff] text-[#2f80ed]">
                         <ReceiptText size={17} />
@@ -865,7 +856,7 @@ export default function DashboardPage() {
                     </a>
                   ))
                 ) : (
-                  <p className="rounded-[18px] border border-[#e6ebf4] bg-[#fbfdff] p-4 text-center text-sm font-semibold text-[#6b7a99]">
+                  <p className="dashboard-subtle-card rounded-[18px] p-4 text-center text-sm font-semibold text-[#6b7a99]">
                     No uploaded receipts yet.
                   </p>
                 )}
@@ -876,7 +867,7 @@ export default function DashboardPage() {
 
         <div className="hidden sm:block">
         {!messesLoading && !loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
-          <div className="mb-7 overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+          <div className="dashboard-panel mb-7 overflow-hidden p-5">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 shadow-sm">
@@ -913,36 +904,25 @@ export default function DashboardPage() {
         )}
 
         {/* Primary Stats Grid */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {stats.slice(0, 6).map(([label, value, badge, Icon, accent, iconBg, iconColor]) => (
+        <div className="dashboard-stat-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {stats.slice(0, 6).map(([label, value, , Icon]) => (
             <StatCard
               key={label}
               label={label}
               value={value}
-              badge={badge}
               icon={Icon}
-              accent={accent}
-              iconBg={iconBg}
-              iconColor={iconColor}
             />
           ))}
         </div>
 
         {/* Mini Stats Row */}
-        <div className="mt-5 grid gap-5 sm:grid-cols-3">
-          {stats.slice(6, 9).map(([label, value, , Icon], index) => (
+        <div className="dashboard-mini-stat-grid mt-5 grid gap-5 sm:grid-cols-3">
+          {stats.slice(6, 9).map(([label, value, , Icon]) => (
             <MiniStatCard
               key={label}
               label={label}
               value={value}
               icon={Icon}
-              tone={
-                [
-                  'from-[#f59e0b] to-[#f97316]',
-                  'from-[#10b981] to-[#34d399]',
-                  'from-[#ef4444] to-[#f43f5e]',
-                ][index]
-              }
             />
           ))}
         </div>
@@ -951,33 +931,23 @@ export default function DashboardPage() {
         {user.role !== 'ADMIN' && (
           <div className="mt-7 grid gap-6 xl:grid-cols-[1.35fr_.85fr_.7fr]">
             {/* Monthly Overview - Line Chart */}
-            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-5 text-sm font-black text-[#172554]">
-                Monthly Overview
-              </h3>
+            <DashboardPanel title="Monthly Overview" eyebrow="This month">
               <MonthlyOverviewChart
                 data={resolvedMonthlyOverview ?? []}
                 isLoading={chartLoading ?? false}
               />
-            </div>
+            </DashboardPanel>
 
             {/* Expense Breakdown - Pie Chart */}
-            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-5 text-sm font-black text-[#172554]">
-                Expense Breakdown
-              </h3>
+            <DashboardPanel title="Expense Breakdown" eyebrow="Costs">
               <ExpenseBreakdownChart
                 data={resolvedExpenseBreakdown?.data ?? []}
                 isLoading={chartLoading ?? false}
               />
-            </div>
+            </DashboardPanel>
 
             {/* Recent Notices / Receipts */}
-            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-4 text-sm font-black text-[#172554]">
-                Recent Notices
-              </h3>
-
+            <DashboardPanel title="Recent Notices" eyebrow="Notice board">
               <div className="space-y-3">
                 {(resolvedDashboard?.notices?.length
                   ? resolvedDashboard.notices
@@ -1000,7 +970,7 @@ export default function DashboardPage() {
                 ).map((notice) => (
                   <div
                     key={notice.id}
-                    className="flex items-start gap-3 rounded-xl border border-[#e6ebf4] bg-white p-3 transition hover:border-[#a9ccfb] hover:bg-[#f8faff]"
+                    className="dashboard-subtle-card flex items-start gap-3 rounded-xl p-3 transition hover:bg-[var(--dashboard-hover)]"
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-50 to-orange-100 text-amber-600">
                       <Bell size={16} />
@@ -1017,17 +987,14 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </DashboardPanel>
           </div>
         )}
 
         {/* Admin: show expense receipts instead of charts */}
         {user.role === 'ADMIN' && (
           <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
-            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-4 text-sm font-black text-[#172554]">
-                Recent Expense Receipts
-              </h3>
+            <DashboardPanel title="Recent Expense Receipts" eyebrow="Admin activity">
               <div className="space-y-3">
                 {adminDashboard?.recentExpenses?.length ? (
                   adminDashboard.recentExpenses.map((expense) => (
@@ -1036,7 +1003,7 @@ export default function DashboardPage() {
                       href={expense.receipt_url ?? '#'}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-start gap-3 rounded-xl border border-[#e6ebf4] bg-white p-3 transition hover:border-[#a9ccfb] hover:bg-[#f8faff]"
+                      className="dashboard-subtle-card flex items-start gap-3 rounded-xl p-3 transition hover:bg-[var(--dashboard-hover)]"
                     >
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2f80ed]/10 to-[#8b5cf6]/10 text-[#2f80ed]">
                         <ReceiptText size={16} />
@@ -1059,7 +1026,7 @@ export default function DashboardPage() {
                   </p>
                 )}
               </div>
-            </div>
+            </DashboardPanel>
           </div>
         )}
 
@@ -1067,24 +1034,16 @@ export default function DashboardPage() {
         {user.role !== 'ADMIN' && (
           <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
             {/* Weekly Meal Count - Bar Chart */}
-            <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-              <h3 className="mb-4 text-sm font-black text-[#172554]">
-                Meal Count This Week
-              </h3>
-
+            <DashboardPanel title="Meal Count This Week" eyebrow="Meals">
               <WeeklyMealsChart
                 data={resolvedWeeklyMeals ?? []}
                 isLoading={chartLoading ?? false}
               />
-            </div>
+            </DashboardPanel>
 
             {/* Quick Actions */}
             {user.role !== 'MEMBER' && (
-              <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-                <h3 className="mb-5 text-sm font-black text-[#172554]">
-                  Quick Actions
-                </h3>
-
+              <DashboardPanel title="Quick Actions" eyebrow="Shortcuts">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-2">
                   {dashboardQuickActions.map(([label, Icon, href]) => (
                     <button
@@ -1102,7 +1061,7 @@ export default function DashboardPage() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </DashboardPanel>
             )}
           </div>
         )}

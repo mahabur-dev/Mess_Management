@@ -56,7 +56,7 @@ export default function MonthlyBillPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [memberSearch, setMemberSearch] = useState('')
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
-  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
   const billMonth = `${selectedMonth}-01`
 
   function normalizeBills(payload: any) {
@@ -170,23 +170,23 @@ export default function MonthlyBillPage() {
         {/* Summary Cards - same icons, same font */}
         {filteredBills.length > 0 && (
           <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><TrendingUp size={13} className="text-[#2f80ed]" /> Food</p>
               <p className="mt-1.5 text-base font-bold text-[#172554]">{money(summary.totalFood)}</p>
             </div>
-            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#f59e0b]" /> Rent</p>
               <p className="mt-1.5 text-base font-bold text-[#172554]">{money(summary.totalRent)}</p>
             </div>
-            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#ec4899]" /> Utility</p>
               <p className="mt-1.5 text-base font-bold text-[#172554]">{money(summary.totalUtility)}</p>
             </div>
-            <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-700"><CheckCircle2 size={13} /> Total</p>
               <p className="mt-1.5 text-base font-bold text-emerald-700">{money(summary.totalCost)}</p>
             </div>
-            <div className="rounded-xl border border-red-200/60 bg-red-50/50 p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-red-600"><XCircle size={13} /> Due</p>
               <p className="mt-1.5 text-base font-bold text-red-600">{money(summary.totalDue)}</p>
             </div>

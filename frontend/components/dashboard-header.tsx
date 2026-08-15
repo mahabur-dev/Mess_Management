@@ -4,6 +4,7 @@ import { useAuth } from '@/app/context/auth-context'
 import { useSidebar } from '@/app/context/sidebar-context'
 import { Bell, CalendarDays, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,7 +108,6 @@ export function DashboardHeader({
   const [paySubmitting, setPaySubmitting] = useState(false)
 
   const isAdmin = user?.role === 'ADMIN'
-  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
   const canUseQuickAdd = showQuickAddButton && !isAdmin // Hide for admin and onboarding users
 
   const loadNotifications = async () => {
@@ -223,21 +223,21 @@ export function DashboardHeader({
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[#e6ebf4] bg-white shadow-sm">
+    <header className="dashboard-header-clean sticky top-0 z-20">
       <div className="flex min-h-[72px] flex-col gap-2 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="flex items-center gap-3 pr-3">
           {/* Hamburger - visible on mobile and tablet */}
           <button
             type="button"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e6ebf4] bg-white text-[#172554] shadow-sm lg:hidden"
+            className="dashboard-icon-button flex h-10 w-10 shrink-0 items-center justify-center rounded-xl lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
           >
             <Menu size={18} />
           </button>
           <div>
-            <h1 className="text-[20px] font-black tracking-tight text-[#172554]">{title}</h1>
-            {description && <p className="mt-1 text-sm font-semibold text-[#6b7a99]">{description}</p>}
+            <h1 className="text-[20px] font-black tracking-tight text-foreground">{title}</h1>
+            {description && <p className="mt-1 text-sm font-semibold text-muted-foreground">{description}</p>}
           </div>
         </div>
 
@@ -247,9 +247,9 @@ export function DashboardHeader({
             <button
               type="button"
               onClick={openMonthPicker}
-              className="relative hidden h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#e6ebf4] bg-white px-4 text-sm font-bold text-[#53617d] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md sm:flex"
+              className="dashboard-control relative hidden h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-bold sm:flex"
             >
-              <CalendarDays size={16} className="text-[#2f80ed]" />
+              <CalendarDays size={16} className="text-[var(--brand)]" />
               <span className="min-w-[120px]">{formatMonthLabel(selectedMonth)}</span>
               {onMonthChange && (
                 <input
@@ -271,7 +271,7 @@ export function DashboardHeader({
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#e6ebf4] bg-white px-4 text-sm font-bold text-[#53617d] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md data-[state=open]:border-[#a9ccfb] data-[state=open]:bg-[#f8faff]"
+                  className="dashboard-control flex h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-bold"
                 >
                   <Plus size={16} className="text-[var(--brand)]" />
                   Quick Add
@@ -318,14 +318,16 @@ export function DashboardHeader({
             </Button>
           )}
 
+          <ThemeToggle className="dashboard-icon-button h-11 w-11 rounded-xl" />
+
           {/* Notifications */}
           <DropdownMenu onOpenChange={(open) => open && void loadNotifications()}>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-[#e6ebf4] bg-white shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md data-[state=open]:border-[#a9ccfb] data-[state=open]:bg-[#f8faff]"
+                className="dashboard-icon-button relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl"
               >
-                <Bell size={18} className="text-[#53617d]" />
+                <Bell size={18} />
                 {unreadCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gradient-to-r from-[#ff4d4f] to-[#ff2e55] px-1 text-[9px] font-black leading-none text-white shadow-[0_4px_8px_rgba(255,77,79,0.3)]">
                     {unreadCount > 99 ? '99+' : unreadCount}
@@ -333,20 +335,20 @@ export function DashboardHeader({
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[340px] p-2 border border-[#e6ebf4] shadow-[0_8px_30px_rgba(65,103,153,0.12)]">
+            <DropdownMenuContent align="end" className="dashboard-card w-[340px] p-2">
               <div className="flex items-center justify-between px-2 py-1.5">
-                <DropdownMenuLabel className="p-0 text-sm font-black text-[#172554]">
+                <DropdownMenuLabel className="p-0 text-sm font-black text-[var(--dashboard-ink)]">
                   Notifications
                 </DropdownMenuLabel>
                 <button
                   type="button"
                   onClick={() => router.push('/dashboard/notifications')}
-                  className="cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold text-[#2f80ed] transition hover:bg-[#e7f1ff]"
+                  className="cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold text-[var(--brand)] transition hover:bg-[var(--brand-soft)]"
                 >
                   View all
                 </button>
               </div>
-              <DropdownMenuSeparator className="bg-[#e6ebf4]" />
+              <DropdownMenuSeparator className="bg-[var(--dashboard-line)]" />
               {notifications.length ? (
                 notifications.map((notification) => {
                   const isRead = notification.reads?.some((read) => read.user_id === user?.id)
@@ -357,14 +359,14 @@ export function DashboardHeader({
                         await markAsRead(notification)
                         router.push('/dashboard/notifications')
                       }}
-                      className="cursor-pointer items-start gap-3 rounded-lg p-3 transition hover:bg-[#f8faff] focus:bg-[#f8faff]"
+                      className="cursor-pointer items-start gap-3 rounded-lg p-3 transition hover:bg-[var(--dashboard-hover)] focus:bg-[var(--dashboard-hover)]"
                     >
-                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${isRead ? 'bg-[#cbd5e1]' : 'bg-[#ff2e55]'}`} />
+                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${isRead ? 'bg-[var(--dashboard-line-strong)]' : 'bg-[var(--brand-bright)]'}`} />
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold text-[#172554]">
+                        <span className="block truncate text-sm font-bold text-[var(--dashboard-ink)]">
                           {notification.title}
                         </span>
-                        <span className="mt-0.5 line-clamp-2 block text-xs font-semibold text-[#667085]">
+                        <span className="mt-0.5 line-clamp-2 block text-xs font-semibold text-[var(--dashboard-muted)]">
                           {notification.body}
                         </span>
                       </span>
@@ -372,7 +374,7 @@ export function DashboardHeader({
                   )
                 })
               ) : (
-                <div className="px-2 py-8 text-center text-sm font-semibold text-[#667085]">
+                <div className="px-2 py-8 text-center text-sm font-semibold text-[var(--dashboard-muted)]">
                   No notifications yet.
                 </div>
               )}
@@ -384,7 +386,7 @@ export function DashboardHeader({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#e6ebf4] bg-white px-2 pr-3 shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#f8faff] hover:shadow-md data-[state=open]:border-[#a9ccfb] data-[state=open]:bg-[#f8faff]"
+                className="dashboard-control flex h-11 cursor-pointer items-center gap-2 rounded-xl px-2 pr-3"
               >
                 {user?.avatar_url && !imageError ? (
                   <img
@@ -404,8 +406,8 @@ export function DashboardHeader({
                     {getInitials(user?.name || 'M')}
                   </div>
                 )}
-                <span className="hidden max-w-[100px] truncate text-sm font-bold text-[#172554] sm:inline">{user?.name}</span>
-                <ChevronDown size={14} className="text-[#667085]" />
+                <span className="hidden max-w-[100px] truncate text-sm font-bold text-foreground sm:inline">{user?.name}</span>
+                <ChevronDown size={14} className="text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 border border-[#e6ebf4] shadow-[0_8px_30px_rgba(65,103,153,0.12)]">

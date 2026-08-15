@@ -135,7 +135,7 @@ export default function MessManagementPage() {
   const [subscription, setSubscription] = useState<MessSubscriptionSummary | null>(null)
   const activeMess = messes[0]
   const isAdmin = user?.role === 'ADMIN'
-  const isManager = user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const isManager = user?.role === 'MANAGER'
 
   async function load() {
     setLoading(true)

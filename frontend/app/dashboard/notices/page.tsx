@@ -37,7 +37,7 @@ export default function NoticesPage() {
   const [type, setType] = useState<NoticeType>('GENERAL')
   const { user } = useAuth()
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
-  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
   const [showModal, setShowModal] = useState(false)
   const [publishing, setPublishing] = useState(false)
 

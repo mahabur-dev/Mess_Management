@@ -76,11 +76,11 @@ const adminItems = [
 
 const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e']
 const sidebarIconButtonClass =
-  'flex h-9 w-9 items-center justify-center rounded-lg text-[#8a9bb5] transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]'
+  'dashboard-icon-button flex h-9 w-9 items-center justify-center rounded-lg border-0 bg-transparent shadow-none'
 const sidebarActiveLinkClass =
   'bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] text-white shadow-[0_8px_20px_var(--brand-shadow)]'
 const sidebarInactiveLinkClass =
-  'text-[#53617d] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]'
+  'text-muted-foreground hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)]'
 const sidebarLogoutButtonClass =
   'border-red-200 bg-red-50 text-red-600 shadow-[0_8px_18px_rgba(220,38,38,0.08)] hover:border-red-300 hover:bg-red-600 hover:text-white'
 
@@ -126,7 +126,7 @@ export function DashboardSidebar() {
   const sidebarItems =
     user?.role === 'ADMIN'
       ? adminItems
-      : user?.role === 'MANAGER' || user?.role === 'ORGANIZER' || managesMess
+      : user?.role === 'MANAGER' || managesMess
         ? managerItems
         : hasAnyMess
           ? memberItems
@@ -136,9 +136,9 @@ export function DashboardSidebar() {
   const sidebarWidth = collapsed ? 'w-[72px]' : 'w-[280px]'
 
   const content = (
-    <aside className={`flex h-full ${sidebarWidth} flex-col overflow-hidden border-r border-[#e6ebf4] bg-white transition-all duration-300`}>
+    <aside className={`dashboard-sidebar flex h-full ${sidebarWidth} flex-col overflow-hidden transition-all duration-300`}>
       {/* Logo Area */}
-      <div className="relative flex h-[88px] items-center border-b border-[#e6ebf4] px-5">
+      <div className="relative flex h-[88px] items-center border-b border-[var(--dashboard-line)] px-5">
         {collapsed ? (
           /* When collapsed: center the expand button (desktop only) */
           <div className="hidden lg:flex w-full items-center justify-center">
@@ -184,7 +184,7 @@ export function DashboardSidebar() {
                 title={collapsed ? item.label : undefined}
               >
                 <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all ${
-                  isActive ? 'bg-white/20' : 'bg-[#f1f5f9] group-hover:bg-[var(--brand-soft)]'
+                  isActive ? 'bg-white/20' : 'bg-[var(--dashboard-surface-subtle)] group-hover:bg-[var(--brand-soft)]'
                 }`}>
                   <Icon size={18} />
                 </div>
@@ -201,8 +201,8 @@ export function DashboardSidebar() {
       </nav>
 
       {/* User Profile + Logout */}
-      <div className="border-t border-[#e6ebf4] p-4">
-        <div className={`flex items-center gap-3 rounded-xl bg-[#f8faff] p-3 ${collapsed ? 'justify-center px-2' : ''}`}>
+      <div className="border-t border-[var(--dashboard-line)] p-4">
+        <div className={`dashboard-subtle-card flex items-center gap-3 rounded-xl p-3 ${collapsed ? 'justify-center px-2' : ''}`}>
           <div
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-black shadow-sm"
             style={{
@@ -215,8 +215,8 @@ export function DashboardSidebar() {
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-[#172554]">{user?.name || 'Mess User'}</p>
-              <p className="truncate text-xs font-semibold text-[#7a8aaa]">{user?.role || 'Member'}</p>
+              <p className="truncate text-sm font-bold text-foreground">{user?.name || 'Mess User'}</p>
+              <p className="truncate text-xs font-semibold text-muted-foreground">{user?.role || 'Member'}</p>
             </div>
           )}
         </div>

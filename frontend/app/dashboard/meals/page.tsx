@@ -4,7 +4,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AttendanceStatus, type MealName, type Mess } from '@/lib/api-client'
-import { CalendarDays, Clock, UserPlus, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, CheckCircle2, XCircle } from 'lucide-react'
+import { CalendarDays, Clock, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, Minus, Plus, Save } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
@@ -31,15 +31,9 @@ const MEAL_ICONS: Record<MealName, React.ReactNode> = {
   DINNER: <Moon size={22} />,
 }
 
-const MEAL_COLORS: Record<MealName, { bg: string; iconBg: string; border: string }> = {
-  BREAKFAST: { bg: '#fff7ed', iconBg: '#f9731618', border: '#fed7aa' },
-  LUNCH: { bg: '#f0fdf4', iconBg: '#22c55e18', border: '#bbf7d0' },
-  DINNER: { bg: '#f0f9ff', iconBg: '#3b82f618', border: '#bae6fd' },
-}
-
 type MealAttendance = { member_id: string; guests?: number | null; status: AttendanceStatus; member?: { id: string; name: string; email?: string } }
 type MealEntry = { id: string; name: MealName; scheduled_date: string; status?: string; is_locked?: boolean; attendances?: MealAttendance[] }
-type ActiveMember = { user_id: string; mess_id: string; is_active: boolean; user?: { name?: string | null } }
+type ActiveMember = { user_id: string; mess_id?: string; is_active: boolean; user?: { name?: string | null } }
 type MemberMealRow = { id: string; name: string; meals: Record<MealName, number> }
 type DeadlineInfo = { startTime: string; endTime: string; isWindowOpen: boolean; windowStartTime: string; windowEndTime: string }
 
@@ -66,7 +60,7 @@ export default function MealsPage() {
   const { user } = useAuth()
   const [messes, setMesses] = useState<Mess[]>([])
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [guests, setGuests] = useState<Record<MealName, string>>({ BREAKFAST: '', LUNCH: '', DINNER: '' })
+  const [mealDrafts, setMealDrafts] = useState<Record<MealName, number>>({ BREAKFAST: 0, LUNCH: 0, DINNER: 0 })
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [members, setMembers] = useState<ActiveMember[]>([])
@@ -78,15 +72,16 @@ export default function MealsPage() {
   const [managerMealDrafts, setManagerMealDrafts] = useState<Record<string, Record<MealName, string>>>({})
   const [userMeals, setUserMeals] = useState<MealEntry[]>([])
   const [userMealsLoading, setUserMealsLoading] = useState(true)
+  const [savingMeals, setSavingMeals] = useState(false)
   const [deadlineInfo, setDeadlineInfo] = useState<DeadlineInfo | null>(null)
   const [deadlineLoading, setDeadlineLoading] = useState(false)
   const [settingDeadline, setSettingDeadline] = useState(false)
   const [showDeadlineSettings, setShowDeadlineSettings] = useState(false)
-  const [deadlineStartTime, setDeadlineStartTime] = useState('22:00')
-  const [deadlineEndTime, setDeadlineEndTime] = useState('11:00')
+  const [deadlineStartTime, setDeadlineStartTime] = useState('09:00')
+  const [deadlineEndTime, setDeadlineEndTime] = useState('17:00')
 
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
-  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
   const canViewMemberMealSheet = Boolean(user?.id)
   const isPastSelectedDate = isPastDate(date)
   const mealControlsLocked = userMealsLoading || (!isManager && deadlineInfo ? !deadlineInfo.isWindowOpen : false)
@@ -121,7 +116,7 @@ export default function MealsPage() {
         setDeadlineInfo(r.data)
         setDeadlineStartTime(r.data.startTime)
         setDeadlineEndTime(r.data.endTime)
-      } catch { if (!m) return; setDeadlineInfo({ startTime: '22:00', endTime: '11:00', isWindowOpen: true, windowStartTime: '22:00', windowEndTime: '11:00' }) }
+      } catch { if (!m) return; setDeadlineInfo({ startTime: '09:00', endTime: '17:00', isWindowOpen: true, windowStartTime: '09:00', windowEndTime: '17:00' }) }
       finally { if (m) setDeadlineLoading(false) }
     }
     loadDeadlineInfo()
@@ -139,9 +134,12 @@ export default function MealsPage() {
         const meals = Array.isArray(r.data) ? r.data as MealEntry[] : []
         const myMeals = meals.filter(meal => meal.attendances?.some(a => a.member_id === user.id))
         setUserMeals(myMeals)
-        const ug = { BREAKFAST: '', LUNCH: '', DINNER: '' } as Record<MealName, string>
-        myMeals.forEach(meal => { const a = meal.attendances?.find(a => a.member_id === user.id); if (a && a.guests) ug[meal.name] = String(a.guests) })
-        setGuests(ug)
+        const drafts = { BREAKFAST: 0, LUNCH: 0, DINNER: 0 } as Record<MealName, number>
+        myMeals.forEach(meal => {
+          const attendance = meal.attendances?.find(a => a.member_id === user.id)
+          if (attendance) drafts[meal.name] = getMealCount(attendance, meal.name)
+        })
+        setMealDrafts(drafts)
       } catch (e) { if (!m) return; console.error('Failed to load user meals:', e) }
       finally { if (m) setUserMealsLoading(false) }
     }
@@ -156,11 +154,11 @@ export default function MealsPage() {
       setSheetLoading(true); setSheetError('')
       try {
         const [memR, mealR] = await Promise.all([
-          isManager ? apiClient.getAllMembers({ limit: 100 }).catch(() => null) : Promise.resolve(null),
+          isManager ? apiClient.getMealMembers(activeMess.id).catch(() => null) : Promise.resolve(null),
           apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 }),
         ])
         if (!m) return
-        const apiMembers = (Array.isArray(memR?.data) ? memR.data : []).filter((mb: ActiveMember) => mb.is_active && mb.mess_id === activeMess.id)
+        const apiMembers = (Array.isArray(memR?.data) ? memR.data : []).filter((mb: ActiveMember) => mb.is_active)
         const fb = ((activeMess as Mess & { memberships?: ActiveMember[] }).memberships ?? []).filter(mb => mb.is_active)
         setMembers(apiMembers.length ? apiMembers : fb)
         setTodayMeals(Array.isArray(mealR.data) ? mealR.data as MealEntry[] : [])
@@ -170,11 +168,6 @@ export default function MealsPage() {
     loadManagerMealSheet()
     return () => { m = false }
   }, [activeMess, activeMess?.id, canViewMemberMealSheet, date, isManager])
-
-  const getUserMealStatus = (mealName: MealName): AttendanceStatus => {
-    const meal = userMeals.find(m => m.name === mealName)
-    return meal?.attendances?.find(a => a.member_id === user?.id)?.status || 'OFF'
-  }
 
   const memberMealRows = useMemo<MemberMealRow[]>(() => {
     const rows = new Map<string, MemberMealRow>()
@@ -193,22 +186,41 @@ export default function MealsPage() {
     if (!activeMess?.id) return
     const r = await apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 })
     const meals = Array.isArray(r.data) ? r.data as MealEntry[] : []
-    setUserMeals(meals.filter(m => m.attendances?.some(a => a.member_id === user?.id)))
+    const myMeals = meals.filter(m => m.attendances?.some(a => a.member_id === user?.id))
+    setUserMeals(myMeals)
+    const drafts = { BREAKFAST: 0, LUNCH: 0, DINNER: 0 } as Record<MealName, number>
+    myMeals.forEach(meal => {
+      const attendance = meal.attendances?.find(a => a.member_id === user?.id)
+      if (attendance) drafts[meal.name] = getMealCount(attendance, meal.name)
+    })
+    setMealDrafts(drafts)
     if (canViewMemberMealSheet) setTodayMeals(meals)
   }
 
   function parseNum(v: string) { const n = Number(v); return isNaN(n) ? 0 : n }
 
-  async function setMeal(mealName: MealName, status: AttendanceStatus) {
+  async function saveMyMeals() {
     if (!activeMess) return
     if (isPastSelectedDate && !isManager) { setMessageType('error'); setMessage('Past date meals can only be updated by managers.'); return }
     if (!isPastSelectedDate && deadlineInfo && !deadlineInfo.isWindowOpen && !isManager) { setMessageType('error'); setMessage("Today's meal window is closed. Only managers can modify meals now."); return }
+    setSavingMeals(true)
     setMessage('')
     try {
-      await apiClient.createMeal({ messId: activeMess.id, mealName, status, guests: parseNum(guests[mealName]), date })
-      setMessageType('success'); setMessage(`${mealLabels[mealName]} turned ${status.toLowerCase()} successfully.`)
+      await Promise.all(mealNames.map(mealName => {
+        const total = Math.max(0, Number(mealDrafts[mealName].toFixed(2)))
+        const base = getMealBaseValue(mealName)
+        return apiClient.createMeal({
+          messId: activeMess.id,
+          mealName,
+          status: total > 0 ? 'ON' : 'OFF',
+          guests: total > 0 ? Math.max(0, +(total - base).toFixed(2)) : 0,
+          date,
+        })
+      }))
+      setMessageType('success'); setMessage('Breakfast, lunch and dinner updated successfully.')
       await refreshMealsForDate()
     } catch (e) { setMessageType('error'); setMessage(getErrorMessage(e, 'Failed')) }
+    finally { setSavingMeals(false) }
   }
 
   async function saveMemberMealRow(row: MemberMealRow) {
@@ -233,7 +245,7 @@ export default function MealsPage() {
     if (!activeMess || !isManager) return
     setSettingDeadline(true); setMessage('')
     try {
-      await apiClient.setMealDeadline(activeMess.id, deadlineStartTime, deadlineEndTime, date)
+      await apiClient.setMealDeadline(activeMess.id, deadlineStartTime, deadlineEndTime)
       setMessageType('success'); setMessage(`Deadline: ${formatTimeReadable(deadlineStartTime)} - ${formatTimeReadable(deadlineEndTime)}`)
       const info = await apiClient.getMealDeadlineInfo(activeMess.id, date)
       setDeadlineInfo(info.data); setShowDeadlineSettings(false)
@@ -243,7 +255,7 @@ export default function MealsPage() {
 
   return (
     <div className="min-h-screen bg-[#fafcff]">
-      <DashboardHeader title={isManager ? 'Meal Sheet' : 'My Meals'} description="Breakfast, lunch and dinner ON/OFF with guest meal support" />
+      <DashboardHeader title={isManager ? 'Meal Sheet' : 'My Meals'} description="Set your breakfast, lunch and dinner quantities" />
       <div className="p-4 sm:p-6 lg:p-8">
         {message && <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${messageType === 'error' ? 'border border-red-200/70 bg-red-50 text-red-700' : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'}`}>{message}</div>}
 
@@ -282,43 +294,33 @@ export default function MealsPage() {
           </div>
         )}
 
-        <div className="mb-8 grid gap-5 md:grid-cols-3">
+        <div className="mb-4 grid gap-4 md:grid-cols-3">
           {mealNames.map(mealName => {
-            const colors = MEAL_COLORS[mealName]
-            const currentStatus = getUserMealStatus(mealName)
-            const isOn = currentStatus === 'ON'
             const isLoading = userMealsLoading
+            const quantity = mealDrafts[mealName]
+            const step = getMealBaseValue(mealName)
             return (
-              <div key={mealName} className="group relative overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-sm transition-all hover:border-[#a9ccfb] hover:shadow-md">
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
-                <div className="p-5">
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: colors.iconBg }}><span className="text-[#172554]">{MEAL_ICONS[mealName]}</span></div>
-                    {!isLoading && isOn && <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />ON {parseNum(guests[mealName]) > 0 && `+${guests[mealName]}`}</span>}
-                    {!isLoading && !isOn && currentStatus === 'OFF' && <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-500">OFF</span>}
-                  </div>
-                  <h3 className="text-lg font-black text-[#172554]">{mealLabels[mealName]}</h3>
-                  <p className="mt-1 text-xs font-semibold text-[#6b7a99]">Set your meal status for {formatDate(date)}</p>
-                  <div className="mt-4">
-                    <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-[#6b7a99]"><UserPlus size={14} /> Guest Meal</label>
-                    <input type="number" min={0} placeholder="0" disabled={mealControlsLocked}
-                      className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
-                      value={guests[mealName]} onChange={e => setGuests(c => ({ ...c, [mealName]: e.target.value }))} />
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <button disabled={!activeMess || userMealsLoading || mealControlsLocked} onClick={() => setMeal(mealName, 'ON')}
-                      className={`inline-flex h-[46px] items-center justify-center gap-2 rounded-xl border text-sm font-bold transition active:scale-[0.98] disabled:opacity-60 ${isOn ? 'border-emerald-500/40 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-emerald-400/60 hover:bg-emerald-50/50 hover:text-emerald-600'}`}>
-                      <CheckCircle2 size={16} /> ON
-                    </button>
-                    <button disabled={!activeMess || userMealsLoading || mealControlsLocked} onClick={() => setMeal(mealName, 'OFF')}
-                      className={`inline-flex h-[46px] items-center justify-center gap-2 rounded-xl border text-sm font-bold transition active:scale-[0.98] disabled:opacity-60 ${!isOn && currentStatus === 'OFF' ? 'border-red-400/40 bg-red-50 text-red-600 shadow-sm' : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-500'}`}>
-                      <XCircle size={16} /> OFF
-                    </button>
-                  </div>
+              <div key={mealName} className="dashboard-card dashboard-meal-card group relative overflow-hidden p-5">
+                <div className="mb-5 flex items-start justify-between gap-3">
+                  <div className="dashboard-meal-icon flex h-11 w-11 items-center justify-center rounded-xl text-[var(--brand)]">{MEAL_ICONS[mealName]}</div>
+                  <span className="dashboard-eyebrow rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-[9px] tracking-[0.1em]">{isLoading ? 'Loading' : 'Meal quantity'}</span>
+                </div>
+                <h3 className="text-lg font-black text-foreground">{mealLabels[mealName]}</h3>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">For {formatDate(date)} · +{step} per click</p>
+                <div className="mt-5 flex items-center justify-between rounded-2xl bg-[var(--dashboard-surface-subtle)] p-2">
+                  <button type="button" aria-label={`Decrease ${mealLabels[mealName]}`} disabled={!activeMess || isLoading || mealControlsLocked || quantity <= 0} onClick={() => setMealDrafts(c => ({ ...c, [mealName]: Math.max(0, +(c[mealName] - step).toFixed(2)) }))} className="dashboard-meal-step grid h-11 w-11 place-items-center rounded-xl text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"><Minus size={18} strokeWidth={2.5} /></button>
+                  <span className="text-3xl font-black tracking-tight text-foreground">{quantity}</span>
+                  <button type="button" aria-label={`Increase ${mealLabels[mealName]}`} disabled={!activeMess || isLoading || mealControlsLocked} onClick={() => setMealDrafts(c => ({ ...c, [mealName]: +(c[mealName] + step).toFixed(2) }))} className="dashboard-meal-step grid h-11 w-11 place-items-center rounded-xl bg-[var(--brand)] text-white shadow-[0_8px_18px_var(--brand-shadow)] transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} strokeWidth={2.5} /></button>
                 </div>
               </div>
             )
           })}
+        </div>
+
+        <div className="mb-8 flex justify-end">
+          <Button type="button" onClick={saveMyMeals} disabled={!activeMess || userMealsLoading || mealControlsLocked || savingMeals} className="h-11 w-full gap-2 rounded-xl bg-[var(--brand)] px-6 font-black text-white shadow-[0_12px_24px_var(--brand-shadow)] transition hover:bg-[var(--brand-hover)] sm:w-auto">
+            <Save size={16} /> {savingMeals ? 'Saving meals...' : 'Save meal sheet'}
+          </Button>
         </div>
 
         {canViewMemberMealSheet && (

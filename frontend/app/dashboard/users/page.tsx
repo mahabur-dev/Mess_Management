@@ -27,7 +27,6 @@ const getInitials = (name: string) => {
 
 const ROLE_BADGES: Record<string, { label: string; bg: string; text: string; border: string }> = {
   ADMIN: { label: 'Admin', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200/50' },
-  ORGANIZER: { label: 'Organizer', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200/50' },
   MANAGER: { label: 'Manager', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200/50' },
   MEMBER: { label: 'Member', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200/50' },
 }

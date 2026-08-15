@@ -335,20 +335,20 @@ export function DashboardHeader({
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[340px] p-2 border border-[#e6ebf4] shadow-[0_8px_30px_rgba(65,103,153,0.12)]">
+            <DropdownMenuContent align="end" className="dashboard-card w-[340px] p-2">
               <div className="flex items-center justify-between px-2 py-1.5">
-                <DropdownMenuLabel className="p-0 text-sm font-black text-[#172554]">
+                <DropdownMenuLabel className="p-0 text-sm font-black text-[var(--dashboard-ink)]">
                   Notifications
                 </DropdownMenuLabel>
                 <button
                   type="button"
                   onClick={() => router.push('/dashboard/notifications')}
-                  className="cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold text-[#2f80ed] transition hover:bg-[#e7f1ff]"
+                  className="cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold text-[var(--brand)] transition hover:bg-[var(--brand-soft)]"
                 >
                   View all
                 </button>
               </div>
-              <DropdownMenuSeparator className="bg-[#e6ebf4]" />
+              <DropdownMenuSeparator className="bg-[var(--dashboard-line)]" />
               {notifications.length ? (
                 notifications.map((notification) => {
                   const isRead = notification.reads?.some((read) => read.user_id === user?.id)
@@ -359,14 +359,14 @@ export function DashboardHeader({
                         await markAsRead(notification)
                         router.push('/dashboard/notifications')
                       }}
-                      className="cursor-pointer items-start gap-3 rounded-lg p-3 transition hover:bg-[#f8faff] focus:bg-[#f8faff]"
+                      className="cursor-pointer items-start gap-3 rounded-lg p-3 transition hover:bg-[var(--dashboard-hover)] focus:bg-[var(--dashboard-hover)]"
                     >
-                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${isRead ? 'bg-[#cbd5e1]' : 'bg-[#ff2e55]'}`} />
+                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${isRead ? 'bg-[var(--dashboard-line-strong)]' : 'bg-[var(--brand-bright)]'}`} />
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold text-[#172554]">
+                        <span className="block truncate text-sm font-bold text-[var(--dashboard-ink)]">
                           {notification.title}
                         </span>
-                        <span className="mt-0.5 line-clamp-2 block text-xs font-semibold text-[#667085]">
+                        <span className="mt-0.5 line-clamp-2 block text-xs font-semibold text-[var(--dashboard-muted)]">
                           {notification.body}
                         </span>
                       </span>
@@ -374,7 +374,7 @@ export function DashboardHeader({
                   )
                 })
               ) : (
-                <div className="px-2 py-8 text-center text-sm font-semibold text-[#667085]">
+                <div className="px-2 py-8 text-center text-sm font-semibold text-[var(--dashboard-muted)]">
                   No notifications yet.
                 </div>
               )}

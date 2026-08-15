@@ -23,7 +23,7 @@ export function DashboardPanel({
   return (
     <section className={cn('dashboard-panel overflow-hidden', className)}>
       {hasHeader && (
-        <div className="flex items-start justify-between gap-4 px-5 pb-2 pt-5">
+        <div className="dashboard-panel-header flex items-start justify-between gap-4 px-5 pb-2 pt-5">
           <div>
             {eyebrow && <p className="dashboard-eyebrow">{eyebrow}</p>}
             {title && (

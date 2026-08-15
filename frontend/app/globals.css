@@ -402,19 +402,19 @@
   }
 
   .dashboard-theme {
-    --dashboard-bg: #f4f9f8;
+    --dashboard-bg: #eef7f5;
     --dashboard-surface: #ffffff;
     --dashboard-surface-raised: rgba(255, 255, 255, 0.94);
-    --dashboard-surface-subtle: #edf7f5;
-    --dashboard-header: rgba(255, 255, 255, 0.88);
-    --dashboard-sidebar-bg: rgba(255, 255, 255, 0.96);
+    --dashboard-surface-subtle: #e7f3f1;
+    --dashboard-header: var(--dashboard-bg);
+    --dashboard-sidebar-bg: var(--dashboard-bg);
     --dashboard-ink: #0a2f2d;
     --dashboard-muted: #687b7a;
     --dashboard-line: #dceae8;
     --dashboard-line-strong: #c5ddda;
     --dashboard-hover: #e8f6f4;
-    --dashboard-shadow: 0 1px 2px rgba(7, 55, 53, 0.04), 0 10px 32px rgba(7, 55, 53, 0.07);
-    --dashboard-shadow-lg: 0 18px 48px rgba(7, 55, 53, 0.11);
+    --dashboard-shadow: 0 2px 4px rgba(7, 55, 53, 0.04), 0 14px 34px rgba(7, 55, 53, 0.08);
+    --dashboard-shadow-lg: 0 22px 52px rgba(7, 55, 53, 0.14);
     --background: var(--dashboard-bg);
     --foreground: var(--dashboard-ink);
     --card: var(--dashboard-surface);
@@ -450,8 +450,8 @@
     --dashboard-surface: #0d2324;
     --dashboard-surface-raised: #11292a;
     --dashboard-surface-subtle: #102c2c;
-    --dashboard-header: rgba(8, 25, 26, 0.9);
-    --dashboard-sidebar-bg: rgba(8, 25, 26, 0.97);
+    --dashboard-header: var(--dashboard-bg);
+    --dashboard-sidebar-bg: var(--dashboard-bg);
     --dashboard-ink: #ecfffc;
     --dashboard-muted: #9bb8b5;
     --dashboard-line: #214344;
@@ -473,7 +473,7 @@
 
   .dashboard-sidebar {
     border-right: 1px solid var(--dashboard-line);
-    background: var(--dashboard-sidebar-bg);
+    background: var(--dashboard-bg);
     color: var(--dashboard-ink);
     box-shadow: 12px 0 36px color-mix(in srgb, var(--brand-dark) 7%, transparent);
     backdrop-filter: blur(20px);
@@ -481,24 +481,33 @@
 
   .dashboard-header-clean {
     border-bottom: 1px solid var(--dashboard-line) !important;
-    background: var(--dashboard-header) !important;
+    background: var(--dashboard-bg) !important;
     box-shadow: 0 1px 0 color-mix(in srgb, var(--dashboard-line) 70%, transparent);
     backdrop-filter: blur(18px) saturate(140%);
   }
 
   .dashboard-panel {
     border: 0;
-    border-radius: 1rem;
-    background: var(--dashboard-surface);
+    border-radius: 1.25rem;
+    background: linear-gradient(
+      155deg,
+      var(--dashboard-surface) 0%,
+      color-mix(in srgb, var(--dashboard-surface) 97%, var(--brand)) 100%
+    );
     color: var(--dashboard-ink);
     box-shadow: var(--dashboard-shadow);
+    transition: box-shadow 180ms ease, background-color 180ms ease;
   }
 
   /* Reusable solid dashboard surface. Cards are separated by elevation, not outlines. */
   .dashboard-card {
     border: 0;
-    border-radius: 1rem;
-    background: var(--dashboard-surface);
+    border-radius: 1.25rem;
+    background: linear-gradient(
+      155deg,
+      var(--dashboard-surface) 0%,
+      color-mix(in srgb, var(--dashboard-surface) 97%, var(--card-accent, var(--brand))) 100%
+    );
     color: var(--dashboard-ink);
     box-shadow: var(--dashboard-shadow);
     transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
@@ -506,6 +515,94 @@
 
   .dashboard-card:hover {
     box-shadow: var(--dashboard-shadow-lg);
+  }
+
+  .dashboard-stat-card {
+    --card-accent: var(--brand);
+  }
+
+  .dashboard-stat-grid > .dashboard-stat-card:nth-child(2) {
+    --card-accent: var(--brand-bright);
+  }
+
+  .dashboard-stat-grid > .dashboard-stat-card:nth-child(3) {
+    --card-accent: #e8a321;
+  }
+
+  .dashboard-stat-grid > .dashboard-stat-card:nth-child(4) {
+    --card-accent: #d84c4c;
+  }
+
+  .dashboard-stat-grid > .dashboard-stat-card:nth-child(5) {
+    --card-accent: #7c3aed;
+  }
+
+  .dashboard-stat-grid > .dashboard-stat-card:nth-child(6) {
+    --card-accent: #0284c7;
+  }
+
+  .dashboard-stat-card .dashboard-stat-icon {
+    background: color-mix(in srgb, var(--card-accent) 11%, var(--dashboard-surface));
+    color: var(--card-accent);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--card-accent) 13%, transparent);
+  }
+
+  .dashboard-meal-card {
+    background: linear-gradient(155deg, var(--dashboard-surface), color-mix(in srgb, var(--dashboard-surface) 97%, var(--brand)));
+  }
+
+  .dashboard-meal-icon {
+    background: var(--brand-soft);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--brand) 12%, transparent);
+  }
+
+  .dashboard-meal-step {
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--brand) 10%, transparent);
+  }
+
+  .dashboard-panel-header {
+    position: relative;
+    padding-bottom: 0.9rem;
+  }
+
+  .dashboard-panel-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 1.25rem;
+    height: 0.2rem;
+    width: 2rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand), var(--brand-bright));
+    opacity: 0.7;
+  }
+
+  .dashboard-mini-stat-grid > .dashboard-stat-card:nth-child(1) {
+    --card-accent: #e8a321;
+  }
+
+  .dashboard-mini-stat-grid > .dashboard-stat-card:nth-child(2) {
+    --card-accent: #16a36a;
+  }
+
+  .dashboard-mini-stat-grid > .dashboard-stat-card:nth-child(3) {
+    --card-accent: #d84c4c;
+  }
+
+  .dashboard-report-grid > .report-stat-card[data-tone='meal'] {
+    --card-accent: var(--brand);
+  }
+
+  .dashboard-report-grid > .report-stat-card[data-tone='expense'] {
+    --card-accent: #e8a321;
+  }
+
+  .dashboard-report-grid > .report-stat-card[data-tone='due'] {
+    --card-accent: #d84c4c;
+  }
+
+  .dashboard-report-grid > .report-stat-card[data-tone='payment'] {
+    --card-accent: #16a36a;
   }
 
   .dashboard-subtle-card {
@@ -531,6 +628,30 @@
     border-color: var(--brand-border);
     background: var(--dashboard-hover);
     color: var(--brand);
+  }
+
+  .dashboard-theme .push-not-now-button {
+    border: 1px solid var(--dashboard-line-strong) !important;
+    background: var(--dashboard-surface-subtle) !important;
+    color: var(--dashboard-ink) !important;
+  }
+
+  .dashboard-theme .push-not-now-button:hover {
+    border-color: var(--brand-border) !important;
+    background: var(--dashboard-hover) !important;
+    color: var(--dashboard-ink) !important;
+  }
+
+  .dashboard-theme [data-slot='button'].push-not-now-button:not([class*='bg-[#22b66f]']):not([class*='bg-green']):not([class*='bg-red']):not([class*='bg-rose']):not([class*='bg-destructive']) {
+    border-color: var(--brand-dark) !important;
+    background: var(--brand-dark) !important;
+    color: #ffffff !important;
+  }
+
+  .dashboard-theme [data-slot='button'].push-not-now-button:not([class*='bg-[#22b66f]']):not([class*='bg-green']):not([class*='bg-red']):not([class*='bg-rose']):not([class*='bg-destructive']):hover {
+    border-color: var(--brand) !important;
+    background: var(--brand) !important;
+    color: #ffffff !important;
   }
 
   .dashboard-icon-button:hover {
@@ -618,18 +739,29 @@
     border-color: var(--dashboard-line) !important;
   }
 
-  .dark .dashboard-theme [class~='bg-white'],
-  .dark .dashboard-theme [class~='bg-white/90'],
-  .dark .dashboard-theme [class~='bg-white/95'] {
-    background-color: var(--dashboard-surface) !important;
+  /* Keep dashboard surfaces on the same theme background instead of isolated white blocks. */
+  .dashboard-theme [class~='bg-white'],
+  .dashboard-theme [class~='bg-white/90'],
+  .dashboard-theme [class~='bg-white/95'] {
+    background-color: var(--dashboard-bg) !important;
   }
 
-  .dark .dashboard-theme [class*='bg-[#fafcff]'],
-  .dark .dashboard-theme [class*='bg-[#fbfdff]'],
-  .dark .dashboard-theme [class*='bg-[#f8faff]'],
-  .dark .dashboard-theme [class*='bg-[#f1f5f9]'],
-  .dark .dashboard-theme [class*='bg-[#f0f6ff]'] {
-    background: var(--dashboard-surface-subtle) !important;
+  .dashboard-theme [class*='bg-[#fafcff]'],
+  .dashboard-theme [class*='bg-[#fbfdff]'],
+  .dashboard-theme [class*='bg-[#f8faff]'],
+  .dashboard-theme [class*='bg-[#f1f5f9]'],
+  .dashboard-theme [class*='bg-[#f0f6ff]'] {
+    background: var(--dashboard-bg) !important;
+  }
+
+  /* Remove page-specific light gradient surfaces in dark dashboard mode. */
+  .dark .dashboard-theme [class*='from-[#f8faff]'][class*='via-white'],
+  .dark .dashboard-theme [class*='from-[#f8faff]'][class*='to-white'],
+  .dark .dashboard-theme [class*='via-white'][class*='to-[#fafcff]'],
+  .dark .dashboard-theme [class*='bg-white/90'],
+  .dark .dashboard-theme [class*='bg-white/95'] {
+    background: var(--dashboard-bg) !important;
+    background-image: none !important;
   }
 
   .dashboard-theme [class*='text-[#6f3df4]'],

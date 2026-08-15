@@ -716,10 +716,10 @@ export default function FinancePage() {
                 />
               </div>
 
-              <label className="flex h-[38px] items-center gap-1.5 rounded-xl border border-[#d8e6f8] bg-white px-3 shadow-sm transition hover:border-[#a9ccfb]">
-                <CalendarDays size={15} className="text-[#2f80ed]" />
+              <label className="box-border flex h-[38px] items-center gap-1.5 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3 shadow-sm transition hover:border-[var(--brand)] focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)]">
+                <CalendarDays size={15} className="shrink-0 text-[var(--brand)]" />
                 <input
-                  className="bg-transparent text-xs font-bold text-[#172554] outline-none w-[110px]"
+                  className="!min-h-0 h-full w-[110px] min-w-0 border-0 bg-transparent p-0 text-xs font-bold text-[var(--dashboard-ink)] outline-none ring-0"
                   type="month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
@@ -986,10 +986,10 @@ export default function FinancePage() {
               />
             </div>
 
-            <label className="flex h-[42px] w-[130px] shrink-0 items-center gap-1.5 rounded-xl border border-[#d8e6f8] bg-white px-3 shadow-sm transition hover:border-[#a9ccfb]">
-              <CalendarDays size={15} className="text-[#2f80ed]" />
+            <label className="box-border flex h-[42px] w-[130px] shrink-0 items-center gap-1.5 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3 shadow-sm transition hover:border-[var(--brand)] focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)]">
+              <CalendarDays size={15} className="shrink-0 text-[var(--brand)]" />
               <input
-                className="bg-transparent text-xs font-bold text-[#172554] outline-none w-full"
+                className="!min-h-0 h-full w-full min-w-0 border-0 bg-transparent p-0 text-xs font-bold text-[var(--dashboard-ink)] outline-none ring-0"
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}

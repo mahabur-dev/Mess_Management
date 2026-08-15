@@ -265,19 +265,19 @@ export default function PaymentsPage() {
         {/* Summary Cards */}
         {!loading && payments.length > 0 && (
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><CreditCard size={13} className="text-[#2f80ed]" /> Total</p>
               <p className="mt-1.5 text-2xl font-black text-[#172554]">{payments.length}</p>
             </div>
-            <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-amber-700"><Loader2 size={13} /> Pending</p>
               <p className="mt-1.5 text-2xl font-black text-amber-700">{pendingCount}</p>
             </div>
-            <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-700"><Check size={13} /> Approved</p>
               <p className="mt-1.5 text-2xl font-black text-emerald-700">{approvedCount}</p>
             </div>
-            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#58d68d]" /> Total Amount</p>
               <p className="mt-1.5 text-2xl font-black text-[#172554]">{money(totalAmount)}</p>
             </div>
@@ -290,9 +290,9 @@ export default function PaymentsPage() {
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
             <input className="h-[38px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
           </div>
-          <label className="flex h-[38px] items-center gap-1.5 rounded-xl border border-[#d8e6f8] bg-white px-3 shadow-sm transition hover:border-[#a9ccfb]">
-            <CalendarDays size={15} className="text-[#2f80ed]" />
-            <input className="bg-transparent text-xs font-bold text-[#172554] outline-none w-[110px]" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+          <label className="box-border flex h-[38px] items-center gap-1.5 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3 shadow-sm transition hover:border-[var(--brand)] focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)]">
+            <CalendarDays size={15} className="shrink-0 text-[var(--brand)]" />
+            <input className="!min-h-0 h-full w-[110px] min-w-0 border-0 bg-transparent p-0 text-xs font-bold text-[var(--dashboard-ink)] outline-none ring-0" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
           </label>
           {(searchText || selectedMonth !== new Date().toISOString().slice(0, 7)) && (
             <span className="text-[10px] font-semibold text-[#6b7a99]">Showing {filteredPayments.length} of {payments.length} payments</span>
@@ -415,9 +415,9 @@ export default function PaymentsPage() {
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
             <input className="h-[46px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-3.5 text-sm font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
           </div>
-          <label className="flex h-[46px] items-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-3.5 shadow-sm transition hover:border-[#a9ccfb]">
-            <CalendarDays size={17} className="shrink-0 text-[#2f80ed]" />
-            <input className="bg-transparent text-sm font-bold text-[#172554] outline-none w-full h-full min-h-[42px]" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+          <label className="box-border flex h-[46px] items-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3.5 shadow-sm transition hover:border-[var(--brand)] focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)]">
+            <CalendarDays size={17} className="shrink-0 text-[var(--brand)]" />
+            <input className="!min-h-0 h-full w-full min-w-0 border-0 bg-transparent p-0 text-sm font-bold text-[var(--dashboard-ink)] outline-none ring-0" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
           </label>
         </div>
 

@@ -139,8 +139,8 @@ export function PushNotificationPermissionModal() {
       if (!nextOpen) closeForNow()
       else setOpen(true)
     }}>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-lg border-border bg-card p-0">
-        <div className="border-b border-border bg-[#2F80ED] px-5 py-4 text-white">
+      <DialogContent className="dashboard-card w-[calc(100%-2rem)] max-w-sm rounded-2xl border-0 bg-card p-0">
+        <div className="bg-gradient-to-br from-[var(--brand-dark)] via-[var(--brand)] to-[var(--brand-bright)] px-5 py-5 text-white">
           <DialogHeader className="space-y-2 text-left">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
               <Bell className="h-5 w-5" />
@@ -176,11 +176,11 @@ export function PushNotificationPermissionModal() {
           </p>
         </div>
 
-        <DialogFooter className="grid grid-cols-1 gap-2 border-t border-border px-5 py-4 sm:grid-cols-2">
+        <DialogFooter className="grid grid-cols-1 gap-2 border-t border-[var(--dashboard-line)] px-5 py-4 sm:grid-cols-2">
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="push-not-now-button !text-white w-full rounded-xl font-bold shadow-sm transition"
             onClick={closeForNow}
             disabled={isSaving}
           >
@@ -189,7 +189,7 @@ export function PushNotificationPermissionModal() {
           </Button>
           <Button
             type="button"
-            className="w-full bg-[#2F80ED] text-white hover:bg-[#2770d6]"
+            className="w-full bg-[var(--brand)] text-white shadow-[0_10px_22px_var(--brand-shadow)] hover:bg-[var(--brand-hover)]"
             onClick={enableNotifications}
             disabled={isSaving}
           >

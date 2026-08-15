@@ -250,7 +250,7 @@ function StatCard({
   icon: ElementType
 }) {
   return (
-    <div className="dashboard-card group relative min-h-[112px] overflow-hidden p-5 hover:-translate-y-0.5">
+    <div className="dashboard-card dashboard-stat-card group relative min-h-[112px] overflow-hidden p-5 hover:-translate-y-0.5">
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl transition group-hover:bg-[var(--brand)]/12" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -265,7 +265,7 @@ function StatCard({
             <span>Live update</span>
           </div>
         </div>
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] ring-1 ring-[var(--brand-border)]">
+        <span className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
           <Icon size={20} strokeWidth={2.4} />
         </span>
       </div>
@@ -284,7 +284,7 @@ function MiniStatCard({
   icon: ElementType
 }) {
   return (
-    <div className="dashboard-card group relative min-h-[104px] overflow-hidden p-5 hover:-translate-y-0.5">
+    <div className="dashboard-card dashboard-stat-card group relative min-h-[104px] overflow-hidden p-5 hover:-translate-y-0.5">
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -297,7 +297,7 @@ function MiniStatCard({
             <span>Live update</span>
           </div>
         </div>
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] ring-1 ring-[var(--brand-border)]">
+        <div className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
           <Icon size={19} />
         </div>
       </div>
@@ -904,7 +904,7 @@ export default function DashboardPage() {
         )}
 
         {/* Primary Stats Grid */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="dashboard-stat-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {stats.slice(0, 6).map(([label, value, , Icon]) => (
             <StatCard
               key={label}
@@ -916,7 +916,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Mini Stats Row */}
-        <div className="mt-5 grid gap-5 sm:grid-cols-3">
+        <div className="dashboard-mini-stat-grid mt-5 grid gap-5 sm:grid-cols-3">
           {stats.slice(6, 9).map(([label, value, , Icon]) => (
             <MiniStatCard
               key={label}

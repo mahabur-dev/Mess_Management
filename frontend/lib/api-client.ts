@@ -32,6 +32,11 @@ export type MembershipRole = 'MANAGER' | 'MEMBER'
 export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
 export type AttendanceStatus = 'ON' | 'OFF'
+const MEAL_BASE_VALUES: Record<MealName, number> = {
+  BREAKFAST: 0.5,
+  LUNCH: 1,
+  DINNER: 1,
+}
 export type ExpenseCategory =
   | 'GROCERY'
   | 'UTILITY'
@@ -673,7 +678,14 @@ class ApiClient {
   }
 
   createMeal(data: { messId: string; memberId?: string; mealName: MealName; status: AttendanceStatus; guests?: number; date: string; mealCount?: number }) {
-    return this.request('/meal', { method: 'POST', body: JSON.stringify({ mealCount: data.status === 'ON' ? 1 : 0, ...data }) })
+    const mealCount = data.mealCount ?? (data.status === 'ON'
+      ? Number((MEAL_BASE_VALUES[data.mealName] + Number(data.guests ?? 0)).toFixed(2))
+      : 0)
+
+    return this.request('/meal', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, mealCount }),
+    })
   }
 
   setMealDeadline(messId: string, startTime: string, endTime: string) {

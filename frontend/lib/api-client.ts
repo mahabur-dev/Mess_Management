@@ -6,6 +6,13 @@ export interface BackendResponse<T> {
   success: boolean
   message: string
   meta?: { total: number; page: number; limit: number; totalPages?: number } | null
+  totalAmount?: number
+  totalMealCount?: number
+  billing?: {
+    status: string
+    requestedAt?: string | null
+    calculatedAt?: string | null
+  } | null
   data: T
 }
 
@@ -20,7 +27,7 @@ export class ApiError extends Error {
   }
 }
 
-export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER' | 'ORGANIZER'
+export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER'
 export type MembershipRole = 'MANAGER' | 'MEMBER'
 export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
@@ -38,7 +45,7 @@ export type ExpenseCategory =
   | 'BUABILL'
   | 'WATER'
   | 'OTHER'
-export type ExpensePaymentType = 'FROM_DEPOSIT' | 'PERSONAL'
+export type ExpensePaymentType = 'FROM_DEPOSIT' | 'PERSONAL' | 'COLLECTED_FUND'
 export type PaymentMethod = 'CASH' | 'BKASH' | 'NAGAD' | 'ROCKET' | 'BANK'
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type BillStatus = 'PENDING' | 'PAID' | 'PARTIAL'
@@ -60,6 +67,9 @@ export interface User {
   phone?: string | null
   role: GlobalRole
   avatar_url?: string | null
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
   memberships?: MessMembership[]
 }
 
@@ -172,6 +182,16 @@ export interface MessDashboard {
   extraExpenses:number
   perExtraExpenses:number
   totalDepositAmount:number
+  remainingAmount: number
+  netBalance: number
+  carryForwardBalance: number
+  carryForwardDueAmount: number
+  carryForwardRemainingAmount: number
+  totalRoomRent: number
+  totalCost: number
+  billingStatus: string
+  billingCalculatedAt: string | null
+  billingDataFresh: boolean
 }
 
 export interface AdminDashboard {
@@ -190,7 +210,38 @@ export interface AdminDashboard {
     expense_date: string
     mess?: { id: string; name: string }
     creator?: { id: string; name: string; email: string }
+    items?: Array<{
+      itemName: string
+      quantity: number | null
+      unit: string | null
+      amount: number
+      sortOrder: number
+    }>
   }>
+}
+
+export interface MealMember {
+  id: string
+  user_id: string
+  role: MembershipRole
+  is_active: boolean
+  user: Pick<User, 'id' | 'name' | 'email' | 'avatar_url'>
+}
+
+export interface MealDeadlineInfo {
+  targetDate: string
+  startTime: string
+  endTime: string
+  isWindowOpen: boolean
+  isTargetDateEditable: boolean
+  windowStart: string
+  windowEnd: string
+  windowStartTime: string
+  windowEndTime: string
+  canManage: boolean
+  canEdit: boolean
+  timeZone: string
+  rule: string
 }
 
 export interface MonthlyBill {
@@ -417,6 +468,52 @@ class ApiClient {
     }
   }
 
+  /**
+   * Fetch every page for dashboard screens that render a complete client-side
+   * list. Supplying an explicit page keeps the normal paginated contract.
+   * Any failed page rejects the whole request, avoiding silently partial data.
+   */
+  private async requestAllPages<T>(
+    endpoint: string,
+    params?: QueryParams,
+    pageSize = 200,
+  ): Promise<BackendResponse<T[]>> {
+    if (params?.page !== undefined && params.page !== null) {
+      return this.request<T[]>(endpoint, { params })
+    }
+
+    const limit = Number(params?.limit) || pageSize
+    const first = await this.request<T[]>(endpoint, {
+      params: { ...params, page: 1, limit },
+    })
+    const totalPages = first.meta?.totalPages ?? 1
+
+    if (totalPages <= 1) return first
+    if (totalPages > 100) {
+      throw new ApiError(
+        500,
+        `Refusing to present a partial list: ${totalPages} API pages exceed the safe dashboard limit.`,
+      )
+    }
+
+    const remaining = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) =>
+        this.request<T[]>(endpoint, {
+          params: { ...params, page: index + 2, limit },
+        }),
+      ),
+    )
+    const data = [first, ...remaining].flatMap((response) => response.data)
+
+    return {
+      ...first,
+      data,
+      meta: first.meta
+        ? { ...first.meta, page: 1, limit: data.length, totalPages: 1 }
+        : null,
+    }
+  }
+
   login(email: string, password: string) {
     return this.request<{ accessToken: string; user: User }>('/auth/login', {
       method: 'POST',
@@ -468,7 +565,7 @@ class ApiClient {
   }
 
   getUsers(params?: QueryParams) {
-    return this.request<User[]>('/users', { params })
+    return this.requestAllPages<User>('/users', params)
   }
 
   getMesses() {
@@ -476,7 +573,7 @@ class ApiClient {
   }
 
   getAllMesses(params?: QueryParams) {
-    return this.request<Mess[]>('/messes', { params })
+    return this.requestAllPages<Mess>('/messes', params)
   }
 
   getMess(id: string) {
@@ -488,7 +585,7 @@ class ApiClient {
   }
 
   getActiveMesses(params?: QueryParams) {
-    return this.request<Mess[]>('/messes/active', { params })
+    return this.requestAllPages<Mess>('/messes/active', params)
   }
 
   updateMess(id: string, data: { messName?: string; messLocation?: string; description?: string }) {
@@ -504,7 +601,7 @@ class ApiClient {
   }
 
   getMessRequests(params?: QueryParams) {
-    return this.request('/mess-requests', { params })
+    return this.requestAllPages<unknown>('/mess-requests', params)
   }
 
   reviewMessRequest(id: string, data: { status: 'APPROVED' | 'REJECTED'; reviewNote?: string }) {
@@ -520,11 +617,11 @@ class ApiClient {
   }
 
   getMyMemberJoinRequests(params?: QueryParams) {
-    return this.request<MemberJoinRequest[]>('/member-join-requests/my', { params })
+    return this.requestAllPages<MemberJoinRequest>('/member-join-requests/my', params)
   }
 
   getManagedMemberJoinRequests(params?: QueryParams) {
-    return this.request<MemberJoinRequest[]>('/member-join-requests/managed', { params })
+    return this.requestAllPages<MemberJoinRequest>('/member-join-requests/managed', params)
   }
 
   reviewMemberJoinRequest(id: string, data: { status: RequestStatus; reviewNote?: string }) {
@@ -536,7 +633,7 @@ class ApiClient {
   }
 
   getAllMembers(params?: QueryParams) {
-    return this.request<MessMembershipWithDetails[]>('/messes/members', { params })
+    return this.requestAllPages<MessMembershipWithDetails>('/messes/members', params)
   }
 
   addMember(messId: string, data: { email: string; role: MembershipRole; roomNo?: string; seatNo?: string; monthlyRent?: number; depositAmount?: number }) {
@@ -575,31 +672,31 @@ class ApiClient {
     return this.request<AdminDashboard>('/dashboard/admin')
   }
 
-  createMeal(data: { messId: string; memberId?: string; mealName: MealName; status: AttendanceStatus; guests?: number; date?: string; mealCount?: number }) {
+  createMeal(data: { messId: string; memberId?: string; mealName: MealName; status: AttendanceStatus; guests?: number; date: string; mealCount?: number }) {
     return this.request('/meal', { method: 'POST', body: JSON.stringify({ mealCount: data.status === 'ON' ? 1 : 0, ...data }) })
   }
 
-  setMealDeadline(messId: string, startTime: string, endTime: string, date?: string) {
+  setMealDeadline(messId: string, startTime: string, endTime: string) {
     return this.request(`/meal/mess/${messId}/deadline`, {
       method: 'POST',
-      body: JSON.stringify({ startTime, endTime, date }),
+      body: JSON.stringify({ startTime, endTime }),
     })
   }
 
   getMealDeadlineInfo(messId: string, date?: string) {
-    return this.request<{ startTime: string; endTime: string; isWindowOpen: boolean; windowStartTime: string; windowEndTime: string }>(`/meal/mess/${messId}/deadline`, { params: { date } })
+    return this.request<MealDeadlineInfo>(`/meal/mess/${messId}/deadline`, { params: { date } })
   }
 
   getMealWindowStatus(messId: string, date?: string) {
     return this.request<{ isWindowOpen: boolean }>(`/meal/mess/${messId}/window-status`, { params: { date } })
   }
 
-  getMyMeals(params?: QueryParams) {
-    return this.request('/meal/my', { params })
-  }
-
   getMealsByMess(messId: string, params?: QueryParams) {
     return this.request(`/meal/mess/${messId}`, { params })
+  }
+
+  getMealMembers(messId: string) {
+    return this.request<MealMember[]>(`/meal/mess/${messId}/members`)
   }
 
   getMealSummary(messId: string, params?: QueryParams) {
@@ -607,7 +704,7 @@ class ApiClient {
   }
 
   getExpensesByMess(messId: string, params?: QueryParams) {
-    return this.request('/expense/mess/' + messId, { params })
+    return this.requestAllPages<unknown>('/expense/mess/' + messId, params)
   }
 
   createExpense(data: Record<string, unknown> | FormData) {
@@ -640,11 +737,11 @@ class ApiClient {
   }
 
   getBillsByMess(messId: string, params?: QueryParams) {
-    return this.request<MonthlyBill[]>(`/monthly-bill/mess/${messId}`, { params })
+    return this.requestAllPages<MonthlyBill>(`/monthly-bill/mess/${messId}`, params)
   }
 
   getMyBills(params?: QueryParams) {
-    return this.request<MonthlyBill[]>('/monthly-bill/my', { params })
+    return this.requestAllPages<MonthlyBill>('/monthly-bill/my', params)
   }
 
   submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string; paymentDate?: string; categories?: string[]; purchasedBy?: string }) {
@@ -652,15 +749,15 @@ class ApiClient {
   }
 
   getPaymentsByMess(messId: string, params?: QueryParams) {
-    return this.request<Payment[]>(`/payments/mess/${messId}`, { params })
+    return this.requestAllPages<Payment>(`/payments/mess/${messId}`, params)
   }
 
   getAllPayments(params?: QueryParams) {
-    return this.request<Payment[]>('/payments', { params })
+    return this.requestAllPages<Payment>('/payments', params)
   }
 
   getMyPayments(params?: QueryParams) {
-    return this.request<Payment[]>('/payments/my', { params })
+    return this.requestAllPages<Payment>('/payments/my', params)
   }
 
   reviewPayment(id: string, data: { status: 'APPROVED' | 'REJECTED'; note?: string }) {
@@ -672,7 +769,7 @@ class ApiClient {
   }
 
   getNoticesByMess(messId: string, params?: QueryParams) {
-    return this.request<Notice[]>(`/notices/mess/${messId}`, { params })
+    return this.requestAllPages<Notice>(`/notices/mess/${messId}`, params)
   }
 
   createNotice(data: { messId: string; type: NoticeType; title: string; body: string; isPinned?: boolean }) {
@@ -680,15 +777,15 @@ class ApiClient {
   }
 
   getComplaintsByMess(messId: string, params?: QueryParams) {
-    return this.request<Complaint[]>(`/complaints/mess/${messId}`, { params })
+    return this.requestAllPages<Complaint>(`/complaints/mess/${messId}`, params)
   }
 
   getAllComplaints(params?: QueryParams) {
-    return this.request<Complaint[]>('/complaints', { params })
+    return this.requestAllPages<Complaint>('/complaints', params)
   }
 
   getMyComplaints(params?: QueryParams) {
-    return this.request<Complaint[]>('/complaints/my', { params })
+    return this.requestAllPages<Complaint>('/complaints/my', params)
   }
 
   createComplaint(data: { messId: string; category: ComplaintCategory; title: string; description: string }) {
@@ -718,7 +815,7 @@ class ApiClient {
   }
 
   getContactRequests(params?: QueryParams) {
-    return this.request<ContactRequest[]>('/contact-requests', { params })
+    return this.requestAllPages<ContactRequest>('/contact-requests', params)
   }
 
   reviewContactRequest(id: string, data: { status: ContactRequestStatus; adminNote?: string }) {
@@ -775,7 +872,7 @@ class ApiClient {
   }
 
   getSubscriptions(params?: QueryParams) {
-    return this.request<SubscriptionRecord[]>('/subscriptions', { params })
+    return this.requestAllPages<SubscriptionRecord>('/subscriptions', params)
   }
 
   getSubscription(id: string) {

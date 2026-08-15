@@ -39,7 +39,7 @@ const MEAL_COLORS: Record<MealName, { bg: string; iconBg: string; border: string
 
 type MealAttendance = { member_id: string; guests?: number | null; status: AttendanceStatus; member?: { id: string; name: string; email?: string } }
 type MealEntry = { id: string; name: MealName; scheduled_date: string; status?: string; is_locked?: boolean; attendances?: MealAttendance[] }
-type ActiveMember = { user_id: string; mess_id: string; is_active: boolean; user?: { name?: string | null } }
+type ActiveMember = { user_id: string; mess_id?: string; is_active: boolean; user?: { name?: string | null } }
 type MemberMealRow = { id: string; name: string; meals: Record<MealName, number> }
 type DeadlineInfo = { startTime: string; endTime: string; isWindowOpen: boolean; windowStartTime: string; windowEndTime: string }
 
@@ -82,11 +82,11 @@ export default function MealsPage() {
   const [deadlineLoading, setDeadlineLoading] = useState(false)
   const [settingDeadline, setSettingDeadline] = useState(false)
   const [showDeadlineSettings, setShowDeadlineSettings] = useState(false)
-  const [deadlineStartTime, setDeadlineStartTime] = useState('22:00')
-  const [deadlineEndTime, setDeadlineEndTime] = useState('11:00')
+  const [deadlineStartTime, setDeadlineStartTime] = useState('09:00')
+  const [deadlineEndTime, setDeadlineEndTime] = useState('17:00')
 
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
-  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
   const canViewMemberMealSheet = Boolean(user?.id)
   const isPastSelectedDate = isPastDate(date)
   const mealControlsLocked = userMealsLoading || (!isManager && deadlineInfo ? !deadlineInfo.isWindowOpen : false)
@@ -121,7 +121,7 @@ export default function MealsPage() {
         setDeadlineInfo(r.data)
         setDeadlineStartTime(r.data.startTime)
         setDeadlineEndTime(r.data.endTime)
-      } catch { if (!m) return; setDeadlineInfo({ startTime: '22:00', endTime: '11:00', isWindowOpen: true, windowStartTime: '22:00', windowEndTime: '11:00' }) }
+      } catch { if (!m) return; setDeadlineInfo({ startTime: '09:00', endTime: '17:00', isWindowOpen: true, windowStartTime: '09:00', windowEndTime: '17:00' }) }
       finally { if (m) setDeadlineLoading(false) }
     }
     loadDeadlineInfo()
@@ -156,11 +156,11 @@ export default function MealsPage() {
       setSheetLoading(true); setSheetError('')
       try {
         const [memR, mealR] = await Promise.all([
-          isManager ? apiClient.getAllMembers({ limit: 100 }).catch(() => null) : Promise.resolve(null),
+          isManager ? apiClient.getMealMembers(activeMess.id).catch(() => null) : Promise.resolve(null),
           apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 }),
         ])
         if (!m) return
-        const apiMembers = (Array.isArray(memR?.data) ? memR.data : []).filter((mb: ActiveMember) => mb.is_active && mb.mess_id === activeMess.id)
+        const apiMembers = (Array.isArray(memR?.data) ? memR.data : []).filter((mb: ActiveMember) => mb.is_active)
         const fb = ((activeMess as Mess & { memberships?: ActiveMember[] }).memberships ?? []).filter(mb => mb.is_active)
         setMembers(apiMembers.length ? apiMembers : fb)
         setTodayMeals(Array.isArray(mealR.data) ? mealR.data as MealEntry[] : [])
@@ -233,7 +233,7 @@ export default function MealsPage() {
     if (!activeMess || !isManager) return
     setSettingDeadline(true); setMessage('')
     try {
-      await apiClient.setMealDeadline(activeMess.id, deadlineStartTime, deadlineEndTime, date)
+      await apiClient.setMealDeadline(activeMess.id, deadlineStartTime, deadlineEndTime)
       setMessageType('success'); setMessage(`Deadline: ${formatTimeReadable(deadlineStartTime)} - ${formatTimeReadable(deadlineEndTime)}`)
       const info = await apiClient.getMealDeadlineInfo(activeMess.id, date)
       setDeadlineInfo(info.data); setShowDeadlineSettings(false)

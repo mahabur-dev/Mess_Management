@@ -242,7 +242,6 @@ export default function FinancePage() {
   const canManageMess =
     user?.role === 'ADMIN' ||
     user?.role === 'MANAGER' ||
-    user?.role === 'ORGANIZER'||
     activeMembership?.role === 'MANAGER'
 
   const canAddExpense = Boolean(user && activeMess)

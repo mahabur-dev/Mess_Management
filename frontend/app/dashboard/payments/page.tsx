@@ -87,7 +87,6 @@ export default function PaymentsPage() {
   const isManager =
     user?.role === 'ADMIN' ||
     user?.role === 'MANAGER' ||
-    user?.role === 'ORGANIZER' ||
     activeMembership?.role === 'MANAGER'
   const purchasedByOptions = useMemo(
     () =>

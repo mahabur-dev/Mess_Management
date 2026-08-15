@@ -56,7 +56,7 @@ export default function MonthlyBillPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [memberSearch, setMemberSearch] = useState('')
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
-  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
   const billMonth = `${selectedMonth}-01`
 
   function normalizeBills(payload: any) {

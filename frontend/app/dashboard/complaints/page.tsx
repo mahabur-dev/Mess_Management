@@ -44,7 +44,7 @@ export default function ComplaintsPage() {
   const { user } = useAuth()
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const isAdmin = user?.role === 'ADMIN'
-  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'ORGANIZER'
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
   const canSubmitComplaint = user?.role === 'MEMBER'
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)

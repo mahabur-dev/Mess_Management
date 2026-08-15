@@ -18,8 +18,8 @@ const DYNAMIC_SWR = {
 }
 
 // ─── Mess List (static) ───────────────────────────────────────
-export function useMesses() {
-  return useSWR('messes', () => swrFetcher(() => apiClient.getMesses()), STATIC_SWR)
+export function useMesses(enabled = true) {
+  return useSWR(enabled ? 'messes' : null, () => swrFetcher(() => apiClient.getMesses()), STATIC_SWR)
 }
 
 // ─── Mess Dashboard (dynamic) ─────────────────────────────────

@@ -1,0 +1,25 @@
+// ============================================================
+// prisma/schema/fcm-device-token.prisma
+// Native Android FCM registrations owned by a user.
+// ============================================================
+
+enum PushDevicePlatform {
+  ANDROID
+}
+
+model FcmDeviceToken {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String             @db.Uuid
+  token        String             @unique @db.Text
+  platform     PushDevicePlatform @default(ANDROID)
+  app_version  String?            @db.VarChar(40)
+  is_active    Boolean            @default(true)
+  last_used_at DateTime           @default(now()) @db.Timestamptz
+  created_at   DateTime           @default(now()) @db.Timestamptz
+  updated_at   DateTime           @updatedAt @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_active])
+  @@map("fcm_device_tokens")
+}

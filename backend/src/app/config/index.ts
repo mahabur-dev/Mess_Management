@@ -44,6 +44,12 @@ export default {
     vapidSubject: process.env.VAPID_SUBJECT as string,
   },
 
+  fcm: {
+    projectId: process.env.FCM_PROJECT_ID,
+    clientEmail: process.env.FCM_CLIENT_EMAIL,
+    privateKey: process.env.FCM_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  },
+
   aiAutomation: {
     enabled:
       process.env.AI_AUTOMATION_ENABLED === undefined

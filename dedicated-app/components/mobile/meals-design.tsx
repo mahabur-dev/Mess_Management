@@ -11,7 +11,9 @@ import {
   Circle,
   Coffee,
   Lock,
+  Minus,
   Moon,
+  Plus,
   Search,
   Sun,
   Unlock,
@@ -693,6 +695,69 @@ export function MealOptionRow({
         {!rightSlot && rightText ? <span className="shrink-0 text-caption font-semibold text-[#65838b]">{rightText}</span> : null}
       </button>
       {rightSlot ? <div className="shrink-0">{rightSlot}</div> : null}
+    </div>
+  )
+}
+
+export function MealCountEditorRow({
+  mealName,
+  value,
+  disabled,
+  onChange,
+  onStep,
+  onBlur,
+}: {
+  mealName: MealName
+  value: string
+  disabled: boolean
+  onChange: (value: string) => void
+  onStep: (direction: 1 | -1) => void
+  onBlur?: (value: string) => void
+}) {
+  return (
+    <div className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-3 py-3 last:border-b-0">
+      <MealIconBadge mealName={mealName} size="sm" />
+      <label htmlFor={`meal-count-${mealName}`} className="min-w-0 flex-1 text-left">
+        <span className="block text-label font-bold text-[#123748]">{MEAL_LABELS[mealName]}</span>
+        <span className="block text-caption text-[#65838b]">
+          {mealName === 'BREAKFAST' ? 'Morning meal' : mealName === 'LUNCH' ? 'Midday meal' : 'Evening meal'}
+        </span>
+      </label>
+
+      <div className="flex h-9 shrink-0 items-center overflow-hidden border border-[#9edddc] bg-[#f8fbfb]">
+        <button
+          type="button"
+          aria-label={`Decrease ${MEAL_LABELS[mealName]} meal`}
+          onClick={() => onStep(-1)}
+          disabled={disabled}
+          className="grid h-full w-8 place-items-center text-[#00777a] transition hover:bg-[#dff4f3] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Minus size={16} />
+        </button>
+        <input
+          id={`meal-count-${mealName}`}
+          aria-label={`${MEAL_LABELS[mealName]} meal count`}
+          className="h-full w-12 border-x border-[#bfe7e6] bg-transparent px-1 text-center text-label font-semibold tabular-nums text-[#245d66] outline-none disabled:opacity-60"
+          type="number"
+          inputMode="decimal"
+          min="0"
+          max="21"
+          step="0.5"
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={(event) => onBlur?.(event.target.value)}
+        />
+        <button
+          type="button"
+          aria-label={`Increase ${MEAL_LABELS[mealName]} meal`}
+          onClick={() => onStep(1)}
+          disabled={disabled}
+          className="grid h-full w-8 place-items-center bg-[#008d8c] text-white transition hover:bg-[#00777a] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
     </div>
   )
 }

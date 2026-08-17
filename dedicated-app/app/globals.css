@@ -3425,7 +3425,9 @@ textarea {
 .more-drawer-logout {
   display: flex;
   width: 100%;
+  height: 56px;
   min-height: 56px;
+  flex: 0 0 56px;
   align-items: center;
   gap: 11px;
   margin-top: 16px;
@@ -3437,6 +3439,7 @@ textarea {
   font-size: var(--text-label);
   font-weight: 750;
   text-align: left;
+  white-space: nowrap;
 }
 
 .more-drawer-logout .more-drawer-item-icon {
@@ -3572,6 +3575,54 @@ textarea {
 
 .info-page-action:active {
   transform: scale(0.99);
+}
+
+.request-mess-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  overflow: hidden;
+  padding: 18px;
+  border: 1px solid rgba(0, 108, 105, 0.13);
+  border-radius: 22px;
+  background: linear-gradient(135deg, #f0fbfa, #ffffff 72%);
+  box-shadow: 0 10px 26px rgba(18, 55, 72, 0.05);
+}
+
+.request-mess-hero__icon {
+  display: grid;
+  height: 50px;
+  width: 50px;
+  flex: 0 0 50px;
+  place-items: center;
+  border: 1px solid rgba(0, 141, 140, 0.14);
+  border-radius: 16px;
+  background: #dff4f3;
+  color: #00777a;
+}
+
+.request-mess-hero__eyebrow {
+  margin: 1px 0 4px;
+  color: #008d8c;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.request-mess-hero h1 {
+  margin: 0;
+  color: var(--brand-900);
+  font-size: var(--text-title-sm);
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.request-mess-hero__description {
+  margin: 6px 0 0;
+  color: var(--neutral-700);
+  font-size: var(--text-caption);
+  font-weight: 550;
+  line-height: 1.5;
 }
 
 .subscription-hero {
@@ -3779,6 +3830,18 @@ textarea {
   background: #ffffff;
   padding: 22px 18px 18px;
   box-shadow: 0 28px 70px rgba(18, 55, 72, 0.24);
+}
+
+.app-modal--review {
+  width: min(100%, 520px);
+  overflow: hidden;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .app-modal-backdrop {
+    align-items: center;
+  }
 }
 
 .app-modal-close {
@@ -4652,6 +4715,22 @@ textarea {
 .field:focus {
   border-color: rgba(0, 141, 140, 0.45);
   box-shadow: 0 0 0 4px rgba(0, 141, 140, 0.12);
+}
+
+.meal-time-input {
+  min-width: 0;
+  padding-inline: 12px;
+  text-align: left;
+}
+
+.meal-time-input::-webkit-date-and-time-value {
+  margin: 0;
+  min-width: 0;
+  text-align: left;
+}
+
+.meal-time-input::-webkit-calendar-picker-indicator {
+  margin-left: 6px;
 }
 
 /* ============================================================

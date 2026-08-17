@@ -1,5 +1,5 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { NotificationType, PaymentStatus, Prisma } from '@prisma/client';
+import { NotificationType, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -19,6 +19,20 @@ import {
 } from '../monthly-bill/monthly-bill-reconciliation.service';
 import sendMailer from 'src/app/helpers/sendMailer';
 import { NotificationService } from '../notification/notification.service';
+
+export type PreparedPayment = {
+  messId: string;
+  memberId: string;
+  amount: number;
+  method: PaymentMethod;
+  paymentDate: Date;
+  monthlyBillId?: string;
+  transactionId?: string;
+  screenshotUrl?: string;
+  note?: string;
+  categories: string[];
+  canManage: boolean;
+};
 
 @Injectable()
 export class PaymentService {
@@ -149,7 +163,11 @@ export class PaymentService {
     }
   }
 
-  async create(userId: string, role: string, dto: CreatePaymentDto) {
+  async prepareCreate(
+    userId: string,
+    role: string,
+    dto: CreatePaymentDto,
+  ): Promise<PreparedPayment> {
     await this.verifyMessMember(dto.messId, userId, role);
     await this.ensureActiveSubscription(dto.messId, role);
 
@@ -183,54 +201,93 @@ export class PaymentService {
       }
     }
 
-    const status = statusForPaymentWrite(canManage);
-    const payment = await this.prisma.payment.create({
+    return {
+      messId: dto.messId,
+      memberId: purchasedById,
+      amount: dto.amount,
+      method: dto.method,
+      paymentDate: dto.paymentDate ? new Date(dto.paymentDate) : new Date(),
+      monthlyBillId: dto.monthlyBillId,
+      transactionId: dto.transactionId,
+      screenshotUrl: dto.screenshotUrl,
+      note: dto.note,
+      categories: dto.categories ?? [],
+      canManage,
+    };
+  }
+
+  async persistCreate(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    prepared: PreparedPayment,
+  ) {
+    return tx.payment.create({
       data: {
-        mess_id: dto.messId,
-        member_id: purchasedById,
+        mess_id: prepared.messId,
+        member_id: prepared.memberId,
         created_by: userId,
-        monthly_bill_id: dto.monthlyBillId,
-        amount: dto.amount,
-        method: dto.method,
-        categories: dto.categories ?? [],
-        transaction_id: dto.transactionId,
-        screenshot_url: dto.screenshotUrl,
-        note: dto.note,
-        payment_date: dto.paymentDate ? new Date(dto.paymentDate) : undefined,
-        status,
-        approved_by: canManage ? userId : null,
-        approved_at: canManage ? new Date() : null,
+        monthly_bill_id: prepared.monthlyBillId,
+        amount: prepared.amount,
+        method: prepared.method,
+        categories: prepared.categories,
+        transaction_id: prepared.transactionId,
+        screenshot_url: prepared.screenshotUrl,
+        note: prepared.note,
+        payment_date: prepared.paymentDate,
+        status: statusForPaymentWrite(prepared.canManage),
+        approved_by: prepared.canManage ? userId : null,
+        approved_at: prepared.canManage ? new Date() : null,
       },
       select: this.paymentSelect,
     });
+  }
 
-    const billingSync = canManage
+  async completeCreate(
+    userId: string,
+    prepared: PreparedPayment,
+    payment: Awaited<ReturnType<PaymentService['persistCreate']>>,
+  ) {
+    const billingSync = prepared.canManage
       ? await this.billReconciliation.reconcile(
-          dto.messId,
+          prepared.messId,
           await this.getPaymentRecalculateDate(payment),
         )
       : null;
 
-    await this.notificationService
-      .createForMess(
-        userId,
-        dto.messId,
-        NotificationType.PAYMENT_NOTICE,
-        `Payment Submitted - ${payment.mess.name}`,
-        `${payment.member.name} submitted ${Number(payment.amount).toLocaleString()} via ${payment.method}.`,
-        {
-          source: 'PAYMENT',
-          paymentId: payment.id,
-          status: payment.status,
-        },
-        undefined,
-        '/dashboard/payments',
-      )
-      .catch(() => {
-        // Payment submission should not fail if notification delivery fails.
-      });
+    if (!prepared.canManage) {
+      const managerUserIds =
+        await this.notificationService.resolveMessManagerUserIds(prepared.messId);
+
+      await this.notificationService
+        .createForMess(
+          userId,
+          prepared.messId,
+          NotificationType.PAYMENT_NOTICE,
+          `Payment Submitted - ${payment.mess.name}`,
+          `${payment.member.name} submitted ${Number(payment.amount).toLocaleString()} via ${payment.method}.`,
+          {
+            source: 'PAYMENT',
+            paymentId: payment.id,
+            status: payment.status,
+          },
+          managerUserIds,
+          '/payments',
+          `payment-submitted-${payment.id}`,
+        )
+        .catch(() => {
+          // Payment submission should not fail if notification delivery fails.
+        });
+    }
 
     return { ...payment, billingSync };
+  }
+
+  async create(userId: string, role: string, dto: CreatePaymentDto) {
+    const prepared = await this.prepareCreate(userId, role, dto);
+    const payment = await this.prisma.$transaction((tx) =>
+      this.persistCreate(tx, userId, prepared),
+    );
+    return this.completeCreate(userId, prepared, payment);
   }
 
   async findAll(query: PaymentFilterDto) {
@@ -396,6 +453,32 @@ export class PaymentService {
         recalculateDate,
       );
     }
+
+    await this.notificationService
+      .createForMess(
+        userId,
+        payment.mess_id,
+        dto.status === PaymentStatus.APPROVED
+          ? NotificationType.DEPOSIT_CONFIRMED
+          : NotificationType.PAYMENT_NOTICE,
+        dto.status === PaymentStatus.APPROVED
+          ? 'Deposit approved'
+          : 'Deposit rejected',
+        dto.status === PaymentStatus.APPROVED
+          ? `Your deposit of ${Number(payment.amount).toLocaleString()} has been approved.`
+          : `Your deposit of ${Number(payment.amount).toLocaleString()} has been rejected.`,
+        {
+          source: 'PAYMENT_REVIEW',
+          paymentId: payment.id,
+          status: dto.status,
+        },
+        [payment.member_id],
+        '/payments',
+        `payment-review-${payment.id}-${dto.status.toLowerCase()}`,
+      )
+      .catch(() => {
+        // Payment review should not fail if notification delivery fails.
+      });
 
     return { ...updatedPayment, billingSync };
   }

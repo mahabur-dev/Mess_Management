@@ -23,7 +23,7 @@ export function MobileShell({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { isLoading, requestLogout, user } = useAuth()
+  const { isLoading, logout, user } = useAuth()
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false)
   const normalizedPathname = normalizePathname(pathname)
   const bottomNavigationVisible = showBottomNavigation ?? shouldShowDefaultBottomNavigation(user, normalizedPathname)
@@ -113,7 +113,9 @@ export function MobileShell({
         open={moreDrawerOpen}
         user={user}
         onClose={closeMoreDrawer}
-        onLogout={requestLogout}
+        onLogout={() => {
+          void logout()
+        }}
       />
     </div>
   )

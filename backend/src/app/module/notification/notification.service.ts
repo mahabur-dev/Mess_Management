@@ -2,6 +2,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import {
   CreateNotificationDto,
   NotificationFilterDto,
+  RegisterFcmDeviceDto,
   SavePushSubscriptionDto,
   SendPushNotificationDto,
 } from './dto/notification.dto';
@@ -11,10 +12,14 @@ import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
 import webPush, { type PushSubscription } from 'web-push';
 import config from '../../config';
+import { FcmService } from './fcm.service';
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fcmService: FcmService,
+  ) {
     this.configureWebPush();
   }
 
@@ -120,6 +125,21 @@ export class NotificationService {
     });
 
     return { message: 'Push notification subscription removed' };
+  }
+
+  async getFcmStatus(userId: string) {
+    await this.ensureUserExists(userId);
+    return this.fcmService.getStatus(userId);
+  }
+
+  async registerFcmDevice(userId: string, dto: RegisterFcmDeviceDto) {
+    await this.ensureUserExists(userId);
+    return this.fcmService.registerToken(userId, dto.token, dto.appVersion);
+  }
+
+  async unregisterFcmDevice(userId: string, token: string) {
+    await this.ensureUserExists(userId);
+    return this.fcmService.unregisterToken(userId, token);
   }
 
   async sendPushToUser(userId: string, dto: SendPushNotificationDto) {
@@ -366,7 +386,7 @@ export class NotificationService {
       }
     }
 
-    return this.findAll({ ...query, messId });
+    return this.findMine(userId, role, { ...query, messId });
   }
 
   async findOne(id: string, userId: string, role: string) {
@@ -378,6 +398,19 @@ export class NotificationService {
     if (!notification) throw new HttpException('Notification not found', 404);
 
     if (role !== 'ADMIN') {
+      const metadata =
+        notification.metadata &&
+        typeof notification.metadata === 'object' &&
+        !Array.isArray(notification.metadata)
+          ? (notification.metadata as Record<string, unknown>)
+          : {};
+      const targetUserIds = Array.isArray(metadata.targetUserIds)
+        ? metadata.targetUserIds.filter((value): value is string => typeof value === 'string')
+        : [];
+      if (targetUserIds.length > 0 && !targetUserIds.includes(userId)) {
+        throw new HttpException('Forbidden: Notification is not addressed to this user', 403);
+      }
+
       const membership = await this.prisma.messMembership.findUnique({
         where: {
           mess_id_user_id: { mess_id: notification.mess.id, user_id: userId },
@@ -553,6 +586,36 @@ export class NotificationService {
     ];
   }
 
+  async resolveMessManagerUserIds(messId: string) {
+    const [mess, managerMemberships] = await Promise.all([
+      this.prisma.mess.findUnique({
+        where: { id: messId },
+        select: {
+          created_by: true,
+          creator: { select: { id: true, role: true, is_active: true } },
+        },
+      }),
+      this.prisma.messMembership.findMany({
+        where: { mess_id: messId, is_active: true, role: 'MANAGER' },
+        select: {
+          user_id: true,
+          user: { select: { id: true, role: true, is_active: true } },
+        },
+      }),
+    ]);
+
+    return [
+      ...new Set([
+        ...(mess?.creator?.is_active && mess.creator.role !== 'ADMIN'
+          ? [mess.created_by]
+          : []),
+        ...managerMemberships
+          .filter((membership) => membership.user.is_active && membership.user.role !== 'ADMIN')
+          .map((membership) => membership.user_id),
+      ]),
+    ];
+  }
+
   async resolveAdminUserIds() {
     const admins = await this.prisma.user.findMany({
       where: { role: 'ADMIN', is_active: true },
@@ -593,12 +656,22 @@ export class NotificationService {
     where.mess_id = query.messId
       ? query.messId
       : { in: accessibleMessIds };
-    where.NOT = {
-      metadata: {
-        path: ['hiddenFor'],
-        array_contains: userId,
+    where.AND = [
+      {
+        metadata: {
+          path: ['targetUserIds'],
+          array_contains: userId,
+        },
       },
-    };
+      {
+        NOT: {
+          metadata: {
+            path: ['hiddenFor'],
+            array_contains: userId,
+          },
+        },
+      },
+    ];
 
     return where;
   }
@@ -609,7 +682,13 @@ export class NotificationService {
   ) {
     const uniqueUserIds = [...new Set(userIds)].filter(Boolean);
     if (uniqueUserIds.length === 0) {
-      return { sent: 0, failed: 0, totalSubscriptions: 0 };
+      return {
+        sent: 0,
+        failed: 0,
+        totalSubscriptions: 0,
+        totalFcmTokens: 0,
+        fcmConfigured: this.fcmService.isConfigured,
+      };
     }
 
     const subscriptions =
@@ -659,6 +738,19 @@ export class NotificationService {
       }),
     );
 
-    return { sent, failed, totalSubscriptions: subscriptions.length };
+    const fcmResult = await this.fcmService.sendToUsers(uniqueUserIds, {
+      title: dto.title,
+      body: dto.body,
+      url: dto.url,
+      data: dto.data,
+    });
+
+    return {
+      sent: sent + fcmResult.sent,
+      failed: failed + fcmResult.failed,
+      totalSubscriptions: subscriptions.length,
+      totalFcmTokens: fcmResult.totalTokens,
+      fcmConfigured: fcmResult.configured,
+    };
   }
 }

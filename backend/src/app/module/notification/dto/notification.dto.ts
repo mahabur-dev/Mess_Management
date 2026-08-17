@@ -140,3 +140,22 @@ export class SendPushNotificationDto {
   @IsObject()
   data?: Record<string, unknown>;
 }
+
+export class RegisterFcmDeviceDto {
+  @ApiProperty({ description: 'FCM registration token for the Android app' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+
+  @ApiPropertyOptional({ example: '1.0.0' })
+  @IsOptional()
+  @IsString()
+  appVersion?: string;
+}
+
+export class UnregisterFcmDeviceDto {
+  @ApiProperty({ description: 'FCM registration token to deactivate' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+}

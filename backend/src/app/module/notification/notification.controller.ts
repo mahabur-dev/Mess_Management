@@ -16,8 +16,10 @@ import { NotificationService } from './notification.service';
 import {
   CreateNotificationDto,
   NotificationFilterDto,
+  RegisterFcmDeviceDto,
   SavePushSubscriptionDto,
   SendPushNotificationDto,
+  UnregisterFcmDeviceDto,
 } from './dto/notification.dto';
 import AuthGuard from '../../middlewares/auth.guard';
 
@@ -77,6 +79,41 @@ export class NotificationController {
     @Body('endpoint') endpoint: string,
   ) {
     return this.notificationService.removePushSubscription(req.user!.id, endpoint);
+  }
+
+  @Get('push/fcm/status')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Get current user Android FCM device status' })
+  async getFcmStatus(@Req() req: Request) {
+    const data = await this.notificationService.getFcmStatus(req.user!.id);
+    return { message: 'FCM device status fetched successfully', data };
+  }
+
+  @Post('push/fcm/register')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Register an Android FCM device token' })
+  async registerFcmDevice(
+    @Req() req: Request,
+    @Body() dto: RegisterFcmDeviceDto,
+  ) {
+    const data = await this.notificationService.registerFcmDevice(
+      req.user!.id,
+      dto,
+    );
+    return { message: 'FCM device registered successfully', data };
+  }
+
+  @Patch('push/fcm/unregister')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Deactivate an Android FCM device token' })
+  async unregisterFcmDevice(
+    @Req() req: Request,
+    @Body() dto: UnregisterFcmDeviceDto,
+  ) {
+    return this.notificationService.unregisterFcmDevice(
+      req.user!.id,
+      dto.token,
+    );
   }
 
   @Post('push/send/user/:userId')

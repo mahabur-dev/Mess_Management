@@ -38,6 +38,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Capacitor's WebView requests this together with RECORD_AUDIO. If it is
          absent, Android denies the whole WebView microphone permission request
          even when RECORD_AUDIO was granted manually in App settings. -->

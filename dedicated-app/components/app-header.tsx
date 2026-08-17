@@ -14,7 +14,7 @@ type AppHeaderProps = {
   backHref?: string
   leading?: ReactNode
   trailing?: ReactNode
-  hasUnreadNotices?: boolean
+  hasUnreadNotifications?: boolean
   variant?: 'default' | 'onboarding'
 }
 
@@ -62,7 +62,7 @@ export function ProfileAvatarLink() {
   )
 }
 
-function NotificationLink({ hasUnreadNotices = false }: { hasUnreadNotices?: boolean }) {
+function NotificationLink({ hasUnreadNotifications = false }: { hasUnreadNotifications?: boolean }) {
   const { user } = useAuth()
   const canViewNotices = hasActiveMess(user) || canManageMess(user)
 
@@ -70,13 +70,13 @@ function NotificationLink({ hasUnreadNotices = false }: { hasUnreadNotices?: boo
 
   return (
     <Link
-      href={appHref('/notices')}
+      href={appHref('/notifications')}
       className="app-header-action"
-      aria-label={hasUnreadNotices ? 'Open notices, unread notices available' : 'Open notices'}
-      title="Notices"
+      aria-label={hasUnreadNotifications ? 'Open notifications, unread notifications available' : 'Open notifications'}
+      title="Notifications"
     >
       <Bell size={19} strokeWidth={2.3} aria-hidden="true" />
-      {hasUnreadNotices ? <span className="app-header-notification-dot" aria-hidden="true" /> : null}
+      {hasUnreadNotifications ? <span className="app-header-notification-dot" aria-hidden="true" /> : null}
     </Link>
   )
 }
@@ -87,7 +87,7 @@ export function AppHeader({
   backHref,
   leading,
   trailing,
-  hasUnreadNotices = false,
+  hasUnreadNotifications = false,
   variant = 'default',
 }: AppHeaderProps) {
   const router = useRouter()
@@ -139,7 +139,7 @@ export function AppHeader({
           <h1 className={`ui-header-title truncate ${variant === 'onboarding' ? 'text-title' : 'text-title-sm'}`}>{title}</h1>
           {subtitle ? <p className={`${variant === 'onboarding' ? 'mt-1 text-label' : 'mt-0.5 text-caption'} truncate text-white/82`}>{subtitle}</p> : null}
         </div>
-        <div className="flex justify-end">{trailing ?? <NotificationLink hasUnreadNotices={hasUnreadNotices} />}</div>
+        <div className="flex justify-end">{trailing ?? <NotificationLink hasUnreadNotifications={hasUnreadNotifications} />}</div>
       </div>
     </header>
   )

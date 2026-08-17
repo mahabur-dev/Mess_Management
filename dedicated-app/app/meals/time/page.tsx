@@ -117,14 +117,14 @@ export default function SetMealTimePage() {
 
         <MealCard className="space-y-4">
           <div className="section-title mb-0">Update Window</div>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
+          <div className="grid min-w-0 grid-cols-2 gap-3">
+            <label className="min-w-0 block">
               <div className="mb-2 text-label font-semibold text-[#123748]">From</div>
-              <input className="field min-h-14" type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
+              <input className="field meal-time-input min-h-14 w-full min-w-0" type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
             </label>
-            <label className="block">
+            <label className="min-w-0 block">
               <div className="mb-2 text-label font-semibold text-[#123748]">To</div>
-              <input className="field min-h-14" type="time" step="3600" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
+              <input className="field meal-time-input min-h-14 w-full min-w-0" type="time" step="3600" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
             </label>
           </div>
 

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { DepositModule } from '../deposit/deposit.module';
 import { ExpenseModule } from '../expense/expense.module';
 import { MealModule } from '../meal/meal.module';
+import { PaymentModule } from '../payment/payment.module';
 import { AiAutomationController } from './ai-automation.controller';
 import { AiAutomationService } from './ai-automation.service';
 import {
@@ -11,7 +11,7 @@ import {
 import { OpenAiCompatibleProvider } from './providers/openai-compatible.provider';
 
 @Module({
-  imports: [ExpenseModule, DepositModule, MealModule],
+  imports: [ExpenseModule, MealModule, PaymentModule],
   controllers: [AiAutomationController],
   providers: [
     AiAutomationService,

@@ -8,6 +8,7 @@ import { NativeBackActionsProvider } from '@/components/native-back-actions'
 import { NativeBackHandler } from '@/components/native-back-handler'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
+import { initializeNativePush, nativePushActionEventName, shutdownNativePush, type NativePushActionDetail } from '@/lib/native-push'
 import {
   buildLoginPath,
   buildOnboardingPath,
@@ -110,6 +111,30 @@ export function Providers({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:expired', handleAuthExpired)
   }, [clearSession, router])
 
+  useEffect(() => {
+    if (!user) return
+    void initializeNativePush(user.id)
+
+    return () => {
+      void shutdownNativePush()
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    const handlePushAction = (event: Event) => {
+      const detail = (event as CustomEvent<NativePushActionDetail>).detail
+      const rawUrl = detail?.url || '/'
+      const route = rawUrl
+        .replace(/^\/dashboard\/payments\/?$/, '/payments')
+        .replace(/^\/dashboard\/notifications\/?$/, '/notifications')
+        .replace(/^\/dashboard\/?$/, '/')
+      router.push(route)
+    }
+
+    window.addEventListener(nativePushActionEventName(), handlePushAction)
+    return () => window.removeEventListener(nativePushActionEventName(), handlePushAction)
+  }, [router])
+
   const login = useCallback(
     async (email: string, password: string, redirectTo = readPostLoginPath()) => {
       setIsSubmitting(true)
@@ -140,17 +165,20 @@ export function Providers({ children }: { children: ReactNode }) {
           password,
           role: 'MEMBER',
         })
-        await login(normalizedEmail, password, redirectTo)
+        // Registration must not create an authenticated session. The user signs in explicitly.
+        clearSession()
+        router.replace(buildLoginPath(redirectTo))
       } finally {
         setIsSubmitting(false)
       }
     },
-    [login]
+    [clearSession, router]
   )
 
   const logout = useCallback(async () => {
     setIsLoggingOut(true)
     try {
+      await shutdownNativePush()
       await api.logout()
     } catch {
       // Local logout must still complete if the network or cookie clear fails.

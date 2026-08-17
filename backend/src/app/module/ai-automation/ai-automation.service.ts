@@ -27,15 +27,16 @@ import {
   MealName,
   Prisma,
   UtilityType,
+  PaymentMethod,
 } from '@prisma/client';
 import config from 'src/app/config';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateDepositDto } from '../deposit/dto/deposit.dto';
-import { DepositService, PreparedDeposit } from '../deposit/deposit.service';
 import { CreateExpenseDto } from '../expense/dto/expense.dto';
 import { ExpenseService, PreparedExpense } from '../expense/expense.service';
 import { CreateMealDto } from '../meal/dto/meal.dto';
 import { MealService, PreparedMeal } from '../meal/meal.service';
+import { CreatePaymentDto } from '../payment/dto/payment.dto';
+import { PaymentService, PreparedPayment } from '../payment/payment.service';
 import {
   inferExpenseCategory,
   isSelfReference,
@@ -66,7 +67,7 @@ type MemberOption = { id: string; name: string };
 type PreparedDomainCommand =
   | { intent: 'EXPENSE_CREATE'; dto: CreateExpenseDto; prepared: PreparedExpense }
   | { intent: 'UTILITY_CREATE'; dto: CreateExpenseDto; prepared: PreparedExpense }
-  | { intent: 'DEPOSIT_CREATE'; dto: CreateDepositDto; prepared: PreparedDeposit }
+  | { intent: 'DEPOSIT_CREATE'; dto: CreatePaymentDto; prepared: PreparedPayment }
   | { intent: 'MEAL_CREATE'; dto: CreateMealDto; prepared: PreparedMeal };
 
 const AUDIO_TYPES = new Set([
@@ -88,8 +89,8 @@ export class AiAutomationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly expenseService: ExpenseService,
-    private readonly depositService: DepositService,
     private readonly mealService: MealService,
+    private readonly paymentService: PaymentService,
     @Inject(AI_COMMAND_PROVIDER)
     private readonly commandProvider: AiCommandProvider,
     @Inject(SPEECH_TO_TEXT_PROVIDER)
@@ -390,7 +391,9 @@ export class AiAutomationService {
             : ExpenseSplitMethod.EQUAL,
       };
     } else if (intent === 'DEPOSIT_CREATE') {
-      if (!canManage) throw new ForbiddenException('Only managers can record direct deposits');
+      if (!canManage && memberMatch.member && memberMatch.member.id !== actor.id) {
+        throw new ForbiddenException('Members can submit deposits only for themselves');
+      }
       if (!parsed.data.amount || parsed.data.amount <= 0) missing.add('amount');
       if (!memberMatch.member) missing.add('memberName');
       payload = {
@@ -399,6 +402,7 @@ export class AiAutomationService {
         amount: parsed.data.amount,
         date,
         note: parsed.data.description,
+        method: PaymentMethod.CASH,
       };
     } else if (intent === 'MEAL_CREATE') {
       const sourceMeals: ParsedMealItem[] = parsed.data.meals.length
@@ -514,6 +518,24 @@ export class AiAutomationService {
     return instance;
   }
 
+  private paymentPayload(payload: Record<string, unknown>) {
+    const {
+      memberId,
+      date,
+      purchasedBy,
+      paymentDate,
+      method,
+      ...rest
+    } = payload;
+
+    return {
+      ...rest,
+      purchasedBy: purchasedBy ?? memberId,
+      paymentDate: paymentDate ?? date,
+      method: method ?? PaymentMethod.CASH,
+    };
+  }
+
   private normalizeEditedPayload(
     intent: AiCommandIntent,
     payload: Record<string, unknown>,
@@ -572,14 +594,15 @@ export class AiAutomationService {
       return this.expenseService.preview(userId, role, dto);
     }
     if (intent === 'DEPOSIT_CREATE') {
-      const dto = await this.validateDto(CreateDepositDto, payload);
-      const prepared = await this.depositService.prepareCreate(userId, role, dto);
+      const dto = await this.validateDto(CreatePaymentDto, this.paymentPayload(payload));
+      const prepared = await this.paymentService.prepareCreate(userId, role, dto);
       return {
         memberId: prepared.memberId,
         amount: prepared.amount,
-        date: prepared.depositDate,
+        date: prepared.paymentDate,
         note: prepared.note,
-        method: 'CASH',
+        method: prepared.method,
+        status: prepared.canManage ? 'APPROVED' : 'PENDING',
       };
     }
     if (intent === 'MEAL_CREATE') {
@@ -841,8 +864,8 @@ export class AiAutomationService {
       return { intent, dto, prepared: await this.expenseService.prepareCreate(userId, role, dto) };
     }
     if (intent === AiCommandIntent.DEPOSIT_CREATE) {
-      const dto = await this.validateDto(CreateDepositDto, payload);
-      return { intent, dto, prepared: await this.depositService.prepareCreate(userId, role, dto) };
+      const dto = await this.validateDto(CreatePaymentDto, this.paymentPayload(payload));
+      return { intent, dto, prepared: await this.paymentService.prepareCreate(userId, role, dto) };
     }
     if (intent === AiCommandIntent.MEAL_CREATE) {
       const dto = await this.validateDto(CreateMealDto, payload);
@@ -901,7 +924,7 @@ export class AiAutomationService {
           if (prepared.intent === 'EXPENSE_CREATE' || prepared.intent === 'UTILITY_CREATE') {
             domains.push(await this.expenseService.persistCreate(tx, userId, prepared.dto, prepared.prepared));
           } else if (prepared.intent === 'DEPOSIT_CREATE') {
-            domains.push(await this.depositService.persistCreate(tx, userId, prepared.prepared));
+            domains.push(await this.paymentService.persistCreate(tx, userId, prepared.prepared));
           } else {
             domains.push(await this.mealService.persistCreate(tx, userId, prepared.dto, prepared.prepared));
           }
@@ -940,7 +963,7 @@ export class AiAutomationService {
           if (prepared.intent === 'EXPENSE_CREATE' || prepared.intent === 'UTILITY_CREATE') {
             await this.expenseService.completeCreate(userId, prepared.prepared, domain);
           } else if (prepared.intent === 'DEPOSIT_CREATE') {
-            await this.depositService.completeCreate(prepared.prepared, domain);
+            await this.paymentService.completeCreate(userId, prepared.prepared, domain);
           } else {
             await this.mealService.completeCreate(prepared.prepared, domain);
           }

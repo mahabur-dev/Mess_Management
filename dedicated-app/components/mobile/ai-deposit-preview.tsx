@@ -22,23 +22,28 @@ export type AiDepositPreviewPayload = Record<string, unknown>
 export function AiDepositPreview({
   payload,
   members,
+  canManage,
+  currentUserId,
   disabled,
   onPatch,
 }: {
   payload: AiDepositPreviewPayload
   members: MemberOption[]
+  canManage: boolean
+  currentUserId?: string
   disabled?: boolean
   onPatch: (patch: Record<string, unknown>) => void
 }) {
   const memberId = typeof payload.memberId === 'string' ? payload.memberId : ''
   const member = members.find((item) => item.id === memberId)
+  const selectableMembers = canManage ? members : members.filter((item) => item.id === currentUserId)
   const amount = payload.amount == null ? '' : String(payload.amount)
   const date = typeof payload.date === 'string' ? payload.date : ''
   const note = typeof payload.note === 'string' ? payload.note : ''
   const previewItem: DepositListRecord = {
     id: 'ai-deposit-preview',
     amount: Number(amount || 0),
-    status: 'APPROVED',
+    status: canManage ? 'APPROVED' : 'PENDING',
     method: 'CASH',
     payment_date: date,
     note: note || 'Member deposit',
@@ -60,11 +65,11 @@ export function AiDepositPreview({
           icon={expenseFormIcons.member}
           value={memberId}
           onChange={(event) => onPatch({ memberId: event.target.value })}
-          disabled={disabled}
+          disabled={disabled || !canManage}
           required
         >
-          <option value="">Select member</option>
-          {members.map((option) => (
+          <option value="">{canManage ? 'Select member' : 'Your account'}</option>
+          {selectableMembers.map((option) => (
             <option key={option.id} value={option.id}>{option.name}</option>
           ))}
         </DesignedSelect>

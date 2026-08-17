@@ -96,7 +96,7 @@ export function LogoutConfirmDialog({
             onClick={onCancel}
             disabled={busy}
             className="
-              flex h-12 items-center justify-center
+              flex h-12 min-h-12 w-full flex-nowrap items-center justify-center
               rounded-[14px]
               border border-[#d7e8e8]
               bg-white
@@ -106,6 +106,8 @@ export function LogoutConfirmDialog({
               hover:border-[#9ed5d3]
               hover:bg-[#f7fbfb]
               active:scale-[0.98]
+              whitespace-nowrap
+              leading-none
               disabled:cursor-not-allowed
               disabled:opacity-60
             "
@@ -132,7 +134,7 @@ export function LogoutConfirmDialog({
               disabled:opacity-70
             "
           >
-            <LogOut size={17} strokeWidth={2.3} />
+            <LogOut size={17} className="shrink-0" strokeWidth={2.3} />
 
             {busy ? 'Logging out...' : 'Log out'}
           </button>

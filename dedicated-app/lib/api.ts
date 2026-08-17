@@ -561,6 +561,40 @@ class Api {
   getNoticesByMess(messId: string, params?: Record<string, QueryValue>) {
     return this.request(`/notices/mess/${messId}`, { params })
   }
+
+  getNotifications(params?: Record<string, QueryValue>) {
+    return this.request('/notification/my', { params })
+  }
+
+  getUnreadNotificationCount() {
+    return this.request<{ count: number }>('/notification/unread-count', { cache: 'no-store' })
+  }
+
+  markNotificationRead(id: string) {
+    return this.request(`/notification/${id}/read`, { method: 'PATCH' })
+  }
+
+  getFcmDeviceStatus() {
+    return this.request<{
+      configured: boolean
+      hasActiveDevice: boolean
+      activeDeviceCount: number
+    }>('/notification/push/fcm/status', { cache: 'no-store' })
+  }
+
+  registerFcmDevice(token: string, appVersion: string) {
+    return this.request('/notification/push/fcm/register', {
+      method: 'POST',
+      body: JSON.stringify({ token, appVersion }),
+    })
+  }
+
+  unregisterFcmDevice(token: string) {
+    return this.request('/notification/push/fcm/unregister', {
+      method: 'PATCH',
+      body: JSON.stringify({ token }),
+    })
+  }
 }
 
 export const api = new Api()

@@ -99,6 +99,7 @@ export default function HomePage() {
   const [recentExpenses, setRecentExpenses] = useState<ExpenseListRecord[]>([])
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [expensesLoading, setExpensesLoading] = useState(false)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const { activeMess, isLoading: activeMessLoading, retry: retryActiveMess, status: activeMessStatus } = useActiveMess(user)
 
   const profileName = user?.name || 'Manager'
@@ -176,6 +177,27 @@ export default function HomePage() {
     }
   }, [activeMess?.id, month])
 
+  useEffect(() => {
+    if (!user || !activeMess?.id) {
+      setUnreadNotificationCount(0)
+      return
+    }
+
+    let cancelled = false
+    api
+      .getUnreadNotificationCount()
+      .then((res) => {
+        if (!cancelled) setUnreadNotificationCount(Number(res.data?.count ?? 0))
+      })
+      .catch(() => {
+        if (!cancelled) setUnreadNotificationCount(0)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeMess?.id, user])
+
   const cards = [
     { label: 'Total Member', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading total members" /> : summary?.activeMembers ?? '--', icon: Users, color: '#008d8c' },
     { label: 'Today Meal', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading today meals" /> : summary?.todayTotalMeals ?? '--', icon: UtensilsCrossed, color: '#4bbfc0' },
@@ -211,7 +233,7 @@ export default function HomePage() {
       <AppHeader
         title={profileName}
         subtitle="Here's what's happening today"
-        hasUnreadNotices={Boolean(summary?.notices?.length)}
+        hasUnreadNotifications={unreadNotificationCount > 0}
         variant={showOnboarding ? 'onboarding' : 'default'}
       />
 

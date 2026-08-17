@@ -23,6 +23,7 @@ import {
   normalizeExpenseApprovalStatus,
   type ExpenseApprovalStatus,
 } from '@/components/mobile/expense-approval'
+import { ExpenseReviewModal, type ExpenseReviewAction } from '@/components/mobile/expense-review-modal'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
@@ -104,6 +105,7 @@ export default function ExpenseDetailsPage() {
   const [reviewBusy, setReviewBusy] = useState(false)
   const [reviewMessage, setReviewMessage] = useState('')
   const [reviewFailed, setReviewFailed] = useState(false)
+  const [reviewAction, setReviewAction] = useState<ExpenseReviewAction | null>(null)
 
   useEffect(() => {
     if (!expenseId || !messId) return
@@ -159,18 +161,24 @@ export default function ExpenseDetailsPage() {
     }
   }
 
-  async function reviewExpense(status: 'APPROVED' | 'REJECTED') {
+  function openReviewModal(status: ExpenseReviewAction) {
     if (!expenseId || reviewBusy) return
-    const action = status === 'APPROVED' ? 'approve' : 'reject'
-    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this expense?`)) return
+    setReviewMessage('')
+    setReviewFailed(false)
+    setReviewAction(status)
+  }
+
+  async function reviewExpense(status: ExpenseReviewAction, note: string) {
+    if (!expenseId || reviewBusy) return
 
     setReviewBusy(true)
     setReviewMessage('')
     setReviewFailed(false)
     try {
-      const response = await api.reviewExpense(expenseId, status)
+      const response = await api.reviewExpense(expenseId, status, note || undefined)
       setExpense(response.data as ExpenseRecord)
       setReviewMessage(`Expense ${status === 'APPROVED' ? 'approved' : 'rejected'} successfully.`)
+      setReviewAction(null)
     } catch (error) {
       setReviewFailed(true)
       setReviewMessage(error instanceof Error ? error.message : 'Failed to review expense.')
@@ -319,8 +327,8 @@ export default function ExpenseDetailsPage() {
               <ExpenseSurface title="Manager Review">
                 <ExpenseReviewActions
                   busy={reviewBusy}
-                  onApprove={() => void reviewExpense('APPROVED')}
-                  onReject={() => void reviewExpense('REJECTED')}
+                  onApprove={() => openReviewModal('APPROVED')}
+                  onReject={() => openReviewModal('REJECTED')}
                 />
               </ExpenseSurface>
             ) : null}
@@ -336,6 +344,24 @@ export default function ExpenseDetailsPage() {
           </>
         ) : null}
       </div>
+
+      {expense && details && reviewAction ? (
+        <ExpenseReviewModal
+          action={reviewAction}
+          amount={expense.amount}
+          category={expense.category}
+          itemName={expense.itemName}
+          expenseDate={expense.expenseDate ?? expense.expense_date}
+          addedBy={details.addedBy}
+          purchasedBy={details.purchasedBy}
+          busy={reviewBusy}
+          error={reviewFailed ? reviewMessage : ''}
+          onClose={() => {
+            if (!reviewBusy) setReviewAction(null)
+          }}
+          onConfirm={(note) => void reviewExpense(reviewAction, note)}
+        />
+      ) : null}
     </MobileShell>
   )
 }

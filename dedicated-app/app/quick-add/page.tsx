@@ -342,8 +342,12 @@ export default function QuickAddPage() {
         ) : completed ? (
           <HomeCard className="py-7 text-center">
             <CheckCircle2 size={52} className="mx-auto text-[#008d8c]" />
-            <h2 className="mt-4 text-title-sm font-bold text-[#123748]">{copy.success}</h2>
-            <p className="mt-2 text-label text-[#65838b]">{intentLabel}</p>
+            <h2 className="mt-4 text-title-sm font-bold text-[#123748]">
+              {command.intent === 'DEPOSIT_CREATE' && !canManage ? 'Deposit submitted' : copy.success}
+            </h2>
+            <p className="mt-2 text-label text-[#65838b]">
+              {command.intent === 'DEPOSIT_CREATE' && !canManage ? 'Pending manager approval' : intentLabel}
+            </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button type="button" className="ui-btn ui-btn--secondary" onClick={() => void reset()}>{copy.newCommand}</button>
               <button type="button" className="ui-btn ui-btn--primary" onClick={() => router.replace(appHref(command.result?.redirectTo ?? '/'))}>View</button>
@@ -394,6 +398,8 @@ export default function QuickAddPage() {
                 key={command.id}
                 payload={payload}
                 members={members}
+                canManage={canManage}
+                currentUserId={user?.id}
                 disabled={busy}
                 onPatch={(patch) => patchPayloadItem(0, patch)}
               />

@@ -125,6 +125,17 @@ export default function RequestMessPage() {
     <MobileShell>
       <TopScreen title="Request Mess" subtitle="Join an existing mess" backHref="/" />
       <div className="screen space-y-4">
+        <section className="request-mess-hero">
+          <div className="request-mess-hero__icon" aria-hidden="true">
+            <DoorOpen size={25} strokeWidth={2.25} />
+          </div>
+          <div className="min-w-0">
+            <p className="request-mess-hero__eyebrow">MEMBER ACCESS</p>
+            <h1>Find your mess workspace</h1>
+            <p className="request-mess-hero__description">Search for an active mess and send a join request to its manager.</p>
+          </div>
+        </section>
+
         <section className="app-toolbar">
           <FieldCard label="Search Mess" hint="Name or location">
             <div className="relative">

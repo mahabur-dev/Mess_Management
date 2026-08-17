@@ -1258,6 +1258,12 @@ export class ExpenseService {
     prepared: PreparedExpense,
     expenseId: string,
   ) {
+    if (!prepared.requiresApproval) return;
+
+    const managerUserIds =
+      await this.notificationService.resolveMessManagerUserIds(prepared.messId);
+    if (managerUserIds.length === 0) return;
+
     await this.notificationService
       .createForMess(
         userId,
@@ -1275,8 +1281,9 @@ export class ExpenseService {
           splitMethod: prepared.splitMethod,
           approvalStatus: prepared.requiresApproval ? 'PENDING' : 'APPROVED',
         },
-        undefined,
+        managerUserIds,
         '/expenses',
+        `expense-submitted-${expenseId}`,
       )
       .catch(() => undefined);
   }

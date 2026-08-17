@@ -90,6 +90,7 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/deposits', label: 'Deposits', icon: Landmark, access: 'manager' },
   { href: '/edit-deposit', label: 'Edit Deposit', icon: Landmark, access: 'manager' },
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
+  { href: '/notifications', label: 'Notifications', icon: Bell, access: 'mess' },
   { href: '/meals/time', label: 'Set Meal Time', icon: UtensilsCrossed, access: 'manager' },
   { href: '/meals/members', label: 'Member Meals', icon: UtensilsCrossed, access: 'manager' },
   { href: '/meals/member-meal', label: 'Edit Member Meal', icon: UtensilsCrossed, access: 'manager' },

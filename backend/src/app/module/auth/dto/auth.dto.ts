@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -97,6 +98,7 @@ export class VerifyOtpDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(6)
+  @Matches(/^\d{6}$/, { message: 'OTP must be exactly 6 digits' })
   otp: string;
 }
 

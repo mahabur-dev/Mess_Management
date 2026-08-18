@@ -7143,3 +7143,38 @@ textarea {
     background: var(--neutral-50);
   }
 }
+
+/* Keep default controls and navigation icons readable on the light surfaces.
+   The app background and teal brand accents remain unchanged. */
+:root {
+  --default-icon-ink: #111827;
+}
+
+.auth-reference .field-icon,
+.auth-reference label > div.relative > span:first-child,
+.auth-reference label > div.relative button,
+.auth-reference .auth-reference__protected svg {
+  color: var(--default-icon-ink);
+}
+
+.onboarding-floating-badge,
+.onboarding-illustration-grid span,
+.onboarding-action-track span,
+.onboarding-welcome-mark,
+.onboarding-start-mark {
+  color: var(--default-icon-ink);
+}
+
+.onboarding-secondary-actions button svg {
+  color: var(--default-icon-ink);
+}
+
+.nav-item,
+.nav-item[data-active="true"],
+.nav-item[data-active="true"] .nav-icon-shell {
+  color: var(--default-icon-ink);
+}
+
+.more-drawer-item-icon {
+  color: var(--default-icon-ink);
+}

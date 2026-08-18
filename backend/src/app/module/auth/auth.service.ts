@@ -1,7 +1,12 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
+import { randomInt } from 'node:crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import config from '../../config';
 import sendMailer from 'src/app/helpers/sendMailer';
@@ -150,12 +155,12 @@ export class AuthService {
     });
     if (!user) throw new HttpException('Email not found', 404);
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = randomInt(100000, 1000000).toString();
     const otp_expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { otp, otp_expiry },
+      data: { otp, otp_expiry, is_verified: false },
     });
 
     const html = `
@@ -168,7 +173,20 @@ export class AuthService {
       </div>
     `;
 
-    await sendMailer(user.email, 'Password Reset OTP — Mess Management', html);
+    try {
+      await sendMailer(user.email, 'Password Reset OTP — Mess Management', html);
+    } catch (error) {
+      // Do not leave an OTP active when delivery failed.
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { otp: null, otp_expiry: null },
+      });
+      console.error('Password reset email delivery failed:', error);
+      throw new ServiceUnavailableException(
+        'Unable to send the password reset email right now',
+      );
+    }
+
     return { message: 'OTP sent to your email' };
   }
 

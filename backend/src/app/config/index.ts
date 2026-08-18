@@ -12,7 +12,7 @@ export default {
   port: process.env.PORT || 5001,
   env: process.env.NODE_ENV || 'development',
   bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS) || 12,
-  resend_apiKey: process.env.RESEND_API_KEY as string,
+  resendApiKey: process.env.RESEND_API_KEY,
 
   database: {
     url: process.env.DATABASE_URL,
@@ -32,11 +32,8 @@ export default {
   },
 
   email: {
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: Number(process.env.EMAIL_PORT) || 587,
-    address: process.env.EMAIL_ADDRESS,
-    pass: process.env.EMAIL_PASS,
-    from: process.env.EMAIL_FROM,
+    resendFrom:
+      process.env.RESEND_FROM_EMAIL || 'Mess Management <onboarding@resend.dev>',
   },
   webPush: {
     vapidPublicKey: process.env.VAPID_PUBLIC_KEY as string,

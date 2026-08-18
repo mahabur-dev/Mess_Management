@@ -154,9 +154,15 @@ export function ForgotPasswordPage() {
     setMessage('')
 
     const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail) {
+      setMessage('Enter your email address first.')
+      return
+    }
+
     try {
       const result = await api.forgotPassword(normalizedEmail)
       sessionStorage.setItem('resetEmail', normalizedEmail)
+      sessionStorage.removeItem('otpVerified')
       setSuccess(true)
       setMessage(resultMessage(result, 'OTP sent to your email.'))
       window.setTimeout(() => router.push('/verify_otp'), 700)

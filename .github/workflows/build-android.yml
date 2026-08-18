@@ -23,11 +23,30 @@ jobs:
         working-directory: dedicated-app
         run: pnpm install --frozen-lockfile
 
+      - name: Configure Firebase push notifications
+        id: firebase
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > dedicated-app/android/app/google-services.json
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > dedicated-app/android/app/google-services.json
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Firebase config was not provided; push notifications will be disabled in this APK."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build Next.js static export
         working-directory: dedicated-app
         run: pnpm build
         env:
           NEXT_PUBLIC_API_URL: https://api.messzen.com/api/v1
+          NEXT_PUBLIC_NATIVE_PUSH_ENABLED: ${{ steps.firebase.outputs.enabled }}
 
       - name: Sync Capacitor
         working-directory: dedicated-app

@@ -10,6 +10,10 @@ import { api } from './api'
 const APP_VERSION = '0.1.0'
 const PUSH_ACTION_EVENT = 'messzen:native-push-action'
 const NOTIFICATION_CHANNEL_ID = 'messzen_notifications'
+// Firebase is optional for an APK build. CI builds without a Firebase config
+// must not call the native register API because the Capacitor plugin will
+// otherwise throw when the default Firebase app does not exist.
+const NATIVE_PUSH_ENABLED = process.env.NEXT_PUBLIC_NATIVE_PUSH_ENABLED === 'true'
 
 let activeUserId: string | null = null
 let activeFcmToken: string | null = null
@@ -95,7 +99,7 @@ export function nativePushActionEventName() {
 }
 
 export async function initializeNativePush(userId: string) {
-  if (!Capacitor.isNativePlatform()) return
+  if (!Capacitor.isNativePlatform() || !NATIVE_PUSH_ENABLED) return
   if (activeUserId === userId && startupPromise) return startupPromise
 
   await shutdownNativePush()

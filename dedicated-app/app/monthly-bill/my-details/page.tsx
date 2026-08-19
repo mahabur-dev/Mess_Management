@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   CalendarDays,
+  ChevronDown,
   ChevronRight,
   CircleDollarSign,
   ReceiptText,
@@ -56,6 +57,16 @@ type MyExpenseDetails = {
   roomRent?: number
   total?: number
   transactionCount?: number
+  assignedFoodExpenseTotal?: number
+  assignedFoodExpenses?: Array<{
+    id: string
+    title: string
+    expenseDate: string
+    memberShare: number
+    sharedWith: string
+    splitRule: string
+    note?: string | null
+  }>
   history?: ExpenseListRecord[]
 }
 
@@ -74,7 +85,59 @@ function toNumber(value?: string | number | null) {
 
 function mealRate(bill?: BillItem | null) {
   const meals = toNumber(bill?.total_meals)
-  return meals > 0 ? toNumber(bill?.food_bill) / meals : 0
+  return meals > 0 ? toNumber(bill?.meal_charge) / meals : 0
+}
+
+function AssignedFoodExpensesBreakdown({
+  total,
+  expenses,
+  messId,
+}: {
+  total: number
+  expenses: NonNullable<MyExpenseDetails['assignedFoodExpenses']>
+  messId: string
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="border-b border-[#edf1f4] last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="expense-breakdown-row w-full text-left"
+        aria-expanded={open}
+      >
+        <span className="expense-breakdown-row__icon bg-[#edfafa] text-[#0aa0a0]">
+          <ReceiptText size={16} strokeWidth={2.35} />
+        </span>
+        <span className="min-w-0 flex-1 text-label font-medium text-[#3d5560]">Assigned Food Expenses</span>
+        <span className="text-label font-semibold text-[#1d3a42]">{formatTaka(total)}</span>
+        <ChevronDown size={17} className={`shrink-0 text-[#65838b] transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open ? (
+        <div className="space-y-2 bg-[#f8fdfd] px-3 py-3">
+          {expenses.map((expense) => (
+            <Link
+              key={expense.id}
+              href={appHref(`/expense-details?expenseId=${encodeURIComponent(expense.id)}&messId=${encodeURIComponent(messId)}`)}
+              className="flex items-center gap-3 rounded-[13px] border border-[#e4eaec] bg-white px-3 py-2.5"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-label font-semibold text-[#123748]">{expense.title}</span>
+                <span className="mt-0.5 block text-caption font-medium text-[#65838b]">
+                  {new Date(expense.expenseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                </span>
+              </span>
+              <span className="shrink-0 text-label font-bold text-[#00777a]">{formatTaka(expense.memberShare)}</span>
+              <ChevronRight size={16} className="shrink-0 text-[#65838b]" />
+            </Link>
+          ))}
+          {!expenses.length ? <div className="expense-empty-state">No assigned food expenses.</div> : null}
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 function MyMonthlyDetailsContent() {
@@ -156,7 +219,12 @@ function MyMonthlyDetailsContent() {
   const expenseHistory = details?.history ?? []
   const billMeals = toNumber(bill?.total_meals) || mealSummary.totalMeals
   const billMealRate = mealRate(bill)
-  const billFoodCost = toNumber(bill?.food_bill) || toNumber(details?.foodBill)
+  const assignedFoodExpenseTotal = toNumber(bill?.food_bill)
+    ? Math.max(0, toNumber(bill?.food_bill) - toNumber(bill?.meal_charge))
+    : toNumber(details?.assignedFoodExpenseTotal)
+  const regularMealCharge = toNumber(bill?.meal_charge)
+    || Math.max(0, toNumber(details?.foodBill) - assignedFoodExpenseTotal)
+  const totalFoodBill = toNumber(bill?.food_bill) || toNumber(details?.foodBill)
 
   return (
     <MobileShell>
@@ -184,7 +252,7 @@ function MyMonthlyDetailsContent() {
                 items={[
                   { icon: UtensilsCrossed, label: 'Total meals eaten', value: billMeals },
                   { icon: WalletCards, label: 'Meal rate', value: formatTaka(billMealRate) },
-                  { icon: ReceiptText, label: 'Meal total cost', value: formatTaka(billFoodCost) },
+                  { icon: ReceiptText, label: 'Meal total cost', value: formatTaka(regularMealCharge) },
                 ]}
               />
             </ExpenseSurface>
@@ -192,7 +260,17 @@ function MyMonthlyDetailsContent() {
             <ExpenseSurface title="Bill Breakdown">
               <ExpenseBreakdownList
                 items={[
-                  { icon: ReceiptText, label: 'Food / Meal', value: formatTaka(bill?.food_bill ?? details?.foodBill) },
+                  { icon: ReceiptText, label: 'Regular Meal Charge', value: formatTaka(regularMealCharge) },
+                ]}
+              />
+              <AssignedFoodExpensesBreakdown
+                total={assignedFoodExpenseTotal}
+                expenses={details?.assignedFoodExpenses ?? []}
+                messId={messId}
+              />
+              <ExpenseBreakdownList
+                items={[
+                  { icon: ReceiptText, label: 'Total Food Bill', value: formatTaka(totalFoodBill) },
                   { icon: WalletCards, label: 'Room rent', value: formatTaka(bill?.seat_rent ?? details?.roomRent), accent: 'violet' },
                   { icon: Zap, label: 'Utility', value: formatTaka(bill?.utility_share ?? details?.utilityBill), accent: 'blue' },
                   { icon: CalendarDays, label: 'Previous balance', value: formatTaka(bill?.prev_balance), accent: 'green' },

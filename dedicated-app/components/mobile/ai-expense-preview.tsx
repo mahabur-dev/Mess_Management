@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Eye, ReceiptText, Trash2, Zap } from 'lucide-react'
 import {
   DesignedInput,
@@ -101,12 +101,6 @@ function customSharesOf(item: AiExpensePreviewItem): ExpenseCustomShare[] {
   })
 }
 
-function monthValue(item: AiExpensePreviewItem) {
-  const billingMonth = typeof item.billingMonth === 'string' ? item.billingMonth : ''
-  const expenseDate = typeof item.expenseDate === 'string' ? item.expenseDate : ''
-  return (billingMonth || expenseDate).slice(0, 7)
-}
-
 function initialPreviewValue(value: unknown): SplitPreview | null {
   if (value && !Array.isArray(value) && typeof value === 'object') return value as SplitPreview
   return null
@@ -155,6 +149,14 @@ export function AiExpensePreview({
   const [preview, setPreview] = useState<SplitPreview | null>(() => initialPreviewValue(initialPreview))
   const [previewBusy, setPreviewBusy] = useState(false)
   const [previewMessage, setPreviewMessage] = useState('')
+
+  useEffect(() => {
+    const patch: Record<string, unknown> = {}
+    if (primary.billingMonth !== undefined) patch.billingMonth = undefined
+    if (isUtility && usedBy === 'MEAL_ON_MEMBERS') patch.usedBy = 'ALL_MEMBERS'
+    if (isUtility && splitMethod === 'MEAL_COUNT') patch.splitMethod = 'EQUAL'
+    if (Object.keys(patch).length) onPatchPayload(patch)
+  }, [isUtility, onPatchPayload, primary.billingMonth, splitMethod, usedBy])
 
   const invalidatePreview = () => {
     setPreview(null)
@@ -213,12 +215,12 @@ export function AiExpensePreview({
         icon={isUtility ? Zap : ReceiptText}
       />
 
-      <FormSection title="Paid From">
+      <FormSection title="Payment Source">
         <PaymentTypeSelector value={paymentType} onChange={updatePaymentType} showHeading={false} />
       </FormSection>
 
-      <FormSection title="Used By">
-        <ExpenseUsedBySelector value={usedBy} onChange={updateUsedBy} />
+      <FormSection title="Shared With">
+        <ExpenseUsedBySelector value={usedBy} onChange={updateUsedBy} allowMealMembers={!isUtility} />
         {usedBy === 'SELECTED_MEMBERS' ? (
           <MemberMultiSelect
             members={members}
@@ -229,11 +231,12 @@ export function AiExpensePreview({
       </FormSection>
 
       {usedBy !== 'SELF_ONLY' ? (
-        <FormSection title="Split Method">
+        <FormSection title="Split Rule">
           <ExpenseSplitMethodSelector
             value={splitMethod}
             onChange={(value) => patchAll({ splitMethod: value })}
             allowCustom={usedBy !== 'MEAL_ON_MEMBERS'}
+            allowMealCount={!isUtility}
           />
           {splitMethod === 'CUSTOM' ? (
             <ExpenseCustomShareFields
@@ -247,9 +250,9 @@ export function AiExpensePreview({
       ) : null}
 
       {canManage ? (
-        <FormSection title={paymentType === 'PERSONAL' ? 'Paid By' : 'Purchased By'}>
+        <FormSection title="Paid By">
           <DesignedSelect
-            label={paymentType === 'PERSONAL' ? 'Paid By' : 'Purchased By'}
+            label="Paid By"
             icon={expenseFormIcons.member}
             value={String(primary.purchasedBy ?? '')}
             onChange={(event) => patchAll({ purchasedBy: event.target.value || undefined })}
@@ -284,24 +287,14 @@ export function AiExpensePreview({
             {GENERAL_EXPENSE_CATEGORIES.map((option) => <option key={option} value={option}>{LABELS.EXPENSE_CATEGORIES[option]}</option>)}
           </DesignedSelect>
         )}
-        <FormFieldGrid>
-          <DesignedInput
-            label={isUtility ? 'Bill Date' : 'Expense Date'}
-            icon={expenseFormIcons.date}
-            value={String(primary.expenseDate ?? '')}
-            onChange={(event) => patchAll({ expenseDate: event.target.value })}
-            type="date"
-            required
-          />
-          <DesignedInput
-            label="Billing Month"
-            icon={expenseFormIcons.date}
-            value={monthValue(primary)}
-            onChange={(event) => patchAll({ billingMonth: event.target.value ? `${event.target.value}-01` : undefined })}
-            type="month"
-            required
-          />
-        </FormFieldGrid>
+        <DesignedInput
+          label={isUtility ? 'Bill Date' : 'Expense Date'}
+          icon={expenseFormIcons.date}
+          value={String(primary.expenseDate ?? '')}
+          onChange={(event) => patchAll({ expenseDate: event.target.value, billingMonth: undefined })}
+          type="date"
+          required
+        />
         <DesignedTextarea
           label="Note (Optional)"
           icon={expenseFormIcons.description}

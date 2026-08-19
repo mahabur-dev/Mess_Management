@@ -263,7 +263,7 @@ export default function ExpenseDetailsPage() {
               <ExpenseSurface className="!p-3">
                 <div className="flex items-center gap-2.5">
                   <CircleIcon icon={UserRound} />
-                  <div className="min-w-0"><div className="text-caption font-semibold text-[#65838b]">Purchased By</div><div className="mt-1 truncate text-label font-bold text-[#123748]">{details.purchasedBy}</div></div>
+                  <div className="min-w-0"><div className="text-caption font-semibold text-[#65838b]">Paid By</div><div className="mt-1 truncate text-label font-bold text-[#123748]">{details.purchasedBy}</div></div>
                 </div>
               </ExpenseSurface>
               <ExpenseSurface className="!p-3">
@@ -275,9 +275,9 @@ export default function ExpenseDetailsPage() {
             </div>
 
             <ExpenseSurface title="Calculation">
-              <DetailRow icon={detailIcons.payment} label="Paid From" value={details.payment} />
-              <DetailRow icon={detailIcons.user} label="Used By" value={details.usedBy} />
-              <DetailRow icon={detailIcons.amount} label="Split Method" value={details.splitMethod} />
+              <DetailRow icon={detailIcons.payment} label="Payment Source" value={details.payment} />
+              <DetailRow icon={detailIcons.user} label="Shared With" value={details.usedBy} />
+              <DetailRow icon={detailIcons.amount} label="Split Rule" value={details.splitMethod} />
               <DetailRow icon={detailIcons.added} label="Added On" value={details.createdAt} />
               <DetailRow icon={detailIcons.user} label="Affected Members" value={`${expense.shares?.length ?? 0} Members`} />
             </ExpenseSurface>

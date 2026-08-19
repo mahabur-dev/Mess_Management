@@ -8,7 +8,6 @@ import {
   DesignedInput,
   DesignedSelect,
   DesignedTextarea,
-  FormFieldGrid,
   FormPageShell,
   FormSection,
   FormStatusMessage,
@@ -23,8 +22,7 @@ import {
   expenseLineItemsPayload,
   type ExpenseLineItem,
 } from '@/components/mobile/expense-line-items'
-import { currentMonthValue } from '@/components/mobile/meals-design'
-import { ExpensePrimaryAction, ExpenseSplitMethodSelector, ExpenseUsedBySelector } from '@/components/mobile/expense-ui'
+import { ExpenseAdvancedOptions, ExpensePrimaryAction } from '@/components/mobile/expense-ui'
 import {
   ExpenseCustomShareFields,
   buildCustomShares,
@@ -80,7 +78,6 @@ type FormState = {
   purchasedBy: string
   items: ExpenseLineItem[]
   expenseDate: string
-  billingMonth: string
   description: string
   paymentType: ExpensePaymentType
   usedBy: ExpenseUsedBy
@@ -100,17 +97,12 @@ function dateValue(value?: string | null) {
   return value?.slice(0, 10) || new Date().toISOString().slice(0, 10)
 }
 
-function monthValue(value?: string | null) {
-  return value?.slice(0, 7) || currentMonthValue()
-}
-
 const INITIAL_FORM: FormState = {
   category: 'FOOD',
   utilityType: 'ELECTRICITY',
   purchasedBy: '',
   items: [{ id: 'initial-item', itemName: '', quantity: '', unit: '', amount: '' }],
   expenseDate: new Date().toISOString().slice(0, 10),
-  billingMonth: currentMonthValue(),
   description: '',
   paymentType: 'FROM_DEPOSIT',
   usedBy: 'ALL_MEMBERS',
@@ -135,6 +127,7 @@ export default function EditExpensePage() {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   useEffect(() => {
     if (!expenseId || !messId) return
@@ -184,11 +177,10 @@ export default function EditExpensePage() {
                 amount: String(found.amount ?? ''),
               }],
           expenseDate: dateValue(found.expenseDate),
-          billingMonth: monthValue(found.billingMonth ?? found.expenseDate),
           description: found.description ?? '',
           paymentType: found.paymentType ?? 'FROM_DEPOSIT',
-          usedBy: found.usedBy ?? 'ALL_MEMBERS',
-          splitMethod: found.splitMethod ?? 'EQUAL',
+          usedBy: foundType === 'UTILITY' && found.usedBy === 'MEAL_ON_MEMBERS' ? 'ALL_MEMBERS' : found.usedBy ?? 'ALL_MEMBERS',
+          splitMethod: foundType === 'UTILITY' && found.splitMethod === 'MEAL_COUNT' ? 'EQUAL' : found.splitMethod ?? 'EQUAL',
           selectedMemberIds: shares.map((share) => share.memberId),
           customShares: shares.map((share) => ({
             memberId: share.memberId,
@@ -246,7 +238,6 @@ export default function EditExpensePage() {
       category: form.category,
       items: expenseLineItemsPayload(form.items),
       expenseDate: form.expenseDate,
-      billingMonth: `${form.billingMonth}-01`,
       description: form.description.trim() || null,
       paymentType: form.paymentType,
       usedBy: form.usedBy,
@@ -293,45 +284,12 @@ export default function EditExpensePage() {
         <FormPageShell title={isUtilityExpense ? 'Edit Utility' : 'Edit Expense'} icon={isUtilityExpense ? Zap : ReceiptText} backHref="/expenses">
           {loading ? <LoadingIndicator variant="card" label="Loading expense" /> : null}
 
-          <FormSection title="Paid From">
+          <FormSection title="Payment Source">
             <PaymentTypeSelector value={form.paymentType} onChange={(paymentType) => update('paymentType', paymentType)} showHeading={false} />
           </FormSection>
 
-          <FormSection title="Used By">
-            <ExpenseUsedBySelector
-              value={form.usedBy}
-              onChange={(usedBy) => {
-                update('usedBy', usedBy)
-                if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
-                if (usedBy === 'MEAL_ON_MEMBERS' && form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT')
-              }}
-            />
-
-            {form.usedBy === 'SELECTED_MEMBERS' ? (
-              <MemberMultiSelect members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} />
-            ) : null}
-          </FormSection>
-
-          {form.usedBy !== 'SELF_ONLY' ? (
-            <FormSection title="Split Method">
-              <ExpenseSplitMethodSelector
-                value={form.splitMethod}
-                onChange={(splitMethod) => update('splitMethod', splitMethod)}
-                allowCustom={form.usedBy !== 'MEAL_ON_MEMBERS'}
-              />
-              {form.splitMethod === 'CUSTOM' ? (
-                <ExpenseCustomShareFields
-                  members={members}
-                  memberIds={affectedMemberIds}
-                  shares={form.customShares}
-                  onChange={(shares) => update('customShares', shares)}
-                />
-              ) : null}
-            </FormSection>
-          ) : null}
-
-          {isUtilityExpense ? (
-            <FormSection title="Utility Details">
+          <FormSection title={isUtilityExpense ? 'Utility Details' : 'Expense Details'}>
+            {isUtilityExpense ? (
               <DesignedSelect
                 label="Utility Type"
                 icon={expenseFormIcons.category}
@@ -350,44 +308,60 @@ export default function EditExpensePage() {
                   </option>
                 ))}
               </DesignedSelect>
-              <FormFieldGrid>
-                <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />
-                <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
-              </FormFieldGrid>
-              <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
-              {isManager ? (
-                <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
-                  <option value="">Select member</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>{member.name}</option>
-                  ))}
-                </DesignedSelect>
-              ) : null}
-              <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
-            </FormSection>
-          ) : (
-            <FormSection title="Expense Details">
+            ) : (
               <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
                 {GENERAL_EXPENSE_CATEGORIES.map((category) => (
                   <option key={category} value={category}>{LABELS.EXPENSE_CATEGORIES[category]}</option>
                 ))}
               </DesignedSelect>
-              <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
-              <FormFieldGrid>
-                <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
-                <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />
-              </FormFieldGrid>
-              {isManager ? (
-                <DesignedSelect label={form.paymentType === 'PERSONAL' ? 'Paid By' : 'Purchased By'} icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
-                  <option value="">Select member</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>{member.name}</option>
-                  ))}
-                </DesignedSelect>
-              ) : null}
-              <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
-            </FormSection>
-          )}
+            )}
+            {isManager ? (
+              <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
+                <option value="">Select member</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>{member.name}</option>
+                ))}
+              </DesignedSelect>
+            ) : null}
+            <DesignedInput label={isUtilityExpense ? 'Bill Date' : 'Expense Date'} icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
+          </FormSection>
+
+          <FormSection title="Items">
+            <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
+          </FormSection>
+
+          <ExpenseAdvancedOptions
+            open={advancedOpen}
+            usedBy={form.usedBy}
+            splitMethod={form.splitMethod}
+            allowMealMembers={!isUtilityExpense}
+            allowMealCount={!isUtilityExpense}
+            allowCustom={isUtilityExpense || form.usedBy !== 'MEAL_ON_MEMBERS'}
+            onOpen={() => setAdvancedOpen(true)}
+            onClose={() => setAdvancedOpen(false)}
+            onUsedByChange={(usedBy) => {
+              update('usedBy', usedBy)
+              if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
+              if (usedBy === 'MEAL_ON_MEMBERS' && form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT')
+            }}
+            onSplitMethodChange={(splitMethod) => update('splitMethod', splitMethod)}
+          >
+            {form.usedBy === 'SELECTED_MEMBERS' ? (
+              <MemberMultiSelect members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} />
+            ) : null}
+            {form.usedBy !== 'SELF_ONLY' && form.splitMethod === 'CUSTOM' ? (
+              <ExpenseCustomShareFields
+                members={members}
+                memberIds={affectedMemberIds}
+                shares={form.customShares}
+                onChange={(shares) => update('customShares', shares)}
+              />
+            ) : null}
+          </ExpenseAdvancedOptions>
+
+          <FormSection title="Note">
+            <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
+          </FormSection>
 
           <FormSection title="Attachment">
             {existingReceiptUrl && !removeReceipt ? (

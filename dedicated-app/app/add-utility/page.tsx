@@ -178,7 +178,10 @@ export default function AddUtilityPage() {
       setPreview(null)
       setAdvancedOpen(false)
       setSuccess(true)
-      setMessage(isManager ? 'Utility saved successfully.' : 'Utility submitted for manager approval.')
+      const autoApproved = isManager || (
+        effectivePaymentType === 'PERSONAL' && effectiveUsedBy === 'SELF_ONLY'
+      )
+      setMessage(autoApproved ? 'Utility saved successfully.' : 'Utility submitted for manager approval.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save utility.')
     } finally {

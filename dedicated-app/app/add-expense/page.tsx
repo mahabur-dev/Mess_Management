@@ -193,7 +193,10 @@ export default function AddExpensePage() {
       setAdvancedOpen(false)
       setAdvancedCustomized(false)
       setSuccess(true)
-      setMessage(isManager ? 'Expense saved successfully.' : 'Expense submitted for manager approval.')
+      const autoApproved = isManager || (
+        effectivePaymentType === 'PERSONAL' && effectiveUsedBy === 'SELF_ONLY'
+      )
+      setMessage(autoApproved ? 'Expense saved successfully.' : 'Expense submitted for manager approval.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save expense.')
     } finally {

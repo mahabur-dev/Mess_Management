@@ -43,6 +43,7 @@ import {
 import { isUtilitySplitAllowed } from './expense-accounting';
 import {
   canEditExpense,
+  requiresExpenseApproval,
   statusForExpenseWrite,
   toApprovalStatus,
 } from './expense-approval.policy';
@@ -846,7 +847,11 @@ export class ExpenseService {
       payerCredit: impact.payerCredit,
       totalSharedCost: impact.totalSharedCost,
       personalHistoryAmount: impact.personalHistoryAmount,
-      requiresApproval: !canManage,
+      requiresApproval: requiresExpenseApproval({
+        canManage,
+        paymentType: paidFrom,
+        usedBy,
+      }),
     };
   }
 
@@ -1420,7 +1425,7 @@ export class ExpenseService {
     try {
       updated = await this.runSerializableTransaction(async (tx) => {
         await tx.depositLedger.deleteMany({ where: { expense_id: id } });
-        if (canManage) {
+        if (!prepared.requiresApproval) {
           await this.fundLedgerService.assertSufficientBalance(
             tx,
             prepared.messId,
@@ -1449,9 +1454,9 @@ export class ExpenseService {
             payment_type: prepared.paidFrom,
             used_by: prepared.usedBy,
             split_method: prepared.splitMethod,
-            status: statusForExpenseWrite(canManage),
-            reviewed_by: canManage ? userId : null,
-            reviewed_at: canManage ? new Date() : null,
+            status: statusForExpenseWrite(!prepared.requiresApproval),
+            reviewed_by: prepared.requiresApproval ? null : userId,
+            reviewed_at: prepared.requiresApproval ? null : new Date(),
             review_note: null,
           },
         });
@@ -1480,7 +1485,7 @@ export class ExpenseService {
           });
         }
 
-        if (canManage) {
+        if (!prepared.requiresApproval) {
           const ledgers = this.buildLedgerRows(id, prepared);
           if (ledgers.length) {
             await tx.depositLedger.createMany({ data: ledgers });

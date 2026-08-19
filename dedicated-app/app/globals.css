@@ -3455,6 +3455,12 @@ textarea {
   text-align: center;
 }
 
+.expense-payment-source-card {
+  height: 80px;
+  min-height: 80px;
+  max-height: 80px;
+}
+
 .info-page-hero,
 .subscription-hero {
   overflow: hidden;

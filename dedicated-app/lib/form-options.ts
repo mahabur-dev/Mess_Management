@@ -53,13 +53,13 @@ export const LABELS = {
     OTHER: 'Other',
   },
   EXPENSE_PAYMENT_TYPES: {
-    FROM_DEPOSIT: 'Deposit Balance',
+    FROM_DEPOSIT: 'From Deposit',
     PERSONAL: 'Personal',
     COLLECTED_FUND: 'Mess Fund',
   },
   EXPENSE_PAID_FROM: {
     PERSONAL: 'Personal',
-    MESS_DEPOSIT: 'Deposit Balance',
+    MESS_DEPOSIT: 'From Deposit',
     COLLECTED_FUND: 'Mess Fund',
   },
   EXPENSE_USED_BY: {

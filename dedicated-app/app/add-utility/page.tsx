@@ -26,21 +26,22 @@ import {
 } from '@/components/mobile/expense-custom-shares'
 import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
 import {
-  ExpenseLineItemsEditor,
   createExpenseLineItem,
-  expenseLineItemsPayload,
   type ExpenseLineItem,
 } from '@/components/mobile/expense-line-items'
+import {
+  UtilityLineItemsEditor,
+  utilityLineItemsPayload,
+  utilityOptionForItemName,
+} from '@/components/mobile/utility-line-items'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
-import { LABELS, UTILITY_FORM_OPTIONS, type ExpenseCategory, type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
+import { LABELS, type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
 
 type FormState = {
-  category: ExpenseCategory
-  utilityType: string
   paymentBy: string
   items: ExpenseLineItem[]
   billDate: string
@@ -64,8 +65,6 @@ type PreviewData = {
 }
 
 const INITIAL_FORM: FormState = {
-  category: 'ELECTRICITY',
-  utilityType: 'ELECTRICITY',
   paymentBy: '',
   items: [{ id: 'initial-item', itemName: 'Electricity', quantity: '', unit: '', amount: '' }],
   billDate: new Date().toISOString().slice(0, 10),
@@ -112,12 +111,18 @@ export default function AddUtilityPage() {
         ? buildCustomShares(selectedMembers, form.customShares)
         : undefined
 
+    const selectedUtilityOptions = form.items
+      .map((item) => utilityOptionForItemName(item.itemName))
+      .filter((option) => option !== undefined)
+    const utilityTypes = new Set(selectedUtilityOptions.map((option) => option.utilityType))
+    const singleUtilityOption = utilityTypes.size === 1 ? selectedUtilityOptions[0] : undefined
+
     return {
       messId,
       type: 'UTILITY',
-      category: form.category,
-      utilityType: form.utilityType,
-      items: expenseLineItemsPayload(form.items),
+      category: singleUtilityOption?.category ?? 'UTILITY',
+      utilityType: singleUtilityOption?.utilityType ?? 'OTHER',
+      items: utilityLineItemsPayload(form.items),
       paidFrom: effectivePaymentType === 'FROM_DEPOSIT' ? 'MESS_DEPOSIT' : effectivePaymentType,
       paymentType: effectivePaymentType,
       usedBy: effectiveUsedBy,
@@ -215,28 +220,6 @@ export default function AddUtilityPage() {
           </FormSection>
 
           <FormSection title="Utility Details">
-            <DesignedSelect
-              label="Utility Type"
-              icon={expenseFormIcons.category}
-              value={form.utilityType}
-              onChange={(event) => {
-                const option = UTILITY_FORM_OPTIONS.find((item) => item.utilityType === event.target.value) ?? UTILITY_FORM_OPTIONS[0]
-                const previousLabel = UTILITY_FORM_OPTIONS.find((item) => item.utilityType === form.utilityType)?.label
-                update('utilityType', option.utilityType)
-                update('category', option.category)
-                update('items', form.items.map((item, index) => (
-                  index === 0 && (!item.itemName.trim() || item.itemName === previousLabel)
-                    ? { ...item, itemName: option.label }
-                    : item
-                )))
-              }}
-            >
-              {UTILITY_FORM_OPTIONS.map((option) => (
-                <option key={option.utilityType} value={option.utilityType}>
-                  {option.label}
-                </option>
-              ))}
-            </DesignedSelect>
             {isManager ? <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.paymentBy} onChange={(event) => update('paymentBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
               <option value="">Select member</option>
               {members.map((member) => (
@@ -248,8 +231,8 @@ export default function AddUtilityPage() {
             <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.billDate} onChange={(event) => update('billDate', event.target.value)} type="date" required />
           </FormSection>
 
-          <FormSection title="Items">
-            <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
+          <FormSection title="Utility Items">
+            <UtilityLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
           </FormSection>
 
           <ExpenseAdvancedOptions

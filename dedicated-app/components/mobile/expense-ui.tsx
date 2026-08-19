@@ -398,7 +398,7 @@ export function ExpenseAdvancedOptions({
       onOpen={onOpen}
       onClose={onClose}
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
         <h3 className="ui-section-title mb-0!">Shared With</h3>
         <ExpenseUsedBySelector
           value={usedBy}
@@ -408,7 +408,7 @@ export function ExpenseAdvancedOptions({
       </div>
 
       {usedBy !== 'SELF_ONLY' ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h3 className="ui-section-title mb-0!">Split Rule</h3>
           <ExpenseSplitMethodSelector
             value={splitMethod}

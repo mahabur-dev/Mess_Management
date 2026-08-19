@@ -22,6 +22,11 @@ import {
   expenseLineItemsPayload,
   type ExpenseLineItem,
 } from '@/components/mobile/expense-line-items'
+import {
+  UtilityLineItemsEditor,
+  utilityLineItemsPayload,
+  utilityOptionForItemName,
+} from '@/components/mobile/utility-line-items'
 import { ExpenseAdvancedOptions, ExpensePrimaryAction } from '@/components/mobile/expense-ui'
 import {
   ExpenseCustomShareFields,
@@ -74,7 +79,6 @@ type ExpenseRecord = {
 
 type FormState = {
   category: ExpenseCategory
-  utilityType: string
   purchasedBy: string
   items: ExpenseLineItem[]
   expenseDate: string
@@ -99,7 +103,6 @@ function dateValue(value?: string | null) {
 
 const INITIAL_FORM: FormState = {
   category: 'FOOD',
-  utilityType: 'ELECTRICITY',
   purchasedBy: '',
   items: [{ id: 'initial-item', itemName: '', quantity: '', unit: '', amount: '' }],
   expenseDate: new Date().toISOString().slice(0, 10),
@@ -154,24 +157,30 @@ export default function EditExpensePage() {
         const foundType = found.type ?? (LEGACY_UTILITY_CATEGORY_SET.has(found.category) ? 'UTILITY' : 'EXPENSE')
         setRecordType(foundType)
         setExistingReceiptUrl(found.receiptUrl ?? null)
+        const fallbackUtilityLabel =
+          UTILITY_FORM_OPTIONS.find((option) => option.utilityType === found.utilityType)?.label ??
+          UTILITY_FORM_OPTIONS.find((option) => option.category === found.category)?.label ??
+          'Other'
         setForm({
           category: found.category ?? 'FOOD',
-          utilityType:
-            found.utilityType ??
-            UTILITY_FORM_OPTIONS.find((option) => option.category === found.category)?.utilityType ??
-            'OTHER',
           purchasedBy: found.purchasedBy ?? '',
           items: found.items?.length
             ? found.items.map((item, index) => ({
                 id: item.id ?? `expense-item-${index}`,
-                itemName: item.itemName,
+                itemName:
+                  foundType === 'UTILITY'
+                    ? utilityOptionForItemName(item.itemName)?.label ?? fallbackUtilityLabel
+                    : item.itemName,
                 quantity: item.quantity == null ? '' : String(item.quantity),
                 unit: item.unit ?? '',
                 amount: String(item.amount),
               }))
             : [{
                 id: 'legacy-item',
-                itemName: found.itemName ?? LABELS.EXPENSE_CATEGORIES[found.category],
+                itemName:
+                  foundType === 'UTILITY'
+                    ? utilityOptionForItemName(found.itemName ?? '')?.label ?? fallbackUtilityLabel
+                    : found.itemName ?? LABELS.EXPENSE_CATEGORIES[found.category],
                 quantity: found.quantity == null ? '' : String(found.quantity),
                 unit: found.unit ?? '',
                 amount: String(found.amount ?? ''),
@@ -231,12 +240,19 @@ export default function EditExpensePage() {
         : undefined
 
     const isUtilityExpense = recordType === 'UTILITY'
+    const selectedUtilityOptions = form.items
+      .map((item) => utilityOptionForItemName(item.itemName))
+      .filter((option) => option !== undefined)
+    const utilityTypes = new Set(selectedUtilityOptions.map((option) => option.utilityType))
+    const singleUtilityOption = utilityTypes.size === 1 ? selectedUtilityOptions[0] : undefined
     const payload = {
       type: isUtilityExpense ? 'UTILITY' : 'EXPENSE',
-      utilityType: isUtilityExpense ? form.utilityType : null,
+      utilityType: isUtilityExpense ? singleUtilityOption?.utilityType ?? 'OTHER' : null,
       purchasedBy: isManager ? form.purchasedBy || undefined : undefined,
-      category: form.category,
-      items: expenseLineItemsPayload(form.items),
+      category: isUtilityExpense ? singleUtilityOption?.category ?? 'UTILITY' : form.category,
+      items: isUtilityExpense
+        ? utilityLineItemsPayload(form.items)
+        : expenseLineItemsPayload(form.items),
       expenseDate: form.expenseDate,
       description: form.description.trim() || null,
       paymentType: form.paymentType,
@@ -289,32 +305,13 @@ export default function EditExpensePage() {
           </FormSection>
 
           <FormSection title={isUtilityExpense ? 'Utility Details' : 'Expense Details'}>
-            {isUtilityExpense ? (
-              <DesignedSelect
-                label="Utility Type"
-                icon={expenseFormIcons.category}
-                value={form.utilityType}
-                onChange={(event) => {
-                  const option =
-                    UTILITY_FORM_OPTIONS.find((item) => item.utilityType === event.target.value) ??
-                    UTILITY_FORM_OPTIONS[0]
-                  update('utilityType', option.utilityType)
-                  update('category', option.category)
-                }}
-              >
-                {UTILITY_FORM_OPTIONS.map((option) => (
-                  <option key={option.utilityType} value={option.utilityType}>
-                    {option.label}
-                  </option>
-                ))}
-              </DesignedSelect>
-            ) : (
+            {!isUtilityExpense ? (
               <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
                 {GENERAL_EXPENSE_CATEGORIES.map((category) => (
                   <option key={category} value={category}>{LABELS.EXPENSE_CATEGORIES[category]}</option>
                 ))}
               </DesignedSelect>
-            )}
+            ) : null}
             {isManager ? (
               <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
                 <option value="">Select member</option>
@@ -326,8 +323,12 @@ export default function EditExpensePage() {
             <DesignedInput label={isUtilityExpense ? 'Bill Date' : 'Expense Date'} icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
           </FormSection>
 
-          <FormSection title="Items">
-            <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
+          <FormSection title={isUtilityExpense ? 'Utility Items' : 'Items'}>
+            {isUtilityExpense ? (
+              <UtilityLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
+            ) : (
+              <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
+            )}
           </FormSection>
 
           <ExpenseAdvancedOptions

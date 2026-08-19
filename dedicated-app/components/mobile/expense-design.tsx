@@ -896,7 +896,7 @@ export function PaymentTypeSelector({
 }) {
   const choices: Array<{ value: ExpensePaymentType; label: string; icon: IconType }> = [
     { value: 'PERSONAL', label: 'Personal', icon: User },
-    { value: 'FROM_DEPOSIT', label: 'Deposit Balance', icon: Landmark },
+    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
     { value: 'COLLECTED_FUND', label: 'Mess Fund', icon: UsersRound },
   ]
 
@@ -912,7 +912,7 @@ export function PaymentTypeSelector({
               key={choice.value}
               type="button"
               onClick={() => onChange(choice.value)}
-              className="expense-choice-card"
+              className="expense-choice-card expense-payment-source-card"
               data-active={selected}
               data-compact={false}
               data-layout="vertical"

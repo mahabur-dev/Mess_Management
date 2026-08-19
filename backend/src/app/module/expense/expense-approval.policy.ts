@@ -1,6 +1,21 @@
 export type ExpenseApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ExpenseRecordStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
 
+type ExpenseApprovalContext = {
+  canManage: boolean;
+  paymentType: string;
+  usedBy: string;
+};
+
+export function requiresExpenseApproval({
+  canManage,
+  paymentType,
+  usedBy,
+}: ExpenseApprovalContext) {
+  if (canManage) return false;
+  return !(paymentType === 'PERSONAL' && usedBy === 'SELF_ONLY');
+}
+
 export function toApprovalStatus(
   status: ExpenseRecordStatus,
 ): ExpenseApprovalStatus {
@@ -10,9 +25,9 @@ export function toApprovalStatus(
 }
 
 export function statusForExpenseWrite(
-  canManage: boolean,
+  approved: boolean,
 ): ExpenseRecordStatus {
-  return canManage ? 'CONFIRMED' : 'DRAFT';
+  return approved ? 'CONFIRMED' : 'DRAFT';
 }
 
 export function canEditExpense(

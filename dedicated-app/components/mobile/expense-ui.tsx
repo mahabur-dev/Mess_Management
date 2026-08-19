@@ -400,22 +400,26 @@ export function ExpenseAdvancedOptions({
     >
       <div className="space-y-4">
         <h3 className="ui-section-title mb-0!">Shared With</h3>
-        <ExpenseUsedBySelector
-          value={usedBy}
-          onChange={onUsedByChange}
-          allowMealMembers={allowMealMembers}
-        />
+        <div className="pt-2">
+          <ExpenseUsedBySelector
+            value={usedBy}
+            onChange={onUsedByChange}
+            allowMealMembers={allowMealMembers}
+          />
+        </div>
       </div>
 
       {usedBy !== 'SELF_ONLY' ? (
         <div className="space-y-4">
           <h3 className="ui-section-title mb-0!">Split Rule</h3>
-          <ExpenseSplitMethodSelector
-            value={splitMethod}
-            onChange={onSplitMethodChange}
-            allowCustom={allowCustom}
-            allowMealCount={allowMealCount}
-          />
+          <div className="pt-2">
+            <ExpenseSplitMethodSelector
+              value={splitMethod}
+              onChange={onSplitMethodChange}
+              allowCustom={allowCustom}
+              allowMealCount={allowMealCount}
+            />
+          </div>
         </div>
       ) : null}
 

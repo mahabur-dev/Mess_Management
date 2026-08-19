@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
-import { Check, ChevronRight, CircleDollarSign, Scale, User, UserRound, Users, UtensilsCrossed, WalletCards } from 'lucide-react'
+import { Check, ChevronRight, CircleDollarSign, Pencil, Scale, SlidersHorizontal, User, UserRound, Users, UtensilsCrossed, WalletCards } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { ExpenseSplitMethod, ExpenseUsedBy } from '@/lib/form-options'
+import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 
 type Accent = 'teal' | 'blue' | 'violet' | 'green' | 'orange'
 
@@ -283,19 +284,23 @@ export function ExpenseSecondaryAction({ children, onClick }: { children: ReactN
 export function ExpenseUsedBySelector({
   value,
   onChange,
+  allowMealMembers = true,
 }: {
   value: ExpenseUsedBy
   onChange: (value: ExpenseUsedBy) => void
+  allowMealMembers?: boolean
 }) {
   const options = [
-    { value: 'SELF_ONLY', title: 'Self Only', icon: User },
-    { value: 'SELECTED_MEMBERS', title: 'Selected', icon: Users },
     { value: 'ALL_MEMBERS', title: 'All Members', icon: Users },
-    { value: 'MEAL_ON_MEMBERS', title: 'Meal-On', icon: UtensilsCrossed },
+    { value: 'SELECTED_MEMBERS', title: 'Specific Members', icon: User },
+    ...(allowMealMembers
+      ? [{ value: 'MEAL_ON_MEMBERS' as const, title: 'Meal Members', icon: UtensilsCrossed }]
+      : []),
+    { value: 'SELF_ONLY', title: 'Only Me', icon: User },
   ] as const
 
   return (
-    <div className="grid grid-cols-2 gap-2.5 min-[390px]:grid-cols-4">
+    <div className={`grid grid-cols-2 gap-2.5 ${options.length === 4 ? 'min-[390px]:grid-cols-4' : 'min-[390px]:grid-cols-3'}`}>
       {options.map((option) => (
         <ExpenseChoiceCard
           key={option.value}
@@ -314,15 +319,19 @@ export function ExpenseSplitMethodSelector({
   value,
   onChange,
   allowCustom = true,
+  allowMealCount = true,
 }: {
   value: ExpenseSplitMethod
   onChange: (value: ExpenseSplitMethod) => void
   allowCustom?: boolean
+  allowMealCount?: boolean
 }) {
   const options = [
     { value: 'EQUAL', title: 'Equal', icon: Scale },
-    { value: 'MEAL_COUNT', title: 'Meal Count', icon: UtensilsCrossed },
-    ...(allowCustom ? [{ value: 'CUSTOM' as const, title: 'Custom', icon: Scale }] : []),
+    ...(allowMealCount
+      ? [{ value: 'MEAL_COUNT' as const, title: 'By Meal Count', icon: UtensilsCrossed }]
+      : []),
+    ...(allowCustom ? [{ value: 'CUSTOM' as const, title: 'Manual Split', icon: Pencil }] : []),
   ] as const
 
   return (
@@ -338,6 +347,80 @@ export function ExpenseSplitMethodSelector({
         />
       ))}
     </div>
+  )
+}
+
+export function ExpenseAdvancedOptions({
+  open,
+  usedBy,
+  splitMethod,
+  allowMealMembers = true,
+  allowMealCount = true,
+  allowCustom = true,
+  children,
+  onOpen,
+  onClose,
+  onUsedByChange,
+  onSplitMethodChange,
+}: {
+  open: boolean
+  usedBy: ExpenseUsedBy
+  splitMethod: ExpenseSplitMethod
+  allowMealMembers?: boolean
+  allowMealCount?: boolean
+  allowCustom?: boolean
+  children?: ReactNode
+  onOpen: () => void
+  onClose: () => void
+  onUsedByChange: (value: ExpenseUsedBy) => void
+  onSplitMethodChange: (value: ExpenseSplitMethod) => void
+}) {
+  const usedByLabels: Record<ExpenseUsedBy, string> = {
+    ALL_MEMBERS: 'All Members',
+    SELECTED_MEMBERS: 'Specific Members',
+    MEAL_ON_MEMBERS: 'Meal Members',
+    SELF_ONLY: 'Only Me',
+  }
+  const splitLabels: Record<ExpenseSplitMethod, string> = {
+    EQUAL: 'Equal',
+    MEAL_COUNT: 'By Meal Count',
+    CUSTOM: 'Manual Split',
+  }
+  const summary = `${usedByLabels[usedBy]} · ${splitLabels[splitMethod]}`
+
+  return (
+    <DeferredFormSection
+      open={open}
+      title="Advanced Features"
+      description={summary}
+      actionLabel="Advanced Features (Optional)"
+      icon={<SlidersHorizontal size={19} strokeWidth={2.3} />}
+      onOpen={onOpen}
+      onClose={onClose}
+    >
+      <div className="space-y-3">
+        <h3 className="ui-section-title mb-0!">Shared With</h3>
+        <ExpenseUsedBySelector
+          value={usedBy}
+          onChange={onUsedByChange}
+          allowMealMembers={allowMealMembers}
+        />
+      </div>
+
+      {usedBy !== 'SELF_ONLY' ? (
+        <div className="space-y-3">
+          <h3 className="ui-section-title mb-0!">Split Rule</h3>
+          <ExpenseSplitMethodSelector
+            value={splitMethod}
+            onChange={onSplitMethodChange}
+            allowCustom={allowCustom}
+            allowMealCount={allowMealCount}
+          />
+        </div>
+      ) : null}
+
+      {children}
+    </DeferredFormSection>
   )
 }
 
@@ -442,15 +525,15 @@ export function SplitPreviewContent({
         <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-[#edf1f4] pt-3">
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><WalletCards size={17} /></span>
-            <span><span className="block text-caption font-medium text-[#65838b]">Paid From</span><span className="block text-label font-semibold text-[#1d3a42]">{paidFrom}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">Payment Source</span><span className="block text-label font-semibold text-[#1d3a42]">{paidFrom}</span></span>
           </div>
           <div className="flex items-center gap-2 border-l border-[#edf1f4] pl-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><UserRound size={17} /></span>
-            <span><span className="block text-caption font-medium text-[#65838b]">Used By</span><span className="block text-label font-semibold text-[#1d3a42]">{usedBy}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">Shared With</span><span className="block text-label font-semibold text-[#1d3a42]">{usedBy}</span></span>
           </div>
           <div className="col-span-2 flex items-center gap-2 border-t border-[#edf1f4] pt-2">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><Scale size={17} /></span>
-            <span><span className="block text-caption font-medium text-[#65838b]">Split Method</span><span className="block text-label font-semibold text-[#1d3a42]">{splitMethod}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">Split Rule</span><span className="block text-label font-semibold text-[#1d3a42]">{splitMethod}</span></span>
           </div>
         </div>
       </ExpenseSurface>

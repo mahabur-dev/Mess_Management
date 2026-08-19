@@ -6,7 +6,6 @@ import {
   DesignedInput,
   DesignedSelect,
   DesignedTextarea,
-  FormFieldGrid,
   FormPageShell,
   FormSection,
   FormStatusMessage,
@@ -16,9 +15,8 @@ import {
   formatTaka,
 } from '@/components/mobile/expense-design'
 import {
+  ExpenseAdvancedOptions,
   ExpensePrimaryAction,
-  ExpenseSplitMethodSelector,
-  ExpenseUsedBySelector,
   SplitPreviewContent,
 } from '@/components/mobile/expense-ui'
 import {
@@ -27,7 +25,12 @@ import {
   type ExpenseCustomShare,
 } from '@/components/mobile/expense-custom-shares'
 import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
-import { currentMonthValue } from '@/components/mobile/meals-design'
+import {
+  ExpenseLineItemsEditor,
+  createExpenseLineItem,
+  expenseLineItemsPayload,
+  type ExpenseLineItem,
+} from '@/components/mobile/expense-line-items'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import { LABELS, UTILITY_FORM_OPTIONS, type ExpenseCategory, type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
@@ -39,8 +42,7 @@ type FormState = {
   category: ExpenseCategory
   utilityType: string
   paymentBy: string
-  amount: string
-  billingMonth: string
+  items: ExpenseLineItem[]
   billDate: string
   description: string
   paymentType: ExpensePaymentType
@@ -58,14 +60,14 @@ type PreviewData = {
   payerCredit: number
   totalSharedCost: number
   shares: Array<{ memberId: string; memberName?: string | null; shareAmount: number }>
+  items: Array<{ itemName: string; quantity?: number | null; unit?: string | null; amount: number }>
 }
 
 const INITIAL_FORM: FormState = {
   category: 'ELECTRICITY',
   utilityType: 'ELECTRICITY',
   paymentBy: '',
-  amount: '',
-  billingMonth: currentMonthValue(),
+  items: [{ id: 'initial-item', itemName: 'Electricity', quantity: '', unit: '', amount: '' }],
   billDate: new Date().toISOString().slice(0, 10),
   description: '',
   paymentType: 'FROM_DEPOSIT',
@@ -86,6 +88,7 @@ export default function AddUtilityPage() {
   const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState<PreviewData | null>(null)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const effectivePaymentType: ExpensePaymentType = form.paymentType
   const effectiveUsedBy: ExpenseUsedBy = form.usedBy
   const effectiveSplitMethod: ExpenseSplitMethod = form.splitMethod
@@ -114,8 +117,7 @@ export default function AddUtilityPage() {
       type: 'UTILITY',
       category: form.category,
       utilityType: form.utilityType,
-      amount: Number(form.amount),
-      itemName: LABELS.EXPENSE_CATEGORIES[form.category],
+      items: expenseLineItemsPayload(form.items),
       paidFrom: effectivePaymentType === 'FROM_DEPOSIT' ? 'MESS_DEPOSIT' : effectivePaymentType,
       paymentType: effectivePaymentType,
       usedBy: effectiveUsedBy,
@@ -124,7 +126,6 @@ export default function AddUtilityPage() {
       customShares,
       purchasedBy: isManager ? form.paymentBy || undefined : user?.id,
       expenseDate: form.billDate,
-      billingMonth: `${form.billingMonth}-01`,
       description: form.description.trim() || undefined,
     }
   }
@@ -133,7 +134,9 @@ export default function AddUtilityPage() {
     event?.preventDefault()
     setMessage('')
     if (!messId) return setMessage('No mess selected.')
-    if (!form.amount) return setMessage('Amount is required.')
+    if (form.items.some((item) => !item.itemName.trim() || !item.amount || Number(item.amount) <= 0)) {
+      return setMessage('Every item requires a name and a valid line amount.')
+    }
     if (effectiveUsedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return setMessage('Select members first.')
     if (effectiveSplitMethod === 'CUSTOM' && !selectedMembers.length) return setMessage('Select members before custom split.')
 
@@ -165,9 +168,10 @@ export default function AddUtilityPage() {
       } else {
         await api.createExpense(body)
       }
-      setForm(INITIAL_FORM)
+      setForm({ ...INITIAL_FORM, items: [createExpenseLineItem({ itemName: 'Electricity' })] })
       setReceiptFile(null)
       setPreview(null)
+      setAdvancedOpen(false)
       setSuccess(true)
       setMessage(isManager ? 'Utility saved successfully.' : 'Utility submitted for manager approval.')
     } catch (error) {
@@ -189,6 +193,7 @@ export default function AddUtilityPage() {
             splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}
             payerCredit={preview.payerCredit}
             totalSharedCost={preview.totalSharedCost}
+            items={preview.items}
             shares={preview.shares}
             formatMoney={formatTaka}
             busy={busy}
@@ -205,39 +210,10 @@ export default function AddUtilityPage() {
     <MobileShell>
       <form onSubmit={handlePreview}>
         <FormPageShell title="Add Utility" icon={Zap} backHref="/expenses">
-          <FormSection title="Paid From">
+          <FormSection title="Payment Source">
             <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} showHeading={false} />
           </FormSection>
-          <FormSection title="Used By">
-            <ExpenseUsedBySelector
-              value={form.usedBy}
-              onChange={(usedBy) => {
-                update('usedBy', usedBy)
-                if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
-                if (usedBy === 'MEAL_ON_MEMBERS' && form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT')
-              }}
-            />
-            {form.usedBy === 'SELECTED_MEMBERS' ? (
-              <MemberMultiSelect members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} />
-            ) : null}
-          </FormSection>
-          {form.usedBy !== 'SELF_ONLY' ? (
-            <FormSection title="Split Method">
-              <ExpenseSplitMethodSelector
-                value={form.splitMethod}
-                onChange={(splitMethod) => update('splitMethod', splitMethod)}
-                allowCustom={form.usedBy !== 'MEAL_ON_MEMBERS'}
-              />
-              {form.splitMethod === 'CUSTOM' ? (
-                <ExpenseCustomShareFields
-                  members={members}
-                  memberIds={selectedMembers}
-                  shares={form.customShares}
-                  onChange={(shares) => update('customShares', shares)}
-                />
-              ) : null}
-            </FormSection>
-          ) : null}
+
           <FormSection title="Utility Details">
             <DesignedSelect
               label="Utility Type"
@@ -245,8 +221,14 @@ export default function AddUtilityPage() {
               value={form.utilityType}
               onChange={(event) => {
                 const option = UTILITY_FORM_OPTIONS.find((item) => item.utilityType === event.target.value) ?? UTILITY_FORM_OPTIONS[0]
+                const previousLabel = UTILITY_FORM_OPTIONS.find((item) => item.utilityType === form.utilityType)?.label
                 update('utilityType', option.utilityType)
                 update('category', option.category)
+                update('items', form.items.map((item, index) => (
+                  index === 0 && (!item.itemName.trim() || item.itemName === previousLabel)
+                    ? { ...item, itemName: option.label }
+                    : item
+                )))
               }}
             >
               {UTILITY_FORM_OPTIONS.map((option) => (
@@ -255,11 +237,6 @@ export default function AddUtilityPage() {
                 </option>
               ))}
             </DesignedSelect>
-            <FormFieldGrid>
-              <DesignedInput label="Billing Month" icon={expenseFormIcons.date} value={form.billingMonth} onChange={(event) => update('billingMonth', event.target.value)} type="month" required />
-              <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.billDate} onChange={(event) => update('billDate', event.target.value)} type="date" required />
-            </FormFieldGrid>
-            <DesignedInput label="Amount" icon={expenseFormIcons.amount} value={form.amount} onChange={(event) => update('amount', event.target.value)} placeholder="Enter amount" type="number" min="0.01" step="0.01" required />
             {isManager ? <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.paymentBy} onChange={(event) => update('paymentBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
               <option value="">Select member</option>
               {members.map((member) => (
@@ -268,6 +245,41 @@ export default function AddUtilityPage() {
                 </option>
               ))}
             </DesignedSelect> : null}
+            <DesignedInput label="Bill Date" icon={expenseFormIcons.date} value={form.billDate} onChange={(event) => update('billDate', event.target.value)} type="date" required />
+          </FormSection>
+
+          <FormSection title="Items">
+            <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
+          </FormSection>
+
+          <ExpenseAdvancedOptions
+            open={advancedOpen}
+            usedBy={form.usedBy}
+            splitMethod={form.splitMethod}
+            allowMealMembers={false}
+            allowMealCount={false}
+            onOpen={() => setAdvancedOpen(true)}
+            onClose={() => setAdvancedOpen(false)}
+            onUsedByChange={(usedBy) => {
+              update('usedBy', usedBy)
+              if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
+            }}
+            onSplitMethodChange={(splitMethod) => update('splitMethod', splitMethod)}
+          >
+            {form.usedBy === 'SELECTED_MEMBERS' ? (
+              <MemberMultiSelect members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} />
+            ) : null}
+            {form.usedBy !== 'SELF_ONLY' && form.splitMethod === 'CUSTOM' ? (
+              <ExpenseCustomShareFields
+                members={members}
+                memberIds={selectedMembers}
+                shares={form.customShares}
+                onChange={(shares) => update('customShares', shares)}
+              />
+            ) : null}
+          </ExpenseAdvancedOptions>
+
+          <FormSection title="Note">
             <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
           </FormSection>
           <FormSection title="Attachment">

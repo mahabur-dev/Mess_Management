@@ -17,6 +17,7 @@ import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { buildDeterministicOrder } from 'src/app/helpers/deterministic-order';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
+import { allocateAmountByWeight } from '../monthly-bill/billing-calculator';
 import { NotificationService } from '../notification/notification.service';
 import { FundLedgerService } from '../fund-ledger/fund-ledger.service';
 import {
@@ -39,6 +40,7 @@ import {
   type CalculatedShare,
   type SplitMember,
 } from './expense-calculator';
+import { isUtilitySplitAllowed } from './expense-accounting';
 import {
   canEditExpense,
   statusForExpenseWrite,
@@ -736,6 +738,16 @@ export class ExpenseService {
       (category === ExpenseCategory.FOOD || category === ExpenseCategory.GROCERY
         ? ExpenseSplitMethod.MEAL_COUNT
         : ExpenseSplitMethod.EQUAL);
+
+    if (
+      type === ExpenseRecordType.UTILITY &&
+      !isUtilitySplitAllowed(usedBy, splitMethod)
+    ) {
+      throw new HttpException(
+        'Utility expenses support All Members, Specific Members, or Only Me with Equal or Manual Split',
+        400,
+      );
+    }
     const expenseDate = this.getExpenseDate(dto, existing?.expense_date);
     const billingMonth = this.monthStart(
       dto.billingMonth ?? existing?.billing_month ?? expenseDate,
@@ -1793,24 +1805,124 @@ export class ExpenseService {
   ) {
     const summary = await this.getSummary(messId, userId, role, month);
     const { start } = this.monthRange(month);
-    const history = await this.prisma.expense.findMany({
-      where: {
-        mess_id: messId,
-        billing_month: start,
-        status: 'CONFIRMED',
-        OR: [
-          { purchased_by: userId },
-          { shares: { some: { member_id: userId } } },
-        ],
-      },
-      take: 20,
-      orderBy: this.expenseOrderBy(),
-      select: this.expenseSelect,
-    });
+    const [history, assignedFoodRecords] = await Promise.all([
+      this.prisma.expense.findMany({
+        where: {
+          mess_id: messId,
+          billing_month: start,
+          status: 'CONFIRMED',
+          OR: [
+            { purchased_by: userId },
+            { shares: { some: { member_id: userId } } },
+          ],
+        },
+        take: 20,
+        orderBy: this.expenseOrderBy(),
+        select: this.expenseSelect,
+      }),
+      this.prisma.expense.findMany({
+        where: {
+          mess_id: messId,
+          billing_month: start,
+          status: ExpenseStatus.CONFIRMED,
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          category: {
+            in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
+          },
+          shares: { some: { member_id: userId } },
+          AND: [
+            {
+              NOT: {
+                used_by: ExpenseUsedBy.ALL_MEMBERS,
+                split_method: ExpenseSplitMethod.MEAL_COUNT,
+              },
+            },
+            {
+              NOT: {
+                payment_type: ExpensePaymentType.PERSONAL,
+                used_by: ExpenseUsedBy.SELF_ONLY,
+              },
+            },
+          ],
+        },
+        orderBy: this.expenseOrderBy(),
+        select: {
+          id: true,
+          category: true,
+          amount: true,
+          expense_date: true,
+          description: true,
+          used_by: true,
+          split_method: true,
+          items: {
+            orderBy: { sort_order: 'asc' },
+            select: { item_name: true },
+          },
+          shares: {
+            orderBy: { created_at: 'asc' },
+            select: {
+              member_id: true,
+              share_amount: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const assignedMemberIds = [
+      ...new Set(
+        assignedFoodRecords.flatMap((expense) =>
+          expense.shares.map((share) => share.member_id),
+        ),
+      ),
+    ];
+    const finalMealCounts = await this.getMealCounts(
+      messId,
+      assignedMemberIds,
+      start,
+    );
+
+    const assignedFoodExpenses = assignedFoodRecords
+      .map((expense) => {
+        const storedShare = expense.shares.find(
+          (share) => share.member_id === userId,
+        );
+        const memberShare =
+          expense.split_method === ExpenseSplitMethod.MEAL_COUNT
+            ? (allocateAmountByWeight(
+                Number(expense.amount),
+                expense.shares.map((share) => ({
+                  memberId: share.member_id,
+                  weight: finalMealCounts.get(share.member_id) ?? 0,
+                })),
+              ).get(userId) ?? 0)
+            : Number(storedShare?.share_amount ?? 0);
+
+        return {
+          id: expense.id,
+          title: this.expenseItemsTitle(
+            expense.items.map((item) => ({ itemName: item.item_name })),
+            expense.category,
+          ),
+          expenseDate: expense.expense_date,
+          memberShare: roundMoney(memberShare),
+          sharedWith: expense.used_by,
+          splitRule: expense.split_method,
+          note: expense.description,
+        };
+      })
+      .filter((expense) => expense.memberShare > 0);
 
     return {
       ...summary.myView,
       month: summary.month,
+      assignedFoodExpenseTotal: roundMoney(
+        assignedFoodExpenses.reduce(
+          (sum, expense) => sum + expense.memberShare,
+          0,
+        ),
+      ),
+      assignedFoodExpenses,
       history: history.map((expense) => this.mapExpense(expense)),
     };
   }

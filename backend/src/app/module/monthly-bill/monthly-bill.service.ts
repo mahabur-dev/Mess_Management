@@ -22,6 +22,11 @@ import {
   calculateMemberBalance,
 } from './billing-calculator';
 import { billingMonthRange } from './billing-period';
+import {
+  calculateMemberFoodBill,
+  communalMealExpenseWhere,
+  isCommunalMealExpense,
+} from '../expense/expense-accounting';
 
 // ─── Constants ──────────────────────────────────────────────
 /**
@@ -273,10 +278,7 @@ export class MonthlyBillService {
           billing_month: month,
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
-          shares: { none: {} },
-          category: {
-            in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
-          },
+          ...communalMealExpenseWhere,
         },
         _sum: {
           amount: true,
@@ -434,6 +436,7 @@ export class MonthlyBillService {
             payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
           },
         },
+        orderBy: [{ expense_id: 'asc' }, { created_at: 'asc' }],
         select: {
           expense_id: true,
           member_id: true,
@@ -487,9 +490,12 @@ export class MonthlyBillService {
       totalMeals += mealCount;
     }
 
-    const totalFoodExpense = this.toFixedNumber(foodExpenses._sum.amount);
+    const totalCommunalFoodExpense = this.toFixedNumber(
+      foodExpenses._sum.amount,
+    );
 
-    const perMealRate = totalMeals > 0 ? totalFoodExpense / totalMeals : 0;
+    const perMealRate =
+      totalMeals > 0 ? totalCommunalFoodExpense / totalMeals : 0;
 
     const depositByUser = this.makeAmountMap(depositGroups);
     const paymentByUser = this.makeAmountMap(paymentGroups);
@@ -520,6 +526,11 @@ export class MonthlyBillService {
       ) {
         continue;
       }
+
+      // Communal FOOD/GROCERY is billed exclusively through the mess meal rate.
+      // Its persisted shares are useful for previews/auditing, but including them
+      // here would charge members a second time as an assigned expense.
+      if (isCommunalMealExpense(expense)) continue;
 
       let allocated = new Map(
         shares.map((share) => [
@@ -597,9 +608,12 @@ export class MonthlyBillService {
         const prevBalance = prevBalanceByMember[user_id] ?? 0;
         const memberMeals = mealCountByUser[user_id] ?? 0;
 
-        const foodBill = this.toFixedNumber(
-          memberMeals * perMealRate + (allocatedFoodByUser[user_id] ?? 0),
-        );
+        const { regularMealCharge, totalFoodBill: foodBill } =
+          calculateMemberFoodBill({
+            memberMeals,
+            communalMealRate: perMealRate,
+            assignedFoodExpense: allocatedFoodByUser[user_id] ?? 0,
+          });
         // console.log("food bill : ", foodBill)
         const seatRent = this.toFixedNumber(
           this.calculateSeatRent(
@@ -637,7 +651,7 @@ export class MonthlyBillService {
 
         const billData = {
           total_meals: memberMeals,
-          meal_charge: foodBill,
+          meal_charge: regularMealCharge,
           food_bill: foodBill,
           seat_rent: seatRent,
           electricity_bill: electricityShare,

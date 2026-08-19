@@ -896,13 +896,13 @@ export function PaymentTypeSelector({
 }) {
   const choices: Array<{ value: ExpensePaymentType; label: string; icon: IconType }> = [
     { value: 'PERSONAL', label: 'Personal', icon: User },
-    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
-    { value: 'COLLECTED_FUND', label: 'Collected Fund', icon: UsersRound },
+    { value: 'FROM_DEPOSIT', label: 'Deposit Balance', icon: Landmark },
+    { value: 'COLLECTED_FUND', label: 'Mess Fund', icon: UsersRound },
   ]
 
   return (
     <div>
-      {showHeading ? <h2 className="mb-3 text-body font-semibold leading-tight text-[#1d3a42]">Paid From</h2> : null}
+      {showHeading ? <h2 className="mb-3 text-body font-semibold leading-tight text-[#1d3a42]">Payment Source</h2> : null}
       <div className="grid grid-cols-3 gap-2.5">
         {choices.map((choice) => {
           const selected = value === choice.value

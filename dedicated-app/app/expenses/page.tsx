@@ -340,7 +340,7 @@ export default function ExpensesPage() {
     setMessageTone('ERROR')
     const amount = Number(collectedAmount)
     if (!Number.isFinite(amount) || amount <= 0) {
-      setMessage('Enter a valid collected fund amount.')
+      setMessage('Enter a valid mess fund amount.')
       return
     }
 
@@ -356,9 +356,9 @@ export default function ExpensesPage() {
       setCollectedAmount('')
       setCollectedNote('')
       setMessageTone('SUCCESS')
-      setMessage('Collected fund recorded successfully.')
+      setMessage('Mess fund recorded successfully.')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to record collected fund.')
+      setMessage(error instanceof Error ? error.message : 'Failed to record mess fund.')
     } finally {
       setFundBusy(false)
     }
@@ -433,7 +433,7 @@ export default function ExpensesPage() {
                 />
                 <ExpenseSummaryCard
                   icon={UsersRound}
-                  label="Collected Fund"
+                  label="Mess Fund"
                   value={formatTaka(fundBalances?.collectedFundBalance)}
                   accent="violet"
                 />
@@ -446,7 +446,7 @@ export default function ExpensesPage() {
                   value={collectedAmount}
                   onChange={(event) => setCollectedAmount(event.target.value)}
                   className="h-12 rounded-[15px] border border-[#dce5ec] bg-white px-4 text-label font-medium text-[#123748] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
-                  placeholder="Collected fund amount"
+                  placeholder="Mess fund amount"
                 />
                 <input
                   value={collectedNote}
@@ -460,7 +460,7 @@ export default function ExpensesPage() {
                   disabled={fundBusy}
                   className="expense-secondary-action disabled:opacity-60"
                 >
-                  <Plus size={18} /> {fundBusy ? 'Recording...' : 'Record Collected Fund'}
+                  <Plus size={18} /> {fundBusy ? 'Recording...' : 'Record Mess Fund'}
                 </button>
               </div>
             </ExpenseSurface>

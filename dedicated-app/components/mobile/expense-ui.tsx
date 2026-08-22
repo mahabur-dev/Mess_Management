@@ -494,6 +494,8 @@ export function SplitPreviewContent({
   busy,
   onBack,
   onSave,
+  backLabel = 'Back to Edit',
+  saveLabel = 'Confirm & Save',
 }: {
   title: string
   amount: number
@@ -508,6 +510,8 @@ export function SplitPreviewContent({
   busy?: boolean
   onBack: () => void
   onSave: () => void
+  backLabel?: string
+  saveLabel?: string
 }) {
   return (
     <>
@@ -576,8 +580,8 @@ export function SplitPreviewContent({
       </ExpenseSurface>
 
       <ExpenseActionBar>
-        <ExpenseSecondaryAction onClick={onBack}>Back to Edit</ExpenseSecondaryAction>
-        <ExpensePrimaryAction onClick={onSave} disabled={busy}>{busy ? 'Saving...' : 'Confirm & Save'}</ExpensePrimaryAction>
+        <ExpenseSecondaryAction onClick={onBack} disabled={busy}>{backLabel}</ExpenseSecondaryAction>
+        <ExpensePrimaryAction onClick={onSave} disabled={busy}>{busy ? 'Saving...' : saveLabel}</ExpensePrimaryAction>
       </ExpenseActionBar>
     </>
   )

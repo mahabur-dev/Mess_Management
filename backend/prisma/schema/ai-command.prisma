@@ -32,3 +32,6 @@ model AiCommand {
   @@index([user_id, status, created_at])
   @@map("ai_commands")
 }
+
+
+//hello 

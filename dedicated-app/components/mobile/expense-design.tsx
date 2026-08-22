@@ -17,14 +17,12 @@ import {
   Banknote,
   Bed,
   CalendarDays,
-  Check,
   ChevronDown,
   ChevronRight,
   ClipboardList,
   FileText,
   HandCoins,
   Home,
-  Landmark,
   Pencil,
   ReceiptText,
   Save,
@@ -35,7 +33,6 @@ import {
   Trash2,
   UploadCloud,
   User,
-  UsersRound,
   UserPlus,
   UtensilsCrossed,
   WalletCards,
@@ -894,45 +891,27 @@ export function PaymentTypeSelector({
   onChange: (value: ExpensePaymentType) => void
   showHeading?: boolean
 }) {
-  const choices: Array<{ value: ExpensePaymentType; label: string; icon: IconType }> = [
-    { value: 'PERSONAL', label: 'Personal', icon: User },
-    { value: 'FROM_DEPOSIT', label: 'From Deposit', icon: Landmark },
-    { value: 'COLLECTED_FUND', label: 'Mess Fund', icon: UsersRound },
+  const choices: Array<{ value: ExpensePaymentType; label: string }> = [
+    { value: 'PERSONAL', label: 'Personal' },
+    { value: 'FROM_DEPOSIT', label: 'From Deposit' },
+    { value: 'COLLECTED_FUND', label: 'Mess Fund' },
   ]
 
   return (
     <div>
       {showHeading ? <h2 className="mb-3 text-body font-semibold leading-tight text-[#1d3a42]">Payment Source</h2> : null}
-      <div className="grid grid-cols-3 gap-2.5">
-        {choices.map((choice) => {
-          const selected = value === choice.value
-          const Icon = choice.icon
-          return (
-            <button
-              key={choice.value}
-              type="button"
-              onClick={() => onChange(choice.value)}
-              className="expense-choice-card expense-payment-source-card"
-              data-active={selected}
-              data-compact={false}
-              data-layout="vertical"
-              aria-pressed={selected}
-            >
-              <span className="expense-choice-card__icon bg-[#e8f8f7] text-[#008d8c]">
-                <Icon size={21} strokeWidth={2.2} />
-              </span>
-              {selected ? (
-                <span className="expense-choice-card__check" aria-hidden="true">
-                  <Check size={12} strokeWidth={3} />
-                </span>
-              ) : null}
-              <span className="min-w-0">
-                <span className="expense-choice-card__title">{choice.label}</span>
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      <DesignedSelect
+        label={showHeading ? 'Source' : 'Payment Source'}
+        icon={WalletCards}
+        value={value}
+        onChange={(event) => onChange(event.target.value as ExpensePaymentType)}
+      >
+        {choices.map((choice) => (
+          <option key={choice.value} value={choice.value}>
+            {choice.label}
+          </option>
+        ))}
+      </DesignedSelect>
     </div>
   )
 }

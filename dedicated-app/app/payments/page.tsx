@@ -7,16 +7,14 @@ import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
-import { SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
-import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-design'
+import { SubmitButton } from '@/components/mobile/form-controls'
+import { DepositEntryForm } from '@/components/mobile/deposit-entry-form'
 import { MealMonthSelector, currentMonthValue } from '@/components/mobile/meals-design'
 import {
   DepositListItem,
-  DepositManualNotice,
   DepositSectionTitle,
   DepositStatCard,
   DepositStatPanel,
-  PaymentMethodGrid,
   formatDepositMoney,
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
@@ -178,29 +176,22 @@ export default function PaymentsPage() {
             onOpen={openDepositForm}
             onClose={() => setShowForm(false)}
           >
-            <PaymentMethodGrid value={form.method} onChange={(method) => setForm((prev) => ({ ...prev, method }))} />
-            <div className="grid grid-cols-2 gap-3">
-              <TextField label="Amount" value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="2500" type="number" />
-              <TextField label="Deposit Date" value={form.paymentDate} onChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))} type="date" />
-            </div>
-            {isManager ? (
-              <DesignedSelect
-                label="Deposit For"
-                icon={expenseFormIcons.member}
-                value={form.purchasedBy}
-                onChange={(event) => setForm((prev) => ({ ...prev, purchasedBy: event.target.value }))}
-              >
-                <option value="">Self</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </DesignedSelect>
-            ) : null}
-            <TextField label="Transaction ID" hint="Optional" value={form.transactionId} onChange={(transactionId) => setForm((prev) => ({ ...prev, transactionId }))} placeholder="TXN123456" />
-            <TextAreaField label="Note" value={form.note} onChange={(note) => setForm((prev) => ({ ...prev, note }))} placeholder="Deposit for May bill" rows={3} />
-            <DepositManualNotice compact />
+            <DepositEntryForm
+              method={form.method}
+              onMethodChange={(method) => setForm((prev) => ({ ...prev, method }))}
+              amount={form.amount}
+              onAmountChange={(amount) => setForm((prev) => ({ ...prev, amount }))}
+              date={form.paymentDate}
+              onDateChange={(paymentDate) => setForm((prev) => ({ ...prev, paymentDate }))}
+              paidBy={form.purchasedBy}
+              onPaidByChange={(purchasedBy) => setForm((prev) => ({ ...prev, purchasedBy }))}
+              showPaidBy={isManager}
+              members={members}
+              transactionId={form.transactionId}
+              onTransactionIdChange={(transactionId) => setForm((prev) => ({ ...prev, transactionId }))}
+              note={form.note}
+              onNoteChange={(note) => setForm((prev) => ({ ...prev, note }))}
+            />
             {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
             <SubmitButton busy={busy} onClick={handleSubmit}>
               Submit Deposit

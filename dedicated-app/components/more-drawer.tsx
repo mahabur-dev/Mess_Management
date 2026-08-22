@@ -4,6 +4,7 @@ import { useId, useLayoutEffect, useRef } from 'react'
 import Link from 'next/link'
 import { LogOut, UserRound, X } from 'lucide-react'
 import { useNativeBackAction } from '@/components/native-back-actions'
+import { useNativeStatusBarOverride } from '@/components/native-status-bar'
 import { getMoreMenuGroups } from '@/lib/app-permissions'
 import type { AuthUser } from '@/lib/auth'
 import { appHref } from '@/lib/routes'
@@ -24,6 +25,8 @@ export function MoreDrawer({
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLElement>(null)
   const menuGroups = getMoreMenuGroups(user)
+
+  useNativeStatusBarOverride('dark-content', open)
 
   useNativeBackAction(open, () => {
     onClose()

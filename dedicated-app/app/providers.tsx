@@ -6,6 +6,7 @@ import { BrowserRuntimeGuard } from '@/components/browser-runtime-guard'
 import { LogoutConfirmDialog } from '@/components/logout-confirm-dialog'
 import { NativeBackActionsProvider } from '@/components/native-back-actions'
 import { NativeBackHandler } from '@/components/native-back-handler'
+import { NativeStatusBarProvider } from '@/components/native-status-bar'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { api } from '@/lib/api'
 import { initializeNativePush, nativePushActionEventName, shutdownNativePush, type NativePushActionDetail } from '@/lib/native-push'
@@ -211,32 +212,36 @@ export function Providers({ children }: { children: ReactNode }) {
   if (!hasMounted) {
     return (
       <AuthContext.Provider value={value}>
-        <LoadingIndicator variant="screen" label="Loading application" />
+        <NativeStatusBarProvider>
+          <LoadingIndicator variant="screen" label="Loading application" />
+        </NativeStatusBarProvider>
       </AuthContext.Provider>
     )
   }
 
   return (
     <AuthContext.Provider value={value}>
-      <BrowserRuntimeGuard />
-      <NativeBackActionsProvider>
-        <NativeBackHandler
-          user={user}
-          isLoading={isLoading}
-          homePromptOpen={logoutPromptOpen}
-          onCancelHomePrompt={closeLogoutPrompt}
-          onHomeBack={openLogoutPrompt}
-        />
-        <LogoutConfirmDialog
-          open={logoutPromptOpen}
-          busy={isLoggingOut}
-          onCancel={closeLogoutPrompt}
-          onConfirm={() => {
-            void logout()
-          }}
-        />
-        {children}
-      </NativeBackActionsProvider>
+      <NativeStatusBarProvider>
+        <BrowserRuntimeGuard />
+        <NativeBackActionsProvider>
+          <NativeBackHandler
+            user={user}
+            isLoading={isLoading}
+            homePromptOpen={logoutPromptOpen}
+            onCancelHomePrompt={closeLogoutPrompt}
+            onHomeBack={openLogoutPrompt}
+          />
+          <LogoutConfirmDialog
+            open={logoutPromptOpen}
+            busy={isLoggingOut}
+            onCancel={closeLogoutPrompt}
+            onConfirm={() => {
+              void logout()
+            }}
+          />
+          {children}
+        </NativeBackActionsProvider>
+      </NativeStatusBarProvider>
     </AuthContext.Provider>
   )
 }

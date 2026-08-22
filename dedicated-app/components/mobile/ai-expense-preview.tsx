@@ -1,30 +1,22 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Eye, ReceiptText, Trash2, Zap } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import {
-  DesignedInput,
-  DesignedSelect,
-  DesignedTextarea,
-  FormFieldGrid,
-  FormSection,
   FormStatusMessage,
-  FormSummaryCard,
-  PaymentTypeSelector,
-  expenseFormIcons,
   formatTaka,
 } from '@/components/mobile/expense-design'
 import {
   ExpensePrimaryAction,
-  ExpenseSplitMethodSelector,
-  ExpenseUsedBySelector,
-  MemberAllocationList,
+  ExpenseSecondaryAction,
+  SplitPreviewContent,
 } from '@/components/mobile/expense-ui'
 import {
-  ExpenseCustomShareFields,
   type ExpenseCustomShare,
 } from '@/components/mobile/expense-custom-shares'
-import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
+import { ExpenseEntryForm } from '@/components/mobile/expense-entry-form'
+import type { ExpenseLineItem } from '@/components/mobile/expense-line-items'
+import { utilityOptionForItemName } from '@/components/mobile/utility-line-items'
 import type { MemberOption } from '@/hooks/use-mess-member-options'
 import { api } from '@/lib/api'
 import {
@@ -101,35 +93,30 @@ function customSharesOf(item: AiExpensePreviewItem): ExpenseCustomShare[] {
   })
 }
 
-function initialPreviewValue(value: unknown): SplitPreview | null {
-  if (value && !Array.isArray(value) && typeof value === 'object') return value as SplitPreview
-  return null
-}
-
 export function AiExpensePreview({
   intent,
   payload,
   items,
-  initialPreview,
   members,
   currentUserId,
   canManage,
   disabled,
   onPatchPayload,
-  onPatchItem,
-  onRemoveItem,
+  onReplaceItems,
+  onCancel,
+  onConfirm,
 }: {
   intent: 'EXPENSE_CREATE' | 'UTILITY_CREATE'
   payload: AiExpensePreviewItem
   items: AiExpensePreviewItem[]
-  initialPreview: unknown
   members: MemberOption[]
   currentUserId?: string
   canManage: boolean
   disabled?: boolean
   onPatchPayload: (patch: Record<string, unknown>) => void
-  onPatchItem: (index: number, patch: Record<string, unknown>) => void
-  onRemoveItem: (index: number) => void
+  onReplaceItems: (items: Array<Record<string, unknown>>) => void
+  onCancel: () => void
+  onConfirm: () => void
 }) {
   const isUtility = intent === 'UTILITY_CREATE'
   const primary = payload
@@ -146,9 +133,11 @@ export function AiExpensePreview({
           ? [currentUserId]
           : []
         : members.map((member) => member.id)
-  const [preview, setPreview] = useState<SplitPreview | null>(() => initialPreviewValue(initialPreview))
+  const [preview, setPreview] = useState<SplitPreview | null>(null)
   const [previewBusy, setPreviewBusy] = useState(false)
   const [previewMessage, setPreviewMessage] = useState('')
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [advancedCustomized, setAdvancedCustomized] = useState(false)
 
   useEffect(() => {
     const patch: Record<string, unknown> = {}
@@ -163,19 +152,9 @@ export function AiExpensePreview({
     setPreviewMessage('Details changed. Update the split preview to see the new member allocation.')
   }
 
-  const patchItem = (index: number, patch: Record<string, unknown>) => {
-    invalidatePreview()
-    onPatchItem(index, patch)
-  }
-
   const patchAll = (patch: Record<string, unknown>) => {
     invalidatePreview()
     onPatchPayload(patch)
-  }
-
-  const removeItem = (index: number) => {
-    invalidatePreview()
-    onRemoveItem(index)
   }
 
   const updatePaymentType = (value: ExpensePaymentType) => {
@@ -206,203 +185,125 @@ export function AiExpensePreview({
     }
   }
 
+  const category: ExpenseCategory = isOneOf(primary.category, GENERAL_EXPENSE_CATEGORIES)
+    ? primary.category
+    : 'OTHER'
+  const utilityTypeOption = isUtility
+    ? UTILITY_FORM_OPTIONS.find((option) => option.utilityType === primary.utilityType)
+    : undefined
+  const editorItems: ExpenseLineItem[] = (items.length ? items : [{}]).map((item, index) => {
+    const itemName = String(item.itemName ?? '')
+    return {
+      id: `ai-expense-item-${index}`,
+      itemName: isUtility
+        ? utilityOptionForItemName(itemName)?.label ?? utilityTypeOption?.label ?? 'Other'
+        : itemName,
+      quantity: item.quantity == null ? '' : String(item.quantity),
+      unit: String(item.unit ?? ''),
+      amount: item.amount == null ? '' : String(item.amount),
+    }
+  })
+
+  const replaceEditorItems = (nextItems: ExpenseLineItem[]) => {
+    invalidatePreview()
+    const nextPayloadItems = nextItems.map((item) => {
+      const baseItem = {
+        itemName: item.itemName,
+        amount: item.amount === '' ? '' : Number(item.amount),
+      }
+      if (isUtility) return baseItem
+      return {
+        ...baseItem,
+        quantity: item.quantity === '' ? undefined : Number(item.quantity),
+        unit: item.unit.trim() || undefined,
+      }
+    })
+    onReplaceItems(nextPayloadItems)
+    if (isUtility) {
+      const selectedOptions = nextItems
+        .map((item) => utilityOptionForItemName(item.itemName))
+        .filter((option) => option !== undefined)
+      const utilityTypes = new Set(selectedOptions.map((option) => option.utilityType))
+      const singleOption = utilityTypes.size === 1 ? selectedOptions[0] : undefined
+      onPatchPayload({
+        category: singleOption?.category ?? 'UTILITY',
+        utilityType: singleOption?.utilityType ?? 'OTHER',
+      })
+    }
+  }
+
+  if (preview) {
+    return (
+      <SplitPreviewContent
+        title={preview.title || (isUtility ? 'Utility total' : 'Expense total')}
+        amount={preview.amount ?? 0}
+        paidFrom={LABELS.EXPENSE_PAYMENT_TYPES[preview.paymentType ?? paymentType]}
+        usedBy={LABELS.EXPENSE_USED_BY[preview.usedBy ?? usedBy]}
+        splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod ?? splitMethod]}
+        payerCredit={preview.payerCredit ?? 0}
+        totalSharedCost={preview.totalSharedCost ?? 0}
+        items={preview.items}
+        shares={preview.shares ?? []}
+        formatMoney={formatTaka}
+        busy={disabled}
+        onBack={() => setPreview(null)}
+        onSave={onConfirm}
+      />
+    )
+  }
+
   return (
     <div className="space-y-4">
-      <FormSummaryCard
-        eyebrow="AI Preview"
-        title={isUtility ? 'Review utility before saving' : 'Review expense before saving'}
-        description={`${items.length} ${items.length === 1 ? 'item' : 'items'} · Edit anything that AI misunderstood`}
-        icon={isUtility ? Zap : ReceiptText}
+      <ExpenseEntryForm
+        kind={isUtility ? 'utility' : 'expense'}
+        paymentType={paymentType}
+        onPaymentTypeChange={updatePaymentType}
+        category={category}
+        onCategoryChange={(value) => patchAll({
+          category: value,
+          ...(!advancedCustomized
+            ? {
+                usedBy: 'ALL_MEMBERS',
+                splitMethod: value === 'FOOD' || value === 'GROCERY' ? 'MEAL_COUNT' : 'EQUAL',
+              }
+            : {}),
+        })}
+        paidBy={String(primary.purchasedBy ?? '')}
+        onPaidByChange={(value) => patchAll({ purchasedBy: value || undefined })}
+        showPaidBy={canManage}
+        date={String(primary.expenseDate ?? '')}
+        onDateChange={(value) => patchAll({ expenseDate: value, billingMonth: undefined })}
+        items={editorItems}
+        onItemsChange={replaceEditorItems}
+        advancedOpen={advancedOpen}
+        onAdvancedOpen={() => setAdvancedOpen(true)}
+        onAdvancedClose={() => setAdvancedOpen(false)}
+        usedBy={usedBy}
+        onUsedByChange={(value) => {
+          setAdvancedCustomized(true)
+          updateUsedBy(value)
+        }}
+        splitMethod={splitMethod}
+        onSplitMethodChange={(value) => {
+          setAdvancedCustomized(true)
+          patchAll({ splitMethod: value })
+        }}
+        members={members}
+        selectedMemberIds={selectedMemberIds}
+        onSelectedMemberIdsChange={(value) => patchAll({ selectedMemberIds: value })}
+        customShares={customShares}
+        customShareMemberIds={selectedMembers}
+        onCustomSharesChange={(value) => patchAll({ customShares: value })}
+        description={String(primary.description ?? '')}
+        onDescriptionChange={(value) => patchAll({ description: value })}
+        busy={disabled || previewBusy}
       />
 
-      <FormSection title="Payment Source">
-        <PaymentTypeSelector value={paymentType} onChange={updatePaymentType} showHeading={false} />
-      </FormSection>
-
-      <FormSection title="Shared With">
-        <ExpenseUsedBySelector value={usedBy} onChange={updateUsedBy} allowMealMembers={!isUtility} />
-        {usedBy === 'SELECTED_MEMBERS' ? (
-          <MemberMultiSelect
-            members={members}
-            selected={selectedMemberIds}
-            onChange={(selectedMemberIds) => patchAll({ selectedMemberIds })}
-          />
-        ) : null}
-      </FormSection>
-
-      {usedBy !== 'SELF_ONLY' ? (
-        <FormSection title="Split Rule">
-          <ExpenseSplitMethodSelector
-            value={splitMethod}
-            onChange={(value) => patchAll({ splitMethod: value })}
-            allowCustom={usedBy !== 'MEAL_ON_MEMBERS'}
-            allowMealCount={!isUtility}
-          />
-          {splitMethod === 'CUSTOM' ? (
-            <ExpenseCustomShareFields
-              members={members}
-              memberIds={selectedMembers}
-              shares={customShares}
-              onChange={(shares) => patchAll({ customShares: shares })}
-            />
-          ) : null}
-        </FormSection>
-      ) : null}
-
-      {canManage ? (
-        <FormSection title="Paid By">
-          <DesignedSelect
-            label="Paid By"
-            icon={expenseFormIcons.member}
-            value={String(primary.purchasedBy ?? '')}
-            onChange={(event) => patchAll({ purchasedBy: event.target.value || undefined })}
-            required={paymentType === 'PERSONAL'}
-          >
-            <option value="">Select member</option>
-            {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-          </DesignedSelect>
-        </FormSection>
-      ) : null}
-
-      <FormSection title={isUtility ? 'Utility Details' : 'Expense Details'}>
-        {isUtility ? (
-          <DesignedSelect
-            label="Utility Type"
-            icon={expenseFormIcons.category}
-            value={String(primary.utilityType ?? 'OTHER')}
-            onChange={(event) => {
-              const option = UTILITY_FORM_OPTIONS.find((candidate) => candidate.utilityType === event.target.value) ?? UTILITY_FORM_OPTIONS[0]
-              patchAll({ utilityType: option.utilityType, category: option.category })
-            }}
-          >
-            {UTILITY_FORM_OPTIONS.map((option) => <option key={option.utilityType} value={option.utilityType}>{option.label}</option>)}
-          </DesignedSelect>
-        ) : (
-          <DesignedSelect
-            label="Category"
-            icon={expenseFormIcons.category}
-            value={String(primary.category ?? 'OTHER')}
-            onChange={(event) => patchAll({ category: event.target.value })}
-          >
-            {GENERAL_EXPENSE_CATEGORIES.map((option) => <option key={option} value={option}>{LABELS.EXPENSE_CATEGORIES[option]}</option>)}
-          </DesignedSelect>
-        )}
-        <DesignedInput
-          label={isUtility ? 'Bill Date' : 'Expense Date'}
-          icon={expenseFormIcons.date}
-          value={String(primary.expenseDate ?? '')}
-          onChange={(event) => patchAll({ expenseDate: event.target.value, billingMonth: undefined })}
-          type="date"
-          required
-        />
-        <DesignedTextarea
-          label="Note (Optional)"
-          icon={expenseFormIcons.description}
-          value={String(primary.description ?? '')}
-          onChange={(event) => patchAll({ description: event.target.value.slice(0, 250) })}
-          placeholder="Add a note"
-          count={`${String(primary.description ?? '').length}/250`}
-        />
-      </FormSection>
-
-      {items.map((item, index) => (
-          <FormSection key={index} title={`Purchased Item ${index + 1}`}>
-            {items.length > 1 ? (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => removeItem(index)}
-                  disabled={disabled}
-                  className="ui-btn ui-btn--ghost ui-btn--sm text-[#ee1f2f]"
-                >
-                  <Trash2 size={15} /> Remove item
-                </button>
-              </div>
-            ) : null}
-
-            <DesignedInput
-              label="Item"
-              icon={expenseFormIcons.item}
-              value={String(item.itemName ?? '')}
-              onChange={(event) => patchItem(index, { itemName: event.target.value })}
-              placeholder="Expense item"
-              required
-            />
-            <FormFieldGrid>
-              <DesignedInput
-                label="Quantity (Optional)"
-                icon={expenseFormIcons.item}
-                value={String(item.quantity ?? '')}
-                onChange={(event) => patchItem(index, { quantity: event.target.value === '' ? null : Number(event.target.value) })}
-                placeholder="0"
-                type="number"
-                min="0"
-              />
-              <DesignedInput
-                label="Unit (Optional)"
-                icon={expenseFormIcons.item}
-                value={String(item.unit ?? '')}
-                onChange={(event) => patchItem(index, { unit: event.target.value })}
-                placeholder="kg"
-              />
-            </FormFieldGrid>
-
-            <DesignedInput
-              label="Amount"
-              icon={expenseFormIcons.amount}
-              value={String(item.amount ?? '')}
-              onChange={(event) => patchItem(index, { amount: event.target.value === '' ? '' : Number(event.target.value) })}
-              placeholder="Enter amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              required
-            />
-          </FormSection>
-      ))}
-
-      <FormSection title="Split Preview">
-        {preview ? (
-          <div className="overflow-hidden rounded-[16px] border border-[#e4eaec] bg-[#f8fdfd] p-3">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-label font-bold text-[#123748]">{preview.title || 'Expense total'}</p>
-                    <p className="mt-0.5 text-caption font-semibold text-[#65838b]">
-                      {LABELS.EXPENSE_USED_BY[preview.usedBy ?? usedBy]} · {LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod ?? splitMethod]}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-body font-bold text-[#00777a]">{formatTaka(preview.amount ?? 0)}</span>
-                </div>
-                <div className="mb-3 overflow-hidden rounded-[12px] border border-[#e4eaec] bg-white">
-                  {(preview.items ?? []).map((item, index) => (
-                    <div key={`${item.itemName}-${index}`} className="flex items-center justify-between gap-3 border-b border-[#edf1f4] px-3 py-2.5 last:border-b-0">
-                      <span className="min-w-0 truncate text-label font-semibold text-[#123748]">{item.itemName}</span>
-                      <span className="shrink-0 text-label font-bold text-[#00777a]">{formatTaka(item.amount)}</span>
-                    </div>
-                  ))}
-                </div>
-                <MemberAllocationList shares={preview.shares ?? []} formatMoney={formatTaka} amountLabel="Share" />
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className="rounded-[12px] bg-white px-3 py-2">
-                    <span className="block text-caption font-semibold text-[#65838b]">Payer Credit</span>
-                    <span className="mt-1 block text-label font-bold text-[#15953a]">{formatTaka(preview.payerCredit ?? 0)}</span>
-                  </div>
-                  <div className="rounded-[12px] bg-white px-3 py-2">
-                    <span className="block text-caption font-semibold text-[#65838b]">Shared Cost</span>
-                    <span className="mt-1 block text-label font-bold text-[#00777a]">{formatTaka(preview.totalSharedCost ?? 0)}</span>
-                  </div>
-                </div>
-          </div>
-        ) : (
-          <div className="rounded-[15px] border border-[#f5dfab] bg-[#fff8e9] px-3.5 py-3 text-label font-semibold text-[#7a5a13]">
-            {previewMessage || 'Calculate the split to check exactly which members will be charged.'}
-          </div>
-        )}
-        <ExpensePrimaryAction onClick={() => void refreshPreview()} disabled={disabled || previewBusy}>
-          <Eye size={17} /> {previewBusy ? 'Calculating...' : preview ? 'Recalculate Split' : 'Update Split Preview'}
-        </ExpensePrimaryAction>
-        <FormStatusMessage message={preview ? previewMessage : ''} />
-      </FormSection>
+      <FormStatusMessage message={previewMessage} />
+      <ExpensePrimaryAction onClick={() => void refreshPreview()} disabled={disabled || previewBusy}>
+        <Eye size={17} /> {previewBusy ? 'Calculating...' : 'Preview Split'}
+      </ExpensePrimaryAction>
+      <ExpenseSecondaryAction onClick={onCancel}>Cancel AI Draft</ExpenseSecondaryAction>
     </div>
   )
 }

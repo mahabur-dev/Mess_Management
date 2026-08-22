@@ -274,9 +274,17 @@ export function ExpensePrimaryAction({
   )
 }
 
-export function ExpenseSecondaryAction({ children, onClick }: { children: ReactNode; onClick?: () => void }) {
+export function ExpenseSecondaryAction({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: ReactNode
+  onClick?: () => void
+  disabled?: boolean
+}) {
   return (
-    <button type="button" onClick={onClick} className="expense-secondary-action">
+    <button type="button" onClick={onClick} disabled={disabled} className="expense-secondary-action">
       {children}
     </button>
   )

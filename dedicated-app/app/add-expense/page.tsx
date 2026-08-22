@@ -3,30 +3,20 @@
 import { type FormEvent, useMemo, useState } from 'react'
 import { Eye, ReceiptText } from 'lucide-react'
 import {
-  DesignedInput,
-  DesignedSelect,
-  DesignedTextarea,
   FormPageShell,
-  FormSection,
   FormStatusMessage,
-  PaymentTypeSelector,
-  UploadField,
-  expenseFormIcons,
   formatTaka,
 } from '@/components/mobile/expense-design'
 import {
-  ExpenseAdvancedOptions,
   ExpensePrimaryAction,
   SplitPreviewContent,
 } from '@/components/mobile/expense-ui'
 import {
-  ExpenseCustomShareFields,
   buildCustomShares,
   type ExpenseCustomShare,
 } from '@/components/mobile/expense-custom-shares'
-import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
+import { ExpenseEntryForm } from '@/components/mobile/expense-entry-form'
 import {
-  ExpenseLineItemsEditor,
   createExpenseLineItem,
   expenseLineItemsPayload,
   type ExpenseLineItem,
@@ -34,7 +24,6 @@ import {
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import {
-  GENERAL_EXPENSE_CATEGORIES,
   LABELS,
   type ExpenseCategory,
   type ExpensePaymentType,
@@ -233,83 +222,51 @@ export default function AddExpensePage() {
     <MobileShell>
       <form onSubmit={handlePreview}>
         <FormPageShell title="Add Expense" icon={ReceiptText} backHref="/expenses">
-          <FormSection title="Payment Source">
-            <PaymentTypeSelector value={form.paymentType} onChange={(value) => update('paymentType', value)} showHeading={false} />
-          </FormSection>
-
-          <FormSection title="Expense Details">
-            <DesignedSelect
-              label="Category"
-              icon={expenseFormIcons.category}
-              value={form.category}
-              onChange={(event) => {
-                const category = event.target.value as ExpenseCategory
-                update('category', category)
-                if (!advancedCustomized) {
-                  update('usedBy', 'ALL_MEMBERS')
-                  update('splitMethod', category === 'FOOD' || category === 'GROCERY' ? 'MEAL_COUNT' : 'EQUAL')
-                }
-              }}
-            >
-              {GENERAL_EXPENSE_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {LABELS.EXPENSE_CATEGORIES[category]}
-                </option>
-              ))}
-            </DesignedSelect>
-            {isManager ? <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
-              <option value="">Select member</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </DesignedSelect> : null}
-            <DesignedInput label="Expense Date" icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
-          </FormSection>
-
-          <FormSection title="Items">
-            <ExpenseLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
-          </FormSection>
-
-          <ExpenseAdvancedOptions
-            open={advancedOpen}
+          <ExpenseEntryForm
+            kind="expense"
+            paymentType={form.paymentType}
+            onPaymentTypeChange={(value) => update('paymentType', value)}
+            category={form.category}
+            onCategoryChange={(category) => {
+              update('category', category)
+              if (!advancedCustomized) {
+                update('usedBy', 'ALL_MEMBERS')
+                update('splitMethod', category === 'FOOD' || category === 'GROCERY' ? 'MEAL_COUNT' : 'EQUAL')
+              }
+            }}
+            paidBy={form.purchasedBy}
+            onPaidByChange={(value) => update('purchasedBy', value)}
+            showPaidBy={isManager}
+            date={form.expenseDate}
+            onDateChange={(value) => update('expenseDate', value)}
+            items={form.items}
+            onItemsChange={(items) => update('items', items)}
+            advancedOpen={advancedOpen}
+            onAdvancedOpen={() => setAdvancedOpen(true)}
+            onAdvancedClose={() => setAdvancedOpen(false)}
             usedBy={form.usedBy}
-            splitMethod={form.splitMethod}
-            allowCustom={form.usedBy !== 'MEAL_ON_MEMBERS'}
-            onOpen={() => setAdvancedOpen(true)}
-            onClose={() => setAdvancedOpen(false)}
             onUsedByChange={(usedBy) => {
               setAdvancedCustomized(true)
               update('usedBy', usedBy)
               if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
               if (usedBy === 'MEAL_ON_MEMBERS' && form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT')
             }}
+            splitMethod={form.splitMethod}
             onSplitMethodChange={(splitMethod) => {
               setAdvancedCustomized(true)
               update('splitMethod', splitMethod)
             }}
-          >
-            {form.usedBy === 'SELECTED_MEMBERS' ? (
-              <MemberMultiSelect members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} />
-            ) : null}
-            {form.usedBy !== 'SELF_ONLY' && form.splitMethod === 'CUSTOM' ? (
-              <ExpenseCustomShareFields
-                members={members}
-                memberIds={selectedMembers}
-                shares={form.customShares}
-                onChange={(shares) => update('customShares', shares)}
-              />
-            ) : null}
-          </ExpenseAdvancedOptions>
-
-          <FormSection title="Note">
-            <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
-          </FormSection>
-
-          <FormSection title="Attachment">
-            <UploadField fileName={receiptFile?.name} onChange={setReceiptFile} />
-          </FormSection>
+            members={members}
+            selectedMemberIds={form.selectedMemberIds}
+            onSelectedMemberIdsChange={(ids) => update('selectedMemberIds', ids)}
+            customShares={form.customShares}
+            customShareMemberIds={selectedMembers}
+            onCustomSharesChange={(shares) => update('customShares', shares)}
+            description={form.description}
+            onDescriptionChange={(value) => update('description', value)}
+            busy={busy}
+            attachment={{ fileName: receiptFile?.name, onChange: setReceiptFile }}
+          />
 
           <FormStatusMessage message={message} success={success} />
           <ExpensePrimaryAction type="submit" disabled={busy}>

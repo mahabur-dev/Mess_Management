@@ -300,7 +300,7 @@ export default function EditExpensePage() {
         <FormPageShell title={isUtilityExpense ? 'Edit Utility' : 'Edit Expense'} icon={isUtilityExpense ? Zap : ReceiptText} backHref="/expenses">
           {loading ? <LoadingIndicator variant="card" label="Loading expense" /> : null}
 
-          <FormSection title="Payment Source">
+          <FormSection title="Payment Details">
             <PaymentTypeSelector value={form.paymentType} onChange={(paymentType) => update('paymentType', paymentType)} showHeading={false} />
           </FormSection>
 

@@ -8,6 +8,14 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     cleartext: true,
   },
+  plugins: {
+    StatusBar: {
+      overlaysWebView: true,
+      // Internal screens use a dark brand header by default. Route-aware
+      // runtime overrides keep Auth, Onboarding and More surfaces dark-on-light.
+      style: 'DARK',
+    },
+  },
 }
 
 export default config

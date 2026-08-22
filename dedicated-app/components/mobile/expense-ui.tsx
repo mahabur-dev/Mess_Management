@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
-import { Check, ChevronRight, CircleDollarSign, Pencil, Scale, SlidersHorizontal, User, UserRound, Users, UtensilsCrossed, WalletCards } from 'lucide-react'
+import { Check, ChevronRight, CircleDollarSign, Scale, SlidersHorizontal, UserRound, Users, WalletCards } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { ExpenseSplitMethod, ExpenseUsedBy } from '@/lib/form-options'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
+import { DesignedSelect } from '@/components/mobile/expense-design'
 
 type Accent = 'teal' | 'blue' | 'violet' | 'green' | 'orange'
 
@@ -290,28 +291,26 @@ export function ExpenseUsedBySelector({
   onChange: (value: ExpenseUsedBy) => void
   allowMealMembers?: boolean
 }) {
-  const options = [
-    { value: 'ALL_MEMBERS', title: 'All Members', icon: Users },
-    { value: 'SELECTED_MEMBERS', title: 'Specific Members', icon: User },
+  const options: Array<{ value: ExpenseUsedBy; label: string }> = [
+    { value: 'ALL_MEMBERS', label: 'All Members' },
+    { value: 'SELECTED_MEMBERS', label: 'Specific Members' },
     ...(allowMealMembers
-      ? [{ value: 'MEAL_ON_MEMBERS' as const, title: 'Meal Members', icon: UtensilsCrossed }]
+      ? [{ value: 'MEAL_ON_MEMBERS' as const, label: 'Meal Members' }]
       : []),
-    { value: 'SELF_ONLY', title: 'Only Me', icon: User },
-  ] as const
+    { value: 'SELF_ONLY', label: 'Only Me' },
+  ]
 
   return (
-    <div className={`grid grid-cols-2 gap-2.5 ${options.length === 4 ? 'min-[390px]:grid-cols-4' : 'min-[390px]:grid-cols-3'}`}>
+    <DesignedSelect
+      label="Shared With"
+      icon={Users}
+      value={value}
+      onChange={(event) => onChange(event.target.value as ExpenseUsedBy)}
+    >
       {options.map((option) => (
-        <ExpenseChoiceCard
-          key={option.value}
-          active={value === option.value}
-          icon={option.icon}
-          title={option.title}
-          onClick={() => onChange(option.value)}
-          layout="vertical"
-        />
+        <option key={option.value} value={option.value}>{option.label}</option>
       ))}
-    </div>
+    </DesignedSelect>
   )
 }
 
@@ -326,27 +325,25 @@ export function ExpenseSplitMethodSelector({
   allowCustom?: boolean
   allowMealCount?: boolean
 }) {
-  const options = [
-    { value: 'EQUAL', title: 'Equal', icon: Scale },
+  const options: Array<{ value: ExpenseSplitMethod; label: string }> = [
+    { value: 'EQUAL', label: 'Equal' },
     ...(allowMealCount
-      ? [{ value: 'MEAL_COUNT' as const, title: 'By Meal Count', icon: UtensilsCrossed }]
+      ? [{ value: 'MEAL_COUNT' as const, label: 'By Meal Count' }]
       : []),
-    ...(allowCustom ? [{ value: 'CUSTOM' as const, title: 'Manual Split', icon: Pencil }] : []),
-  ] as const
+    ...(allowCustom ? [{ value: 'CUSTOM' as const, label: 'Manual Split' }] : []),
+  ]
 
   return (
-    <div className={`grid gap-2.5 ${options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+    <DesignedSelect
+      label="Split Method"
+      icon={Scale}
+      value={value}
+      onChange={(event) => onChange(event.target.value as ExpenseSplitMethod)}
+    >
       {options.map((option) => (
-        <ExpenseChoiceCard
-          key={option.value}
-          active={value === option.value}
-          icon={option.icon}
-          title={option.title}
-          onClick={() => onChange(option.value)}
-          layout="vertical"
-        />
+        <option key={option.value} value={option.value}>{option.label}</option>
       ))}
-    </div>
+    </DesignedSelect>
   )
 }
 
@@ -398,29 +395,19 @@ export function ExpenseAdvancedOptions({
       onOpen={onOpen}
       onClose={onClose}
     >
-      <div className="space-y-4">
-        <h3 className="ui-section-title mb-0!">Shared With</h3>
-        <div className="pt-2">
-          <ExpenseUsedBySelector
-            value={usedBy}
-            onChange={onUsedByChange}
-            allowMealMembers={allowMealMembers}
-          />
-        </div>
-      </div>
+      <ExpenseUsedBySelector
+        value={usedBy}
+        onChange={onUsedByChange}
+        allowMealMembers={allowMealMembers}
+      />
 
       {usedBy !== 'SELF_ONLY' ? (
-        <div className="space-y-4">
-          <h3 className="ui-section-title mb-0!">Split Rule</h3>
-          <div className="pt-2">
-            <ExpenseSplitMethodSelector
-              value={splitMethod}
-              onChange={onSplitMethodChange}
-              allowCustom={allowCustom}
-              allowMealCount={allowMealCount}
-            />
-          </div>
-        </div>
+        <ExpenseSplitMethodSelector
+          value={splitMethod}
+          onChange={onSplitMethodChange}
+          allowCustom={allowCustom}
+          allowMealCount={allowMealCount}
+        />
       ) : null}
 
       {children}

@@ -1,31 +1,33 @@
 'use client'
 
-import { Coins } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { DepositEntryForm } from '@/components/mobile/deposit-entry-form'
 import {
-  DesignedInput,
-  DesignedSelect,
-  DesignedTextarea,
-  FormSection,
-  FormSummaryCard,
-  expenseFormIcons,
-} from '@/components/mobile/expense-design'
-import {
-  DepositListItem,
-  DepositManualNotice,
-  DepositSectionTitle,
-  type DepositListRecord,
-} from '@/components/mobile/deposit-design'
+  ExpensePrimaryAction,
+  ExpenseSecondaryAction,
+} from '@/components/mobile/expense-ui'
 import type { MemberOption } from '@/hooks/use-mess-member-options'
+import {
+  PAYMENT_METHODS,
+  type PaymentMethod,
+} from '@/lib/form-options'
 
 export type AiDepositPreviewPayload = Record<string, unknown>
+
+function paymentMethodOf(value: unknown): PaymentMethod {
+  return typeof value === 'string' && PAYMENT_METHODS.includes(value as PaymentMethod)
+    ? value as PaymentMethod
+    : 'CASH'
+}
 
 export function AiDepositPreview({
   payload,
   members,
   canManage,
-  currentUserId,
   disabled,
   onPatch,
+  onCancel,
+  onConfirm,
 }: {
   payload: AiDepositPreviewPayload
   members: MemberOption[]
@@ -33,89 +35,44 @@ export function AiDepositPreview({
   currentUserId?: string
   disabled?: boolean
   onPatch: (patch: Record<string, unknown>) => void
+  onCancel: () => void
+  onConfirm: () => void
 }) {
-  const memberId = typeof payload.memberId === 'string' ? payload.memberId : ''
-  const member = members.find((item) => item.id === memberId)
-  const selectableMembers = canManage ? members : members.filter((item) => item.id === currentUserId)
+  const paidBy = String(payload.purchasedBy ?? payload.memberId ?? '')
+  const date = String(payload.paymentDate ?? payload.date ?? '')
   const amount = payload.amount == null ? '' : String(payload.amount)
-  const date = typeof payload.date === 'string' ? payload.date : ''
-  const note = typeof payload.note === 'string' ? payload.note : ''
-  const previewItem: DepositListRecord = {
-    id: 'ai-deposit-preview',
-    amount: Number(amount || 0),
-    status: canManage ? 'APPROVED' : 'PENDING',
-    method: 'CASH',
-    payment_date: date,
-    note: note || 'Member deposit',
-    member: member ? { id: member.id, name: member.name, email: member.email } : null,
-  }
+  const transactionId = String(payload.transactionId ?? '')
+  const note = String(payload.note ?? '')
 
   return (
     <div className="space-y-4">
-      <FormSummaryCard
-        eyebrow="AI Preview"
-        title="Review deposit before saving"
-        description="Check the member, amount and date. Nothing is saved until you confirm."
-        icon={Coins}
+      <DepositEntryForm
+        method={paymentMethodOf(payload.method)}
+        onMethodChange={(method) => onPatch({ method })}
+        amount={amount}
+        onAmountChange={(value) => onPatch({ amount: value === '' ? '' : Number(value) })}
+        date={date}
+        onDateChange={(value) => onPatch({ paymentDate: value, date: value })}
+        paidBy={paidBy}
+        onPaidByChange={(value) => onPatch({
+          purchasedBy: value || undefined,
+          memberId: value || undefined,
+        })}
+        showPaidBy={canManage}
+        members={members}
+        transactionId={transactionId}
+        onTransactionIdChange={(value) => onPatch({ transactionId: value })}
+        note={note}
+        onNoteChange={(value) => onPatch({ note: value })}
       />
 
-      <FormSection title="Deposit Details">
-        <DesignedSelect
-          label="Deposit For"
-          icon={expenseFormIcons.member}
-          value={memberId}
-          onChange={(event) => onPatch({ memberId: event.target.value })}
-          disabled={disabled || !canManage}
-          required
-        >
-          <option value="">{canManage ? 'Select member' : 'Your account'}</option>
-          {selectableMembers.map((option) => (
-            <option key={option.id} value={option.id}>{option.name}</option>
-          ))}
-        </DesignedSelect>
-
-        <div className="grid grid-cols-2 gap-3">
-          <DesignedInput
-            label="Amount"
-            icon={expenseFormIcons.amount}
-            value={amount}
-            onChange={(event) => onPatch({ amount: event.target.value === '' ? '' : Number(event.target.value) })}
-            placeholder="1500"
-            type="number"
-            min="1"
-            step="1"
-            disabled={disabled}
-            required
-          />
-          <DesignedInput
-            label="Date"
-            icon={expenseFormIcons.date}
-            value={date}
-            onChange={(event) => onPatch({ date: event.target.value })}
-            type="date"
-            disabled={disabled}
-            required
-          />
-        </div>
-
-        <DesignedTextarea
-          label="Note (Optional)"
-          icon={expenseFormIcons.description}
-          value={note}
-          onChange={(event) => onPatch({ note: event.target.value })}
-          placeholder="Monthly contribution"
-          disabled={disabled}
-        />
-      </FormSection>
-
-      <DepositManualNotice compact />
-
-      <section className="app-section">
-        <DepositSectionTitle title="Deposit Preview" />
-        <div className="flush-list flush-list--panel mt-3">
-          <DepositListItem item={previewItem} variant="horizontal" />
-        </div>
-      </section>
+      <ExpensePrimaryAction
+        onClick={onConfirm}
+        disabled={disabled || !amount || !date}
+      >
+        <Check size={17} /> {disabled ? 'Saving...' : 'Confirm & Save'}
+      </ExpensePrimaryAction>
+      <ExpenseSecondaryAction onClick={disabled ? undefined : onCancel}>Cancel AI Draft</ExpenseSecondaryAction>
     </div>
   )
 }

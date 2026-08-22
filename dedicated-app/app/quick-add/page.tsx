@@ -38,6 +38,15 @@ function label(value: string) {
   return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
+const QUICK_EXAMPLES = [
+  { text: 'Today grocery 850 taka', language: 'EN', icon: ReceiptText },
+  { text: 'আজ বাজার ৮৫০ টাকা', language: 'বাংলা', icon: ReceiptText },
+  { text: 'Add Rahim deposit 2000', language: 'EN', icon: WalletCards },
+  { text: 'রহিমের ডিপোজিট ২০০০ যোগ করো', language: 'বাংলা', icon: WalletCards },
+  { text: 'Tomorrow dinner 2 meals', language: 'EN', icon: UtensilsCrossed },
+  { text: 'আগামীকাল ডিনার ২ মিল', language: 'বাংলা', icon: UtensilsCrossed },
+] as const
+
 export default function QuickAddPage() {
   const router = useRouter()
   const { user } = useAuth()
@@ -60,9 +69,7 @@ export default function QuickAddPage() {
         command: 'কমান্ড লিখুন',
         tryCommand: 'দ্রুত উদাহরণ',
         suggestions: 'টি সাজেশন',
-        voiceTitle: 'কথা বলে দ্রুত যোগ করুন',
-        voiceHint: 'বাংলা, English বা Banglish—স্বাভাবিকভাবে বলুন',
-        voiceReady: 'রেকর্ডিং শুরু করতে চাপ দিন',
+        exampleHint: 'ব্যবহার করতে যেকোনো উদাহরণে চাপ দিন',
         processing: 'AI আপনার কমান্ড বিশ্লেষণ করছে',
       }
     : {
@@ -71,13 +78,9 @@ export default function QuickAddPage() {
         command: 'Write a command',
         tryCommand: 'Quick examples',
         suggestions: 'suggestions',
-        voiceTitle: 'Add faster with your voice',
-        voiceHint: 'Speak naturally in Bangla, English, or Banglish',
-        voiceReady: 'Tap the microphone to start',
+        exampleHint: 'Tap an example to use it as your command',
         processing: 'AI is analyzing your command',
       }
-  const exampleIcons = [ReceiptText, WalletCards, UtensilsCrossed]
-
   useEffect(() => {
     const stored = window.localStorage.getItem('messzen:ai-locale')
     if (stored === 'bn' || stored === 'en') {
@@ -205,12 +208,44 @@ export default function QuickAddPage() {
         : current.items,
     }))
   }
+  const replacePayloadItems = (items: Array<Record<string, unknown>>) => {
+    setPayload((current) => ({ ...current, items }))
+  }
+  const isExpenseReview = Boolean(
+    command
+      && !completed
+      && command.status === 'PENDING'
+      && expenseItems
+      && (command.intent === 'EXPENSE_CREATE' || command.intent === 'UTILITY_CREATE'),
+  )
+  const isDepositReview = Boolean(
+    command && !completed && command.status === 'PENDING' && command.intent === 'DEPOSIT_CREATE',
+  )
+  const isCanonicalEntryReview = isExpenseReview || isDepositReview
+  const reviewTitle = isExpenseReview
+    ? command?.intent === 'UTILITY_CREATE' ? 'Add Utility' : 'Add Expense'
+    : isDepositReview
+      ? 'Submit Deposit'
+      : copy.title
+  const ReviewIcon = command?.intent === 'UTILITY_CREATE'
+    ? Zap
+    : command?.intent === 'EXPENSE_CREATE'
+      ? ReceiptText
+      : WalletCards
 
   if (messLoading) return <LoadingIndicator variant="screen" label="Loading mess workspace" />
 
   return (
     <MobileShell>
-      <AppHeader title={copy.title} subtitle={copy.subtitle} backHref="/" trailing={(
+      <AppHeader
+        title={reviewTitle}
+        subtitle={isCanonicalEntryReview ? 'AI-prefilled entry · Review before saving' : copy.subtitle}
+        backHref="/"
+        trailing={isCanonicalEntryReview ? (
+          <span className="app-header-action" aria-hidden="true">
+            <ReviewIcon size={18} strokeWidth={2.4} />
+          </span>
+        ) : (
         <div className="quick-add-language-select">
           <button
             type="button"
@@ -222,9 +257,10 @@ export default function QuickAddPage() {
             {locale === 'en' ? 'En' : 'বাং'}
           </button>
         </div>
-      )} />
+      )}
+      />
 
-      <div className="screen space-y-3.5 pb-8">
+      <div className={`screen space-y-3.5 pb-8 ${isCanonicalEntryReview ? 'expense-form-screen' : ''}`}>
         {messStatus !== 'connected' ? <Notice tone="warning">Connect to a mess workspace before using AI Quick Add.</Notice> : null}
         {enabled === false ? <Notice tone="warning">{copy.disabled}</Notice> : null}
 
@@ -232,6 +268,7 @@ export default function QuickAddPage() {
           <>
             <section className="quick-add-hero" aria-labelledby="quick-add-hero-title">
               <span className="quick-add-hero-glow" aria-hidden="true" />
+              <span className="quick-add-hero-dots" aria-hidden="true" />
               <div className="quick-add-hero-heading">
                 <span className="quick-add-hero-icon" aria-hidden="true">
                   <WandSparkles size={23} strokeWidth={2.2} />
@@ -276,28 +313,35 @@ export default function QuickAddPage() {
                   disabled={busy || recorder.isRecording}
                   aria-describedby="quick-add-text-help"
                 />
-                <div id="quick-add-text-help" className="quick-add-input-status">
-                  <Sparkles size={13} aria-hidden="true" />
-                  <span>Bangla · English · Banglish</span>
+                <div className="quick-add-textarea-footer">
+                  <div id="quick-add-text-help" className="quick-add-input-status" aria-live="polite">
+                    {recorder.isRecording ? <AudioLines size={14} aria-hidden="true" /> : <Sparkles size={13} aria-hidden="true" />}
+                    <span>
+                      {recorder.isRecording
+                        ? `${copy.recording} · ${recorder.seconds}s / 60s`
+                        : busy
+                          ? experienceCopy.processing
+                          : 'Bangla · English · Banglish'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="quick-add-inline-voice"
+                    data-recording={recorder.isRecording ? 'true' : 'false'}
+                    onClick={() => recorder.isRecording ? recorder.stop() : void recorder.start()}
+                    disabled={!recorder.supported || busy || enabled === false || voiceEnabled === false}
+                    aria-label={recorder.isRecording ? copy.stop : copy.record}
+                    aria-pressed={recorder.isRecording}
+                    title={recorder.isRecording ? copy.stop : copy.record}
+                  >
+                    {recorder.isRecording ? <Square size={16} fill="currentColor" /> : <Mic size={19} />}
+                  </button>
                 </div>
-              </div>
-
-              <div className="quick-add-examples-heading">
-                <span>{experienceCopy.tryCommand}</span>
-                <small>{copy.examples.length} {experienceCopy.suggestions}</small>
-              </div>
-
-              <div className="quick-add-examples">
-                {copy.examples.map((example, index) => {
-                  const ExampleIcon = exampleIcons[index] ?? Sparkles
-                  return (
-                    <button key={example} type="button" className="quick-add-example" onClick={() => setText(example)} disabled={busy || recorder.isRecording}>
-                      <span aria-hidden="true"><ExampleIcon size={15} /></span>
-                      <strong>{example}</strong>
-                      <ArrowRight size={14} aria-hidden="true" />
-                    </button>
-                  )
-                })}
+                {recorder.isRecording ? (
+                  <div className="quick-add-inline-waveform" aria-hidden="true">
+                    {Array.from({ length: 18 }, (_value, index) => <span key={index} />)}
+                  </div>
+                ) : null}
               </div>
 
               <button type="submit" className="quick-add-generate" disabled={!text.trim() || busy || enabled === false}>
@@ -307,33 +351,30 @@ export default function QuickAddPage() {
               </button>
             </form>
 
-            <section className="quick-add-voice-card" data-recording={recorder.isRecording ? 'true' : 'false'}>
-              <div className="quick-add-voice-copy">
-                <span className="quick-add-voice-label"><AudioLines size={15} /> VOICE COMMAND</span>
-                <h2>{experienceCopy.voiceTitle}</h2>
-                <p>{recorder.isRecording ? `${copy.recording} · ${recorder.seconds}s` : busy ? experienceCopy.processing : experienceCopy.voiceHint}</p>
+            <section className="quick-add-examples-card" aria-labelledby="quick-add-examples-title">
+              <div className="quick-add-examples-heading">
+                <div>
+                  <span id="quick-add-examples-title">{experienceCopy.tryCommand}</span>
+                  <p>{experienceCopy.exampleHint}</p>
+                </div>
+                <small>{QUICK_EXAMPLES.length} {experienceCopy.suggestions}</small>
               </div>
 
-              <button
-                type="button"
-                onClick={() => recorder.isRecording ? recorder.stop() : void recorder.start()}
-                disabled={!recorder.supported || busy || enabled === false || voiceEnabled === false}
-                className="quick-add-voice-trigger"
-                aria-label={recorder.isRecording ? copy.stop : copy.record}
-              >
-                <span className="quick-add-voice-ripple" aria-hidden="true" />
-                <span className="quick-add-voice-orb" aria-hidden="true">
-                  {recorder.isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={23} />}
-                </span>
-                <strong>{recorder.isRecording ? copy.stop : copy.record}</strong>
-                <small>{recorder.isRecording ? `${recorder.seconds}s / 60s` : experienceCopy.voiceReady}</small>
-              </button>
-
-              {recorder.isRecording ? (
-                <div className="quick-add-waveform" aria-hidden="true">
-                  {Array.from({ length: 22 }, (_value, index) => <span key={index} />)}
-                </div>
-              ) : null}
+              <div className="quick-add-examples">
+                {QUICK_EXAMPLES.map((example) => {
+                  const ExampleIcon = example.icon
+                  return (
+                    <button key={example.text} type="button" className="quick-add-example" onClick={() => setText(example.text)} disabled={busy || recorder.isRecording}>
+                      <span className="quick-add-example-icon" aria-hidden="true"><ExampleIcon size={15} /></span>
+                      <span className="quick-add-example-copy">
+                        <small>{example.language}</small>
+                        <strong>{example.text}</strong>
+                      </span>
+                      <ArrowRight size={14} aria-hidden="true" />
+                    </button>
+                  )
+                })}
+              </div>
             </section>
             {!recorder.supported ? <Notice tone="info">{copy.unsupportedVoice}</Notice> : null}
             {voiceEnabled === false ? <Notice tone="warning">{copy.voiceDisabled}</Notice> : null}
@@ -355,6 +396,7 @@ export default function QuickAddPage() {
           </HomeCard>
         ) : (
           <>
+            {!isCanonicalEntryReview ? (
             <HomeCard title={copy.preview} caption={copy.previewHelp}>
               <div className="mb-4 flex items-center justify-between rounded-xl bg-[#edfafa] px-3 py-2">
                 <span className="text-label font-bold text-[#00777a]">{intentLabel}</span>
@@ -375,25 +417,26 @@ export default function QuickAddPage() {
                 ) : null}
               </div>
             </HomeCard>
+            ) : null}
 
-            {expenseItems && (command.intent === 'EXPENSE_CREATE' || command.intent === 'UTILITY_CREATE') ? (
+            {command.status === 'PENDING' && expenseItems && (command.intent === 'EXPENSE_CREATE' || command.intent === 'UTILITY_CREATE') ? (
               <AiExpensePreview
                 key={command.id}
                 intent={command.intent}
                 payload={payload}
                 items={expenseItems}
-                initialPreview={command.preview}
                 members={members}
                 currentUserId={user?.id}
                 canManage={canManage}
                 disabled={busy}
                 onPatchPayload={patchPayload}
-                onPatchItem={patchPayloadItem}
-                onRemoveItem={removePayloadItem}
+                onReplaceItems={replacePayloadItems}
+                onCancel={() => void reset(true)}
+                onConfirm={() => void confirm()}
               />
             ) : null}
 
-            {command.intent === 'DEPOSIT_CREATE' ? (
+            {command.status === 'PENDING' && command.intent === 'DEPOSIT_CREATE' ? (
               <AiDepositPreview
                 key={command.id}
                 payload={payload}
@@ -401,17 +444,21 @@ export default function QuickAddPage() {
                 canManage={canManage}
                 currentUserId={user?.id}
                 disabled={busy}
-                onPatch={(patch) => patchPayloadItem(0, patch)}
+                onPatch={patchPayload}
+                onCancel={() => void reset(true)}
+                onConfirm={() => void confirm()}
               />
             ) : null}
 
             {error ? <Notice tone="danger">{error}</Notice> : null}
+            {!isCanonicalEntryReview ? (
             <div className="grid grid-cols-[0.85fr_1.4fr] gap-2">
               <button type="button" className="ui-btn ui-btn--secondary" disabled={busy} onClick={() => void reset(true)}>{copy.cancel}</button>
               <button type="button" className="ui-btn ui-btn--primary" disabled={busy || command.intent === 'UNKNOWN' || command.intent === 'NEEDS_CLARIFICATION'} onClick={() => void confirm()}>
                 {busy ? copy.confirming : copy.confirm}
               </button>
             </div>
+            ) : null}
           </>
         )}
 

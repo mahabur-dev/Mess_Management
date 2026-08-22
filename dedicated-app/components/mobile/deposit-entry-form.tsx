@@ -1,10 +1,10 @@
 'use client'
 
 import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-design'
-import { DepositManualNotice, PaymentMethodGrid } from '@/components/mobile/deposit-design'
+import { DepositManualNotice } from '@/components/mobile/deposit-design'
 import { TextAreaField, TextField } from '@/components/mobile/form-controls'
 import type { MemberOption } from '@/hooks/use-mess-member-options'
-import type { PaymentMethod } from '@/lib/form-options'
+import { LABELS, PAYMENT_METHODS, type PaymentMethod } from '@/lib/form-options'
 
 export type DepositEntryFormProps = {
   method: PaymentMethod
@@ -42,7 +42,16 @@ export function DepositEntryForm({
 }: DepositEntryFormProps) {
   return (
     <>
-      <PaymentMethodGrid value={method} onChange={onMethodChange} />
+      <DesignedSelect
+        label="Deposit Method"
+        icon={expenseFormIcons.payment}
+        value={method}
+        onChange={(event) => onMethodChange(event.target.value as PaymentMethod)}
+      >
+        {PAYMENT_METHODS.map((option) => (
+          <option key={option} value={option}>{LABELS.PAYMENT_METHODS[option]}</option>
+        ))}
+      </DesignedSelect>
       <div className="grid grid-cols-2 gap-3">
         <TextField label="Amount" value={amount} onChange={onAmountChange} placeholder="2500" type="number" />
         <TextField label="Deposit Date" value={date} onChange={onDateChange} type="date" />

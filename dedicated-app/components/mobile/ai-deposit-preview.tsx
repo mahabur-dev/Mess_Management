@@ -3,6 +3,7 @@
 import { Check } from 'lucide-react'
 import { DepositEntryForm } from '@/components/mobile/deposit-entry-form'
 import {
+  ExpenseActionBar,
   ExpensePrimaryAction,
   ExpenseSecondaryAction,
 } from '@/components/mobile/expense-ui'
@@ -66,13 +67,15 @@ export function AiDepositPreview({
         onNoteChange={(value) => onPatch({ note: value })}
       />
 
-      <ExpensePrimaryAction
-        onClick={onConfirm}
-        disabled={disabled || !amount || !date}
-      >
-        <Check size={17} /> {disabled ? 'Saving...' : 'Confirm & Save'}
-      </ExpensePrimaryAction>
-      <ExpenseSecondaryAction onClick={disabled ? undefined : onCancel}>Cancel AI Draft</ExpenseSecondaryAction>
+      <ExpenseActionBar>
+        <ExpenseSecondaryAction onClick={onCancel} disabled={disabled}>Cancel</ExpenseSecondaryAction>
+        <ExpensePrimaryAction
+          onClick={onConfirm}
+          disabled={disabled || !amount || !date}
+        >
+          <Check size={17} /> {disabled ? 'Saving...' : 'Save'}
+        </ExpensePrimaryAction>
+      </ExpenseActionBar>
     </div>
   )
 }

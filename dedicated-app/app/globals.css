@@ -5463,19 +5463,19 @@ textarea {
 .quick-add-inline-waveform span:nth-child(4n) { animation-delay: -650ms; }
 
 .quick-add-examples-card {
-  padding: 15px;
+  padding: 16px;
   border: 1px solid var(--neutral-200);
-  border-radius: 18px;
+  border-radius: 20px;
   background: #ffffff;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 10px 28px rgba(18, 55, 72, 0.055);
 }
 
 .quick-add-examples-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 2px 11px;
+  margin: 0 2px 14px;
 }
 
 .quick-add-examples-heading > div {
@@ -5500,40 +5500,53 @@ textarea {
 
 .quick-add-examples-heading > small {
   flex: 0 0 auto;
-  color: var(--neutral-500);
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--brand-50);
+  color: var(--brand-700);
   font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
 }
 
 .quick-add-examples {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--neutral-200);
+  border-radius: 16px;
+  background: #ffffff;
 }
 
 .quick-add-example {
   display: grid;
-  min-height: 72px;
-  grid-template-columns: 32px minmax(0, 1fr) 14px;
+  min-height: 68px;
+  grid-template-columns: 38px minmax(0, 1fr) 28px;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
   width: 100%;
-  padding: 8px 8px 8px 7px;
-  border: 1px solid rgba(102, 86, 201, 0.1);
-  border-radius: 14px;
-  background: linear-gradient(135deg, #fbfbff, #f5f3ff);
+  padding: 10px 11px;
+  border: 0;
+  border-bottom: 1px solid var(--neutral-200);
+  border-radius: 0;
+  background: #ffffff;
   color: var(--brand-800);
   text-align: left;
-  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.quick-add-example:last-child {
+  border-bottom: 0;
 }
 
 .quick-add-example-icon {
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   place-items: center;
-  border-radius: 10px;
-  background: rgba(102, 86, 201, 0.1);
-  color: #6656c9;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #f0edff, #e8f8f7);
+  color: var(--brand-600);
 }
 
 .quick-add-example-copy {
@@ -5542,8 +5555,13 @@ textarea {
 }
 
 .quick-add-example-copy small {
-  display: block;
-  margin-bottom: 2px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 19px;
+  margin-bottom: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--brand-50);
   color: var(--brand-600);
   font-size: var(--text-caption);
   font-weight: 800;
@@ -5551,23 +5569,26 @@ textarea {
 }
 
 .quick-add-example-copy strong {
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: var(--text-caption);
+  display: block;
+  color: var(--brand-900);
+  font-size: var(--text-label);
   font-weight: 700;
-  line-height: 1.3;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .quick-add-example > svg {
-  color: rgba(0, 108, 105, 0.48);
+  width: 28px;
+  height: 28px;
+  padding: 7px;
+  border-radius: 9px;
+  background: var(--brand-50);
+  color: var(--brand-600);
 }
 
 .quick-add-example:active {
-  transform: scale(0.99);
-  border-color: rgba(102, 86, 201, 0.2);
-  background: #f2efff;
+  transform: scale(0.995);
+  background: #f3fbfb;
 }
 
 .quick-add-example:disabled {
@@ -5630,8 +5651,15 @@ textarea {
     border-radius: 16px;
   }
 
-  .quick-add-examples {
-    grid-template-columns: 1fr;
+  .quick-add-example {
+    grid-template-columns: 36px minmax(0, 1fr) 28px;
+    gap: 9px;
+    padding-inline: 9px;
+  }
+
+  .quick-add-example-icon {
+    width: 36px;
+    height: 36px;
   }
 }
 

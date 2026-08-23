@@ -3002,11 +3002,7 @@ textarea {
   height: 48px;
   flex: 0 0 48px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 14px;
-  background: linear-gradient(145deg, #7868de, var(--assistant-card-violet-deep));
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(81, 66, 175, 0.24);
 }
 
 .assistant-summary-card__copy {
@@ -3166,11 +3162,7 @@ textarea {
   height: 48px;
   flex: 0 0 48px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 14px;
-  background: linear-gradient(145deg, #7868de, var(--assistant-card-violet-deep));
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(81, 66, 175, 0.24);
 }
 
 .assistant-pattern-card__title {
@@ -5438,11 +5430,7 @@ textarea {
   height: 48px;
   flex: 0 0 48px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 14px;
-  background: linear-gradient(145deg, #7868de, var(--assistant-card-violet-deep));
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(81, 66, 175, 0.24);
 }
 
 .assistant-info-card__description {
@@ -5509,11 +5497,7 @@ textarea {
   height: 48px;
   flex: 0 0 48px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 14px;
-  background: linear-gradient(145deg, #7868de, var(--quick-add-violet-deep));
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(81, 66, 175, 0.24);
 }
 
 .quick-add-hero-heading > div {
@@ -5614,8 +5598,6 @@ textarea {
   flex: 0 0 38px;
   place-items: center;
   border-radius: 13px;
-  background: var(--brand-100);
-  color: var(--brand-700);
 }
 
 .quick-add-composer-heading p,
@@ -5848,8 +5830,18 @@ textarea {
   height: 38px;
   place-items: center;
   border-radius: 12px;
-  background: linear-gradient(145deg, #f0edff, #e8f8f7);
-  color: var(--brand-600);
+}
+
+.quick-add-hero-icon,
+.quick-add-composer-icon,
+.quick-add-example-icon,
+.assistant-summary-card__icon,
+.assistant-pattern-card__icon,
+.assistant-info-card__icon {
+  border: 1px solid rgba(79, 112, 165, 0.14);
+  background: linear-gradient(145deg, #f1efff 0%, var(--brand-100) 100%);
+  color: #4f70a5;
+  box-shadow: 0 7px 16px rgba(58, 82, 125, 0.11), 0 1px 0 rgba(255, 255, 255, 0.78) inset;
 }
 
 .quick-add-example-copy {

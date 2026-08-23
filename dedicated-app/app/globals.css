@@ -5113,13 +5113,15 @@ textarea {
 
 /* ---------- Buttons ---------- */
 .ui-btn {
+  --ui-btn-height: 44px;
+  --ui-btn-radius: var(--radius-md);
   display: inline-flex;
-  min-height: 48px;
+  min-height: var(--ui-btn-height);
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   border: 0;
-  border-radius: var(--radius-lg);
+  border-radius: var(--ui-btn-radius);
   padding: 0 var(--space-4);
   font-size: var(--text-label);
   font-weight: 600;
@@ -5161,8 +5163,8 @@ textarea {
 }
 
 .ui-btn--sm {
-  min-height: 36px;
-  border-radius: var(--radius-md);
+  --ui-btn-height: 34px;
+  --ui-btn-radius: var(--radius-sm);
   padding: 0 var(--space-3);
   font-size: var(--text-caption);
 }

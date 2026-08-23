@@ -48,6 +48,22 @@ function roundCurrency(value: number) {
   return Number((Math.round((value + Number.EPSILON) * 100) / 100).toFixed(2));
 }
 
+export function calculateAdditionalFoodExpenseTotal(
+  allEligibleFoodExpenses: number,
+  communalMealExpenses: number,
+) {
+  if (
+    !Number.isFinite(allEligibleFoodExpenses) ||
+    !Number.isFinite(communalMealExpenses)
+  ) {
+    throw new TypeError('Food expense totals must be finite numbers');
+  }
+
+  return roundCurrency(
+    Math.max(allEligibleFoodExpenses - communalMealExpenses, 0),
+  );
+}
+
 export function calculateMemberFoodBill(params: {
   memberMeals: number;
   communalMealRate: number;

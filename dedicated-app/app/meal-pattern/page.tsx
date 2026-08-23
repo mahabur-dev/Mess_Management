@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Notice } from '@/components/ui/notice'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import { AssistantInfoCard } from '@/components/mobile/assistant-info-card'
 import { MealIconBadge } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
 import { useAuth } from '../providers'
@@ -170,18 +171,12 @@ export default function MealPatternPage() {
         {step === 'overview' ? (
           current ? (
             <>
-              <Card variant="hero" className="assistant-active-schedule">
-                <span className="assistant-active-schedule__glow" aria-hidden="true" />
-                <span className="assistant-active-schedule__dots" aria-hidden="true" />
-                <div className="assistant-active-schedule__heading">
-                  <div className="min-w-0 flex-1">
-                    <p className="assistant-active-schedule__eyebrow">Active schedule</p>
-                    <h1 className="assistant-active-schedule__title">{current.pattern_type === 'DAILY' ? 'Daily pattern' : 'Weekly pattern'}</h1>
-                  </div>
-                  <span className="assistant-active-schedule__icon" aria-hidden="true"><CircleCheck size={23} strokeWidth={2.2} /></span>
-                </div>
-                <p className="assistant-active-schedule__description">Meals are added automatically from {new Date(current.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</p>
-              </Card>
+              <AssistantInfoCard
+                eyebrow="Active schedule"
+                title={current.pattern_type === 'DAILY' ? 'Daily pattern' : 'Weekly pattern'}
+                description={<>Meals are added automatically from {new Date(current.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</>}
+                icon={CircleCheck}
+              />
               <Card title="Your schedule" subtitle="You can change this whenever your routine changes.">
                 {current.pattern_type === 'DAILY' ? <div className="space-y-2">{enabledLabels(current.daily_schedule).map((label) => <div key={label} className="flex items-center gap-2 text-label text-[#245d66]"><span className="grid h-6 w-6 place-items-center rounded-full bg-[#dff4f3] text-[#008d8c]"><Check size={14} /></span>{label}</div>)}</div> : <div className="space-y-2">{days.map((day) => <div key={day} className="flex items-center justify-between border-b border-[#e4eaec] pb-2 text-label"><span className="text-[#245d66]">{dayLabels[day]}</span><span className="text-[#65838b]">{enabledLabels(current.weekly_schedule?.[day]).join(', ') || 'No meals'}</span></div>)}</div>}
               </Card>
@@ -223,17 +218,12 @@ export default function MealPatternPage() {
         {step === 'schedule' ? (
           <>
             <button type="button" className="flex items-center gap-1 text-label text-[#00777a]" onClick={() => setStep('type')}><ChevronLeft size={18} /> Back</button>
-            <div className="relative overflow-hidden rounded-[14px] border border-[#d7e5e7] bg-white px-4 py-4 shadow-[0_8px_22px_rgba(18,55,72,.06)]">
-              <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#008d8c] via-[#35b7a9] to-[#f0b84b]" />
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-caption font-bold uppercase tracking-[.14em] text-[#008d8c]">Step 2 of 2</p>
-                  <h1 className="mt-1 text-headline font-semibold leading-tight text-[#245d66]">{type === 'DAILY' ? 'What meals do you take?' : 'Plan each day'}</h1>
-                  <p className="mt-2 max-w-[330px] text-body leading-5 text-[#65838b]">{type === 'DAILY' ? 'Add the meals you normally take every day.' : 'Add meals for each day. Empty days stay meal-free.'}</p>
-                </div>
-                <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#edfafa] text-[#008d8c]"><CalendarCheck2 size={17} /></span>
-              </div>
-            </div>
+            <AssistantInfoCard
+              eyebrow="Step 2 of 2"
+              title={type === 'DAILY' ? 'What meals do you take?' : 'Plan each day'}
+              description={type === 'DAILY' ? 'Add the meals you normally take every day.' : 'Add meals for each day. Empty days stay meal-free.'}
+              icon={CalendarCheck2}
+            />
             {type === 'DAILY' ? <div className="w-full rounded-[12px] border border-[#dce8e9] bg-white p-3"><MealScheduleEditor schedule={daily} onChange={setDaily} /></div> : <div className="w-full space-y-3">{days.map((day) => <div key={day} className="w-full rounded-[12px] border border-[#dce8e9] bg-white p-3"><div className="mb-2 flex items-center justify-between"><span className="text-label text-[#245d66]">{dayLabels[day]}</span><span className="text-caption text-[#65838b]">{mealCountLabel(scheduleTotal(weekly[day]))} added</span></div><MealScheduleEditor schedule={weekly[day]} onChange={(next) => setWeekly((old) => ({ ...old, [day]: next }))} /></div>)}</div>}
             <Button className="w-full" onClick={submit} busy={saving} disabled={type === 'DAILY' && selectedCount === 0}>Activate pattern <ArrowRight size={18} /></Button>
           </>

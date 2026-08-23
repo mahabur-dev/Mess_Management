@@ -7,6 +7,7 @@ import {
   formatTaka,
 } from '@/components/mobile/expense-design'
 import {
+  ExpenseActionBar,
   ExpensePrimaryAction,
   ExpenseSecondaryAction,
   SplitPreviewContent,
@@ -246,8 +247,10 @@ export function AiExpensePreview({
         shares={preview.shares ?? []}
         formatMoney={formatTaka}
         busy={disabled}
-        onBack={() => setPreview(null)}
+        onBack={onCancel}
         onSave={onConfirm}
+        backLabel="Cancel"
+        saveLabel="Save"
       />
     )
   }
@@ -300,10 +303,12 @@ export function AiExpensePreview({
       />
 
       <FormStatusMessage message={previewMessage} />
-      <ExpensePrimaryAction onClick={() => void refreshPreview()} disabled={disabled || previewBusy}>
-        <Eye size={17} /> {previewBusy ? 'Calculating...' : 'Preview Split'}
-      </ExpensePrimaryAction>
-      <ExpenseSecondaryAction onClick={onCancel}>Cancel AI Draft</ExpenseSecondaryAction>
+      <ExpenseActionBar>
+        <ExpenseSecondaryAction onClick={onCancel} disabled={disabled || previewBusy}>Cancel</ExpenseSecondaryAction>
+        <ExpensePrimaryAction onClick={() => void refreshPreview()} disabled={disabled || previewBusy}>
+          <Eye size={17} /> {previewBusy ? 'Calculating...' : 'Preview'}
+        </ExpensePrimaryAction>
+      </ExpenseActionBar>
     </div>
   )
 }

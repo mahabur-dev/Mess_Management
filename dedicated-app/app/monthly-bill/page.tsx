@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   CalendarDays,
-  ChevronRight,
   CircleDollarSign,
   ReceiptText,
   ShieldCheck,
@@ -13,7 +12,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
-import { CircleIcon, formatTaka } from '@/components/mobile/expense-design'
+import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
+import { formatTaka } from '@/components/mobile/expense-design'
 import { InlineNotice, MealMonthSelector, currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
@@ -267,24 +267,14 @@ export default function MonthlyBillPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[18px] border border-[#9edddc] bg-[linear-gradient(135deg,#ffffff_0%,#f4ffff_58%,#edfafa_100%)] shadow-[0_12px_28px_rgba(0,119,122,0.08)]">
-          <div className="relative flex min-h-[98px] items-center gap-3 px-4 py-3.5">
-            <div className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-[#008d8c]" />
-            <CircleIcon icon={CalendarDays} size="lg" className="!rounded-[16px]" />
-            <div className="min-w-0 flex-1">
-              <div className="max-w-[160px] text-caption font-bold uppercase leading-[15px] tracking-[0.08em] text-[#00777a]">My Bill Summary</div>
-              <div className="mt-1 truncate text-label font-semibold text-[#1d3a42]">
-                Meals, deposits, expenses and utility
-              </div>
-            </div>
-            <Link
-              href={appHref(`/monthly-bill/my-details?month=${encodeURIComponent(month)}`)}
-              className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[13px] border border-[#8dd8d7] bg-white px-3 text-label font-semibold text-[#1d3a42] shadow-[0_8px_18px_rgba(0,119,122,0.07)] active:scale-[0.98]"
-            >
-              Details <ChevronRight size={15} className="text-[#008d8c]" />
-            </Link>
-          </div>
-        </section>
+        <AssistantSummaryCard
+          icon={CalendarDays}
+          title="My Bill Summary"
+          href={appHref(`/monthly-bill/my-details?month=${encodeURIComponent(month)}`)}
+          actionLabel="Details"
+        >
+          Meals, deposits, expenses and utility
+        </AssistantSummaryCard>
 
         <section className="monthly-member-overview" aria-labelledby="member-bill-overview-title">
           <div className="monthly-member-overview__header">

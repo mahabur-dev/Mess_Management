@@ -2944,98 +2944,147 @@ textarea {
   font-weight: 500;
 }
 
-.expense-details-cta {
+.assistant-summary-card {
+  --assistant-card-violet: #6656c9;
+  --assistant-card-violet-deep: #5142af;
   position: relative;
   display: flex;
   min-height: 96px;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
   overflow: hidden;
-  border: 1px solid #9edddc;
+  isolation: isolate;
+  border: 1px solid rgba(102, 86, 201, 0.13);
   border-radius: 18px;
-  background: linear-gradient(135deg, #ffffff 0%, #f4ffff 58%, #edfafa 100%);
-  padding: 14px 14px 14px 16px;
-  color: #123748;
-  box-shadow: 0 12px 28px rgba(0, 119, 122, 0.08);
-  margin-top: 16px;
+  background:
+    radial-gradient(circle at 94% 7%, rgba(197, 188, 255, 0.5), transparent 26%),
+    radial-gradient(circle at 7% 100%, rgba(223, 244, 243, 0.72), transparent 31%),
+    linear-gradient(135deg, #ffffff 0%, #faf9ff 52%, #f1efff 100%);
+  padding: 16px 14px 16px 17px;
+  color: var(--semantic-ink);
+  box-shadow: 0 10px 28px rgba(73, 61, 145, 0.12);
 }
 
-.expense-details-cta::after {
-  content: "";
+.assistant-summary-card__glow {
   position: absolute;
-  inset: 12px auto 12px 0;
-  width: 4px;
-  border-radius: 0 999px 999px 0;
-  background: #008d8c;
-  pointer-events: none;
+  top: -40px;
+  right: -34px;
+  z-index: -1;
+  width: 112px;
+  height: 112px;
+  border: 18px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: rgba(184, 173, 255, 0.16);
 }
 
-.expense-details-cta > * {
-  position: relative;
-  z-index: 1;
-}
-
-.expense-details-cta__icon {
-  display: grid;
-  height: 48px;
+.assistant-summary-card__dots {
+  position: absolute;
+  right: 11px;
+  bottom: 5px;
+  z-index: -1;
   width: 48px;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: 16px;
-  background: #d8f2f1;
-  color: #008d8c;
-  box-shadow: 0 0 0 1px #bfe7e6 inset;
+  height: 44px;
+  opacity: 0.42;
+  background-image: radial-gradient(circle, rgba(102, 86, 201, 0.35) 1px, transparent 1.5px);
+  background-size: 8px 8px;
+  -webkit-mask-image: linear-gradient(to left, #000, transparent);
+  mask-image: linear-gradient(to left, #000, transparent);
 }
 
-.expense-details-cta__title,
-.expense-details-cta__subtitle {
+.assistant-summary-card__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #7868de, var(--assistant-card-violet-deep));
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(81, 66, 175, 0.24);
+}
+
+.assistant-summary-card__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.assistant-summary-card__title,
+.assistant-summary-card__content {
   display: block;
+}
+
+.assistant-summary-card__title {
+  max-width: 160px;
+  color: var(--brand-600);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 15px;
+  text-transform: uppercase;
+}
+
+.assistant-summary-card__content {
+  margin-top: 4px;
   overflow: hidden;
+  color: var(--semantic-ink);
+  font-size: var(--text-label);
+  font-weight: 650;
+  line-height: var(--text-label--line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.expense-details-cta__title {
-  color: #55727b;
-  font-size: var(--text-caption);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 15px;
-  text-transform: uppercase;
-  white-space: normal;
+.assistant-summary-card__content--metric {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  overflow: visible;
 }
 
-.expense-details-cta__subtitle {
-  margin-top: 4px;
-  color: #65838b;
-  font-size: var(--text-caption);
-  font-weight: 500;
-  line-height: var(--text-caption--line-height);
+.assistant-summary-card__value {
+  color: var(--semantic-ink);
+  font-size: var(--text-title);
+  font-weight: 650;
+  line-height: 1;
 }
 
-.expense-details-cta__button {
+.assistant-summary-card__unit {
+  padding-bottom: 1px;
+  color: var(--assistant-card-violet);
+  font-size: var(--text-caption);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.assistant-summary-card__action {
   display: inline-flex;
   min-height: 40px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border: 1px solid #8dd8d7;
+  border: 1px solid rgba(102, 86, 201, 0.2);
   border-radius: 13px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.82);
   padding: 8px 12px;
-  color: #00777a;
+  color: var(--assistant-card-violet-deep);
   font-size: var(--text-label);
-  font-weight: 600;
-  box-shadow: 0 8px 18px rgba(0, 119, 122, 0.07);
+  font-weight: 650;
+  box-shadow: 0 8px 18px rgba(81, 66, 175, 0.09);
   transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
-.expense-details-cta__button:active {
+.assistant-summary-card__action:active {
   transform: scale(0.98);
-  border-color: #008d8c;
-  background: #edfafa;
-  color: #008d8c;
+  border-color: var(--assistant-card-violet);
+  background: #f1efff;
+  color: var(--assistant-card-violet-deep);
+}
+
+.assistant-summary-card__action:focus-visible {
+  outline: 3px solid rgba(102, 86, 201, 0.2);
+  outline-offset: 2px;
 }
 
 .expense-breakdown-list {
@@ -5463,7 +5512,7 @@ textarea {
 .quick-add-inline-waveform span:nth-child(4n) { animation-delay: -650ms; }
 
 .quick-add-examples-card {
-  padding: 16px;
+  padding: 14px 8px 10px;
   border: 1px solid var(--neutral-200);
   border-radius: 20px;
   background: #ffffff;
@@ -5475,7 +5524,7 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 2px 14px;
+  margin: 0 5px 12px;
 }
 
 .quick-add-examples-heading > div {
@@ -5645,9 +5694,13 @@ textarea {
 
 @media (max-width: 350px) {
   .quick-add-hero,
-  .quick-add-composer,
-  .quick-add-examples-card {
+  .quick-add-composer {
     padding: 14px;
+    border-radius: 16px;
+  }
+
+  .quick-add-examples-card {
+    padding: 13px 7px 9px;
     border-radius: 16px;
   }
 
@@ -6611,7 +6664,8 @@ textarea {
   backdrop-filter: none;
 }
 
-.phone-frame[data-appearance="default"] .quick-add-hero {
+.phone-frame[data-appearance="default"] .quick-add-hero,
+.phone-frame[data-appearance="default"] .assistant-summary-card {
   border-radius: 16px;
   box-shadow: 0 8px 22px rgba(73, 61, 145, 0.12);
 }

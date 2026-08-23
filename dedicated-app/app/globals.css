@@ -2946,7 +2946,7 @@ textarea {
 
 .assistant-summary-card,
 .assistant-pattern-card,
-.assistant-active-schedule {
+.assistant-info-card {
   --assistant-card-violet: #6656c9;
   --assistant-card-violet-deep: #5142af;
 }
@@ -5367,7 +5367,7 @@ textarea {
   cursor: not-allowed;
 }
 
-.assistant-active-schedule {
+.assistant-info-card {
   position: relative;
   overflow: hidden;
   isolation: isolate;
@@ -5382,7 +5382,7 @@ textarea {
   box-shadow: 0 10px 28px rgba(73, 61, 145, 0.12);
 }
 
-.assistant-active-schedule__glow {
+.assistant-info-card__glow {
   position: absolute;
   top: -36px;
   right: -34px;
@@ -5394,7 +5394,7 @@ textarea {
   background: rgba(184, 173, 255, 0.16);
 }
 
-.assistant-active-schedule__dots {
+.assistant-info-card__dots {
   position: absolute;
   right: 14px;
   bottom: 10px;
@@ -5408,13 +5408,13 @@ textarea {
   mask-image: linear-gradient(to left, #000, transparent);
 }
 
-.assistant-active-schedule__heading {
+.assistant-info-card__heading {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
 
-.assistant-active-schedule__eyebrow {
+.assistant-info-card__eyebrow {
   margin: 1px 0 4px;
   color: var(--brand-600);
   font-size: var(--text-caption);
@@ -5424,7 +5424,7 @@ textarea {
   text-transform: uppercase;
 }
 
-.assistant-active-schedule__title {
+.assistant-info-card__title {
   margin: 0;
   color: var(--semantic-ink);
   font-size: var(--text-body);
@@ -5432,7 +5432,7 @@ textarea {
   line-height: 1.45;
 }
 
-.assistant-active-schedule__icon {
+.assistant-info-card__icon {
   display: grid;
   width: 48px;
   height: 48px;
@@ -5445,7 +5445,7 @@ textarea {
   box-shadow: 0 8px 18px rgba(81, 66, 175, 0.24);
 }
 
-.assistant-active-schedule__description {
+.assistant-info-card__description {
   max-width: calc(100% - 46px);
   margin: 12px 0 0;
   color: var(--neutral-600);
@@ -5823,31 +5823,23 @@ textarea {
 .quick-add-examples {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  overflow: hidden;
-  border: 1px solid var(--neutral-200);
-  border-radius: 16px;
-  background: #ffffff;
+  gap: 4px;
 }
 
 .quick-add-example {
   display: grid;
-  min-height: 68px;
+  min-height: 64px;
   grid-template-columns: 38px minmax(0, 1fr) 28px;
   align-items: center;
   gap: 11px;
   width: 100%;
-  padding: 10px 11px;
+  padding: 8px 6px;
   border: 0;
-  border-bottom: 1px solid var(--neutral-200);
-  border-radius: 0;
-  background: #ffffff;
+  border-radius: 12px;
+  background: transparent;
   color: var(--brand-800);
   text-align: left;
   transition: background-color 160ms ease, transform 160ms ease;
-}
-
-.quick-add-example:last-child {
-  border-bottom: 0;
 }
 
 .quick-add-example-icon {
@@ -5892,14 +5884,20 @@ textarea {
   width: 28px;
   height: 28px;
   padding: 7px;
-  border-radius: 9px;
-  background: var(--brand-50);
+  border-radius: 0;
+  background: transparent;
   color: var(--brand-600);
 }
 
 .quick-add-example:active {
   transform: scale(0.995);
-  background: #f3fbfb;
+  background: rgba(237, 250, 250, 0.72);
+}
+
+@media (hover: hover) {
+  .quick-add-example:not(:disabled):hover {
+    background: rgba(237, 250, 250, 0.58);
+  }
 }
 
 .quick-add-example:disabled {
@@ -5969,7 +5967,7 @@ textarea {
   .quick-add-example {
     grid-template-columns: 36px minmax(0, 1fr) 28px;
     gap: 9px;
-    padding-inline: 9px;
+    padding-inline: 5px;
   }
 
   .quick-add-example-icon {
@@ -6929,7 +6927,7 @@ textarea {
 .phone-frame[data-appearance="default"] .quick-add-hero,
 .phone-frame[data-appearance="default"] .assistant-summary-card,
 .phone-frame[data-appearance="default"] .assistant-pattern-card,
-.phone-frame[data-appearance="default"] .assistant-active-schedule {
+.phone-frame[data-appearance="default"] .assistant-info-card {
   border-radius: 16px;
   box-shadow: 0 8px 22px rgba(73, 61, 145, 0.12);
 }

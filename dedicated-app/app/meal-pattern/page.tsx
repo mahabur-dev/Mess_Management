@@ -229,7 +229,16 @@ export default function MealPatternPage() {
           </>
         ) : null}
 
-        {step === 'success' ? <Card variant="tint" className="py-10 text-center"><div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_10px_25px_rgba(0,141,140,.25)]"><Check size={48} strokeWidth={3} /></div><h1 className="mt-6 text-headline text-[#245d66]">Meal pattern activated</h1><p className="mx-auto mt-2 max-w-[300px] text-body text-[#65838b]">Your {type.toLowerCase()} meal schedule is now active. Meals will be added automatically.</p><Button className="mt-6 w-full" onClick={() => setStep('overview')}>View my schedule <ArrowRight size={18} /></Button></Card> : null}
+        {step === 'success' ? (
+          <Card variant="tint" className="assistant-success-card">
+            <span className="assistant-success-card__glow" aria-hidden="true" />
+            <span className="assistant-success-card__dots" aria-hidden="true" />
+            <span className="assistant-success-card__icon" aria-hidden="true"><Check size={38} strokeWidth={2.8} /></span>
+            <h1 className="assistant-success-card__title">Meal pattern activated</h1>
+            <p className="assistant-success-card__description">Your {type.toLowerCase()} meal schedule is now active. Meals will be added automatically.</p>
+            <Button className="assistant-success-card__action w-full" onClick={() => setStep('overview')}>View my schedule <ArrowRight size={18} /></Button>
+          </Card>
+        ) : null}
       </div>
     </MobileShell>
   )

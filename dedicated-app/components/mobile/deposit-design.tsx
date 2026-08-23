@@ -418,10 +418,10 @@ export function DepositListItem({
   const isHorizontal = variant === 'horizontal'
   const avatarUrl = item.member?.avatar_url || item.creator?.avatar_url || null
   const className = joinClasses(
-    'flex min-h-[82px] items-center gap-3 bg-white',
+    'flex min-h-[82px] items-center gap-3',
     isHorizontal
-      ? 'border-y border-x-0 border-[#dce9ec] py-3 shadow-none'
-      : 'rounded-[18px] border border-[#dce9ec] px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.055)]'
+      ? 'transaction-list-row py-3'
+      : 'rounded-[18px] border border-[#dce9ec] bg-white px-3 py-3 shadow-[0_8px_20px_rgba(18,55,72,0.055)]'
   )
   const content = isHorizontal ? (
     <>

@@ -2945,7 +2945,8 @@ textarea {
 }
 
 .assistant-summary-card,
-.assistant-pattern-card {
+.assistant-pattern-card,
+.assistant-active-schedule {
   --assistant-card-violet: #6656c9;
   --assistant-card-violet-deep: #5142af;
 }
@@ -5366,6 +5367,93 @@ textarea {
   cursor: not-allowed;
 }
 
+.assistant-active-schedule {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(102, 86, 201, 0.13);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 94% 7%, rgba(197, 188, 255, 0.5), transparent 26%),
+    radial-gradient(circle at 7% 100%, rgba(223, 244, 243, 0.72), transparent 31%),
+    linear-gradient(135deg, #ffffff 0%, #faf9ff 52%, #f1efff 100%);
+  padding: 17px;
+  color: var(--semantic-ink);
+  box-shadow: 0 10px 28px rgba(73, 61, 145, 0.12);
+}
+
+.assistant-active-schedule__glow {
+  position: absolute;
+  top: -36px;
+  right: -34px;
+  z-index: -1;
+  width: 112px;
+  height: 112px;
+  border: 18px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: rgba(184, 173, 255, 0.16);
+}
+
+.assistant-active-schedule__dots {
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  z-index: -1;
+  width: 48px;
+  height: 52px;
+  opacity: 0.42;
+  background-image: radial-gradient(circle, rgba(102, 86, 201, 0.35) 1px, transparent 1.5px);
+  background-size: 8px 8px;
+  -webkit-mask-image: linear-gradient(to left, #000, transparent);
+  mask-image: linear-gradient(to left, #000, transparent);
+}
+
+.assistant-active-schedule__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.assistant-active-schedule__eyebrow {
+  margin: 1px 0 4px;
+  color: var(--brand-600);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: var(--text-caption--line-height);
+  text-transform: uppercase;
+}
+
+.assistant-active-schedule__title {
+  margin: 0;
+  color: var(--semantic-ink);
+  font-size: var(--text-body);
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.assistant-active-schedule__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #7868de, var(--assistant-card-violet-deep));
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(81, 66, 175, 0.24);
+}
+
+.assistant-active-schedule__description {
+  max-width: calc(100% - 46px);
+  margin: 12px 0 0;
+  color: var(--neutral-600);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .quick-add-hero {
   --quick-add-violet: #6656c9;
   --quick-add-violet-deep: #5142af;
@@ -6840,7 +6928,8 @@ textarea {
 
 .phone-frame[data-appearance="default"] .quick-add-hero,
 .phone-frame[data-appearance="default"] .assistant-summary-card,
-.phone-frame[data-appearance="default"] .assistant-pattern-card {
+.phone-frame[data-appearance="default"] .assistant-pattern-card,
+.phone-frame[data-appearance="default"] .assistant-active-schedule {
   border-radius: 16px;
   box-shadow: 0 8px 22px rgba(73, 61, 145, 0.12);
 }

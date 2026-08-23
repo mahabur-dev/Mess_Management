@@ -170,9 +170,17 @@ export default function MealPatternPage() {
         {step === 'overview' ? (
           current ? (
             <>
-              <Card variant="hero" className="overflow-hidden">
-                <div className="flex items-start justify-between gap-3"><div><p className="text-caption font-bold uppercase tracking-[.12em] text-white/75">Active schedule</p><h1 className="mt-2 text-headline text-white">{current.pattern_type === 'DAILY' ? 'Daily pattern' : 'Weekly pattern'}</h1></div><span className="grid h-12 w-12 place-items-center rounded-full bg-white/15"><CircleCheck className="text-white" size={27} /></span></div>
-                <p className="mt-3 text-label text-white/80">Meals are added automatically from {new Date(current.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</p>
+              <Card variant="hero" className="assistant-active-schedule">
+                <span className="assistant-active-schedule__glow" aria-hidden="true" />
+                <span className="assistant-active-schedule__dots" aria-hidden="true" />
+                <div className="assistant-active-schedule__heading">
+                  <div className="min-w-0 flex-1">
+                    <p className="assistant-active-schedule__eyebrow">Active schedule</p>
+                    <h1 className="assistant-active-schedule__title">{current.pattern_type === 'DAILY' ? 'Daily pattern' : 'Weekly pattern'}</h1>
+                  </div>
+                  <span className="assistant-active-schedule__icon" aria-hidden="true"><CircleCheck size={23} strokeWidth={2.2} /></span>
+                </div>
+                <p className="assistant-active-schedule__description">Meals are added automatically from {new Date(current.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</p>
               </Card>
               <Card title="Your schedule" subtitle="You can change this whenever your routine changes.">
                 {current.pattern_type === 'DAILY' ? <div className="space-y-2">{enabledLabels(current.daily_schedule).map((label) => <div key={label} className="flex items-center gap-2 text-label text-[#245d66]"><span className="grid h-6 w-6 place-items-center rounded-full bg-[#dff4f3] text-[#008d8c]"><Check size={14} /></span>{label}</div>)}</div> : <div className="space-y-2">{days.map((day) => <div key={day} className="flex items-center justify-between border-b border-[#e4eaec] pb-2 text-label"><span className="text-[#245d66]">{dayLabels[day]}</span><span className="text-[#65838b]">{enabledLabels(current.weekly_schedule?.[day]).join(', ') || 'No meals'}</span></div>)}</div>}

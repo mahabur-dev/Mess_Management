@@ -129,7 +129,7 @@ export default function SubscriptionPage() {
               <div className="ui-section-heading">
                 <div>
                   <h2 id="plans-heading" className="ui-section-title">Available plans</h2>
-                  <p className="ui-section-subtitle">Choose the plan that fits your mess.</p>
+                  {/* <p className="ui-section-subtitle">Choose the plan that fits your mess.</p> */}
                 </div>
               </div>
               <div className="space-y-3">

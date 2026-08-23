@@ -7,6 +7,7 @@ import type { ReactNode } from 'react'
 import type { ExpenseSplitMethod, ExpenseUsedBy } from '@/lib/form-options'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { DesignedSelect } from '@/components/mobile/expense-design'
+import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
 
 type Accent = 'teal' | 'blue' | 'violet' | 'green' | 'orange'
 
@@ -129,19 +130,15 @@ export function ExpenseDetailsCta({
   buttonLabel?: string
 }) {
   return (
-    <section className="expense-details-cta" aria-label={title}>
-      <span className="expense-details-cta__icon" aria-hidden="true">
-        <CircleDollarSign size={34} strokeWidth={1.9} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="expense-details-cta__title">{title}</span>
-        <span className="expense-details-cta__subtitle">{subtitle}</span>
-      </span>
-      <Link href={href} className="expense-details-cta__button">
-        {buttonLabel}
-        <ChevronRight size={15} strokeWidth={2.6} />
-      </Link>
-    </section>
+    <AssistantSummaryCard
+      icon={CircleDollarSign}
+      title={title}
+      href={href}
+      actionLabel={buttonLabel}
+      className="mt-4"
+    >
+      {subtitle}
+    </AssistantSummaryCard>
   )
 }
 

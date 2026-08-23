@@ -1,8 +1,9 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { InputHTMLAttributes, ReactNode } from 'react'
 import { ChevronDown, Grip } from 'lucide-react'
 import { MobileSelectSheet } from '@/components/mobile/select-sheet'
+import { Button } from '@/components/ui/button'
 
 type BaseFieldProps = {
   label: string
@@ -14,7 +15,7 @@ type BaseFieldProps = {
 export function FieldCard({ label, hint, className, children }: BaseFieldProps) {
   return (
     <label className={`block w-full ${className ?? ''}`}>
-      <div className="mb-2 flex items-end justify-between gap-3">
+      <div className="ui-field-heading">
         <div className="ui-field-label">{label}</div>
         {hint ? <div className="ui-field-hint">{hint}</div> : null}
       </div>
@@ -23,24 +24,62 @@ export function FieldCard({ label, hint, className, children }: BaseFieldProps) 
   )
 }
 
+export function SettingsSection({
+  id,
+  title,
+  description,
+  action,
+  className,
+  children,
+}: {
+  id: string
+  title: string
+  description?: string
+  action?: ReactNode
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <section
+      className={`management-section ${className ?? ''}`.trim()}
+      aria-labelledby={id}
+    >
+      <div className="management-section__header">
+        <div className="management-section__heading">
+          <h2 id={id} className="management-section__title">{title}</h2>
+          {description ? <p className="management-section__description">{description}</p> : null}
+        </div>
+        {action ? <div className="management-section__action">{action}</div> : null}
+      </div>
+      <div className="management-section__content">{children}</div>
+    </section>
+  )
+}
+
 export function TextField({
   label,
   hint,
   value,
   onChange,
-  placeholder,
   type = 'text',
+  ...inputProps
 }: {
   label: string
   hint?: string
   value: string
   onChange: (value: string) => void
-  placeholder?: string
-  type?: string
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'> & {
+  type?: InputHTMLAttributes<HTMLInputElement>['type']
 }) {
   return (
     <FieldCard label={label} hint={hint}>
-      <input className="field min-h-14" type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      <input
+        {...inputProps}
+        className="field min-h-14"
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
     </FieldCard>
   )
 }
@@ -251,8 +290,14 @@ export function SubmitButton({
   disabled?: boolean
 }) {
   return (
-    <button type={type} className="primary-btn mt-1 w-full disabled:cursor-not-allowed disabled:opacity-70" onClick={onClick} disabled={busy || disabled}>
-      {busy ? 'Saving...' : children}
-    </button>
+    <Button
+      type={type}
+      className="w-full"
+      busy={busy}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </Button>
   )
 }

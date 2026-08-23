@@ -779,13 +779,13 @@ export function ExpenseListItem({
   const className = joinClasses(
         `
         group relative flex min-h-[76px]
-        items-center gap-3 overflow-hidden bg-white/95
+        items-center gap-3 overflow-hidden
         transition-all duration-200
         active:scale-[0.995]
         `,
         isHorizontal
-          ? 'border-y border-x-0 border-[#cfeeed] py-3 shadow-none'
-          : 'rounded-[17px] border border-white/90 px-3 py-3 shadow-[0_10px_26px_rgba(18,55,72,0.065)] hover:-translate-y-0.5 hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]'
+          ? 'transaction-list-row py-3'
+          : 'rounded-[17px] border border-white/90 bg-white/95 px-3 py-3 shadow-[0_10px_26px_rgba(18,55,72,0.065)] hover:-translate-y-0.5 hover:shadow-[0_15px_32px_rgba(18,55,72,0.10)]'
   )
 
   return href ? (

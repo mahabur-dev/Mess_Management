@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import type { ComponentType } from 'react'
-import { ChevronRight, type LucideProps } from 'lucide-react'
+import { ChevronRight, type LucideIcon } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
+import { AssistantInfoCard } from '@/components/mobile/assistant-info-card'
 import { appHref } from '@/lib/routes'
 
 export type InfoPageSection = {
@@ -32,7 +32,7 @@ export function InfoPage({
   subtitle: string
   eyebrow: string
   introduction: string
-  icon: ComponentType<LucideProps>
+  icon: LucideIcon
   sections: InfoPageSection[]
   actions?: InfoPageAction[]
 }) {
@@ -40,16 +40,12 @@ export function InfoPage({
     <MobileShell>
       <TopScreen title={title} subtitle={subtitle} backHref="/" />
       <div className="screen space-y-4">
-        <section className="info-page-hero">
-          <span className="info-page-hero-icon" aria-hidden="true">
-            <Icon size={27} strokeWidth={2.1} />
-          </span>
-          <div>
-            <p>{eyebrow}</p>
-            <h1>{title}</h1>
-            <span>{introduction}</span>
-          </div>
-        </section>
+        <AssistantInfoCard
+          eyebrow={eyebrow}
+          title={title}
+          description={introduction}
+          icon={Icon}
+        />
 
         <div className="space-y-3">
           {sections.map((section, index) => (

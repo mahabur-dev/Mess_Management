@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { Check, Crown, RefreshCw } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { MobileShell } from '@/components/mobile-shell'
+import { AssistantMetricsCard } from '@/components/mobile/assistant-metrics-card'
 import { TopScreen } from '@/components/top-screen'
+import { StatusPill } from '@/components/ui/badge'
 import { useActiveMess } from '@/hooks/use-active-mess'
 import { api } from '@/lib/api'
 import { appHref } from '@/lib/routes'
@@ -78,6 +80,16 @@ export default function SubscriptionPage() {
   }, [activeMess?.id, messLoading])
 
   const remaining = daysRemaining(subscription?.end_date)
+  const subscriptionStatus = subscription?.status ?? 'Unknown'
+  const normalizedStatus = subscriptionStatus.toUpperCase()
+  const statusTone =
+    normalizedStatus === 'ACTIVE'
+      ? 'success'
+      : normalizedStatus === 'EXPIRED'
+        ? 'danger'
+        : normalizedStatus === 'CANCELLED'
+          ? 'neutral'
+          : 'warning'
 
   return (
     <MobileShell>
@@ -100,27 +112,24 @@ export default function SubscriptionPage() {
           <section className="ui-notice ui-notice--danger" role="alert">{error}</section>
         ) : (
           <>
-            <section className="subscription-hero">
-              <div className="subscription-hero-heading">
-                <span aria-hidden="true"><Crown size={25} strokeWidth={2.1} /></span>
-                <div>
-                  <p>{activeMess.name}</p>
-                  <h1>{plans[subscription?.plan ?? '']?.label ?? subscription?.plan ?? 'Subscription'}</h1>
-                </div>
-                <span className="subscription-status">{subscription?.status ?? 'Unknown'}</span>
-              </div>
-              <div className="subscription-summary">
-                <div><span>Started</span><strong>{formatDate(subscription?.start_date)}</strong></div>
-                <div><span>Ends</span><strong>{formatDate(subscription?.end_date)}</strong></div>
-                <div><span>Days left</span><strong>{remaining === null ? '—' : remaining}</strong></div>
-              </div>
-            </section>
+            <AssistantMetricsCard
+              icon={Crown}
+              eyebrow={activeMess.name}
+              title={plans[subscription?.plan ?? '']?.label ?? subscription?.plan ?? 'Subscription'}
+              titleId="subscription-summary-title"
+              status={<StatusPill tone={statusTone}>{subscriptionStatus}</StatusPill>}
+              metrics={[
+                { label: 'Started', value: formatDate(subscription?.start_date) },
+                { label: 'Ends', value: formatDate(subscription?.end_date) },
+                { label: 'Days left', value: remaining === null ? '—' : remaining },
+              ]}
+            />
 
             <section aria-labelledby="plans-heading">
               <div className="ui-section-heading">
                 <div>
                   <h2 id="plans-heading" className="ui-section-title">Available plans</h2>
-                  <p className="ui-section-subtitle">Choose the plan that fits your mess.</p>
+                  {/* <p className="ui-section-subtitle">Choose the plan that fits your mess.</p> */}
                 </div>
               </div>
               <div className="space-y-3">

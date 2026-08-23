@@ -2,10 +2,29 @@ const assert = require('node:assert/strict');
 const { describe, it } = require('node:test');
 
 const {
+  calculateAdditionalFoodExpenseTotal,
   calculateMemberFoodBill,
   isCommunalMealExpense,
   isUtilitySplitAllowed,
 } = require('../dist/app/module/expense/expense-accounting.js');
+
+describe('dashboard food expense accounting', () => {
+  it('isolates non-default food and grocery costs from the communal meal pool', () => {
+    assert.equal(calculateAdditionalFoodExpenseTotal(4_000, 3_000), 1_000);
+  });
+
+  it('does not change the existing cost when every food expense is communal', () => {
+    assert.equal(calculateAdditionalFoodExpenseTotal(3_000, 3_000), 0);
+  });
+
+  it('guards against negative deltas and invalid financial inputs', () => {
+    assert.equal(calculateAdditionalFoodExpenseTotal(2_999.99, 3_000), 0);
+    assert.throws(
+      () => calculateAdditionalFoodExpenseTotal(Number.NaN, 3_000),
+      /finite numbers/,
+    );
+  });
+});
 
 describe('expense accounting classification', () => {
   it('treats only all-member meal-count food as communal', () => {

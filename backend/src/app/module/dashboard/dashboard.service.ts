@@ -2,11 +2,16 @@ import { HttpException, Injectable } from '@nestjs/common';
 import {
   AttendanceStatus,
   DepositLedgerType,
+  ExpenseCategory,
   ExpensePaymentType,
+  ExpenseUsedBy,
   MealName,
   Prisma,
 } from '@prisma/client';
-import { communalMealExpenseWhere } from '../expense/expense-accounting';
+import {
+  calculateAdditionalFoodExpenseTotal,
+  communalMealExpenseWhere,
+} from '../expense/expense-accounting';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
   billingMonthRange,
@@ -131,6 +136,7 @@ export class DashboardService {
       billingState,
       mealTotals,
       monthlyExpenses,
+      allEligibleFoodExpenses,
       monthlyExtraExpenses,
       personalExpenseCredits,
       totalPayment,
@@ -150,6 +156,22 @@ export class DashboardService {
           ...communalMealExpenseWhere,
           status: 'CONFIRMED',
           payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          billing_month: start,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.expense.aggregate({
+        where: {
+          mess_id: messId,
+          category: {
+            in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
+          },
+          status: 'CONFIRMED',
+          payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+          NOT: {
+            payment_type: ExpensePaymentType.PERSONAL,
+            used_by: ExpenseUsedBy.SELF_ONLY,
+          },
           billing_month: start,
         },
         _sum: { amount: true },
@@ -267,6 +289,10 @@ export class DashboardService {
     const totalBazar = hasGeneratedBills
       ? Number(billsAgg._sum.meal_charge ?? 0)
       : Number(monthlyExpenses._sum.amount ?? 0);
+    const additionalFoodExpenses = calculateAdditionalFoodExpenseTotal(
+      Number(allEligibleFoodExpenses._sum.amount ?? 0),
+      Number(monthlyExpenses._sum.amount ?? 0),
+    );
     const currentMealRate =
       totalMeals > 0 ? Number((totalBazar / totalMeals).toFixed(2)) : 0;
     const personalExpenseCreditAmount = Number(
@@ -299,7 +325,8 @@ export class DashboardService {
             return sum + (roomRent || 0);
           }, 0)
         : 0;
-    const totalCost = totalBazar + extraExpenses + totalRoomRent;
+    const totalCost =
+      totalBazar + additionalFoodExpenses + extraExpenses + totalRoomRent;
 
     // ── Prev-balance logic (carry-over from previous month) ────────────────────
     const prevBalanceTotal = Number(previousBillsAgg._sum.balance ?? 0);

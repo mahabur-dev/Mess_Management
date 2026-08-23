@@ -20,6 +20,7 @@ import {
   UtensilsCrossed,
   type LucideProps,
 } from 'lucide-react'
+import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
 import { appHref } from '@/lib/routes'
 
 export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
@@ -575,30 +576,16 @@ export function MonthlyMealSummaryCard({
   title?: string
 }) {
   return (
-    <div className="overflow-hidden rounded-[18px] border border-[#9edddc] bg-[linear-gradient(135deg,#ffffff_0%,#f4ffff_58%,#edfafa_100%)] shadow-[0_12px_28px_rgba(0,119,122,0.08)]">
-      <div className="relative flex min-h-[96px] items-center gap-3 px-4 py-3.5">
-        <div className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-[#008d8c]" />
-
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[#d8f2f1] text-[#008d8c] ring-1 ring-[#bfe7e6]">
-          <CalendarDays size={21} strokeWidth={2.4} />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="max-w-[132px] text-caption font-semibold uppercase leading-[15px] text-[#55727b]">{title}</div>
-          <div className="mt-1 flex items-end gap-1.5">
-            <span className="text-title font-semibold leading-none text-[#1d3a42]">{total}</span>
-            <span className="pb-0.5 text-caption font-semibold text-[#008d8c]">meals</span>
-          </div>
-        </div>
-
-          <Link
-          href={appHref(href)}
-          className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[13px] border border-[#8dd8d7] bg-white px-3 text-label font-semibold text-[#1d3a42] shadow-[0_8px_18px_rgba(0,119,122,0.07)] active:scale-[0.98]"
-        >
-          Details <ChevronRight size={15} className="text-[#008d8c]" />
-        </Link>
-      </div>
-    </div>
+    <AssistantSummaryCard
+      icon={CalendarDays}
+      title={title}
+      href={appHref(href)}
+      actionLabel="Details"
+      contentClassName="assistant-summary-card__content--metric"
+    >
+      <span className="assistant-summary-card__value">{total}</span>
+      <span className="assistant-summary-card__unit">meals</span>
+    </AssistantSummaryCard>
   )
 }
 

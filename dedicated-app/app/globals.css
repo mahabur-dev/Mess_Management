@@ -7760,7 +7760,20 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  padding-right: 0;
+  padding-left: 0;
   padding-bottom: 32px;
+}
+
+.phone-frame[data-appearance="default"] .screen.mess-management-page {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.mess-management-page > * {
+  width: min(95%, calc(100% - 20px));
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .management-section {
@@ -7779,8 +7792,6 @@ textarea {
   justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid rgba(0, 127, 131, 0.1);
 }
 
 .management-section__heading {
@@ -8003,16 +8014,11 @@ textarea {
 }
 
 .management-room-list {
-  gap: var(--space-3);
+  gap: var(--space-6);
 }
 
 .management-room-card {
-  overflow: hidden;
-  border: 1px solid rgba(0, 127, 131, 0.14);
-  border-radius: 14px;
-  background: linear-gradient(155deg, #ffffff 0%, #f8fcfc 100%);
-  padding: 14px;
-  box-shadow: 0 5px 16px rgba(18, 55, 72, 0.04);
+  min-width: 0;
 }
 
 .management-room-card__header {
@@ -8022,8 +8028,6 @@ textarea {
   justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(0, 127, 131, 0.09);
 }
 
 .management-room-card__header p {
@@ -8078,7 +8082,20 @@ textarea {
 }
 
 .profile-page {
+  padding-right: 0;
+  padding-left: 0;
   padding-bottom: 32px;
+}
+
+.phone-frame[data-appearance="default"] .screen.profile-page {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.profile-page > * {
+  width: min(95%, calc(100% - 20px));
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .profile-identity-card {

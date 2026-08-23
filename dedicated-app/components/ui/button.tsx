@@ -28,9 +28,10 @@ export function Button({
 
   return (
     <button
+      {...props}
       className={`ui-btn ${variantClass} ${sizeClass} ${className}`.trim()}
       disabled={busy || props.disabled}
-      {...props}
+      aria-busy={busy || undefined}
     >
       {busy ? 'Saving...' : children}
     </button>

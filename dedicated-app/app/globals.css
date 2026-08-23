@@ -5515,9 +5515,9 @@ textarea {
 
 .assistant-success-card .assistant-success-card__action {
   margin-top: 22px;
-  background: linear-gradient(110deg, var(--assistant-card-violet-deep), var(--brand-600));
+  background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-700) 100%);
   color: #ffffff;
-  box-shadow: 0 10px 22px rgba(73, 83, 151, 0.18);
+  box-shadow: 0 10px 22px rgba(0, 119, 122, 0.18);
 }
 
 .quick-add-hero {

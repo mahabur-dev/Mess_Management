@@ -107,6 +107,21 @@ function getDaysRemaining(endDate?: string | null) {
   return Math.max(days, 0)
 }
 
+function getActiveMemberCount(mess?: {
+  memberships?: unknown
+  _count?: { memberships?: unknown }
+}) {
+  if (Array.isArray(mess?.memberships)) {
+    return mess.memberships.filter((membership) => {
+      if (!membership || typeof membership !== 'object') return false
+      return (membership as { is_active?: boolean }).is_active !== false
+    }).length
+  }
+
+  const count = Number(mess?._count?.memberships)
+  return Number.isFinite(count) && count >= 0 ? count : 0
+}
+
 function planLabel(plan?: string, planInfo?: SubscriptionPlanInfo) {
   if (planInfo?.label) return planInfo.label
   if (!plan) return 'N/A'
@@ -139,6 +154,7 @@ export default function MessManagementPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const [setup, setSetup] = useState<SetupState>(createEmptySetup)
+  const [activeMemberCount, setActiveMemberCount] = useState(0)
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null)
   const [subscriptionPlans, setSubscriptionPlans] = useState<Record<string, SubscriptionPlanInfo>>({})
 
@@ -166,6 +182,7 @@ export default function MessManagementPage() {
         const mess = list.find((item) => item?.id === messId) ?? list[0]
 
         if (mess) {
+          setActiveMemberCount(getActiveMemberCount(mess))
           setSetup({
             messName: mess?.name ?? '',
             address: mess?.address ?? '',
@@ -178,9 +195,11 @@ export default function MessManagementPage() {
             rooms: normalizeRooms(mess?.rooms),
           })
         } else {
+          setActiveMemberCount(0)
           setSetup(createEmptySetup())
         }
       } else {
+        setActiveMemberCount(0)
         setSetup(createEmptySetup())
       }
 
@@ -327,7 +346,7 @@ export default function MessManagementPage() {
                   label: 'Days Left',
                   value: subscription?.end_date ? `${getDaysRemaining(subscription.end_date) ?? 0}d` : 'N/A',
                 },
-                { label: 'Members', value: user?.memberships?.length ?? 0 },
+                { label: 'Members', value: activeMemberCount },
               ]}
             />
 

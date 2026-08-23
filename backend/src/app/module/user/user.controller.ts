@@ -8,11 +8,11 @@ import {
   Put,
   Query,
   Req,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiConsumes,
@@ -69,15 +69,35 @@ export class UserController {
   // Update own profile (with optional image)
   @Patch('profile')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
-  @ApiOperation({ summary: 'Update own profile (with optional profile image)' })
+  @ApiOperation({ summary: 'Update own profile and identity details' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('profileImage', uploadConfig))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'profileImage', maxCount: 1 },
+        { name: 'nidImage', maxCount: 1 },
+      ],
+      {
+        ...uploadConfig,
+        limits: { ...uploadConfig.limits, files: 2 },
+      },
+    ),
+  )
   async updateProfile(
     @Req() req: Request,
     @Body() dto: UpdateUserDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles()
+    files?: {
+      profileImage?: Express.Multer.File[];
+      nidImage?: Express.Multer.File[];
+    },
   ) {
-    const data = await this.userService.updateProfile(req.user!.id, dto, file);
+    const data = await this.userService.updateProfile(
+      req.user!.id,
+      dto,
+      files?.profileImage?.[0],
+      files?.nidImage?.[0],
+    );
     return { message: 'Profile updated successfully', data };
   }
 

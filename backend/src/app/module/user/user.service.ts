@@ -78,6 +78,12 @@ export class UserService {
         role: true,
         phone: true,
         avatar_url: true,
+        nid_number: true,
+        nid_image_url: true,
+        location: true,
+        state: true,
+        city: true,
+        zipcode: true,
         is_active: true,
         is_verified: true,
         created_at: true,
@@ -109,26 +115,72 @@ export class UserService {
   async updateProfile(
     userId: string,
     dto: UpdateUserDto,
-    file?: Express.Multer.File,
+    profileImage?: Express.Multer.File,
+    nidImage?: Express.Multer.File,
   ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new HttpException('User not found', 404);
 
     let avatar_url = user.avatar_url;
+    let nid_image_url = user.nid_image_url;
 
-    if (file) {
+    const normalizedEmail = dto.email?.trim().toLowerCase();
+    if (normalizedEmail && normalizedEmail !== user.email) {
+      const emailOwner = await this.prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        select: { id: true },
+      });
+      if (emailOwner && emailOwner.id !== userId) {
+        throw new HttpException('Email is already in use', 409);
+      }
+    }
+
+    const normalizedNidNumber = dto.nidNumber?.trim() || null;
+    if (normalizedNidNumber && normalizedNidNumber !== user.nid_number) {
+      const nidOwner = await this.prisma.user.findUnique({
+        where: { nid_number: normalizedNidNumber },
+        select: { id: true },
+      });
+      if (nidOwner && nidOwner.id !== userId) {
+        throw new HttpException('NID number is already in use', 409);
+      }
+    }
+
+    if (profileImage) {
       const uploaded = await uploadToCloudinary(
-        file,
+        profileImage,
         'mess_management/profiles',
       );
       avatar_url = uploaded.url;
     }
 
+    if (nidImage) {
+      const uploaded = await uploadToCloudinary(
+        nidImage,
+        'mess_management/identity-documents',
+        { allowedTypes: ['image'], maxSizeBytes: 5 * 1024 * 1024 },
+      );
+      nid_image_url = uploaded.url;
+    }
+
+    const nullableText = (value: string | undefined) => {
+      if (value === undefined) return undefined;
+      return value.trim() || null;
+    };
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        name: dto.name,
-        phone: dto.phone,
+        name: dto.name?.trim(),
+        email: normalizedEmail,
+        phone: nullableText(dto.phone),
+        nid_number:
+          dto.nidNumber === undefined ? undefined : normalizedNidNumber,
+        nid_image_url,
+        location: nullableText(dto.location),
+        state: nullableText(dto.state),
+        city: nullableText(dto.city),
+        zipcode: nullableText(dto.zipcode),
         avatar_url,
       },
       select: {
@@ -138,6 +190,14 @@ export class UserService {
         role: true,
         phone: true,
         avatar_url: true,
+        nid_number: true,
+        nid_image_url: true,
+        location: true,
+        state: true,
+        city: true,
+        zipcode: true,
+        is_active: true,
+        is_verified: true,
         created_at: true,
       },
     });

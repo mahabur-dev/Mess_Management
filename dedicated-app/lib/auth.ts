@@ -29,6 +29,16 @@ export type AuthUser = {
   email: string
   phone?: string | null
   avatar_url?: string | null
+  nid_number?: string | null
+  nid_image_url?: string | null
+  location?: string | null
+  state?: string | null
+  city?: string | null
+  zipcode?: string | null
+  is_active?: boolean
+  is_verified?: boolean
+  created_at?: string
+  updated_at?: string
   role?: GlobalRole | string
   memberships?: MessMembership[]
 }

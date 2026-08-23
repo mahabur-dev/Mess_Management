@@ -1,43 +1,36 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import Link from 'next/link'
 import {
   Building2,
   CalendarDays,
   Camera,
   ChevronRight,
+  Fingerprint,
   LoaderCircle,
   Mail,
+  Map,
   MapPin,
+  Navigation,
   Pencil,
   Phone,
   ShieldCheck,
-  UserRound,
 } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
+import {
+  formatProfileRole,
+  ProfileDetailRow,
+  ProfileDocumentCard,
+  ProfileIdentityCard,
+  ProfileSection,
+} from '@/components/mobile/profile-ui'
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
-import { api } from '@/lib/api'
 import { getActiveMemberships } from '@/lib/app-permissions'
+import { api } from '@/lib/api'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
-
-function getInitials(name?: string | null) {
-  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? []
-  if (!parts.length) return ''
-
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-}
-
-function formatRole(role?: string | null) {
-  if (!role) return 'Member'
-  return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
-}
 
 function formatDate(date?: string | null) {
   if (!date) return 'Not available'
@@ -52,38 +45,22 @@ function formatDate(date?: string | null) {
   }).format(parsedDate)
 }
 
-function DetailRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex min-h-16 items-center gap-3 border-b border-[#e4eaec] py-3 last:border-b-0">
-      <div className="ui-icon-tile ui-icon-tile--md bg-[#edfafa] text-[#008d8c]" aria-hidden="true">
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="ui-caption">{label}</div>
-        <div className="ui-label mt-0.5 break-words">{value}</div>
-      </div>
-    </div>
-  )
+function profileValue(value?: string | null) {
+  return value?.trim() || 'Not provided'
 }
 
 export default function ProfilePage() {
   const { user, refresh } = useAuth()
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const [imageFailed, setImageFailed] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [avatarNotice, setAvatarNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   useAutoDismiss(avatarNotice, () => setAvatarNotice(null))
 
-  const avatarUrl = user?.avatar_url?.trim() ?? ''
-  const initials = getInitials(user?.name)
   const membership = useMemo(() => getActiveMemberships(user)[0], [user])
-  const accountRole = formatRole(user?.role ?? membership?.role)
+  const accountRole = formatProfileRole(membership?.role ?? user?.role)
+  const isActive = user?.is_active !== false
   const workspaceName = membership?.mess?.name ?? 'No workspace joined'
   const workspaceAddress = membership?.mess?.address?.trim() || 'Address not available'
-
-  useEffect(() => {
-    setImageFailed(false)
-  }, [avatarUrl])
 
   async function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget
@@ -119,110 +96,133 @@ export default function ProfilePage() {
     <MobileShell>
       <TopScreen title="Profile" subtitle="Account overview" backHref="/" />
 
-      <div className="screen space-y-4">
-        <section className="ui-card" aria-labelledby="profile-name">
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <div className="grid h-18 w-18 place-items-center overflow-hidden rounded-[20px] bg-[#dff4f3] text-title font-bold text-[#00777a]">
-                {avatarUrl && !imageFailed ? (
-                  <img
-                    src={avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    onError={() => setImageFailed(true)}
-                  />
-                ) : initials ? (
-                  <span aria-hidden="true">{initials}</span>
-                ) : (
-                  <UserRound size={28} strokeWidth={2.2} aria-hidden="true" />
-                )}
-              </div>
-
+      <div className="screen profile-page">
+        <ProfileIdentityCard
+          id="profile-name"
+          name={user?.name}
+          imageUrl={user?.avatar_url}
+          status={isActive ? 'Active' : 'Inactive'}
+          active={isActive}
+          role={accountRole}
+          avatarAction={(
+            <>
               <input
                 ref={imageInputRef}
                 className="sr-only"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleAvatarChange}
                 tabIndex={-1}
               />
               <button
                 type="button"
-                className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-[#008d8c] text-white shadow-sm transition active:scale-95 disabled:opacity-70"
+                className="profile-avatar-action"
                 onClick={() => imageInputRef.current?.click()}
                 disabled={isUploadingAvatar}
                 aria-label="Upload profile photo"
                 title="Upload profile photo"
               >
                 {isUploadingAvatar ? (
-                  <LoaderCircle size={15} className="animate-spin" aria-hidden="true" />
+                  <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
                 ) : (
-                  <Camera size={15} strokeWidth={2.4} aria-hidden="true" />
+                  <Camera size={16} strokeWidth={2.4} aria-hidden="true" />
                 )}
               </button>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="ui-badge ui-badge--success">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#008d8c]" aria-hidden="true" />
-                  Active
-                </span>
-                <span className="ui-badge ui-badge--neutral">{accountRole}</span>
-              </div>
-              <h2 id="profile-name" className="ui-card-title break-words">
-                {user?.name ?? 'Account holder'}
-              </h2>
-              <p className="ui-card-subtitle break-all">{user?.email ?? 'Email not available'}</p>
-            </div>
-          </div>
-
+            </>
+          )}
+        >
           {avatarNotice ? (
             <div
-              className={`ui-notice mt-4 ${avatarNotice.tone === 'success' ? 'ui-notice--success' : 'ui-notice--danger'}`}
+              className={`ui-notice ${avatarNotice.tone === 'success' ? 'ui-notice--success' : 'ui-notice--danger'}`}
               role="status"
             >
               {avatarNotice.text}
             </div>
           ) : null}
 
-          <Link href={appHref('/edit-profile')} className="ui-btn ui-btn--primary mt-5 w-full">
-            <Pencil size={17} strokeWidth={2.3} aria-hidden="true" />
+          <Link href={appHref('/edit-profile')} className="ui-btn ui-btn--primary profile-edit-action">
+            <Pencil size={16} strokeWidth={2.3} aria-hidden="true" />
             Edit profile
           </Link>
-        </section>
+        </ProfileIdentityCard>
 
-        <section className="ui-card" aria-labelledby="contact-heading">
-          <h2 id="contact-heading" className="ui-section-title">
-            Contact information
-          </h2>
-          <DetailRow icon={<Mail size={18} />} label="Email address" value={user?.email ?? 'Not provided'} />
-          <DetailRow icon={<Phone size={18} />} label="Phone number" value={user?.phone?.trim() || 'Not provided'} />
-        </section>
+        <ProfileSection id="contact-heading" title="Contact information">
+          <div className="profile-detail-list">
+            <ProfileDetailRow
+              icon={<Mail size={18} />}
+              label="Email address"
+              value={profileValue(user?.email)}
+            />
+            <ProfileDetailRow
+              icon={<Phone size={18} />}
+              label="Phone number"
+              value={profileValue(user?.phone)}
+            />
+          </div>
+        </ProfileSection>
 
-        <section className="ui-card" aria-labelledby="workspace-heading">
-          <h2 id="workspace-heading" className="ui-section-title">
-            Workspace access
-          </h2>
-          <DetailRow icon={<Building2 size={18} />} label="Workspace" value={workspaceName} />
-          <DetailRow icon={<MapPin size={18} />} label="Location" value={workspaceAddress} />
-          <DetailRow icon={<ShieldCheck size={18} />} label="Access level" value={accountRole} />
-          <DetailRow icon={<CalendarDays size={18} />} label="Joined on" value={formatDate(membership?.joined_at)} />
-        </section>
+        <ProfileSection id="identity-heading" title="Identity verification">
+          <div className="profile-detail-list">
+            <ProfileDetailRow
+              icon={<Fingerprint size={18} />}
+              label="NID number"
+              value={profileValue(user?.nid_number)}
+            />
+          </div>
+          <ProfileDocumentCard imageUrl={user?.nid_image_url} />
+        </ProfileSection>
+
+        <ProfileSection id="address-heading" title="Address information">
+          <div className="profile-detail-list">
+            <ProfileDetailRow
+              icon={<MapPin size={18} />}
+              label="Location"
+              value={profileValue(user?.location)}
+            />
+            <ProfileDetailRow
+              icon={<Map size={18} />}
+              label="State"
+              value={profileValue(user?.state)}
+            />
+            <ProfileDetailRow
+              icon={<Building2 size={18} />}
+              label="City"
+              value={profileValue(user?.city)}
+            />
+            <ProfileDetailRow
+              icon={<Navigation size={18} />}
+              label="Zip code"
+              value={profileValue(user?.zipcode)}
+            />
+          </div>
+        </ProfileSection>
+
+        <ProfileSection id="workspace-heading" title="Workspace access">
+          <div className="profile-detail-list">
+            <ProfileDetailRow icon={<Building2 size={18} />} label="Workspace" value={workspaceName} />
+            <ProfileDetailRow icon={<MapPin size={18} />} label="Location" value={workspaceAddress} />
+            <ProfileDetailRow icon={<ShieldCheck size={18} />} label="Access level" value={accountRole} />
+            <ProfileDetailRow
+              icon={<CalendarDays size={18} />}
+              label="Joined on"
+              value={formatDate(membership?.joined_at)}
+            />
+          </div>
+        </ProfileSection>
 
         <Link
           href={appHref('/settings')}
-          className="ui-card flex min-h-16 items-center gap-3 transition-colors active:bg-[#edfafa]"
+          className="profile-settings-card"
           aria-label="Open account settings"
         >
-          <div className="ui-icon-tile ui-icon-tile--md bg-[#dff4f3] text-[#008d8c]" aria-hidden="true">
+          <span className="profile-settings-card__icon" aria-hidden="true">
             <ShieldCheck size={19} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="ui-label">Account settings</div>
-            <div className="ui-caption mt-0.5">Profile details and security</div>
-          </div>
-          <ChevronRight size={18} className="shrink-0 text-[#78a4a9]" aria-hidden="true" />
+          </span>
+          <span className="profile-settings-card__copy">
+            <strong>Account settings</strong>
+            <span>Profile details and security</span>
+          </span>
+          <ChevronRight size={18} aria-hidden="true" />
         </Link>
       </div>
     </MobileShell>

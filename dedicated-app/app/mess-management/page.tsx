@@ -13,7 +13,15 @@ import {
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { LoadingIndicator } from '@/components/loading-indicator'
-import { FieldCard, SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { AssistantMetricsCard } from '@/components/mobile/assistant-metrics-card'
+import {
+  FieldCard,
+  SettingsSection,
+  SubmitButton,
+  TextAreaField,
+  TextField,
+} from '@/components/mobile/form-controls'
+import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 import { useAuth } from '../providers'
 
@@ -289,222 +297,215 @@ export default function MessManagementPage() {
     <MobileShell>
       <TopScreen title="Mess Management" subtitle="Setup, rooms and billing defaults" backHref="/" />
 
-      <div className="screen space-y-4">
+      <div className="screen mess-management-page">
         {loading ? (
           <LoadingIndicator variant="card" label="Loading mess settings" />
         ) : (
           <>
             {/* ── Overview hero ── */}
-            <section className="ui-card ui-card--hero" aria-labelledby="mess-overview-heading">
-              <div className="flex items-center gap-4">
-                <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-[18px] bg-white/15 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.14)_inset]">
-                  <Building2 size={26} aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="ui-caption text-white/70">Workspace</p>
-                  <h2 id="mess-overview-heading" className="ui-card-title mt-0.5 break-words !text-white">
-                    {setup.messName || 'Your Mess'}
-                  </h2>
-                  <p className="ui-card-subtitle mt-0.5 flex items-center gap-1 !text-white/70">
-                    <MapPin size={13} aria-hidden="true" />
-                    <span className="truncate">{setup.address || 'Address not set'}</span>
-                  </p>
-                </div>
-                <StatusPill status={subscription?.status} />
-              </div>
-
-              <div className="mt-5 grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-white/10 p-3 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset]">
-                  <p className="text-caption font-semibold text-white/70">Plan</p>
-                  <p className="mt-1 text-body font-bold text-white">{planLabel(subscription?.plan, subscription?.plan ? subscriptionPlans[subscription.plan] : undefined)}</p>
-                </div>
-                <div className="rounded-xl bg-white/10 p-3 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset]">
-                  <p className="text-caption font-semibold text-white/70">Days Left</p>
-                  <p className="mt-1 text-body font-bold text-white">
-                    {subscription?.end_date ? `${getDaysRemaining(subscription.end_date) ?? 0}d` : 'N/A'}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-white/10 p-3 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset]">
-                  <p className="text-caption font-semibold text-white/70">Members</p>
-                  <p className="mt-1 text-body font-bold text-white">{user?.memberships?.length ?? 0}</p>
-                </div>
-              </div>
-            </section>
+            <AssistantMetricsCard
+              icon={Building2}
+              eyebrow="Workspace"
+              title={setup.messName || 'Your Mess'}
+              titleId="mess-overview-heading"
+              subtitle={(
+                <>
+                  <MapPin size={13} aria-hidden="true" />
+                  <span className="truncate">{setup.address || 'Address not set'}</span>
+                </>
+              )}
+              status={<StatusPill status={subscription?.status} />}
+              metrics={[
+                {
+                  label: 'Plan',
+                  value: planLabel(
+                    subscription?.plan,
+                    subscription?.plan ? subscriptionPlans[subscription.plan] : undefined,
+                  ),
+                },
+                {
+                  label: 'Days Left',
+                  value: subscription?.end_date ? `${getDaysRemaining(subscription.end_date) ?? 0}d` : 'N/A',
+                },
+                { label: 'Members', value: user?.memberships?.length ?? 0 },
+              ]}
+            />
 
             {/* ── Subscription summary ── */}
             {subscription ? (
-              <section className="ui-card" aria-labelledby="subscription-heading">
-                <h2 id="subscription-heading" className="ui-section-title">
-                  Subscription
-                </h2>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#cfeeed] bg-[#f9fdfd] px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="ui-icon-tile ui-icon-tile--md bg-[#edfafa] text-[#008d8c]" aria-hidden="true">
-                        <CircleDollarSign size={18} />
-                      </div>
-                      <div>
-                        <p className="ui-label">Plan</p>
-                        <p className="ui-caption mt-0.5">{planLabel(subscription.plan, subscriptionPlans[subscription.plan])}</p>
-                      </div>
+              <SettingsSection id="subscription-heading" title="Subscription">
+                <div className="management-subscription__plan">
+                  <div className="management-subscription__identity">
+                    <div className="management-subscription__icon" aria-hidden="true">
+                      <CircleDollarSign size={18} />
                     </div>
-                    <StatusPill status={subscription.status} />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-[#cfeeed] bg-[#f9fdfd] px-4 py-3">
-                      <p className="ui-caption">Started</p>
-                      <p className="ui-label mt-0.5">{formatDate(subscription.start_date)}</p>
-                    </div>
-                    <div className="rounded-2xl border border-[#cfeeed] bg-[#f9fdfd] px-4 py-3">
-                      <p className="ui-caption">Ends</p>
-                      <p className="ui-label mt-0.5">{formatDate(subscription.end_date)}</p>
+                    <div>
+                      <p className="management-subscription__label">Plan</p>
+                      <p className="management-subscription__value">
+                        {planLabel(subscription.plan, subscriptionPlans[subscription.plan])}
+                      </p>
                     </div>
                   </div>
+                  <StatusPill status={subscription.status} />
                 </div>
-              </section>
+
+                <dl className="management-subscription__dates">
+                  <div>
+                    <dt>Started</dt>
+                    <dd>{formatDate(subscription.start_date)}</dd>
+                  </div>
+                  <div>
+                    <dt>Ends</dt>
+                    <dd>{formatDate(subscription.end_date)}</dd>
+                  </div>
+                </dl>
+              </SettingsSection>
             ) : null}
 
             {/* ── Setup form ── */}
-            <section className="ui-card space-y-4" aria-labelledby="settings-heading">
-              <h2 id="settings-heading" className="ui-section-title">
-                Mess settings
-              </h2>
-
-              <TextField
-                label="Mess Name"
-                value={setup.messName}
-                onChange={(messName) => setSetup((current) => ({ ...current, messName }))}
-                placeholder="Green House Mess"
-              />
-
-              <TextField
-                label="Address"
-                value={setup.address}
-                onChange={(address) => setSetup((current) => ({ ...current, address }))}
-                placeholder="Narayanganj, Dhaka"
-              />
-
-              <div className="ui-grid-2">
+            <SettingsSection id="settings-heading" title="Mess settings">
+              <div className="management-form-stack">
                 <TextField
-                  label="Mess Category"
-                  value={setup.messCategory}
-                  onChange={(messCategory) => setSetup((current) => ({ ...current, messCategory }))}
-                  placeholder="flat, mess"
+                  label="Mess Name"
+                  value={setup.messName}
+                  onChange={(messName) => setSetup((current) => ({ ...current, messName }))}
+                  placeholder="Green House Mess"
                 />
-                <TextField
-                  label="Total Seats"
-                  value={setup.totalSeats}
-                  onChange={(totalSeats) => setSetup((current) => ({ ...current, totalSeats }))}
-                  placeholder="e.g. 12"
-                  type="number"
-                />
-              </div>
 
-              <div className="ui-grid-2">
                 <TextField
-                  label="Monthly Rent (৳)"
-                  value={setup.monthlyRent}
-                  onChange={(monthlyRent) => setSetup((current) => ({ ...current, monthlyRent }))}
-                  placeholder="e.g. 50000"
-                  type="number"
+                  label="Address"
+                  value={setup.address}
+                  onChange={(address) => setSetup((current) => ({ ...current, address }))}
+                  placeholder="Narayanganj, Dhaka"
                 />
-                <TextField
-                  label="Payment Deadline Day"
-                  value={setup.paymentDeadlineDay}
-                  onChange={(paymentDeadlineDay) => setSetup((current) => ({ ...current, paymentDeadlineDay }))}
-                  placeholder="e.g. 10"
-                  type="number"
-                />
-              </div>
 
-              <FieldCard label="Meal Off Deadline" hint="Members must mark meals off before this time">
-                <div className="relative">
-                  <span className="field-icon field-icon--leading text-[#008d8c]" aria-hidden="true">
-                    <Clock3 size={18} />
-                  </span>
-                  <input
-                    type="time"
-                    className="field min-h-14 pl-12"
-                    value={setup.mealOffDeadline}
-                    onChange={(event) =>
-                      setSetup((current) => ({ ...current, mealOffDeadline: event.target.value }))
-                    }
+                <div className="management-form-grid">
+                  <TextField
+                    label="Mess Category"
+                    value={setup.messCategory}
+                    onChange={(messCategory) => setSetup((current) => ({ ...current, messCategory }))}
+                    placeholder="flat, mess"
+                  />
+                  <TextField
+                    label="Total Seats"
+                    value={setup.totalSeats}
+                    onChange={(totalSeats) => setSetup((current) => ({ ...current, totalSeats }))}
+                    placeholder="e.g. 12"
+                    type="number"
                   />
                 </div>
-              </FieldCard>
 
-              <TextAreaField
-                label="Bazar Rules"
-                value={setup.bazarRules}
-                onChange={(bazarRules) => setSetup((current) => ({ ...current, bazarRules }))}
-                placeholder="Manager assigns weekly bazar turns."
-                rows={3}
-              />
-            </section>
+                <div className="management-form-grid">
+                  <TextField
+                    label="Monthly Rent (৳)"
+                    value={setup.monthlyRent}
+                    onChange={(monthlyRent) => setSetup((current) => ({ ...current, monthlyRent }))}
+                    placeholder="e.g. 50000"
+                    type="number"
+                  />
+                  <TextField
+                    label="Payment Deadline Day"
+                    value={setup.paymentDeadlineDay}
+                    onChange={(paymentDeadlineDay) => setSetup((current) => ({ ...current, paymentDeadlineDay }))}
+                    placeholder="e.g. 10"
+                    type="number"
+                  />
+                </div>
+
+                <FieldCard
+                  className="management-deadline-field"
+                  label="Meal Off Deadline"
+                  hint="Members must mark meals off before this time"
+                >
+                  <div className="management-time-control">
+                    <span className="management-time-control__icon" aria-hidden="true">
+                      <Clock3 size={17} />
+                    </span>
+                    <input
+                      type="time"
+                      className="field meal-time-input management-time-control__input"
+                      value={setup.mealOffDeadline}
+                      onChange={(event) =>
+                        setSetup((current) => ({ ...current, mealOffDeadline: event.target.value }))
+                      }
+                    />
+                  </div>
+                </FieldCard>
+
+                <TextAreaField
+                  label="Bazar Rules"
+                  value={setup.bazarRules}
+                  onChange={(bazarRules) => setSetup((current) => ({ ...current, bazarRules }))}
+                  placeholder="Manager assigns weekly bazar turns."
+                  rows={3}
+                />
+              </div>
+            </SettingsSection>
 
             {/* ── Rooms ── */}
-            <section className="ui-card space-y-3" aria-labelledby="rooms-heading">
-              <div className="flex items-center justify-between gap-3">
-                <h2 id="rooms-heading" className="ui-section-title !mb-0">
-                  Rooms
-                </h2>
-                <button
+            <SettingsSection
+              id="rooms-heading"
+              title="Rooms"
+              action={
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={addRoom}
-                  className="flex min-h-9 items-center justify-center gap-1.5 rounded-[12px] bg-[#edfafa] px-3 text-caption font-bold text-[#008d8c] transition active:scale-[0.98]"
+                  className="management-add-room"
                 >
                   <Plus size={14} strokeWidth={2.6} aria-hidden="true" />
                   Add Room
-                </button>
-              </div>
-
-              {setup.rooms.map((room, index) => (
-                <div
-                  key={room.id}
-                  className="rounded-2xl border border-[#cfeeed] bg-[#fbfefe] p-3"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="ui-caption font-bold !text-[#123748]">Room {index + 1}</p>
-                    {setup.rooms.length > 1 ? (
-                      <button
-                        type="button"
-                        onClick={() => removeRoom(index)}
-                        className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#fff1f1] text-[#d92d20] transition active:scale-[0.96]"
-                        aria-label={`Remove room ${index + 1}`}
-                      >
-                        <Trash2 size={14} strokeWidth={2.3} aria-hidden="true" />
-                      </button>
-                    ) : null}
-                  </div>
-
-                  <div className="space-y-3">
-                    <TextField
-                      label="Room Name"
-                      value={room.roomName}
-                      onChange={(roomName) => updateRoom(index, 'roomName', roomName)}
-                      placeholder="e.g. Room A"
-                    />
-                    <div className="ui-grid-2">
-                      <TextField
-                        label="Total Person"
-                        value={room.perPerson}
-                        onChange={(perPerson) => updateRoom(index, 'perPerson', perPerson)}
-                        placeholder="e.g. 2"
-                        type="number"
-                      />
-                      <TextField
-                        label="Room Price (৳)"
-                        value={room.roomPrice}
-                        onChange={(roomPrice) => updateRoom(index, 'roomPrice', roomPrice)}
-                        placeholder="e.g. 12000"
-                        type="number"
-                      />
+                </Button>
+              }
+            >
+              <div className="management-room-list">
+                {setup.rooms.map((room, index) => (
+                  <article key={room.id} className="management-room-card">
+                    <div className="management-room-card__header">
+                      <p>Room {index + 1}</p>
+                      {setup.rooms.length > 1 ? (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={() => removeRoom(index)}
+                          className="management-room-card__remove"
+                          aria-label={`Remove room ${index + 1}`}
+                        >
+                          <Trash2 size={14} strokeWidth={2.3} aria-hidden="true" />
+                        </Button>
+                      ) : null}
                     </div>
-                  </div>
-                </div>
-              ))}
-            </section>
+
+                    <div className="management-room-card__fields">
+                      <TextField
+                        label="Room Name"
+                        value={room.roomName}
+                        onChange={(roomName) => updateRoom(index, 'roomName', roomName)}
+                        placeholder="e.g. Room A"
+                      />
+                      <div className="management-form-grid">
+                        <TextField
+                          label="Total Person"
+                          value={room.perPerson}
+                          onChange={(perPerson) => updateRoom(index, 'perPerson', perPerson)}
+                          placeholder="e.g. 2"
+                          type="number"
+                        />
+                        <TextField
+                          label="Room Price (৳)"
+                          value={room.roomPrice}
+                          onChange={(roomPrice) => updateRoom(index, 'roomPrice', roomPrice)}
+                          placeholder="e.g. 12000"
+                          type="number"
+                        />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </SettingsSection>
 
             {message ? (
               <div
@@ -515,10 +516,12 @@ export default function MessManagementPage() {
               </div>
             ) : null}
 
-            <SubmitButton busy={saving} onClick={() => void handleSave()}>
-              <Save size={17} aria-hidden="true" />
-              Save Setup
-            </SubmitButton>
+            <div className="management-save-action">
+              <SubmitButton busy={saving} onClick={() => void handleSave()}>
+                <Save size={17} aria-hidden="true" />
+                Save Setup
+              </SubmitButton>
+            </div>
           </>
         )}
       </div>

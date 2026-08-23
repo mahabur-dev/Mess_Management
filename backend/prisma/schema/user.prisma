@@ -8,6 +8,12 @@ model User {
   name          String     @db.VarChar(100)
   email         String     @unique @db.VarChar(255)
   phone         String?    @db.VarChar(40)
+  nid_number    String?    @unique @db.VarChar(32)
+  nid_image_url String?    @db.Text
+  location      String?    @db.VarChar(255)
+  state         String?    @db.VarChar(100)
+  city          String?    @db.VarChar(100)
+  zipcode       String?    @db.VarChar(20)
   password_hash String     @db.Text
   avatar_url    String?    @db.Text
   role          GlobalRole @default(MEMBER)

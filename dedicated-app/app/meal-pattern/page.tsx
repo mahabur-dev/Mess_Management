@@ -6,7 +6,6 @@ import { AppHeader } from '@/components/app-header'
 import { MobileShell } from '@/components/mobile-shell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Notice } from '@/components/ui/notice'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { MealIconBadge } from '@/components/mobile/meals-design'
@@ -60,24 +59,34 @@ function scheduleTotal(schedule?: Schedule | null) {
 function PatternTypeCard({ type, selected, onSelect }: { type: PatternType; selected: boolean; onSelect: () => void }) {
   const daily = type === 'DAILY'
   return (
-    <button type="button" onClick={onSelect} aria-pressed={selected} className={`relative flex min-h-[285px] flex-col text-left transition active:scale-[.99] ${selected ? 'border-2 border-[#008d8c] bg-[#edf8f7] shadow-[0_12px_28px_rgba(0,141,140,.14)]' : 'border border-[#dce8e9] bg-[#f3f6f6] shadow-[0_8px_20px_rgba(18,55,72,.05)]'} rounded-[20px] p-4`}>
-      <div className="relative flex items-start gap-3 pr-1 pt-3">
-        <div className={`grid h-12 w-12 place-items-center rounded-[15px] ${daily ? 'bg-[#dff4f3] text-[#008d8c]' : 'bg-[#fff2d8] text-[#d98b10]'}`}>
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className="assistant-pattern-card"
+      data-selected={selected ? 'true' : 'false'}
+    >
+      <span className="assistant-pattern-card__glow" aria-hidden="true" />
+      <span className="assistant-pattern-card__dots" aria-hidden="true" />
+
+      <span className="assistant-pattern-card__heading">
+        <span className="assistant-pattern-card__icon" aria-hidden="true">
           {daily ? <CalendarDays size={24} strokeWidth={2.2} /> : <CalendarRange size={24} strokeWidth={2.2} />}
-        </div>
-        <div className="min-w-0 flex-1 pt-0.5 pr-1">
-          <h2 className="text-title text-[#245d66]">{daily ? 'Daily' : 'Weekly'}</h2>
-        </div>
-        <div className="absolute right-0 -top-2">{daily ? <span className="text-caption font-bold tracking-[.08em] text-[#d98b10]">Popular</span> : <Badge tone="warning">Flexible</Badge>}</div>
-      </div>
-      <p className="mt-2 text-label font-medium leading-5 text-[#52727b]">{daily ? 'Same meals every day' : 'Different meals for each day'}</p>
-      <div className="mt-4 space-y-2 text-caption font-semibold text-[#52727b]">
-        <div className="flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#edfafa] text-[#008d8c]"><Check size={12} strokeWidth={3} /></span>{daily ? 'Fast to set up' : 'Plan around your week'}</div>
-        <div className="flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#edfafa] text-[#008d8c]"><Check size={12} strokeWidth={3} /></span>{daily ? 'Best for regular routines' : 'Best for changing routines'}</div>
-      </div>
-      <div className={`mt-auto flex items-center justify-center gap-2 rounded-[12px] py-3 text-label ${selected ? 'bg-[#008d8c] text-white' : 'border border-[#9edddc] bg-white text-[#00777a]'}`}>
+        </span>
+        <span className="assistant-pattern-card__title">{daily ? 'Daily' : 'Weekly'}</span>
+        <span className="assistant-pattern-card__badge">{daily ? 'Popular' : 'Flexible'}</span>
+      </span>
+
+      <span className="assistant-pattern-card__description">{daily ? 'Same meals every day' : 'Different meals for each day'}</span>
+
+      <span className="assistant-pattern-card__features">
+        <span><span className="assistant-pattern-card__check"><Check size={12} strokeWidth={3} /></span>{daily ? 'Fast to set up' : 'Plan around your week'}</span>
+        <span><span className="assistant-pattern-card__check"><Check size={12} strokeWidth={3} /></span>{daily ? 'Best for regular routines' : 'Best for changing routines'}</span>
+      </span>
+
+      <span className="assistant-pattern-card__choice">
         {selected ? <Check size={16} strokeWidth={2.8} /> : null} {selected ? 'Selected' : 'Choose plan'}
-      </div>
+      </span>
     </button>
   )
 }

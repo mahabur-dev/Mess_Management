@@ -19,6 +19,7 @@ import {
   WandSparkles,
 } from 'lucide-react'
 import { AppScreenshot } from '@/components/app-screenshot'
+import { MarketingMobileAppTour } from '@/components/marketing-mobile-app-tour'
 import { SectionHeading } from '@/components/marketing-section'
 
 const automationModes = [
@@ -35,30 +36,6 @@ const automationModes = [
     text: 'For deposits, expenses, utilities, or one-off meal changes, use a natural voice or text command and review before saving.',
     icon: WandSparkles,
     bullets: ['Bangla, English & Banglish', 'Preview before confirm', 'Records update together'],
-  },
-]
-
-const aiSteps = [
-  {
-    number: '01',
-    title: 'Speak or type',
-    text: 'Say what happened in natural language.',
-    src: '/ai-command.webp.jpeg',
-    alt: 'Messzen AI command screen accepting text and voice',
-  },
-  {
-    number: '02',
-    title: 'Review the preview',
-    text: 'Check member, amount, date, and action before anything is saved.',
-    src: '/ai-preview.webp.jpeg',
-    alt: 'Messzen AI preview screen before saving a deposit',
-  },
-  {
-    number: '03',
-    title: 'Confirm with confidence',
-    text: 'Approve the preview and Messzen updates the right record.',
-    src: '/ai-success.webp.jpeg',
-    alt: 'Messzen confirmation screen after saving successfully',
   },
 ]
 
@@ -113,7 +90,7 @@ export function AutomationOverviewSection() {
 export function AiWorkflowSection() {
   return (
     <section className="marketing-section overflow-hidden">
-      <div className="marketing-container grid items-center gap-12 xl:grid-cols-[.7fr_1.3fr]">
+      <div className="marketing-container grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(250px,.65fr)]">
         <div>
           <span className="marketing-eyebrow gap-2"><Sparkles size={13} /> AI Quick Add</span>
           <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-foreground sm:text-4xl">
@@ -140,17 +117,8 @@ export function AiWorkflowSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 items-end gap-2 sm:gap-4">
-          {aiSteps.map((step, index) => (
-            <div key={step.title} className={index === 1 ? 'pb-8' : ''}>
-              <div className="mb-3 hidden sm:block">
-                <span className="text-[10px] font-black text-[var(--brand)]">{step.number}</span>
-                <h3 className="mt-1 text-sm font-black text-foreground">{step.title}</h3>
-                <p className="mt-1 text-[11px] font-medium leading-5 text-muted-foreground">{step.text}</p>
-              </div>
-              <AppScreenshot src={step.src} alt={step.alt} className="w-full rounded-[1.25rem] border-[4px] sm:rounded-[1.7rem]" sizes="(max-width: 640px) 31vw, 220px" />
-            </div>
-          ))}
+        <div className="mx-auto w-full max-w-[340px]">
+          <MarketingMobileAppTour variant="ai" presentation="device" />
         </div>
       </div>
     </section>
@@ -160,15 +128,10 @@ export function AiWorkflowSection() {
 export function MealPatternSection() {
   return (
     <section id="meal-pattern" className="marketing-section scroll-mt-24 bg-[var(--marketing-subtle)]/70 overflow-hidden">
-      <div className="marketing-container grid items-center gap-12 lg:grid-cols-[1.1fr_.9fr]">
-        <div className="relative mx-auto w-full max-w-2xl min-h-[520px] sm:min-h-[600px]">
-          <AppScreenshot
-            src="/meal-management.webp.jpeg"
-            alt="Messzen meal management screen"
-            className="absolute left-0 top-0 w-[46%] max-w-[270px]"
-            sizes="270px"
-          />
-          <div className="marketing-card absolute bottom-0 right-0 w-[72%] rounded-2xl p-4 sm:p-6">
+      <div className="marketing-container grid items-center gap-12 xl:grid-cols-[1.35fr_.65fr]">
+        <div className="mx-auto grid w-full max-w-3xl items-center gap-5 md:grid-cols-[minmax(260px,340px)_minmax(300px,1fr)]">
+          <MarketingMobileAppTour variant="meal-pattern" presentation="device" />
+          <div className="marketing-card rounded-2xl p-4 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Weekly meal pattern</p>
@@ -231,11 +194,9 @@ export function DedicatedAppSection() {
           description="Managers and members get a focused app for everyday actions, while every update stays connected to the web dashboard."
         />
 
-        <div className="mt-12 grid items-center gap-12 lg:grid-cols-[1.15fr_.85fr]">
-          <div className="relative mx-auto flex min-h-[540px] w-full max-w-2xl items-center justify-center sm:min-h-[640px]">
-            <AppScreenshot src="/deposit-management.webp.jpeg" alt="Deposit management in the Messzen app" className="absolute left-[4%] top-[12%] w-[35%] rotate-[-5deg] opacity-90" sizes="230px" />
-            <AppScreenshot src="/app-home.webp.jpeg" alt="Messzen dedicated app home dashboard" className="relative z-10 w-[42%]" sizes="280px" />
-            <AppScreenshot src="/monthly-bill-management.webp.jpeg" alt="Monthly bill management in the Messzen app" className="absolute right-[4%] top-[12%] w-[35%] rotate-[5deg] opacity-90" sizes="230px" />
+        <div className="mt-12 grid items-center gap-12 lg:grid-cols-[.8fr_1.2fr]">
+          <div className="mx-auto w-full max-w-[340px]">
+            <MarketingMobileAppTour variant="app" presentation="device" />
           </div>
 
           <div className="space-y-4">

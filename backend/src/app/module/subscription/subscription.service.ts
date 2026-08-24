@@ -343,7 +343,7 @@ export class SubscriptionService {
    * Runs once every 24 hours to keep stored subscription status in sync with
    * end_date. Runtime feature checks still validate end_date directly.
    */
-  @Cron('5 0 * * *')
+  @Cron('5 0 * * *', { timeZone: 'Asia/Dhaka' })
   async checkExpiredSubscriptionsDaily() {
     try {
       const result = await this.checkAndUpdateExpired();

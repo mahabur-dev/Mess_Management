@@ -221,6 +221,28 @@
 }
 
 @layer components {
+  .marketing-shell {
+    --marketing-heading-weight: 600;
+    font-family: var(--font-marketing-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+    font-optical-sizing: auto;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  .marketing-shell :is(h1, h2, h3) {
+    font-weight: var(--marketing-heading-weight);
+    text-wrap: balance;
+  }
+
+  .marketing-shell h2 {
+    letter-spacing: -0.03em;
+  }
+
+  .marketing-shell .font-black {
+    font-weight: var(--marketing-heading-weight);
+  }
+
   .marketing-page {
     min-height: 100vh;
     color: var(--foreground);

@@ -21,7 +21,7 @@ export function MarketingHero() {
             <Sparkles size={13} /> All-in-one mess management platform
           </span>
 
-          <h1 className="mt-6 max-w-xl text-4xl font-black leading-[1.08] tracking-[-0.055em] text-foreground sm:text-5xl lg:text-[3.65rem]">
+          <h1 className="mt-6 max-w-xl text-4xl font-extrabold leading-[1.08] tracking-[-0.04em] text-foreground sm:text-5xl lg:text-[3.65rem]">
             Put your mess
             <br /> on autopilot.
             <br />
@@ -30,7 +30,7 @@ export function MarketingHero() {
             </span>
           </h1>
 
-          <p className="mt-6 max-w-lg text-base font-medium leading-8 text-muted-foreground">
+          <p className="mt-6 max-w-lg text-base font-normal leading-8 text-muted-foreground">
             Set recurring meal patterns once, use text or voice for changes, and let Messzen keep records, bills, and reminders moving automatically.
           </p>
 

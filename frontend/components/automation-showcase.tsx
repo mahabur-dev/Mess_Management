@@ -93,7 +93,7 @@ export function AiWorkflowSection() {
       <div className="marketing-container grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(250px,.65fr)]">
         <div>
           <span className="marketing-eyebrow gap-2"><Sparkles size={13} /> AI Quick Add</span>
-          <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-foreground sm:text-4xl">
+          <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.04em] text-foreground sm:text-4xl">
             Say it once. Review it. Consider it done.
           </h2>
           <p className="mt-4 text-sm font-medium leading-7 text-muted-foreground sm:text-base">
@@ -160,7 +160,7 @@ export function MealPatternSection() {
 
         <div>
           <span className="marketing-eyebrow gap-2"><CalendarCheck2 size={13} /> Meal Pattern</span>
-          <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-foreground sm:text-4xl">Set the routine once. Stop entering meals every day.</h2>
+          <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.04em] text-foreground sm:text-4xl">Set the routine once. Stop entering meals every day.</h2>
           <p className="mt-4 text-sm font-medium leading-7 text-muted-foreground sm:text-base">
             Build a daily or weekly meal pattern for each member. Messzen follows that schedule automatically and keeps meal counts and monthly calculations current.
           </p>
@@ -230,7 +230,7 @@ export function BillingAndAlertsSection() {
         <div className="grid items-center gap-12 lg:grid-cols-[.85fr_1.15fr]">
           <div>
             <span className="marketing-eyebrow gap-2"><ReceiptText size={13} /> Live monthly billing</span>
-            <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-foreground sm:text-4xl">Every update flows into the final calculation.</h2>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.04em] text-foreground sm:text-4xl">Every update flows into the final calculation.</h2>
             <p className="mt-4 text-sm font-medium leading-7 text-muted-foreground sm:text-base">Meals, expenses, utilities, deposits, payments, and previous balances stay connected. Messzen keeps member-wise monthly bills ready without rebuilding the calculation by hand.</p>
             <div className="mt-6 flex flex-wrap gap-2">
               {['Meals', 'Expenses', 'Utilities', 'Deposits', 'Previous balance'].map((item) => <span key={item} className="rounded-full border border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-3 py-2 text-xs font-bold text-foreground">{item}</span>)}
@@ -256,7 +256,7 @@ export function BillingAndAlertsSection() {
           </div>
           <div>
             <span className="marketing-eyebrow gap-2"><BellRing size={13} /> Smart push notifications</span>
-            <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-foreground sm:text-4xl">Messzen remembers what your mess should not miss.</h2>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.04em] text-foreground sm:text-4xl">Messzen remembers what your mess should not miss.</h2>
             <p className="mt-4 text-sm font-medium leading-7 text-muted-foreground sm:text-base">Proactive alerts keep members and managers ahead of meal deadlines, payment dues, and bazar responsibilities—even when the app is not open.</p>
             <div className="mt-6 rounded-2xl border border-[var(--brand-border-subtle)] bg-[var(--brand-softer)] p-5">
               <p className="flex items-center gap-2 text-sm font-black text-foreground"><BellRing size={17} className="text-[var(--brand)]" /> Timely, useful, and action-focused</p>

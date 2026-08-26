@@ -25,6 +25,12 @@ enum RequestStatus {
   REJECTED
 }
 
+enum PersonalTransactionType {
+  INCOME
+  EXPENSE
+  SAVING
+}
+
 // ─── MessMembership ────────────────────────────────────────
 enum MembershipRole {
   MANAGER

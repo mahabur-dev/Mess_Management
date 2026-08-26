@@ -13,7 +13,13 @@ import {
   parseDate,
   scheduleForDate,
 } from './meal-pattern.policy';
-import { getMealBaseValue, MEAL_TIME_ZONE } from '../meal/meal-policy';
+import {
+  getDhakaDateKey,
+  getMealBaseValue,
+  MEAL_TIME_ZONE,
+  parseMealDate,
+  shiftDateKey,
+} from '../meal/meal-policy';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 
 const DAY_MS = 86_400_000;
@@ -36,10 +42,10 @@ export class MealPatternService {
     const end = dto.endDate ? parseDate(dto.endDate) : null;
     if (end && end < start) throw new ConflictException('endDate must be on or after startDate');
     const schedule = normalizeSchedule(dto.patternType, dto.dailySchedule, dto.weeklySchedule);
-    return this.prisma.$transaction(async (tx) => {
+    const activate = dto.activate !== false;
+    const pattern = await this.prisma.$transaction(async (tx) => {
       const latest = await tx.mealPattern.findFirst({ where: { membership_id: membership.id }, orderBy: { version: 'desc' } });
       const active = await tx.mealPattern.findFirst({ where: { membership_id: membership.id, status: MealPatternStatus.ACTIVE } });
-      const activate = dto.activate !== false;
       if (activate && active) {
         const previousEnd = new Date(start.getTime() - 86400000);
         await tx.mealPattern.update({ where: { id: active.id }, data: { end_date: previousEnd, status: MealPatternStatus.ENDED } });
@@ -49,6 +55,8 @@ export class MealPatternService {
         include: patternInclude,
       });
     });
+    if (activate) await this.generateActivationMeals(pattern);
+    return pattern;
   }
 
   async findMine(actorId: string, role: string, membershipId?: string) {
@@ -91,7 +99,11 @@ export class MealPatternService {
         await tx.mealPattern.update({ where: { id }, data: { status } });
       });
     } else await this.prisma.mealPattern.update({ where: { id }, data: { status } });
-    return this.findOne(id, actorId, role);
+    const updated = await this.findOne(id, actorId, role);
+    if (status === MealPatternStatus.ACTIVE) {
+      await this.generateActivationMeals(updated);
+    }
+    return updated;
   }
 
   @Cron('1 0 * * *', { timeZone: MEAL_TIME_ZONE })
@@ -105,6 +117,7 @@ export class MealPatternService {
         status: MealPatternStatus.ACTIVE,
         start_date: { lte: targetDate },
         OR: [{ end_date: null }, { end_date: { gte: targetDate } }],
+        membership: { is_active: true },
       },
       include: { membership: true },
     });
@@ -140,6 +153,30 @@ export class MealPatternService {
       changed ||= attendanceChanged;
     }
     return changed;
+  }
+
+  private async generateActivationMeals(pattern: any, now = new Date()) {
+    const todayKey = getDhakaDateKey(now);
+    const dates = [
+      parseMealDate(todayKey),
+      parseMealDate(shiftDateKey(todayKey, 1)),
+    ].filter((date) => {
+      const start = new Date(pattern.start_date).getTime();
+      const end = pattern.end_date
+        ? new Date(pattern.end_date).getTime()
+        : Number.POSITIVE_INFINITY;
+      return date.getTime() >= start && date.getTime() <= end;
+    });
+    const changedDates: Date[] = [];
+    for (const date of dates) {
+      if (await this.generateDate(pattern, date)) changedDates.push(date);
+    }
+    if (changedDates.length) {
+      await this.billReconciliation.reconcile(
+        pattern.membership.mess_id,
+        ...changedDates,
+      );
+    }
   }
 
   private async getMembership(id: string) { const membership = await this.prisma.messMembership.findUnique({ where: { id }, include: { mess: true } }); if (!membership) throw new NotFoundException('Mess membership not found'); if (!membership.is_active) throw new ConflictException('Membership is not active'); return membership; }

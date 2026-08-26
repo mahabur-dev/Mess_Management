@@ -22,6 +22,7 @@ import {
   UtensilsCrossed,
   CalendarClock,
   Wallet2,
+  CircleDollarSign,
   Zap,
   type LucideProps,
 } from 'lucide-react'
@@ -103,6 +104,7 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
   { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, access: 'mess', exact: true },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
+  { href: '/personal', label: 'Personal', icon: CircleDollarSign, access: 'public' },
   { href: '/edit-monthly-bill', label: 'Edit Bill', icon: ClipboardList, access: 'manager' },
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
   { href: '/edit-payment', label: 'Edit Deposit', icon: Landmark, access: 'mess' },
@@ -207,6 +209,7 @@ export function getMoreMenuGroups(user: AuthUser | null | undefined): MoreMenuGr
       label: 'Workspace',
       items: [
         { href: '/meal-pattern', label: 'Meal Pattern', description: 'Review your meal calendar', icon: CalendarClock, access: 'mess' },
+        { href: '/personal', label: 'Personal', description: 'Income, expenses, savings and family budgets', icon: CircleDollarSign, access: 'public' },
         { href: '/complaints', label: 'Complaints', description: 'Raise and follow up issues', icon: MessageSquareWarning, access: 'mess' },
         { href: '/mess-management', label: 'Mess Management', description: 'Rooms, rules and billing setup', icon: Settings, access: 'manager' },
         { href: '/subscription', label: 'Subscription', description: 'Current plan and available plans', icon: Crown, access: 'mess' },
@@ -275,6 +278,7 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/change-password', fallback: '/settings', exact: true },
   { href: '/mess-management', fallback: '/', exact: true },
   { href: '/subscription', fallback: '/', exact: true },
+  { href: '/personal', fallback: '/', exact: true },
   { href: '/how-it-works', fallback: '/', exact: true },
   { href: '/contact-us', fallback: '/', exact: true },
   { href: '/privacy-policy', fallback: '/', exact: true },

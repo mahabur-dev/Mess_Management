@@ -52,6 +52,11 @@ type BillItem = {
   prev_balance?: string | number | null
   balance?: string | number | null
   member?: MemberSummary
+  close_requests?: Array<{
+    id: string
+    status: 'PENDING' | 'APPROVED' | 'REJECTED'
+    original_balance?: string | number | null
+  }>
 }
 
 type MemberRecord = {
@@ -162,6 +167,7 @@ function MemberBillRow({
   const name = bill.member?.name || member?.user?.name || 'Member'
   const email = bill.member?.email || member?.user?.email || 'Email not available'
   const isPaid = bill.status === 'PAID' || toNumber(bill.final_due) <= 0
+  const closeStatus = bill.close_requests?.[0]?.status
 
   return (
     <Link
@@ -174,8 +180,8 @@ function MemberBillRow({
         <strong>{name}</strong>
         <small>{email}</small>
       </span>
-      <span className="monthly-member-row__status" data-status={isPaid ? 'paid' : 'due'}>
-        {isPaid ? 'Paid' : 'Due'}
+      <span className="monthly-member-row__status" data-status={closeStatus === 'PENDING' ? 'due' : closeStatus === 'APPROVED' || isPaid ? 'paid' : 'due'}>
+        {closeStatus === 'PENDING' ? 'Close pending' : closeStatus === 'APPROVED' ? 'Closed' : isPaid ? 'Paid' : 'Due'}
       </span>
     </Link>
   )

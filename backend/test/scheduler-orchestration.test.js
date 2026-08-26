@@ -176,6 +176,65 @@ describe('scheduler orchestration', () => {
       generatedDates.map((date) => date.toISOString()),
       [expectedTarget.toISOString(), expectedTarget.toISOString()],
     );
+    assert.deepEqual(patternQuery.where.membership, { is_active: true });
     assert.deepEqual(reconciliationCalls, [[messId, expectedTarget]]);
+  });
+
+  it('generates the current and upcoming meals immediately when a pattern is activated', async () => {
+    const actorId = '33333333-3333-3333-3333-333333333333';
+    const messId = '44444444-4444-4444-4444-444444444444';
+    const membership = {
+      id: '55555555-5555-5555-5555-555555555555',
+      user_id: actorId,
+      mess_id: messId,
+      is_active: true,
+      role: 'MEMBER',
+      mess: { created_by: '66666666-6666-6666-6666-666666666666' },
+    };
+    const todayKey = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Dhaka',
+    }).format(new Date());
+    const today = new Date(`${todayKey}T00:00:00.000Z`);
+    const tomorrow = new Date(today.getTime() + 86_400_000);
+    const generatedDates = [];
+    const reconciliationCalls = [];
+    const prisma = {
+      messMembership: {
+        findUnique: async () => membership,
+      },
+      $transaction: async (callback) =>
+        callback({
+          mealPattern: {
+            findFirst: async () => null,
+            create: async ({ data }) => ({
+              id: 'pattern-1',
+              ...data,
+              membership,
+            }),
+          },
+        }),
+    };
+    const service = new MealPatternService(prisma, {
+      reconcile: async (...args) => reconciliationCalls.push(args),
+    });
+    service.generateDate = async (_pattern, date) => {
+      generatedDates.push(date);
+      return true;
+    };
+
+    const pattern = await service.create(actorId, 'MEMBER', {
+      membershipId: membership.id,
+      patternType: 'DAILY',
+      dailySchedule: { BREAKFAST: 0.5, LUNCH: 1, DINNER: 1 },
+      startDate: todayKey,
+      activate: true,
+    });
+
+    assert.equal(pattern.status, 'ACTIVE');
+    assert.deepEqual(
+      generatedDates.map((date) => date.toISOString()),
+      [today.toISOString(), tomorrow.toISOString()],
+    );
+    assert.deepEqual(reconciliationCalls, [[messId, today, tomorrow]]);
   });
 });

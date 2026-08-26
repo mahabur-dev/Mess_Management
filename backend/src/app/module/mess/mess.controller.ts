@@ -180,6 +180,7 @@ export class MessController {
       messId,
       userId,
       req.user!.id,
+      req.user!.role,
     );
     return { message: 'Member removed successfully', data };
   }

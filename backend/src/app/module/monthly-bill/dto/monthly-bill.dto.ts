@@ -2,12 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { BillStatus } from '@prisma/client';
+import { BillStatus, RequestStatus } from '@prisma/client';
 
 export class GenerateBillDto {
   @ApiProperty({ example: 'uuid-mess-id', description: 'Mess ID' })
@@ -69,4 +70,27 @@ export class BillFilterDto {
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc';
+}
+
+export class ReviewBillCloseRequestDto {
+  @ApiProperty({ enum: [RequestStatus.APPROVED, RequestStatus.REJECTED] })
+  @IsIn([RequestStatus.APPROVED, RequestStatus.REJECTED])
+  status: 'APPROVED' | 'REJECTED';
+
+  @ApiPropertyOptional({ description: 'Optional manager review note' })
+  @IsOptional()
+  @IsString()
+  reviewNote?: string;
+}
+
+export class BillCloseRequestFilterDto {
+  @ApiProperty({ description: 'Mess ID' })
+  @IsString()
+  @IsNotEmpty()
+  messId: string;
+
+  @ApiPropertyOptional({ enum: RequestStatus })
+  @IsOptional()
+  @IsEnum(RequestStatus)
+  status?: RequestStatus;
 }

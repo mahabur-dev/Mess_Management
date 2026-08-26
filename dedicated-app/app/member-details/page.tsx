@@ -7,12 +7,17 @@ import { MemberDetailsView } from '@/components/mobile/member-details'
 import type { MobileMember } from '@/components/mobile/member-card'
 import { formatTaka } from '@/components/mobile/expense-design'
 import { ExpenseBreakdownList, ExpenseSurface, ExpenseSummaryCard } from '@/components/mobile/expense-ui'
+import { ExpenseReviewActions } from '@/components/mobile/expense-approval'
+import { InlineNotice } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
 import { useQueryParams } from '@/lib/use-query-params'
+import { useAuth } from '@/app/providers'
 
 export default function MemberDetailsPage() {
+  const { user } = useAuth()
   const searchParams = useQueryParams()
   const memberId = searchParams.get('memberId') ?? ''
   const messId = searchParams.get('messId') ?? ''
@@ -23,6 +28,7 @@ export default function MemberDetailsPage() {
   const [billLoading, setBillLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [billMessage, setBillMessage] = useState('')
+  const [reviewBusy, setReviewBusy] = useState(false)
 
   useEffect(() => {
     if (!memberId || !messId) {
@@ -121,6 +127,29 @@ export default function MemberDetailsPage() {
   const totalCost = bill ? toNumber(bill.food_bill) + toNumber(bill.seat_rent) + toNumber(bill.utility_share) : 0
   const totalDeposit = bill ? toNumber(bill.deposit_total) + toNumber(bill.paid_amount) : 0
   const currentMonthBalance = Number((totalCost - totalDeposit).toFixed(2))
+  const closeRequest = bill?.close_requests?.[0] ?? null
+
+  const reviewCloseRequest = async (status: 'APPROVED' | 'REJECTED') => {
+    if (!bill || !closeRequest || reviewBusy) return
+    setReviewBusy(true)
+    setBillMessage('')
+    try {
+      const response = await api.reviewMonthlyBillCloseRequest(closeRequest.id, status)
+      const reviewed = response.data as BillCloseRequest
+      setBill((current) => current ? {
+        ...current,
+        ...(status === 'APPROVED' ? { balance: 0, final_due: 0 } : {}),
+        close_requests: [reviewed],
+      } : current)
+      setBillMessage(status === 'APPROVED'
+        ? 'Calculation closed. The effective and carry-forward balance is now zero.'
+        : 'Close request rejected.')
+    } catch (error) {
+      setBillMessage(error instanceof Error ? error.message : 'Failed to review close request.')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
 
   return (
     <MobileShell>
@@ -153,6 +182,30 @@ export default function MemberDetailsPage() {
                     { icon: WalletCards, label: 'Carry-forward balance', value: formatTaka(bill.balance), accent: 'violet' },
                   ]}
                 />
+                {closeRequest ? (
+                  <div className="space-y-3">
+                    {closeRequest.status === 'PENDING' ? (
+                      <InlineNotice tone="warning">
+                        This member requested to close the calculation. Original carry-forward balance: {formatTaka(closeRequest.original_balance)}.
+                      </InlineNotice>
+                    ) : null}
+                    {closeRequest.status === 'APPROVED' ? (
+                      <InlineNotice tone="success">
+                        Closed and settled at zero. Original audit balance: {formatTaka(closeRequest.original_balance)}.
+                      </InlineNotice>
+                    ) : null}
+                    {closeRequest.status === 'REJECTED' ? (
+                      <InlineNotice tone="danger">Close request rejected.</InlineNotice>
+                    ) : null}
+                    {closeRequest.status === 'PENDING' && canManageMess(user) ? (
+                      <ExpenseReviewActions
+                        busy={reviewBusy}
+                        onApprove={() => reviewCloseRequest('APPROVED')}
+                        onReject={() => reviewCloseRequest('REJECTED')}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </ExpenseSurface>
@@ -180,6 +233,14 @@ type BillRecord = {
   final_due?: string | number | null
   prev_balance?: string | number | null
   balance?: string | number | null
+  close_requests?: BillCloseRequest[]
+}
+
+type BillCloseRequest = {
+  id: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  original_balance?: string | number | null
+  review_note?: string | null
 }
 
 function toNumber(value?: string | number | null) {

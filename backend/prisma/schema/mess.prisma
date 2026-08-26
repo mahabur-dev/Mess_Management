@@ -45,6 +45,7 @@ model Mess {
   deposit_ledgers      DepositLedger[]
   deposits             Deposit[]
   monthly_bills        MonthlyBill[]
+  bill_close_requests  MonthlyBillCloseRequest[]
   billing_states       MonthlyBillingState[]
   shopping_lists       ShoppingList[]
   notifications        Notification[]

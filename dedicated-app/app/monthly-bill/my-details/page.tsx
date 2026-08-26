@@ -30,6 +30,7 @@ import {
 } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
+import { Button } from '@/components/ui'
 import { api } from '@/lib/api'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '@/app/providers'
@@ -49,6 +50,18 @@ type BillItem = {
   balance?: string | number | null
   status?: string | null
   member?: { id: string; name: string }
+  close_requests?: BillCloseRequest[]
+}
+
+type BillCloseRequest = {
+  id: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  original_balance?: string | number | null
+  original_final_due?: string | number | null
+  original_credit_balance?: string | number | null
+  review_note?: string | null
+  requested_at?: string | null
+  reviewed_at?: string | null
 }
 
 type MyExpenseDetails = {
@@ -151,7 +164,9 @@ function MyMonthlyDetailsContent() {
   const [deposits, setDeposits] = useState<DepositListRecord[]>([])
   const [payments, setPayments] = useState<PaymentItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [closeBusy, setCloseBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [closeMessage, setCloseMessage] = useState('')
 
   const range = useMemo(() => monthBounds(month), [month])
 
@@ -225,6 +240,31 @@ function MyMonthlyDetailsContent() {
   const regularMealCharge = toNumber(bill?.meal_charge)
     || Math.max(0, toNumber(details?.foodBill) - assignedFoodExpenseTotal)
   const totalFoodBill = toNumber(bill?.food_bill) || toNumber(details?.foodBill)
+  const latestCloseRequest = bill?.close_requests?.[0] ?? null
+  const isCompletedMonth = month < currentMonthValue()
+  const canRequestClose = Boolean(
+    bill
+      && isCompletedMonth
+      && toNumber(bill.balance) !== 0
+      && latestCloseRequest?.status !== 'PENDING'
+      && latestCloseRequest?.status !== 'APPROVED',
+  )
+
+  const requestClose = async () => {
+    if (!bill || closeBusy) return
+    setCloseBusy(true)
+    setCloseMessage('')
+    try {
+      const response = await api.requestMonthlyBillClose(bill.id)
+      const request = response.data as BillCloseRequest
+      setBill((current) => current ? { ...current, close_requests: [request] } : current)
+      setCloseMessage('Request submitted. Your manager has been notified for approval.')
+    } catch (error) {
+      setCloseMessage(error instanceof Error ? error.message : 'Failed to submit close request.')
+    } finally {
+      setCloseBusy(false)
+    }
+  }
 
   return (
     <MobileShell>
@@ -279,6 +319,37 @@ function MyMonthlyDetailsContent() {
                 ]}
               />
             </ExpenseSurface>
+
+            {bill && isCompletedMonth ? (
+              <ExpenseSurface title="Close Previous Calculation">
+                <div className="space-y-3 px-3 py-3">
+                  {latestCloseRequest?.status === 'PENDING' ? (
+                    <InlineNotice tone="warning">Waiting for manager approval. Your current balance is unchanged until approval.</InlineNotice>
+                  ) : null}
+                  {latestCloseRequest?.status === 'APPROVED' ? (
+                    <InlineNotice tone="success">
+                      Calculation closed. Displayed and carry-forward balance is now {formatTaka(0)}. Original audit balance: {formatTaka(latestCloseRequest.original_balance)}.
+                    </InlineNotice>
+                  ) : null}
+                  {latestCloseRequest?.status === 'REJECTED' ? (
+                    <InlineNotice tone="danger">
+                      The previous request was rejected{latestCloseRequest.review_note ? `: ${latestCloseRequest.review_note}` : '.'}
+                    </InlineNotice>
+                  ) : null}
+                  {closeMessage ? <InlineNotice tone={latestCloseRequest?.status === 'PENDING' ? 'success' : 'danger'}>{closeMessage}</InlineNotice> : null}
+                  {canRequestClose ? (
+                    <>
+                      <p className="text-label leading-6 text-[#65838b]">
+                        Ask your manager to settle this month without carrying its positive or negative balance into the next month. The original amount will remain in audit history.
+                      </p>
+                      <Button type="button" className="w-full" busy={closeBusy} onClick={requestClose}>
+                        Close Previous Calculation
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              </ExpenseSurface>
+            ) : null}
 
             <ExpenseSurface title="Deposit Section">
               <div className="flush-list flush-list--home-card">

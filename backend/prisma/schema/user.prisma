@@ -37,6 +37,9 @@ model User {
   deposits_confirmed            Deposit[]                      @relation("DepositConfirmer")
   deposit_ledgers               DepositLedger[]                @relation("DepositLedgerMember")
   monthly_bills                 MonthlyBill[]
+  monthly_bill_close_requests   MonthlyBillCloseRequest[]      @relation("MonthlyBillCloseMember")
+  requested_bill_closures       MonthlyBillCloseRequest[]      @relation("MonthlyBillCloseRequester")
+  reviewed_bill_closures        MonthlyBillCloseRequest[]      @relation("MonthlyBillCloseReviewer")
   created_lists                 ShoppingList[]                 @relation("ListCreator")
   purchased_items               ShoppingItem[]                 @relation("ItemPurchaser")
   notifications_sent            Notification[]                 @relation("NotificationSender")
@@ -56,6 +59,9 @@ model User {
   complaints_updated            Complaint[]                    @relation("ComplaintStatusUpdater")
   contact_requests_reviewed     ContactRequest[]               @relation("ContactRequestReviewer")
   ai_commands                   AiCommand[]
+  personal_transactions         PersonalTransaction[]
+  family_members                FamilyMember[]
+  personal_budgets              PersonalBudget[]
 
   @@map("users")
 }

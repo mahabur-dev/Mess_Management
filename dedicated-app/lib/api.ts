@@ -151,7 +151,7 @@ class Api {
   }
 
   getMesses() {
-    return this.request<any[]>('/messes/my-mess')
+    return this.request<any[]>('/messes/my-mess', { cache: 'no-store' })
   }
 
   getMessSubscription(messId: string) {
@@ -218,6 +218,7 @@ class Api {
   getMessDashboard(messId: string, month?: string) {
     return this.request<any>(`/dashboard/mess/${messId}`, {
       params: month ? { month } : undefined,
+      cache: 'no-store',
     })
   }
 
@@ -228,11 +229,14 @@ class Api {
   }
 
   getAllMembers(params?: Record<string, QueryValue>) {
-    return this.request<any[]>('/messes/members', { params })
+    return this.request<any[]>('/messes/members', { params, cache: 'no-store' })
   }
 
   getMessMemberOptions(messId: string) {
-    return this.request<Array<{ id: string; name: string; email: string }>>(`/messes/${messId}/member-options`)
+    return this.request<Array<{ id: string; name: string; email: string }>>(
+      `/messes/${messId}/member-options`,
+      { cache: 'no-store' },
+    )
   }
 
   addMember(messId: string, data: Record<string, unknown>) {
@@ -459,6 +463,124 @@ class Api {
 
   getMonthlyBillById(id: string) {
     return this.request(`/monthly-bill/${id}`)
+  }
+
+  requestMonthlyBillClose(id: string) {
+    return this.request(`/monthly-bill/${id}/close-request`, {
+      method: 'POST',
+    })
+  }
+
+  getManagedMonthlyBillCloseRequests(messId: string, status?: 'PENDING' | 'APPROVED' | 'REJECTED') {
+    return this.request('/monthly-bill/close-requests/managed', {
+      params: { messId, status },
+    })
+  }
+
+  reviewMonthlyBillCloseRequest(requestId: string, status: 'APPROVED' | 'REJECTED', reviewNote?: string) {
+    return this.request(`/monthly-bill/close-requests/${requestId}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, reviewNote }),
+    })
+  }
+
+  getPersonalSummary(month?: string) {
+    return this.request('/personal/summary', { params: { month } })
+  }
+
+  getPersonalReports(month?: string) {
+    return this.request('/personal/reports', { params: { month } })
+  }
+
+  getPersonalTransactions(params?: {
+    month?: string
+    type?: 'INCOME' | 'EXPENSE' | 'SAVING'
+    category?: string
+    familyMemberId?: string
+    search?: string
+    page?: number
+    limit?: number
+  }) {
+    return this.request('/personal/transactions', { params })
+  }
+
+  createPersonalTransaction(data: {
+    type: 'INCOME' | 'EXPENSE' | 'SAVING'
+    category: string
+    amount: number
+    date: string
+    description?: string
+    familyMemberId?: string | null
+  }) {
+    return this.request('/personal/transactions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  updatePersonalTransaction(
+    id: string,
+    data: Partial<{
+      type: 'INCOME' | 'EXPENSE' | 'SAVING'
+      category: string
+      amount: number
+      date: string
+      description?: string
+      familyMemberId?: string | null
+    }>
+  ) {
+    return this.request(`/personal/transactions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  deletePersonalTransaction(id: string) {
+    return this.request(`/personal/transactions/${id}`, { method: 'DELETE' })
+  }
+
+  getPersonalFamilyMembers(month?: string) {
+    return this.request('/personal/family-members', { params: { month } })
+  }
+
+  createPersonalFamilyMember(data: { name: string; relation: string }) {
+    return this.request('/personal/family-members', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  updatePersonalFamilyMember(id: string, data: { name?: string; relation?: string }) {
+    return this.request(`/personal/family-members/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  deletePersonalFamilyMember(id: string) {
+    return this.request(`/personal/family-members/${id}`, { method: 'DELETE' })
+  }
+
+  getPersonalBudgets(month?: string) {
+    return this.request('/personal/budgets', { params: { month } })
+  }
+
+  createPersonalBudget(data: { month: string; category: string; limitAmount: number }) {
+    return this.request('/personal/budgets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  updatePersonalBudget(id: string, data: { limitAmount: number }) {
+    return this.request(`/personal/budgets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  deletePersonalBudget(id: string) {
+    return this.request(`/personal/budgets/${id}`, { method: 'DELETE' })
   }
 
   updateMonthlyBillStatus(id: string, data: Record<string, unknown>) {

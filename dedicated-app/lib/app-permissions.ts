@@ -279,6 +279,7 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/mess-management', fallback: '/', exact: true },
   { href: '/subscription', fallback: '/', exact: true },
   { href: '/personal', fallback: '/', exact: true },
+  { href: '/personal/transactions/add', fallback: '/personal/transactions', exact: true },
   { href: '/how-it-works', fallback: '/', exact: true },
   { href: '/contact-us', fallback: '/', exact: true },
   { href: '/privacy-policy', fallback: '/', exact: true },

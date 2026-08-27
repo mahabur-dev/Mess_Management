@@ -802,12 +802,14 @@ export function FormPageShell({
   description,
   icon: Icon,
   backHref,
+  trailing,
   children,
 }: {
   title: string
   description?: string
   icon: IconType
   backHref: string
+  trailing?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -816,11 +818,11 @@ export function FormPageShell({
         title={title}
         subtitle={description}
         backHref={backHref}
-        trailing={
+        trailing={trailing ?? (
           <span className="app-header-action" aria-hidden="true">
             <Icon size={18} strokeWidth={2.4} />
           </span>
-        }
+        )}
       />
 
       <div className="screen expense-form-screen space-y-4">{children}</div>

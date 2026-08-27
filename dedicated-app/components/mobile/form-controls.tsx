@@ -91,6 +91,7 @@ export function TextAreaField({
   onChange,
   placeholder,
   rows = 4,
+  maxLength,
 }: {
   label: string
   hint?: string
@@ -98,12 +99,14 @@ export function TextAreaField({
   onChange: (value: string) => void
   placeholder?: string
   rows?: number
+  maxLength?: number
 }) {
   return (
     <FieldCard label={label} hint={hint}>
       <textarea
         className="field min-h-32 resize-none"
         rows={rows}
+        maxLength={maxLength}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

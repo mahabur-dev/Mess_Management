@@ -47,25 +47,3 @@ export function PersonalNavigation({
     </nav>
   );
 }
-
-export function PersonalLanguageButton({
-  locale,
-  onToggle,
-}: {
-  locale: PersonalLocale;
-  onToggle: () => void;
-}) {
-  const copy = personalCopy(locale);
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="ui-btn ui-btn--ghost ui-btn--sm min-w-[76px]"
-      aria-label={
-        locale === "en" ? "Switch to Bangla" : "ইংরেজিতে পরিবর্তন করুন"
-      }
-    >
-      {copy.language}
-    </button>
-  );
-}

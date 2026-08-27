@@ -8,10 +8,12 @@ import {
   WalletCards,
 } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
+import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import {
   ExpenseBreakdownList,
   ExpenseSurface,
 } from "@/components/mobile/expense-ui";
+import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
 import { personalApi } from "@/features/personal/api/personal.api";
@@ -21,10 +23,7 @@ import {
   formatPersonalMoney,
   personalCopy,
 } from "@/features/personal/constants";
-import {
-  PersonalLanguageButton,
-  PersonalNavigation,
-} from "@/features/personal/components/personal-navigation";
+import { PersonalNavigation } from "@/features/personal/components/personal-navigation";
 import { SummaryCard } from "@/features/personal/components/summary-card";
 import { usePersonalLocale } from "@/features/personal/hooks/use-personal-locale";
 import type { PersonalReport } from "@/features/personal/types";
@@ -61,17 +60,10 @@ export default function PersonalReportsPage() {
         title={copy.reports}
         subtitle={copy.monthlySummary}
         backHref="/personal"
+        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
       />
       <div className="screen space-y-4">
-        <div className="flex items-center gap-2">
-          <input
-            className="field min-w-0 flex-1"
-            type="month"
-            value={month}
-            onChange={(event) => setMonth(event.target.value)}
-          />
-          <PersonalLanguageButton locale={locale} onToggle={toggleLocale} />
-        </div>
+        <MealMonthSelector month={month} onChange={setMonth} />
         <PersonalNavigation locale={locale} active="reports" />
         {loading ? (
           <LoadingIndicator variant="card" label={copy.reports} />

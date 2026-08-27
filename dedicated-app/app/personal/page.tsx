@@ -37,17 +37,17 @@ export default function PersonalPage() {
         label={copy.quickActions}
         items={[
           {
-            href: "/personal/transactions?action=add&type=INCOME",
+            href: "/personal/transactions/add?type=INCOME",
             label: copy.addIncome,
             icon: <ArrowDownLeft size={20} strokeWidth={2.3} />,
           },
           {
-            href: "/personal/transactions?action=add&type=EXPENSE",
+            href: "/personal/transactions/add?type=EXPENSE",
             label: copy.addExpense,
             icon: <ArrowUpRight size={20} strokeWidth={2.3} />,
           },
           {
-            href: "/personal/transactions?action=add&type=SAVING",
+            href: "/personal/transactions/add?type=SAVING",
             label: copy.addSaving,
             icon: <PiggyBank size={20} strokeWidth={2.3} />,
           },

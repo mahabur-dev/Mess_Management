@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, PiggyBank } from "lucide-react";
+import {
+  SelectField,
+  TextAreaField,
+  TextField,
+} from "@/components/mobile/form-controls";
 import { Button } from "@/components/ui";
-import { ExpenseChoiceCard } from "@/components/mobile/expense-ui";
 import {
   PERSONAL_CATEGORIES,
   categoryLabel,
@@ -92,106 +95,52 @@ export function PersonalTransactionForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div className="grid grid-cols-3 gap-2">
-        <ExpenseChoiceCard
-          active={type === "INCOME"}
-          icon={ArrowDownLeft}
-          title={copy.income}
-          onClick={() => changeType("INCOME")}
-          compact
-          layout="vertical"
-          accent="green"
-        />
-        <ExpenseChoiceCard
-          active={type === "EXPENSE"}
-          icon={ArrowUpRight}
-          title={copy.expense}
-          onClick={() => changeType("EXPENSE")}
-          compact
-          layout="vertical"
-          accent="orange"
-        />
-        <ExpenseChoiceCard
-          active={type === "SAVING"}
-          icon={PiggyBank}
-          title={copy.saving}
-          onClick={() => changeType("SAVING")}
-          compact
-          layout="vertical"
-          accent="teal"
-        />
-      </div>
-
-      <label className="block">
-        <span className="mb-1.5 block text-label font-bold text-[#123748]">
-          {copy.category}
-        </span>
-        <select
-          className="field"
-          value={category}
-          onChange={(event) => setCategory(event.target.value)}
-        >
-          {PERSONAL_CATEGORIES[type].map((item) => (
-            <option key={item} value={item}>
-              {categoryLabel(item, locale)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block">
-        <span className="mb-1.5 block text-label font-bold text-[#123748]">
-          {copy.amount}
-        </span>
-        <input
-          className="field ui-mono-number"
-          type="number"
-          inputMode="decimal"
-          min="0.01"
-          step="0.01"
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          placeholder="0.00"
-        />
-      </label>
-      <label className="block">
-        <span className="mb-1.5 block text-label font-bold text-[#123748]">
-          {copy.date}
-        </span>
-        <input
-          className="field"
-          type="date"
-          value={date}
-          onChange={(event) => setDate(event.target.value)}
-        />
-      </label>
-      <label className="block">
-        <span className="mb-1.5 block text-label font-bold text-[#123748]">
-          {copy.description} ({copy.optional})
-        </span>
-        <textarea
-          className="field min-h-[92px] resize-none py-3"
-          value={description}
-          maxLength={500}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </label>
-      <label className="block">
-        <span className="mb-1.5 block text-label font-bold text-[#123748]">
-          {copy.familyMember} ({copy.optional})
-        </span>
-        <select
-          className="field"
-          value={familyMemberId}
-          onChange={(event) => setFamilyMemberId(event.target.value)}
-        >
-          <option value="">{copy.none}</option>
-          {familyMembers.map((member) => (
-            <option key={member.id} value={member.id}>
-              {member.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField
+        label={copy.transactionType}
+        value={type}
+        onChange={changeType}
+        options={["INCOME", "EXPENSE", "SAVING"] as const}
+        getLabel={(value) => value === "INCOME" ? copy.income : value === "EXPENSE" ? copy.expense : copy.saving}
+      />
+      <SelectField
+        label={copy.category}
+        value={category}
+        onChange={setCategory}
+        options={PERSONAL_CATEGORIES[type]}
+        getLabel={(value) => categoryLabel(value, locale)}
+      />
+      <TextField
+        label={copy.amount}
+        type="number"
+        inputMode="decimal"
+        min="0.01"
+        step="0.01"
+        value={amount}
+        onChange={setAmount}
+        placeholder="0.00"
+      />
+      <TextField
+        label={copy.date}
+        type="date"
+        value={date}
+        onChange={setDate}
+      />
+      <TextAreaField
+        label={copy.description}
+        hint={copy.optional}
+        value={description}
+        onChange={setDescription}
+        rows={3}
+        maxLength={500}
+      />
+      <SelectField
+        label={copy.familyMember}
+        hint={copy.optional}
+        value={familyMemberId}
+        onChange={setFamilyMemberId}
+        options={["", ...familyMembers.map((member) => member.id)]}
+        getLabel={(value) => familyMembers.find((member) => member.id === value)?.name ?? copy.none}
+      />
       {error ? (
         <div className="ui-notice ui-notice--danger">{error}</div>
       ) : null}

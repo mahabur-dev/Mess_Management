@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
+import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import { ExpenseSurface } from "@/components/mobile/expense-ui";
+import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
 import { Button } from "@/components/ui";
@@ -15,10 +17,7 @@ import {
   relationLabel,
 } from "@/features/personal/constants";
 import { FamilyCard } from "@/features/personal/components/family-card";
-import {
-  PersonalLanguageButton,
-  PersonalNavigation,
-} from "@/features/personal/components/personal-navigation";
+import { PersonalNavigation } from "@/features/personal/components/personal-navigation";
 import { useFamilyMembers } from "@/features/personal/hooks/use-family-members";
 import { usePersonalLocale } from "@/features/personal/hooks/use-personal-locale";
 import { validateFamilyMember } from "@/features/personal/schemas/personal.schema";
@@ -78,17 +77,10 @@ export default function PersonalFamilyPage() {
         title={copy.family}
         subtitle={copy.familySubtitle}
         backHref="/personal"
+        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
       />
       <div className="screen space-y-4">
-        <div className="flex items-center gap-2">
-          <input
-            className="field min-w-0 flex-1"
-            type="month"
-            value={month}
-            onChange={(event) => setMonth(event.target.value)}
-          />
-          <PersonalLanguageButton locale={locale} onToggle={toggleLocale} />
-        </div>
+        <MealMonthSelector month={month} onChange={setMonth} />
         <PersonalNavigation locale={locale} active="family" />
         <Button className="w-full" onClick={() => openForm()}>
           <Plus size={17} />

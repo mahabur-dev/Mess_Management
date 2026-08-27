@@ -1,22 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
+import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import { ExpenseSurface } from "@/components/mobile/expense-ui";
+import { SelectField } from "@/components/mobile/form-controls";
+import { FloatingActionLink } from "@/components/mobile/floating-action-link";
+import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
-import { Button } from "@/components/ui";
-import { useQueryParams } from "@/lib/use-query-params";
 import { personalApi } from "@/features/personal/api/personal.api";
 import {
   currentPersonalMonth,
   personalCopy,
 } from "@/features/personal/constants";
-import {
-  PersonalLanguageButton,
-  PersonalNavigation,
-} from "@/features/personal/components/personal-navigation";
+import { PersonalNavigation } from "@/features/personal/components/personal-navigation";
 import { PersonalTransactionForm } from "@/features/personal/components/transaction-form";
 import { TransactionCard } from "@/features/personal/components/transaction-card";
 import { useFamilyMembers } from "@/features/personal/hooks/use-family-members";
@@ -29,15 +28,11 @@ import type {
 } from "@/features/personal/types";
 
 export default function PersonalTransactionsPage() {
-  const params = useQueryParams();
   const { locale, toggleLocale } = usePersonalLocale();
   const copy = personalCopy(locale);
   const [month, setMonth] = useState(currentPersonalMonth());
   const [type, setType] = useState<"ALL" | PersonalTransactionType>("ALL");
   const [search, setSearch] = useState("");
-  const [formOpen, setFormOpen] = useState(false);
-  const [initialType, setInitialType] =
-    useState<PersonalTransactionType>("EXPENSE");
   const [editing, setEditing] = useState<PersonalTransaction | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -52,23 +47,12 @@ export default function PersonalTransactionsPage() {
   );
   const { familyMembers } = useFamilyMembers(month, copy.loadFailed);
 
-  useEffect(() => {
-    if (params.get("action") !== "add") return;
-    const requested = params.get("type");
-    setInitialType(
-      requested === "INCOME" || requested === "SAVING" ? requested : "EXPENSE",
-    );
-    setEditing(null);
-    setFormOpen(true);
-  }, [params]);
-
   const save = async (input: PersonalTransactionInput) => {
+    if (!editing) return;
     setBusy(true);
     setMessage("");
     try {
-      if (editing) await personalApi.updateTransaction(editing.id, input);
-      else await personalApi.createTransaction(input);
-      setFormOpen(false);
+      await personalApi.updateTransaction(editing.id, input);
       setEditing(null);
       await refresh();
     } catch {
@@ -89,83 +73,49 @@ export default function PersonalTransactionsPage() {
   };
 
   return (
-    <MobileShell showBottomNavigation>
+    <MobileShell showBottomNavigation hasFloatingAction>
       <TopScreen
         title={copy.transactions}
         subtitle={copy.transactionHistory}
         backHref="/personal"
+        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
       />
       <div className="screen space-y-4">
-        <div className="flex items-center gap-2">
-          <input
-            className="field min-w-0 flex-1"
-            type="month"
-            value={month}
-            onChange={(event) => setMonth(event.target.value)}
-          />
-          <PersonalLanguageButton locale={locale} onToggle={toggleLocale} />
-        </div>
+        <MealMonthSelector month={month} onChange={setMonth} />
         <PersonalNavigation locale={locale} active="transactions" />
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <label className="relative">
-            <Search
-              className="absolute left-3 top-3.5 text-[#65838b]"
-              size={17}
-            />
-            <input
-              className="field pl-10"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={copy.search}
-            />
-          </label>
-          <Button
-            type="button"
-            onClick={() => {
-              setEditing(null);
-              setInitialType("EXPENSE");
-              setFormOpen(true);
-            }}
-          >
-            <Plus size={17} />
-            {copy.addTransaction}
-          </Button>
-        </div>
-        <div className="expense-segmented">
-          {(["ALL", "INCOME", "EXPENSE", "SAVING"] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              className="expense-segmented__item"
-              data-active={type === item}
-              onClick={() => setType(item)}
-            >
-              {item === "ALL"
-                ? copy.all
-                : item === "INCOME"
-                  ? copy.income
-                  : item === "EXPENSE"
-                    ? copy.expense
-                    : copy.saving}
-            </button>
-          ))}
-        </div>
+        <label className="relative block">
+          <Search
+            className="absolute left-3 top-3.5 text-[#65838b]"
+            size={17}
+          />
+          <input
+            className="field pl-10"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={copy.search}
+          />
+        </label>
+        <SelectField
+          label={copy.filterType}
+          value={type}
+          onChange={setType}
+          options={["ALL", "INCOME", "EXPENSE", "SAVING"] as const}
+          getLabel={(value) => value === "ALL" ? copy.all : value === "INCOME" ? copy.income : value === "EXPENSE" ? copy.expense : copy.saving}
+        />
         {message ? (
           <div className="ui-notice ui-notice--danger">{message}</div>
         ) : null}
-        {formOpen ? (
+        {editing ? (
           <ExpenseSurface
-            title={editing ? copy.editTransaction : copy.addTransaction}
+            title={copy.editTransaction}
           >
             <PersonalTransactionForm
               locale={locale}
               familyMembers={familyMembers}
               initial={editing}
-              initialType={initialType}
               busy={busy}
               onSubmit={save}
               onCancel={() => {
-                setFormOpen(false);
                 setEditing(null);
               }}
             />
@@ -187,8 +137,6 @@ export default function PersonalTransactionsPage() {
                   locale={locale}
                   onEdit={() => {
                     setEditing(transaction);
-                    setInitialType(transaction.type);
-                    setFormOpen(true);
                   }}
                   onDelete={() => remove(transaction)}
                 />
@@ -200,6 +148,11 @@ export default function PersonalTransactionsPage() {
           </ExpenseSurface>
         ) : null}
       </div>
+      <FloatingActionLink
+        href="/personal/transactions/add"
+        label={copy.addTransaction}
+        icon={<Plus size={24} strokeWidth={2.4} />}
+      />
     </MobileShell>
   );
 }

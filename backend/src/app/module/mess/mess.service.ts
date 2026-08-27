@@ -10,7 +10,13 @@ import {
   UpdateMemberDto,
   UpdateMessDto,
 } from './dto/mess.dto';
-import { MembershipRole, NotificationType, Prisma, RequestStatus } from '@prisma/client';
+import {
+  MealPatternStatus,
+  MembershipRole,
+  NotificationType,
+  Prisma,
+  RequestStatus,
+} from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -89,7 +95,13 @@ export class MessService {
     approved_at: true,
     created_at: true,
     creator: { select: { id: true, name: true, email: true } },
-    _count: { select: { memberships: true, deposits: true, meals: true } },
+    _count: {
+      select: {
+        memberships: { where: { is_active: true } },
+        deposits: true,
+        meals: true,
+      },
+    },
   } as const;
 
   private readonly activeMessForJoinSelect = {
@@ -833,7 +845,13 @@ export class MessService {
             },
           },
         },
-        _count: { select: { memberships: true, deposits: true, meals: true } },
+        _count: {
+          select: {
+            memberships: { where: { is_active: true } },
+            deposits: true,
+            meals: true,
+          },
+        },
       },
     });
 
@@ -863,7 +881,9 @@ export class MessService {
             },
           },
         },
-        _count: { select: { memberships: true } },
+        _count: {
+          select: { memberships: { where: { is_active: true } } },
+        },
       },
     });
 
@@ -1128,7 +1148,9 @@ export class MessService {
     const existing = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: user.id } },
     });
-    if (existing) throw new HttpException('User is already a member', 400);
+    if (existing?.is_active) {
+      throw new HttpException('User is already a member', 400);
+    }
 
     const rooms = Array.isArray(mess.rooms) ? mess.rooms : [];
 
@@ -1198,21 +1220,38 @@ export class MessService {
       });
     }
 
-    const member = await this.prisma.messMembership.create({
-      data: {
-        mess_id: messId,
-        user_id: user.id,
-        role: role,
-        created_by: managerId,
-        room_no: dto?.roomNo,
-        seat_no: dto?.seatNo,
-        monthly_rent: autoRent ?? dto?.monthlyRent,
-        deposit_amount: dto?.depositAmount,
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-      },
-    });
+    const memberData = {
+      role,
+      is_active: true,
+      joined_at: new Date(),
+      left_at: null,
+      created_by: managerId,
+      room_no: dto?.roomNo ?? null,
+      seat_no: dto?.seatNo ?? null,
+      monthly_rent: autoRent ?? dto?.monthlyRent ?? null,
+      deposit_amount: dto?.depositAmount ?? null,
+    };
+
+    const member = existing
+      ? await this.prisma.messMembership.update({
+          where: {
+            mess_id_user_id: { mess_id: messId, user_id: user.id },
+          },
+          data: memberData,
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+        })
+      : await this.prisma.messMembership.create({
+          data: {
+            mess_id: messId,
+            user_id: user.id,
+            ...memberData,
+          },
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+        });
 
     await this.recalculateCurrentMonthBillIfPossible(messId);
 
@@ -1222,18 +1261,34 @@ export class MessService {
   // ─────────────────────────────────────────
   // Remove member from mess (Manager)
   // ─────────────────────────────────────────
-  async removeMember(messId: string, userId: string, managerId: string) {
-    await this.verifyManagerAccess(messId, managerId, 'MANAGER');
+  async removeMember(
+    messId: string,
+    userId: string,
+    managerId: string,
+    managerRole: string,
+  ) {
+    await this.verifyManagerAccess(messId, managerId, managerRole);
 
     const member = await this.prisma.messMembership.findUnique({
       where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
     });
-    if (!member)
+    if (!member?.is_active)
       throw new HttpException('User is not a member of this mess', 404);
 
-    await this.prisma.messMembership.update({
-      where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
-      data: { is_active: false, left_at: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.messMembership.update({
+        where: { mess_id_user_id: { mess_id: messId, user_id: userId } },
+        data: { is_active: false, left_at: new Date() },
+      });
+
+      // An inactive membership must not keep creating future meals.
+      await tx.mealPattern.updateMany({
+        where: {
+          membership_id: member.id,
+          status: MealPatternStatus.ACTIVE,
+        },
+        data: { status: MealPatternStatus.CANCELLED, end_date: new Date() },
+      });
     });
 
     // Recalculate monthly bills so removed member's data is no longer included

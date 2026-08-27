@@ -14,7 +14,9 @@ import { Request } from 'express';
 import { MonthlyBillService } from './monthly-bill.service';
 import {
   BillFilterDto,
+  BillCloseRequestFilterDto,
   GenerateBillDto,
+  ReviewBillCloseRequestDto,
   UpdateBillStatusDto,
 } from './dto/monthly-bill.dto';
 import AuthGuard from '../../middlewares/auth.guard';
@@ -99,6 +101,49 @@ export class MonthlyBillController {
           }
         : null,
     };
+  }
+
+  @Get('close-requests/managed')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Get bill close requests managed by this user' })
+  async findManagedCloseRequests(
+    @Req() req: Request,
+    @Query() query: BillCloseRequestFilterDto,
+  ) {
+    const data = await this.monthlyBillService.findManagedCloseRequests(
+      req.user!.id,
+      req.user!.role,
+      query,
+    );
+    return { message: 'Bill close requests fetched successfully', data };
+  }
+
+  @Post(':id/close-request')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Request settlement of a completed monthly bill' })
+  async requestClose(@Param('id') id: string, @Req() req: Request) {
+    const data = await this.monthlyBillService.requestClose(
+      id,
+      req.user!.id,
+    );
+    return { message: 'Bill close request submitted successfully', data };
+  }
+
+  @Patch('close-requests/:requestId/review')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Approve or reject a bill close request' })
+  async reviewCloseRequest(
+    @Param('requestId') requestId: string,
+    @Req() req: Request,
+    @Body() dto: ReviewBillCloseRequestDto,
+  ) {
+    const data = await this.monthlyBillService.reviewCloseRequest(
+      requestId,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return { message: `Bill close request ${dto.status.toLowerCase()}`, data };
   }
 
   @Get(':id')

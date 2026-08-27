@@ -91,6 +91,7 @@ export function TextAreaField({
   onChange,
   placeholder,
   rows = 4,
+  maxLength,
 }: {
   label: string
   hint?: string
@@ -98,12 +99,14 @@ export function TextAreaField({
   onChange: (value: string) => void
   placeholder?: string
   rows?: number
+  maxLength?: number
 }) {
   return (
     <FieldCard label={label} hint={hint}>
       <textarea
         className="field min-h-32 resize-none"
         rows={rows}
+        maxLength={maxLength}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -112,33 +115,6 @@ export function TextAreaField({
   )
 }
 
-// export function SelectField<T extends string>({
-//   label,
-//   hint,
-//   value,
-//   onChange,
-//   options,
-//   getLabel,
-// }: {
-//   label: string
-//   hint?: string
-//   value: T
-//   onChange: (value: T) => void
-//   options: readonly T[]
-//   getLabel?: (value: T) => string
-// }) {
-//   return (
-//     <FieldCard label={label} hint={hint}>
-//       <select className="field h-14 pr-2" value={value} onChange={(e) => onChange(e.target.value as T)}>
-//         {options.map((option) => (
-//           <option key={option} value={option}>
-//             {getLabel ? getLabel(option) : option}
-//           </option>
-//         ))}
-//       </select>
-//     </FieldCard>
-//   )
-// }
 export function SelectField<T extends string>({
   label,
   hint,

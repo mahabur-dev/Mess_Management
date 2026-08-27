@@ -52,6 +52,11 @@ type BillItem = {
   prev_balance?: string | number | null
   balance?: string | number | null
   member?: MemberSummary
+  close_requests?: Array<{
+    id: string
+    status: 'PENDING' | 'APPROVED' | 'REJECTED'
+    original_balance?: string | number | null
+  }>
 }
 
 type MemberRecord = {
@@ -162,6 +167,7 @@ function MemberBillRow({
   const name = bill.member?.name || member?.user?.name || 'Member'
   const email = bill.member?.email || member?.user?.email || 'Email not available'
   const isPaid = bill.status === 'PAID' || toNumber(bill.final_due) <= 0
+  const closeStatus = bill.close_requests?.[0]?.status
 
   return (
     <Link
@@ -174,8 +180,8 @@ function MemberBillRow({
         <strong>{name}</strong>
         <small>{email}</small>
       </span>
-      <span className="monthly-member-row__status" data-status={isPaid ? 'paid' : 'due'}>
-        {isPaid ? 'Paid' : 'Due'}
+      <span className="monthly-member-row__status" data-status={closeStatus === 'PENDING' ? 'due' : closeStatus === 'APPROVED' || isPaid ? 'paid' : 'due'}>
+        {closeStatus === 'PENDING' ? 'Close pending' : closeStatus === 'APPROVED' ? 'Closed' : isPaid ? 'Paid' : 'Due'}
       </span>
     </Link>
   )
@@ -218,15 +224,21 @@ export default function MonthlyBillPage() {
         return { data: null }
       }),
       api.getBillsByMess(messId, { month: `${month}-01`, limit: 500, sortBy: 'generated_at', sortOrder: 'desc' }).catch(() => ({ data: [], billing: null })),
-      api.getAllMembers({ limit: 500 }).catch(() => ({ data: [] })),
+      api.getMessMemberOptions(messId).catch(() => ({ data: [] })),
     ])
       .then(([detailRes, billRes, memberRes]) => {
         if (!alive) return
         const billList = Array.isArray(billRes.data) ? (billRes.data as BillItem[]) : []
-        const memberList = Array.isArray(memberRes.data) ? (memberRes.data as MemberRecord[]) : []
+        const memberList = Array.isArray(memberRes.data) ? memberRes.data : []
         setDetails((detailRes.data ?? null) as MyExpenseDetails | null)
         setBills(billList)
-        setMembers(memberList.filter((member) => member.mess_id === messId || member.mess?.id === messId))
+        setMembers(memberList.map((member) => ({
+          id: `${messId}:${member.id}`,
+          user_id: member.id,
+          mess_id: messId,
+          is_active: true,
+          user: member,
+        })))
         if (billRes.billing && billRes.billing.status !== 'READY' && billRes.billing.status !== 'FAILED') {
           billingTimer = setTimeout(refreshBills, 1500)
         }
@@ -243,6 +255,10 @@ export default function MonthlyBillPage() {
 
   const myBill = useMemo(() => bills.find((bill) => bill.member?.id === user?.id) ?? null, [bills, user?.id])
   const memberByUserId = useMemo(() => new Map(members.map((member) => [member.user_id, member])), [members])
+  const visibleBills = useMemo(
+    () => bills.filter((bill) => memberByUserId.has(bill.member?.id ?? '')),
+    [bills, memberByUserId],
+  )
   const totalCost = myBill ? billCurrentCost(myBill) : toNumber(details?.total)
   const totalDeposit = myBill ? billTotalDeposit(myBill) : 0
   const totalDue = myBill ? toNumber(myBill.final_due) : 0
@@ -282,7 +298,7 @@ export default function MonthlyBillPage() {
               <p>MEMBER BILLS</p>
               <h2 id="member-bill-overview-title">Member overview</h2>
             </div>
-            <span>{loading ? '—' : bills.length}</span>
+            <span>{loading ? '—' : visibleBills.length}</span>
           </div>
 
           {loading ? (
@@ -291,14 +307,14 @@ export default function MonthlyBillPage() {
               <span>Loading member bills...</span>
             </div>
           ) : null}
-          {!loading && bills.length ? (
+          {!loading && visibleBills.length ? (
             <div className="monthly-member-overview__list">
-              {bills.map((bill) => (
+              {visibleBills.map((bill) => (
                 <MemberBillRow key={bill.id} bill={bill} member={memberByUserId.get(bill.member?.id ?? '')} messId={messId} />
               ))}
             </div>
           ) : null}
-          {!loading && !bills.length ? (
+          {!loading && !visibleBills.length ? (
             <div className="monthly-member-overview__empty">
               No generated bills for this month.
             </div>

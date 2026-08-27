@@ -144,6 +144,7 @@ export class DashboardService {
       billsAgg,
       previousBillsAgg,
       activeMembers,
+      currentActiveMemberCount,
       pendingPayments,
       notices,
       complaints,
@@ -260,6 +261,9 @@ export class DashboardService {
           OR: [{ is_active: true }, { left_at: { gte: start } }],
         },
         select: { monthly_rent: true, room_no: true },
+      }),
+      this.prisma.messMembership.count({
+        where: { mess_id: messId, is_active: true },
       }),
       this.prisma.payment.count({
         where: { mess_id: messId, status: 'PENDING' },
@@ -385,7 +389,10 @@ export class DashboardService {
       paidAmount:
         Number(totalPayment._sum.amount ?? 0) +
         Number(directDeposits._sum.amount ?? 0),
-      activeMembers: activeMembersCount,
+      // Dashboard membership is a live figure. Members who left during the
+      // selected billing month remain in billing calculations above, but must
+      // disappear from the home-page member count immediately.
+      activeMembers: currentActiveMemberCount,
       pendingPayments,
       openComplaints: complaints,
       notices,

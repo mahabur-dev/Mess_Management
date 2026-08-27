@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { IconInput } from '@/components/mobile/icon-input'
 import { BrandBuildingArt } from '@/components/brand-building-art'
+import { Button } from '@/components/ui/button'
 
 type IconType = ComponentType<LucideProps>
 
@@ -261,14 +262,14 @@ export function AuthSubmitButton({
   children: ReactNode
 }) {
   return (
-    <button
-      className="primary-btn group relative flex min-h-[52px] w-full items-center justify-center py-3 text-body disabled:cursor-not-allowed disabled:opacity-70"
+    <Button
+      className="w-full"
       type="submit"
-      disabled={busy}
+      busy={busy}
+      busyLabel={busyLabel}
     >
-      <span>{busy ? busyLabel : children}</span>
-
-    </button>
+      {children}
+    </Button>
   )
 }
 

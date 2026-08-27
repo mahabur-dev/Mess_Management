@@ -1,9 +1,17 @@
 'use client'
 
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { Plus } from 'lucide-react'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'md' | 'sm'
+
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: ButtonVariant
+  size?: ButtonSize
+  busy?: boolean
+  busyLabel?: ReactNode
+}
 
 export function Button({
   children,
@@ -11,12 +19,9 @@ export function Button({
   size = 'md',
   className = '',
   busy = false,
+  busyLabel = 'Saving...',
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: ButtonVariant
-  size?: ButtonSize
-  busy?: boolean
-}) {
+}: ButtonProps) {
   const variantClass = {
     primary: 'ui-btn--primary',
     secondary: 'ui-btn--secondary',
@@ -33,8 +38,17 @@ export function Button({
       disabled={busy || props.disabled}
       aria-busy={busy || undefined}
     >
-      {busy ? 'Saving...' : children}
+      {busy ? busyLabel : children}
     </button>
+  )
+}
+
+export function AddActionButton({ children, className = '', ...props }: ButtonProps) {
+  return (
+    <Button {...props} className={`w-full ${className}`.trim()}>
+      <Plus size={15} strokeWidth={2.4} aria-hidden="true" />
+      {children}
+    </Button>
   )
 }
 

@@ -26,6 +26,7 @@ import { Notice } from '@/components/ui/notice'
 import { AiMealPreview } from '@/components/mobile/ai-meal-preview'
 import { AiExpensePreview } from '@/components/mobile/ai-expense-preview'
 import { AiDepositPreview } from '@/components/mobile/ai-deposit-preview'
+import { CompactLanguageToggle } from '@/components/mobile/compact-language-toggle'
 import { useActiveMess } from '@/hooks/use-active-mess'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
@@ -246,18 +247,12 @@ export default function QuickAddPage() {
             <ReviewIcon size={18} strokeWidth={2.4} />
           </span>
         ) : (
-        <div className="quick-add-language-select">
-          <button
-            type="button"
-            onClick={() => setLocale((current) => current === 'en' ? 'bn' : 'en')}
+          <CompactLanguageToggle
+            locale={locale}
+            onToggle={() => setLocale((current) => current === 'en' ? 'bn' : 'en')}
             disabled={busy || recorder.isRecording}
-            aria-label={locale === 'en' ? 'Switch to Bangla' : 'Switch to English'}
-            title={locale === 'en' ? 'বাংলা' : 'English'}
-          >
-            {locale === 'en' ? 'En' : 'বাং'}
-          </button>
-        </div>
-      )}
+          />
+        )}
       />
 
       <div className={`screen space-y-3.5 pb-8 ${isCanonicalEntryReview ? 'expense-form-screen' : ''}`}>

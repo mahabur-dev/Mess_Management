@@ -12,7 +12,9 @@ import {
   ExpenseSplitMethod,
   ExpenseUsedBy,
   MealName,
+  NotificationType,
   Prisma,
+  RequestStatus,
 } from '@prisma/client';
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
@@ -21,12 +23,18 @@ import {
   allocateAmountByWeight,
   calculateMemberBalance,
 } from './billing-calculator';
-import { billingMonthRange } from './billing-period';
+import { billingMonthRange, currentDhakaMonth } from './billing-period';
 import {
   calculateMemberFoodBill,
   communalMealExpenseWhere,
   isCommunalMealExpense,
 } from '../expense/expense-accounting';
+import { NotificationService } from '../notification/notification.service';
+import sendMailer from 'src/app/helpers/sendMailer';
+import {
+  BillCloseRequestFilterDto,
+  ReviewBillCloseRequestDto,
+} from './dto/monthly-bill.dto';
 
 // ─── Constants ──────────────────────────────────────────────
 /**
@@ -60,9 +68,35 @@ function calculateTotalMeals(
   return +(baseValue + guestValue).toFixed(2);
 }
 
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 @Injectable()
 export class MonthlyBillService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
+
+  private readonly closeRequestSelect = {
+    id: true,
+    status: true,
+    original_balance: true,
+    original_final_due: true,
+    original_credit_balance: true,
+    original_status: true,
+    review_note: true,
+    requested_at: true,
+    reviewed_at: true,
+    requester: { select: { id: true, name: true, email: true } },
+    reviewer: { select: { id: true, name: true, email: true } },
+  } as const;
 
   private readonly billSelect = {
     id: true,
@@ -88,6 +122,11 @@ export class MonthlyBillService {
     generated_at: true,
     mess: { select: { id: true, name: true } },
     member: { select: { id: true, name: true, email: true, avatar_url: true } },
+    close_requests: {
+      orderBy: { requested_at: 'desc' as const },
+      take: 1,
+      select: this.closeRequestSelect,
+    },
   } as const;
 
   private getBillMonthRange(monthInput: string | Date) {
@@ -600,6 +639,19 @@ export class MonthlyBillService {
       prevBalanceByMember[pb.member_id] = this.toFixedNumber(pb.balance);
     }
 
+    const approvedCloseRequests =
+      await this.prisma.monthlyBillCloseRequest.findMany({
+        where: {
+          mess_id: messId,
+          status: RequestStatus.APPROVED,
+          bill: { month },
+        },
+        select: { member_id: true },
+      });
+    const closedMemberIds = new Set(
+      approvedCloseRequests.map((request) => request.member_id),
+    );
+
     const dueDate = new Date(month);
     dueDate.setDate(mess.payment_deadline_day ?? 10);
 
@@ -638,6 +690,7 @@ export class MonthlyBillService {
           payments: paidAmount,
           previousBalance: prevBalance,
         });
+        const isClosed = closedMemberIds.has(user_id);
 
         // Include previous month's balance in the current month's calculation
         // prevBalance from DB: Positive (+) = due/baki from last month → gets added to current costs
@@ -667,11 +720,11 @@ export class MonthlyBillService {
           deposit_total: depositTotal,
           paid_amount: paidAmount,
           prev_balance: prevBalance,
-          final_due: memberBalance.finalDue,
-          credit_balance: memberBalance.creditBalance,
-          balance: memberBalance.balance,
+          final_due: isClosed ? 0 : memberBalance.finalDue,
+          credit_balance: isClosed ? 0 : memberBalance.creditBalance,
+          balance: isClosed ? 0 : memberBalance.balance,
           due_date: dueDate,
-          status: memberBalance.status,
+          status: isClosed ? ('PAID' as const) : memberBalance.status,
           generated_at: new Date(),
         };
 
@@ -720,7 +773,270 @@ export class MonthlyBillService {
     });
   }
 
-  async findAll(query: BillFilterDto) {
+  async requestClose(billId: string, userId: string) {
+    const bill = await this.prisma.monthlyBill.findUnique({
+      where: { id: billId },
+      select: {
+        id: true,
+        mess_id: true,
+        member_id: true,
+        month: true,
+        balance: true,
+        final_due: true,
+        credit_balance: true,
+        status: true,
+        mess: { select: { name: true } },
+        member: { select: { name: true, email: true } },
+        close_requests: {
+          where: { status: { in: [RequestStatus.PENDING, RequestStatus.APPROVED] } },
+          select: { id: true, status: true },
+        },
+      },
+    });
+
+    if (!bill) throw new HttpException('Bill not found', 404);
+    if (bill.member_id !== userId) {
+      throw new HttpException('You can only close your own monthly bill', 403);
+    }
+    if (bill.month.getTime() >= currentDhakaMonth().getTime()) {
+      throw new HttpException(
+        'The current month cannot be closed before it is completed',
+        400,
+      );
+    }
+    if (this.toFixedNumber(bill.balance) === 0) {
+      throw new HttpException('This bill has no balance to close', 400);
+    }
+
+    const existing = bill.close_requests[0];
+    if (existing?.status === RequestStatus.PENDING) {
+      throw new HttpException('A close request is already pending', 409);
+    }
+    if (existing?.status === RequestStatus.APPROVED) {
+      throw new HttpException('This bill has already been closed', 409);
+    }
+
+    let request;
+    try {
+      request = await this.prisma.monthlyBillCloseRequest.create({
+        data: {
+          monthly_bill_id: bill.id,
+          mess_id: bill.mess_id,
+          member_id: bill.member_id,
+          requested_by: userId,
+          original_balance: bill.balance,
+          original_final_due: bill.final_due,
+          original_credit_balance: bill.credit_balance,
+          original_status: bill.status,
+        },
+        select: this.closeRequestSelect,
+      });
+    } catch (error) {
+      if ((error as { code?: string }).code === 'P2002') {
+        throw new HttpException('A close request already exists for this bill', 409);
+      }
+      throw error;
+    }
+
+    await this.notifyManagersAboutCloseRequest({
+      requestId: request.id,
+      requesterId: userId,
+      messId: bill.mess_id,
+      messName: bill.mess.name,
+      memberName: bill.member.name,
+      month: bill.month,
+      balance: this.toFixedNumber(bill.balance),
+    });
+
+    return request;
+  }
+
+  async findManagedCloseRequests(
+    userId: string,
+    role: string,
+    query: BillCloseRequestFilterDto,
+  ) {
+    await this.verifyGeneratePermission(query.messId, userId, role);
+
+    return this.prisma.monthlyBillCloseRequest.findMany({
+      where: {
+        mess_id: query.messId,
+        ...(query.status ? { status: query.status } : {}),
+      },
+      orderBy: { requested_at: 'desc' },
+      select: {
+        ...this.closeRequestSelect,
+        bill: {
+          select: {
+            id: true,
+            month: true,
+            balance: true,
+            final_due: true,
+            credit_balance: true,
+          },
+        },
+        member: {
+          select: { id: true, name: true, email: true, avatar_url: true },
+        },
+        mess: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async reviewCloseRequest(
+    requestId: string,
+    reviewerId: string,
+    role: string,
+    dto: ReviewBillCloseRequestDto,
+  ) {
+    const request = await this.prisma.monthlyBillCloseRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        bill: true,
+        member: { select: { name: true, email: true } },
+        mess: { select: { name: true } },
+      },
+    });
+
+    if (!request) throw new HttpException('Bill close request not found', 404);
+    await this.verifyGeneratePermission(request.mess_id, reviewerId, role);
+    await this.ensureActiveSubscription(request.mess_id, role);
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new HttpException('This close request has already been reviewed', 409);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.monthlyBillCloseRequest.updateMany({
+        where: { id: requestId, status: RequestStatus.PENDING },
+        data: {
+          status: dto.status,
+          review_note: dto.reviewNote?.trim() || null,
+          reviewed_by: reviewerId,
+          reviewed_at: new Date(),
+        },
+      });
+      if (claimed.count !== 1) {
+        throw new HttpException('This close request has already been reviewed', 409);
+      }
+
+      if (dto.status === RequestStatus.APPROVED) {
+        await tx.monthlyBill.update({
+          where: { id: request.monthly_bill_id },
+          data: {
+            balance: 0,
+            final_due: 0,
+            credit_balance: 0,
+            status: 'PAID',
+          },
+        });
+      }
+    });
+
+    if (dto.status === RequestStatus.APPROVED) {
+      await this.recalculateCarryForwardChain(
+        request.mess_id,
+        request.bill.month,
+      );
+    }
+
+    await Promise.allSettled([
+      this.notificationService.createForMess(
+        reviewerId,
+        request.mess_id,
+        NotificationType.BILL_GENERATED,
+        dto.status === RequestStatus.APPROVED
+          ? 'Monthly calculation closed'
+          : 'Monthly calculation close request rejected',
+        dto.status === RequestStatus.APPROVED
+          ? `${request.mess.name} approved your request. The closed balance is now zero and will not carry forward.`
+          : `${request.mess.name} rejected your request to close the previous calculation.`,
+        {
+          closeRequestId: request.id,
+          billId: request.monthly_bill_id,
+          status: dto.status,
+        },
+        [request.member_id],
+        '/monthly-bill',
+        `bill-close-reviewed:${request.id}`,
+      ),
+    ]);
+
+    return this.prisma.monthlyBillCloseRequest.findUnique({
+      where: { id: requestId },
+      select: this.closeRequestSelect,
+    });
+  }
+
+  private async recalculateCarryForwardChain(messId: string, month: Date) {
+    const currentMonth = currentDhakaMonth();
+    let cursor = new Date(month);
+
+    while (cursor.getTime() <= currentMonth.getTime()) {
+      await this.recalculateMonthlyBills(messId, cursor);
+      cursor = new Date(
+        Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1),
+      );
+    }
+  }
+
+  private async notifyManagersAboutCloseRequest(input: {
+    requestId: string;
+    requesterId: string;
+    messId: string;
+    messName: string;
+    memberName: string;
+    month: Date;
+    balance: number;
+  }) {
+    try {
+      const managerIds =
+        await this.notificationService.resolveMessManagerUserIds(input.messId);
+      const managers = managerIds.length
+        ? await this.prisma.user.findMany({
+            where: { id: { in: managerIds }, is_active: true },
+            select: { email: true, name: true },
+          })
+        : [];
+      const monthLabel = input.month.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      });
+
+      await Promise.allSettled([
+        this.notificationService.createForMess(
+          input.requesterId,
+          input.messId,
+          NotificationType.BILL_GENERATED,
+          'Previous calculation close request',
+          `${input.memberName} requested to close the ${monthLabel} balance (${input.balance.toFixed(2)}).`,
+          {
+            closeRequestId: input.requestId,
+            month: input.month.toISOString(),
+            balance: input.balance,
+          },
+          managerIds,
+          '/monthly-bill',
+          `bill-close-requested:${input.requestId}`,
+        ),
+        ...managers.map((manager) =>
+          sendMailer(
+            manager.email,
+            `Monthly calculation close request - ${input.messName}`,
+            `<p>Hello ${escapeHtml(manager.name)},</p><p><strong>${escapeHtml(input.memberName)}</strong> requested to close the <strong>${escapeHtml(monthLabel)}</strong> calculation in ${escapeHtml(input.messName)}.</p><p>Original carry-forward balance: <strong>${escapeHtml(input.balance.toFixed(2))}</strong></p><p>Please review the pending request from the Monthly Bill page.</p>`,
+          ),
+        ),
+      ]);
+    } catch (error) {
+      console.error('Failed to notify managers about bill close request', error);
+    }
+  }
+
+  async findAll(
+    query: BillFilterDto,
+    additionalWhere?: Prisma.MonthlyBillWhereInput,
+  ) {
     const paginationOptions = pick(query, [
       'page',
       'limit',
@@ -731,7 +1047,10 @@ export class MonthlyBillService {
     const { page, limit, skip, sortBy, sortOrder } =
       paginationHelper(paginationOptions);
 
-    const where = this.buildWhere(query);
+    const queryWhere = this.buildWhere(query);
+    const where: Prisma.MonthlyBillWhereInput = additionalWhere
+      ? { AND: [queryWhere, additionalWhere] }
+      : queryWhere;
 
     const safeSortBy = sortBy === 'created_at' ? 'generated_at' : sortBy;
 
@@ -769,7 +1088,16 @@ export class MonthlyBillService {
       }
     }
 
-    return this.findAll({ ...query, messId });
+    return this.findAll(
+      { ...query, messId },
+      {
+        member: {
+          memberships: {
+            some: { mess_id: messId, is_active: true },
+          },
+        },
+      },
+    );
   }
 
   async findMyBills(userId: string, query: BillFilterDto) {

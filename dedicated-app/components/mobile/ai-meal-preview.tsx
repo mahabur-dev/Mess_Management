@@ -13,6 +13,7 @@ import {
   type MealName,
 } from '@/components/mobile/meals-design'
 import type { AiLocale } from '@/lib/ai-automation'
+import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
 
 export type AiMealPreviewItem = Record<string, unknown>
 
@@ -208,20 +209,27 @@ export function AiMealPreview({
               <p className="text-label font-bold text-[#123748]">{formatDisplayDate(group.date)}</p>
               <p className="mt-0.5 text-caption font-medium text-[#65838b]">{formatWeekday(group.date)}</p>
             </div>
-            <label className="relative flex max-w-[46%] items-center gap-1.5 rounded-[12px] border border-[#bfe7e6] bg-white px-2.5 py-2 text-caption font-semibold text-[#245d66]">
-              <UserRound size={14} className="shrink-0 text-[#008d8c]" />
-              <span className="truncate">{members.find((member) => member.value === group.memberId)?.label ?? copy.member}</span>
-              <ChevronDown size={13} className="shrink-0 text-[#789096]" />
-              <select
-                aria-label={copy.member}
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            <div className="max-w-[46%]">
+              <MobileSelectSheet
+                label={copy.member}
                 value={group.memberId}
-                onChange={(event) => patchGroup(group, { memberId: event.target.value })}
-              >
-                <option value="">{copy.member}</option>
-                {members.map((member) => <option key={member.value} value={member.value}>{member.label}</option>)}
-              </select>
-            </label>
+                options={[
+                  { value: '', label: copy.member },
+                  ...members,
+                ] satisfies MobileSelectOption[]}
+                onChange={(memberId) => patchGroup(group, { memberId })}
+                renderTrigger={({ open, selectedLabel, buttonProps }) => (
+                  <button
+                    {...buttonProps}
+                    className="flex w-full items-center gap-1.5 rounded-[12px] border border-[#bfe7e6] bg-white px-2.5 py-2 text-left text-caption font-semibold text-[#245d66]"
+                  >
+                    <UserRound size={14} className="shrink-0 text-[#008d8c]" />
+                    <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+                    <ChevronDown size={13} className={`shrink-0 text-[#789096] transition-transform ${open ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+              />
+            </div>
           </div>
 
           <div className="divide-y divide-[#e3eeee]">
@@ -232,26 +240,28 @@ export function AiMealPreview({
                 <div key={`${group.key}:${index}`} className="px-3.5 py-3">
                   <div className="flex items-center gap-3">
                     <MealIconBadge mealName={mealName} size="sm" />
-                    <label className="relative min-w-0 flex-1 cursor-pointer">
-                      <span className="flex items-center gap-1 text-label font-bold text-[#123748]">
-                        {MEAL_LABELS[mealName]} <ChevronDown size={13} className="text-[#789096]" />
-                      </span>
-                      <span className="mt-0.5 block text-caption text-[#65838b]">
-                        {mealName === 'BREAKFAST' ? '1 serving = 0.5 meal' : '1 serving = 1 meal'}
-                      </span>
-                      <select
-                        aria-label="Change meal type"
-                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    <div className="min-w-0 flex-1">
+                      <MobileSelectSheet
+                        label="Change meal type"
                         value={mealName}
-                        onChange={(event) => {
-                          const nextMeal = event.target.value as MealName
+                        options={MEAL_ORDER.map((name) => ({ value: name, label: MEAL_LABELS[name] }))}
+                        onChange={(nextMeal) => {
                           const nextCount = Math.max(MEAL_META[nextMeal].baseValue, itemCount(item))
                           onPatchItem(index, { mealName: nextMeal, mealCount: nextCount, status: 'ON' })
                         }}
-                      >
-                        {MEAL_ORDER.map((name) => <option key={name} value={name}>{MEAL_LABELS[name]}</option>)}
-                      </select>
-                    </label>
+                        renderTrigger={({ open, selectedLabel, buttonProps }) => (
+                          <button {...buttonProps} className="w-full cursor-pointer text-left">
+                            <span className="flex items-center gap-1 text-label font-bold text-[#123748]">
+                              {selectedLabel}
+                              <ChevronDown size={13} className={`text-[#789096] transition-transform ${open ? 'rotate-180' : ''}`} />
+                            </span>
+                            <span className="mt-0.5 block text-caption text-[#65838b]">
+                              {mealName === 'BREAKFAST' ? '1 serving = 0.5 meal' : '1 serving = 1 meal'}
+                            </span>
+                          </button>
+                        )}
+                      />
+                    </div>
                     <MealCountControl item={item} onPatch={(patch) => onPatchItem(index, patch)} />
                     {items.length > 1 ? (
                       <button

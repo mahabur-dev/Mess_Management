@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Tag } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
 import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import { ExpenseSurface } from "@/components/mobile/expense-ui";
+import { DesignedSelect } from "@/components/mobile/expense-design";
 import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
-import { Button } from "@/components/ui";
+import { AddActionButton, Button } from "@/components/ui";
 import { personalApi } from "@/features/personal/api/personal.api";
 import {
   categoryLabel,
@@ -83,30 +84,25 @@ export default function PersonalBudgetPage() {
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />
         <PersonalNavigation locale={locale} active="budget" />
-        <Button className="w-full" onClick={() => openForm()}>
-          <Plus size={17} />
+        <AddActionButton onClick={() => openForm()}>
           {copy.addBudget}
-        </Button>
+        </AddActionButton>
         {formOpen ? (
           <ExpenseSurface title={editing ? copy.editBudget : copy.addBudget}>
             <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1.5 block text-label font-bold text-[#123748]">
-                  {copy.category}
-                </span>
-                <select
-                  className="field"
-                  disabled={Boolean(editing)}
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value)}
-                >
-                  {PERSONAL_CATEGORIES.EXPENSE.map((item) => (
-                    <option key={item} value={item}>
-                      {categoryLabel(item, locale)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <DesignedSelect
+                label={copy.category}
+                icon={Tag}
+                disabled={Boolean(editing)}
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+              >
+                {PERSONAL_CATEGORIES.EXPENSE.map((item) => (
+                  <option key={item} value={item}>
+                    {categoryLabel(item, locale)}
+                  </option>
+                ))}
+              </DesignedSelect>
               <label className="block">
                 <span className="mb-1.5 block text-label font-bold text-[#123748]">
                   {copy.limitAmount}

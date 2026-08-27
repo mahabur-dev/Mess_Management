@@ -42,6 +42,7 @@ import {
 } from 'lucide-react'
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
 import { ExpenseApprovalBadge } from '@/components/mobile/expense-approval'
+import { Button } from '@/components/ui/button'
 import { LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
 
 type IconType = ComponentType<LucideProps>
@@ -1138,12 +1139,10 @@ export function DesignedToggle({
 
 export function SubmitGradientButton({ children, busy }: { children: ReactNode; busy?: boolean }) {
   return (
-    <div className="mt-4 rounded-[18px] border border-white/85 bg-white/96 p-2.5 shadow-[0_12px_30px_rgba(18,55,72,0.10)]">
-      <button type="submit" disabled={busy} className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[15px] border-0 bg-gradient-to-br from-[#008d8c] to-[#00777a] text-label font-bold text-white shadow-[0_14px_26px_rgba(0,119,122,0.22)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70">
-        <Save size={17} strokeWidth={2.5} />
-        {busy ? 'Saving...' : children}
-      </button>
-    </div>
+    <Button type="submit" busy={busy} className="mt-4 w-full">
+      <Save size={15} strokeWidth={2.4} />
+      {children}
+    </Button>
   )
 }
 

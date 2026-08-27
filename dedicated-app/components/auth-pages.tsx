@@ -15,6 +15,7 @@ import {
   AuthSubmitButton,
   authLinkClass,
 } from '@/components/auth-ui'
+import { Button } from '@/components/ui/button'
 function messageFrom(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
@@ -584,29 +585,17 @@ export function VerifyOtpPage() {
         </AuthSubmitButton>
       </form>
 
-      <button
+      <Button
         type="button"
+        variant="secondary"
         onClick={() => void resendOtp()}
-        disabled={resending}
-        className="auth-secondary-button
-          mt-4 flex min-h-12 w-full py-2
-          items-center justify-center gap-2
-          rounded-2xl
-          border border-[#cfeeed]
-          bg-white
-          text-label font-bold
-          text-[#008d8c]
-          transition-all duration-200
-          hover:border-[#008d8c]
-          hover:bg-[#f2fbfb]
-          disabled:cursor-not-allowed
-          disabled:opacity-70
-        "
+        busy={resending}
+        busyLabel="Resending..."
+        className="mt-4 w-full"
       >
-        <RotateCcw size={16} />
-
-        {resending ? 'Resending...' : 'Resend OTP'}
-      </button>
+        <RotateCcw size={15} />
+        Resend OTP
+      </Button>
     </AuthShell>
   )
 }

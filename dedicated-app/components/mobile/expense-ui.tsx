@@ -8,6 +8,7 @@ import type { ExpenseSplitMethod, ExpenseUsedBy } from '@/lib/form-options'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { DesignedSelect } from '@/components/mobile/expense-design'
 import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
+import { Button } from '@/components/ui/button'
 
 type Accent = 'teal' | 'blue' | 'violet' | 'green' | 'orange'
 
@@ -265,9 +266,9 @@ export function ExpensePrimaryAction({
   disabled?: boolean
 }) {
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className="expense-primary-action">
+    <Button type={type} onClick={onClick} disabled={disabled} className="w-full">
       {children}
-    </button>
+    </Button>
   )
 }
 
@@ -281,9 +282,9 @@ export function ExpenseSecondaryAction({
   disabled?: boolean
 }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className="expense-secondary-action">
+    <Button type="button" variant="secondary" onClick={onClick} disabled={disabled} className="w-full">
       {children}
-    </button>
+    </Button>
   )
 }
 

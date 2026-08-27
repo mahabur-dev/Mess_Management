@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { UsersRound } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
 import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import { ExpenseSurface } from "@/components/mobile/expense-ui";
+import { DesignedSelect } from "@/components/mobile/expense-design";
 import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
-import { Button } from "@/components/ui";
+import { AddActionButton, Button } from "@/components/ui";
 import { personalApi } from "@/features/personal/api/personal.api";
 import {
   currentPersonalMonth,
@@ -82,10 +83,9 @@ export default function PersonalFamilyPage() {
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />
         <PersonalNavigation locale={locale} active="family" />
-        <Button className="w-full" onClick={() => openForm()}>
-          <Plus size={17} />
+        <AddActionButton onClick={() => openForm()}>
           {copy.addFamilyMember}
-        </Button>
+        </AddActionButton>
         {formOpen ? (
           <ExpenseSurface
             title={editing ? copy.editFamilyMember : copy.addFamilyMember}
@@ -102,22 +102,18 @@ export default function PersonalFamilyPage() {
                   onChange={(event) => setName(event.target.value)}
                 />
               </label>
-              <label className="block">
-                <span className="mb-1.5 block text-label font-bold text-[#123748]">
-                  {copy.relation}
-                </span>
-                <select
-                  className="field"
-                  value={relation}
-                  onChange={(event) => setRelation(event.target.value)}
-                >
-                  {PERSONAL_RELATIONS.map((item) => (
-                    <option key={item} value={item}>
-                      {relationLabel(item, locale)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <DesignedSelect
+                label={copy.relation}
+                icon={UsersRound}
+                value={relation}
+                onChange={(event) => setRelation(event.target.value)}
+              >
+                {PERSONAL_RELATIONS.map((item) => (
+                  <option key={item} value={item}>
+                    {relationLabel(item, locale)}
+                  </option>
+                ))}
+              </DesignedSelect>
               {message ? (
                 <div className="ui-notice ui-notice--danger">{message}</div>
               ) : null}

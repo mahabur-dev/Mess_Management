@@ -1,5 +1,5 @@
 export { Card, CardGrid, ListItem } from './card'
 export { Text, SectionTitle, CardTitle, Subtitle, Label, Caption } from './text'
-export { Button, IconButton } from './button'
+export { AddActionButton, Button, IconButton } from './button'
 export { Badge, StatusPill } from './badge'
 export { Notice, EmptyState } from './notice'

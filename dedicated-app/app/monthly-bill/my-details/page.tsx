@@ -250,8 +250,18 @@ function MyMonthlyDetailsContent() {
       && latestCloseRequest?.status !== 'APPROVED',
   )
 
+  const closeUnavailableMessage = latestCloseRequest?.status === 'PENDING' || latestCloseRequest?.status === 'APPROVED'
+    ? null
+    : !bill
+      ? 'No generated monthly bill is available to close.'
+      : !isCompletedMonth
+        ? 'This calculation can be closed after the current month is completed.'
+        : toNumber(bill.balance) === 0
+          ? 'This calculation has no remaining balance to close.'
+          : null
+
   const requestClose = async () => {
-    if (!bill || closeBusy) return
+    if (!bill || !canRequestClose || closeBusy) return
     setCloseBusy(true)
     setCloseMessage('')
     try {
@@ -320,36 +330,37 @@ function MyMonthlyDetailsContent() {
               />
             </ExpenseSurface>
 
-            {bill && isCompletedMonth ? (
-              <ExpenseSurface title="Close Previous Calculation">
-                <div className="space-y-3 px-3 py-3">
-                  {latestCloseRequest?.status === 'PENDING' ? (
-                    <InlineNotice tone="warning">Waiting for manager approval. Your current balance is unchanged until approval.</InlineNotice>
-                  ) : null}
-                  {latestCloseRequest?.status === 'APPROVED' ? (
-                    <InlineNotice tone="success">
-                      Calculation closed. Displayed and carry-forward balance is now {formatTaka(0)}. Original audit balance: {formatTaka(latestCloseRequest.original_balance)}.
-                    </InlineNotice>
-                  ) : null}
-                  {latestCloseRequest?.status === 'REJECTED' ? (
-                    <InlineNotice tone="danger">
-                      The previous request was rejected{latestCloseRequest.review_note ? `: ${latestCloseRequest.review_note}` : '.'}
-                    </InlineNotice>
-                  ) : null}
-                  {closeMessage ? <InlineNotice tone={latestCloseRequest?.status === 'PENDING' ? 'success' : 'danger'}>{closeMessage}</InlineNotice> : null}
-                  {canRequestClose ? (
-                    <>
-                      <p className="text-label leading-6 text-[#65838b]">
-                        Ask your manager to settle this month without carrying its positive or negative balance into the next month. The original amount will remain in audit history.
-                      </p>
-                      <Button type="button" className="w-full" busy={closeBusy} onClick={requestClose}>
-                        Close Previous Calculation
-                      </Button>
-                    </>
-                  ) : null}
-                </div>
-              </ExpenseSurface>
-            ) : null}
+            <ExpenseSurface title="Close Previous Calculation">
+              <div className="space-y-3 px-3 py-3">
+                {latestCloseRequest?.status === 'PENDING' ? (
+                  <InlineNotice tone="warning">Waiting for manager approval. Your current balance is unchanged until approval.</InlineNotice>
+                ) : null}
+                {latestCloseRequest?.status === 'APPROVED' ? (
+                  <InlineNotice tone="success">
+                    Calculation closed. Displayed and carry-forward balance is now {formatTaka(0)}. Original audit balance: {formatTaka(latestCloseRequest.original_balance)}.
+                  </InlineNotice>
+                ) : null}
+                {latestCloseRequest?.status === 'REJECTED' ? (
+                  <InlineNotice tone="danger">
+                    The previous request was rejected{latestCloseRequest.review_note ? `: ${latestCloseRequest.review_note}` : '.'}
+                  </InlineNotice>
+                ) : null}
+                {closeUnavailableMessage ? <InlineNotice tone="warning">{closeUnavailableMessage}</InlineNotice> : null}
+                {closeMessage ? <InlineNotice tone={latestCloseRequest?.status === 'PENDING' ? 'success' : 'danger'}>{closeMessage}</InlineNotice> : null}
+                <p className="text-label leading-6 text-[#65838b]">
+                  Ask your manager to settle this month without carrying its positive or negative balance into the next month. The original amount will remain in audit history.
+                </p>
+                <Button
+                  type="button"
+                  className="w-full"
+                  busy={closeBusy}
+                  disabled={!canRequestClose}
+                  onClick={requestClose}
+                >
+                  Close Previous Calculation
+                </Button>
+              </div>
+            </ExpenseSurface>
 
             <ExpenseSurface title="Deposit Section">
               <div className="flush-list flush-list--home-card">

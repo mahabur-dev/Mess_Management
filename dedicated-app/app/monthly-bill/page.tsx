@@ -18,6 +18,7 @@ import { InlineNotice, MealMonthSelector, currentMonthValue, formatMonthLabel } 
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
 import type { BillStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
@@ -249,6 +250,12 @@ export default function MonthlyBillPage() {
 
   const myBill = useMemo(() => bills.find((bill) => bill.member?.id === user?.id) ?? null, [bills, user?.id])
   const memberByUserId = useMemo(() => new Map(members.map((member) => [member.user_id, member])), [members])
+  const visibleBills = useMemo(
+    () => canManageMess(user)
+      ? bills.filter((bill) => memberByUserId.has(bill.member?.id ?? ''))
+      : bills,
+    [bills, memberByUserId, user],
+  )
   const totalCost = myBill ? billCurrentCost(myBill) : toNumber(details?.total)
   const totalDeposit = myBill ? billTotalDeposit(myBill) : 0
   const totalDue = myBill ? toNumber(myBill.final_due) : 0
@@ -288,7 +295,7 @@ export default function MonthlyBillPage() {
               <p>MEMBER BILLS</p>
               <h2 id="member-bill-overview-title">Member overview</h2>
             </div>
-            <span>{loading ? '—' : bills.length}</span>
+            <span>{loading ? '—' : visibleBills.length}</span>
           </div>
 
           {loading ? (
@@ -297,14 +304,14 @@ export default function MonthlyBillPage() {
               <span>Loading member bills...</span>
             </div>
           ) : null}
-          {!loading && bills.length ? (
+          {!loading && visibleBills.length ? (
             <div className="monthly-member-overview__list">
-              {bills.map((bill) => (
+              {visibleBills.map((bill) => (
                 <MemberBillRow key={bill.id} bill={bill} member={memberByUserId.get(bill.member?.id ?? '')} messId={messId} />
               ))}
             </div>
           ) : null}
-          {!loading && !bills.length ? (
+          {!loading && !visibleBills.length ? (
             <div className="monthly-member-overview__empty">
               No generated bills for this month.
             </div>

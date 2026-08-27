@@ -1,5 +1,9 @@
 "use client";
 
+import { ArrowDownLeft, ArrowUpRight, PiggyBank } from "lucide-react";
+import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
+import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
+import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
 import {
@@ -7,10 +11,7 @@ import {
   personalCopy,
 } from "@/features/personal/constants";
 import { PersonalDashboard } from "@/features/personal/components/personal-dashboard";
-import {
-  PersonalLanguageButton,
-  PersonalNavigation,
-} from "@/features/personal/components/personal-navigation";
+import { PersonalNavigation } from "@/features/personal/components/personal-navigation";
 import { usePersonalLocale } from "@/features/personal/hooks/use-personal-locale";
 import { useState } from "react";
 
@@ -19,24 +20,39 @@ export default function PersonalPage() {
   const copy = personalCopy(locale);
   const [month, setMonth] = useState(currentPersonalMonth());
   return (
-    <MobileShell showBottomNavigation>
-      <TopScreen title={copy.personal} subtitle={copy.overview} backHref="/" />
+    <MobileShell showBottomNavigation hasFloatingAction>
+      <TopScreen
+        title={copy.personal}
+        subtitle={copy.overview}
+        backHref="/"
+        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
+      />
       <div className="screen space-y-4">
-        <div className="flex items-center gap-2">
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">{copy.currentMonth}</span>
-            <input
-              className="field"
-              type="month"
-              value={month}
-              onChange={(event) => setMonth(event.target.value)}
-            />
-          </label>
-          <PersonalLanguageButton locale={locale} onToggle={toggleLocale} />
-        </div>
+        <MealMonthSelector month={month} onChange={setMonth} />
         <PersonalNavigation locale={locale} active="dashboard" />
         <PersonalDashboard locale={locale} month={month} />
       </div>
+
+      <FloatingActionMenu
+        label={copy.quickActions}
+        items={[
+          {
+            href: "/personal/transactions?action=add&type=INCOME",
+            label: copy.addIncome,
+            icon: <ArrowDownLeft size={20} strokeWidth={2.3} />,
+          },
+          {
+            href: "/personal/transactions?action=add&type=EXPENSE",
+            label: copy.addExpense,
+            icon: <ArrowUpRight size={20} strokeWidth={2.3} />,
+          },
+          {
+            href: "/personal/transactions?action=add&type=SAVING",
+            label: copy.addSaving,
+            icon: <PiggyBank size={20} strokeWidth={2.3} />,
+          },
+        ]}
+      />
     </MobileShell>
   );
 }

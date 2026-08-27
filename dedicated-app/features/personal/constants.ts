@@ -228,9 +228,8 @@ export function formatPersonalMoney(
   locale: PersonalLocale,
 ) {
   const amount = Number(value ?? 0);
-  return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", {
-    style: "currency",
-    currency: "BDT",
+  return new Intl.NumberFormat(locale === "bn" ? "bn" : "en", {
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(Number.isFinite(amount) ? amount : 0);
 }

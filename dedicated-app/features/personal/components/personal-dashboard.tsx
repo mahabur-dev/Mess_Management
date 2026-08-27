@@ -17,7 +17,6 @@ import { formatPersonalMoney, personalCopy } from "../constants";
 import type {
   PersonalLocale,
   PersonalSummary,
-  PersonalTransactionType,
 } from "../types";
 import { SummaryCard } from "./summary-card";
 import { TransactionCard } from "./transaction-card";
@@ -52,16 +51,6 @@ export function PersonalDashboard({
       active = false;
     };
   }, [copy.loadFailed, month]);
-
-  const actions: Array<{
-    type: PersonalTransactionType;
-    label: string;
-    icon: typeof ArrowDownLeft;
-  }> = [
-    { type: "INCOME", label: copy.addIncome, icon: ArrowDownLeft },
-    { type: "EXPENSE", label: copy.addExpense, icon: ArrowUpRight },
-    { type: "SAVING", label: copy.addSaving, icon: PiggyBank },
-  ];
 
   if (loading) return <LoadingIndicator variant="card" label={copy.overview} />;
   return (
@@ -102,21 +91,6 @@ export function PersonalDashboard({
           </div>
         ) : null}
       </section>
-
-      <ExpenseSurface title={copy.quickActions}>
-        <div className="grid grid-cols-3 gap-2">
-          {actions.map(({ type, label, icon: Icon }) => (
-            <Link
-              key={type}
-              href={appHref(`/personal/transactions?action=add&type=${type}`)}
-              className="flex min-h-[82px] flex-col items-center justify-center gap-2 rounded-[15px] bg-[#edfafa] px-2 text-center text-caption font-bold text-[#00777a]"
-            >
-              <Icon size={20} />
-              <span>{label}</span>
-            </Link>
-          ))}
-        </div>
-      </ExpenseSurface>
 
       <ExpenseSurface
         title={copy.recentTransactions}

@@ -18,7 +18,6 @@ import { InlineNotice, MealMonthSelector, currentMonthValue, formatMonthLabel } 
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
-import { canManageMess } from '@/lib/app-permissions'
 import type { BillStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
@@ -225,15 +224,21 @@ export default function MonthlyBillPage() {
         return { data: null }
       }),
       api.getBillsByMess(messId, { month: `${month}-01`, limit: 500, sortBy: 'generated_at', sortOrder: 'desc' }).catch(() => ({ data: [], billing: null })),
-      api.getAllMembers({ limit: 500 }).catch(() => ({ data: [] })),
+      api.getMessMemberOptions(messId).catch(() => ({ data: [] })),
     ])
       .then(([detailRes, billRes, memberRes]) => {
         if (!alive) return
         const billList = Array.isArray(billRes.data) ? (billRes.data as BillItem[]) : []
-        const memberList = Array.isArray(memberRes.data) ? (memberRes.data as MemberRecord[]) : []
+        const memberList = Array.isArray(memberRes.data) ? memberRes.data : []
         setDetails((detailRes.data ?? null) as MyExpenseDetails | null)
         setBills(billList)
-        setMembers(memberList.filter((member) => member.mess_id === messId || member.mess?.id === messId))
+        setMembers(memberList.map((member) => ({
+          id: `${messId}:${member.id}`,
+          user_id: member.id,
+          mess_id: messId,
+          is_active: true,
+          user: member,
+        })))
         if (billRes.billing && billRes.billing.status !== 'READY' && billRes.billing.status !== 'FAILED') {
           billingTimer = setTimeout(refreshBills, 1500)
         }
@@ -251,10 +256,8 @@ export default function MonthlyBillPage() {
   const myBill = useMemo(() => bills.find((bill) => bill.member?.id === user?.id) ?? null, [bills, user?.id])
   const memberByUserId = useMemo(() => new Map(members.map((member) => [member.user_id, member])), [members])
   const visibleBills = useMemo(
-    () => canManageMess(user)
-      ? bills.filter((bill) => memberByUserId.has(bill.member?.id ?? ''))
-      : bills,
-    [bills, memberByUserId, user],
+    () => bills.filter((bill) => memberByUserId.has(bill.member?.id ?? '')),
+    [bills, memberByUserId],
   )
   const totalCost = myBill ? billCurrentCost(myBill) : toNumber(details?.total)
   const totalDeposit = myBill ? billTotalDeposit(myBill) : 0

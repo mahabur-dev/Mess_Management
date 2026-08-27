@@ -157,10 +157,10 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
   }
 
   const primary: AppRouteItem = {
-    href: '/expenses',
-    label: 'Expenses',
-    icon: ReceiptText,
-    access: 'mess',
+    href: '/personal',
+    label: 'Personal',
+    icon: CircleDollarSign,
+    access: 'public',
   }
 
   const tabs: AppRouteItem[] = [

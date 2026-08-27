@@ -1033,7 +1033,10 @@ export class MonthlyBillService {
     }
   }
 
-  async findAll(query: BillFilterDto) {
+  async findAll(
+    query: BillFilterDto,
+    additionalWhere?: Prisma.MonthlyBillWhereInput,
+  ) {
     const paginationOptions = pick(query, [
       'page',
       'limit',
@@ -1044,7 +1047,10 @@ export class MonthlyBillService {
     const { page, limit, skip, sortBy, sortOrder } =
       paginationHelper(paginationOptions);
 
-    const where = this.buildWhere(query);
+    const queryWhere = this.buildWhere(query);
+    const where: Prisma.MonthlyBillWhereInput = additionalWhere
+      ? { AND: [queryWhere, additionalWhere] }
+      : queryWhere;
 
     const safeSortBy = sortBy === 'created_at' ? 'generated_at' : sortBy;
 
@@ -1082,7 +1088,16 @@ export class MonthlyBillService {
       }
     }
 
-    return this.findAll({ ...query, messId });
+    return this.findAll(
+      { ...query, messId },
+      {
+        member: {
+          memberships: {
+            some: { mess_id: messId, is_active: true },
+          },
+        },
+      },
+    );
   }
 
   async findMyBills(userId: string, query: BillFilterDto) {

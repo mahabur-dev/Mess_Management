@@ -33,6 +33,12 @@ const PAID_FROM_INPUTS = [
   'COLLECTED_FUND',
 ] as const;
 
+const SHARED_EXPENSE_USED_BY = [
+  ExpenseUsedBy.SELECTED_MEMBERS,
+  ExpenseUsedBy.ALL_MEMBERS,
+  ExpenseUsedBy.MEAL_ON_MEMBERS,
+] as const;
+
 function parseStringArray(value: unknown) {
   if (value === undefined || value === null || value === '') return undefined;
   if (Array.isArray(value)) return value;
@@ -248,11 +254,11 @@ export class CreateExpenseDto {
   paymentType?: ExpensePaymentType;
 
   @ApiPropertyOptional({
-    enum: ExpenseUsedBy,
+    enum: SHARED_EXPENSE_USED_BY,
     example: ExpenseUsedBy.ALL_MEMBERS,
   })
   @IsOptional()
-  @IsIn(Object.values(ExpenseUsedBy))
+  @IsIn(SHARED_EXPENSE_USED_BY)
   usedBy?: ExpenseUsedBy;
 
   @ApiPropertyOptional({
@@ -411,9 +417,9 @@ export class UpdateExpenseDto {
   @IsIn(Object.values(ExpensePaymentType))
   paymentType?: ExpensePaymentType;
 
-  @ApiPropertyOptional({ enum: ExpenseUsedBy })
+  @ApiPropertyOptional({ enum: SHARED_EXPENSE_USED_BY })
   @IsOptional()
-  @IsIn(Object.values(ExpenseUsedBy))
+  @IsIn(SHARED_EXPENSE_USED_BY)
   usedBy?: ExpenseUsedBy;
 
   @ApiPropertyOptional({ enum: ExpenseSplitMethod })

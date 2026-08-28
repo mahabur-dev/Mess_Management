@@ -15,7 +15,7 @@ export const EXPENSE_CATEGORIES = [
 ] as const
 export const EXPENSE_PAYMENT_TYPES = ['FROM_DEPOSIT', 'PERSONAL', 'COLLECTED_FUND'] as const
 export const EXPENSE_PAID_FROM = ['PERSONAL', 'MESS_DEPOSIT', 'COLLECTED_FUND'] as const
-export const EXPENSE_USED_BY = ['SELF_ONLY', 'SELECTED_MEMBERS', 'ALL_MEMBERS', 'MEAL_ON_MEMBERS'] as const
+export const EXPENSE_USED_BY = ['SELECTED_MEMBERS', 'ALL_MEMBERS', 'MEAL_ON_MEMBERS'] as const
 export const EXPENSE_SPLIT_METHODS = ['EQUAL', 'MEAL_COUNT', 'CUSTOM'] as const
 export const MEAL_NAMES = ['BREAKFAST', 'LUNCH', 'DINNER'] as const
 export const NOTICE_TYPES = ['MEAL', 'PAYMENT', 'EMERGENCY', 'MEETING', 'RULE_UPDATE', 'GENERAL'] as const
@@ -63,7 +63,6 @@ export const LABELS = {
     COLLECTED_FUND: 'Mess Fund',
   },
   EXPENSE_USED_BY: {
-    SELF_ONLY: 'Only Me',
     SELECTED_MEMBERS: 'Specific Members',
     ALL_MEMBERS: 'All Members',
     MEAL_ON_MEMBERS: 'Meal Members',

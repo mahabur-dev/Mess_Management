@@ -52,7 +52,6 @@ describe('expense accounting classification', () => {
       ['SELECTED_MEMBERS', 'MEAL_COUNT'],
       ['SELECTED_MEMBERS', 'CUSTOM'],
       ['MEAL_ON_MEMBERS', 'EQUAL'],
-      ['SELF_ONLY', 'EQUAL'],
     ];
 
     for (const [used_by, split_method] of advancedRules) {
@@ -81,6 +80,7 @@ describe('expense accounting classification', () => {
   it('rejects meal-member and meal-count rules for utilities', () => {
     assert.equal(isUtilitySplitAllowed('ALL_MEMBERS', 'EQUAL'), true);
     assert.equal(isUtilitySplitAllowed('SELECTED_MEMBERS', 'CUSTOM'), true);
+    assert.equal(isUtilitySplitAllowed('SELF_ONLY', 'EQUAL'), false);
     assert.equal(isUtilitySplitAllowed('MEAL_ON_MEMBERS', 'EQUAL'), false);
     assert.equal(isUtilitySplitAllowed('ALL_MEMBERS', 'MEAL_COUNT'), false);
   });

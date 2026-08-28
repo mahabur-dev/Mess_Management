@@ -61,7 +61,6 @@ type PreviewData = {
   usedBy: ExpenseUsedBy
   splitMethod: ExpenseSplitMethod
   payerCredit: number
-  personalHistoryAmount: number
   totalSharedCost: number
   shares: PreviewShare[]
   items: Array<{ itemName: string; quantity?: number | null; unit?: string | null; amount: number }>
@@ -100,11 +99,7 @@ export default function AddExpensePage() {
   const selectedMembers =
     effectiveUsedBy === 'SELECTED_MEMBERS'
       ? form.selectedMemberIds
-      : effectiveUsedBy === 'SELF_ONLY'
-        ? user?.id
-          ? [user.id]
-          : []
-        : members.map((member) => member.id)
+      : members.map((member) => member.id)
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setPreview(null)
@@ -182,9 +177,7 @@ export default function AddExpensePage() {
       setAdvancedOpen(false)
       setAdvancedCustomized(false)
       setSuccess(true)
-      const autoApproved = isManager || (
-        effectivePaymentType === 'PERSONAL' && effectiveUsedBy === 'SELF_ONLY'
-      )
+      const autoApproved = isManager
       setMessage(autoApproved ? 'Expense saved successfully.' : 'Expense submitted for manager approval.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save expense.')
@@ -248,7 +241,6 @@ export default function AddExpensePage() {
             onUsedByChange={(usedBy) => {
               setAdvancedCustomized(true)
               update('usedBy', usedBy)
-              if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
               if (usedBy === 'MEAL_ON_MEMBERS' && form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT')
             }}
             splitMethod={form.splitMethod}

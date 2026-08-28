@@ -175,7 +175,7 @@ export function ExpenseEntryForm({
             onChange={onSelectedMemberIdsChange}
           />
         ) : null}
-        {usedBy !== 'SELF_ONLY' && splitMethod === 'CUSTOM' ? (
+        {splitMethod === 'CUSTOM' ? (
           <ExpenseCustomShareFields
             members={members}
             memberIds={customShareMemberIds}

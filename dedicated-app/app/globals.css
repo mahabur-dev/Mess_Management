@@ -212,7 +212,7 @@
 .auth-reference .field:hover,
 .auth-reference label > div.relative:hover { border-color: rgba(0, 141, 140, 0.32); }
 .auth-reference .field:focus,
-.auth-reference label > div.relative:focus-within { border-color: var(--brand-600); box-shadow: 0 0 0 4px rgba(0, 141, 140, 0.1); }
+.auth-reference label > div.relative:focus-within { border-color: var(--brand-600); box-shadow: 0 0 0 2px rgba(0, 141, 140, 0.075); }
 .auth-reference .field::placeholder,
 .auth-reference input::placeholder { color: var(--neutral-500); opacity: 1; }
 .auth-reference .field-icon { left: 16px; color: var(--brand-600); }
@@ -473,6 +473,13 @@
 
 .auth-reference form {
   margin-top: 0;
+}
+
+.auth-reference .auth-reference__body,
+.auth-reference .auth-reference__protected,
+.auth-reference .auth-reference__footer {
+  width: min(calc(100% - 16px), 382px);
+  margin-inline: auto;
 }
 
 .auth-reference label > .sr-only {
@@ -1820,14 +1827,14 @@
 
 .auth-reference .field,
 .auth-reference label > div.relative {
-  min-height: 56px;
+  min-height: 52px;
   border: 1px solid var(--auth-line);
   border-radius: 15px;
   background: rgba(248, 253, 253, 0.86);
   color: var(--experience-ink);
   font-size: var(--text-body);
   font-weight: 500;
-  box-shadow: 0 5px 16px rgba(18, 55, 72, 0.035);
+  box-shadow: 0 2px 8px rgba(18, 55, 72, 0.025);
   transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 
@@ -1843,7 +1850,7 @@
 .auth-reference .auth-otp-input:focus {
   border-color: var(--experience-teal);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(0, 141, 140, 0.1), 0 8px 20px rgba(18, 55, 72, 0.045);
+  box-shadow: 0 0 0 2px rgba(0, 141, 140, 0.075), 0 2px 6px rgba(18, 55, 72, 0.02);
 }
 
 .auth-reference .field-icon,
@@ -1894,7 +1901,7 @@
 
 .auth-reference__footer {
   flex: 0 0 auto;
-  margin-top: 0;
+  margin-top: 16px;
   padding: 0 4px 2px;
   color: var(--experience-muted);
   font-size: var(--text-label);
@@ -1919,7 +1926,36 @@
   border-color: var(--auth-line);
   background: rgba(248, 253, 253, 0.86);
   color: var(--experience-ink);
-  box-shadow: 0 5px 16px rgba(18, 55, 72, 0.035);
+  box-shadow: 0 2px 8px rgba(18, 55, 72, 0.025);
+}
+
+.auth-reference .ui-btn--primary {
+  --ui-btn-height: 52px;
+  --ui-btn-radius: 14px;
+  border-color: transparent;
+  background: linear-gradient(108deg, var(--experience-teal-deep) 0%, #00aaa9 100%);
+  font-size: var(--text-body);
+  font-weight: 700;
+  box-shadow: 0 3px 8px rgba(0, 119, 122, 0.14);
+}
+
+.auth-reference .ui-btn--primary:hover {
+  background: linear-gradient(108deg, var(--experience-teal-deep) 0%, #00aaa9 100%);
+  box-shadow: 0 5px 12px rgba(0, 119, 122, 0.17);
+  filter: saturate(1.05);
+}
+
+.auth-reference .ui-btn--secondary {
+  --ui-btn-height: 48px;
+  --ui-btn-radius: 14px;
+}
+
+@media (max-width: 380px) {
+  .auth-reference .auth-reference__body,
+  .auth-reference .auth-reference__protected,
+  .auth-reference .auth-reference__footer {
+    width: calc(100% - 8px);
+  }
 }
 
 .auth-reference .auth-secondary-button {
@@ -2199,7 +2235,7 @@ body {
   min-height: 100%;
   overflow-x: hidden;
   overscroll-behavior-x: none;
-  touch-action: pan-y;
+  touch-action: pan-x pan-y;
   background: var(--app-background);
   background-attachment: fixed;
   color: var(--fg);
@@ -2247,7 +2283,7 @@ textarea {
   background: transparent;
   overflow-x: hidden;
   overscroll-behavior-x: none;
-  touch-action: pan-y;
+  touch-action: pan-x pan-y;
   position: relative;
 }
 
@@ -4196,6 +4232,15 @@ textarea {
   padding: 0;
 }
 
+.personal-form-modal {
+  width: min(100%, 420px);
+}
+
+.personal-form-modal .ui-btn {
+  --ui-btn-height: 48px;
+  --ui-btn-radius: 14px;
+}
+
 @media (min-width: 640px) {
   .app-modal-backdrop {
     align-items: center;
@@ -5075,6 +5120,15 @@ textarea {
   box-shadow: 0 0 0 4px rgba(0, 141, 140, 0.12);
 }
 
+.personal-date-input {
+  padding-inline-end: 18px;
+}
+
+.personal-date-input::-webkit-calendar-picker-indicator {
+  margin: 0 2px 0 8px;
+  padding: 3px;
+}
+
 .meal-time-input {
   min-width: 0;
   padding-inline: 12px;
@@ -5471,6 +5525,108 @@ textarea {
   padding: 10px 14px;
   font-weight: 600;
   box-shadow: 0 2px 6px rgba(0, 119, 122, 0.14);
+}
+
+/* Personal workspace action rail: three cards plus a half-card scroll cue. */
+.personal-action-rail {
+  --personal-action-gap: 8px;
+  display: grid;
+  width: 100%;
+  grid-auto-flow: column;
+  grid-auto-columns: calc(28.5714% - 6.8571px);
+  gap: var(--personal-action-gap);
+  padding: 2px 0 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 1px;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.personal-action-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.personal-action-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 82px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 119, 122, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 10px 5px 9px;
+  color: var(--neutral-600);
+  box-shadow: 0 5px 14px rgba(18, 55, 72, 0.045);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  text-align: center;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.personal-action-card__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid rgba(0, 119, 122, 0.1);
+  border-radius: 11px;
+  background: var(--brand-50);
+  color: var(--brand-600);
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.personal-action-card__label {
+  display: -webkit-box;
+  width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.personal-action-card[data-active="true"] {
+  border-color: rgba(0, 141, 140, 0.34);
+  background: linear-gradient(180deg, #ffffff 0%, var(--brand-50) 100%);
+  color: var(--brand-700);
+  box-shadow: 0 7px 18px rgba(0, 119, 122, 0.09);
+}
+
+.personal-action-card[data-active="true"] .personal-action-card__icon {
+  border-color: var(--brand-600);
+  background: var(--brand-600);
+  color: #ffffff;
+  box-shadow: 0 5px 12px rgba(0, 119, 122, 0.16);
+}
+
+.personal-action-card:active {
+  transform: scale(0.975);
+}
+
+.personal-action-card:focus-visible {
+  outline: 2px solid rgba(0, 141, 140, 0.32);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .personal-action-card:hover {
+    border-color: rgba(0, 141, 140, 0.28);
+    background: #ffffff;
+    box-shadow: 0 8px 20px rgba(18, 55, 72, 0.075);
+  }
 }
 
 /* AI Quick Add uses one compact language control and standard-height actions. */

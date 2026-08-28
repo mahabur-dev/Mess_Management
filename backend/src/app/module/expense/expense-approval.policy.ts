@@ -3,17 +3,12 @@ export type ExpenseRecordStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
 
 type ExpenseApprovalContext = {
   canManage: boolean;
-  paymentType: string;
-  usedBy: string;
 };
 
 export function requiresExpenseApproval({
   canManage,
-  paymentType,
-  usedBy,
 }: ExpenseApprovalContext) {
-  if (canManage) return false;
-  return !(paymentType === 'PERSONAL' && usedBy === 'SELF_ONLY');
+  return !canManage;
 }
 
 export function toApprovalStatus(

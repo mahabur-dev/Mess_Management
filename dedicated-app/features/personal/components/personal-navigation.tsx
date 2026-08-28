@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import {
   BarChart3,
   ChartPie,
@@ -28,20 +29,43 @@ export function PersonalNavigation({
   active: (typeof links)[number]["key"];
 }) {
   const copy = personalCopy(locale);
+  const railRef = useRef<HTMLElement>(null);
+  const activeItemRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const rail = railRef.current;
+    const activeItem = activeItemRef.current;
+    if (!rail || !activeItem) return;
+
+    const itemEnd = activeItem.offsetLeft + activeItem.offsetWidth;
+    const visibleEnd = rail.scrollLeft + rail.clientWidth;
+
+    if (activeItem.offsetLeft < rail.scrollLeft) {
+      rail.scrollLeft = activeItem.offsetLeft;
+    } else if (itemEnd > visibleEnd) {
+      rail.scrollLeft = itemEnd - rail.clientWidth;
+    }
+  }, [active]);
+
   return (
     <nav
-      className="grid grid-cols-5 gap-1 rounded-[18px] border border-[#dce9ec] bg-white p-1.5 shadow-[0_8px_18px_rgba(18,55,72,0.04)]"
+      ref={railRef}
+      className="personal-action-rail"
       aria-label="Personal finance"
     >
       {links.map(({ href, key, icon: Icon }) => (
         <Link
           key={href}
+          ref={active === key ? activeItemRef : undefined}
           href={appHref(href)}
           aria-current={active === key ? "page" : undefined}
-          className={`flex min-w-0 flex-col items-center gap-1 rounded-[13px] px-1 py-2 text-center text-[10px] font-bold transition ${active === key ? "bg-[#e8f8f7] text-[#00777a]" : "text-[#65838b]"}`}
+          className="personal-action-card"
+          data-active={active === key}
         >
-          <Icon size={17} strokeWidth={2.3} />
-          <span className="w-full truncate">{copy[key]}</span>
+          <span className="personal-action-card__icon" aria-hidden="true">
+            <Icon size={18} strokeWidth={2.2} />
+          </span>
+          <span className="personal-action-card__label">{copy[key]}</span>
         </Link>
       ))}
     </nav>

@@ -303,7 +303,6 @@ export function ExpenseUsedBySelector({
     ...(allowMealMembers
       ? [{ value: 'MEAL_ON_MEMBERS' as const, label: 'Meal Members' }]
       : []),
-    { value: 'SELF_ONLY', label: 'Only Me' },
   ]
 
   return (
@@ -382,7 +381,6 @@ export function ExpenseAdvancedOptions({
     ALL_MEMBERS: 'All Members',
     SELECTED_MEMBERS: 'Specific Members',
     MEAL_ON_MEMBERS: 'Meal Members',
-    SELF_ONLY: 'Only Me',
   }
   const splitLabels: Record<ExpenseSplitMethod, string> = {
     EQUAL: 'Equal',
@@ -407,14 +405,12 @@ export function ExpenseAdvancedOptions({
         allowMealMembers={allowMealMembers}
       />
 
-      {usedBy !== 'SELF_ONLY' ? (
-        <ExpenseSplitMethodSelector
-          value={splitMethod}
-          onChange={onSplitMethodChange}
-          allowCustom={allowCustom}
-          allowMealCount={allowMealCount}
-        />
-      ) : null}
+      <ExpenseSplitMethodSelector
+        value={splitMethod}
+        onChange={onSplitMethodChange}
+        allowCustom={allowCustom}
+        allowMealCount={allowMealCount}
+      />
 
       {children}
     </DeferredFormSection>

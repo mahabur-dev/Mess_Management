@@ -84,7 +84,11 @@ export function AuthShell({
               )}
             </div>
 
-            {children}
+            {reference ? (
+              <div className="auth-reference__body">{children}</div>
+            ) : (
+              children
+            )}
 
             <div className={reference ? 'auth-reference__protected' : 'mt-5 flex items-center gap-3 text-[#65838b]'}>
               <span className="h-px flex-1 bg-[#cbd8e1]" />
@@ -96,11 +100,15 @@ export function AuthShell({
 
               <span className="h-px flex-1 bg-[#cbd8e1]" />
             </div>
+
+            {reference && footer ? (
+              <div className="auth-reference__footer">{footer}</div>
+            ) : null}
           </section>
         </main>
 
-        {footer ? (
-          <div className={reference ? 'auth-reference__footer' : 'mt-4 text-center text-label font-medium text-[#65838b]'}>
+        {!reference && footer ? (
+          <div className="mt-4 text-center text-label font-medium text-[#65838b]">
             {footer}
           </div>
         ) : null}
@@ -152,7 +160,7 @@ export function AuthField({
 
       <IconInput
         icon={Icon}
-        className={`min-h-[54px] rounded-[14px] border-[#bfe7e6] bg-white text-body ${className}`}
+        className={`min-h-[52px] rounded-[14px] border-[#bfe7e6] bg-white text-body ${className}`}
         {...props}
       />
     </label>
@@ -185,7 +193,7 @@ export function AuthPasswordField({
 
       <div
         className="
-          relative flex min-h-[54px] items-center
+          relative flex min-h-[52px] items-center
           rounded-[14px]
           border border-[#bfe7e6]
           bg-white
@@ -211,7 +219,7 @@ export function AuthPasswordField({
 
         <input
           className="
-            min-h-[54px] min-w-0 flex-1
+            min-h-[52px] min-w-0 flex-1
             bg-transparent px-2 py-3
             text-body font-medium
             text-[#062b35]

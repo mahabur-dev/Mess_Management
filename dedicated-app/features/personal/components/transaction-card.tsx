@@ -15,7 +15,7 @@ import {
 } from "../constants";
 import type { PersonalLocale, PersonalTransaction } from "../types";
 
-export function TransactionCard({
+export function TransactionRow({
   transaction,
   locale,
   onEdit,
@@ -50,11 +50,12 @@ export function TransactionCard({
   const Icon = config.icon;
 
   return (
-    <article className="flex items-center gap-3 border-b border-[#edf1f4] px-3 py-3 last:border-b-0">
+    <article role="listitem" className="flex min-h-[68px] items-center gap-3 px-1 py-2.5">
       <span
-        className={`grid h-11 w-11 shrink-0 place-items-center rounded-[14px] ${config.background} ${config.color}`}
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${config.background} ${config.color}`}
+        aria-hidden="true"
       >
-        <Icon size={20} />
+        <Icon size={18} strokeWidth={2.25} />
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block truncate text-label text-[#123748]">
@@ -77,12 +78,12 @@ export function TransactionCard({
           {config.sign} {formatPersonalMoney(transaction.amount, locale)}
         </strong>
         {onEdit || onDelete ? (
-          <span className="mt-1 flex justify-end gap-1">
+          <span className="mt-1.5 flex justify-end gap-1.5">
             {onEdit ? (
               <button
                 type="button"
                 onClick={onEdit}
-                className="grid h-7 w-7 place-items-center rounded-full bg-[#edfafa] text-[#00777a]"
+                className="grid h-8 w-8 place-items-center rounded-[10px] text-[#00777a] transition-colors hover:bg-[#e8f8f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008d8c]/25"
                 aria-label={copy.edit}
               >
                 <Pencil size={13} />
@@ -92,7 +93,7 @@ export function TransactionCard({
               <button
                 type="button"
                 onClick={onDelete}
-                className="grid h-7 w-7 place-items-center rounded-full bg-[#fff1f0] text-[#d92d20]"
+                className="grid h-8 w-8 place-items-center rounded-[10px] text-[#d92d20] transition-colors hover:bg-[#fff1f0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d92d20]/20"
                 aria-label={copy.delete}
               >
                 <Trash2 size={13} />

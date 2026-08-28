@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ChevronDown, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
 import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
-import { ExpenseSurface } from "@/components/mobile/expense-ui";
 import { FloatingActionLink } from "@/components/mobile/floating-action-link";
 import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileSelectSheet, type MobileSelectOption } from "@/components/mobile/select-sheet";
@@ -16,8 +15,8 @@ import {
   personalCopy,
 } from "@/features/personal/constants";
 import { PersonalNavigation } from "@/features/personal/components/personal-navigation";
-import { PersonalTransactionForm } from "@/features/personal/components/transaction-form";
-import { TransactionCard } from "@/features/personal/components/transaction-card";
+import { TransactionFormModal } from "@/features/personal/components/transaction-form-modal";
+import { TransactionRow } from "@/features/personal/components/transaction-card";
 import { useFamilyMembers } from "@/features/personal/hooks/use-family-members";
 import { usePersonalLocale } from "@/features/personal/hooks/use-personal-locale";
 import { useTransactions } from "@/features/personal/hooks/use-transactions";
@@ -77,6 +76,11 @@ export default function PersonalTransactionsPage() {
       setMessage(copy.deleteFailed);
     }
   };
+  const closeEditor = () => {
+    if (busy) return;
+    setEditing(null);
+    setMessage("");
+  };
 
   return (
     <MobileShell showBottomNavigation hasFloatingAction>
@@ -91,7 +95,7 @@ export default function PersonalTransactionsPage() {
         <PersonalNavigation locale={locale} active="transactions" />
         <section
           aria-label={`${copy.search} / ${copy.filterType}`}
-          className="grid grid-cols-[minmax(0,1fr)_minmax(126px,0.55fr)] gap-2 rounded-[18px] border border-[#dce8e9] bg-white p-2 shadow-[0_10px_28px_rgba(18,55,72,0.07)]"
+          className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_116px] gap-2 rounded-[18px] border border-[#dce8e9] bg-white p-2 shadow-[0_8px_22px_rgba(18,55,72,0.055)]"
         >
           <label className="group relative min-w-0">
             <span className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-[#789096] transition-colors group-focus-within:text-[#008d8c]">
@@ -126,7 +130,7 @@ export default function PersonalTransactionsPage() {
             renderTrigger={({ open, selectedLabel, buttonProps }) => (
               <button
                 {...buttonProps}
-                className="flex h-12 min-w-0 items-center gap-2 rounded-[14px] border border-[#bfe7e6] bg-[#f8fdfd] px-2.5 text-left outline-none transition hover:border-[#8fd2d0] focus-visible:border-[#008d8c] focus-visible:ring-4 focus-visible:ring-[#008d8c]/10"
+                className="flex h-12 w-full min-w-0 items-center gap-1.5 rounded-[14px] border border-[#bfe7e6] bg-[#f8fdfd] px-2 text-left outline-none transition hover:border-[#8fd2d0] focus-visible:border-[#008d8c] focus-visible:ring-2 focus-visible:ring-[#008d8c]/10"
               >
                 <span className="relative grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#e3f6f5] text-[#008d8c]">
                   <SlidersHorizontal size={15} strokeWidth={2.35} />
@@ -134,16 +138,11 @@ export default function PersonalTransactionsPage() {
                     <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#008d8c] ring-2 ring-white" />
                   ) : null}
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-caption font-semibold leading-none text-[#789096]">
-                    {copy.filterType}
-                  </span>
-                  <span className="mt-1 block truncate text-label font-bold leading-none text-[#123748]">
-                    {selectedLabel}
-                  </span>
+                <span className="min-w-0 flex-1 truncate text-caption font-bold text-[#123748]">
+                  {selectedLabel}
                 </span>
                 <ChevronDown
-                  size={15}
+                  size={14}
                   strokeWidth={2.5}
                   className={`shrink-0 text-[#008d8c] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
                 />
@@ -151,24 +150,8 @@ export default function PersonalTransactionsPage() {
             )}
           />
         </section>
-        {message ? (
+        {!editing && message ? (
           <div className="ui-notice ui-notice--danger">{message}</div>
-        ) : null}
-        {editing ? (
-          <ExpenseSurface
-            title={copy.editTransaction}
-          >
-            <PersonalTransactionForm
-              locale={locale}
-              familyMembers={familyMembers}
-              initial={editing}
-              busy={busy}
-              onSubmit={save}
-              onCancel={() => {
-                setEditing(null);
-              }}
-            />
-          </ExpenseSurface>
         ) : null}
         {loading ? (
           <LoadingIndicator variant="card" label={copy.transactions} />
@@ -177,30 +160,42 @@ export default function PersonalTransactionsPage() {
           <div className="ui-notice ui-notice--danger">{error}</div>
         ) : null}
         {!loading ? (
-          <ExpenseSurface>
-            <div className="overflow-hidden rounded-[15px] border border-[#edf1f4]">
+          <section aria-label={copy.transactions}>
+            <div role="list" className="space-y-2.5">
               {transactions.map((transaction) => (
-                <TransactionCard
+                <TransactionRow
                   key={transaction.id}
                   transaction={transaction}
                   locale={locale}
                   onEdit={() => {
+                    setMessage("");
                     setEditing(transaction);
                   }}
                   onDelete={() => remove(transaction)}
                 />
               ))}
               {!transactions.length ? (
-                <div className="expense-empty-state">{copy.noTransactions}</div>
+                <div className="py-12 text-center text-label font-semibold text-[#65838b]">
+                  {copy.noTransactions}
+                </div>
               ) : null}
             </div>
-          </ExpenseSurface>
+          </section>
         ) : null}
       </div>
       <FloatingActionLink
         href="/personal/transactions/add"
         label={copy.addTransaction}
         icon={<Plus size={24} strokeWidth={2.4} />}
+      />
+      <TransactionFormModal
+        transaction={editing}
+        locale={locale}
+        familyMembers={familyMembers}
+        busy={busy}
+        message={message}
+        onClose={closeEditor}
+        onSubmit={save}
       />
     </MobileShell>
   );

@@ -85,7 +85,6 @@ export type PreparedExpense = {
   shares: CalculatedShare[];
   payerCredit: number;
   totalSharedCost: number;
-  personalHistoryAmount: number;
   requiresApproval: boolean;
 };
 
@@ -618,9 +617,7 @@ export class ExpenseService {
     let memberIds: string[];
     const activeMembers = await this.getActiveMembers(messId);
 
-    if (usedBy === ExpenseUsedBy.SELF_ONLY) {
-      memberIds = [purchasedByMemberId];
-    } else if (usedBy === ExpenseUsedBy.SELECTED_MEMBERS) {
+    if (usedBy === ExpenseUsedBy.SELECTED_MEMBERS) {
       if (!selectedMemberIds.length) {
         throw new HttpException('Selected members are required', 400);
       }
@@ -740,12 +737,19 @@ export class ExpenseService {
         ? ExpenseSplitMethod.MEAL_COUNT
         : ExpenseSplitMethod.EQUAL);
 
+    if (usedBy === ExpenseUsedBy.SELF_ONLY) {
+      throw new HttpException(
+        'Self-only expenses are no longer supported; use Personal Finance instead',
+        400,
+      );
+    }
+
     if (
       type === ExpenseRecordType.UTILITY &&
       !isUtilitySplitAllowed(usedBy, splitMethod)
     ) {
       throw new HttpException(
-        'Utility expenses support All Members, Specific Members, or Only Me with Equal or Manual Split',
+        'Utility expenses support All Members or Specific Members with Equal or Manual Split',
         400,
       );
     }
@@ -846,11 +850,8 @@ export class ExpenseService {
       shares: impact.shares,
       payerCredit: impact.payerCredit,
       totalSharedCost: impact.totalSharedCost,
-      personalHistoryAmount: impact.personalHistoryAmount,
       requiresApproval: requiresExpenseApproval({
         canManage,
-        paymentType: paidFrom,
-        usedBy,
       }),
     };
   }
@@ -881,15 +882,12 @@ export class ExpenseService {
       purchasedByMemberId: prepared.purchasedByMemberId,
       affectedMemberCount: prepared.affectedMembers.length,
       payerCredit: prepared.payerCredit,
-      personalHistoryAmount: prepared.personalHistoryAmount,
       totalSharedCost: prepared.totalSharedCost,
       shares: prepared.shares,
       validation: {
         isValid:
           itemTotal === roundMoney(prepared.amount) &&
-          (roundMoney(prepared.totalSharedCost) ===
-            roundMoney(prepared.amount) ||
-            prepared.personalHistoryAmount === prepared.amount),
+          roundMoney(prepared.totalSharedCost) === roundMoney(prepared.amount),
         message: 'Split preview calculated successfully',
       },
     };
@@ -1712,20 +1710,10 @@ export class ExpenseService {
       },
     };
 
-    const [myShares, personalSelf, recent, allExpenses] = await Promise.all([
+    const [myShares, recent, allExpenses] = await Promise.all([
       this.prisma.expenseShare.findMany({
         where: shareWhere,
         include: { expense: true },
-      }),
-      this.prisma.expense.findMany({
-        where: {
-          mess_id: messId,
-          purchased_by: userId,
-          payment_type: ExpensePaymentType.PERSONAL,
-          used_by: ExpenseUsedBy.SELF_ONLY,
-          billing_month: start,
-          status: 'CONFIRMED',
-        },
       }),
       this.prisma.expense.findMany({
         where: {
@@ -1777,11 +1765,6 @@ export class ExpenseService {
     const roomRent = myShares
       .filter((share) => share.expense.category === ExpenseCategory.RENT)
       .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
-    const personalAmount = personalSelf.reduce(
-      (sum, expense) => sum + Number(expense.amount ?? 0),
-      0,
-    );
-
     return {
       month: start,
       myView: {
@@ -1789,8 +1772,7 @@ export class ExpenseService {
         utilityBill: roundMoney(utilityBill),
         roomRent: roundMoney(roomRent),
         total: roundMoney(foodBill + utilityBill + roomRent),
-        personalExpenseAmount: roundMoney(personalAmount),
-        transactionCount: myShares.length + personalSelf.length,
+        transactionCount: myShares.length,
       },
       managerView: isManager
         ? {

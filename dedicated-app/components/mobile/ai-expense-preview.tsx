@@ -99,7 +99,6 @@ export function AiExpensePreview({
   payload,
   items,
   members,
-  currentUserId,
   canManage,
   disabled,
   onPatchPayload,
@@ -111,7 +110,6 @@ export function AiExpensePreview({
   payload: AiExpensePreviewItem
   items: AiExpensePreviewItem[]
   members: MemberOption[]
-  currentUserId?: string
   canManage: boolean
   disabled?: boolean
   onPatchPayload: (patch: Record<string, unknown>) => void
@@ -129,11 +127,7 @@ export function AiExpensePreview({
   const selectedMembers =
     usedBy === 'SELECTED_MEMBERS'
       ? selectedMemberIds
-      : usedBy === 'SELF_ONLY'
-        ? currentUserId
-          ? [currentUserId]
-          : []
-        : members.map((member) => member.id)
+      : members.map((member) => member.id)
   const [preview, setPreview] = useState<SplitPreview | null>(null)
   const [previewBusy, setPreviewBusy] = useState(false)
   const [previewMessage, setPreviewMessage] = useState('')
@@ -143,6 +137,7 @@ export function AiExpensePreview({
   useEffect(() => {
     const patch: Record<string, unknown> = {}
     if (primary.billingMonth !== undefined) patch.billingMonth = undefined
+    if (primary.usedBy !== undefined && !isOneOf(primary.usedBy, EXPENSE_USED_BY)) patch.usedBy = 'ALL_MEMBERS'
     if (isUtility && usedBy === 'MEAL_ON_MEMBERS') patch.usedBy = 'ALL_MEMBERS'
     if (isUtility && splitMethod === 'MEAL_COUNT') patch.splitMethod = 'EQUAL'
     if (Object.keys(patch).length) onPatchPayload(patch)
@@ -167,7 +162,6 @@ export function AiExpensePreview({
 
   const updateUsedBy = (value: ExpenseUsedBy) => {
     const patch: Record<string, unknown> = { usedBy: value }
-    if (value === 'SELF_ONLY') patch.splitMethod = 'EQUAL'
     if (value === 'MEAL_ON_MEMBERS' && splitMethod === 'CUSTOM') patch.splitMethod = 'MEAL_COUNT'
     patchAll(patch)
   }

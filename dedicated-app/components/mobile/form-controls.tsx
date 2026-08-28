@@ -62,6 +62,7 @@ export function TextField({
   value,
   onChange,
   type = 'text',
+  className = '',
   ...inputProps
 }: {
   label: string
@@ -75,7 +76,7 @@ export function TextField({
     <FieldCard label={label} hint={hint}>
       <input
         {...inputProps}
-        className="field min-h-14"
+        className={`field min-h-14 ${type === 'date' ? 'personal-date-input' : ''} ${className}`.trim()}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}

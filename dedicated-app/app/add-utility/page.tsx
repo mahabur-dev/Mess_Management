@@ -84,11 +84,7 @@ export default function AddUtilityPage() {
   const selectedMembers =
     effectiveUsedBy === 'SELECTED_MEMBERS'
       ? form.selectedMemberIds
-      : effectiveUsedBy === 'SELF_ONLY'
-        ? user?.id
-          ? [user.id]
-          : []
-        : members.map((member) => member.id)
+      : members.map((member) => member.id)
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setPreview(null)
@@ -168,9 +164,7 @@ export default function AddUtilityPage() {
       setPreview(null)
       setAdvancedOpen(false)
       setSuccess(true)
-      const autoApproved = isManager || (
-        effectivePaymentType === 'PERSONAL' && effectiveUsedBy === 'SELF_ONLY'
-      )
+      const autoApproved = isManager
       setMessage(autoApproved ? 'Utility saved successfully.' : 'Utility submitted for manager approval.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save utility.')
@@ -225,7 +219,6 @@ export default function AddUtilityPage() {
             usedBy={form.usedBy}
             onUsedByChange={(usedBy) => {
               update('usedBy', usedBy)
-              if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
             }}
             splitMethod={form.splitMethod}
             onSplitMethodChange={(splitMethod) => update('splitMethod', splitMethod)}

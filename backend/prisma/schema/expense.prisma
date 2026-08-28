@@ -15,6 +15,7 @@ enum ExpenseRecordType {
 }
 
 enum ExpenseUsedBy {
+  // Deprecated for new writes; retained only so historical records remain readable.
   SELF_ONLY
   SELECTED_MEMBERS
   ALL_MEMBERS

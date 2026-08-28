@@ -48,19 +48,31 @@ describe('calculateSplit', () => {
     assert.equal(result.totalSharedCost, 175);
   });
 
-  it('keeps a personal self-only expense out of shared billing', () => {
+  it('keeps payer credit for a shared mess expense paid personally', () => {
     const result = calculateSplit({
       ...baseInput,
-      amount: 250,
       paidFrom: 'PERSONAL',
-      usedBy: 'SELF_ONLY',
-      members: [{ id: 'member-a' }],
     });
 
-    assert.equal(result.totalSharedCost, 0);
-    assert.equal(result.payerCredit, 0);
-    assert.equal(result.personalHistoryAmount, 250);
-    assert.equal(result.shares[0].shareAmount, 0);
+    assert.equal(result.totalSharedCost, 100);
+    assert.equal(result.payerCredit, 100);
+    assert.deepEqual(
+      result.shares.map((share) => share.shareAmount),
+      [33.33, 33.33, 33.34],
+    );
+  });
+
+  it('rejects self-only allocation from mess expense calculations', () => {
+    assert.throws(
+      () => calculateSplit({
+        ...baseInput,
+        amount: 250,
+        paidFrom: 'PERSONAL',
+        usedBy: 'SELF_ONLY',
+        members: [{ id: 'member-a' }],
+      }),
+      /no longer supported/,
+    );
   });
 
   it('rejects duplicate custom-share members', () => {

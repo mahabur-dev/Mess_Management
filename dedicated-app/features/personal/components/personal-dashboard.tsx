@@ -19,7 +19,7 @@ import type {
   PersonalSummary,
 } from "../types";
 import { SummaryCard } from "./summary-card";
-import { TransactionCard } from "./transaction-card";
+import { TransactionRow } from "./transaction-card";
 
 export function PersonalDashboard({
   locale,
@@ -103,9 +103,9 @@ export function PersonalDashboard({
           </Link>
         }
       >
-        <div className="overflow-hidden rounded-[15px] border border-[#edf1f4]">
+        <div role="list" className="space-y-2">
           {summary?.recentTransactions?.map((transaction) => (
-            <TransactionCard
+            <TransactionRow
               key={transaction.id}
               transaction={transaction}
               locale={locale}

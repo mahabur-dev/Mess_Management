@@ -22,7 +22,6 @@ export type ExpenseImpact = {
   shares: CalculatedShare[];
   totalSharedCost: number;
   payerCredit: number;
-  personalHistoryAmount: number;
 };
 
 const MONEY_DECIMALS = 2;
@@ -102,28 +101,18 @@ export function calculateSplit(params: {
   const { amount, paidFrom, usedBy, splitMethod, members } = params;
   assertValidAmount(amount);
 
+  if (usedBy === 'SELF_ONLY') {
+    throw new ExpenseCalculationError(
+      'Self-only expenses are no longer supported; use Personal Finance instead',
+    );
+  }
+
   if (!members.length) {
     throw new ExpenseCalculationError(
       'At least one affected member is required',
     );
   }
   assertUniqueMemberIds(members);
-
-  const isPersonalSelfOnly = paidFrom === 'PERSONAL' && usedBy === 'SELF_ONLY';
-
-  if (isPersonalSelfOnly) {
-    return {
-      shares: members.map((member) => ({
-        memberId: member.id,
-        memberName: member.name,
-        mealCount: member.mealCount,
-        shareAmount: 0,
-      })),
-      totalSharedCost: 0,
-      payerCredit: 0,
-      personalHistoryAmount: roundMoney(amount),
-    };
-  }
 
   let shares: CalculatedShare[];
 
@@ -210,6 +199,5 @@ export function calculateSplit(params: {
     shares,
     totalSharedCost,
     payerCredit: paidFrom === 'PERSONAL' ? roundMoney(amount) : 0,
-    personalHistoryAmount: 0,
   };
 }

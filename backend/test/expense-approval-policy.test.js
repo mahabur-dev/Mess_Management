@@ -20,31 +20,10 @@ describe('expense approval policy', () => {
     assert.equal(toApprovalStatus('CANCELLED'), 'REJECTED');
   });
 
-  it('auto-approves a member personal expense used only by that member', () => {
+  it('requires approval for every member-submitted mess expense', () => {
     assert.equal(
       requiresExpenseApproval({
         canManage: false,
-        paymentType: 'PERSONAL',
-        usedBy: 'SELF_ONLY',
-      }),
-      false,
-    );
-  });
-
-  it('still requires approval for member-submitted shared or mess-funded expenses', () => {
-    assert.equal(
-      requiresExpenseApproval({
-        canManage: false,
-        paymentType: 'PERSONAL',
-        usedBy: 'ALL_MEMBERS',
-      }),
-      true,
-    );
-    assert.equal(
-      requiresExpenseApproval({
-        canManage: false,
-        paymentType: 'FROM_DEPOSIT',
-        usedBy: 'SELF_ONLY',
       }),
       true,
     );
@@ -54,8 +33,6 @@ describe('expense approval policy', () => {
     assert.equal(
       requiresExpenseApproval({
         canManage: true,
-        paymentType: 'FROM_DEPOSIT',
-        usedBy: 'ALL_MEMBERS',
       }),
       false,
     );

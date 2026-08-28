@@ -1,23 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { UsersRound } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
 import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
-import { ExpenseSurface } from "@/components/mobile/expense-ui";
-import { DesignedSelect } from "@/components/mobile/expense-design";
 import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
-import { AddActionButton, Button } from "@/components/ui";
+import { AddActionButton } from "@/components/ui";
 import { personalApi } from "@/features/personal/api/personal.api";
 import {
   currentPersonalMonth,
-  PERSONAL_RELATIONS,
   personalCopy,
-  relationLabel,
 } from "@/features/personal/constants";
 import { FamilyCard } from "@/features/personal/components/family-card";
+import { FamilyFormModal } from "@/features/personal/components/family-form-modal";
 import { PersonalNavigation } from "@/features/personal/components/personal-navigation";
 import { useFamilyMembers } from "@/features/personal/hooks/use-family-members";
 import { usePersonalLocale } from "@/features/personal/hooks/use-personal-locale";
@@ -56,12 +52,19 @@ export default function PersonalFamilyPage() {
         await personalApi.updateFamilyMember(editing.id, { name, relation });
       else await personalApi.createFamilyMember({ name, relation });
       setFormOpen(false);
+      setEditing(null);
       await refresh();
     } catch {
       setMessage(copy.saveFailed);
     } finally {
       setBusy(false);
     }
+  };
+  const closeForm = () => {
+    if (busy) return;
+    setFormOpen(false);
+    setEditing(null);
+    setMessage("");
   };
   const remove = async (member: FamilyMember) => {
     if (!window.confirm(copy.confirmDeleteFamily)) return;
@@ -86,47 +89,8 @@ export default function PersonalFamilyPage() {
         <AddActionButton onClick={() => openForm()}>
           {copy.addFamilyMember}
         </AddActionButton>
-        {formOpen ? (
-          <ExpenseSurface
-            title={editing ? copy.editFamilyMember : copy.addFamilyMember}
-          >
-            <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1.5 block text-label font-bold text-[#123748]">
-                  {copy.name}
-                </span>
-                <input
-                  className="field"
-                  value={name}
-                  maxLength={100}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              </label>
-              <DesignedSelect
-                label={copy.relation}
-                icon={UsersRound}
-                value={relation}
-                onChange={(event) => setRelation(event.target.value)}
-              >
-                {PERSONAL_RELATIONS.map((item) => (
-                  <option key={item} value={item}>
-                    {relationLabel(item, locale)}
-                  </option>
-                ))}
-              </DesignedSelect>
-              {message ? (
-                <div className="ui-notice ui-notice--danger">{message}</div>
-              ) : null}
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="secondary" onClick={() => setFormOpen(false)}>
-                  {copy.cancel}
-                </Button>
-                <Button busy={busy} onClick={save}>
-                  {copy.save}
-                </Button>
-              </div>
-            </div>
-          </ExpenseSurface>
+        {!formOpen && message ? (
+          <div className="ui-notice ui-notice--danger">{message}</div>
         ) : null}
         {loading ? (
           <LoadingIndicator variant="card" label={copy.familyMembers} />
@@ -149,6 +113,19 @@ export default function PersonalFamilyPage() {
           ) : null}
         </div>
       </div>
+      <FamilyFormModal
+        open={formOpen}
+        editing={Boolean(editing)}
+        locale={locale}
+        name={name}
+        relation={relation}
+        busy={busy}
+        message={message}
+        onNameChange={setName}
+        onRelationChange={setRelation}
+        onClose={closeForm}
+        onSubmit={() => void save()}
+      />
     </MobileShell>
   );
 }

@@ -150,7 +150,6 @@ export class ExpenseController {
         usedBy: {
           type: 'string',
           enum: [
-            'SELF_ONLY',
             'SELECTED_MEMBERS',
             'ALL_MEMBERS',
             'MEAL_ON_MEMBERS',

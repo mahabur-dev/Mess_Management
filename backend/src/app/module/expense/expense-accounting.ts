@@ -39,6 +39,7 @@ export function isUtilitySplitAllowed(
   splitMethod: ExpenseSplitMethod,
 ) {
   return (
+    usedBy !== ExpenseUsedBy.SELF_ONLY &&
     usedBy !== ExpenseUsedBy.MEAL_ON_MEMBERS &&
     splitMethod !== ExpenseSplitMethod.MEAL_COUNT
   );

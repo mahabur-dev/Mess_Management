@@ -421,7 +421,6 @@ export default function QuickAddPage() {
                 payload={payload}
                 items={expenseItems}
                 members={members}
-                currentUserId={user?.id}
                 canManage={canManage}
                 disabled={busy}
                 onPatchPayload={patchPayload}

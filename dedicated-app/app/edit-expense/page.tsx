@@ -36,6 +36,7 @@ import {
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import {
+  EXPENSE_USED_BY,
   GENERAL_EXPENSE_CATEGORIES,
   LABELS,
   UTILITY_FORM_OPTIONS,
@@ -70,7 +71,7 @@ type ExpenseRecord = {
   description?: string | null
   receiptUrl?: string | null
   paymentType?: ExpensePaymentType | null
-  usedBy?: ExpenseUsedBy | null
+  usedBy?: string | null
   splitMethod?: ExpenseSplitMethod | null
   createdById?: string | null
   creator?: { id?: string | null } | null
@@ -99,6 +100,12 @@ const LEGACY_UTILITY_CATEGORY_SET = new Set<ExpenseCategory>([
 
 function dateValue(value?: string | null) {
   return value?.slice(0, 10) || new Date().toISOString().slice(0, 10)
+}
+
+function supportedUsedBy(value?: string | null): ExpenseUsedBy {
+  return EXPENSE_USED_BY.includes(value as ExpenseUsedBy)
+    ? (value as ExpenseUsedBy)
+    : 'ALL_MEMBERS'
 }
 
 const INITIAL_FORM: FormState = {
@@ -155,8 +162,12 @@ export default function EditExpensePage() {
 
         const shares = found.shares ?? []
         const foundType = found.type ?? (LEGACY_UTILITY_CATEGORY_SET.has(found.category) ? 'UTILITY' : 'EXPENSE')
+        const normalizedUsedBy = supportedUsedBy(found.usedBy)
         setRecordType(foundType)
         setExistingReceiptUrl(found.receiptUrl ?? null)
+        if (found.usedBy && normalizedUsedBy !== found.usedBy) {
+          setMessage('This legacy allocation is no longer supported. Review the shared members before saving.')
+        }
         const fallbackUtilityLabel =
           UTILITY_FORM_OPTIONS.find((option) => option.utilityType === found.utilityType)?.label ??
           UTILITY_FORM_OPTIONS.find((option) => option.category === found.category)?.label ??
@@ -188,7 +199,7 @@ export default function EditExpensePage() {
           expenseDate: dateValue(found.expenseDate),
           description: found.description ?? '',
           paymentType: found.paymentType ?? 'FROM_DEPOSIT',
-          usedBy: foundType === 'UTILITY' && found.usedBy === 'MEAL_ON_MEMBERS' ? 'ALL_MEMBERS' : found.usedBy ?? 'ALL_MEMBERS',
+          usedBy: foundType === 'UTILITY' && normalizedUsedBy === 'MEAL_ON_MEMBERS' ? 'ALL_MEMBERS' : normalizedUsedBy,
           splitMethod: foundType === 'UTILITY' && found.splitMethod === 'MEAL_COUNT' ? 'EQUAL' : found.splitMethod ?? 'EQUAL',
           selectedMemberIds: shares.map((share) => share.memberId),
           customShares: shares.map((share) => ({
@@ -210,7 +221,6 @@ export default function EditExpensePage() {
   }, [expenseId, isManager, messId, router, user?.id])
 
   const affectedMemberIds = useMemo(() => {
-    if (form.usedBy === 'SELF_ONLY') return form.purchasedBy ? [form.purchasedBy] : []
     if (form.usedBy === 'SELECTED_MEMBERS') return form.selectedMemberIds
     if (form.usedBy === 'ALL_MEMBERS') return members.map((member) => member.id)
     return form.selectedMemberIds
@@ -257,7 +267,7 @@ export default function EditExpensePage() {
       description: form.description.trim() || null,
       paymentType: form.paymentType,
       usedBy: form.usedBy,
-      splitMethod: form.usedBy !== 'SELF_ONLY' ? form.splitMethod : 'EQUAL',
+      splitMethod: form.splitMethod,
       selectedMemberIds: form.usedBy === 'SELECTED_MEMBERS' ? form.selectedMemberIds : undefined,
       customShares,
       receiptUrl: removeReceipt && !receiptFile ? null : undefined,
@@ -342,7 +352,6 @@ export default function EditExpensePage() {
             onClose={() => setAdvancedOpen(false)}
             onUsedByChange={(usedBy) => {
               update('usedBy', usedBy)
-              if (usedBy === 'SELF_ONLY') update('splitMethod', 'EQUAL')
               if (usedBy === 'MEAL_ON_MEMBERS' && form.splitMethod === 'CUSTOM') update('splitMethod', 'MEAL_COUNT')
             }}
             onSplitMethodChange={(splitMethod) => update('splitMethod', splitMethod)}
@@ -350,7 +359,7 @@ export default function EditExpensePage() {
             {form.usedBy === 'SELECTED_MEMBERS' ? (
               <MemberMultiSelect members={members} selected={form.selectedMemberIds} onChange={(ids) => update('selectedMemberIds', ids)} />
             ) : null}
-            {form.usedBy !== 'SELF_ONLY' && form.splitMethod === 'CUSTOM' ? (
+            {form.splitMethod === 'CUSTOM' ? (
               <ExpenseCustomShareFields
                 members={members}
                 memberIds={affectedMemberIds}

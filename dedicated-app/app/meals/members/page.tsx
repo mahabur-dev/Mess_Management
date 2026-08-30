@@ -25,6 +25,7 @@ import {
   type MealRecord,
 } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
+import { getActiveMessId } from '@/lib/app-permissions'
 import { useAuth } from '@/app/providers'
 import { useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
@@ -33,7 +34,7 @@ export default function MemberMealsPage() {
   const { locale } = useLocale()
   const format = useLocaleFormatters()
   const mealCopy = useTranslations('meals')
-  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
+  const messId = useMemo(() => getActiveMessId(user), [user])
   const [date, setDate] = useState(todayIsoDate())
   const [mealName, setMealName] = useState<MealName>('LUNCH')
   const [members, setMembers] = useState<MealMember[]>([])
@@ -61,7 +62,7 @@ export default function MemberMealsPage() {
       .then(([memberRes, mealRes]) => {
         if (!alive) return
         const memberList = Array.isArray(memberRes.data) ? (memberRes.data as MealMember[]) : []
-        setMembers(memberList.filter((member) => member.mess_id === messId || member.mess?.id === messId))
+        setMembers(memberList.filter((member) => member.is_active !== false && (member.mess_id === messId || member.mess?.id === messId)))
         setMeals(normalizeMeals(mealRes.data))
       })
       .catch((error) => {

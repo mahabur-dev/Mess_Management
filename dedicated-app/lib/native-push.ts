@@ -9,6 +9,7 @@ import { api } from './api'
 
 const APP_VERSION = '0.1.0'
 const PUSH_ACTION_EVENT = 'messzen:native-push-action'
+const PUSH_RECEIVED_EVENT = 'messzen:native-push-received'
 const NOTIFICATION_CHANNEL_ID = 'messzen_notifications'
 // Firebase is optional for an APK build. CI builds without a Firebase config
 // must not call the native register API because the Capacitor plugin will
@@ -54,6 +55,11 @@ function dispatchPushAction(payload: PushPayload) {
   window.dispatchEvent(new CustomEvent<NativePushActionDetail>(PUSH_ACTION_EVENT, { detail: payload }))
 }
 
+function dispatchPushReceived(payload: PushPayload) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent<NativePushActionDetail>(PUSH_RECEIVED_EVENT, { detail: payload }))
+}
+
 async function registerToken(token: string) {
   if (!activeUserId || !token || token === activeFcmToken) return
   const previousToken = activeFcmToken
@@ -88,6 +94,7 @@ async function addListeners() {
     }),
     PushNotifications.addListener('registrationError', () => undefined),
     PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
+      dispatchPushReceived(pushPayloadFromNotification(notification))
       void showForegroundNotification(notification).catch(() => undefined)
     }),
     PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
@@ -105,6 +112,10 @@ async function addListeners() {
 
 export function nativePushActionEventName() {
   return PUSH_ACTION_EVENT
+}
+
+export function nativePushReceivedEventName() {
+  return PUSH_RECEIVED_EVENT
 }
 
 export async function initializeNativePush(userId: string, copy: NativePushCopy) {

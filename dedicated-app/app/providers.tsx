@@ -10,7 +10,13 @@ import { NativeStatusBarProvider } from '@/components/native-status-bar'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { useLocale, useTranslations } from '@/lib/i18n'
 import { api } from '@/lib/api'
-import { initializeNativePush, nativePushActionEventName, shutdownNativePush, type NativePushActionDetail } from '@/lib/native-push'
+import {
+  initializeNativePush,
+  nativePushActionEventName,
+  nativePushReceivedEventName,
+  shutdownNativePush,
+  type NativePushActionDetail,
+} from '@/lib/native-push'
 import {
   buildLoginPath,
   buildOnboardingPath,
@@ -31,11 +37,13 @@ type AuthContextValue = {
   isAuthenticated: boolean
   isLoading: boolean
   isSubmitting: boolean
+  unreadNotificationCount: number
   login: (email: string, password: string, redirectTo?: string) => Promise<void>
   register: (name: string, email: string, phone: string, password: string, redirectTo?: string) => Promise<void>
   logout: () => Promise<void>
   requestLogout: () => void
   refresh: () => Promise<void>
+  refreshUnreadNotifications: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -53,6 +61,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [hasMounted, setHasMounted] = useState(false)
 
   const receiveUser = useCallback((nextUser: AuthUser, adoptProfileLocale = true) => {
@@ -158,16 +167,53 @@ export function Providers({ children }: { children: ReactNode }) {
     const handlePushAction = (event: Event) => {
       const detail = (event as CustomEvent<NativePushActionDetail>).detail
       const rawUrl = detail?.url || '/'
-      const route = rawUrl
-        .replace(/^\/dashboard\/payments\/?$/, '/payments')
-        .replace(/^\/dashboard\/notifications\/?$/, '/notifications')
-        .replace(/^\/dashboard\/?$/, '/')
+      const parsedUrl = new URL(rawUrl, window.location.origin)
+      const dedicatedPath = parsedUrl.pathname.replace(/^\/dashboard(?=\/|$)/, '') || '/'
+      const route = `${dedicatedPath}${parsedUrl.search}${parsedUrl.hash}`
       router.push(route)
     }
 
     window.addEventListener(nativePushActionEventName(), handlePushAction)
     return () => window.removeEventListener(nativePushActionEventName(), handlePushAction)
   }, [router])
+
+  const refreshUnreadNotifications = useCallback(async () => {
+    if (!user?.id) {
+      setUnreadNotificationCount(0)
+      return
+    }
+
+    try {
+      const response = await api.getUnreadNotificationCount()
+      setUnreadNotificationCount(Math.max(0, Number(response.data?.count ?? 0)))
+    } catch {
+      // Keep the last known badge during a transient network failure.
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) {
+      setUnreadNotificationCount(0)
+      return
+    }
+
+    void refreshUnreadNotifications()
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void refreshUnreadNotifications()
+    }
+    const refreshAfterPush = () => void refreshUnreadNotifications()
+    const interval = window.setInterval(() => void refreshUnreadNotifications(), 30_000)
+
+    window.addEventListener('focus', refreshAfterPush)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    window.addEventListener(nativePushReceivedEventName(), refreshAfterPush)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refreshAfterPush)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      window.removeEventListener(nativePushReceivedEventName(), refreshAfterPush)
+    }
+  }, [refreshUnreadNotifications, user?.id])
 
   const login = useCallback(
     async (email: string, password: string, redirectTo = readPostLoginPath()) => {
@@ -242,8 +288,21 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, token, isAuthenticated: Boolean(user), isLoading, isSubmitting, login, register, logout, requestLogout: openLogoutPrompt, refresh }),
-    [user, token, isLoading, isSubmitting, login, register, logout, openLogoutPrompt, refresh]
+    () => ({
+      user,
+      token,
+      isAuthenticated: Boolean(user),
+      isLoading,
+      isSubmitting,
+      unreadNotificationCount,
+      login,
+      register,
+      logout,
+      requestLogout: openLogoutPrompt,
+      refresh,
+      refreshUnreadNotifications,
+    }),
+    [user, token, isLoading, isSubmitting, unreadNotificationCount, login, register, logout, openLogoutPrompt, refresh, refreshUnreadNotifications]
   )
 
   if (!hasMounted) {

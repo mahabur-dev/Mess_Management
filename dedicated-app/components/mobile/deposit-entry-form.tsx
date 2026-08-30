@@ -55,7 +55,7 @@ export function DepositEntryForm({
           <option key={option} value={option}>{paymentMethodLabel(option, locale)}</option>
         ))}
       </DesignedSelect>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-4 min-[390px]:grid-cols-2">
         <TextField label={t('amount')} value={amount} onChange={onAmountChange} placeholder="2500" type="number" />
         <TextField label={t('depositDate')} value={date} onChange={onDateChange} type="date" />
       </div>

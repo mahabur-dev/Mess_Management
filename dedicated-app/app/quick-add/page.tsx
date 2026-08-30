@@ -111,7 +111,7 @@ export default function QuickAddPage() {
         messId: activeMess.id,
         audio: blob,
         locale,
-        speechLanguage: 'auto',
+        speechLanguage: locale,
         idempotencyKey: crypto.randomUUID(),
       })
       receiveCommand(response.data)

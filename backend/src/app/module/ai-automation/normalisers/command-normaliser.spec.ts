@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import {
   buildCommandNormalization,
   inferExpenseCategory,
+  inferNumericMoneyAmount,
+  normalizeBanglaSpokenCurrencyAmounts,
   normalizeCommandText,
 } from './command-normaliser';
 
@@ -20,6 +22,20 @@ const normalizationCases: Array<[string, string]> = [
 test('normalizes supported Bangla, Banglish and mixed-language commands', () => {
   for (const [input, expected] of normalizationCases) {
     assert.equal(normalizeCommandText(input), expected);
+  }
+});
+
+test('normalizes spoken Bangla monetary amounts deterministically', () => {
+  const cases: Array<[string, number]> = [
+    ['আজ বাজার পাঁচশ টাকা', 500],
+    ['আজ কারেন্ট বিল তিন হাজার দুইশ টাকা দিলাম', 3200],
+    ['রহিমের ডিপোজিট এক লাখ বিশ হাজার পাঁচশ টাকা', 120500],
+    ['বাজার পঁচিশ টাকা', 25],
+  ];
+
+  for (const [input, expected] of cases) {
+    assert.match(normalizeBanglaSpokenCurrencyAmounts(input), new RegExp(String(expected)));
+    assert.equal(inferNumericMoneyAmount(input), expected);
   }
 });
 

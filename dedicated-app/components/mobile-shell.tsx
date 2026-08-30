@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { LoadingIndicator } from '@/components/loading-indicator'
-import { canAccessAppPath, getBottomTabs, getDefaultAppPath, shouldShowDefaultBottomNavigation } from '@/lib/app-permissions'
+import { canAccessAppPath, getBottomTabs, getDefaultAppPath, getHomeQuickActions, shouldShowDefaultBottomNavigation } from '@/lib/app-permissions'
 import { normalizePathname } from '@/lib/auth'
 import { appHref } from '@/lib/routes'
 import { useTranslations } from '@/lib/i18n'
@@ -29,7 +29,7 @@ export function MobileShell({
   const navigation = useTranslations('navigation')
   const normalizedPathname = normalizePathname(pathname)
   const bottomNavigationVisible = showBottomNavigation ?? shouldShowDefaultBottomNavigation(user, normalizedPathname)
-  const tabs = getBottomTabs(user)
+  const tabs = useMemo(() => getBottomTabs(user), [user])
   const canAccess = canAccessAppPath(user, pathname)
 
   useEffect(() => {
@@ -37,6 +37,33 @@ export function MobileShell({
       router.replace(appHref(getDefaultAppPath(user)))
     }
   }, [canAccess, isLoading, router, user])
+
+  useEffect(() => {
+    if (!user || isLoading) return
+    const destinations = new Set([
+      '/',
+      '/more',
+      '/notifications',
+      '/quick-add',
+      '/meals',
+      '/meals/my',
+      ...tabs.map((tab) => tab.href),
+      ...getHomeQuickActions(user).map((item) => item.href),
+    ])
+    const prefetch = () => destinations.forEach((href) => router.prefetch(appHref(href)))
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+
+    if (idleWindow.requestIdleCallback) {
+      const id = idleWindow.requestIdleCallback(prefetch, { timeout: 1_200 })
+      return () => idleWindow.cancelIdleCallback?.(id)
+    }
+
+    const timer = window.setTimeout(prefetch, 250)
+    return () => window.clearTimeout(timer)
+  }, [isLoading, router, tabs, user])
 
   if (isLoading || !user) {
     return <LoadingIndicator variant="screen" label={common('loadingApplication')} />

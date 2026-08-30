@@ -65,9 +65,10 @@ export function ProfileAvatarLink() {
 }
 
 export function NotificationLink({ hasUnreadNotifications = false }: { hasUnreadNotifications?: boolean }) {
-  const { user } = useAuth()
+  const { unreadNotificationCount, user } = useAuth()
   const canViewNotices = hasActiveMess(user) || canManageMess(user)
   const navigation = useTranslations('navigation')
+  const hasUnread = hasUnreadNotifications || unreadNotificationCount > 0
 
   if (!canViewNotices) return <span className="h-11 w-11" aria-hidden="true" />
 
@@ -75,11 +76,15 @@ export function NotificationLink({ hasUnreadNotifications = false }: { hasUnread
     <Link
       href={appHref('/notifications')}
       className="app-header-action"
-      aria-label={hasUnreadNotifications ? navigation('openUnreadNotifications') : navigation('openNotifications')}
+      aria-label={hasUnread ? navigation('openUnreadNotifications') : navigation('openNotifications')}
       title={navigation('notifications')}
     >
       <Bell size={19} strokeWidth={2.3} aria-hidden="true" />
-      {hasUnreadNotifications ? <span className="app-header-notification-dot" aria-hidden="true" /> : null}
+      {hasUnread ? (
+        <span className="app-header-notification-badge" aria-hidden="true">
+          {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount || ''}
+        </span>
+      ) : null}
     </Link>
   )
 }

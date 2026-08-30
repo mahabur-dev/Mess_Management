@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Bell, Send } from 'lucide-react'
-import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { InlineNotice } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
-import { SelectField, SubmitButton, TextAreaField, TextField, ToggleField } from '@/components/mobile/form-controls'
+import { SelectField, TextAreaField, TextField, ToggleField } from '@/components/mobile/form-controls'
+import { PersonalFormModal } from '@/features/personal/components/personal-form-modal'
+import { AddActionButton, Button } from '@/components/ui'
 import { api } from '@/lib/api'
 import { canManageMess, getActiveMessId } from '@/lib/app-permissions'
 import { NOTICE_TYPES, type NoticeType } from '@/lib/form-options'
@@ -43,6 +44,7 @@ export default function NoticesPage() {
   const { locale } = useLocale()
   const format = useLocaleFormatters()
   const t = useTranslations('communication')
+  const common = useTranslations('common')
   const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('communication')
   const { user } = useAuth()
   const messId = useMemo(() => getActiveMessId(user), [user])
@@ -115,53 +117,13 @@ export default function NoticesPage() {
           <>
         {notice && !showForm ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
-        {canSendNotice ? (
-          <DeferredFormSection
-            open={showForm}
-            title={t('sendNotice')}
-            description={t('sendNoticeDescription')}
-            actionLabel={t('sendNotice')}
-            icon={<Send size={20} />}
-            onOpen={() => setShowForm(true)}
-            onClose={() => setShowForm(false)}
-          >
-            <SelectField
-              label={t('noticeType')}
-              value={form.type}
-              onChange={(type) => setForm((prev) => ({ ...prev, type }))}
-              options={NOTICE_TYPES}
-              getLabel={(value) => noticeTypeLabel(value, locale)}
-            />
-            <TextField
-              label={t('title')}
-              value={form.title}
-              onChange={(title) => setForm((prev) => ({ ...prev, title }))}
-              placeholder={t('noticeTitlePlaceholder')}
-            />
-            <TextAreaField
-              label={t('message')}
-              value={form.body}
-              onChange={(body) => setForm((prev) => ({ ...prev, body }))}
-              placeholder={t('noticeMessagePlaceholder')}
-            />
-            <ToggleField
-              label={t('pinned')}
-              hint={t('pinnedHint')}
-              checked={form.isPinned}
-              onChange={(isPinned) => setForm((prev) => ({ ...prev, isPinned }))}
-            />
-            {notice && showForm ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
-            <SubmitButton busy={busy} onClick={handleSubmit}>
-              {t('sendNotice')}
-            </SubmitButton>
-          </DeferredFormSection>
-        ) : null}
+        {canSendNotice ? <AddActionButton onClick={() => setShowForm(true)}>{t('sendNotice')}</AddActionButton> : null}
 
-        <section className="app-section" aria-label={t('noticeList')}>
-          <div className="app-list">
+        <section aria-label={t('noticeList')}>
+          <div className="space-y-3">
           {loading ? <LoadingIndicator variant="card" label={t('loadingNotices')} /> : null}
           {[...items].sort((left, right) => Number(Boolean(right.is_pinned)) - Number(Boolean(left.is_pinned))).map((item) => (
-            <article key={item.id} className="app-list-row py-4">
+            <article key={item.id} className="ui-card p-4">
               <div className="flex items-start gap-3">
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#edfafa] text-[#008d8c]">
                   <Bell size={17} />
@@ -191,6 +153,31 @@ export default function NoticesPage() {
           </>
         ) : null}
       </div>
+      <PersonalFormModal
+        id="notice-form"
+        open={showForm}
+        busy={busy}
+        icon={Send}
+        eyebrow={t('notices')}
+        title={t('sendNotice')}
+        description={t('sendNoticeDescription')}
+        closeLabel={common('cancel')}
+        onClose={() => setShowForm(false)}
+      >
+        <form onSubmit={(event) => { event.preventDefault(); void handleSubmit() }}>
+          <div className="space-y-4 px-5 py-5">
+            <SelectField label={t('noticeType')} value={form.type} onChange={(type) => setForm((prev) => ({ ...prev, type }))} options={NOTICE_TYPES} getLabel={(value) => noticeTypeLabel(value, locale)} />
+            <TextField label={t('title')} value={form.title} onChange={(title) => setForm((prev) => ({ ...prev, title }))} placeholder={t('noticeTitlePlaceholder')} autoFocus />
+            <TextAreaField label={t('message')} value={form.body} onChange={(body) => setForm((prev) => ({ ...prev, body }))} placeholder={t('noticeMessagePlaceholder')} />
+            <ToggleField label={t('pinned')} hint={t('pinnedHint')} checked={form.isPinned} onChange={(isPinned) => setForm((prev) => ({ ...prev, isPinned }))} />
+            {notice && showForm ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
+          </div>
+          <footer className="grid grid-cols-2 gap-3 border-t border-[#e9eff1] bg-[#fbfcfc] px-5 py-4">
+            <Button type="button" variant="secondary" className="w-full" onClick={() => setShowForm(false)} disabled={busy}>{common('cancel')}</Button>
+            <Button type="submit" className="w-full" busy={busy} busyLabel={common('loading')}>{t('sendNotice')}</Button>
+          </footer>
+        </form>
+      </PersonalFormModal>
     </MobileShell>
   )
 }

@@ -38,6 +38,93 @@ export type InferredExpenseItem = {
 
 const BANGLA_DIGITS = '০১২৩৪৫৬৭৮৯';
 
+const BANGLA_NUMBER_VALUES: Record<string, number> = {
+  'শূন্য': 0,
+  'এক': 1, 'দুই': 2, 'তিন': 3, 'চার': 4, 'পাঁচ': 5, 'ছয়': 6, 'ছয়': 6, 'সাত': 7, 'আট': 8, 'নয়': 9, 'নয়': 9,
+  'দশ': 10, 'এগারো': 11, 'বারো': 12, 'তেরো': 13, 'চৌদ্দ': 14, 'পনেরো': 15, 'ষোলো': 16, 'সতেরো': 17, 'আঠারো': 18, 'উনিশ': 19,
+  'বিশ': 20, 'একুশ': 21, 'বাইশ': 22, 'তেইশ': 23, 'চব্বিশ': 24, 'পঁচিশ': 25, 'ছাব্বিশ': 26, 'সাতাশ': 27, 'আটাশ': 28, 'উনত্রিশ': 29, 'ঊনত্রিশ': 29,
+  'ত্রিশ': 30, 'একত্রিশ': 31, 'বত্রিশ': 32, 'তেত্রিশ': 33, 'চৌত্রিশ': 34, 'পঁয়ত্রিশ': 35, 'পঁয়ত্রিশ': 35, 'ছত্রিশ': 36, 'সাঁইত্রিশ': 37, 'আটত্রিশ': 38, 'উনচল্লিশ': 39, 'ঊনচল্লিশ': 39,
+  'চল্লিশ': 40, 'একচল্লিশ': 41, 'বিয়াল্লিশ': 42, 'বিয়াল্লিশ': 42, 'তেতাল্লিশ': 43, 'চুয়াল্লিশ': 44, 'চুয়াল্লিশ': 44, 'পঁয়তাল্লিশ': 45, 'পঁয়তাল্লিশ': 45, 'ছেচল্লিশ': 46, 'সাতচল্লিশ': 47, 'আটচল্লিশ': 48, 'উনপঞ্চাশ': 49, 'ঊনপঞ্চাশ': 49,
+  'পঞ্চাশ': 50, 'একান্ন': 51, 'বাহান্ন': 52, 'তিপ্পান্ন': 53, 'চুয়ান্ন': 54, 'চুয়ান্ন': 54, 'পঞ্চান্ন': 55, 'ছাপ্পান্ন': 56, 'সাতান্ন': 57, 'আটান্ন': 58, 'উনষাট': 59, 'ঊনষাট': 59,
+  'ষাট': 60, 'একষট্টি': 61, 'বাষট্টি': 62, 'তেষট্টি': 63, 'চৌষট্টি': 64, 'পঁয়ষট্টি': 65, 'পঁয়ষট্টি': 65, 'ছেষট্টি': 66, 'সাতষট্টি': 67, 'আটষট্টি': 68, 'উনসত্তর': 69, 'ঊনসত্তর': 69,
+  'সত্তর': 70, 'একাত্তর': 71, 'বাহাত্তর': 72, 'তিয়াত্তর': 73, 'তিয়াত্তর': 73, 'চুয়াত্তর': 74, 'চুয়াত্তর': 74, 'পঁচাত্তর': 75, 'ছিয়াত্তর': 76, 'ছিয়াত্তর': 76, 'সাতাত্তর': 77, 'আটাত্তর': 78, 'উনআশি': 79, 'ঊনআশি': 79,
+  'আশি': 80, 'একাশি': 81, 'বিরাশি': 82, 'তিরাশি': 83, 'চুরাশি': 84, 'পঁচাশি': 85, 'ছিয়াশি': 86, 'ছিয়াশি': 86, 'সাতাশি': 87, 'আটাশি': 88, 'উননব্বই': 89, 'ঊননব্বই': 89,
+  'নব্বই': 90, 'একানব্বই': 91, 'বিরানব্বই': 92, 'তিরানব্বই': 93, 'চুরানব্বই': 94, 'পঁচানব্বই': 95, 'ছিয়ানব্বই': 96, 'ছিয়ানব্বই': 96, 'সাতানব্বই': 97, 'আটানব্বই': 98, 'নিরানব্বই': 99,
+  'দেড়': 1.5, 'দেড়': 1.5, 'আড়াই': 2.5, 'আড়াই': 2.5,
+};
+
+const BANGLA_NUMBER_SCALES: Record<string, number> = {
+  'শ': 100,
+  'শো': 100,
+  'শত': 100,
+  'হাজার': 1_000,
+  'লাখ': 100_000,
+  'লক্ষ': 100_000,
+  'কোটি': 10_000_000,
+};
+
+function parseBanglaNumberTokens(tokens: string[]): number | null {
+  if (!tokens.length) return null;
+  let total = 0;
+  let group = 0;
+  let recognized = 0;
+
+  for (const rawToken of tokens) {
+    const token = rawToken.normalize('NFKC').toLocaleLowerCase();
+    if (token === 'ও') continue;
+
+    const direct = BANGLA_NUMBER_VALUES[token];
+    if (direct !== undefined) {
+      group += direct;
+      recognized += 1;
+      continue;
+    }
+
+    const scale = BANGLA_NUMBER_SCALES[token];
+    if (scale !== undefined) {
+      if (scale === 100) group = (group || 1) * scale;
+      else {
+        total += (group || 1) * scale;
+        group = 0;
+      }
+      recognized += 1;
+      continue;
+    }
+
+    const hundredSuffix = ['শত', 'শো', 'শ'].find((suffix) => token.endsWith(suffix));
+    if (hundredSuffix) {
+      const base = BANGLA_NUMBER_VALUES[token.slice(0, -hundredSuffix.length)];
+      if (base !== undefined && base > 0) {
+        group += base * 100;
+        recognized += 1;
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  const value = total + group;
+  return recognized > 0 && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** Converts spoken Bangla currency phrases while leaving ordinary copy intact. */
+export function normalizeBanglaSpokenCurrencyAmounts(text: string): string {
+  return text.replace(
+    /([\p{L}\p{M}]+(?:[\s-]+[\p{L}\p{M}]+){0,7})\s*(টাকা(?:য়|য়)?|taka|tk)(?=\s|$|[,.;])/giu,
+    (match, phrase: string, currency: string) => {
+      const tokens = phrase.trim().split(/[\s-]+/u);
+      for (let start = 0; start < tokens.length; start += 1) {
+        const value = parseBanglaNumberTokens(tokens.slice(start));
+        if (value === null) continue;
+        const prefix = tokens.slice(0, start).join(' ');
+        return `${prefix ? `${prefix} ` : ''}${value} ${currency}`;
+      }
+      return match;
+    },
+  );
+}
+
 const MONEY_CONTEXT_PATTERN =
   /(bazar|bajaar|market|grocery|expense|spent|spend|buy|bought|purchase|purchased|bill|deposit|rent|বাজার|খরচ|কিন|বিল|জমা|ভাড়া|ভাড়া)/iu;
 
@@ -132,6 +219,7 @@ function normalizeCommonBanglish(text: string): string {
 export function normalizeCommandText(text: string): string {
   let result = text.normalize('NFKC');
   result = normalizeBanglaDigits(result);
+  result = normalizeBanglaSpokenCurrencyAmounts(result);
   result = normalizeCurrency(result);
   result = normalizeUnitsInText(result);
   result = normalizeCommonBanglish(result);

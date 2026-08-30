@@ -11,7 +11,7 @@ export type NativeStatusBarTone = 'light-content' | 'dark-content'
  */
 export function nativeStatusBarToneForPath(pathname: string): NativeStatusBarTone {
   const normalizedPathname = normalizePathname(pathname)
-  if (isAuthPath(normalizedPathname) || normalizedPathname === '/more') return 'dark-content'
+  if (isAuthPath(normalizedPathname)) return 'dark-content'
   return 'light-content'
 }
 

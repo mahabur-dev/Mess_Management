@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { Capacitor } from '@capacitor/core'
 import { useAuth } from '@/app/providers'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { canAccessAppPath, getBottomTabs, getDefaultAppPath, getHomeQuickActions, shouldShowDefaultBottomNavigation } from '@/lib/app-permissions'
@@ -27,6 +28,7 @@ export function MobileShell({
   const { isLoading, user } = useAuth()
   const common = useTranslations('common')
   const navigation = useTranslations('navigation')
+  const nativeScrollRoot = useRef<HTMLDivElement>(null)
   const normalizedPathname = normalizePathname(pathname)
   const bottomNavigationVisible = showBottomNavigation ?? shouldShowDefaultBottomNavigation(user, normalizedPathname)
   const tabs = useMemo(() => getBottomTabs(user), [user])
@@ -65,6 +67,13 @@ export function MobileShell({
     return () => window.clearTimeout(timer)
   }, [isLoading, router, tabs, user])
 
+  useEffect(() => {
+    // Android WebView can keep the document viewport fixed when a native
+    // status bar overlays it. The app shell owns scrolling on native builds,
+    // so every screen remains reachable and each route starts at the top.
+    nativeScrollRoot.current?.scrollTo(0, 0)
+  }, [pathname])
+
   if (isLoading || !user) {
     return <LoadingIndicator variant="screen" label={common('loadingApplication')} />
   }
@@ -78,6 +87,8 @@ export function MobileShell({
       className="phone-frame"
       data-appearance={appearance}
       data-bottom-navigation={bottomNavigationVisible ? 'visible' : 'hidden'}
+      data-native-scroll-root={Capacitor.isNativePlatform() ? 'true' : 'false'}
+      ref={nativeScrollRoot}
     >
       <main
         className="app-shell"

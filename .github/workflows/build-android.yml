@@ -2,6 +2,15 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      package_type:
+        description: Build output to download
+        required: true
+        default: test-apk
+        type: choice
+        options:
+          - test-apk
+          - play-apk-and-aab
 
 permissions:
   contents: write
@@ -136,7 +145,7 @@ jobs:
           chmod +x android/gradlew
           node scripts/android-smoke.mjs --strict
 
-      - name: Package installable APK
+      - name: Package Android build
         id: package
         shell: bash
         env:
@@ -149,28 +158,20 @@ jobs:
           mkdir -p "$release_dir"
 
           if [ "${{ steps.signing.outputs.enabled }}" = "true" ]; then
-            (cd dedicated-app/android && ./gradlew assembleRelease bundleRelease)
+            (cd dedicated-app/android && ./gradlew assembleRelease)
             apk_name="Messzen-test-${GITHUB_RUN_NUMBER}.apk"
-            aab_name="Messzen-play-${GITHUB_RUN_NUMBER}.aab"
-            zip_name="Messzen-test-${GITHUB_RUN_NUMBER}.zip"
             cp dedicated-app/android/app/build/outputs/apk/release/app-release.apk "$release_dir/$apk_name"
-            cp dedicated-app/android/app/build/outputs/bundle/release/app-release.aab "$release_dir/$aab_name"
+            if [ "${{ inputs.package_type }}" = "play-apk-and-aab" ]; then
+              (cd dedicated-app/android && ./gradlew bundleRelease)
+              aab_name="Messzen-play-${GITHUB_RUN_NUMBER}.aab"
+              cp dedicated-app/android/app/build/outputs/bundle/release/app-release.aab "$release_dir/$aab_name"
+            fi
           else
             apk_name="Messzen-debug-${GITHUB_RUN_NUMBER}.apk"
-            aab_name=""
-            zip_name="Messzen-debug-${GITHUB_RUN_NUMBER}.zip"
             cp dedicated-app/android/app/build/outputs/apk/debug/app-debug.apk "$release_dir/$apk_name"
           fi
 
-          (cd "$release_dir" && sha256sum "$apk_name" > "$apk_name.sha256")
-          if [ -n "$aab_name" ]; then
-            (cd "$release_dir" && sha256sum "$aab_name" > "$aab_name.sha256")
-            zip -j "$release_dir/$zip_name" "$release_dir/$apk_name" "$release_dir/$apk_name.sha256" "$release_dir/$aab_name" "$release_dir/$aab_name.sha256"
-          else
-            zip -j "$release_dir/$zip_name" "$release_dir/$apk_name" "$release_dir/$apk_name.sha256"
-          fi
           echo "apk_name=$apk_name" >> "$GITHUB_OUTPUT"
-          echo "zip_name=$zip_name" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         id: apk-artifact
@@ -188,9 +189,9 @@ jobs:
           {
             echo "## Android test build"
             echo
-            echo "[Download the APK package from this workflow run](${{ steps.apk-artifact.outputs.artifact-url }})"
+            echo "[Download the APK from this workflow run](${{ steps.apk-artifact.outputs.artifact-url }})"
             echo
-            echo "The download is a GitHub artifact ZIP. Extract it, then use ${{ steps.package.outputs.apk_name }} on the Android device."
+            echo "The GitHub artifact contains ${{ steps.package.outputs.apk_name }}. Extract it, then install that APK on the Android device."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish direct-download prerelease
@@ -199,7 +200,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           APK_NAME: ${{ steps.package.outputs.apk_name }}
-          ZIP_NAME: ${{ steps.package.outputs.zip_name }}
         run: |
           tag="android-test-${GITHUB_RUN_NUMBER}"
           gh release create "$tag" \
@@ -211,7 +211,7 @@ jobs:
           {
             echo
             echo "### Direct download"
-            echo "[Download the Windows-friendly ZIP](https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/${ZIP_NAME})"
+            echo "[Download the test APK](https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/${APK_NAME})"
           } >> "$GITHUB_STEP_SUMMARY"
 
 

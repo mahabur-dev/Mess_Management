@@ -26,9 +26,11 @@ jobs:
         working-directory: dedicated-app
         run: pnpm install --frozen-lockfile
 
-      - name: Install backend deps
+      - name: Install backend deps and generate Prisma Client
         working-directory: backend
-        run: npm ci
+        run: |
+          npm ci
+          npm run prisma:generate
 
       - name: Run localization and accessibility gates
         working-directory: dedicated-app

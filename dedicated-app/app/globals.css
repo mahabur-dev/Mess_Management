@@ -2311,6 +2311,17 @@ a {
   position: relative;
 }
 
+/* Capacitor uses an Android WebView rather than a browser document viewport.
+   Let this root own vertical scrolling there so a fixed header/status bar can
+   never leave the whole app trapped at one position. */
+.phone-frame[data-native-scroll-root="true"] {
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+}
+
 .phone-frame[data-appearance="onboarding"],
 .phone-frame[data-appearance="onboarding"] .app-shell {
   background: var(--app-background);
@@ -3631,6 +3642,7 @@ a {
    app-permissions while these primitives keep the presentation reusable. */
 .more-page {
   display: grid;
+  justify-items: start;
   gap: 20px;
   padding-block: 16px 28px;
 }
@@ -3726,6 +3738,7 @@ a {
 
 .more-page-groups {
   display: grid;
+  width: min(100%, 280px);
   gap: 20px;
 }
 
@@ -3817,7 +3830,7 @@ a {
 
 .more-page-logout {
   display: flex;
-  width: 100%;
+  width: min(100%, 280px);
   min-height: 58px;
   align-items: center;
   gap: 12px;
@@ -3843,6 +3856,7 @@ a {
 }
 
 .more-page-version {
+  width: min(100%, 280px);
   margin: -4px 0 0;
   color: rgba(18, 55, 72, 0.5);
   font-size: var(--text-caption);

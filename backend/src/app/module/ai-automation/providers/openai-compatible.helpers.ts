@@ -7,6 +7,7 @@ const AUTO_TRANSCRIPTION_PROMPT = [
   'The speaker may use বাংলা, English, Banglish (romanized Bangla), or switch languages mid-sentence.',
   'Do not translate, answer, summarize, or rewrite.',
   'Preserve names, item names, spoken numbers, quantities, units, and monetary amounts accurately.',
+  'Write unambiguous spoken monetary numbers as digits (for example, পাঁচশ টাকা as 500 টাকা and তিন হাজার দুইশ টাকা as 3200 টাকা).',
   'This is a Bangladeshi mess-management command about expenses, bazar or groceries, utility bills, deposits, and meal counts.',
   'Common words include টাকা, taka, tk, কেজি, kg, বাজার, bazar, আলু, alu, পেঁয়াজ, piyaj, বিদ্যুৎ, current, internet, WiFi, gas, পানি, meal, নাস্তা, lunch, dinner, জমা, and deposit.',
 ].join(' ');

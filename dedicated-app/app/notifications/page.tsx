@@ -1,14 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Check, ChevronRight } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
-import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
-import { getActiveMessId } from '@/lib/app-permissions'
 import { localizedNotificationCopy, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
@@ -41,14 +39,13 @@ export default function NotificationsPage() {
   const t = useTranslations('communication')
   const format = useLocaleFormatters()
   const { notice, clearNotice, showError } = useLocalizedNotice('communication')
-  const { user } = useAuth()
+  const { refreshUnreadNotifications, user } = useAuth()
   const router = useRouter()
-  const messId = useMemo(() => getActiveMessId(user), [user])
   const [items, setItems] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
-    if (!messId) {
+    if (!user?.id) {
       setItems([])
       setLoading(false)
       return
@@ -57,11 +54,11 @@ export default function NotificationsPage() {
     setLoading(true)
     clearNotice()
     api
-      .getNotifications({ messId, limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
+      .getNotifications({ limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
       .then((res) => setItems(Array.isArray(res.data) ? (res.data as NotificationItem[]) : []))
       .catch((requestError) => showError(requestError, 'loadNotificationsFailed'))
       .finally(() => setLoading(false))
-  }, [clearNotice, messId, showError])
+  }, [clearNotice, showError, user?.id])
 
   useEffect(() => {
     load()
@@ -72,6 +69,7 @@ export default function NotificationsPage() {
     if (!isRead) {
       await api.markNotificationRead(item.id).catch(() => undefined)
       setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, reads: [...(entry.reads ?? []), { user_id: user?.id ?? '' }] } : entry))
+      void refreshUnreadNotifications()
     }
 
     router.push(appHref(notificationRoute(item)))
@@ -81,9 +79,6 @@ export default function NotificationsPage() {
     <MobileShell>
       <TopScreen title={t('notifications')} subtitle={t('notificationSubtitle')} backHref="/" />
       <div className="screen space-y-4">
-        {!messId ? <MessOnboardingActions compact /> : null}
-        {messId ? (
-          <>
         {notice ? <div className={`ui-notice ui-notice--${notice.tone}`} role="alert">{notice.message}</div> : null}
         {loading ? <LoadingIndicator variant="card" label={t('loadingNotifications')} /> : null}
         {!loading && !items.length ? <div className="app-empty-state">{t('noNotifications')}</div> : null}
@@ -116,8 +111,6 @@ export default function NotificationsPage() {
             })}
           </div>
         </section>
-          </>
-        ) : null}
       </div>
     </MobileShell>
   )

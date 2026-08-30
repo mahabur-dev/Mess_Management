@@ -16,6 +16,7 @@ const {
   inferNumericMoneyAmount,
   inferUtilityCommandType,
   isSelfReference,
+  normalizeBanglaSpokenCurrencyAmounts,
   normalizeCommandText,
   resolveMemberMention,
   resolveMemberName,
@@ -45,6 +46,20 @@ test('normalizes natural Bangla, English, and Banglish purchase phrasing', () =>
     normalizeCommandText('আমি ২ কেজি আলু ৬০ টাকা কিনেছি'),
     'আমি 2 kg আলু 60 taka কিনেছি',
   );
+});
+
+test('normalizes spoken Bangla monetary amounts before command parsing', () => {
+  const cases = [
+    ['আজ বাজার পাঁচশ টাকা', 500],
+    ['আজ কারেন্ট বিল তিন হাজার দুইশ টাকা দিলাম', 3200],
+    ['রহিমের ডিপোজিট এক লাখ বিশ হাজার পাঁচশ টাকা', 120500],
+    ['বাজার পঁচিশ টাকা', 25],
+  ];
+
+  for (const [input, expected] of cases) {
+    assert.match(normalizeBanglaSpokenCurrencyAmounts(input), new RegExp(String(expected)));
+    assert.equal(inferNumericMoneyAmount(input), expected);
+  }
 });
 
 test('extracts adjacent multi-item prices and removes a matching summary total', () => {

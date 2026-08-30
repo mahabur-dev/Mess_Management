@@ -1,14 +1,16 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Edit3 } from 'lucide-react'
+import { Edit3, MessageSquareWarning } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { InlineNotice } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { IconActionLink, StatusPill } from '@/components/mobile/action-links'
 import { TopScreen } from '@/components/top-screen'
-import { SelectField, SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { SelectField, TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { PersonalFormModal } from '@/features/personal/components/personal-form-modal'
+import { AddActionButton, Button } from '@/components/ui'
 import { api } from '@/lib/api'
 import { canManageMess, getActiveMessId } from '@/lib/app-permissions'
 import { COMPLAINT_CATEGORIES, COMPLAINT_STATUSES, type ComplaintCategory, type ComplaintStatus } from '@/lib/form-options'
@@ -50,6 +52,7 @@ export default function ComplaintsPage() {
   const { locale } = useLocale()
   const format = useLocaleFormatters()
   const t = useTranslations('communication')
+  const common = useTranslations('common')
   const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('communication')
   const { user } = useAuth()
   const messId = useMemo(() => getActiveMessId(user), [user])
@@ -58,6 +61,7 @@ export default function ComplaintsPage() {
   const [items, setItems] = useState<ComplaintItem[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
     if (!messId) {
@@ -102,8 +106,9 @@ export default function ComplaintsPage() {
         title: form.title.trim(),
         description: form.description.trim(),
       })
-      setForm(INITIAL_FORM)
+      setForm((current) => ({ ...INITIAL_FORM, statusFilter: current.statusFilter }))
       showMessage('complaintSubmitted', 'success')
+      setShowForm(false)
     } catch (error) {
       showError(error, 'submitComplaintFailed')
     } finally {
@@ -118,29 +123,10 @@ export default function ComplaintsPage() {
         {!messId ? <MessOnboardingActions compact /> : null}
         {messId ? (
           <>
-        <section className="app-section app-form-section space-y-4">
-          <SelectField
-            label={t('category')}
-            value={form.category}
-            onChange={(category) => setForm((prev) => ({ ...prev, category }))}
-            options={COMPLAINT_CATEGORIES}
-            getLabel={(value) => complaintCategoryLabel(value, locale)}
-          />
-          <TextField label={t('title')} value={form.title} onChange={(title) => setForm((prev) => ({ ...prev, title }))} placeholder={t('complaintTitlePlaceholder')} />
-          <TextAreaField
-            label={t('description')}
-            value={form.description}
-            onChange={(description) => setForm((prev) => ({ ...prev, description }))}
-            placeholder={t('complaintDescriptionPlaceholder')}
-            rows={4}
-          />
-          {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
-          <SubmitButton busy={busy} onClick={handleSubmit}>
-            {t('submitComplaint')}
-          </SubmitButton>
-        </section>
+        <AddActionButton onClick={() => { clearNotice(); setShowForm(true) }}>{t('submitComplaint')}</AddActionButton>
+        {notice && !showForm ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
-        <section className="app-section">
+        <section>
           <div className="flex items-center justify-between gap-3">
             <div className="section-title mb-0">{t('recent')}</div>
             <SelectField
@@ -151,10 +137,10 @@ export default function ComplaintsPage() {
               getLabel={(value) => complaintStatusLabel(value, locale)}
             />
           </div>
-          <div className="app-list mt-3">
+          <div className="mt-3 space-y-3">
             {loading ? <LoadingIndicator variant="card" label={t('loadingComplaints')} /> : null}
             {items.map((item) => (
-              <article key={item.id} className="app-list-row py-4">
+              <article key={item.id} className="ui-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-label font-semibold text-[#1d3a42]">{item.title}</div>
@@ -187,6 +173,30 @@ export default function ComplaintsPage() {
           </>
         ) : null}
       </div>
+      <PersonalFormModal
+        id="complaint-form"
+        open={showForm}
+        busy={busy}
+        icon={MessageSquareWarning}
+        eyebrow={t('complaints')}
+        title={t('submitComplaint')}
+        description={t('complaintSubtitle')}
+        closeLabel={common('cancel')}
+        onClose={() => setShowForm(false)}
+      >
+        <form onSubmit={(event) => { event.preventDefault(); void handleSubmit() }}>
+          <div className="space-y-4 px-5 py-5">
+            <SelectField label={t('category')} value={form.category} onChange={(category) => setForm((prev) => ({ ...prev, category }))} options={COMPLAINT_CATEGORIES} getLabel={(value) => complaintCategoryLabel(value, locale)} />
+            <TextField label={t('title')} value={form.title} onChange={(title) => setForm((prev) => ({ ...prev, title }))} placeholder={t('complaintTitlePlaceholder')} autoFocus />
+            <TextAreaField label={t('description')} value={form.description} onChange={(description) => setForm((prev) => ({ ...prev, description }))} placeholder={t('complaintDescriptionPlaceholder')} rows={4} />
+            {notice && showForm ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
+          </div>
+          <footer className="grid grid-cols-2 gap-3 border-t border-[#e9eff1] bg-[#fbfcfc] px-5 py-4">
+            <Button type="button" variant="secondary" className="w-full" onClick={() => setShowForm(false)} disabled={busy}>{common('cancel')}</Button>
+            <Button type="submit" className="w-full" busy={busy} busyLabel={common('loading')}>{t('submitComplaint')}</Button>
+          </footer>
+        </form>
+      </PersonalFormModal>
     </MobileShell>
   )
 }

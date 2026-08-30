@@ -51,7 +51,7 @@ export default function MembersPage() {
     try {
       const res = await api.getAllMembers({ limit: 500, searchTerm: search.trim() || undefined })
       const list = Array.isArray(res.data) ? res.data : []
-      setMembers(list.filter((item: MobileMember) => item.mess_id === messId || item.mess?.id === messId))
+      setMembers(list.filter((item: MobileMember) => item.is_active !== false && (item.mess_id === messId || item.mess?.id === messId)))
     } catch (error) {
       setMembers([])
       memberNotice.showError(error, 'loadMembersFailed')
@@ -71,7 +71,7 @@ export default function MembersPage() {
       .then((res) => {
         if (!alive) return
         const list = Array.isArray(res.data) ? res.data : []
-        setMembers(list.filter((item: MobileMember) => item.mess_id === messId || item.mess?.id === messId))
+        setMembers(list.filter((item: MobileMember) => item.is_active !== false && (item.mess_id === messId || item.mess?.id === messId)))
       })
       .catch((error) => {
         if (!alive) return

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ClipboardList,
-  Bell,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -33,17 +32,9 @@ import { useActiveMess } from '@/hooks/use-active-mess'
 import { api } from '@/lib/api'
 import { canManageMess, getHomeQuickActions } from '@/lib/app-permissions'
 import { appHref } from '@/lib/routes'
-import { noticeTypeLabel, useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
+import { useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
 import { routeLabel } from '@/lib/i18n/navigation'
 import { useAuth } from './providers'
-
-type DashboardNotice = {
-  id: string
-  title: string
-  type?: string
-  is_pinned?: boolean
-  created_at: string
-}
 
 type DashboardSummary = {
   todayTotalMeals?: number
@@ -65,7 +56,6 @@ type DashboardSummary = {
   billingStatus?: 'DIRTY' | 'PROCESSING' | 'READY' | 'FAILED'
   billingCalculatedAt?: string | null
   billingDataFresh?: boolean
-  notices?: DashboardNotice[]
 }
 
 function HomeMonthPill({
@@ -101,7 +91,6 @@ export default function HomePage() {
   const { user, isLoading } = useAuth()
   const common = useTranslations('common')
   const navigation = useTranslations('navigation')
-  const communication = useTranslations('communication')
   const { locale } = useLocale()
   const format = useLocaleFormatters()
   const [month, setMonth] = useState(currentMonthValue())
@@ -113,7 +102,6 @@ export default function HomePage() {
   const [expensesError, setExpensesError] = useState(false)
   const [summaryRetryToken, setSummaryRetryToken] = useState(0)
   const [expensesRetryToken, setExpensesRetryToken] = useState(0)
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const { activeMess, isLoading: activeMessLoading, retry: retryActiveMess, status: activeMessStatus } = useActiveMess(user)
 
   const profileName = user?.name || common(canManageMess(user) ? 'managerFallback' : 'memberFallback')
@@ -208,27 +196,6 @@ export default function HomePage() {
     }
   }, [activeMess?.id, expensesRetryToken, month])
 
-  useEffect(() => {
-    if (!user || !activeMess?.id) {
-      setUnreadNotificationCount(0)
-      return
-    }
-
-    let cancelled = false
-    api
-      .getUnreadNotificationCount()
-      .then((res) => {
-        if (!cancelled) setUnreadNotificationCount(Number(res.data?.count ?? 0))
-      })
-      .catch(() => {
-        if (!cancelled) setUnreadNotificationCount(0)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [activeMess?.id, user])
-
   const cards = [
     { label: common('totalMember'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalMember') })} /> : number(summary?.activeMembers), icon: Users, color: '#008d8c' },
     { label: common('todayMeal'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('todayMeal') })} /> : number(summary?.todayTotalMeals), icon: UtensilsCrossed, color: '#4bbfc0' },
@@ -264,7 +231,6 @@ export default function HomePage() {
       <AppHeader
         title={profileName}
         subtitle={common('homeGreeting')}
-        hasUnreadNotifications={unreadNotificationCount > 0}
         variant={showOnboarding ? 'onboarding' : 'default'}
       />
 
@@ -398,46 +364,6 @@ export default function HomePage() {
               </div>
             </HomeCard>
 
-            <HomeCard
-              title={common('recentNotices')}
-              caption={common('communityUpdates')}
-              className="mt-3.5"
-              action={
-                <button type="button" onClick={() => router.push(appHref('/notices'))} className="home-card-action">
-                  {common('viewAll')}
-                  <ChevronRight size={14} strokeWidth={2.7} />
-                </button>
-              }
-            >
-              <div className="flush-list flush-list--home-card">
-                {summaryLoading ? <LoadingIndicator variant="card" label={communication('loadingNotices')} className="mx-3 !w-auto" /> : null}
-                {!summaryLoading && summaryError ? <HomeEmptyState>{common('loadRecentNoticesFailed')}</HomeEmptyState> : null}
-                {(summary?.notices ?? []).slice(0, 3).map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => router.push(appHref('/notices'))}
-                    className="app-list-row flex w-full items-center gap-3 text-left"
-                  >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#edfafa] text-[#008d8c]">
-                      <Bell size={17} aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-label font-bold text-[#123748]">{item.title}</span>
-                      <span className="mt-1 block text-caption text-[#65838b]">
-                        {item.type ? noticeTypeLabel(item.type, locale) : common('notice')}
-                        {' · '}
-                        {format.date(item.created_at, { day: '2-digit', month: 'short' })}
-                      </span>
-                    </span>
-                    <ChevronRight size={16} className="shrink-0 text-[#65838b]" aria-hidden="true" />
-                  </button>
-                ))}
-                {!summaryLoading && !summaryError && !summary?.notices?.length ? (
-                  <HomeEmptyState>{common('noRecentNotices')}</HomeEmptyState>
-                ) : null}
-              </div>
-            </HomeCard>
           </>
         ) : null}
       </div>

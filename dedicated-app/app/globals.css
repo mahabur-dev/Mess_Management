@@ -2250,6 +2250,7 @@ body {
   min-height: 100%;
   overflow-x: hidden;
   overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
   touch-action: pan-x pan-y;
   background: var(--app-background);
   background-attachment: fixed;
@@ -2261,6 +2262,8 @@ body {
 
 body {
   position: relative;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -2273,6 +2276,12 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button,
+a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .app-shell {
@@ -2311,6 +2320,18 @@ textarea {
   padding: 14px var(--screen-inline-padding) 24px;
   overflow-x: hidden;
   overflow-anchor: none;
+  animation: native-screen-enter 150ms cubic-bezier(0.2, 0.72, 0.3, 1) both;
+}
+
+@keyframes native-screen-enter {
+  from {
+    opacity: 0.72;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .home-screen {
@@ -2343,7 +2364,15 @@ textarea {
   z-index: 70;
   width: min(430px, 100vw);
   min-height: var(--app-header-min-height);
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    animation: none;
+  }
 }
 
 .app-header-action {
@@ -2384,15 +2413,22 @@ textarea {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.82) inset;
 }
 
-.app-header-notification-dot {
+.app-header-notification-badge {
   position: absolute;
-  right: 7px;
-  top: 7px;
-  height: 9px;
-  width: 9px;
+  right: 3px;
+  top: 3px;
+  display: grid;
+  min-width: 17px;
+  height: 17px;
+  padding-inline: 4px;
+  place-items: center;
   border: 2px solid #00777a;
   border-radius: 999px;
-  background: #9edddc;
+  background: #ffffff;
+  color: #00777a;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
 }
 
 .expense-top {
@@ -5080,12 +5116,13 @@ textarea {
 }
 
 .personal-date-input {
-  padding-inline-end: 18px;
+  min-width: 0;
+  padding-inline-end: 42px;
 }
 
 .personal-date-input::-webkit-calendar-picker-indicator {
-  margin: 0 2px 0 8px;
-  padding: 3px;
+  margin: 0;
+  padding: 5px;
 }
 
 .meal-time-input {
@@ -7897,9 +7934,15 @@ textarea {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
+  max-width: 112px;
+  padding: 5px 9px;
   border-radius: 999px;
   font-size: var(--text-caption);
   font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
 }
 
 .monthly-member-row__status[data-status='paid'] {

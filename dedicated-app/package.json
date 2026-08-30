@@ -17,6 +17,7 @@
     "qa:visual": "node scripts/visual-qa.mjs",
     "qa:visual:update": "node scripts/visual-qa.mjs --update",
     "qa:android": "cap sync android && node scripts/android-smoke.mjs",
+    "check:google-auth": "node scripts/check-google-services.mjs",
     "qa:android:strict": "cap sync android && node scripts/android-smoke.mjs --strict",
     "qa:verify": "node scripts/release-qa.mjs",
     "qa:release": "node scripts/release-qa.mjs --strict-native",
@@ -26,6 +27,7 @@
     "cap:open:android": "cap open android"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "7.5.0",
     "@capacitor/android": "^7.0.0",
     "@capacitor/app": "^7.1.2",
     "@capacitor/cli": "^7.0.0",
@@ -33,6 +35,7 @@
     "@capacitor/local-notifications": "^7.0.0",
     "@capacitor/push-notifications": "^7.0.0",
     "@capacitor/status-bar": "7.0.0",
+    "firebase": "11.10.0",
     "lucide-react": "^0.564.0",
     "next": "15.5.22",
     "react": "19.2.7",

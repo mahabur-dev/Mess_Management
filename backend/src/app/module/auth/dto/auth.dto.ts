@@ -73,6 +73,16 @@ export class LoginDto {
 // ─────────────────────────────────────────
 // Forgot Password
 // ─────────────────────────────────────────
+export class GoogleLoginDto {
+  @ApiProperty({ description: 'Firebase ID token issued after Google sign-in' })
+  @Transform(({ value }) => String(value ?? '').trim())
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(100)
+  @MaxLength(10000)
+  idToken: string;
+}
+
 export class ForgotPasswordDto {
   @ApiProperty({ example: 'rakib@example.com' })
   @Transform(({ value }) => String(value ?? '').trim().toLowerCase())

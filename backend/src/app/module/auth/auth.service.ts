@@ -6,18 +6,20 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
-import { randomInt } from 'node:crypto';
+import { randomBytes, randomInt } from 'node:crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import config from '../../config';
 import sendMailer from 'src/app/helpers/sendMailer';
 import {
   ChangePasswordDto,
   ForgotPasswordDto,
+  GoogleLoginDto,
   LoginDto,
   RegisterDto,
   ResetPasswordDto,
   VerifyOtpDto,
 } from './dto/auth.dto';
+import { FirebaseAuthService } from './firebase-auth.service';
 
 // ─── Prisma select: safe user (no password_hash, no otp) ─────────────────────
 const SAFE_USER_SELECT = {
@@ -64,6 +66,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly firebaseAuthService: FirebaseAuthService,
   ) {}
 
   // ─────────────────────────────────────────
@@ -112,6 +115,79 @@ export class AuthService {
     const isMatch = await bcrypt.compare(dto.password, user.password_hash);
     if (!isMatch) throw new HttpException('Invalid email or password', 401);
 
+    const { password_hash: _passwordHash, ...safeUser } = user;
+    return this.createSession(safeUser, res);
+  }
+
+  async googleLogin(dto: GoogleLoginDto, res: Response) {
+    const identity = await this.firebaseAuthService.verifyGoogleIdToken(
+      dto.idToken,
+    );
+
+    let user = await this.prisma.user.findUnique({
+      where: { firebase_uid: identity.uid },
+      select: MY_PROFILE_SELECT,
+    });
+
+    if (!user) {
+      const emailUser = await this.prisma.user.findUnique({
+        where: { email: identity.email },
+        select: {
+          ...MY_PROFILE_SELECT,
+          firebase_uid: true,
+        },
+      });
+
+      if (emailUser?.firebase_uid && emailUser.firebase_uid !== identity.uid) {
+        throw new HttpException('Google account is linked to another user', 409);
+      }
+
+      if (emailUser) {
+        user = await this.prisma.user.update({
+          where: { id: emailUser.id },
+          data: {
+            firebase_uid: identity.uid,
+            is_verified: true,
+            avatar_url: emailUser.avatar_url || identity.picture,
+          },
+          select: MY_PROFILE_SELECT,
+        });
+      } else {
+        const password_hash = await bcrypt.hash(
+          randomBytes(48).toString('hex'),
+          config.bcryptSaltRounds,
+        );
+        user = await this.prisma.user.create({
+          data: {
+            name: identity.name,
+            email: identity.email,
+            password_hash,
+            firebase_uid: identity.uid,
+            avatar_url: identity.picture,
+            role: 'MEMBER',
+            is_verified: true,
+          },
+          select: MY_PROFILE_SELECT,
+        });
+      }
+    }
+
+    if (!user.is_active) {
+      throw new HttpException('Account is deactivated', 403);
+    }
+
+    return this.createSession(user, res);
+  }
+
+  private createSession(
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      [key: string]: unknown;
+    },
+    res: Response,
+  ) {
     const payload = { id: user.id, email: user.email, role: user.role };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -137,24 +213,7 @@ export class AuthService {
 
     return {
       accessToken,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        avatar_url: user.avatar_url,
-        nid_number: user.nid_number,
-        nid_image_url: user.nid_image_url,
-        location: user.location,
-        state: user.state,
-        city: user.city,
-        zipcode: user.zipcode,
-        role: user.role,
-        is_active: user.is_active,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        memberships: user.memberships,
-      },
+      user,
     };
   }
 

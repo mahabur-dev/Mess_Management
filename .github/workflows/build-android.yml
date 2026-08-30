@@ -91,6 +91,10 @@ jobs:
           keystore_path="$RUNNER_TEMP/messzen-upload.jks"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           keytool -list -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" >/dev/null
+          if ! keytool -list -v -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" -keypass "$ANDROID_KEY_PASSWORD" >/dev/null; then
+            echo "::error::ANDROID_KEY_PASSWORD does not unlock the selected key alias. Update that GitHub secret and run the workflow again."
+            exit 1
+          fi
           signing_sha1="$(keytool -list -v -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" | sed -n 's/.*SHA1: //p' | head -n 1)"
           echo "enabled=true" >> "$GITHUB_OUTPUT"
           echo "keystore_path=$keystore_path" >> "$GITHUB_OUTPUT"

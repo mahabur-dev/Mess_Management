@@ -14,9 +14,12 @@ import {
   AuthField,
   authLinkClass,
 } from '@/components/auth-ui'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
 export default function LoginPage() {
   const { login, isSubmitting } = useAuth()
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,20 +38,21 @@ export default function LoginPage() {
     try {
       await login(email, password, redirectTo)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(localizedErrorMessage(err, locale) || auth('loginFailed'))
     }
   }
 
   return (
     <AuthShell
-      title="Welcome back"
-      description="Sign in to continue to your account" 
+      title={auth('welcomeBack')}
+      description={auth('signInDescription')}
       variant="reference"
+      showLanguageToggle
       footer={
         <AuthFooterLink
-          text="Don't have an account?"
+          text={auth('noAccount')}
           href="/signup"
-          action="Sign up"
+          action={auth('signUp')}
         />
       }
     >
@@ -62,7 +66,7 @@ export default function LoginPage() {
         }}
       >
         <AuthField
-          label="Email address"
+          label={auth('emailAddress')}
           icon={Mail}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -73,12 +77,12 @@ export default function LoginPage() {
         />
 
         <AuthPasswordField
-          label="Password"
+          label={auth('password')}
           value={password}
           onChange={setPassword}
           show={showPassword}
           onToggle={() => setShowPassword((current) => !current)}
-          placeholder="Enter your password"
+          placeholder={auth('enterPassword')}
           autoComplete="current-password"
         />
 
@@ -97,19 +101,19 @@ export default function LoginPage() {
               <Check size={14} strokeWidth={3} />
             </span>
 
-            Remember me
+            {auth('rememberMe')}
           </button>
 
           <Link
             href="/forget_password"
             className={`min-w-0 text-left text-label min-[360px]:text-right ${authLinkClass}`}
           >
-            Forgot password?
+            {auth('forgotPassword')}
           </Link>
         </div>
 
-        <AuthSubmitButton busy={isSubmitting} busyLabel="Signing in...">
-          Sign In
+        <AuthSubmitButton busy={isSubmitting} busyLabel={auth('signingIn')}>
+          {auth('signIn')}
         </AuthSubmitButton>
       </form>
     </AuthShell>

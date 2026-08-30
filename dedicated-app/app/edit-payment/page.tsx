@@ -17,11 +17,12 @@ import {
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
-import { LABELS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
+import { PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
+import { paymentStatusLabel, useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type PaymentRecord = {
   id: string
@@ -52,6 +53,9 @@ type ReviewFormState = {
 }
 
 export default function EditPaymentPage() {
+  const { locale } = useLocale()
+  const t = useTranslations('payments')
+  const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('payments')
   const searchParams = useQueryParams()
   const router = useRouter()
   const { user } = useAuth()
@@ -71,19 +75,18 @@ export default function EditPaymentPage() {
     status: 'PENDING',
     note: '',
   })
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  useAutoDismiss(message, () => setMessage(''))
+  useAutoDismiss(notice?.message ?? '', clearNotice)
 
-  const depositLabel = useMemo(() => (payment ? LABELS.PAYMENT_STATUSES[payment.status] : 'Deposit'), [payment])
+  const depositLabel = useMemo(() => (payment ? paymentStatusLabel(payment.status, locale) : t('deposit')), [locale, payment, t])
   useEffect(() => {
     if (!paymentId || !messId) return
 
     let alive = true
     setLoading(true)
-    setMessage('')
+    clearNotice()
     api
       .getPaymentById(paymentId)
       .then((res) => {
@@ -103,12 +106,12 @@ export default function EditPaymentPage() {
             note: '',
           })
         } else {
-          setMessage('Deposit not found.')
+          showMessage('depositNotFound', 'danger')
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
-        setMessage('Failed to load deposit details.')
+        showError(error, 'loadDepositDetailsFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -122,9 +125,9 @@ export default function EditPaymentPage() {
   const canEdit = Boolean(payment && (isManager || payment.creator?.id === user?.id))
 
   async function handleUpdate() {
-    setMessage('')
-    if (!paymentId || !messId) return setMessage('Deposit id or mess id is missing.')
-    if (!editForm.amount) return setMessage('Amount is required.')
+    clearNotice()
+    if (!paymentId || !messId) return showMessage('missingDepositContext', 'danger')
+    if (!editForm.amount) return showMessage('amountRequired', 'danger')
 
     setBusy(true)
     try {
@@ -135,18 +138,18 @@ export default function EditPaymentPage() {
         transactionId: editForm.transactionId.trim(),
         note: editForm.note.trim(),
       })
-      setMessage(isManager ? 'Deposit updated and approved.' : 'Deposit updated and sent for manager approval.')
+      showMessage(isManager ? 'updateDepositApproved' : 'updateDepositSubmitted', 'success')
       router.push('/payments')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update deposit.')
+      showError(error, 'updateDepositFailed')
     } finally {
       setBusy(false)
     }
   }
 
   async function handleReview() {
-    setMessage('')
-    if (!paymentId || !messId) return setMessage('Deposit id or mess id is missing.')
+    clearNotice()
+    if (!paymentId || !messId) return showMessage('missingDepositContext', 'danger')
 
     setBusy(true)
     try {
@@ -156,7 +159,7 @@ export default function EditPaymentPage() {
       })
       router.push('/payments')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to review deposit.')
+      showError(error, 'reviewDepositFailed')
     } finally {
       setBusy(false)
     }
@@ -164,43 +167,43 @@ export default function EditPaymentPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Deposit Details" subtitle={payment?.member?.name ?? depositLabel} backHref="/payments" />
+      <TopScreen title={t('depositDetails')} subtitle={payment?.member?.name ?? depositLabel} backHref="/payments" />
       <div className="screen space-y-4">
-        {loading ? <LoadingIndicator variant="card" label="Loading deposit details" /> : null}
+        {loading ? <LoadingIndicator variant="card" label={t('loadingDepositDetails')} /> : null}
         {payment ? <DepositDetailsSummary item={payment as DepositListRecord} /> : null}
-        {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+        {notice ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{notice.message}</div> : null}
 
         {payment ? <div>
-          <DepositSectionTitle title="Deposit Information" />
+          <DepositSectionTitle title={t('depositInformation')} />
           <section className="app-list mt-3">
-            <DepositInfoRow icon={depositInfoIcons.submittedBy} label="Submitted By" value={payment?.creator?.name ?? depositMemberName(payment as DepositListRecord | null)} />
-            <DepositInfoRow icon={depositInfoIcons.depositFor} label="Deposit For" value={payment?.member?.name ?? 'Self'} />
+            <DepositInfoRow icon={depositInfoIcons.submittedBy} label={t('submittedBy')} value={payment?.creator?.name ?? depositMemberName(payment as DepositListRecord | null, locale)} />
+            <DepositInfoRow icon={depositInfoIcons.depositFor} label={t('depositFor')} value={payment?.member?.name ?? t('self')} />
             <DepositInfoRow
               icon={depositInfoIcons.approval}
-              label="Approval Type"
-              value={payment?.status === 'APPROVED' ? 'Approved deposit' : payment?.status === 'REJECTED' ? 'Rejected deposit' : 'Needs manager approval'}
+              label={t('approvalType')}
+              value={payment?.status === 'APPROVED' ? t('approvedDeposit') : payment?.status === 'REJECTED' ? t('rejectedDeposit') : t('needsApproval')}
             />
           </section>
         </div> : null}
 
         {canEdit ? (
           <section className="app-section app-form-section space-y-4">
-            <DepositSectionTitle title="Edit Deposit" />
+            <DepositSectionTitle title={t('editDeposit')} />
             <PaymentMethodGrid value={editForm.method} onChange={(method) => setEditForm((prev) => ({ ...prev, method }))} />
             <div className="grid grid-cols-2 gap-3">
-              <TextField label="Amount" value={editForm.amount} onChange={(amount) => setEditForm((prev) => ({ ...prev, amount }))} placeholder="2500" type="number" />
-              <TextField label="Deposit Date" value={editForm.paymentDate} onChange={(paymentDate) => setEditForm((prev) => ({ ...prev, paymentDate }))} type="date" />
+              <TextField label={t('amount')} value={editForm.amount} onChange={(amount) => setEditForm((prev) => ({ ...prev, amount }))} placeholder="2500" type="number" />
+              <TextField label={t('depositDate')} value={editForm.paymentDate} onChange={(paymentDate) => setEditForm((prev) => ({ ...prev, paymentDate }))} type="date" />
             </div>
-            <TextField label="Transaction ID" hint="Optional" value={editForm.transactionId} onChange={(transactionId) => setEditForm((prev) => ({ ...prev, transactionId }))} placeholder="TXN123456" />
-            <TextAreaField label="Note" value={editForm.note} onChange={(note) => setEditForm((prev) => ({ ...prev, note }))} placeholder="Deposit note" rows={3} />
+            <TextField label={t('transactionId')} hint={t('optional')} value={editForm.transactionId} onChange={(transactionId) => setEditForm((prev) => ({ ...prev, transactionId }))} placeholder={t('transactionPlaceholder')} />
+            <TextAreaField label={t('note')} value={editForm.note} onChange={(note) => setEditForm((prev) => ({ ...prev, note }))} placeholder={t('notePlaceholder')} rows={3} />
 
-            {!isManager ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#65838b]">Edited deposits require manager approval.</div> : null}
+            {!isManager ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#65838b]">{t('editedRequiresApproval')}</div> : null}
             <div className="grid grid-cols-2 gap-3">
               <button type="button" onClick={() => router.push('/payments')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#00777a]">
-                <ArrowLeft size={17} /> Back
+                <ArrowLeft size={17} /> {t('back')}
               </button>
               <button type="button" onClick={() => void handleUpdate()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-label disabled:opacity-70">
-                <Save size={17} /> {busy ? 'Saving...' : 'Save'}
+                <Save size={17} /> {busy ? t('saving') : t('save')}
               </button>
             </div>
           </section>
@@ -208,28 +211,28 @@ export default function EditPaymentPage() {
 
         {isManager && payment?.status === 'PENDING' ? (
         <section className="app-section app-form-section space-y-4">
-          <DepositSectionTitle title="Review Deposit" />
+          <DepositSectionTitle title={t('reviewDeposit')} />
           <SelectField
-            label="Status"
+            label={t('status')}
             value={reviewForm.status}
             onChange={(status) => setReviewForm((prev) => ({ ...prev, status }))}
             options={PAYMENT_STATUSES.filter((status) => status !== 'PENDING')}
-            getLabel={(value) => LABELS.PAYMENT_STATUSES[value]}
+            getLabel={(value) => paymentStatusLabel(value, locale)}
           />
           <TextAreaField
-            label="Note"
+            label={t('note')}
             value={reviewForm.note}
             onChange={(note) => setReviewForm((prev) => ({ ...prev, note }))}
-            placeholder="Deposit review note or admin comment"
+            placeholder={t('reviewNotePlaceholder')}
             rows={4}
           />
 
           <div className="grid grid-cols-2 gap-3">
             <button type="button" onClick={() => router.push('/payments')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#00777a]">
-              <ArrowLeft size={17} /> Back
+              <ArrowLeft size={17} /> {t('back')}
             </button>
             <button type="button" onClick={() => void handleReview()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-label disabled:opacity-70">
-              <Save size={17} /> {busy ? 'Saving...' : 'Save'}
+              <Save size={17} /> {busy ? t('saving') : t('save')}
             </button>
           </div>
         </section>

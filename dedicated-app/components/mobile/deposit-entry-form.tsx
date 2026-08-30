@@ -4,7 +4,8 @@ import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-de
 import { DepositManualNotice } from '@/components/mobile/deposit-design'
 import { TextAreaField, TextField } from '@/components/mobile/form-controls'
 import type { MemberOption } from '@/hooks/use-mess-member-options'
-import { LABELS, PAYMENT_METHODS, type PaymentMethod } from '@/lib/form-options'
+import { PAYMENT_METHODS, type PaymentMethod } from '@/lib/form-options'
+import { paymentMethodLabel, useLocale, useTranslations } from '@/lib/i18n'
 
 export type DepositEntryFormProps = {
   method: PaymentMethod
@@ -40,47 +41,49 @@ export function DepositEntryForm({
   note,
   onNoteChange,
 }: DepositEntryFormProps) {
+  const { locale } = useLocale()
+  const t = useTranslations('payments')
   return (
     <>
       <DesignedSelect
-        label="Deposit Method"
+        label={t('depositMethod')}
         icon={expenseFormIcons.payment}
         value={method}
         onChange={(event) => onMethodChange(event.target.value as PaymentMethod)}
       >
         {PAYMENT_METHODS.map((option) => (
-          <option key={option} value={option}>{LABELS.PAYMENT_METHODS[option]}</option>
+          <option key={option} value={option}>{paymentMethodLabel(option, locale)}</option>
         ))}
       </DesignedSelect>
       <div className="grid grid-cols-2 gap-3">
-        <TextField label="Amount" value={amount} onChange={onAmountChange} placeholder="2500" type="number" />
-        <TextField label="Deposit Date" value={date} onChange={onDateChange} type="date" />
+        <TextField label={t('amount')} value={amount} onChange={onAmountChange} placeholder="2500" type="number" />
+        <TextField label={t('depositDate')} value={date} onChange={onDateChange} type="date" />
       </div>
       {showPaidBy ? (
         <DesignedSelect
-          label="Deposit For"
+          label={t('depositFor')}
           icon={expenseFormIcons.member}
           value={paidBy}
           onChange={(event) => onPaidByChange(event.target.value)}
         >
-          <option value="">Self</option>
+          <option value="">{t('self')}</option>
           {members.map((member) => (
             <option key={member.id} value={member.id}>{member.name}</option>
           ))}
         </DesignedSelect>
       ) : null}
       <TextField
-        label="Transaction ID"
-        hint="Optional"
+        label={t('transactionId')}
+        hint={t('optional')}
         value={transactionId}
         onChange={onTransactionIdChange}
-        placeholder="TXN123456"
+        placeholder={t('transactionPlaceholder')}
       />
       <TextAreaField
-        label="Note"
+        label={t('note')}
         value={note}
         onChange={onNoteChange}
-        placeholder="Deposit for May bill"
+        placeholder={t('notePlaceholder')}
         rows={3}
       />
       <DepositManualNotice compact />

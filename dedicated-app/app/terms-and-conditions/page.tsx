@@ -2,52 +2,55 @@
 
 import { FileCheck2 } from 'lucide-react'
 import { InfoPage } from '@/components/mobile/info-page'
+import { useTranslations } from '@/lib/i18n'
 
 export default function TermsAndConditionsPage() {
+  const t = useTranslations('support')
+
   return (
     <InfoPage
-      title="Terms & Conditions"
-      subtitle="Rules for using Messzen"
-      eyebrow="TERMS OF USE"
-      introduction="These terms explain the responsibilities that help keep Messzen and every shared mess workspace accurate, secure and dependable."
+      title={t('termsConditions')}
+      subtitle={t('termsSubtitle')}
+      eyebrow={t('termsEyebrow')}
+      introduction={t('termsIntroduction')}
       icon={FileCheck2}
       sections={[
         {
-          title: 'Accepting these terms',
-          body: 'By creating an account or using Messzen, you agree to follow these terms and the policies made available inside the app.',
+          title: t('acceptingTitle'),
+          body: t('acceptingBody'),
         },
         {
-          title: 'Your account',
+          title: t('accountTitle'),
           points: [
-            'Provide accurate account information and keep it updated',
-            'Keep your password and access credentials confidential',
-            'Notify support if you believe your account has been used without permission',
+            t('accountAccurate'),
+            t('accountCredentials'),
+            t('accountNotify'),
           ],
         },
         {
-          title: 'Workspace responsibilities',
-          body: 'Members and managers are responsible for reviewing meals, expenses, deposits, utilities and billing entries before confirming or relying on them.',
+          title: t('workspaceResponsibilitiesTitle'),
+          body: t('workspaceResponsibilitiesBody'),
         },
         {
-          title: 'Acceptable use',
+          title: t('acceptableUseTitle'),
           points: [
-            'Do not misuse the service, interfere with its operation or attempt unauthorized access',
-            'Do not submit unlawful, misleading or harmful information',
-            'Respect the privacy and access rights of other workspace members',
+            t('acceptableUseSecurity'),
+            t('acceptableUseContent'),
+            t('acceptableUsePrivacy'),
           ],
         },
         {
-          title: 'Subscriptions and availability',
-          body: 'Plan features, pricing and service availability may change. Current subscription details shown in the app apply to the connected mess workspace.',
+          title: t('subscriptionAvailabilityTitle'),
+          body: t('subscriptionAvailabilityBody'),
         },
         {
-          title: 'Changes and support',
-          body: 'We may update these terms as Messzen evolves. Material updates will be made available in the app. Contact support if you have questions about these terms.',
+          title: t('changesSupportTitle'),
+          body: t('changesSupportBody'),
         },
       ]}
       actions={[
-        { href: '/privacy-policy', label: 'Read our Privacy Policy' },
-        { href: '/contact-us', label: 'Contact us about these terms' },
+        { href: '/privacy-policy', label: t('readPrivacyAction') },
+        { href: '/contact-us', label: t('termsContactAction') },
       ]}
     />
   )

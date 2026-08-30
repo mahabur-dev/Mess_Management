@@ -13,6 +13,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import webPush, { type PushSubscription } from 'web-push';
 import config from '../../config';
 import { FcmService } from './fcm.service';
+import {
+  isLocalizableSystemNotification,
+  localizeSystemNotification,
+} from './notification-localization';
 
 @Injectable()
 export class NotificationService {
@@ -695,13 +699,17 @@ export class NotificationService {
       await this.prisma.pushNotificationSubscription.findMany({
         where: { user_id: { in: uniqueUserIds }, is_active: true },
       });
-
-    const payload = JSON.stringify({
-      title: dto.title,
-      body: dto.body,
-      url: dto.url || '/',
-      data: dto.data ?? {},
-    });
+    const localizable = isLocalizableSystemNotification(dto);
+    const localeByUser = new Map<string, string | null>();
+    if (localizable) {
+      const recipients = await this.prisma.user.findMany({
+        where: { id: { in: uniqueUserIds } },
+        select: { id: true, preferred_locale: true },
+      });
+      recipients.forEach((recipient) =>
+        localeByUser.set(recipient.id, recipient.preferred_locale),
+      );
+    }
 
     let sent = 0;
     let failed = 0;
@@ -709,6 +717,18 @@ export class NotificationService {
     await Promise.all(
       subscriptions.map(async (subscription) => {
         try {
+          const copy = localizable
+            ? localizeSystemNotification(
+                dto,
+                localeByUser.get(subscription.user_id),
+              )
+            : dto;
+          const payload = JSON.stringify({
+            title: copy.title,
+            body: copy.body,
+            url: copy.url || '/',
+            data: copy.data ?? {},
+          });
           await webPush.sendNotification(
             {
               endpoint: subscription.endpoint,
@@ -738,12 +758,34 @@ export class NotificationService {
       }),
     );
 
-    const fcmResult = await this.fcmService.sendToUsers(uniqueUserIds, {
-      title: dto.title,
-      body: dto.body,
-      url: dto.url,
-      data: dto.data,
-    });
+    const fcmResults = localizable
+      ? await Promise.all(
+          (['en', 'bn'] as const).map((locale) => {
+            const localizedUserIds = uniqueUserIds.filter((userId) =>
+              locale === 'bn'
+                ? String(localeByUser.get(userId) ?? '')
+                    .toLowerCase()
+                    .startsWith('bn')
+                : !String(localeByUser.get(userId) ?? '')
+                    .toLowerCase()
+                    .startsWith('bn'),
+            );
+            return this.fcmService.sendToUsers(
+              localizedUserIds,
+              localizeSystemNotification(dto, locale),
+            );
+          }),
+        )
+      : [await this.fcmService.sendToUsers(uniqueUserIds, dto)];
+    const fcmResult = fcmResults.reduce(
+      (total, result) => ({
+        sent: total.sent + result.sent,
+        failed: total.failed + result.failed,
+        totalTokens: total.totalTokens + result.totalTokens,
+        configured: total.configured || result.configured,
+      }),
+      { sent: 0, failed: 0, totalTokens: 0, configured: false },
+    );
 
     return {
       sent: sent + fcmResult.sent,

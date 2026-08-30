@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { appHref } from '@/lib/routes'
+import { useTranslations } from '@/lib/i18n'
 
 /**
  * Backward-compatible entry point for old bookmarks and persisted login URLs.
@@ -13,6 +14,7 @@ import { appHref } from '@/lib/routes'
 export default function LegacyDashboardPage() {
   const router = useRouter()
   const { isLoading, user } = useAuth()
+  const common = useTranslations('common')
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -20,5 +22,5 @@ export default function LegacyDashboardPage() {
     }
   }, [isLoading, router, user])
 
-  return <LoadingIndicator variant="screen" label="Loading dashboard" />
+  return <LoadingIndicator variant="screen" label={common('loadingApplication')} />
 }

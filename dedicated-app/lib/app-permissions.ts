@@ -63,6 +63,11 @@ export function hasActiveMess(user: AuthUser | null | undefined) {
   return getActiveMemberships(user).some((membership) => Boolean(membership.mess_id || membership.mess?.id))
 }
 
+export function getActiveMessId(user: AuthUser | null | undefined) {
+  const membership = getActiveMemberships(user).find((item) => Boolean(item.mess_id || item.mess?.id))
+  return membership?.mess_id ?? membership?.mess?.id ?? ''
+}
+
 export function canManageMess(user: AuthUser | null | undefined) {
   if (!user) return false
   if (managerGlobalRoles.has(normalizeRole(user.role))) return true
@@ -190,7 +195,7 @@ export function getMoreLinks(user: AuthUser | null | undefined): AppRouteItem[] 
 }
 
 /**
- * The drawer is the secondary navigation surface. Home Quick actions are
+ * The More page is the secondary navigation surface. Home Quick actions are
  * removed by href so role-specific Quick changes never create duplicates.
  */
 export function getMoreMenuGroups(user: AuthUser | null | undefined): MoreMenuGroup[] {

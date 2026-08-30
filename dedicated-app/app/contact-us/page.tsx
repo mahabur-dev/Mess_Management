@@ -2,25 +2,28 @@
 
 import { ContactRound } from 'lucide-react'
 import { InfoPage } from '@/components/mobile/info-page'
+import { useTranslations } from '@/lib/i18n'
 
 const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@messzen.com'
 
 export default function ContactUsPage() {
+  const t = useTranslations('support')
+
   return (
     <InfoPage
-      title="Contact Us"
-      subtitle="Help when you need it"
-      eyebrow="SUPPORT"
-      introduction="Tell us what happened and include the affected month or feature so the team can help quickly."
+      title={t('contactUs')}
+      subtitle={t('contactSubtitle')}
+      eyebrow={t('supportEyebrow')}
+      introduction={t('contactIntroduction')}
       icon={ContactRound}
       sections={[
-        { title: 'Account and access', body: 'Get help with sign-in, profile details, mess membership or manager access.' },
-        { title: 'Meals and billing', body: 'Report a mismatch in meals, expenses, deposits, utilities or monthly calculations.' },
-        { title: 'AI Quick Add', body: 'Share the transcript and expected result when voice transcription or command analysis needs attention.' },
+        { title: t('accountAccessTitle'), body: t('accountAccessBody') },
+        { title: t('mealsBillingTitle'), body: t('mealsBillingBody') },
+        { title: t('aiQuickAddTitle'), body: t('aiQuickAddBody') },
       ]}
       actions={[
-        { href: `mailto:${supportEmail}?subject=Messzen%20Support`, label: `Email ${supportEmail}`, external: true },
-        { href: '/how-it-works', label: 'Read How It Works' },
+        { href: `mailto:${supportEmail}?subject=Messzen%20Support`, label: t('emailSupport', { email: supportEmail }), external: true },
+        { href: '/how-it-works', label: t('readHowItWorks') },
       ]}
     />
   )

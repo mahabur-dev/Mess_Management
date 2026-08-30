@@ -15,13 +15,7 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { appHref } from '@/lib/routes'
-
-const communityMetrics = [
-  { value: '300+', label: 'Active Messes', icon: UsersRound },
-  { value: '500+', label: 'Happy Members', icon: UserRound },
-  { value: '98%', label: 'Satisfaction', icon: BarChart3 },
-  { value: '99%', label: 'Secure & Safe', icon: ShieldCheck },
-]
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 type OnboardingActionVariant = 'primary' | 'secondary' | 'benefit'
 
@@ -34,34 +28,6 @@ type OnboardingActionProps = {
   variant: OnboardingActionVariant
   showPlus?: boolean
 }
-
-const onboardingActions: OnboardingActionProps[] = [
-  {
-    href: '/create-mess',
-    title: 'Create Mess',
-    subtitle: 'Start your own mess workspace',
-    icon: Building2,
-    trailingIcon: ChevronRight,
-    variant: 'primary',
-    showPlus: true,
-  },
-  {
-    href: '/request-mess',
-    title: 'Request Mess',
-    subtitle: 'Find a mess and ask manager approval',
-    icon: DoorOpen,
-    trailingIcon: ChevronRight,
-    variant: 'secondary',
-  },
-  {
-    href: '/why-join',
-    title: 'Why join a mess?',
-    subtitle: 'Learn how Mess helps you stay organized and connected.',
-    icon: ShieldCheck,
-    trailingIcon: ChevronRight,
-    variant: 'benefit',
-  },
-]
 
 function EmptyMessIllustration() {
   return (
@@ -107,15 +73,51 @@ function OnboardingAction({
   )
 }
 
-export function MessOnboardingActions() {
+export function MessOnboardingActions({ compact = false }: { compact?: boolean }) {
+  const auth = useTranslations('auth')
+  const format = useLocaleFormatters()
+  const onboardingActions: OnboardingActionProps[] = [
+    {
+      href: '/create-mess',
+      title: auth('createMessTitle'),
+      subtitle: auth('createMessSubtitle'),
+      icon: Building2,
+      trailingIcon: ChevronRight,
+      variant: 'primary',
+      showPlus: true,
+    },
+    {
+      href: '/request-mess',
+      title: auth('requestMessTitle'),
+      subtitle: auth('requestMessSubtitle'),
+      icon: DoorOpen,
+      trailingIcon: ChevronRight,
+      variant: 'secondary',
+    },
+    {
+      href: '/why-join',
+      title: auth('whyJoin'),
+      subtitle: auth('whyJoinSubtitle'),
+      icon: ShieldCheck,
+      trailingIcon: ChevronRight,
+      variant: 'benefit',
+    },
+  ]
+  const communityMetrics = [
+    { value: `${format.number(300)}+`, label: auth('activeMesses'), icon: UsersRound },
+    { value: `${format.number(500)}+`, label: auth('happyMembers'), icon: UserRound },
+    { value: format.number(0.98, { style: 'percent' }), label: auth('satisfaction'), icon: BarChart3 },
+    { value: format.number(0.99, { style: 'percent' }), label: auth('secureSafe'), icon: ShieldCheck },
+  ]
+
   return (
     <div className="no-mess-onboarding">
       <section className="no-mess-card" aria-labelledby="no-mess-title">
         <EmptyMessIllustration />
 
         <div className="no-mess-copy">
-          <h2 id="no-mess-title">You&apos;re not connected to any mess yet</h2>
-          <p>Create your own mess or request to join an existing mess.</p>
+          <h2 id="no-mess-title">{auth('notConnectedTitle')}</h2>
+          <p>{auth('notConnectedDescription')}</p>
         </div>
 
         <div className="no-mess-actions">
@@ -125,22 +127,24 @@ export function MessOnboardingActions() {
         </div>
       </section>
 
-      <section className="no-mess-trust" aria-label="Mess community highlights">
-        <h2>
-          <Sparkles size={12} strokeWidth={2} aria-hidden="true" />
-          <span>Trusted by mess communities</span>
-          <Sparkles size={12} strokeWidth={2} aria-hidden="true" />
-        </h2>
-        <div className="no-mess-trust__grid">
-          {communityMetrics.map(({ value, label, icon: Icon }) => (
-            <div key={label} className="no-mess-trust__metric">
-              <span className="no-mess-trust__icon"><Icon size={21} strokeWidth={2.3} /></span>
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      {!compact ? (
+        <section className="no-mess-trust" aria-label={auth('communityHighlights')}>
+          <h2>
+            <Sparkles size={12} strokeWidth={2} aria-hidden="true" />
+            <span>{auth('trustedCommunities')}</span>
+            <Sparkles size={12} strokeWidth={2} aria-hidden="true" />
+          </h2>
+          <div className="no-mess-trust__grid">
+            {communityMetrics.map(({ value, label, icon: Icon }) => (
+              <div key={label} className="no-mess-trust__metric">
+                <span className="no-mess-trust__icon"><Icon size={21} strokeWidth={2.3} /></span>
+                <strong>{value}</strong>
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   )
 }

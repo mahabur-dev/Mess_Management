@@ -8,6 +8,7 @@ import { NativeBackActionsProvider } from '@/components/native-back-actions'
 import { NativeBackHandler } from '@/components/native-back-handler'
 import { NativeStatusBarProvider } from '@/components/native-status-bar'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import { useLocale, useTranslations } from '@/lib/i18n'
 import { api } from '@/lib/api'
 import { initializeNativePush, nativePushActionEventName, shutdownNativePush, type NativePushActionDetail } from '@/lib/native-push'
 import {
@@ -43,6 +44,9 @@ export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const normalizedPathname = normalizePathname(pathname)
+  const { adoptLocale, changeSource, isLocaleReady, locale } = useLocale()
+  const common = useTranslations('common')
+  const communication = useTranslations('communication')
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -50,6 +54,11 @@ export function Providers({ children }: { children: ReactNode }) {
   const [logoutPromptOpen, setLogoutPromptOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [hasMounted, setHasMounted] = useState(false)
+
+  const receiveUser = useCallback((nextUser: AuthUser, adoptProfileLocale = true) => {
+    setUser(nextUser)
+    if (adoptProfileLocale) adoptLocale(nextUser.preferred_locale)
+  }, [adoptLocale])
 
   const clearSession = useCallback(() => {
     clearStoredToken()
@@ -71,12 +80,31 @@ export function Providers({ children }: { children: ReactNode }) {
     setToken(saved)
     api
       .getProfile()
-      .then((res) => setUser(res.data))
+      .then((res) => receiveUser(res.data))
       .catch(() => {
         clearSession()
       })
       .finally(() => setIsLoading(false))
-  }, [clearSession])
+  }, [clearSession, receiveUser])
+
+  useEffect(() => {
+    if (!isLocaleReady || !user) return
+    const needsInitialPreference = !user.preferred_locale
+    const needsUserUpdate = changeSource === 'user' && user.preferred_locale !== locale
+    if (!needsInitialPreference && !needsUserUpdate) return
+
+    let active = true
+    api.updatePreferredLocale(locale)
+      .then((response) => {
+        if (!active) return
+        setUser((current) => current?.id === response.data.id ? { ...current, ...response.data } : current)
+      })
+      .catch(() => undefined)
+
+    return () => {
+      active = false
+    }
+  }, [changeSource, isLocaleReady, locale, user])
 
   useEffect(() => {
     if (isLoading) return
@@ -114,12 +142,17 @@ export function Providers({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return
-    void initializeNativePush(user.id)
+    void initializeNativePush(user.id, {
+      fallbackTitle: common('appName'),
+      fallbackBody: communication('newNotificationFallback'),
+      channelName: communication('notificationChannelName'),
+      channelDescription: communication('notificationChannelDescription'),
+    })
 
     return () => {
       void shutdownNativePush()
     }
-  }, [user?.id])
+  }, [communication, common, locale, user?.id])
 
   useEffect(() => {
     const handlePushAction = (event: Event) => {
@@ -144,14 +177,18 @@ export function Providers({ children }: { children: ReactNode }) {
         const res = await api.login(normalizedEmail, password)
         storeToken(res.data.accessToken)
         setToken(res.data.accessToken)
+        // A locale explicitly chosen on Login is the latest user intent. Save
+        // it before loading the profile so an older database preference cannot
+        // replace the selected language during the first authenticated render.
+        await api.updatePreferredLocale(locale).catch(() => undefined)
         const profile = await api.getProfile()
-        setUser(profile.data)
+        receiveUser(profile.data, false)
         router.replace(redirectTo)
       } finally {
         setIsSubmitting(false)
       }
     },
-    [router]
+    [locale, receiveUser, router]
   )
 
   const register = useCallback(
@@ -193,8 +230,8 @@ export function Providers({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const res = await api.getProfile()
-    setUser(res.data)
-  }, [])
+    receiveUser(res.data)
+  }, [receiveUser])
 
   const openLogoutPrompt = useCallback(() => {
     setLogoutPromptOpen(true)
@@ -213,7 +250,7 @@ export function Providers({ children }: { children: ReactNode }) {
     return (
       <AuthContext.Provider value={value}>
         <NativeStatusBarProvider>
-          <LoadingIndicator variant="screen" label="Loading application" />
+          <LoadingIndicator variant="screen" label={common('loadingApplication')} />
         </NativeStatusBarProvider>
       </AuthContext.Provider>
     )

@@ -9,7 +9,6 @@ import { TopScreen } from '@/components/top-screen'
 import {
   InlineNotice,
   MealCard,
-  MEAL_LABELS,
   MEAL_ORDER,
   MealStatusPill,
   MealTotalsGrid,
@@ -19,6 +18,7 @@ import {
   deadlineLabel,
   findAttendanceForMember,
   findMeal,
+  mealLabel,
   monthBounds,
   normalizeMeals,
   summarizeMealHistory,
@@ -30,9 +30,13 @@ import { canManageMess } from '@/lib/app-permissions'
 import { api } from '@/lib/api'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
+import { useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 export default function MealsPage() {
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const mealCopy = useTranslations('meals')
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
   const date = useMemo(() => todayIsoDate(), [])
@@ -41,15 +45,21 @@ export default function MealsPage() {
   const [deadline, setDeadline] = useState<MealDeadlineInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [monthlyLoading, setMonthlyLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
   const month = currentMonthValue()
 
   useEffect(() => {
-    if (!messId) return
+    if (!messId) {
+      setMeals([])
+      setDeadline(null)
+      setLoading(false)
+      showMessage('noMessSelected', 'warning')
+      return
+    }
     let alive = true
 
     setLoading(true)
-    setMessage('')
+    clearNotice()
     Promise.all([
       api.getMealsByMess(messId, { startDate: date, endDate: date, limit: 20 }),
       api.getMealDeadline(messId, date),
@@ -63,7 +73,7 @@ export default function MealsPage() {
         if (!alive) return
         setMeals([])
         setDeadline(null)
-        setMessage(error instanceof Error ? error.message : 'Failed to load meal dashboard.')
+        showError(error, 'loadDashboardFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -72,10 +82,14 @@ export default function MealsPage() {
     return () => {
       alive = false
     }
-  }, [date, messId])
+  }, [clearNotice, date, messId, showError, showMessage])
 
   useEffect(() => {
-    if (!messId) return
+    if (!messId) {
+      setMonthlyMeals([])
+      setMonthlyLoading(false)
+      return
+    }
     let alive = true
     const range = monthBounds(month)
 
@@ -86,9 +100,10 @@ export default function MealsPage() {
         if (!alive) return
         setMonthlyMeals(normalizeMeals(mealRes.data))
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
         setMonthlyMeals([])
+        showError(error, 'loadDashboardFailed')
       })
       .finally(() => {
         if (alive) setMonthlyLoading(false)
@@ -97,7 +112,7 @@ export default function MealsPage() {
     return () => {
       alive = false
     }
-  }, [messId, month])
+  }, [messId, month, showError])
 
   const selectedMeals = MEAL_ORDER.map((mealName) => {
     const meal = findMeal(meals, mealName)
@@ -105,58 +120,58 @@ export default function MealsPage() {
     return { mealName, meal, attendance }
   }).filter((item) => item.attendance?.status === 'ON')
   const selectedMealLabel = selectedMeals.length
-    ? selectedMeals.map((item) => MEAL_LABELS[item.mealName]).join(', ')
-    : 'No meal selected'
+    ? selectedMeals.map((item) => mealLabel(item.mealName, locale)).join(', ')
+    : mealCopy('noMealSelected')
   const monthlySummary = summarizeMealHistory(buildMemberMealHistory(monthlyMeals, user?.id))
 
   return (
     <MobileShell>
-      <TopScreen title="Meal Management" subtitle={user?.memberships?.[0]?.mess?.name ?? 'Mess meals'} backHref="/" />
+      <TopScreen title={mealCopy('management')} subtitle={user?.memberships?.[0]?.mess?.name ?? mealCopy('messMeals')} backHref="/" />
       <div className="screen space-y-4">
         <MealCard className="space-y-4">
           <div className="mb-3 flex items-center justify-between">
-            <div className="section-title mb-0">Today Overview</div>
-            <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'neutral'}>{deadline?.isWindowOpen ? 'Open' : 'Closed'}</MealStatusPill>
+            <div className="section-title mb-0">{mealCopy('todayOverview')}</div>
+            <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'neutral'}>{deadline?.isWindowOpen ? mealCopy('open') : mealCopy('closed')}</MealStatusPill>
           </div>
           {loading ? (
-            <LoadingIndicator variant="card" label="Loading meals" />
+            <LoadingIndicator variant="card" label={mealCopy('loadingMeals')} />
           ) : (
             <MealTotalsGrid meals={meals} />
           )}
 
           <MonthlyMealSummaryCard
-            total={monthlyLoading ? <LoadingIndicator size="sm" label="Loading monthly meals" /> : monthlySummary.totalMeals}
+            total={monthlyLoading ? <LoadingIndicator size="sm" label={mealCopy('loadingMonthlyMeals')} /> : format.number(monthlySummary.totalMeals)}
             href={`/meals/details?month=${month}`}
           />
         </MealCard>
 
-        {message ? <InlineNotice tone="danger">{message}</InlineNotice> : null}
+        {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
         <MealCard>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <div className="text-body font-bold text-[#123748]">My Meal Status</div>
+              <div className="text-body font-bold text-[#123748]">{mealCopy('myMealStatus')}</div>
               <div className="mt-1 flex items-center gap-1 text-caption font-bold text-[#008d8c]">
-                <Clock3 size={12} /> {deadlineLabel(deadline)}
+                <Clock3 size={12} /> {deadlineLabel(deadline, locale)}
               </div>
             </div>
-            <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'closed'}>{deadline?.isWindowOpen ? 'Open' : 'Closed'}</MealStatusPill>
+            <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'closed'}>{deadline?.isWindowOpen ? mealCopy('open') : mealCopy('closed')}</MealStatusPill>
           </div>
 
           <div className="rounded-[16px] border border-[#cfeeed] bg-[#fbffff] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-label font-bold text-[#123748]">{selectedMealLabel}</div>
-                <div className="mt-1 text-label text-[#65838b]">{selectedMeals.length ? 'Your meal is added' : 'Update your meal preference'}</div>
+                <div className="mt-1 text-label text-[#65838b]">{selectedMeals.length ? mealCopy('mealAdded') : mealCopy('updatePreference')}</div>
               </div>
               <MealStatusPill tone={selectedMeals.length ? 'open' : 'neutral'}>
-                {selectedMeals.length ? 'Added' : 'Pending'}
+                {selectedMeals.length ? mealCopy('added') : mealCopy('pending')}
               </MealStatusPill>
             </div>
           </div>
 
           <Link href={appHref(`/meals/my?date=${date}`)} className="primary-btn mt-4 flex items-center justify-center gap-2">
-            <UtensilsCrossed size={18} /> Add My Meal
+            <UtensilsCrossed size={18} /> {mealCopy('addMyMeal')}
           </Link>
         </MealCard>
 
@@ -166,8 +181,8 @@ export default function MealsPage() {
               <Settings2 size={21} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-body font-bold text-[#123748]">Manager Controls</div>
-              <div className="mt-1 text-label text-[#65838b]">Manage meal time, locks and members meals</div>
+              <div className="text-body font-bold text-[#123748]">{mealCopy('managerControls')}</div>
+              <div className="mt-1 text-label text-[#65838b]">{mealCopy('manageTimeLocksMembers')}</div>
             </div>
             <ChevronRight size={17} className="text-[#789096]" />
           </Link>

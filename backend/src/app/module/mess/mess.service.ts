@@ -270,7 +270,7 @@ export class MessService {
     }
 
     if (dto.status === RequestStatus.REJECTED) {
-      return this.prisma.messRequest.update({
+      const rejected = await this.prisma.messRequest.update({
         where: { id: requestId },
         data: {
           status: RequestStatus.REJECTED,
@@ -280,6 +280,24 @@ export class MessService {
         },
         include: { requester: { select: { id: true, name: true, email: true } } },
       });
+
+      void this.notificationService
+        .sendPushToUsers([request.requester_id], {
+          title: 'Mess registration request rejected',
+          body: dto.reviewNote
+            ? `Your mess registration request was rejected. Note: ${dto.reviewNote}`
+            : 'Your mess registration request was rejected.',
+          url: '/dashboard',
+          data: {
+            source: 'MESS_APPROVAL',
+            status: 'REJECTED',
+            requestId,
+            reviewNote: dto.reviewNote,
+          },
+        })
+        .catch(() => undefined);
+
+      return rejected;
     }
 
     const trialPlan = await this.subscriptionService.getPlanInfo('TRIAL');
@@ -361,11 +379,13 @@ export class MessService {
 
     void this.notificationService.sendPushToUsers([request.requester_id], {
       title: 'Your mess is approved',
-      body: 'A 30-day free trial has started. You can upgrade anytime from the dashboard.',
+      body: `A ${trialDays}-day free trial has started. You can upgrade anytime from the dashboard.`,
       url: '/dashboard',
       data: {
         source: 'MESS_APPROVAL',
+        status: 'APPROVED',
         requestId,
+        trialDays,
       },
     }).catch(() => undefined);
 
@@ -450,7 +470,7 @@ export class MessService {
           createdBy: managerId,
         },
         adminUserIds,
-        '/dashboard/mess_management',
+        '/dashboard/notifications',
         `mess-created-${mess.id}`,
       ).catch(() => undefined);
     }

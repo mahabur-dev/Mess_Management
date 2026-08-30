@@ -84,3 +84,4 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/nextjs,visualstudiocode,windows
 .next-dev/
+qa/artifacts/

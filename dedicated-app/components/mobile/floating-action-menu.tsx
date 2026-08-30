@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { Plus } from 'lucide-react'
 import { appHref } from '@/lib/routes'
+import { useTranslations } from '@/lib/i18n'
 
 export type FloatingActionMenuItem = {
   href: string
@@ -20,6 +21,7 @@ export function FloatingActionMenu({
   items: FloatingActionMenuItem[]
   icon?: ReactNode
 }) {
+  const t = useTranslations('common')
   const [open, setOpen] = useState(false)
   const menuId = useId()
 
@@ -39,7 +41,7 @@ export function FloatingActionMenu({
         <button
           type="button"
           className="floating-action-menu__backdrop"
-          aria-label="Close quick actions"
+          aria-label={t('closeQuickActions')}
           onClick={() => setOpen(false)}
         />
       ) : null}
@@ -65,7 +67,7 @@ export function FloatingActionMenu({
       <button
         type="button"
         className="floating-action-link floating-action-menu__trigger"
-        aria-label={open ? `Close ${label}` : label}
+        aria-label={open ? t('closeNamedAction', { action: label }) : label}
         title={label}
         aria-expanded={open}
         aria-controls={menuId}

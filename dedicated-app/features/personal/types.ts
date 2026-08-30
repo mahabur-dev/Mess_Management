@@ -1,4 +1,6 @@
-export type PersonalLocale = "en" | "bn";
+import type { Locale } from "@/lib/i18n";
+
+export type PersonalLocale = Locale;
 export type PersonalTransactionType = "INCOME" | "EXPENSE" | "SAVING";
 
 export type FamilyMember = {

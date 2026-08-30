@@ -2,6 +2,7 @@
 
 import { Check, Clock3, Mail, UserRoundPlus, X } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from '@/lib/member-join-requests'
 
 type ReviewInProgress = {
@@ -24,18 +25,6 @@ function requesterInitials(name: string) {
     .toUpperCase() || 'M'
 }
 
-function formatRequestDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Recently requested'
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date)
-}
-
 export function MemberJoinRequestCard({
   request,
   reviewInProgress,
@@ -45,6 +34,8 @@ export function MemberJoinRequestCard({
   reviewInProgress: ReviewInProgress
   onReview: (request: MemberJoinRequest, status: MemberJoinReviewStatus) => void
 }) {
+  const t = useTranslations('members')
+  const format = useLocaleFormatters()
   const isBusy = reviewInProgress?.requestId === request.id
   const reviewLocked = reviewInProgress !== null
 
@@ -61,14 +52,14 @@ export function MemberJoinRequestCard({
             <span className="truncate">{request.requester.email}</span>
           </span>
         </span>
-        <span className="shrink-0 rounded-full bg-[#fff7e6] px-2.5 py-1 text-caption font-bold text-[#a15c00]">Pending</span>
+        <span className="shrink-0 rounded-full bg-[#fff7e6] px-2.5 py-1 text-caption font-bold text-[#a15c00]">{t('pending')}</span>
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#edf1f4] pt-3">
         <span className="min-w-0">
           <span className="block truncate text-label font-bold text-[#123748]">{request.mess.name}</span>
           <span className="mt-0.5 flex items-center gap-1.5 text-caption font-medium text-[#65838b]">
-            <Clock3 size={13} /> {formatRequestDate(request.created_at)}
+            <Clock3 size={13} /> {request.created_at ? format.date(request.created_at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : t('recentlyRequested')}
           </span>
         </span>
         <UserRoundPlus size={20} className="shrink-0 text-[#70bdbc]" aria-hidden="true" />
@@ -80,18 +71,18 @@ export function MemberJoinRequestCard({
           disabled={reviewLocked}
           onClick={() => onReview(request, 'REJECTED')}
           className="flex min-h-10 items-center justify-center gap-1.5 rounded-[10px] border border-[#efcaca] bg-white px-3 text-label font-bold text-[#b42318] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label={`Reject ${request.requester.name}'s join request`}
+          aria-label={t('rejectNamedRequest', { name: request.requester.name })}
         >
-          {isBusy && reviewInProgress?.status === 'REJECTED' ? <LoadingIndicator size="sm" label="Rejecting request" /> : <><X size={16} /> Reject</>}
+          {isBusy && reviewInProgress?.status === 'REJECTED' ? <LoadingIndicator size="sm" label={t('rejectingRequest')} /> : <><X size={16} /> {t('reject')}</>}
         </button>
         <button
           type="button"
           disabled={reviewLocked}
           onClick={() => onReview(request, 'APPROVED')}
           className="flex min-h-10 items-center justify-center gap-1.5 rounded-[10px] border border-[#008d8c] bg-[#008d8c] px-3 text-label font-bold text-white shadow-[0_8px_18px_rgba(0,119,122,0.16)] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label={`Approve ${request.requester.name}'s join request`}
+          aria-label={t('approveNamedRequest', { name: request.requester.name })}
         >
-          {isBusy && reviewInProgress?.status === 'APPROVED' ? <LoadingIndicator size="sm" label="Approving request" className="!text-white" /> : <><Check size={16} /> Approve</>}
+          {isBusy && reviewInProgress?.status === 'APPROVED' ? <LoadingIndicator size="sm" label={t('approvingRequest')} className="!text-white" /> : <><Check size={16} /> {t('approve')}</>}
         </button>
       </div>
     </article>
@@ -111,15 +102,17 @@ export function MemberJoinRequestsPanel({
   reviewInProgress: ReviewInProgress
   onReview: (request: MemberJoinRequest, status: MemberJoinReviewStatus) => void
 }) {
+  const t = useTranslations('members')
+  const format = useLocaleFormatters()
   return (
     <section className="app-section" aria-labelledby="join-requests-title">
       <div className="flex items-center justify-between gap-3 px-1 pb-3">
         <div>
-          <h2 id="join-requests-title" className="text-body font-semibold text-[#1d3a42]">Join Requests</h2>
-          <p className="mt-0.5 text-caption font-medium text-[#65838b]">Review members waiting to join</p>
+          <h2 id="join-requests-title" className="text-body font-semibold text-[#1d3a42]">{t('joinRequests')}</h2>
+          <p className="mt-0.5 text-caption font-medium text-[#65838b]">{t('reviewWaitingMembers')}</p>
         </div>
-        <span className="grid min-w-8 place-items-center rounded-full bg-[#e6f7f6] px-2.5 py-1.5 text-label font-semibold text-[#008d8c]" aria-label={`${requests.length} pending requests`}>
-          {requests.length}
+        <span className="grid min-w-8 place-items-center rounded-full bg-[#e6f7f6] px-2.5 py-1.5 text-label font-semibold text-[#008d8c]" aria-label={t('pendingRequestCount', { count: requests.length })}>
+          {format.number(requests.length)}
         </span>
       </div>
 
@@ -130,11 +123,11 @@ export function MemberJoinRequestsPanel({
       ) : null}
 
       <div className="app-list">
-        {loading ? <LoadingIndicator variant="card" label="Loading join requests" /> : null}
+        {loading ? <LoadingIndicator variant="card" label={t('loadingJoinRequests')} /> : null}
         {!loading ? requests.map((request) => <MemberJoinRequestCard key={request.id} request={request} reviewInProgress={reviewInProgress} onReview={onReview} />) : null}
         {!loading && !requests.length ? (
           <div className="app-empty-state">
-            No pending join requests.
+            {t('noPendingJoinRequests')}
           </div>
         ) : null}
       </div>

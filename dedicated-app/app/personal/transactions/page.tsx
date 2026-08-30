@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ChevronDown, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
-import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import { FloatingActionLink } from "@/components/mobile/floating-action-link";
 import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileSelectSheet, type MobileSelectOption } from "@/components/mobile/select-sheet";
@@ -27,7 +26,7 @@ import type {
 } from "@/features/personal/types";
 
 export default function PersonalTransactionsPage() {
-  const { locale, toggleLocale } = usePersonalLocale();
+  const { locale } = usePersonalLocale();
   const copy = personalCopy(locale);
   const [month, setMonth] = useState(currentPersonalMonth());
   const [type, setType] = useState<"ALL" | PersonalTransactionType>("ALL");
@@ -88,7 +87,6 @@ export default function PersonalTransactionsPage() {
         title={copy.transactions}
         subtitle={copy.transactionHistory}
         backHref="/personal"
-        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
       />
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />
@@ -113,7 +111,7 @@ export default function PersonalTransactionsPage() {
             {search ? (
               <button
                 type="button"
-                aria-label={`Clear ${copy.search}`}
+                aria-label={copy.clearSearch}
                 onClick={() => setSearch("")}
                 className="absolute inset-y-0 right-1.5 grid w-8 place-items-center text-[#789096] transition hover:text-[#123748] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008d8c]/30"
               >

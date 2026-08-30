@@ -12,13 +12,18 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import {
+  BillingCalculationNotice,
+  billingCalculationIsPending,
+  type BillingCalculationStatus,
+} from '@/components/mobile/billing-status-notice'
 import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
-import { formatTaka } from '@/components/mobile/expense-design'
-import { InlineNotice, MealMonthSelector, currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
+import { InlineNotice, MealMonthSelector, currentMonthValue } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import type { BillStatus } from '@/lib/form-options'
+import { useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
 
@@ -164,8 +169,9 @@ function MemberBillRow({
   member?: MemberRecord
   messId: string
 }) {
-  const name = bill.member?.name || member?.user?.name || 'Member'
-  const email = bill.member?.email || member?.user?.email || 'Email not available'
+  const t = useTranslations('billing')
+  const name = bill.member?.name || member?.user?.name || t('memberFallback')
+  const email = bill.member?.email || member?.user?.email || t('emailNotAvailable')
   const isPaid = bill.status === 'PAID' || toNumber(bill.final_due) <= 0
   const closeStatus = bill.close_requests?.[0]?.status
 
@@ -173,7 +179,7 @@ function MemberBillRow({
     <Link
       href={appHref(`/member-details?memberId=${encodeURIComponent(bill.member?.id ?? '')}&messId=${encodeURIComponent(member?.mess_id ?? messId)}&month=${encodeURIComponent(String(bill.month).slice(0, 7))}`)}
       className="monthly-member-row"
-      aria-label={`View ${name} monthly bill details`}
+      aria-label={t('viewMemberBillDetails', { name })}
     >
       <MemberPhoto avatarUrl={memberAvatarUrl(bill, member)} name={name} />
       <span className="monthly-member-row__identity">
@@ -181,21 +187,24 @@ function MemberBillRow({
         <small>{email}</small>
       </span>
       <span className="monthly-member-row__status" data-status={closeStatus === 'PENDING' ? 'due' : closeStatus === 'APPROVED' || isPaid ? 'paid' : 'due'}>
-        {closeStatus === 'PENDING' ? 'Close pending' : closeStatus === 'APPROVED' ? 'Closed' : isPaid ? 'Paid' : 'Due'}
+        {closeStatus === 'PENDING' ? t('closePending') : closeStatus === 'APPROVED' ? t('closed') : isPaid ? t('paid') : t('due')}
       </span>
     </Link>
   )
 }
 
 export default function MonthlyBillPage() {
+  const t = useTranslations('billing')
+  const format = useLocaleFormatters()
+  const { notice, clearNotice, showError } = useLocalizedNotice('billing')
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const [month, setMonth] = useState(currentMonthValue())
   const [details, setDetails] = useState<MyExpenseDetails | null>(null)
   const [bills, setBills] = useState<BillItem[]>([])
   const [members, setMembers] = useState<MemberRecord[]>([])
+  const [billingStatus, setBillingStatus] = useState<BillingCalculationStatus | null>(null)
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (!messId) return
@@ -208,23 +217,38 @@ export default function MonthlyBillPage() {
         .then((response) => {
           if (!alive) return
           setBills(Array.isArray(response.data) ? (response.data as BillItem[]) : [])
+          setBillingStatus(response.billing?.status ?? null)
           if (response.billing && response.billing.status !== 'READY' && response.billing.status !== 'FAILED') {
             billingTimer = setTimeout(refreshBills, 1500)
           }
         })
-        .catch(() => undefined)
+        .catch((error) => {
+          if (alive) showError(error, 'loadDetailsFailed')
+        })
     }
 
     setLoading(true)
-    setMessage('')
+    setBillingStatus(null)
+    clearNotice()
+
+    let firstLoadError: unknown = null
+    const recordLoadError = (error: unknown) => {
+      firstLoadError ??= error
+    }
 
     Promise.all([
       api.getMyExpenseDetails(messId, `${month}-01`).catch((error) => {
-        if (alive) setMessage(error instanceof Error ? error.message : 'Failed to load your bill overview.')
+        recordLoadError(error)
         return { data: null }
       }),
-      api.getBillsByMess(messId, { month: `${month}-01`, limit: 500, sortBy: 'generated_at', sortOrder: 'desc' }).catch(() => ({ data: [], billing: null })),
-      api.getMessMemberOptions(messId).catch(() => ({ data: [] })),
+      api.getBillsByMess(messId, { month: `${month}-01`, limit: 500, sortBy: 'generated_at', sortOrder: 'desc' }).catch((error) => {
+        recordLoadError(error)
+        return { data: [], billing: null }
+      }),
+      api.getMessMemberOptions(messId).catch((error) => {
+        recordLoadError(error)
+        return { data: [] }
+      }),
     ])
       .then(([detailRes, billRes, memberRes]) => {
         if (!alive) return
@@ -232,6 +256,7 @@ export default function MonthlyBillPage() {
         const memberList = Array.isArray(memberRes.data) ? memberRes.data : []
         setDetails((detailRes.data ?? null) as MyExpenseDetails | null)
         setBills(billList)
+        setBillingStatus(billRes.billing?.status ?? null)
         setMembers(memberList.map((member) => ({
           id: `${messId}:${member.id}`,
           user_id: member.id,
@@ -242,6 +267,7 @@ export default function MonthlyBillPage() {
         if (billRes.billing && billRes.billing.status !== 'READY' && billRes.billing.status !== 'FAILED') {
           billingTimer = setTimeout(refreshBills, 1500)
         }
+        if (firstLoadError) showError(firstLoadError, 'partialDetailsLoadFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -251,7 +277,7 @@ export default function MonthlyBillPage() {
       alive = false
       if (billingTimer) clearTimeout(billingTimer)
     }
-  }, [messId, month])
+  }, [clearNotice, messId, month, showError])
 
   const myBill = useMemo(() => bills.find((bill) => bill.member?.id === user?.id) ?? null, [bills, user?.id])
   const memberByUserId = useMemo(() => new Map(members.map((member) => [member.user_id, member])), [members])
@@ -266,45 +292,46 @@ export default function MonthlyBillPage() {
 
   return (
     <MobileShell showBottomNavigation>
-      <TopScreen title="Monthly Bill Management" subtitle={formatMonthLabel(month)} backHref="/" />
+      <TopScreen title={t('monthlyBillManagement')} subtitle={format.month(`${month}-01`)} backHref="/" />
 
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />
 
-        {message ? <InlineNotice tone="danger">{message}</InlineNotice> : null}
+        {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
+        <BillingCalculationNotice status={billingStatus} />
 
         <section>
-          <div className="section-title">My Overview</div>
+          <div className="section-title">{t('myOverview')}</div>
           <div className="grid grid-cols-2 gap-3">
-            <OverviewCard label="Total Deposit" icon={CircleDollarSign} value={loading ? <LoadingIndicator size="sm" label="Loading deposit" /> : formatTaka(totalDeposit)} />
-            <OverviewCard label="Total Cost" icon={ReceiptText} value={loading ? <LoadingIndicator size="sm" label="Loading cost" /> : formatTaka(totalCost)} />
-            <OverviewCard label="Total Due" icon={WalletCards} value={loading ? <LoadingIndicator size="sm" label="Loading due" /> : formatTaka(totalDue)} />
-            <OverviewCard label="Total Remaining" icon={ShieldCheck} value={loading ? <LoadingIndicator size="sm" label="Loading remaining" /> : formatTaka(totalRemaining)} />
+            <OverviewCard label={t('totalDeposit')} icon={CircleDollarSign} value={loading ? <LoadingIndicator size="sm" label={t('loadingDeposit')} /> : format.money(totalDeposit)} />
+            <OverviewCard label={t('totalCost')} icon={ReceiptText} value={loading ? <LoadingIndicator size="sm" label={t('loadingCost')} /> : format.money(totalCost)} />
+            <OverviewCard label={t('totalDue')} icon={WalletCards} value={loading ? <LoadingIndicator size="sm" label={t('loadingDue')} /> : format.money(totalDue)} />
+            <OverviewCard label={t('totalRemaining')} icon={ShieldCheck} value={loading ? <LoadingIndicator size="sm" label={t('loadingRemaining')} /> : format.money(totalRemaining)} />
           </div>
         </section>
 
         <AssistantSummaryCard
           icon={CalendarDays}
-          title="My Bill Summary"
+          title={t('myBillSummary')}
           href={appHref(`/monthly-bill/my-details?month=${encodeURIComponent(month)}`)}
-          actionLabel="Details"
+          actionLabel={t('details')}
         >
-          Meals, deposits, expenses and utility
+          {t('billSummaryDescription')}
         </AssistantSummaryCard>
 
         <section className="monthly-member-overview" aria-labelledby="member-bill-overview-title">
           <div className="monthly-member-overview__header">
             <div>
-              <p>MEMBER BILLS</p>
-              <h2 id="member-bill-overview-title">Member overview</h2>
+              <p>{t('memberBills')}</p>
+              <h2 id="member-bill-overview-title">{t('memberOverview')}</h2>
             </div>
-            <span>{loading ? '—' : visibleBills.length}</span>
+            <span>{loading ? '—' : format.number(visibleBills.length)}</span>
           </div>
 
           {loading ? (
             <div className="monthly-member-overview__loading">
-              <LoadingIndicator size="sm" label="Loading member bills" />
-              <span>Loading member bills...</span>
+              <LoadingIndicator size="sm" label={t('loadingMemberBills')} />
+              <span>{t('loadingMemberBillsProgress')}</span>
             </div>
           ) : null}
           {!loading && visibleBills.length ? (
@@ -314,9 +341,9 @@ export default function MonthlyBillPage() {
               ))}
             </div>
           ) : null}
-          {!loading && !visibleBills.length ? (
+          {!loading && !visibleBills.length && !billingCalculationIsPending(billingStatus) ? (
             <div className="monthly-member-overview__empty">
-              No generated bills for this month.
+              {t('noGeneratedBills')}
             </div>
           ) : null}
 

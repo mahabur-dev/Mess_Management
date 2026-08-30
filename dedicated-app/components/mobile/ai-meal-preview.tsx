@@ -6,7 +6,7 @@ import {
   formatWeekday,
   MealCard,
   MealIconBadge,
-  MEAL_LABELS,
+  mealLabel,
   MEAL_META,
   MEAL_ORDER,
   SaveConfirmNote,
@@ -14,6 +14,7 @@ import {
 } from '@/components/mobile/meals-design'
 import type { AiLocale } from '@/lib/ai-automation'
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
+import { formatNumber, useTranslations } from '@/lib/i18n'
 
 export type AiMealPreviewItem = Record<string, unknown>
 
@@ -97,12 +98,16 @@ function groupMeals(items: AiMealPreviewItem[]): MealGroup[] {
 
 function MealCountControl({
   item,
+  locale,
   onPatch,
 }: {
   item: AiMealPreviewItem
+  locale: AiLocale
   onPatch: (patch: Record<string, unknown>) => void
 }) {
+  const meals = useTranslations('meals')
   const mealName = itemMealName(item)
+  const label = mealLabel(mealName, locale)
   const baseValue = MEAL_META[mealName].baseValue
   const count = item.status === 'OFF' ? 0 : itemCount(item)
 
@@ -115,14 +120,14 @@ function MealCountControl({
     <div className="flex h-10 shrink-0 items-center overflow-hidden rounded-[12px] border border-[#9edddc] bg-[#f8fbfb]">
       <button
         type="button"
-        aria-label={`Decrease ${MEAL_LABELS[mealName]} meal`}
+        aria-label={meals('decreaseMeal', { meal: label })}
         onClick={() => setCount(count - baseValue)}
         className="grid h-full w-9 place-items-center text-[#00777a] transition active:bg-[#dff4f3]"
       >
         <Minus size={16} />
       </button>
       <input
-        aria-label={`${MEAL_LABELS[mealName]} meal count`}
+        aria-label={meals('mealCount', { meal: label })}
         className="h-full w-14 border-x border-[#bfe7e6] bg-transparent px-1 text-center text-label font-bold tabular-nums text-[#245d66] outline-none"
         type="number"
         inputMode="decimal"
@@ -135,7 +140,7 @@ function MealCountControl({
       />
       <button
         type="button"
-        aria-label={`Increase ${MEAL_LABELS[mealName]} meal`}
+        aria-label={meals('increaseMeal', { meal: label })}
         onClick={() => setCount(count === 0 ? baseValue : count + baseValue)}
         className="grid h-full w-9 place-items-center bg-[#008d8c] text-white transition active:bg-[#00777a]"
       >
@@ -158,6 +163,7 @@ export function AiMealPreview({
   onPatchItem: (index: number, patch: Record<string, unknown>) => void
   onRemoveItem: (index: number) => void
 }) {
+  const meals = useTranslations('meals')
   const copy = COPY[locale]
   const groups = groupMeals(items)
   const totalDays = new Set(groups.map((group) => group.date)).size
@@ -182,14 +188,14 @@ export function AiMealPreview({
           <p className="mt-0.5 text-caption font-medium text-[#65838b]">{copy.helper}</p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-title-sm font-bold tabular-nums text-[#00777a]">{total}</p>
+          <p className="text-title-sm font-bold tabular-nums text-[#00777a]">{formatNumber(total, locale, { maximumFractionDigits: 2 })}</p>
           <p className="text-caption font-semibold text-[#65838b]">{copy.total}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-center gap-2 text-caption font-semibold text-[#65838b]">
-        <span className="rounded-full bg-white px-3 py-1.5 shadow-[0_5px_14px_rgba(18,55,72,0.06)]">{items.length} {copy.entry}</span>
-        <span className="rounded-full bg-white px-3 py-1.5 shadow-[0_5px_14px_rgba(18,55,72,0.06)]">{totalDays} {copy.day}</span>
+        <span className="rounded-full bg-white px-3 py-1.5 shadow-[0_5px_14px_rgba(18,55,72,0.06)]">{formatNumber(items.length, locale)} {copy.entry}</span>
+        <span className="rounded-full bg-white px-3 py-1.5 shadow-[0_5px_14px_rgba(18,55,72,0.06)]">{formatNumber(totalDays, locale)} {copy.day}</span>
       </div>
 
       {groups.map((group) => (
@@ -198,7 +204,7 @@ export function AiMealPreview({
             <label className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[#dff4f3] text-[#008d8c] active:scale-[0.98]">
               <CalendarDays size={18} />
               <input
-                aria-label="Change meal date"
+                aria-label={meals('selectDate')}
                 className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 type="date"
                 value={group.date}
@@ -206,8 +212,8 @@ export function AiMealPreview({
               />
             </label>
             <div className="min-w-0 flex-1">
-              <p className="text-label font-bold text-[#123748]">{formatDisplayDate(group.date)}</p>
-              <p className="mt-0.5 text-caption font-medium text-[#65838b]">{formatWeekday(group.date)}</p>
+              <p className="text-label font-bold text-[#123748]">{formatDisplayDate(group.date, locale)}</p>
+              <p className="mt-0.5 text-caption font-medium text-[#65838b]">{formatWeekday(group.date, locale)}</p>
             </div>
             <div className="max-w-[46%]">
               <MobileSelectSheet
@@ -242,9 +248,9 @@ export function AiMealPreview({
                     <MealIconBadge mealName={mealName} size="sm" />
                     <div className="min-w-0 flex-1">
                       <MobileSelectSheet
-                        label="Change meal type"
+                        label={meals('mealName')}
                         value={mealName}
-                        options={MEAL_ORDER.map((name) => ({ value: name, label: MEAL_LABELS[name] }))}
+                        options={MEAL_ORDER.map((name) => ({ value: name, label: mealLabel(name, locale) }))}
                         onChange={(nextMeal) => {
                           const nextCount = Math.max(MEAL_META[nextMeal].baseValue, itemCount(item))
                           onPatchItem(index, { mealName: nextMeal, mealCount: nextCount, status: 'ON' })
@@ -256,13 +262,13 @@ export function AiMealPreview({
                               <ChevronDown size={13} className={`text-[#789096] transition-transform ${open ? 'rotate-180' : ''}`} />
                             </span>
                             <span className="mt-0.5 block text-caption text-[#65838b]">
-                              {mealName === 'BREAKFAST' ? '1 serving = 0.5 meal' : '1 serving = 1 meal'}
+                              {mealName === 'BREAKFAST' ? meals('halfMealPerServing') : meals('oneMealPerServing')}
                             </span>
                           </button>
                         )}
                       />
                     </div>
-                    <MealCountControl item={item} onPatch={(patch) => onPatchItem(index, patch)} />
+                    <MealCountControl item={item} locale={locale} onPatch={(patch) => onPatchItem(index, patch)} />
                     {items.length > 1 ? (
                       <button
                         type="button"

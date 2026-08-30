@@ -8,7 +8,6 @@ import {
   WalletCards,
 } from "lucide-react";
 import { LoadingIndicator } from "@/components/loading-indicator";
-import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import {
   ExpenseBreakdownList,
   ExpenseSurface,
@@ -29,7 +28,7 @@ import { usePersonalLocale } from "@/features/personal/hooks/use-personal-locale
 import type { PersonalReport } from "@/features/personal/types";
 
 export default function PersonalReportsPage() {
-  const { locale, toggleLocale } = usePersonalLocale();
+  const { locale } = usePersonalLocale();
   const copy = personalCopy(locale);
   const [month, setMonth] = useState(currentPersonalMonth());
   const [report, setReport] = useState<PersonalReport | null>(null);
@@ -60,7 +59,6 @@ export default function PersonalReportsPage() {
         title={copy.reports}
         subtitle={copy.monthlySummary}
         backHref="/personal"
-        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
       />
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />

@@ -7,6 +7,7 @@ export const ONBOARDING_STORAGE_KEY = 'messzen:onboarding-complete:v1'
 
 export type GlobalRole = 'ADMIN' | 'MANAGER' | 'MEMBER'
 export type MembershipRole = 'MANAGER' | 'MEMBER'
+export type PreferredLocale = 'en' | 'bn'
 
 export type MessMembership = {
   id?: string
@@ -35,6 +36,7 @@ export type AuthUser = {
   state?: string | null
   city?: string | null
   zipcode?: string | null
+  preferred_locale?: PreferredLocale | null
   is_active?: boolean
   is_verified?: boolean
   created_at?: string

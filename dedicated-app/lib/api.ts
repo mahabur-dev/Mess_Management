@@ -8,14 +8,9 @@ const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\
 const SERVICE_UNAVAILABLE_MESSAGE = 'Messzen is temporarily unavailable. Please try again in a few moments.'
 const CONNECTION_ERROR_MESSAGE = "We couldn't connect to Messzen. Check your internet connection and try again."
 
-function safeApiErrorMessage(message: string | undefined, status: number) {
+function safeApiErrorMessage(status: number) {
   if (status >= 500) return SERVICE_UNAVAILABLE_MESSAGE
-
-  const candidate = message?.trim()
-  if (!candidate) return 'Something went wrong. Please try again.'
-
-  const containsTechnicalDetail = /https?:\/\/|\/api\/|cannot\s+(get|post|put|patch|delete)\b|prisma|econn|enotfound|stack trace/i.test(candidate)
-  return containsTechnicalDetail ? SERVICE_UNAVAILABLE_MESSAGE : candidate
+  return 'Request failed. Please try again.'
 }
 
 type QueryValue = string | number | boolean | undefined | null
@@ -23,6 +18,9 @@ type QueryValue = string | number | boolean | undefined | null
 type ApiResponse<T> = {
   success: boolean
   message: string
+  code?: string
+  params?: Record<string, string | number | boolean | null>
+  errorSources?: Array<{ path: string | number; message: string }>
   data: T
   meta?: Record<string, unknown>
   totalAmount?: number
@@ -31,6 +29,19 @@ type ApiResponse<T> = {
     requestedAt?: string | null
     calculatedAt?: string | null
   } | null
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly status: number,
+    public readonly errorSources: Array<{ path: string | number; message: string }> = [],
+    public readonly params: Record<string, string | number | boolean | null> = {},
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
 }
 
 class Api {
@@ -76,16 +87,19 @@ class Api {
 
       if (!res.ok || json.success === false) {
         if (res.status === 401) this.clearAuth()
-        throw new Error(safeApiErrorMessage(json.message || res.statusText, res.status))
+        throw new ApiError(
+          safeApiErrorMessage(res.status),
+          json.code || `HTTP_${res.status}`,
+          res.status,
+          json.errorSources,
+          json.params ?? {},
+        )
       }
 
       return json
     } catch (err) {
-      if (err instanceof Error && /invalid or expired token/i.test(err.message)) {
-        this.clearAuth()
-      }
       if (err instanceof TypeError && /fetch|network|failed/i.test(err.message)) {
-        throw new Error(CONNECTION_ERROR_MESSAGE)
+        throw new ApiError(CONNECTION_ERROR_MESSAGE, 'NETWORK_ERROR', 0)
       }
       throw err
     }
@@ -141,6 +155,12 @@ class Api {
       method: 'PATCH',
       body: data,
     })
+  }
+
+  updatePreferredLocale(locale: 'en' | 'bn') {
+    const data = new FormData()
+    data.set('preferredLocale', locale)
+    return this.updateProfile(data)
   }
 
   changePassword(oldPassword: string, newPassword: string) {

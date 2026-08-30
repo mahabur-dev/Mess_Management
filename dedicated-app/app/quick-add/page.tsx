@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
-import { AppHeader } from '@/components/app-header'
+import { AppHeader, NotificationLink } from '@/components/app-header'
 import { HomeCard } from '@/components/home-card'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { MobileShell } from '@/components/mobile-shell'
@@ -26,14 +26,14 @@ import { Notice } from '@/components/ui/notice'
 import { AiMealPreview } from '@/components/mobile/ai-meal-preview'
 import { AiExpensePreview } from '@/components/mobile/ai-expense-preview'
 import { AiDepositPreview } from '@/components/mobile/ai-deposit-preview'
-import { CompactLanguageToggle } from '@/components/mobile/compact-language-toggle'
 import { useActiveMess } from '@/hooks/use-active-mess'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
-import { aiCopy, type AiCommand, type AiLocale } from '@/lib/ai-automation'
+import { aiCopy, type AiCommand } from '@/lib/ai-automation'
 import { api } from '@/lib/api'
 import { appHref } from '@/lib/routes'
 import { canManageMess } from '@/lib/app-permissions'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
 function label(value: string) {
   return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
@@ -51,18 +51,20 @@ const QUICK_EXAMPLES = [
 export default function QuickAddPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const tCommon = useTranslations('common')
   const canManage = canManageMess(user)
   const { activeMess, isLoading: messLoading, status: messStatus } = useActiveMess(user)
   const members = useMessMemberOptions(activeMess?.id ?? '', user)
-  const [locale, setLocale] = useState<AiLocale>('en')
   const [text, setText] = useState('')
   const [command, setCommand] = useState<AiCommand | null>(null)
   const [payload, setPayload] = useState<Record<string, unknown>>({})
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<unknown>(null)
   const [enabled, setEnabled] = useState<boolean | null>(null)
   const [voiceEnabled, setVoiceEnabled] = useState<boolean | null>(null)
   const copy = aiCopy(locale)
+  const errorMessage = error ? localizedErrorMessage(error, locale) : ''
   const experienceCopy = locale === 'bn'
     ? {
         assistant: 'MESSZEN AI ASSISTANT',
@@ -83,16 +85,6 @@ export default function QuickAddPage() {
         processing: 'AI is analyzing your command',
       }
   useEffect(() => {
-    const stored = window.localStorage.getItem('messzen:ai-locale')
-    if (stored === 'bn' || stored === 'en') {
-      setLocale(stored)
-      return
-    }
-
-  }, [])
-
-  useEffect(() => {
-    window.localStorage.setItem('messzen:ai-locale', locale)
     api.getAiCapabilities(locale)
       .then((response) => {
         setEnabled(response.data.enabled)
@@ -113,7 +105,7 @@ export default function QuickAddPage() {
   const sendVoice = useCallback(async (blob: Blob) => {
     if (!activeMess?.id) return
     setBusy(true)
-    setError('')
+    setError(null)
     try {
       const response = await api.createAiVoiceCommand({
         messId: activeMess.id,
@@ -124,7 +116,7 @@ export default function QuickAddPage() {
       })
       receiveCommand(response.data)
     } catch (value) {
-      setError(value instanceof Error ? value.message : 'Voice command failed.')
+      setError(value)
     } finally {
       setBusy(false)
     }
@@ -136,7 +128,7 @@ export default function QuickAddPage() {
     event.preventDefault()
     if (!activeMess?.id || !text.trim() || busy) return
     setBusy(true)
-    setError('')
+    setError(null)
     try {
       const response = await api.createAiTextCommand({
         messId: activeMess.id,
@@ -146,7 +138,7 @@ export default function QuickAddPage() {
       })
       receiveCommand(response.data)
     } catch (value) {
-      setError(value instanceof Error ? value.message : 'AI command failed.')
+      setError(value)
     } finally {
       setBusy(false)
     }
@@ -155,13 +147,13 @@ export default function QuickAddPage() {
   const confirm = async () => {
     if (!command || busy) return
     setBusy(true)
-    setError('')
+    setError(null)
     try {
       const response = await api.confirmAiCommand(command.id, payload)
       setCommand(response.data)
       setPayload(response.data.payload ?? payload)
     } catch (value) {
-      setError(value instanceof Error ? value.message : 'Could not save the command.')
+      setError(value)
     } finally {
       setBusy(false)
     }
@@ -174,7 +166,7 @@ export default function QuickAddPage() {
     setCommand(null)
     setPayload({})
     setText('')
-    setError('')
+    setError(null)
   }
 
   const memberOptions = useMemo(() => members.map((member) => ({ value: member.id, label: member.name })), [members])
@@ -224,39 +216,23 @@ export default function QuickAddPage() {
   )
   const isCanonicalEntryReview = isExpenseReview || isDepositReview
   const reviewTitle = isExpenseReview
-    ? command?.intent === 'UTILITY_CREATE' ? 'Add Utility' : 'Add Expense'
+    ? command?.intent === 'UTILITY_CREATE' ? copy.addUtility : copy.addExpense
     : isDepositReview
-      ? 'Submit Deposit'
+      ? copy.submitDeposit
       : copy.title
-  const ReviewIcon = command?.intent === 'UTILITY_CREATE'
-    ? Zap
-    : command?.intent === 'EXPENSE_CREATE'
-      ? ReceiptText
-      : WalletCards
-
-  if (messLoading) return <LoadingIndicator variant="screen" label="Loading mess workspace" />
+  if (messLoading) return <LoadingIndicator variant="screen" label={copy.loadingWorkspace} />
 
   return (
     <MobileShell>
       <AppHeader
         title={reviewTitle}
-        subtitle={isCanonicalEntryReview ? 'AI-prefilled entry · Review before saving' : copy.subtitle}
+        subtitle={isCanonicalEntryReview ? copy.reviewSubtitle : copy.subtitle}
         backHref="/"
-        trailing={isCanonicalEntryReview ? (
-          <span className="app-header-action" aria-hidden="true">
-            <ReviewIcon size={18} strokeWidth={2.4} />
-          </span>
-        ) : (
-          <CompactLanguageToggle
-            locale={locale}
-            onToggle={() => setLocale((current) => current === 'en' ? 'bn' : 'en')}
-            disabled={busy || recorder.isRecording}
-          />
-        )}
+        trailing={<NotificationLink />}
       />
 
       <div className={`screen space-y-3.5 pb-8 ${isCanonicalEntryReview ? 'expense-form-screen' : ''}`}>
-        {messStatus !== 'connected' ? <Notice tone="warning">Connect to a mess workspace before using AI Quick Add.</Notice> : null}
+        {messStatus !== 'connected' ? <Notice tone="warning">{copy.messRequired}</Notice> : null}
         {enabled === false ? <Notice tone="warning">{copy.disabled}</Notice> : null}
 
         {!command ? (
@@ -274,11 +250,11 @@ export default function QuickAddPage() {
                 </div>
               </div>
 
-              <div className="quick-add-capabilities" aria-label="Supported entry types">
-                <span><ReceiptText size={14} /> Expense</span>
-                <span><Zap size={14} /> Utility</span>
-                <span><WalletCards size={14} /> Deposit</span>
-                <span><UtensilsCrossed size={14} /> Meal</span>
+              <div className="quick-add-capabilities" aria-label={tCommon('supportedEntryTypes')}>
+                <span><ReceiptText size={14} /> {copy.expenseType}</span>
+                <span><Zap size={14} /> {copy.utilityType}</span>
+                <span><WalletCards size={14} /> {copy.depositType}</span>
+                <span><UtensilsCrossed size={14} /> {copy.mealType}</span>
               </div>
 
               <div className="quick-add-safety-note">
@@ -313,10 +289,10 @@ export default function QuickAddPage() {
                     {recorder.isRecording ? <AudioLines size={14} aria-hidden="true" /> : <Sparkles size={13} aria-hidden="true" />}
                     <span>
                       {recorder.isRecording
-                        ? `${copy.recording} · ${recorder.seconds}s / 60s`
+                        ? `${copy.recording} · ${copy.recordingProgress(recorder.seconds)}`
                         : busy
                           ? experienceCopy.processing
-                          : 'Bangla · English · Banglish'}
+                          : copy.supportedLanguages}
                     </span>
                   </div>
                   <button
@@ -379,14 +355,14 @@ export default function QuickAddPage() {
           <HomeCard className="py-7 text-center">
             <CheckCircle2 size={52} className="mx-auto text-[#008d8c]" />
             <h2 className="mt-4 text-title-sm font-bold text-[#123748]">
-              {command.intent === 'DEPOSIT_CREATE' && !canManage ? 'Deposit submitted' : copy.success}
+              {command.intent === 'DEPOSIT_CREATE' && !canManage ? copy.depositSubmitted : copy.success}
             </h2>
             <p className="mt-2 text-label text-[#65838b]">
-              {command.intent === 'DEPOSIT_CREATE' && !canManage ? 'Pending manager approval' : intentLabel}
+              {command.intent === 'DEPOSIT_CREATE' && !canManage ? copy.pendingApproval : intentLabel}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button type="button" className="ui-btn ui-btn--secondary" onClick={() => void reset()}>{copy.newCommand}</button>
-              <button type="button" className="ui-btn ui-btn--primary" onClick={() => router.replace(appHref(command.result?.redirectTo ?? '/'))}>View</button>
+              <button type="button" className="ui-btn ui-btn--primary" onClick={() => router.replace(appHref(command.result?.redirectTo ?? '/'))}>{copy.view}</button>
             </div>
           </HomeCard>
         ) : (
@@ -444,7 +420,7 @@ export default function QuickAddPage() {
               />
             ) : null}
 
-            {error ? <Notice tone="danger">{error}</Notice> : null}
+            {errorMessage ? <Notice tone="danger">{errorMessage}</Notice> : null}
             {!isCanonicalEntryReview ? (
             <div className="grid grid-cols-[0.85fr_1.4fr] gap-2">
               <button type="button" className="ui-btn ui-btn--secondary" disabled={busy} onClick={() => void reset(true)}>{copy.cancel}</button>
@@ -456,7 +432,7 @@ export default function QuickAddPage() {
           </>
         )}
 
-        {error && !command ? <Notice tone="danger">{error}</Notice> : null}
+        {errorMessage && !command ? <Notice tone="danger">{errorMessage}</Notice> : null}
       </div>
     </MobileShell>
   )

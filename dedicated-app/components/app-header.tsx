@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { canManageMess, hasActiveMess } from '@/lib/app-permissions'
 import { appHref } from '@/lib/routes'
+import { useTranslations } from '@/lib/i18n'
 
 type AppHeaderProps = {
   title: string
@@ -33,6 +34,7 @@ export function ProfileAvatarLink() {
   const [imageFailed, setImageFailed] = useState(false)
   const avatarUrl = user?.avatar_url?.trim() ?? ''
   const initials = getInitials(user?.name)
+  const navigation = useTranslations('navigation')
 
   useEffect(() => {
     setImageFailed(false)
@@ -42,8 +44,8 @@ export function ProfileAvatarLink() {
     <Link
       href={appHref('/profile')}
       className="app-header-action app-profile-link"
-      aria-label={`Open ${user?.name ? `${user.name}'s` : 'your'} profile`}
-      title="Profile"
+      aria-label={user?.name ? navigation('openProfile', { name: user.name }) : navigation('openYourProfile')}
+      title={navigation('profile')}
     >
       {avatarUrl && !imageFailed ? (
         // The API returns the uploaded image URL, which may be hosted outside the app origin.
@@ -62,9 +64,10 @@ export function ProfileAvatarLink() {
   )
 }
 
-function NotificationLink({ hasUnreadNotifications = false }: { hasUnreadNotifications?: boolean }) {
+export function NotificationLink({ hasUnreadNotifications = false }: { hasUnreadNotifications?: boolean }) {
   const { user } = useAuth()
   const canViewNotices = hasActiveMess(user) || canManageMess(user)
+  const navigation = useTranslations('navigation')
 
   if (!canViewNotices) return <span className="h-11 w-11" aria-hidden="true" />
 
@@ -72,8 +75,8 @@ function NotificationLink({ hasUnreadNotifications = false }: { hasUnreadNotific
     <Link
       href={appHref('/notifications')}
       className="app-header-action"
-      aria-label={hasUnreadNotifications ? 'Open notifications, unread notifications available' : 'Open notifications'}
-      title="Notifications"
+      aria-label={hasUnreadNotifications ? navigation('openUnreadNotifications') : navigation('openNotifications')}
+      title={navigation('notifications')}
     >
       <Bell size={19} strokeWidth={2.3} aria-hidden="true" />
       {hasUnreadNotifications ? <span className="app-header-notification-dot" aria-hidden="true" /> : null}
@@ -92,6 +95,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   const router = useRouter()
   const headerRef = useRef<HTMLElement>(null)
+  const navigation = useTranslations('navigation')
 
   const navigateBack = () => {
     if (backHref) {
@@ -107,7 +111,7 @@ export function AppHeader({
   const leadingContent =
     leading ??
     (backHref ? (
-      <button type="button" className="app-header-action" onClick={navigateBack} aria-label="Go to previous page" title="Back">
+      <button type="button" className="app-header-action" onClick={navigateBack} aria-label={navigation('back')} title={navigation('back')}>
         <ChevronLeft size={20} strokeWidth={2.5} aria-hidden="true" />
       </button>
     ) : (
@@ -133,7 +137,7 @@ export function AppHeader({
 
   return (
     <header ref={headerRef} className="app-header top-hero px-4 pb-3" data-variant={variant}>
-      <div className={`grid items-center gap-2 ${variant === 'onboarding' ? 'grid-cols-[52px_minmax(0,1fr)_52px]' : 'grid-cols-[44px_minmax(0,1fr)_44px]'}`}>
+      <div className={`grid items-center gap-2 ${variant === 'onboarding' ? 'grid-cols-[52px_minmax(0,1fr)_52px]' : trailing ? 'grid-cols-[44px_minmax(0,1fr)_auto]' : 'grid-cols-[44px_minmax(0,1fr)_44px]'}`}>
         <div className="flex justify-start">{leadingContent}</div>
         <div className={`min-w-0 ${titleAlignment}`}>
           <h1 className={`ui-header-title truncate ${variant === 'onboarding' ? 'text-title' : 'text-title-sm'}`}>{title}</h1>

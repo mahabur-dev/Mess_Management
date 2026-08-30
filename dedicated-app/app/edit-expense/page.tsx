@@ -38,7 +38,6 @@ import { canManageMess } from '@/lib/app-permissions'
 import {
   EXPENSE_USED_BY,
   GENERAL_EXPENSE_CATEGORIES,
-  LABELS,
   UTILITY_FORM_OPTIONS,
   type ExpenseCategory,
   type ExpensePaymentType,
@@ -48,6 +47,7 @@ import {
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
+import { expenseCategoryLabel, formatIsoDate, useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type ExpenseRecord = {
   id: string
@@ -99,7 +99,7 @@ const LEGACY_UTILITY_CATEGORY_SET = new Set<ExpenseCategory>([
 ])
 
 function dateValue(value?: string | null) {
-  return value?.slice(0, 10) || new Date().toISOString().slice(0, 10)
+  return value?.slice(0, 10) || formatIsoDate()
 }
 
 function supportedUsedBy(value?: string | null): ExpenseUsedBy {
@@ -112,7 +112,7 @@ const INITIAL_FORM: FormState = {
   category: 'FOOD',
   purchasedBy: '',
   items: [{ id: 'initial-item', itemName: '', quantity: '', unit: '', amount: '' }],
-  expenseDate: new Date().toISOString().slice(0, 10),
+  expenseDate: formatIsoDate(),
   description: '',
   paymentType: 'FROM_DEPOSIT',
   usedBy: 'ALL_MEMBERS',
@@ -122,6 +122,9 @@ const INITIAL_FORM: FormState = {
 }
 
 export default function EditExpensePage() {
+  const { locale } = useLocale()
+  const t = useTranslations('expenses')
+  const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('expenses')
   const searchParams = useQueryParams()
   const router = useRouter()
   const { user } = useAuth()
@@ -134,7 +137,6 @@ export default function EditExpensePage() {
   const [removeReceipt, setRemoveReceipt] = useState(false)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [recordType, setRecordType] = useState<'EXPENSE' | 'UTILITY'>('EXPENSE')
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -143,7 +145,7 @@ export default function EditExpensePage() {
     if (!expenseId || !messId) return
     let alive = true
     setLoading(true)
-    setMessage('')
+    clearNotice()
 
     api
       .getExpenseById(expenseId)
@@ -151,7 +153,7 @@ export default function EditExpensePage() {
         if (!alive) return
         const found = (res.data as ExpenseRecord | null) ?? null
         if (!found) {
-          setMessage('Expense not found.')
+          showMessage('expenseNotFound', 'danger')
           return
         }
         const createdById = found.createdById ?? found.creator?.id
@@ -166,7 +168,7 @@ export default function EditExpensePage() {
         setRecordType(foundType)
         setExistingReceiptUrl(found.receiptUrl ?? null)
         if (found.usedBy && normalizedUsedBy !== found.usedBy) {
-          setMessage('This legacy allocation is no longer supported. Review the shared members before saving.')
+          showMessage('legacyAllocationWarning', 'warning')
         }
         const fallbackUtilityLabel =
           UTILITY_FORM_OPTIONS.find((option) => option.utilityType === found.utilityType)?.label ??
@@ -191,7 +193,7 @@ export default function EditExpensePage() {
                 itemName:
                   foundType === 'UTILITY'
                     ? utilityOptionForItemName(found.itemName ?? '')?.label ?? fallbackUtilityLabel
-                    : found.itemName ?? LABELS.EXPENSE_CATEGORIES[found.category],
+                    : found.itemName ?? expenseCategoryLabel(found.category, locale),
                 quantity: found.quantity == null ? '' : String(found.quantity),
                 unit: found.unit ?? '',
                 amount: String(found.amount ?? ''),
@@ -209,7 +211,7 @@ export default function EditExpensePage() {
         })
       })
       .catch((error) => {
-        if (alive) setMessage(error instanceof Error ? error.message : 'Failed to load expense details.')
+        if (alive) showError(error, 'loadExpenseDetailsFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -232,16 +234,16 @@ export default function EditExpensePage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setMessage('')
-    if (!expenseId) return setMessage('Expense id is missing.')
+    clearNotice()
+    if (!expenseId) return showMessage('missingExpenseContext', 'danger')
     if (form.usedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) {
-      return setMessage('Select at least one affected member.')
+      return showMessage('selectAtLeastOneMember', 'danger')
     }
     if (form.splitMethod === 'CUSTOM' && !affectedMemberIds.length) {
-      return setMessage('Select members before custom split.')
+      return showMessage('selectMembersBeforeCustom', 'danger')
     }
     if (form.items.some((item) => !item.itemName.trim() || !item.amount || Number(item.amount) <= 0)) {
-      return setMessage('Every item requires a name and a valid line amount.')
+      return showMessage('everyItemRequired', 'danger')
     }
 
     const customShares =
@@ -296,7 +298,7 @@ export default function EditExpensePage() {
 
       router.replace(`/expense-details?expenseId=${encodeURIComponent(expenseId)}&messId=${encodeURIComponent(messId)}`)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update expense.')
+      showError(error, 'updateExpenseFailed')
     } finally {
       setBusy(false)
     }
@@ -307,33 +309,33 @@ export default function EditExpensePage() {
   return (
     <MobileShell>
       <form onSubmit={handleSubmit}>
-        <FormPageShell title={isUtilityExpense ? 'Edit Utility' : 'Edit Expense'} icon={isUtilityExpense ? Zap : ReceiptText} backHref="/expenses">
-          {loading ? <LoadingIndicator variant="card" label="Loading expense" /> : null}
+        <FormPageShell title={isUtilityExpense ? t('editUtility') : t('editExpense')} icon={isUtilityExpense ? Zap : ReceiptText} backHref="/expenses">
+          {loading ? <LoadingIndicator variant="card" label={t('loadingExpense')} /> : null}
 
-          <FormSection title="Payment Details">
+          <FormSection title={t('paymentDetails')}>
             <PaymentTypeSelector value={form.paymentType} onChange={(paymentType) => update('paymentType', paymentType)} showHeading={false} />
           </FormSection>
 
-          <FormSection title={isUtilityExpense ? 'Utility Details' : 'Expense Details'}>
+          <FormSection title={isUtilityExpense ? t('utilityDetails') : t('expenseDetails')}>
             {!isUtilityExpense ? (
-              <DesignedSelect label="Category" icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
+              <DesignedSelect label={t('category')} icon={expenseFormIcons.category} value={form.category} onChange={(event) => update('category', event.target.value as ExpenseCategory)}>
                 {GENERAL_EXPENSE_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>{LABELS.EXPENSE_CATEGORIES[category]}</option>
+                  <option key={category} value={category}>{expenseCategoryLabel(category, locale)}</option>
                 ))}
               </DesignedSelect>
             ) : null}
             {isManager ? (
-              <DesignedSelect label="Paid By" icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
-                <option value="">Select member</option>
+              <DesignedSelect label={t('paidBy')} icon={expenseFormIcons.member} value={form.purchasedBy} onChange={(event) => update('purchasedBy', event.target.value)} required={form.paymentType === 'PERSONAL'}>
+                <option value="">{t('selectMember')}</option>
                 {members.map((member) => (
                   <option key={member.id} value={member.id}>{member.name}</option>
                 ))}
               </DesignedSelect>
             ) : null}
-            <DesignedInput label={isUtilityExpense ? 'Bill Date' : 'Expense Date'} icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
+            <DesignedInput label={isUtilityExpense ? t('billDate') : t('expenseDate')} icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
           </FormSection>
 
-          <FormSection title={isUtilityExpense ? 'Utility Items' : 'Items'}>
+          <FormSection title={isUtilityExpense ? t('utilityItems') : t('items')}>
             {isUtilityExpense ? (
               <UtilityLineItemsEditor items={form.items} onChange={(items) => update('items', items)} disabled={busy} />
             ) : (
@@ -369,28 +371,28 @@ export default function EditExpensePage() {
             ) : null}
           </ExpenseAdvancedOptions>
 
-          <FormSection title="Note">
-            <DesignedTextarea label="Note (Optional)" icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder="Add a note" count={`${form.description.length}/250`} />
+          <FormSection title={t('note')}>
+            <DesignedTextarea label={t('noteOptional')} icon={expenseFormIcons.description} value={form.description} onChange={(event) => update('description', event.target.value.slice(0, 250))} placeholder={t('addNote')} count={`${form.description.length}/250`} />
           </FormSection>
 
-          <FormSection title="Attachment">
+          <FormSection title={t('attachment')}>
             {existingReceiptUrl && !removeReceipt ? (
               <div className="flex items-center justify-between gap-3 rounded-[14px] border border-[#cfeeed] bg-[#edfafa] px-3.5 py-3">
                 <a href={existingReceiptUrl} target="_blank" rel="noreferrer" className="truncate text-label font-bold text-[#008d8c]">
-                  View current receipt
+                  {t('viewCurrentReceipt')}
                 </a>
                 <button type="button" onClick={() => setRemoveReceipt(true)} className="text-caption font-bold text-[#e02d37]">
-                  Remove
+                  {t('remove')}
                 </button>
               </div>
             ) : null}
-            <UploadField label="Replace Receipt (Optional)" fileName={receiptFile?.name} onChange={(file) => { setReceiptFile(file); if (file) setRemoveReceipt(false) }} />
+            <UploadField label={t('replaceReceiptOptional')} fileName={receiptFile?.name} onChange={(file) => { setReceiptFile(file); if (file) setRemoveReceipt(false) }} />
           </FormSection>
 
-          <FormStatusMessage message={message} />
+          <FormStatusMessage message={notice?.message ?? ''} success={notice?.tone === 'success'} />
           <ExpensePrimaryAction type="submit" disabled={busy}>
             <Save size={17} />
-            {busy ? 'Saving...' : 'Save Changes'}
+            {busy ? t('saving') : t('saveChanges')}
           </ExpensePrimaryAction>
         </FormPageShell>
       </form>

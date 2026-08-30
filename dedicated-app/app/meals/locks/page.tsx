@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Lock, Unlock } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
@@ -10,13 +10,13 @@ import {
   LockStateIcon,
   MealCard,
   MealDateCard,
-  MEAL_LABELS,
   MEAL_ORDER,
   MealIconBadge,
   MealStatusPill,
   MealStateIllustration,
   findMeal,
   mealIsLocked,
+  mealLabel,
   normalizeMeals,
   todayIsoDate,
   type MealName,
@@ -24,36 +24,45 @@ import {
 } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
 import { useAuth } from '@/app/providers'
+import { useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 export default function LockMealsPage() {
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const mealCopy = useTranslations('meals')
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const [date, setDate] = useState(todayIsoDate())
   const [mealName, setMealName] = useState<MealName>('LUNCH')
   const [meals, setMeals] = useState<MealRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
 
-  async function loadMeals() {
-    if (!messId) return
+  const loadMeals = useCallback(async (resetNotice = true) => {
+    if (!messId) {
+      setMeals([])
+      setLoading(false)
+      showMessage('noMessSelected', 'warning')
+      return false
+    }
     setLoading(true)
-    setMessage('')
+    if (resetNotice) clearNotice()
     try {
       const res = await api.getMealsByMess(messId, { startDate: date, endDate: date, limit: 20 })
       setMeals(normalizeMeals(res.data))
+      return true
     } catch (error) {
       setMeals([])
-      setMessage(error instanceof Error ? error.message : 'Failed to load meals.')
+      showError(error, 'loadLockFailed')
+      return false
     } finally {
       setLoading(false)
     }
-  }
+  }, [clearNotice, date, messId, showError, showMessage])
 
   useEffect(() => {
     void loadMeals()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, messId])
+  }, [loadMeals])
 
   const selectedMeal = findMeal(meals, mealName)
   const locked = mealIsLocked(selectedMeal)
@@ -61,14 +70,18 @@ export default function LockMealsPage() {
   async function toggleLock() {
     if (!selectedMeal) return
     setSaving(true)
-    setMessage('')
+    clearNotice()
 
     try {
       await api.updateMeal(selectedMeal.id, { mealStatus: locked ? 'CONFIRMED' : 'LOCKED', date })
-      await loadMeals()
-      setMessage(`${MEAL_LABELS[mealName]} meal ${locked ? 'unlocked' : 'locked'} successfully.`)
+      const refreshed = await loadMeals(false)
+      if (!refreshed) return
+      showMessage('lockUpdated', 'success', {
+        meal: mealLabel(mealName, locale),
+        state: locked ? mealCopy('unlocked') : mealCopy('locked'),
+      })
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update lock status.')
+      showError(error, 'lockUpdateFailed')
     } finally {
       setSaving(false)
     }
@@ -76,22 +89,22 @@ export default function LockMealsPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Lock / Unlock Meals" subtitle="Control member updates" backHref="/meals/manager" />
+      <TopScreen title={mealCopy('lockUnlockMeals')} subtitle={mealCopy('controlMemberUpdates')} backHref="/meals/manager" />
       <div className="screen space-y-4">
         <MealDateCard date={date} onChange={setDate} />
 
         <MealCard className="text-center">
           <MealStateIllustration state={locked ? 'locked' : 'open'} mealName={mealName} />
           <div className={`mt-3 text-title font-bold ${locked ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
-            {MEAL_LABELS[mealName]} meal is {locked ? 'locked' : 'unlocked'}
+            {mealCopy('mealState', { meal: mealLabel(mealName, locale), state: locked ? mealCopy('locked') : mealCopy('unlocked') })}
           </div>
           <div className="mt-2 text-label text-[#65838b]">
-            {locked ? 'Members cannot change this meal now.' : 'Members can update this meal while the window allows.'}
+            {locked ? mealCopy('membersCannotChange') : mealCopy('membersCanChange')}
           </div>
         </MealCard>
 
         <MealCard className="space-y-3">
-          <div className="section-title mb-0">Select Meal Time</div>
+          <div className="section-title mb-0">{mealCopy('selectMealTime')}</div>
           {MEAL_ORDER.map((item) => {
             const meal = findMeal(meals, item)
             const itemLocked = mealIsLocked(meal)
@@ -107,20 +120,20 @@ export default function LockMealsPage() {
               >
                 <MealIconBadge mealName={item} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-label font-bold text-[#123748]">{MEAL_LABELS[item]}</div>
-                  <div className="mt-0.5 text-caption font-semibold text-[#65838b]">{meal ? 'Meal record available' : 'No meal record yet'}</div>
+                  <div className="text-label font-bold text-[#123748]">{mealLabel(item, locale)}</div>
+                  <div className="mt-0.5 text-caption font-semibold text-[#65838b]">{meal ? mealCopy('recordAvailable') : mealCopy('noRecordYet')}</div>
                 </div>
-                <MealStatusPill tone={itemLocked ? 'closed' : 'neutral'}>{itemLocked ? 'Locked' : 'Unlocked'}</MealStatusPill>
+                <MealStatusPill tone={itemLocked ? 'closed' : 'neutral'}>{itemLocked ? mealCopy('locked') : mealCopy('unlocked')}</MealStatusPill>
               </button>
             )
           })}
         </MealCard>
 
-        {message ? <InlineNotice tone={message.includes('successfully') ? 'success' : 'danger'}>{message}</InlineNotice> : null}
-        {loading ? <LoadingIndicator variant="card" label="Loading meal lock status" /> : null}
+        {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
+        {loading ? <LoadingIndicator variant="card" label={mealCopy('loadingLockStatus')} /> : null}
 
         <InlineNotice tone={selectedMeal ? 'info' : 'warning'}>
-          {selectedMeal ? 'Locked meals cannot be changed by members.' : 'This meal has no record yet. Add at least one member meal before locking it.'}
+          {selectedMeal ? mealCopy('lockedCannotChange') : mealCopy('addBeforeLocking')}
         </InlineNotice>
 
         <button
@@ -132,7 +145,7 @@ export default function LockMealsPage() {
           disabled={!selectedMeal || saving}
         >
           {locked ? <Unlock size={18} /> : <Lock size={18} />}
-          {saving ? 'Updating...' : locked ? `Unlock ${MEAL_LABELS[mealName]} Meal` : `Lock ${MEAL_LABELS[mealName]} Meal`}
+          {saving ? mealCopy('updating') : locked ? mealCopy('unlockMeal', { meal: mealLabel(mealName, locale) }) : mealCopy('lockMeal', { meal: mealLabel(mealName, locale) })}
         </button>
 
         <MealCard className="flex items-center gap-3">
@@ -140,8 +153,8 @@ export default function LockMealsPage() {
             <LockStateIcon locked={locked} />
           </div>
           <div>
-            <div className="text-body font-bold text-[#123748]">Current selection</div>
-            <div className="mt-1 text-label text-[#65838b]">{MEAL_LABELS[mealName]} is {locked ? 'locked' : 'unlocked'}.</div>
+            <div className="text-body font-bold text-[#123748]">{mealCopy('currentSelection')}</div>
+            <div className="mt-1 text-label text-[#65838b]">{mealCopy('mealState', { meal: mealLabel(mealName, locale), state: locked ? mealCopy('locked') : mealCopy('unlocked') })}</div>
           </div>
         </MealCard>
       </div>

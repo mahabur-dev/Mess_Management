@@ -1,0 +1,41 @@
+import { HttpStatus } from '@nestjs/common';
+
+export const ERROR_CODES = {
+  VALIDATION_FAILED: 'VALIDATION_FAILED',
+  AUTH_UNAUTHORIZED: 'AUTH_UNAUTHORIZED',
+  AUTH_FORBIDDEN: 'AUTH_FORBIDDEN',
+  RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+  RESOURCE_CONFLICT: 'RESOURCE_CONFLICT',
+  BAD_REQUEST: 'BAD_REQUEST',
+  RATE_LIMITED: 'RATE_LIMITED',
+  SERVER_UNAVAILABLE: 'SERVER_UNAVAILABLE',
+  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+  DATABASE_ERROR: 'DATABASE_ERROR',
+  RELATED_RESOURCE_NOT_FOUND: 'RELATED_RESOURCE_NOT_FOUND',
+  RELATION_CONFLICT: 'RELATION_CONFLICT',
+} as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES] | string;
+
+export function errorCodeForStatus(status: number): ErrorCode {
+  switch (status) {
+    case HttpStatus.BAD_REQUEST:
+      return ERROR_CODES.BAD_REQUEST;
+    case HttpStatus.UNAUTHORIZED:
+      return ERROR_CODES.AUTH_UNAUTHORIZED;
+    case HttpStatus.FORBIDDEN:
+      return ERROR_CODES.AUTH_FORBIDDEN;
+    case HttpStatus.NOT_FOUND:
+      return ERROR_CODES.RESOURCE_NOT_FOUND;
+    case HttpStatus.CONFLICT:
+      return ERROR_CODES.RESOURCE_CONFLICT;
+    case HttpStatus.TOO_MANY_REQUESTS:
+      return ERROR_CODES.RATE_LIMITED;
+    case HttpStatus.SERVICE_UNAVAILABLE:
+      return ERROR_CODES.SERVER_UNAVAILABLE;
+    default:
+      return status >= 500
+        ? ERROR_CODES.INTERNAL_SERVER_ERROR
+        : `HTTP_${status}`;
+  }
+}

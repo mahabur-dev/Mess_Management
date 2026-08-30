@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { useNativeBackAction } from '@/components/native-back-actions'
+import { useTranslations } from '@/lib/i18n'
 
 type DeferredFormSectionProps = {
   open: boolean
@@ -24,6 +25,7 @@ export function DeferredFormSection({
   onOpen,
   onClose,
 }: DeferredFormSectionProps) {
+  const t = useTranslations('common')
   useNativeBackAction(open, () => {
     onClose()
     return true
@@ -42,7 +44,7 @@ export function DeferredFormSection({
             onClick={onClose}
             className="rounded-full bg-[#edfafa] px-3 py-1.5 text-caption font-bold text-[#008d8c]"
           >
-            Close
+            {t('close')}
           </button>
         </div>
         {children}

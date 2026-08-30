@@ -13,6 +13,7 @@ import {
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { AssistantMetricsCard } from '@/components/mobile/assistant-metrics-card'
 import {
   FieldCard,
@@ -23,6 +24,15 @@ import {
 } from '@/components/mobile/form-controls'
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
+import { getActiveMessId } from '@/lib/app-permissions'
+import {
+  messPlanLabel,
+  messSubscriptionStatusLabel,
+  useLocale,
+  useLocaleFormatters,
+  useLocalizedNotice,
+  useTranslations,
+} from '@/lib/i18n'
 import { useAuth } from '../providers'
 
 type RoomDraft = {
@@ -90,17 +100,6 @@ function normalizeRooms(rooms?: unknown): RoomDraft[] {
   })
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return 'N/A'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'N/A'
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date)
-}
-
 function getDaysRemaining(endDate?: string | null) {
   if (!endDate) return null
   const days = Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -122,15 +121,7 @@ function getActiveMemberCount(mess?: {
   return Number.isFinite(count) && count >= 0 ? count : 0
 }
 
-function planLabel(plan?: string, planInfo?: SubscriptionPlanInfo) {
-  if (planInfo?.label) return planInfo.label
-  if (!plan) return 'N/A'
-  if (plan === 'MONTHLY') return 'Monthly'
-  if (plan === 'YEARLY') return 'Yearly'
-  return 'Trial'
-}
-
-function StatusPill({ status }: { status?: string }) {
+function StatusPill({ status, label }: { status?: string; label: string }) {
   const normalized = (status ?? '').toUpperCase()
   const tone =
     normalized === 'ACTIVE'
@@ -141,22 +132,29 @@ function StatusPill({ status }: { status?: string }) {
           ? 'ui-badge--neutral'
           : 'ui-badge--warning'
 
-  return <span className={`ui-badge ${tone}`}>{normalized || 'Unknown'}</span>
+  return <span className={`ui-badge ${tone}`}>{label}</span>
 }
 
 export default function MessManagementPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('mess')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('mess')
   const { user } = useAuth()
-  const messId = useMemo(
-    () => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '',
-    [user],
-  )
+  const messId = useMemo(() => getActiveMessId(user), [user])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const [setup, setSetup] = useState<SetupState>(createEmptySetup)
   const [activeMemberCount, setActiveMemberCount] = useState(0)
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null)
   const [subscriptionPlans, setSubscriptionPlans] = useState<Record<string, SubscriptionPlanInfo>>({})
+  const displayPlan = (plan?: string) => {
+    if (!plan) return t('notAvailable')
+    const normalized = plan.toUpperCase()
+    return ['TRIAL', 'MONTHLY', 'YEARLY'].includes(normalized)
+      ? messPlanLabel(normalized, locale)
+      : subscriptionPlans[plan]?.label || messPlanLabel(plan, locale)
+  }
 
   useEffect(() => {
     let alive = true
@@ -167,7 +165,7 @@ export default function MessManagementPage() {
 
     async function loadMessSettings(showLoader = true) {
       if (showLoader) setLoading(true)
-      setMessage(null)
+      clearNotice()
 
       const [messesResult, subscriptionResult, plansResult] = await Promise.allSettled([
         api.getMesses(),
@@ -223,6 +221,9 @@ export default function MessManagementPage() {
         setSubscriptionPlans(plansResult.value.data)
       }
 
+      const failedResult = [messesResult, subscriptionResult, plansResult].find((result) => result.status === 'rejected')
+      if (failedResult?.status === 'rejected') showError(failedResult.reason, 'loadFailed')
+
       if (showLoader) setLoading(false)
     }
 
@@ -240,7 +241,7 @@ export default function MessManagementPage() {
       window.removeEventListener('focus', refreshVisibleData)
       document.removeEventListener('visibilitychange', refreshVisibleData)
     }
-  }, [messId])
+  }, [clearNotice, messId, showError])
 
   function updateRoom(index: number, field: keyof RoomDraft, value: string) {
     setSetup((current) => ({
@@ -267,7 +268,7 @@ export default function MessManagementPage() {
 
   async function handleSave() {
     if (!messId) return
-    setMessage(null)
+    clearNotice()
     setSaving(true)
 
     try {
@@ -301,12 +302,9 @@ export default function MessManagementPage() {
         mealRateMethod: 'EXPENSE_DIVIDED_BY_MEAL_COUNT',
       })
 
-      setMessage({ tone: 'success', text: 'Mess setup saved successfully.' })
+      showMessage('saveSuccess', 'success')
     } catch (error) {
-      setMessage({
-        tone: 'error',
-        text: error instanceof Error ? error.message : 'Failed to save mess setup.',
-      })
+      showError(error, 'saveFailed')
     } finally {
       setSaving(false)
     }
@@ -314,127 +312,126 @@ export default function MessManagementPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Mess Management" subtitle="Setup, rooms and billing defaults" backHref="/" />
+      <TopScreen title={t('title')} subtitle={t('subtitle')} backHref="/" />
 
       <div className="screen mess-management-page">
-        {loading ? (
-          <LoadingIndicator variant="card" label="Loading mess settings" />
+        {!messId ? (
+          <MessOnboardingActions compact />
+        ) : loading ? (
+          <LoadingIndicator variant="card" label={t('loading')} />
         ) : (
           <>
-            {/* ── Overview hero ── */}
+            {/* Overview */}
             <AssistantMetricsCard
               icon={Building2}
-              eyebrow="Workspace"
-              title={setup.messName || 'Your Mess'}
+              eyebrow={t('workspace')}
+              title={setup.messName || t('yourMess')}
               titleId="mess-overview-heading"
               subtitle={(
                 <>
                   <MapPin size={13} aria-hidden="true" />
-                  <span className="truncate">{setup.address || 'Address not set'}</span>
+                  <span className="truncate">{setup.address || t('addressNotSet')}</span>
                 </>
               )}
-              status={<StatusPill status={subscription?.status} />}
+              status={<StatusPill status={subscription?.status} label={subscription?.status ? messSubscriptionStatusLabel(subscription.status, locale) : t('unknown')} />}
               metrics={[
                 {
-                  label: 'Plan',
-                  value: planLabel(
-                    subscription?.plan,
-                    subscription?.plan ? subscriptionPlans[subscription.plan] : undefined,
-                  ),
+                  label: t('plan'),
+                  value: displayPlan(subscription?.plan),
                 },
                 {
-                  label: 'Days Left',
-                  value: subscription?.end_date ? `${getDaysRemaining(subscription.end_date) ?? 0}d` : 'N/A',
+                  label: t('daysLeft'),
+                  value: subscription?.end_date ? format.number(getDaysRemaining(subscription.end_date) ?? 0) : t('notAvailable'),
                 },
-                { label: 'Members', value: activeMemberCount },
+                { label: t('members'), value: format.number(activeMemberCount) },
               ]}
             />
 
-            {/* ── Subscription summary ── */}
+            {/* Subscription summary */}
             {subscription ? (
-              <SettingsSection id="subscription-heading" title="Subscription">
+              <SettingsSection id="subscription-heading" title={t('subscription')}>
                 <div className="management-subscription__plan">
                   <div className="management-subscription__identity">
                     <div className="management-subscription__icon" aria-hidden="true">
                       <CircleDollarSign size={18} />
                     </div>
                     <div>
-                      <p className="management-subscription__label">Plan</p>
+                      <p className="management-subscription__label">{t('plan')}</p>
                       <p className="management-subscription__value">
-                        {planLabel(subscription.plan, subscriptionPlans[subscription.plan])}
+                        {displayPlan(subscription.plan)}
                       </p>
                     </div>
                   </div>
-                  <StatusPill status={subscription.status} />
+                  <StatusPill status={subscription.status} label={messSubscriptionStatusLabel(subscription.status, locale)} />
                 </div>
 
                 <dl className="management-subscription__dates">
                   <div>
-                    <dt>Started</dt>
-                    <dd>{formatDate(subscription.start_date)}</dd>
+                    <dt>{t('started')}</dt>
+                    <dd>{subscription.start_date ? format.date(subscription.start_date) : t('notAvailable')}</dd>
                   </div>
                   <div>
-                    <dt>Ends</dt>
-                    <dd>{formatDate(subscription.end_date)}</dd>
+                    <dt>{t('ends')}</dt>
+                    <dd>{subscription.end_date ? format.date(subscription.end_date) : t('notAvailable')}</dd>
                   </div>
                 </dl>
               </SettingsSection>
             ) : null}
 
-            {/* ── Setup form ── */}
-            <SettingsSection id="settings-heading" title="Mess settings">
+            {/* Setup form */}
+            <SettingsSection id="settings-heading" title={t('messSettings')}>
               <div className="management-form-stack">
                 <TextField
-                  label="Mess Name"
+                  label={t('messName')}
                   value={setup.messName}
                   onChange={(messName) => setSetup((current) => ({ ...current, messName }))}
-                  placeholder="Green House Mess"
+                  placeholder={t('messNamePlaceholder')}
                 />
 
                 <TextField
-                  label="Address"
+                  label={t('address')}
                   value={setup.address}
                   onChange={(address) => setSetup((current) => ({ ...current, address }))}
-                  placeholder="Narayanganj, Dhaka"
+                  placeholder={t('addressPlaceholder')}
                 />
 
                 <div className="management-form-grid">
                   <TextField
-                    label="Mess Category"
+                    label={t('messCategory')}
                     value={setup.messCategory}
                     onChange={(messCategory) => setSetup((current) => ({ ...current, messCategory }))}
-                    placeholder="flat, mess"
+                    placeholder={t('messCategoryPlaceholder')}
                   />
                   <TextField
-                    label="Total Seats"
+                    label={t('totalSeats')}
                     value={setup.totalSeats}
                     onChange={(totalSeats) => setSetup((current) => ({ ...current, totalSeats }))}
-                    placeholder="e.g. 12"
+                    placeholder={t('numberExample', { value: format.number(12) })}
                     type="number"
                   />
                 </div>
 
                 <div className="management-form-grid">
                   <TextField
-                    label="Monthly Rent (৳)"
+                    label={t('monthlyRent')}
                     value={setup.monthlyRent}
                     onChange={(monthlyRent) => setSetup((current) => ({ ...current, monthlyRent }))}
-                    placeholder="e.g. 50000"
+                    placeholder={t('numberExample', { value: format.number(50000) })}
                     type="number"
                   />
                   <TextField
-                    label="Payment Deadline Day"
+                    label={t('paymentDeadlineDay')}
                     value={setup.paymentDeadlineDay}
                     onChange={(paymentDeadlineDay) => setSetup((current) => ({ ...current, paymentDeadlineDay }))}
-                    placeholder="e.g. 10"
+                    placeholder={t('numberExample', { value: format.number(10) })}
                     type="number"
                   />
                 </div>
 
                 <FieldCard
                   className="management-deadline-field"
-                  label="Meal Off Deadline"
-                  hint="Members must mark meals off before this time"
+                  label={t('mealOffDeadline')}
+                  hint={t('mealOffDeadlineHint')}
                 >
                   <div className="management-time-control">
                     <span className="management-time-control__icon" aria-hidden="true">
@@ -452,19 +449,19 @@ export default function MessManagementPage() {
                 </FieldCard>
 
                 <TextAreaField
-                  label="Bazar Rules"
+                  label={t('bazarRules')}
                   value={setup.bazarRules}
                   onChange={(bazarRules) => setSetup((current) => ({ ...current, bazarRules }))}
-                  placeholder="Manager assigns weekly bazar turns."
+                  placeholder={t('bazarRulesPlaceholder')}
                   rows={3}
                 />
               </div>
             </SettingsSection>
 
-            {/* ── Rooms ── */}
+            {/* Rooms */}
             <SettingsSection
               id="rooms-heading"
-              title="Rooms"
+              title={t('rooms')}
               action={
                 <Button
                   type="button"
@@ -474,7 +471,7 @@ export default function MessManagementPage() {
                   className="management-add-room"
                 >
                   <Plus size={14} strokeWidth={2.6} aria-hidden="true" />
-                  Add Room
+                  {t('addRoom')}
                 </Button>
               }
             >
@@ -482,7 +479,7 @@ export default function MessManagementPage() {
                 {setup.rooms.map((room, index) => (
                   <article key={room.id} className="management-room-card">
                     <div className="management-room-card__header">
-                      <p>Room {index + 1}</p>
+                      <p>{t('roomIndex', { index: format.number(index + 1) })}</p>
                       {setup.rooms.length > 1 ? (
                         <Button
                           type="button"
@@ -490,7 +487,7 @@ export default function MessManagementPage() {
                           size="sm"
                           onClick={() => removeRoom(index)}
                           className="management-room-card__remove"
-                          aria-label={`Remove room ${index + 1}`}
+                          aria-label={t('removeRoom', { index: format.number(index + 1) })}
                         >
                           <Trash2 size={14} strokeWidth={2.3} aria-hidden="true" />
                         </Button>
@@ -499,24 +496,24 @@ export default function MessManagementPage() {
 
                     <div className="management-room-card__fields">
                       <TextField
-                        label="Room Name"
+                        label={t('roomName')}
                         value={room.roomName}
                         onChange={(roomName) => updateRoom(index, 'roomName', roomName)}
-                        placeholder="e.g. Room A"
+                        placeholder={t('roomNamePlaceholder')}
                       />
                       <div className="management-form-grid">
                         <TextField
-                          label="Total Person"
+                          label={t('totalPerson')}
                           value={room.perPerson}
                           onChange={(perPerson) => updateRoom(index, 'perPerson', perPerson)}
-                          placeholder="e.g. 2"
+                          placeholder={t('numberExample', { value: format.number(2) })}
                           type="number"
                         />
                         <TextField
-                          label="Room Price (৳)"
+                          label={t('roomPrice')}
                           value={room.roomPrice}
                           onChange={(roomPrice) => updateRoom(index, 'roomPrice', roomPrice)}
-                          placeholder="e.g. 12000"
+                          placeholder={t('numberExample', { value: format.number(12000) })}
                           type="number"
                         />
                       </div>
@@ -526,19 +523,12 @@ export default function MessManagementPage() {
               </div>
             </SettingsSection>
 
-            {message ? (
-              <div
-                className={`ui-notice ${message.tone === 'success' ? 'ui-notice--success' : 'ui-notice--danger'}`}
-                role="status"
-              >
-                {message.text}
-              </div>
-            ) : null}
+            {notice ? <div className={`ui-notice ui-notice--${notice.tone}`} role="status">{notice.message}</div> : null}
 
             <div className="management-save-action">
               <SubmitButton busy={saving} onClick={() => void handleSave()}>
                 <Save size={17} aria-hidden="true" />
-                Save Setup
+                {t('saveSetup')}
               </SubmitButton>
             </div>
           </>

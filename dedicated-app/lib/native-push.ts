@@ -25,6 +25,15 @@ type PushPayload = {
   data?: Record<string, unknown>
 }
 
+export type NativePushCopy = {
+  fallbackTitle: string
+  fallbackBody: string
+  channelName: string
+  channelDescription: string
+}
+
+let activeCopy: NativePushCopy | null = null
+
 export type NativePushActionDetail = PushPayload
 
 function toData(value: unknown) {
@@ -63,8 +72,8 @@ async function showForegroundNotification(notification: PushNotificationSchema) 
     notifications: [
       {
         id: Math.floor(Date.now() % 2_000_000_000),
-        title: notification.title || 'Messzen',
-        body: notification.body || 'You have a new notification.',
+        title: notification.title || activeCopy?.fallbackTitle || 'Messzen',
+        body: notification.body || activeCopy?.fallbackBody || '',
         channelId: NOTIFICATION_CHANNEL_ID,
         extra: payload,
       },
@@ -98,8 +107,9 @@ export function nativePushActionEventName() {
   return PUSH_ACTION_EVENT
 }
 
-export async function initializeNativePush(userId: string) {
+export async function initializeNativePush(userId: string, copy: NativePushCopy) {
   if (!Capacitor.isNativePlatform() || !NATIVE_PUSH_ENABLED) return
+  activeCopy = copy
   if (activeUserId === userId && startupPromise) return startupPromise
 
   await shutdownNativePush()
@@ -108,8 +118,8 @@ export async function initializeNativePush(userId: string) {
     await addListeners()
     await LocalNotifications.createChannel({
       id: NOTIFICATION_CHANNEL_ID,
-      name: 'Messzen notifications',
-      description: 'Updates from your mess workspace',
+      name: activeCopy?.channelName || 'Messzen',
+      description: activeCopy?.channelDescription || '',
       importance: 5,
       sound: 'default',
       vibration: true,

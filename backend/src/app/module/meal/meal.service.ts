@@ -20,6 +20,7 @@ import paginationHelper, {
   buildMeta,
 } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { apiMessage } from 'src/app/contracts/api-message.contract';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 import { NotificationService } from '../notification/notification.service';
 import {
@@ -456,7 +457,11 @@ export class MealService {
       where: { id },
       include: mealInclude,
     });
-    if (!meal) throw new NotFoundException('Meal entry not found');
+    if (!meal) {
+      throw new NotFoundException(
+        apiMessage('MEAL_ENTRY_NOT_FOUND', 'Meal entry not found'),
+      );
+    }
 
     await this.getMessAccessContext(meal.mess_id, userId, role);
     return meal;
@@ -464,7 +469,11 @@ export class MealService {
 
   async update(id: string, userId: string, role: string, dto: UpdateMealDto) {
     const meal = await this.prisma.meal.findUnique({ where: { id } });
-    if (!meal) throw new NotFoundException('Meal entry not found');
+    if (!meal) {
+      throw new NotFoundException(
+        apiMessage('MEAL_ENTRY_NOT_FOUND', 'Meal entry not found'),
+      );
+    }
 
     const context = await this.getMessAccessContext(
       meal.mess_id,
@@ -610,7 +619,11 @@ export class MealService {
         _count: { select: { attendances: true } },
       },
     });
-    if (!meal) throw new NotFoundException('Meal entry not found');
+    if (!meal) {
+      throw new NotFoundException(
+        apiMessage('MEAL_ENTRY_NOT_FOUND', 'Meal entry not found'),
+      );
+    }
 
     const context = await this.getMessAccessContext(
       meal.mess_id,

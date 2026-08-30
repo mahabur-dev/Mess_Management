@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, ChevronRight, Users, X } from 'lucide-react'
 import type { MemberOption } from '@/hooks/use-mess-member-options'
 import { useNativeBackAction } from '@/components/native-back-actions'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
+import { useDialogFocus } from '@/hooks/use-dialog-focus'
 
 export function MemberMultiSelect({
   members,
@@ -15,12 +17,16 @@ export function MemberMultiSelect({
   selected: string[]
   onChange: (ids: string[]) => void
 }) {
+  const t = useTranslations('expenses')
+  const format = useLocaleFormatters()
   const [open, setOpen] = useState(false)
   const listId = useId()
+  const dialogRef = useRef<HTMLElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
   const selectedSet = new Set(selected)
   const selectedLabel = selected.length
-    ? `${selected.length} ${selected.length === 1 ? 'member' : 'members'} selected`
-    : 'Select members'
+    ? t(selected.length === 1 ? 'selectedMemberCount' : 'selectedMembersCount', { count: format.number(selected.length) })
+    : t('selectMembers')
 
   useEffect(() => {
     setOpen(true)
@@ -37,16 +43,12 @@ export function MemberMultiSelect({
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
     return () => {
       document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [open])
+
+  useDialogFocus({ open, containerRef: dialogRef, initialFocusRef: closeButtonRef, onClose: () => setOpen(false) })
 
   function toggleMember(memberId: string) {
     onChange(
@@ -70,7 +72,7 @@ export function MemberMultiSelect({
           <Users size={18} strokeWidth={2.3} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-caption font-bold text-[#65838b]">Members</span>
+          <span className="block text-caption font-bold text-[#65838b]">{t('members')}</span>
           <span className="mt-0.5 block truncate text-label font-bold text-[#123748]">{selectedLabel}</span>
         </span>
         <ChevronRight size={19} className="shrink-0 text-[#78a4a9]" aria-hidden="true" />
@@ -85,10 +87,12 @@ export function MemberMultiSelect({
           }}
         >
           <section
+            ref={dialogRef}
             id={listId}
             role="dialog"
             aria-modal="true"
             aria-labelledby={`${listId}-title`}
+            tabIndex={-1}
             className="relative w-full max-w-[480px] overflow-hidden rounded-t-[26px] border border-b-0 border-[#cfe7e6] bg-white shadow-[0_-20px_60px_rgba(6,43,53,0.22)]"
             onMouseDown={(event) => event.stopPropagation()}
           >
@@ -98,14 +102,15 @@ export function MemberMultiSelect({
                 <Users size={18} strokeWidth={2.3} />
               </span>
               <span className="mt-2 min-w-0 flex-1">
-                <span id={`${listId}-title`} className="block text-body font-bold text-[#123748]">Select Members</span>
+                <span id={`${listId}-title`} className="block text-body font-bold text-[#123748]">{t('selectMembers')}</span>
                 <span className="mt-0.5 block text-caption font-semibold text-[#65838b]">{selectedLabel}</span>
               </span>
               <button
+                ref={closeButtonRef}
                 type="button"
                 className="mt-2 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#edfafa] text-[#00777a] active:scale-95"
                 onClick={() => setOpen(false)}
-                aria-label="Close member selection"
+                aria-label={t('closeMemberSelection')}
               >
                 <X size={18} strokeWidth={2.4} />
               </button>
@@ -145,14 +150,14 @@ export function MemberMultiSelect({
                   )
                 })
               ) : (
-                <div className="px-3 py-5 text-center text-label font-semibold text-[#65838b]">No members available.</div>
+                <div className="px-3 py-5 text-center text-label font-semibold text-[#65838b]">{t('noMembersAvailable')}</div>
               )}
             </div>
 
             <footer className="flex items-center justify-between gap-3 border-t border-[#e4eaec] bg-[#f8fdfd] px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-3">
               <span className="text-caption font-semibold text-[#65838b]">{selectedLabel}</span>
               <button type="button" className="ui-btn ui-btn--primary ui-btn--sm min-w-[88px]" onClick={() => setOpen(false)}>
-                Done
+                {t('done')}
               </button>
             </footer>
           </section>

@@ -2,13 +2,17 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Edit3 } from 'lucide-react'
+import { LoadingIndicator } from '@/components/loading-indicator'
+import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
+import { InlineNotice } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { IconActionLink, StatusPill } from '@/components/mobile/action-links'
 import { TopScreen } from '@/components/top-screen'
 import { SelectField, SubmitButton, TextAreaField, TextField } from '@/components/mobile/form-controls'
 import { api } from '@/lib/api'
-import { canManageMess } from '@/lib/app-permissions'
-import { COMPLAINT_CATEGORIES, COMPLAINT_STATUSES, LABELS, type ComplaintCategory, type ComplaintStatus } from '@/lib/form-options'
+import { canManageMess, getActiveMessId } from '@/lib/app-permissions'
+import { COMPLAINT_CATEGORIES, COMPLAINT_STATUSES, type ComplaintCategory, type ComplaintStatus } from '@/lib/form-options'
+import { complaintCategoryLabel, complaintStatusLabel, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useAuth } from '../providers'
 
 type ComplaintItem = {
@@ -43,17 +47,26 @@ function getStatusTone(status: ComplaintStatus) {
 }
 
 export default function ComplaintsPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('communication')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('communication')
   const { user } = useAuth()
-  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
+  const messId = useMemo(() => getActiveMessId(user), [user])
   const canUpdateComplaints = canManageMess(user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [items, setItems] = useState<ComplaintItem[]>([])
-  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (!messId) return
+    if (!messId) {
+      setItems([])
+      setLoading(false)
+      return
+    }
     let alive = true
+    setLoading(true)
 
     api
       .getComplaintsByMess(messId, { status: form.statusFilter, limit: 20, sortBy: 'created_at', sortOrder: 'desc' })
@@ -61,21 +74,25 @@ export default function ComplaintsPage() {
         if (!alive) return
         setItems(Array.isArray(res.data) ? res.data : [])
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
         setItems([])
+        showError(error, 'loadComplaintsFailed')
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
       })
 
     return () => {
       alive = false
     }
-  }, [messId, form.statusFilter, busy])
+  }, [busy, form.statusFilter, messId, showError])
 
   async function handleSubmit() {
-    setMessage('')
-    if (!messId) return setMessage('No mess selected.')
-    if (!form.title.trim()) return setMessage('Title is required.')
-    if (!form.description.trim()) return setMessage('Description is required.')
+    clearNotice()
+    if (!messId) return showMessage('noMessSelected', 'danger')
+    if (!form.title.trim()) return showMessage('titleRequired', 'danger')
+    if (!form.description.trim()) return showMessage('descriptionRequired', 'danger')
 
     setBusy(true)
     try {
@@ -86,9 +103,9 @@ export default function ComplaintsPage() {
         description: form.description.trim(),
       })
       setForm(INITIAL_FORM)
-      setMessage('Complaint submitted successfully.')
+      showMessage('complaintSubmitted', 'success')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to submit complaint.')
+      showError(error, 'submitComplaintFailed')
     } finally {
       setBusy(false)
     }
@@ -96,67 +113,79 @@ export default function ComplaintsPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Complaints" subtitle="Request and issue board" backHref="/" />
+      <TopScreen title={t('complaints')} subtitle={t('complaintSubtitle')} backHref="/" />
       <div className="screen space-y-4">
+        {!messId ? <MessOnboardingActions compact /> : null}
+        {messId ? (
+          <>
         <section className="app-section app-form-section space-y-4">
           <SelectField
-            label="Category"
+            label={t('category')}
             value={form.category}
             onChange={(category) => setForm((prev) => ({ ...prev, category }))}
             options={COMPLAINT_CATEGORIES}
-            getLabel={(value) => LABELS.COMPLAINT_CATEGORIES[value]}
+            getLabel={(value) => complaintCategoryLabel(value, locale)}
           />
-          <TextField label="Title" value={form.title} onChange={(title) => setForm((prev) => ({ ...prev, title }))} placeholder="Dinner count correction" />
+          <TextField label={t('title')} value={form.title} onChange={(title) => setForm((prev) => ({ ...prev, title }))} placeholder={t('complaintTitlePlaceholder')} />
           <TextAreaField
-            label="Description"
+            label={t('description')}
             value={form.description}
             onChange={(description) => setForm((prev) => ({ ...prev, description }))}
-            placeholder="My dinner was off but counted as on."
+            placeholder={t('complaintDescriptionPlaceholder')}
             rows={4}
           />
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+          {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
-            Submit Complaint
+            {t('submitComplaint')}
           </SubmitButton>
         </section>
 
         <section className="app-section">
           <div className="flex items-center justify-between gap-3">
-            <div className="section-title mb-0">Recent</div>
+            <div className="section-title mb-0">{t('recent')}</div>
             <SelectField
-              label="Filter"
+              label={t('filter')}
               value={form.statusFilter}
               onChange={(statusFilter) => setForm((prev) => ({ ...prev, statusFilter }))}
               options={COMPLAINT_STATUSES}
-              getLabel={(value) => LABELS.COMPLAINT_STATUSES[value]}
+              getLabel={(value) => complaintStatusLabel(value, locale)}
             />
           </div>
           <div className="app-list mt-3">
+            {loading ? <LoadingIndicator variant="card" label={t('loadingComplaints')} /> : null}
             {items.map((item) => (
               <article key={item.id} className="app-list-row py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-label font-semibold text-[#1d3a42]">{item.title}</div>
-                    <div className="mt-1 text-caption text-[#65838b]">{LABELS.COMPLAINT_CATEGORIES[item.category]}</div>
+                    <div className="mt-1 text-caption text-[#65838b]">{complaintCategoryLabel(item.category, locale)}</div>
+                    {item.created_at ? <div className="mt-1 text-caption text-[#789096]">{t('submittedOn', { date: format.date(item.created_at, { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }) })}</div> : null}
                   </div>
                   <div className="flex items-center gap-2">
-                    <StatusPill label={LABELS.COMPLAINT_STATUSES[item.status]} tone={getStatusTone(item.status)} />
+                    <StatusPill label={complaintStatusLabel(item.status, locale)} tone={getStatusTone(item.status)} />
                     {canUpdateComplaints ? (
                       <IconActionLink
                         href={`/edit-complaint?complaintId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
-                        label="Edit complaint"
+                        label={t('editComplaint')}
                         icon={<Edit3 size={16} />}
                       />
                     ) : null}
                   </div>
                 </div>
                 <p className="mt-2 text-label text-[#65838b]">{item.description}</p>
-                {item.response ? <div className="mt-2 rounded-xl bg-[#edfafa] px-3 py-2 text-label text-[#123748]">{item.response}</div> : null}
+                {item.response ? (
+                  <div className="mt-2 rounded-xl bg-[#edfafa] px-3 py-2 text-label text-[#123748]">
+                    <span className="mb-1 block text-caption font-bold text-[#008d8c]">{t('managerResponse')}</span>
+                    {item.response}
+                  </div>
+                ) : null}
               </article>
             ))}
-            {!items.length ? <div className="app-empty-state">No complaints loaded.</div> : null}
+            {!loading && !items.length ? <div className="app-empty-state">{t('noComplaints')}</div> : null}
           </div>
         </section>
+          </>
+        ) : null}
       </div>
     </MobileShell>
   )

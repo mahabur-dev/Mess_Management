@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { BadgeCheck, Eye, Home, MoreVertical, Pencil, Phone, Trash2 } from 'lucide-react'
 import { useNativeBackAction } from '@/components/native-back-actions'
+import { memberRoleLabel, useLocale, useTranslations } from '@/lib/i18n'
 
 export type MobileMember = {
   id: string
@@ -37,10 +38,6 @@ export function getInitials(name?: string | null) {
     .slice(0, 2)
 }
 
-function memberName(member: MobileMember) {
-  return member.user?.name?.trim() || 'Member'
-}
-
 export function memberEditHref(member: MobileMember) {
   return `/edit-member?memberId=${encodeURIComponent(member.user_id)}&messId=${encodeURIComponent(member.mess_id)}`
 }
@@ -64,14 +61,16 @@ export function MemberCard({
   onDelete: () => void
   variant?: 'card' | 'horizontal'
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('members')
   useNativeBackAction(menuOpen, () => {
     onToggleMenu()
     return true
   })
 
-  const name = memberName(member)
+  const name = member.user?.name?.trim() || t('memberFallback')
   const phone = member.user?.phone?.trim()
-  const roleLabel = member.role ? member.role.replaceAll('_', ' ') : 'MEMBER'
+  const roleLabel = memberRoleLabel(member.role || 'MEMBER', locale)
   const isHorizontal = variant === 'horizontal'
 
   return (
@@ -91,38 +90,38 @@ export function MemberCard({
         </div>
         <div className="mt-1.5 flex min-w-0 items-center gap-1 text-caption font-semibold text-[#65838b]">
           <Home size={11} className="shrink-0" />
-          <span className="truncate">{member.room_no ? `Room ${member.room_no}` : 'No room assigned'}</span>
+          <span className="truncate">{member.room_no ? t('roomNumber', { room: member.room_no }) : t('noRoomAssigned')}</span>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
         {phone ? (
-          <a href={`tel:${phone}`} className="member-icon-button" aria-label={`Call ${name}`} title={`Call ${name}`}>
+          <a href={`tel:${phone}`} className="member-icon-button" aria-label={t('callNamedMember', { name })} title={t('callNamedMember', { name })}>
             <Phone size={15} />
           </a>
         ) : (
-          <button type="button" className="member-icon-button text-[#9aaeb4]" disabled aria-label="No phone number" title="No phone number">
+          <button type="button" className="member-icon-button text-[#9aaeb4]" disabled aria-label={t('noPhoneNumber')} title={t('noPhoneNumber')}>
             <Phone size={15} />
           </button>
         )}
 
         <div className="relative">
-          <button type="button" className="member-icon-button" onClick={onToggleMenu} aria-label={`${name} actions`} title="Member actions">
+          <button type="button" className="member-icon-button" onClick={onToggleMenu} aria-label={t('memberActions', { name })} title={t('memberActions', { name })}>
             <MoreVertical size={16} />
           </button>
           {menuOpen ? (
             <div className="member-menu">
               <Link href={memberDetailsHref(member)}>
                 <Eye size={14} />
-                View
+                {t('view')}
               </Link>
               <Link href={memberEditHref(member)}>
                 <Pencil size={14} />
-                Edit
+                {t('edit')}
               </Link>
               <button type="button" onClick={onDelete} disabled={deleting} className="text-[#c2410c]">
                 <Trash2 size={14} />
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? t('deleting') : t('delete')}
               </button>
             </div>
           ) : null}

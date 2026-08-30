@@ -3,6 +3,9 @@ name: Build Android APK
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,7 +14,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11.9.0
 
       - uses: actions/setup-node@v4
         with:
@@ -22,6 +25,26 @@ jobs:
       - name: Install deps
         working-directory: dedicated-app
         run: pnpm install --frozen-lockfile
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Run localization and accessibility gates
+        working-directory: dedicated-app
+        run: |
+          pnpm check:typography
+          pnpm check:i18n
+          pnpm check:copy
+          pnpm check:a11y
+          pnpm check:locale-surfaces
+          pnpm test:phase8
+
+      - name: Verify backend API and push contracts
+        working-directory: backend
+        run: |
+          npm run build
+          node --test test/api-message-contract.test.js test/notification-localization.test.js
 
       - name: Configure Firebase push notifications
         id: firebase
@@ -48,27 +71,79 @@ jobs:
           NEXT_PUBLIC_API_URL: https://api.messzen.com/api/v1
           NEXT_PUBLIC_NATIVE_PUSH_ENABLED: ${{ steps.firebase.outputs.enabled }}
 
-      - name: Sync Capacitor
-        working-directory: dedicated-app
-        run: pnpm cap:sync
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x dedicated-app/android/gradlew
+      - name: Sync and smoke-test Capacitor Android
+        working-directory: dedicated-app
+        run: |
+          pnpm cap:sync android
+          chmod +x android/gradlew
+          node scripts/android-smoke.mjs --strict
 
-      - name: Build APK
-        working-directory: dedicated-app/android
-        run: ./gradlew assembleDebug
+      - name: Package installable APK
+        id: package
+        shell: bash
+        run: |
+          release_dir="dedicated-app/release"
+          apk_name="Messzen-debug-${GITHUB_RUN_NUMBER}.apk"
+          zip_name="Messzen-debug-${GITHUB_RUN_NUMBER}.zip"
+          mkdir -p "$release_dir"
+          cp dedicated-app/android/app/build/outputs/apk/debug/app-debug.apk "$release_dir/$apk_name"
+          (cd "$release_dir" && sha256sum "$apk_name" > "$apk_name.sha256")
+          zip -j "$release_dir/$zip_name" "$release_dir/$apk_name" "$release_dir/$apk_name.sha256"
+          echo "apk_name=$apk_name" >> "$GITHUB_OUTPUT"
+          echo "zip_name=$zip_name" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK artifact
+        id: apk-artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: dedicated-app/android/app/build/outputs/apk/debug/app-debug.apk
+          name: Messzen-Android-${{ github.run_number }}
+          path: |
+            dedicated-app/release/${{ steps.package.outputs.apk_name }}
+            dedicated-app/release/${{ steps.package.outputs.apk_name }}.sha256
+            dedicated-app/release/${{ steps.package.outputs.zip_name }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Add artifact download to run summary
+        shell: bash
+        run: |
+          {
+            echo "## Android test build"
+            echo
+            echo "[Download the APK package from this workflow run](${{ steps.apk-artifact.outputs.artifact-url }})"
+            echo
+            echo "The download is a GitHub artifact ZIP. Extract it, then use ${{ steps.package.outputs.apk_name }} on the Android device."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish direct-download prerelease
+        if: github.ref_name == github.event.repository.default_branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_NAME: ${{ steps.package.outputs.apk_name }}
+          ZIP_NAME: ${{ steps.package.outputs.zip_name }}
+        run: |
+          tag="android-test-${GITHUB_RUN_NUMBER}"
+          gh release create "$tag" \
+            "dedicated-app/release/$APK_NAME" \
+            "dedicated-app/release/$APK_NAME.sha256" \
+            "dedicated-app/release/$ZIP_NAME" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Android test build #${GITHUB_RUN_NUMBER}" \
+            --notes "Debug APK built by GitHub Actions from commit ${GITHUB_SHA}. Use the ZIP download if the browser blocks the raw APK."
+          {
+            echo
+            echo "### Direct download"
+            echo "[Download the Windows-friendly ZIP](https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/${ZIP_NAME})"
+          } >> "$GITHUB_STEP_SUMMARY"
 
 
 

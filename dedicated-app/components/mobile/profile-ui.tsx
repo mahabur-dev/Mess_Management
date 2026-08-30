@@ -13,6 +13,7 @@ import {
   type ChangeEvent,
   type ReactNode,
 } from 'react'
+import { useTranslations } from '@/lib/i18n'
 
 export function getProfileInitials(name?: string | null) {
   const parts = name?.trim().split(/\s+/).filter(Boolean) ?? []
@@ -37,6 +38,7 @@ export function ProfileAvatar({
   name?: string | null
   imageUrl?: string | null
 }) {
+  const profile = useTranslations('profile')
   const [imageFailed, setImageFailed] = useState(false)
   const normalizedImageUrl = imageUrl?.trim() ?? ''
   const initials = getProfileInitials(name)
@@ -50,7 +52,7 @@ export function ProfileAvatar({
       {normalizedImageUrl && !imageFailed ? (
         <img
           src={normalizedImageUrl}
-          alt={`${name?.trim() || 'User'} profile`}
+          alt={profile('userProfileAlt', { name: name?.trim() || profile('accountHolder') })}
           onError={() => setImageFailed(true)}
         />
       ) : initials ? (
@@ -81,6 +83,7 @@ export function ProfileIdentityCard({
   avatarAction?: ReactNode
   children?: ReactNode
 }) {
+  const profile = useTranslations('profile')
   return (
     <section className="profile-identity-card" aria-labelledby={id}>
       <span className="profile-identity-card__glow" aria-hidden="true" />
@@ -92,7 +95,7 @@ export function ProfileIdentityCard({
       </div>
 
       <h2 id={id} className="profile-identity-card__name">
-        {name?.trim() || 'Account holder'}
+        {name?.trim() || profile('accountHolder')}
       </h2>
 
       <div className="profile-identity-card__badges">
@@ -151,11 +154,12 @@ export function ProfileDetailRow({
 }
 
 export function ProfileDocumentCard({ imageUrl }: { imageUrl?: string | null }) {
+  const profile = useTranslations('profile')
   if (!imageUrl?.trim()) {
     return (
       <div className="profile-document-empty">
         <FileImage size={19} aria-hidden="true" />
-        <span>NID image not uploaded</span>
+        <span>{profile('nidImageNotUploaded')}</span>
       </div>
     )
   }
@@ -166,12 +170,12 @@ export function ProfileDocumentCard({ imageUrl }: { imageUrl?: string | null }) 
       target="_blank"
       rel="noreferrer"
       className="profile-document-card"
-      aria-label="Open uploaded NID image"
+      aria-label={profile('openNidImage')}
     >
-      <img src={imageUrl} alt="Uploaded NID document" />
+      <img src={imageUrl} alt={profile('uploadedNidDocument')} />
       <span className="profile-document-card__copy">
-        <span>NID document</span>
-        <strong>View uploaded image</strong>
+        <span>{profile('nidDocument')}</span>
+        <strong>{profile('viewUploadedImage')}</strong>
       </span>
       <ExternalLink size={17} aria-hidden="true" />
     </a>
@@ -189,6 +193,7 @@ export function ProfileDocumentUpload({
   disabled?: boolean
   onChange: (event: ChangeEvent<HTMLInputElement>) => void
 }) {
+  const profile = useTranslations('profile')
   const [previewUrl, setPreviewUrl] = useState(existingImageUrl?.trim() ?? '')
 
   useEffect(() => {
@@ -213,13 +218,13 @@ export function ProfileDocumentUpload({
       </div>
 
       <div className="profile-document-upload__copy">
-        <strong>{selectedFile ? selectedFile.name : previewUrl ? 'NID image uploaded' : 'Upload NID image'}</strong>
-        <span>JPG, PNG or WEBP · Maximum 5 MB</span>
+        <strong>{selectedFile ? selectedFile.name : previewUrl ? profile('nidImageUploaded') : profile('uploadNidImage')}</strong>
+        <span>{profile('imageRequirements')}</span>
       </div>
 
       <label className="profile-document-upload__action">
         {previewUrl ? <CheckCircle2 size={16} aria-hidden="true" /> : <ImagePlus size={16} aria-hidden="true" />}
-        <span>{previewUrl ? 'Change' : 'Choose'}</span>
+        <span>{previewUrl ? profile('change') : profile('choose')}</span>
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"

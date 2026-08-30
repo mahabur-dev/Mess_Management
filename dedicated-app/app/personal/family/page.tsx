@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { LoadingIndicator } from "@/components/loading-indicator";
-import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
@@ -21,7 +20,7 @@ import { validateFamilyMember } from "@/features/personal/schemas/personal.schem
 import type { FamilyMember } from "@/features/personal/types";
 
 export default function PersonalFamilyPage() {
-  const { locale, toggleLocale } = usePersonalLocale();
+  const { locale } = usePersonalLocale();
   const copy = personalCopy(locale);
   const [month, setMonth] = useState(currentPersonalMonth());
   const { familyMembers, loading, error, refresh } = useFamilyMembers(
@@ -81,7 +80,6 @@ export default function PersonalFamilyPage() {
         title={copy.family}
         subtitle={copy.familySubtitle}
         backHref="/personal"
-        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
       />
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />

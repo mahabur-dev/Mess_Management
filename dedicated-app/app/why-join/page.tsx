@@ -2,33 +2,35 @@
 
 import { ShieldCheck } from 'lucide-react'
 import { InfoPage } from '@/components/mobile/info-page'
+import { useTranslations } from '@/lib/i18n'
 
 export default function WhyJoinPage() {
+  const auth = useTranslations('auth')
   return (
     <InfoPage
-      title="Why join a mess?"
-      subtitle="See what you gain from a shared workspace"
-      eyebrow="MEMBER BENEFITS"
-      introduction="Keep your everyday mess life organised, transparent and easier to manage with your manager and fellow members."
+      title={auth('whyJoin')}
+      subtitle={auth('whyJoinPageSubtitle')}
+      eyebrow={auth('memberBenefits')}
+      introduction={auth('whyJoinIntroduction')}
       icon={ShieldCheck}
       sections={[
         {
-          title: 'One clear place for everything',
-          body: 'Meals, expenses, utilities and deposits stay together in one shared workspace.',
-          points: ['Less confusion', 'Fewer manual follow-ups'],
+          title: auth('benefitOneTitle'),
+          body: auth('benefitOneBody'),
+          points: [auth('benefitOnePointA'), auth('benefitOnePointB')],
         },
         {
-          title: 'Know your monthly position',
-          body: 'Review your bill, deposits, meal usage and balance with better visibility.',
-          points: ['Track what you paid', 'Understand what is due'],
+          title: auth('benefitTwoTitle'),
+          body: auth('benefitTwoBody'),
+          points: [auth('benefitTwoPointA'), auth('benefitTwoPointB')],
         },
         {
-          title: 'Stay informed in real time',
-          body: 'Get important manager notices and updates without relying on separate chats.',
-          points: ['Timely announcements', 'Clear member communication'],
+          title: auth('benefitThreeTitle'),
+          body: auth('benefitThreeBody'),
+          points: [auth('benefitThreePointA'), auth('benefitThreePointB')],
         },
       ]}
-      actions={[{ href: '/request-mess', label: 'Request to join a mess' }]}
+      actions={[{ href: '/request-mess', label: auth('requestToJoin') }]}
     />
   )
 }

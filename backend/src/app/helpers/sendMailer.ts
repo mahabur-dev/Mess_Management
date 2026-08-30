@@ -5,17 +5,12 @@ type SendMailerResult = {
   id?: string;
 };
 
-// Initialize Resend once
-const apiKey = config.resendApiKey?.trim();
-
-if (!apiKey) {
-  throw new Error('RESEND_API_KEY is not configured');
-}
-
-const resend = new Resend(apiKey);
-
 /**
  * Send transactional email through Resend.
+ *
+ * Configuration is checked when an email is actually sent instead of during
+ * module import. This keeps non-email flows (including authentication tests)
+ * runnable in environments that intentionally do not have mail credentials.
  */
 const sendMailer = async (
   email: string,
@@ -23,6 +18,11 @@ const sendMailer = async (
   html = '',
 ): Promise<SendMailerResult> => {
   try {
+    const apiKey = config.resendApiKey?.trim();
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
+
     const recipient = email?.trim().toLowerCase();
     const emailSubject = subject?.trim();
     const fromAddress = config.email.resendFrom?.trim();
@@ -50,7 +50,7 @@ const sendMailer = async (
       );
     }
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await new Resend(apiKey).emails.send({
       from: fromAddress,
       to: [recipient],
       subject: emailSubject,

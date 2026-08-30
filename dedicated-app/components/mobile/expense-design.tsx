@@ -43,7 +43,17 @@ import {
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
 import { ExpenseApprovalBadge } from '@/components/mobile/expense-approval'
 import { Button } from '@/components/ui/button'
-import { LABELS, type ExpenseCategory, type ExpensePaymentType } from '@/lib/form-options'
+import type { ExpensePaymentType } from '@/lib/form-options'
+import {
+  expenseCategoryLabel,
+  expensePaymentSourceLabel,
+  formatDate as formatLocalizedDate,
+  formatMoney,
+  formatNumber,
+  useLocale,
+  useTranslations,
+  type Locale,
+} from '@/lib/i18n'
 
 type IconType = ComponentType<LucideProps>
 
@@ -56,30 +66,24 @@ const formIconClass = 'absolute left-3 top-1/2 grid h-8 w-8 -translate-y-1/2 pla
 const formControlClass =
   'h-[52px] w-full rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 pl-[54px] text-body font-medium text-[#1d3a42] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition placeholder:text-[#8a98ad] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10'
 
-export function formatBDT(value?: string | number | null) {
-  const amount = Number(value ?? 0)
-  if (!Number.isFinite(amount)) return `0`
-  return `${amount.toLocaleString('en-US')}`
+export function formatBDT(value?: string | number | null, locale: Locale = 'en') {
+  return formatNumber(value ?? 0, locale)
 }
 
-export function formatTaka(value?: string | number | null) {
-  const amount = Number(value ?? 0)
-  const safeAmount = Number.isFinite(amount) ? amount : 0
-  return `${String.fromCodePoint(0x09f3)} ${safeAmount.toLocaleString('en-US')}`
+export function formatTaka(value?: string | number | null, locale: Locale = 'en') {
+  return formatMoney(value ?? 0, locale)
 }
 
-export function formatDate(value?: string | null) {
-  if (!value) return 'Not set'
+export function formatDate(value?: string | null, locale: Locale = 'en') {
+  if (!value) return ''
+  return formatLocalizedDate(value, locale, { day: '2-digit', month: 'long', year: 'numeric' })
+}
+
+export function formatDateTime(value?: string | null, locale: Locale = 'en') {
+  if (!value) return ''
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('en-US', { day: '2-digit', month: 'long', year: 'numeric' })
-}
-
-export function formatDateTime(value?: string | null) {
-  if (!value) return 'Not set'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return formatDate(value)
-  return date.toLocaleString('en-US', {
+  if (Number.isNaN(date.getTime())) return formatDate(value, locale)
+  return formatLocalizedDate(date, locale, {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -88,14 +92,12 @@ export function formatDateTime(value?: string | null) {
   })
 }
 
-export function categoryLabel(category?: string | null) {
-  const key = String(category ?? 'OTHER').toUpperCase() as ExpenseCategory
-  return LABELS.EXPENSE_CATEGORIES[key] ?? key.replaceAll('_', ' ')
+export function categoryLabel(category?: string | null, locale: Locale = 'en') {
+  return expenseCategoryLabel(category ?? 'OTHER', locale)
 }
 
-export function paymentLabel(paymentType?: string | null) {
-  const key = String(paymentType ?? 'FROM_DEPOSIT').toUpperCase() as ExpensePaymentType
-  return LABELS.EXPENSE_PAYMENT_TYPES[key] ?? key.replaceAll('_', ' ')
+export function paymentLabel(paymentType?: string | null, locale: Locale = 'en') {
+  return expensePaymentSourceLabel(paymentType ?? 'FROM_DEPOSIT', locale)
 }
 
 export function categoryIcon(category?: string | null): IconType {
@@ -503,15 +505,16 @@ export function ExpenseOverviewTile({
 }
 
 export function ExpenseOverviewPanel({
-  title = 'Overview',
+  title,
   children,
 }: {
   title?: string
   children: ReactNode
 }) {
+  const common = useTranslations('common')
   return (
     <section className="home-panel">
-      <div className="section-title">{title}</div>
+      <div className="section-title">{title ?? common('overview')}</div>
       <div className="grid grid-cols-2 gap-2">{children}</div>
     </section>
   )
@@ -526,6 +529,7 @@ export function SearchPanel({
   onSearch: (value: string) => void
   children: ReactNode
 }) {
+  const t = useTranslations('expenses')
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-3">
@@ -535,10 +539,10 @@ export function SearchPanel({
             className="h-12 w-full rounded-[14px] border border-white/70 bg-white px-4 pl-11 text-body font-medium text-[#123748] shadow-[0_10px_24px_rgba(18,55,72,0.06)] outline-none placeholder:text-[#7d8a9d] focus:border-[#9edddc]"
             value={search}
             onChange={(event) => onSearch(event.target.value)}
-            placeholder="Search expenses..."
+            placeholder={t('searchExpenses')}
           />
         </label>
-        <button type="button" className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] border border-white/70 bg-white text-[#123748] shadow-[0_10px_24px_rgba(18,55,72,0.06)]" aria-label="Filter expenses">
+        <button type="button" className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] border border-white/70 bg-white text-[#123748] shadow-[0_10px_24px_rgba(18,55,72,0.06)]" aria-label={t('filterExpenses')}>
           <ChevronDown size={18} />
         </button>
       </div>
@@ -670,19 +674,17 @@ export function ExpenseListItem({
   href?: string
   variant?: 'card' | 'horizontal'
 }) {
+  const { locale } = useLocale()
   const Icon = categoryIcon(item.category)
   const tone = categoryTone(item.category)
   const isHorizontal = variant === 'horizontal'
 
   const label =
     item.itemName?.trim() ||
-    categoryLabel(item.category)
+    categoryLabel(item.category, locale)
 
   const payment =
-    item.paymentType === 'PERSONAL'
-      ? 'Personal'
-      : item.payment_method ||
-        paymentLabel(item.paymentType)
+    paymentLabel(item.paymentType || item.payment_method, locale)
 
   const content = (
     <>
@@ -726,10 +728,7 @@ export function ExpenseListItem({
 
         <span className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="truncate text-caption font-medium text-[#667d87]">
-            {formatDate(
-              item.expenseDate ??
-                item.expense_date
-            )}
+            {formatDate(item.expenseDate ?? item.expense_date, locale)}
           </span>
 
           <span
@@ -755,7 +754,7 @@ export function ExpenseListItem({
         "
         style={{ color: tone.fg }}
       >
-        {formatTaka(item.amount)}
+        {formatTaka(item.amount, locale)}
       </span>
 
       {href ? (
@@ -894,17 +893,19 @@ export function PaymentTypeSelector({
   onChange: (value: ExpensePaymentType) => void
   showHeading?: boolean
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('expenses')
   const choices: Array<{ value: ExpensePaymentType; label: string }> = [
-    { value: 'PERSONAL', label: 'Personal' },
-    { value: 'FROM_DEPOSIT', label: 'From Deposit' },
-    { value: 'COLLECTED_FUND', label: 'Mess Fund' },
+    { value: 'PERSONAL', label: expensePaymentSourceLabel('PERSONAL', locale) },
+    { value: 'FROM_DEPOSIT', label: expensePaymentSourceLabel('FROM_DEPOSIT', locale) },
+    { value: 'COLLECTED_FUND', label: expensePaymentSourceLabel('COLLECTED_FUND', locale) },
   ]
 
   return (
     <div>
-      {showHeading ? <h2 className="mb-3 text-body font-semibold leading-tight text-[#1d3a42]">Payment Source</h2> : null}
+      {showHeading ? <h2 className="mb-3 text-body font-semibold leading-tight text-[#1d3a42]">{t('paymentSource')}</h2> : null}
       <DesignedSelect
-        label={showHeading ? 'Source' : 'Payment Source'}
+        label={showHeading ? t('source') : t('paymentSource')}
         icon={WalletCards}
         value={value}
         onChange={(event) => onChange(event.target.value as ExpensePaymentType)}
@@ -1083,17 +1084,18 @@ export function DesignedTextarea({ label, icon: Icon, count, className = '', ...
   )
 }
 
-export function UploadField({ onChange, fileName, label = 'Receipt (Optional)' }: { onChange: (file: File | null) => void; fileName?: string; label?: string }) {
+export function UploadField({ onChange, fileName, label }: { onChange: (file: File | null) => void; fileName?: string; label?: string }) {
+  const t = useTranslations('expenses')
   return (
     <label className="block">
-      <span className={formLabelClass}>{label}</span>
+      <span className={formLabelClass}>{label ?? t('receiptOptional')}</span>
       <span className="flex min-h-[66px] items-center justify-center gap-2.5 rounded-[14px] border border-dashed border-[#58bfc0] bg-[#f6ffff] px-3.5 text-center">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] bg-white text-[#008d8c]">
           <UploadCloud size={23} strokeWidth={2.1} />
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-label font-semibold text-[#123748]">{fileName || 'Upload receipt image'}</span>
-          <span className="mt-1 block text-caption font-semibold text-[#65838b]">JPG, PNG, PDF up to 10MB</span>
+          <span className="block truncate text-label font-semibold text-[#123748]">{fileName || t('uploadReceiptImage')}</span>
+          <span className="mt-1 block text-caption font-semibold text-[#65838b]">{t('receiptFileTypes')}</span>
         </span>
         <input className="sr-only" type="file" accept="image/*,application/pdf" onChange={(event) => onChange(event.target.files?.[0] ?? null)} />
       </span>
@@ -1168,6 +1170,7 @@ export const detailIcons = {
   purchased: HandCoins,
   user: UserPlus,
   room: Bed,
+  seat: Bed,
   role: User,
   status: ShieldCheck,
   delete: Trash2,

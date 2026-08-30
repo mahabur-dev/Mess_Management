@@ -22,6 +22,18 @@ import {
 } from 'lucide-react'
 import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
 import { appHref } from '@/lib/routes'
+import {
+  formatDate as formatLocalizedDate,
+  formatIsoDate,
+  formatMonth as formatLocalizedMonth,
+  formatWeekday as formatLocalizedWeekday,
+  intlLocale,
+  useLocale,
+  useLocaleFormatters,
+  useTranslations,
+  type Locale,
+} from '@/lib/i18n'
+import { getDictionary } from '@/lib/i18n/dictionaries'
 
 export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
 export type AttendanceStatus = 'ON' | 'OFF'
@@ -94,7 +106,7 @@ export const MEAL_META: Record<
 }
 
 export function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10)
+  return formatIsoDate()
 }
 
 export function formatLocalIsoDate(date: Date) {
@@ -104,23 +116,19 @@ export function formatLocalIsoDate(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-export function formatDisplayDate(date: string) {
+export function formatDisplayDate(date: string, locale: Locale = 'en') {
   if (!date) return '--'
-  return new Date(`${toIsoDateKey(date)}T00:00:00`).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  return formatLocalizedDate(`${toIsoDateKey(date)}T00:00:00+06:00`, locale, { day: '2-digit' })
 }
 
-export function formatWeekday(date: string) {
+export function formatWeekday(date: string, locale: Locale = 'en') {
   if (!date) return ''
-  return new Date(`${toIsoDateKey(date)}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' })
+  return formatLocalizedWeekday(`${toIsoDateKey(date)}T00:00:00+06:00`, locale, 'long')
 }
 
-export function formatShortWeekday(date: string) {
+export function formatShortWeekday(date: string, locale: Locale = 'en') {
   if (!date) return ''
-  return new Date(`${toIsoDateKey(date)}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short' })
+  return formatLocalizedWeekday(`${toIsoDateKey(date)}T00:00:00+06:00`, locale, 'short')
 }
 
 export function toIsoDateKey(value?: string | Date | null) {
@@ -134,6 +142,20 @@ export function toIsoDateKey(value?: string | Date | null) {
 
 export function currentMonthValue() {
   return todayIsoDate().slice(0, 7)
+}
+
+export function mealLabel(mealName: MealName, locale: Locale = 'en') {
+  const messages = getDictionary(locale).meals
+  if (mealName === 'BREAKFAST') return messages.breakfast
+  if (mealName === 'LUNCH') return messages.lunch
+  return messages.dinner
+}
+
+export function mealHint(mealName: MealName, locale: Locale = 'en') {
+  const messages = getDictionary(locale).meals
+  if (mealName === 'BREAKFAST') return messages.morningMeal
+  if (mealName === 'LUNCH') return messages.middayMeal
+  return messages.eveningMeal
 }
 
 export function shiftMonthValue(month: string, offset: number) {
@@ -155,29 +177,29 @@ export function monthBounds(month: string) {
   }
 }
 
-export function formatMonthLabel(month: string) {
+export function formatMonthLabel(month: string, locale: Locale = 'en') {
   const { month: normalizedMonth } = monthBounds(month)
-  return new Date(`${normalizedMonth}-01T00:00:00`).toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  })
+  return formatLocalizedMonth(`${normalizedMonth}-01T00:00:00+06:00`, locale)
 }
 
-export function formatTime(time?: string | null) {
+export function formatTime(time?: string | null, locale: Locale = 'en') {
   if (!time) return '--'
   const [hourValue, minuteValue] = time.split(':').map(Number)
   if (Number.isNaN(hourValue) || Number.isNaN(minuteValue)) return time
-  const suffix = hourValue >= 12 ? 'PM' : 'AM'
-  const hour = hourValue % 12 || 12
-  return `${hour}:${String(minuteValue).padStart(2, '0')} ${suffix}`
+  return new Intl.DateTimeFormat(intlLocale(locale), {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Dhaka',
+  }).format(new Date(Date.UTC(2026, 0, 1, hourValue - 6, minuteValue)))
 }
 
-export function deadlineLabel(deadline?: MealDeadlineInfo | null) {
-  return `${formatTime(deadline?.startTime)} - ${formatTime(deadline?.endTime)}`
+export function deadlineLabel(deadline?: MealDeadlineInfo | null, locale: Locale = 'en') {
+  return `${formatTime(deadline?.startTime, locale)} - ${formatTime(deadline?.endTime, locale)}`
 }
 
-export function memberName(member?: MealMember | null) {
-  return member?.user?.name || 'Unknown member'
+export function memberName(member?: MealMember | null, locale: Locale = 'en') {
+  return member?.user?.name || getDictionary(locale).meals.unknownMember
 }
 
 export function initials(name?: string | null) {
@@ -294,24 +316,26 @@ export function MealDateCard({
   onPrevious?: () => void
   onNext?: () => void
 }) {
+  const { locale } = useLocale()
+  const meals = useTranslations('meals')
   return (
     <MealCard className="flex items-center justify-between gap-3">
       {onPrevious ? (
-        <button type="button" onClick={onPrevious} aria-label="Previous date" className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c] active:scale-[0.97]">
+        <button type="button" onClick={onPrevious} aria-label={meals('previousDate')} className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c] active:scale-[0.97]">
           <ChevronLeft size={18} />
         </button>
       ) : null}
 
       <div className="min-w-0 flex-1">
-        <div className="text-label font-semibold text-[#1d3a42]">{formatDisplayDate(date)}</div>
-        <div className="mt-1 text-caption font-medium text-[#65838b]">{formatWeekday(date)}</div>
+        <div className="text-label font-semibold text-[#1d3a42]">{formatDisplayDate(date, locale)}</div>
+        <div className="mt-1 text-caption font-medium text-[#65838b]">{formatWeekday(date, locale)}</div>
       </div>
 
       {onChange ? (
         <label className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-[14px] bg-[#edfafa] text-[#008d8c] active:scale-[0.97]">
           <CalendarDays size={18} />
           <input
-            aria-label="Select date"
+            aria-label={meals('selectDate')}
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             type="date"
             value={date}
@@ -325,7 +349,7 @@ export function MealDateCard({
       )}
 
       {onNext ? (
-        <button type="button" onClick={onNext} aria-label="Next date" className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c] active:scale-[0.97]">
+        <button type="button" onClick={onNext} aria-label={meals('nextDate')} className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c] active:scale-[0.97]">
           <ChevronRight size={18} />
         </button>
       ) : null}
@@ -340,6 +364,8 @@ export function MealMonthSelector({
   month: string
   onChange: (month: string) => void
 }) {
+  const { locale } = useLocale()
+  const meals = useTranslations('meals')
   const selectMonth = (nextMonth: string) => {
     if (/^\d{4}-\d{2}$/.test(nextMonth)) onChange(nextMonth)
   }
@@ -348,7 +374,7 @@ export function MealMonthSelector({
     <div className="meal-month-selector mx-auto flex h-14 w-fit min-w-[238px] items-center justify-center overflow-hidden rounded-full bg-white text-[#123748] shadow-[0_12px_24px_rgba(18,55,72,0.12)]">
       <button
         type="button"
-        aria-label="Previous month"
+        aria-label={meals('previousMonth')}
         onClick={() => onChange(shiftMonthValue(month, -1))}
         className="grid h-full w-11 shrink-0 place-items-center text-[#008d8c] transition active:scale-[0.97]"
       >
@@ -356,10 +382,10 @@ export function MealMonthSelector({
       </button>
       <label className="relative flex h-full min-w-[156px] items-center justify-center gap-2 overflow-hidden px-2">
         <CalendarDays size={19} className="shrink-0 text-[#008d8c]" />
-        <span className="text-body font-semibold">{formatMonthLabel(month)}</span>
+        <span className="text-body font-semibold">{formatMonthLabel(month, locale)}</span>
         <ChevronDown size={18} className="shrink-0 text-[#123748]" />
         <input
-          aria-label="Select month"
+          aria-label={meals('selectMonth')}
           type="month"
           value={month}
           onChange={(event) => selectMonth(event.target.value)}
@@ -368,7 +394,7 @@ export function MealMonthSelector({
       </label>
       <button
         type="button"
-        aria-label="Next month"
+        aria-label={meals('nextMonth')}
         onClick={() => onChange(shiftMonthValue(month, 1))}
         className="grid h-full w-11 shrink-0 place-items-center text-[#008d8c] transition active:scale-[0.97]"
       >
@@ -387,6 +413,8 @@ export function MealTabs({
   onChange: (value: MealName) => void
   meals?: MealRecord[]
 }) {
+  const { locale } = useLocale()
+  const mealsCopy = useTranslations('meals')
   return (
     <div className="grid grid-cols-3 gap-2">
       {MEAL_ORDER.map((mealName) => {
@@ -406,8 +434,8 @@ export function MealTabs({
                   : 'border-[#d8eeee] bg-white text-[#123748]'
             }`}
           >
-            <span className="block text-label font-medium">{MEAL_LABELS[mealName]}</span>
-            <span className="mt-1 block text-caption font-semibold uppercase">{locked ? 'Locked' : active ? 'Selected' : 'Open'}</span>
+            <span className="block text-label font-medium">{mealLabel(mealName, locale)}</span>
+            <span className="mt-1 block text-caption font-semibold uppercase">{locked ? mealsCopy('locked') : active ? mealsCopy('selected') : mealsCopy('open')}</span>
           </button>
         )
       })}
@@ -462,12 +490,13 @@ export function MealStateIllustration({
   state: 'open' | 'locked'
   mealName: MealName
 }) {
+  const meals = useTranslations('meals')
   const meta = MEAL_META[mealName]
   const isLocked = state === 'locked'
 
   return (
     <div className="relative mx-auto h-32 w-32">
-      <svg viewBox="0 0 160 160" role="img" aria-label={isLocked ? 'Locked meal illustration' : 'Open meal illustration'} className="h-full w-full">
+      <svg viewBox="0 0 160 160" role="img" aria-label={isLocked ? meals('lockedIllustration') : meals('openIllustration')} className="h-full w-full">
         <defs>
           <linearGradient id={`meal-bowl-${state}-${mealName}`} x1="28" x2="132" y1="92" y2="130" gradientUnits="userSpaceOnUse">
             <stop stopColor="#0aa0a0" stopOpacity="0.95" />
@@ -533,12 +562,15 @@ export function MealTotalsGrid({
 }: {
   meals: MealRecord[]
 }) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const mealsCopy = useTranslations('meals')
   const totals = calculateTotals(meals)
   const items: Array<{ label: string; value: number; mealName?: MealName; icon?: ComponentType<LucideProps> }> = [
-    { label: 'Breakfast', value: totals.perMeal.BREAKFAST, mealName: 'BREAKFAST' as MealName },
-    { label: 'Lunch', value: totals.perMeal.LUNCH, mealName: 'LUNCH' as MealName },
-    { label: 'Dinner', value: totals.perMeal.DINNER, mealName: 'DINNER' as MealName },
-    { label: 'Total', value: totals.total, icon: UtensilsCrossed },
+    { label: mealLabel('BREAKFAST', locale), value: totals.perMeal.BREAKFAST, mealName: 'BREAKFAST' as MealName },
+    { label: mealLabel('LUNCH', locale), value: totals.perMeal.LUNCH, mealName: 'LUNCH' as MealName },
+    { label: mealLabel('DINNER', locale), value: totals.perMeal.DINNER, mealName: 'DINNER' as MealName },
+    { label: mealsCopy('total'), value: totals.total, icon: UtensilsCrossed },
   ]
 
   return (
@@ -556,7 +588,7 @@ export function MealTotalsGrid({
               ) : null}
               <div className="min-w-0">
                 <div className="overview-card-label">{item.label}</div>
-                <div className="overview-card-value">{item.value}</div>
+                <div className="overview-card-value">{format.number(item.value)}</div>
               </div>
             </div>
           </div>
@@ -569,22 +601,23 @@ export function MealTotalsGrid({
 export function MonthlyMealSummaryCard({
   total,
   href,
-  title = 'Total Meals This Month',
+  title,
 }: {
   total: ReactNode
   href: string
   title?: string
 }) {
+  const meals = useTranslations('meals')
   return (
     <AssistantSummaryCard
       icon={CalendarDays}
-      title={title}
+      title={title ?? meals('totalMealsThisMonth')}
       href={appHref(href)}
-      actionLabel="Details"
+      actionLabel={meals('details')}
       contentClassName="assistant-summary-card__content--metric"
     >
       <span className="assistant-summary-card__value">{total}</span>
-      <span className="assistant-summary-card__unit">meals</span>
+      <span className="assistant-summary-card__unit">{meals('mealsUnit')}</span>
     </AssistantSummaryCard>
   )
 }
@@ -598,17 +631,19 @@ export function MealHistoryStats({
   days: number
   averagePerDay: number
 }) {
+  const format = useLocaleFormatters()
+  const meals = useTranslations('meals')
   const stats = [
-    { label: 'Total Meals', value: totalMeals },
-    { label: 'Days', value: days },
-    { label: 'Avg / Day', value: averagePerDay },
+    { label: meals('totalMeals'), value: totalMeals },
+    { label: meals('days'), value: days },
+    { label: meals('averagePerDay'), value: averagePerDay },
   ]
 
   return (
     <div className="grid grid-cols-3 rounded-[20px] bg-white px-3 py-5 shadow-[0_16px_34px_rgba(18,55,72,0.1)]">
       {stats.map((stat, index) => (
         <div key={stat.label} className={`text-center ${index ? 'border-l border-[#d8eeee]' : ''}`}>
-          <div className="text-headline font-semibold leading-none text-[#1d3a42]">{stat.value}</div>
+          <div className="text-headline font-semibold leading-none text-[#1d3a42]">{format.number(stat.value)}</div>
           <div className="mt-3 text-caption font-semibold text-[#55727b]">{stat.label}</div>
         </div>
       ))}
@@ -621,32 +656,35 @@ export function MealHistoryTable({
 }: {
   history: MealHistoryDay[]
 }) {
-  if (!history.length) return <EmptyMealsState title="No meal history found for this month." />
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const meals = useTranslations('meals')
+  if (!history.length) return <EmptyMealsState title={meals('noHistory')} />
 
   return (
     <section className="overflow-hidden rounded-[20px] bg-white shadow-[0_16px_34px_rgba(18,55,72,0.1)]">
       <div className="grid grid-cols-[1.1fr_1.7fr_44px] items-center bg-gradient-to-r from-[#00777a] to-[#008d8c] px-4 py-4 text-caption font-bold text-white">
-        <div>Date</div>
-        <div>Meals Taken</div>
-        <div className="text-right">Total</div>
+        <div>{meals('date')}</div>
+        <div>{meals('mealsTaken')}</div>
+        <div className="text-right">{meals('total')}</div>
       </div>
       <div>
         {history.map((day) => (
           <div key={day.date} className="grid grid-cols-[1.1fr_1.7fr_44px] gap-3 border-b border-[#d8eeee] px-4 py-4 last:border-b-0">
             <div className="min-w-0">
-              <div className="text-label font-semibold leading-tight text-[#1d3a42]">{formatDisplayDate(day.date)}</div>
-              <div className="mt-2 text-caption font-medium text-[#55727b]">{formatShortWeekday(day.date)}</div>
+              <div className="text-label font-semibold leading-tight text-[#1d3a42]">{formatDisplayDate(day.date, locale)}</div>
+              <div className="mt-2 text-caption font-medium text-[#55727b]">{formatShortWeekday(day.date, locale)}</div>
             </div>
             <div className="space-y-2">
               {day.meals.map((meal) => (
                 <div key={meal.mealName} className="grid grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-2">
                   <MealIconBadge mealName={meal.mealName} size="sm" />
-                  <span className="truncate text-caption font-medium text-[#55727b]">{MEAL_LABELS[meal.mealName]}</span>
-                  <span className="text-right text-caption font-semibold text-[#1d3a42]">{meal.count}</span>
+                  <span className="truncate text-caption font-medium text-[#55727b]">{mealLabel(meal.mealName, locale)}</span>
+                  <span className="text-right text-caption font-semibold text-[#1d3a42]">{format.number(meal.count)}</span>
                 </div>
               ))}
             </div>
-            <div className="self-center text-right text-title font-semibold text-[#1d3a42]">{day.total}</div>
+            <div className="self-center text-right text-title font-semibold text-[#1d3a42]">{format.number(day.total)}</div>
           </div>
         ))}
       </div>
@@ -701,20 +739,21 @@ export function MealCountEditorRow({
   onStep: (direction: 1 | -1) => void
   onBlur?: (value: string) => void
 }) {
+  const { locale } = useLocale()
+  const meals = useTranslations('meals')
+  const label = mealLabel(mealName, locale)
   return (
     <div className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-3 py-3 last:border-b-0">
       <MealIconBadge mealName={mealName} size="sm" />
       <label htmlFor={`meal-count-${mealName}`} className="min-w-0 flex-1 text-left">
-        <span className="block text-label font-bold text-[#123748]">{MEAL_LABELS[mealName]}</span>
-        <span className="block text-caption text-[#65838b]">
-          {mealName === 'BREAKFAST' ? 'Morning meal' : mealName === 'LUNCH' ? 'Midday meal' : 'Evening meal'}
-        </span>
+        <span className="block text-label font-bold text-[#123748]">{label}</span>
+        <span className="block text-caption text-[#65838b]">{mealHint(mealName, locale)}</span>
       </label>
 
       <div className="flex h-9 shrink-0 items-center overflow-hidden border border-[#9edddc] bg-[#f8fbfb]">
         <button
           type="button"
-          aria-label={`Decrease ${MEAL_LABELS[mealName]} meal`}
+          aria-label={meals('decreaseMeal', { meal: label })}
           onClick={() => onStep(-1)}
           disabled={disabled}
           className="grid h-full w-8 place-items-center text-[#00777a] transition hover:bg-[#dff4f3] disabled:cursor-not-allowed disabled:opacity-50"
@@ -723,7 +762,7 @@ export function MealCountEditorRow({
         </button>
         <input
           id={`meal-count-${mealName}`}
-          aria-label={`${MEAL_LABELS[mealName]} meal count`}
+          aria-label={meals('mealCount', { meal: label })}
           className="h-full w-12 border-x border-[#bfe7e6] bg-transparent px-1 text-center text-label font-semibold tabular-nums text-[#245d66] outline-none disabled:opacity-60"
           type="number"
           inputMode="decimal"
@@ -737,7 +776,7 @@ export function MealCountEditorRow({
         />
         <button
           type="button"
-          aria-label={`Increase ${MEAL_LABELS[mealName]} meal`}
+          aria-label={meals('increaseMeal', { meal: label })}
           onClick={() => onStep(1)}
           disabled={disabled}
           className="grid h-full w-8 place-items-center bg-[#008d8c] text-white transition hover:bg-[#00777a] disabled:cursor-not-allowed disabled:opacity-50"
@@ -758,10 +797,11 @@ export function GuestMealCountInput({
   onChange: (value: string) => void
   disabled?: boolean
 }) {
+  const meals = useTranslations('meals')
   return (
     <label className="flex h-10 w-[92px] items-center gap-1 rounded-[13px] border border-[#9edddc] bg-[#f7ffff] px-2.5 text-[#123748] shadow-[0_8px_18px_rgba(0,119,122,0.06)]">
       <input
-        aria-label="Guest meal count"
+        aria-label={meals('guestMealCount')}
         className="min-w-0 flex-1 bg-transparent text-center text-body font-semibold outline-none disabled:opacity-60"
         type="number"
         inputMode="decimal"
@@ -772,7 +812,7 @@ export function GuestMealCountInput({
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       />
-      <span className="text-caption font-semibold text-[#65838b]">meal</span>
+      <span className="text-caption font-semibold text-[#65838b]">{meals('mealUnit')}</span>
     </label>
   )
 }
@@ -788,21 +828,24 @@ export function MemberMealRow({
   attendance?: MealAttendance | null
   href?: string
 }) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const meals = useTranslations('meals')
   const count = attendanceMealCount(mealName, attendance)
-  const statusText = count > 0 ? 'I will take meal' : 'No Meal'
+  const statusText = count > 0 ? meals('takeMeal') : meals('noMeal')
   const tone = count > 0 ? 'text-[#008d8c]' : 'text-[#ee1f2f]'
   const content = (
     <>
       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#edfafa] text-caption font-semibold text-[#008d8c]">
-        {initials(memberName(member))}
+        {initials(memberName(member, locale))}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-label font-semibold text-[#1d3a42]">{memberName(member)}</div>
-        <div className="mt-0.5 truncate text-caption font-medium text-[#65838b]">{member.user?.email ?? member.room_no ?? 'Mess member'}</div>
+        <div className="truncate text-label font-semibold text-[#1d3a42]">{memberName(member, locale)}</div>
+        <div className="mt-0.5 truncate text-caption font-medium text-[#65838b]">{member.user?.email ?? member.room_no ?? meals('messMember')}</div>
       </div>
       <div className={`shrink-0 text-right text-caption font-semibold ${tone}`}>
         <div>{statusText}</div>
-        {count > 1 ? <div className="mt-0.5 text-caption text-[#65838b]">{count} meals</div> : null}
+        {count > 1 ? <div className="mt-0.5 text-caption text-[#65838b]">{format.number(count)} {meals('mealsUnit')}</div> : null}
       </div>
       {href ? <ChevronRight size={16} className="shrink-0 text-[#9ab2b8]" /> : null}
     </>
@@ -822,12 +865,13 @@ export function MemberMealRow({
 export function SearchBox({
   value,
   onChange,
-  placeholder = 'Search member...',
+  placeholder,
 }: {
   value: string
   onChange: (value: string) => void
   placeholder?: string
 }) {
+  const meals = useTranslations('meals')
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#65838b]" size={17} />
@@ -836,7 +880,7 @@ export function SearchBox({
         style={{ paddingLeft: 44 }}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder ?? meals('searchMember')}
       />
     </div>
   )
@@ -895,11 +939,12 @@ export function InlineNotice({
   return <div className={`rounded-[16px] border px-4 py-3 text-label font-semibold ${classes[tone]}`}>{children}</div>
 }
 
-export function EmptyMealsState({ title = 'No meal data found.' }: { title?: string }) {
+export function EmptyMealsState({ title }: { title?: string }) {
+  const meals = useTranslations('meals')
   return (
     <div className="rounded-[20px] bg-white/90 p-6 text-center text-label font-semibold text-[#65838b]">
       <Circle size={34} className="mx-auto mb-2 text-[#9edddc]" />
-      {title}
+      {title ?? meals('noMealData')}
     </div>
   )
 }

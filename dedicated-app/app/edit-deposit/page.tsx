@@ -18,6 +18,7 @@ import { api } from '@/lib/api'
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
+import { formatIsoDate, useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type DepositRecord = {
   id: string
@@ -35,6 +36,9 @@ type FormState = {
 }
 
 export default function EditDepositPage() {
+  const { locale } = useLocale()
+  const t = useTranslations('payments')
+  const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('payments')
   const searchParams = useQueryParams()
   const router = useRouter()
   const { user } = useAuth()
@@ -44,13 +48,12 @@ export default function EditDepositPage() {
   const [deposit, setDeposit] = useState<DepositRecord | null>(null)
   const [form, setForm] = useState<FormState>({
     amount: '',
-    date: new Date().toISOString().slice(0, 10),
+    date: formatIsoDate(),
     note: '',
   })
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
-  useAutoDismiss(message, () => setMessage(''))
+  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   useEffect(() => {
     if (!depositId || !messId) return
@@ -63,18 +66,18 @@ export default function EditDepositPage() {
         const found = (res.data ?? null) as DepositRecord | null
         setDeposit(found)
         if (!found) {
-          setMessage('Deposit not found.')
+          showMessage('depositNotFound', 'danger')
           return
         }
         setForm({
           amount: found.amount ? String(found.amount) : '',
-          date: found.date ?? new Date().toISOString().slice(0, 10),
+          date: found.date ?? formatIsoDate(),
           note: found.note ?? '',
         })
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
-        setMessage('Failed to load deposit details.')
+        showError(error, 'loadDepositDetailsFailed')
       })
 
     return () => {
@@ -83,9 +86,9 @@ export default function EditDepositPage() {
   }, [depositId, messId])
 
   async function handleSubmit() {
-    setMessage('')
-    if (!depositId || !messId) return setMessage('Deposit id or mess id is missing.')
-    if (!form.amount) return setMessage('Amount is required.')
+    clearNotice()
+    if (!depositId || !messId) return showMessage('missingDepositContext', 'danger')
+    if (!form.amount) return showMessage('amountRequired', 'danger')
 
     setBusy(true)
     try {
@@ -94,10 +97,10 @@ export default function EditDepositPage() {
         date: form.date,
         note: form.note.trim() || undefined,
       })
-      setMessage('Deposit updated successfully.')
+      showMessage('updateDepositSuccess', 'success')
       router.push('/deposits')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update deposit.')
+      showError(error, 'updateDepositFailed')
     } finally {
       setBusy(false)
     }
@@ -105,41 +108,41 @@ export default function EditDepositPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Deposit Details" subtitle={deposit?.member?.name ?? 'Update deposit'} backHref="/deposits" />
+      <TopScreen title={t('depositDetails')} subtitle={deposit?.member?.name ?? t('updateDeposit')} backHref="/deposits" />
       <div className="screen space-y-4">
         <DepositDetailsSummary item={{ ...(deposit ?? { id: depositId, amount: 0 }), status: 'APPROVED', method: 'CASH', categories: ['Member Contribution'], payment_date: deposit?.date ?? deposit?.created_at } as DepositListRecord} />
 
         <div>
-          <DepositSectionTitle title="Deposit Information" />
+          <DepositSectionTitle title={t('depositInformation')} />
           <section className="app-list mt-3">
-            <DepositInfoRow icon={depositInfoIcons.submittedBy} label="Submitted By" value={depositMemberName(deposit as DepositListRecord | null)} />
-            <DepositInfoRow icon={depositInfoIcons.depositFor} label="Deposit For" value={deposit?.member?.name ?? 'Member'} />
-            <DepositInfoRow icon={depositInfoIcons.approval} label="Approval Type" value="Auto approved" />
+            <DepositInfoRow icon={depositInfoIcons.submittedBy} label={t('submittedBy')} value={depositMemberName(deposit as DepositListRecord | null, locale)} />
+            <DepositInfoRow icon={depositInfoIcons.depositFor} label={t('depositFor')} value={deposit?.member?.name ?? t('memberFallback')} />
+            <DepositInfoRow icon={depositInfoIcons.approval} label={t('approvalType')} value={t('autoApproved')} />
           </section>
         </div>
 
         <section className="app-section app-form-section space-y-4">
-          <DepositSectionTitle title="Edit Deposit" />
+          <DepositSectionTitle title={t('editDeposit')} />
           <div className="grid grid-cols-2 gap-3">
-            <TextField label="Amount" value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="1500" type="number" />
-            <TextField label="Date" value={form.date} onChange={(date) => setForm((prev) => ({ ...prev, date }))} type="date" />
+            <TextField label={t('amount')} value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="1500" type="number" />
+            <TextField label={t('date')} value={form.date} onChange={(date) => setForm((prev) => ({ ...prev, date }))} type="date" />
           </div>
           <TextAreaField
-            label="Note"
+            label={t('note')}
             value={form.note}
             onChange={(note) => setForm((prev) => ({ ...prev, note }))}
-            placeholder="Monthly contribution"
+            placeholder={t('monthlyContribution')}
             rows={4}
           />
 
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+          {notice ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{notice.message}</div> : null}
 
           <div className="grid grid-cols-2 gap-3">
             <button type="button" onClick={() => router.push('/deposits')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#00777a]">
-              <ArrowLeft size={17} /> Back
+              <ArrowLeft size={17} /> {t('back')}
             </button>
             <button type="button" onClick={() => void handleSubmit()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-label disabled:opacity-70">
-              <Save size={17} /> {busy ? 'Saving...' : 'Save'}
+              <Save size={17} /> {busy ? t('saving') : t('save')}
             </button>
           </div>
         </section>

@@ -9,6 +9,13 @@ import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { DesignedSelect } from '@/components/mobile/expense-design'
 import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
 import { Button } from '@/components/ui/button'
+import {
+  expenseSplitMethodLabel,
+  expenseUsedByLabel,
+  useLocale,
+  useLocaleFormatters,
+  useTranslations,
+} from '@/lib/i18n'
 
 type Accent = 'teal' | 'blue' | 'violet' | 'green' | 'orange'
 
@@ -53,8 +60,9 @@ export function ExpenseSegmentedControl({
   onChange: (value: string) => void
   options: Array<{ value: string; label: string; icon: LucideIcon }>
 }) {
+  const t = useTranslations('expenses')
   return (
-    <div className="expense-segmented" role="tablist" aria-label="Expense view">
+    <div className="expense-segmented" role="tablist" aria-label={t('expenseView')}>
       {options.map((option) => {
         const selected = option.value === value
         const Icon = option.icon
@@ -121,24 +129,25 @@ export function ExpenseSummaryCard({
 
 export function ExpenseDetailsCta({
   href,
-  title = 'View Details',
-  subtitle = 'Monthly costs in one place',
-  buttonLabel = 'View details',
+  title,
+  subtitle,
+  buttonLabel,
 }: {
   href: string
   title?: string
   subtitle?: string
   buttonLabel?: string
 }) {
+  const t = useTranslations('expenses')
   return (
     <AssistantSummaryCard
       icon={CircleDollarSign}
-      title={title}
+      title={title ?? t('viewDetails')}
       href={href}
-      actionLabel={buttonLabel}
+      actionLabel={buttonLabel ?? t('viewDetails')}
       className="mt-4"
     >
-      {subtitle}
+      {subtitle ?? t('monthlyCosts')}
     </AssistantSummaryCard>
   )
 }
@@ -297,17 +306,19 @@ export function ExpenseUsedBySelector({
   onChange: (value: ExpenseUsedBy) => void
   allowMealMembers?: boolean
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('expenses')
   const options: Array<{ value: ExpenseUsedBy; label: string }> = [
-    { value: 'ALL_MEMBERS', label: 'All Members' },
-    { value: 'SELECTED_MEMBERS', label: 'Specific Members' },
+    { value: 'ALL_MEMBERS', label: expenseUsedByLabel('ALL_MEMBERS', locale) },
+    { value: 'SELECTED_MEMBERS', label: expenseUsedByLabel('SELECTED_MEMBERS', locale) },
     ...(allowMealMembers
-      ? [{ value: 'MEAL_ON_MEMBERS' as const, label: 'Meal Members' }]
+      ? [{ value: 'MEAL_ON_MEMBERS' as const, label: expenseUsedByLabel('MEAL_ON_MEMBERS', locale) }]
       : []),
   ]
 
   return (
     <DesignedSelect
-      label="Shared With"
+      label={t('sharedWith')}
       icon={Users}
       value={value}
       onChange={(event) => onChange(event.target.value as ExpenseUsedBy)}
@@ -330,17 +341,19 @@ export function ExpenseSplitMethodSelector({
   allowCustom?: boolean
   allowMealCount?: boolean
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('expenses')
   const options: Array<{ value: ExpenseSplitMethod; label: string }> = [
-    { value: 'EQUAL', label: 'Equal' },
+    { value: 'EQUAL', label: expenseSplitMethodLabel('EQUAL', locale) },
     ...(allowMealCount
-      ? [{ value: 'MEAL_COUNT' as const, label: 'By Meal Count' }]
+      ? [{ value: 'MEAL_COUNT' as const, label: expenseSplitMethodLabel('MEAL_COUNT', locale) }]
       : []),
-    ...(allowCustom ? [{ value: 'CUSTOM' as const, label: 'Manual Split' }] : []),
+    ...(allowCustom ? [{ value: 'CUSTOM' as const, label: expenseSplitMethodLabel('CUSTOM', locale) }] : []),
   ]
 
   return (
     <DesignedSelect
-      label="Split Method"
+      label={t('splitMethod')}
       icon={Scale}
       value={value}
       onChange={(event) => onChange(event.target.value as ExpenseSplitMethod)}
@@ -377,24 +390,26 @@ export function ExpenseAdvancedOptions({
   onUsedByChange: (value: ExpenseUsedBy) => void
   onSplitMethodChange: (value: ExpenseSplitMethod) => void
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('expenses')
   const usedByLabels: Record<ExpenseUsedBy, string> = {
-    ALL_MEMBERS: 'All Members',
-    SELECTED_MEMBERS: 'Specific Members',
-    MEAL_ON_MEMBERS: 'Meal Members',
+    ALL_MEMBERS: expenseUsedByLabel('ALL_MEMBERS', locale),
+    SELECTED_MEMBERS: expenseUsedByLabel('SELECTED_MEMBERS', locale),
+    MEAL_ON_MEMBERS: expenseUsedByLabel('MEAL_ON_MEMBERS', locale),
   }
   const splitLabels: Record<ExpenseSplitMethod, string> = {
-    EQUAL: 'Equal',
-    MEAL_COUNT: 'By Meal Count',
-    CUSTOM: 'Manual Split',
+    EQUAL: expenseSplitMethodLabel('EQUAL', locale),
+    MEAL_COUNT: expenseSplitMethodLabel('MEAL_COUNT', locale),
+    CUSTOM: expenseSplitMethodLabel('CUSTOM', locale),
   }
   const summary = `${usedByLabels[usedBy]} · ${splitLabels[splitMethod]}`
 
   return (
     <DeferredFormSection
       open={open}
-      title="Advanced Features"
+      title={t('advancedFeatures')}
       description={summary}
-      actionLabel="Advanced Features (Optional)"
+      actionLabel={t('advancedOptional')}
       icon={<SlidersHorizontal size={19} strokeWidth={2.3} />}
       onOpen={onOpen}
       onClose={onClose}
@@ -427,14 +442,15 @@ export type MemberAllocationShare = {
 export function MemberAllocationList({
   shares,
   formatMoney,
-  amountLabel = 'Allocated amount',
-  emptyMessage = 'No member allocations were returned.',
+  amountLabel,
+  emptyMessage,
 }: {
   shares: MemberAllocationShare[]
   formatMoney: (value?: number | null) => string
   amountLabel?: string
   emptyMessage?: string
 }) {
+  const t = useTranslations('expenses')
   return (
     <div className="overflow-hidden rounded-[15px] border border-[#e4eaec] bg-white">
       {shares.map((share, index) => {
@@ -452,14 +468,14 @@ export function MemberAllocationList({
               </span>
               {share.isPayer ? (
                 <span className="mt-1 inline-flex rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-semibold text-[#00777a]">
-                  Payer
+                  {t('payer')}
                 </span>
               ) : (
-                <span className="mt-1 block text-caption font-medium text-[#65838b]">Member share</span>
+                <span className="mt-1 block text-caption font-medium text-[#65838b]">{t('memberShare')}</span>
               )}
             </span>
             <span className="min-w-[96px] shrink-0 text-right">
-              <span className="block text-caption font-medium text-[#65838b]">{amountLabel}</span>
+              <span className="block text-caption font-medium text-[#65838b]">{amountLabel ?? t('allocatedAmount')}</span>
               <span className="ui-mono-number mt-1 block text-body font-bold text-[#00777a]">
                 {formatMoney(share.shareAmount)}
               </span>
@@ -467,7 +483,7 @@ export function MemberAllocationList({
           </div>
         )
       })}
-      {!shares.length ? <div className="expense-empty-state">{emptyMessage}</div> : null}
+      {!shares.length ? <div className="expense-empty-state">{emptyMessage ?? t('noMemberAllocations')}</div> : null}
     </div>
   )
 }
@@ -488,8 +504,8 @@ export function SplitPreviewContent({
   busy,
   onBack,
   onSave,
-  backLabel = 'Back to Edit',
-  saveLabel = 'Confirm & Save',
+  backLabel,
+  saveLabel,
 }: {
   title: string
   amount: number
@@ -507,6 +523,8 @@ export function SplitPreviewContent({
   backLabel?: string
   saveLabel?: string
 }) {
+  const t = useTranslations('expenses')
+  const format = useLocaleFormatters()
   return (
     <>
       <ExpenseSurface>
@@ -522,23 +540,23 @@ export function SplitPreviewContent({
         <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-[#edf1f4] pt-3">
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><WalletCards size={17} /></span>
-            <span><span className="block text-caption font-medium text-[#65838b]">Payment Source</span><span className="block text-label font-semibold text-[#1d3a42]">{paidFrom}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">{t('paymentSource')}</span><span className="block text-label font-semibold text-[#1d3a42]">{paidFrom}</span></span>
           </div>
           <div className="flex items-center gap-2 border-l border-[#edf1f4] pl-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><UserRound size={17} /></span>
-            <span><span className="block text-caption font-medium text-[#65838b]">Shared With</span><span className="block text-label font-semibold text-[#1d3a42]">{usedBy}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">{t('sharedWith')}</span><span className="block text-label font-semibold text-[#1d3a42]">{usedBy}</span></span>
           </div>
           <div className="col-span-2 flex items-center gap-2 border-t border-[#edf1f4] pt-2">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e6f7f6] text-[#008d8c]"><Scale size={17} /></span>
-            <span><span className="block text-caption font-medium text-[#65838b]">Split Rule</span><span className="block text-label font-semibold text-[#1d3a42]">{splitMethod}</span></span>
+            <span><span className="block text-caption font-medium text-[#65838b]">{t('splitRule')}</span><span className="block text-label font-semibold text-[#1d3a42]">{splitMethod}</span></span>
           </div>
         </div>
       </ExpenseSurface>
 
       {items?.length ? (
         <ExpenseSurface
-          title="Purchased Items"
-          aside={<span className="ui-badge ui-badge--info">{items.length} {items.length === 1 ? 'item' : 'items'}</span>}
+          title={t('purchasedItems')}
+          aside={<span className="ui-badge ui-badge--info">{t(items.length === 1 ? 'itemCount' : 'itemsCount', { count: format.number(items.length) })}</span>}
         >
           <div className="overflow-hidden rounded-[14px] border border-[#e4eaec] bg-white">
             {items.map((item, index) => (
@@ -555,27 +573,27 @@ export function SplitPreviewContent({
       ) : null}
 
       <ExpenseSurface
-        title="Member Allocation"
-        aside={<span className="ui-badge ui-badge--info">{shares.length} {shares.length === 1 ? 'member' : 'members'}</span>}
+        title={t('memberAllocation')}
+        aside={<span className="ui-badge ui-badge--info">{t(shares.length === 1 ? 'memberCount' : 'membersCount', { count: format.number(shares.length) })}</span>}
       >
         <MemberAllocationList
           shares={shares}
           formatMoney={formatMoney}
-          amountLabel="Added cost"
-          emptyMessage="No member shares were returned."
+          amountLabel={t('addedCost')}
+          emptyMessage={t('noMemberShares')}
         />
       </ExpenseSurface>
 
-      <ExpenseSurface title="Allocation Summary">
+      <ExpenseSurface title={t('allocationSummary')}>
         <div className="grid grid-cols-2">
-          <ExpenseMetric label="Payer Credit" value={formatMoney(payerCredit)} color="#15953a" />
-          <ExpenseMetric label="Shared Cost" value={formatMoney(totalSharedCost)} color="#00777a" />
+          <ExpenseMetric label={t('payerCredit')} value={formatMoney(payerCredit)} color="#15953a" />
+          <ExpenseMetric label={t('sharedCost')} value={formatMoney(totalSharedCost)} color="#00777a" />
         </div>
       </ExpenseSurface>
 
       <ExpenseActionBar>
-        <ExpenseSecondaryAction onClick={onBack} disabled={busy}>{backLabel}</ExpenseSecondaryAction>
-        <ExpensePrimaryAction onClick={onSave} disabled={busy}>{busy ? 'Saving...' : saveLabel}</ExpensePrimaryAction>
+        <ExpenseSecondaryAction onClick={onBack} disabled={busy}>{backLabel ?? t('backToEdit')}</ExpenseSecondaryAction>
+        <ExpensePrimaryAction onClick={onSave} disabled={busy}>{busy ? t('saving') : (saveLabel ?? t('confirmAndSave'))}</ExpensePrimaryAction>
       </ExpenseActionBar>
     </>
   )

@@ -3,9 +3,13 @@
 import { useEffect, useState } from 'react'
 import { CalendarDays, CircleDollarSign, ReceiptText, UtensilsCrossed, WalletCards, Zap } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import {
+  BillingCalculationNotice,
+  billingCalculationIsPending,
+  type BillingCalculationStatus,
+} from '@/components/mobile/billing-status-notice'
 import { MemberDetailsView } from '@/components/mobile/member-details'
 import type { MobileMember } from '@/components/mobile/member-card'
-import { formatTaka } from '@/components/mobile/expense-design'
 import { ExpenseBreakdownList, ExpenseSurface, ExpenseSummaryCard } from '@/components/mobile/expense-ui'
 import { ExpenseReviewActions } from '@/components/mobile/expense-approval'
 import { InlineNotice } from '@/components/mobile/meals-design'
@@ -13,10 +17,16 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
+import { useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '@/app/providers'
 
 export default function MemberDetailsPage() {
+  const membersCopy = useTranslations('members')
+  const billing = useTranslations('billing')
+  const format = useLocaleFormatters()
+  const memberNotice = useLocalizedNotice('members')
+  const billNotice = useLocalizedNotice('billing')
   const { user } = useAuth()
   const searchParams = useQueryParams()
   const memberId = searchParams.get('memberId') ?? ''
@@ -24,21 +34,20 @@ export default function MemberDetailsPage() {
   const month = searchParams.get('month') ?? ''
   const [member, setMember] = useState<MobileMember | null>(null)
   const [bill, setBill] = useState<BillRecord | null>(null)
+  const [billingStatus, setBillingStatus] = useState<BillingCalculationStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [billLoading, setBillLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [billMessage, setBillMessage] = useState('')
   const [reviewBusy, setReviewBusy] = useState(false)
 
   useEffect(() => {
     if (!memberId || !messId) {
-      setMessage('Member information is missing.')
+      memberNotice.showMessage('memberInformationMissing', 'danger')
       return
     }
 
     let active = true
     setLoading(true)
-    setMessage('')
+    memberNotice.clearNotice()
 
     api
       .getAllMembers({ limit: 500 })
@@ -52,12 +61,13 @@ export default function MemberDetailsPage() {
           ) ?? null
 
         if (found || !month) setMember(found)
-        if (!found && !month) setMessage('Member not found.')
+        if (!found && !month) memberNotice.showMessage('memberNotFound', 'danger')
       })
       .catch((error) => {
         if (!active) return
         if (!month) setMember(null)
-        setMessage(month ? '' : error instanceof Error ? error.message : 'Failed to load member details.')
+        if (month) memberNotice.clearNotice()
+        else memberNotice.showError(error, 'loadMemberDetailsFailed')
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -66,7 +76,7 @@ export default function MemberDetailsPage() {
     return () => {
       active = false
     }
-  }, [memberId, messId, month])
+  }, [memberId, memberNotice.clearNotice, memberNotice.showError, memberNotice.showMessage, messId, month])
 
   useEffect(() => {
     if (!memberId || !messId || !/^\d{4}-\d{2}$/.test(month)) return
@@ -74,7 +84,8 @@ export default function MemberDetailsPage() {
     let active = true
     let billingTimer: ReturnType<typeof setTimeout> | null = null
     setBillLoading(true)
-    setBillMessage('')
+    setBillingStatus(null)
+    billNotice.clearNotice()
 
     const loadBill = () => api
       .getBillsByMess(messId, { month: `${month}-01`, memberId, limit: 1 })
@@ -84,6 +95,7 @@ export default function MemberDetailsPage() {
         const nextBill = list[0] ?? null
         const billMember = nextBill?.member
         setBill(nextBill)
+        setBillingStatus(response.billing?.status ?? null)
         if (billMember) {
           setMember((current) => current ?? {
             id: `${messId}:${billMember.id}`,
@@ -93,13 +105,15 @@ export default function MemberDetailsPage() {
             is_active: true,
             user: {
               id: billMember.id,
-              name: billMember.name || 'Member',
+              name: billMember.name || membersCopy('memberFallback'),
               email: billMember.email || '',
               avatar_url: billMember.avatar_url ?? null,
             },
           })
         }
-        if (!nextBill) setBillMessage('No monthly bill found for this member.')
+        if (!nextBill && !billingCalculationIsPending(response.billing?.status)) {
+          billNotice.showMessage('noMemberBill')
+        }
         if (response.billing && response.billing.status !== 'READY' && response.billing.status !== 'FAILED') {
           billingTimer = setTimeout(loadBill, 1500)
         }
@@ -107,7 +121,7 @@ export default function MemberDetailsPage() {
       .catch((error) => {
         if (!active) return
         setBill(null)
-        setBillMessage(error instanceof Error ? error.message : 'Failed to load member monthly bill.')
+        billNotice.showError(error, 'loadMemberBillFailed')
       })
       .finally(() => {
         if (active) setBillLoading(false)
@@ -119,10 +133,10 @@ export default function MemberDetailsPage() {
       active = false
       if (billingTimer) clearTimeout(billingTimer)
     }
-  }, [memberId, messId, month])
+  }, [billNotice.clearNotice, billNotice.showError, billNotice.showMessage, memberId, membersCopy, messId, month])
 
   const monthLabel = /^\d{4}-\d{2}$/.test(month)
-    ? new Date(`${month}-01T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    ? format.month(`${month}-01`)
     : ''
   const totalCost = bill ? toNumber(bill.food_bill) + toNumber(bill.seat_rent) + toNumber(bill.utility_share) : 0
   const totalDeposit = bill ? toNumber(bill.deposit_total) + toNumber(bill.paid_amount) : 0
@@ -132,7 +146,7 @@ export default function MemberDetailsPage() {
   const reviewCloseRequest = async (status: 'APPROVED' | 'REJECTED') => {
     if (!bill || !closeRequest || reviewBusy) return
     setReviewBusy(true)
-    setBillMessage('')
+    billNotice.clearNotice()
     try {
       const response = await api.reviewMonthlyBillCloseRequest(closeRequest.id, status)
       const reviewed = response.data as BillCloseRequest
@@ -141,11 +155,12 @@ export default function MemberDetailsPage() {
         ...(status === 'APPROVED' ? { balance: 0, final_due: 0 } : {}),
         close_requests: [reviewed],
       } : current)
-      setBillMessage(status === 'APPROVED'
-        ? 'Calculation closed. The effective and carry-forward balance is now zero.'
-        : 'Close request rejected.')
+      billNotice.showMessage(
+        status === 'APPROVED' ? 'closeApprovedByManager' : 'closeRejectedByManager',
+        status === 'APPROVED' ? 'success' : 'danger',
+      )
     } catch (error) {
-      setBillMessage(error instanceof Error ? error.message : 'Failed to review close request.')
+      billNotice.showError(error, 'reviewCloseFailed')
     } finally {
       setReviewBusy(false)
     }
@@ -153,49 +168,50 @@ export default function MemberDetailsPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Member Details" subtitle={monthLabel || member?.user?.name || 'Member overview'} backHref={month ? '/monthly-bill' : '/members'} />
+      <TopScreen title={membersCopy('memberDetails')} subtitle={monthLabel || member?.user?.name || membersCopy('memberOverview')} backHref={month ? '/monthly-bill' : '/members'} />
       <div className="screen space-y-4">
-        {loading ? <LoadingIndicator variant="card" label="Loading member details" /> : null}
-        {message ? <div className="ui-notice ui-notice--danger">{message}</div> : null}
-        {member ? <MemberDetailsView member={member} showActions={!month} /> : null}
+        {loading ? <LoadingIndicator variant="card" label={membersCopy('loadingMemberDetails')} /> : null}
+        {memberNotice.notice ? <InlineNotice tone={memberNotice.notice.tone}>{memberNotice.notice.message}</InlineNotice> : null}
+        {member ? <MemberDetailsView member={member} showActions={!month && canManageMess(user)} /> : null}
 
         {month ? (
-          <ExpenseSurface title="Monthly Bill Details">
-            {billLoading ? <LoadingIndicator variant="card" label="Loading member bill" /> : null}
-            {billMessage && !billLoading ? <div className="ui-notice ui-notice--info">{billMessage}</div> : null}
+          <ExpenseSurface title={billing('memberMonthlyBillDetails')}>
+            {billLoading ? <LoadingIndicator variant="card" label={billing('loadingMemberBill')} /> : null}
+            {billNotice.notice && !billLoading ? <InlineNotice tone={billNotice.notice.tone}>{billNotice.notice.message}</InlineNotice> : null}
+            {!billLoading ? <BillingCalculationNotice status={billingStatus} /> : null}
             {bill && !billLoading ? (
               <div className="space-y-4">
                 <div className="expense-summary-grid">
-                  <ExpenseSummaryCard icon={UtensilsCrossed} label="Total Meals" value={toNumber(bill.total_meals)} />
-                  <ExpenseSummaryCard icon={ReceiptText} label="Total Cost" value={formatTaka(totalCost)} accent="blue" />
-                  <ExpenseSummaryCard icon={CircleDollarSign} label="Deposit" value={formatTaka(totalDeposit)} accent="green" />
-                  <ExpenseSummaryCard icon={WalletCards} label="Final Due" value={formatTaka(bill.final_due)} accent="violet" />
+                  <ExpenseSummaryCard icon={UtensilsCrossed} label={billing('totalMeals')} value={format.number(toNumber(bill.total_meals))} />
+                  <ExpenseSummaryCard icon={ReceiptText} label={billing('totalCost')} value={format.money(totalCost)} accent="blue" />
+                  <ExpenseSummaryCard icon={CircleDollarSign} label={billing('deposit')} value={format.money(totalDeposit)} accent="green" />
+                  <ExpenseSummaryCard icon={WalletCards} label={billing('finalDue')} value={format.money(bill.final_due)} accent="violet" />
                 </div>
                 <ExpenseBreakdownList
                   items={[
-                    { icon: CalendarDays, label: 'Month', value: monthLabel },
-                    { icon: ReceiptText, label: 'Food / Meal', value: formatTaka(bill.food_bill) },
-                    { icon: WalletCards, label: 'Room rent', value: formatTaka(bill.seat_rent), accent: 'violet' },
-                    { icon: Zap, label: 'Utility share', value: formatTaka(bill.utility_share), accent: 'blue' },
-                    { icon: CircleDollarSign, label: 'Previous balance', value: formatTaka(bill.prev_balance), accent: 'green' },
-                    { icon: WalletCards, label: 'Current month balance', value: formatTaka(currentMonthBalance), accent: 'orange' },
-                    { icon: WalletCards, label: 'Carry-forward balance', value: formatTaka(bill.balance), accent: 'violet' },
+                    { icon: CalendarDays, label: billing('month'), value: monthLabel },
+                    { icon: ReceiptText, label: billing('foodAndMeal'), value: format.money(bill.food_bill) },
+                    { icon: WalletCards, label: billing('roomRent'), value: format.money(bill.seat_rent), accent: 'violet' },
+                    { icon: Zap, label: billing('utilityShare'), value: format.money(bill.utility_share), accent: 'blue' },
+                    { icon: CircleDollarSign, label: billing('previousBalance'), value: format.money(bill.prev_balance), accent: 'green' },
+                    { icon: WalletCards, label: billing('currentMonthBalance'), value: format.money(currentMonthBalance), accent: 'orange' },
+                    { icon: WalletCards, label: billing('carryForwardBalance'), value: format.money(bill.balance), accent: 'violet' },
                   ]}
                 />
                 {closeRequest ? (
                   <div className="space-y-3">
                     {closeRequest.status === 'PENDING' ? (
                       <InlineNotice tone="warning">
-                        This member requested to close the calculation. Original carry-forward balance: {formatTaka(closeRequest.original_balance)}.
+                        {billing('memberCloseRequest', { balance: format.money(closeRequest.original_balance) })}
                       </InlineNotice>
                     ) : null}
                     {closeRequest.status === 'APPROVED' ? (
                       <InlineNotice tone="success">
-                        Closed and settled at zero. Original audit balance: {formatTaka(closeRequest.original_balance)}.
+                        {billing('closedAtZero', { balance: format.money(closeRequest.original_balance) })}
                       </InlineNotice>
                     ) : null}
                     {closeRequest.status === 'REJECTED' ? (
-                      <InlineNotice tone="danger">Close request rejected.</InlineNotice>
+                      <InlineNotice tone="danger">{billing('closeRequestRejected')}</InlineNotice>
                     ) : null}
                     {closeRequest.status === 'PENDING' && canManageMess(user) ? (
                       <ExpenseReviewActions

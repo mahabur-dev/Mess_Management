@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useRef, type FormEvent, useState, type ClipboardEvent, type KeyboardEvent, } from 'react'
-import { Mail, Phone, RotateCcw, ShieldCheck, User, UserRound } from 'lucide-react'
+import { Mail, Phone, RotateCcw, User, UserRound } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 import { api } from '@/lib/api'
 import {
@@ -16,16 +16,19 @@ import {
   authLinkClass,
 } from '@/components/auth-ui'
 import { Button } from '@/components/ui/button'
-function messageFrom(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback
+import { localizedErrorMessage, useLocale, useTranslations, type Locale } from '@/lib/i18n'
+function messageFrom(error: unknown, fallback: string, locale: Locale) {
+  return error ? localizedErrorMessage(error, locale) : fallback
 }
 
-function resultMessage(result: { message?: string; data?: { message?: string } }, fallback: string) {
-  return result.data?.message || result.message || fallback
+function resultMessage(_result: { message?: string; data?: { message?: string } }, fallback: string) {
+  return fallback
 }
 
 export function SignupPage() {
   const { register, isSubmitting } = useAuth()
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -46,45 +49,45 @@ export function SignupPage() {
     setError('')
 
     if (form.password.length < 6) {
-      setError('Password must be at least 6 characters.')
+      setError(auth('passwordMinError'))
       return
     }
 
     if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.')
+      setError(auth('passwordMismatch'))
       return
     }
 
     try {
       await register(form.name, form.email, form.phone, form.password)
     } catch (error) {
-      setError(messageFrom(error, 'Registration failed. Please try again.'))
+      setError(messageFrom(error, auth('registrationFailed'), locale))
     }
   }
 
   return (
     <AuthShell
-      title="Create an account"
+      title={auth('createAccount')}
       variant="reference"
       icon={UserRound}
-      description="Join your mess workspace and manage meals, payments, and notices from your phone."
-      footer={<AuthFooterLink text="Already have an account?" href="/login" action="Sign in" />}
+      description={auth('createAccountDescription')}
+      footer={<AuthFooterLink text={auth('alreadyHaveAccount')} href="/login" action={auth('signIn')} />}
     >
       {error ? <AuthMessage>{error}</AuthMessage> : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthField
-          label="Full name"
+          label={auth('fullName')}
           icon={User}
           value={form.name}
           onChange={(event) => update('name', event.target.value)}
-          placeholder="Your name"
+          placeholder={auth('yourName')}
           autoComplete="name"
           required
         />
 
         <AuthField
-          label="Email address"
+          label={auth('emailAddress')}
           icon={Mail}
           value={form.email}
           onChange={(event) => update('email', event.target.value)}
@@ -95,7 +98,7 @@ export function SignupPage() {
         />
 
         <AuthField
-          label="Phone number"
+          label={auth('phoneNumber')}
           icon={Phone}
           value={form.phone}
           onChange={(event) => update('phone', event.target.value)}
@@ -105,36 +108,27 @@ export function SignupPage() {
         />
 
         <AuthPasswordField
-          label="Password"
+          label={auth('password')}
           value={form.password}
           onChange={(value) => update('password', value)}
           show={showPassword}
           onToggle={() => setShowPassword((current) => !current)}
-          placeholder="Minimum 6 characters"
+          placeholder={auth('minimumPassword')}
           autoComplete="new-password"
         />
 
         <AuthPasswordField
-          label="Confirm password"
+          label={auth('confirmPassword')}
           value={form.confirmPassword}
           onChange={(value) => update('confirmPassword', value)}
           show={showConfirmPassword}
           onToggle={() => setShowConfirmPassword((current) => !current)}
-          placeholder="Confirm your password"
+          placeholder={auth('confirmYourPassword')}
           autoComplete="new-password"
         />
 
-        {/* <div className="rounded-2xl border border-[#cfeeed] bg-[#f7fcfb] px-4 py-3">
-          <div className="flex items-start gap-3">
-            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#008d8c]" />
-            <p className="text-caption font-semibold leading-relaxed text-[#65838b]">
-              New accounts start as members. Your mess manager can approve access from the dashboard.
-            </p>
-          </div>
-        </div> */}
-
-        <AuthSubmitButton busy={isSubmitting} busyLabel="Creating account...">
-          Create Account
+        <AuthSubmitButton busy={isSubmitting} busyLabel={auth('creatingAccount')}>
+          {auth('createAccount')}
         </AuthSubmitButton>
       </form>
     </AuthShell>
@@ -143,6 +137,8 @@ export function SignupPage() {
 
 export function ForgotPasswordPage() {
   const router = useRouter()
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -156,7 +152,8 @@ export function ForgotPasswordPage() {
 
     const normalizedEmail = email.trim().toLowerCase()
     if (!normalizedEmail) {
-      setMessage('Enter your email address first.')
+      setMessage(auth('emailRequired'))
+      setBusy(false)
       return
     }
 
@@ -165,10 +162,10 @@ export function ForgotPasswordPage() {
       sessionStorage.setItem('resetEmail', normalizedEmail)
       sessionStorage.removeItem('otpVerified')
       setSuccess(true)
-      setMessage(resultMessage(result, 'OTP sent to your email.'))
+      setMessage(resultMessage(result, auth('otpSent')))
       window.setTimeout(() => router.push('/verify_otp'), 700)
     } catch (error) {
-      setMessage(messageFrom(error, 'Failed to send OTP.'))
+      setMessage(messageFrom(error, auth('sendOtpFailed'), locale))
     } finally {
       setBusy(false)
     }
@@ -176,12 +173,12 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      title="Forgot password?"
+      title={auth('forgotTitle')}
       variant="reference"
-      description="Enter your email address and we will send a verification code."
+      description={auth('forgotDescription')}
       footer={
         <Link href="/login" className={authLinkClass}>
-          Back to sign in
+          {auth('backToSignIn')}
         </Link>
       }
     >
@@ -189,7 +186,7 @@ export function ForgotPasswordPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthField
-          label="Email address"
+          label={auth('emailAddress')}
           icon={Mail}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -199,127 +196,18 @@ export function ForgotPasswordPage() {
           required
         />
 
-        <AuthSubmitButton busy={busy} busyLabel="Sending OTP...">
-          Send OTP
+        <AuthSubmitButton busy={busy} busyLabel={auth('sendingOtp')}>
+          {auth('sendOtp')}
         </AuthSubmitButton>
       </form>
     </AuthShell>
   )
 }
 
-// export function VerifyOtpPage() {
-//   const router = useRouter()
-//   const [otp, setOtp] = useState('')
-//   const [busy, setBusy] = useState(false)
-//   const [resending, setResending] = useState(false)
-//   const [message, setMessage] = useState('')
-//   const [success, setSuccess] = useState(false)
-
-//   async function handleSubmit(event: FormEvent) {
-//     event.preventDefault()
-//     setMessage('')
-//     setSuccess(false)
-
-//     const email = sessionStorage.getItem('resetEmail')
-//     if (!email) {
-//       setMessage('Please request an OTP with your email first.')
-//       return
-//     }
-
-//     if (otp.trim().length !== 6) {
-//       setMessage('Please enter the 6-digit verification code.')
-//       return
-//     }
-
-//     setBusy(true)
-//     try {
-//       const result = await api.verifyOtp(email, otp.trim())
-//       sessionStorage.setItem('otpVerified', 'true')
-//       setSuccess(true)
-//       setMessage(resultMessage(result, 'OTP verified successfully.'))
-//       window.setTimeout(() => router.push('/reset_password'), 700)
-//     } catch (error) {
-//       setMessage(messageFrom(error, 'OTP verification failed.'))
-//     } finally {
-//       setBusy(false)
-//     }
-//   }
-
-//   async function resendOtp() {
-//     const email = sessionStorage.getItem('resetEmail')
-//     setMessage('')
-//     setSuccess(false)
-
-//     if (!email) {
-//       setMessage('Please request an OTP with your email first.')
-//       return
-//     }
-
-//     setResending(true)
-//     try {
-//       const result = await api.forgotPassword(email)
-//       setOtp('')
-//       setSuccess(true)
-//       setMessage(resultMessage(result, 'A new OTP has been sent to your email.'))
-//     } catch (error) {
-//       setMessage(messageFrom(error, 'Failed to resend OTP.'))
-//     } finally {
-//       setResending(false)
-//     }
-//   }
-
-//   return (
-//     <AuthShell
-//       title="Verify OTP"
-//       description="Enter the 6-digit code sent to your email address."
-//       footer={
-//         <div className="space-y-2">
-//           <Link href="/forget_password" className={authLinkClass}>
-//             Back to email
-//           </Link>
-//           <div>
-//             <Link href="/login" className="font-semibold text-[#65838b] transition hover:text-[#008d8c]">
-//               Remember your password? <span className={authLinkClass}>Sign in</span>
-//             </Link>
-//           </div>
-//         </div>
-//       }
-//     >
-//       {message ? <AuthMessage success={success}>{message}</AuthMessage> : null}
-
-//       <form onSubmit={handleSubmit} className="space-y-4">
-//         <label className="block">
-//           <div className="mb-2 text-center text-label font-bold text-[#123748]">Verification code</div>
-//           <input
-//             className="field h-14 rounded-2xl bg-white px-4 text-center text-title font-bold tracking-[0.24em]"
-//             value={otp}
-//             onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-//             placeholder="000000"
-//             inputMode="numeric"
-//             autoComplete="one-time-code"
-//             required
-//           />
-//         </label>
-
-//         <AuthSubmitButton busy={busy} busyLabel="Verifying...">
-//           Verify Code
-//         </AuthSubmitButton>
-//       </form>
-
-//       <button
-//         type="button"
-//         onClick={() => void resendOtp()}
-//         disabled={resending}
-//         className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#cfeeed] bg-white text-label font-bold text-[#008d8c] disabled:cursor-not-allowed disabled:opacity-70"
-//       >
-//         <RotateCcw size={16} />
-//         {resending ? 'Resending...' : 'Resend OTP'}
-//       </button>
-//     </AuthShell>
-//   )
-// }
 export function VerifyOtpPage() {
   const router = useRouter()
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
 
   const OTP_LENGTH = 6
 
@@ -411,12 +299,12 @@ export function VerifyOtpPage() {
     const email = sessionStorage.getItem('resetEmail')
 
     if (!email) {
-      setMessage('Please request an OTP with your email first.')
+      setMessage(auth('requestOtpFirst'))
       return
     }
 
     if (otp.length !== OTP_LENGTH) {
-      setMessage('Please enter the 6-digit verification code.')
+      setMessage(auth('enterSixDigitCode'))
       otpRefs.current[otpDigits.findIndex((digit) => !digit)]?.focus()
       return
     }
@@ -429,7 +317,7 @@ export function VerifyOtpPage() {
       sessionStorage.setItem('otpVerified', 'true')
       setSuccess(true)
       setMessage(
-        resultMessage(result, 'OTP verified successfully.')
+        resultMessage(result, auth('otpVerified'))
       )
 
       window.setTimeout(() => {
@@ -437,7 +325,7 @@ export function VerifyOtpPage() {
       }, 700)
     } catch (error) {
       setMessage(
-        messageFrom(error, 'OTP verification failed.')
+        messageFrom(error, auth('otpVerificationFailed'), locale)
       )
     } finally {
       setBusy(false)
@@ -451,7 +339,7 @@ export function VerifyOtpPage() {
     setSuccess(false)
 
     if (!email) {
-      setMessage('Please request an OTP with your email first.')
+      setMessage(auth('requestOtpFirst'))
       return
     }
 
@@ -467,12 +355,12 @@ export function VerifyOtpPage() {
       setMessage(
         resultMessage(
           result,
-          'A new OTP has been sent to your email.'
+          auth('newOtpSent')
         )
       )
     } catch (error) {
       setMessage(
-        messageFrom(error, 'Failed to resend OTP.')
+        messageFrom(error, auth('resendOtpFailed'), locale)
       )
     } finally {
       setResending(false)
@@ -481,16 +369,16 @@ export function VerifyOtpPage() {
 
   return (
     <AuthShell
-      title="Enter OTP"
+      title={auth('enterOtp')}
       variant="reference"
-      description="Enter the 6-digit code sent to your email address."
+      description={auth('otpDescription')}
       footer={
         <div className="space-y-2">
           <Link
             href="/forget_password"
             className={authLinkClass}
           >
-            Back to email
+            {auth('backToEmail')}
           </Link>
 
           <div>
@@ -498,9 +386,9 @@ export function VerifyOtpPage() {
               href="/login"
               className="font-semibold text-[#65838b] transition hover:text-[#008d8c]"
             >
-              Remember your password?{' '}
+              {auth('rememberPassword')}{' '}
               <span className={authLinkClass}>
-                Sign in
+                {auth('signIn')}
               </span>
             </Link>
           </div>
@@ -516,7 +404,7 @@ export function VerifyOtpPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="block">
           <div className="mb-3 text-center text-label font-bold text-[#123748]">
-            Verification code
+            {auth('verificationCode')}
           </div>
 
           <div
@@ -537,7 +425,7 @@ export function VerifyOtpPage() {
                 }
                 maxLength={1}
                 value={digit}
-                aria-label={`OTP digit ${index + 1}`}
+                aria-label={auth('otpDigit', { number: index + 1 })}
                 onChange={(event) =>
                   handleOtpChange(
                     index,
@@ -573,15 +461,15 @@ export function VerifyOtpPage() {
           </div>
 
           <div className="mt-3 text-center text-caption font-medium text-[#789096]">
-            Enter the code from your email
+            {auth('enterEmailCode')}
           </div>
         </div>
 
         <AuthSubmitButton
           busy={busy}
-          busyLabel="Verifying..."
+          busyLabel={auth('verifying')}
         >
-          Verify Code
+          {auth('verifyCode')}
         </AuthSubmitButton>
       </form>
 
@@ -590,11 +478,11 @@ export function VerifyOtpPage() {
         variant="secondary"
         onClick={() => void resendOtp()}
         busy={resending}
-        busyLabel="Resending..."
+        busyLabel={auth('resending')}
         className="mt-4 w-full"
       >
         <RotateCcw size={15} />
-        Resend OTP
+        {auth('resendOtp')}
       </Button>
     </AuthShell>
   )
@@ -602,6 +490,8 @@ export function VerifyOtpPage() {
 
 export function ResetPasswordPage() {
   const router = useRouter()
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -619,17 +509,17 @@ export function ResetPasswordPage() {
     const otpVerified = sessionStorage.getItem('otpVerified')
 
     if (!email || otpVerified !== 'true') {
-      setMessage('Please verify your OTP before resetting password.')
+      setMessage(auth('verifyOtpBeforeReset'))
       return
     }
 
     if (password.length < 6) {
-      setMessage('Password must be at least 6 characters.')
+      setMessage(auth('passwordMinError'))
       return
     }
 
     if (password !== confirmPassword) {
-      setMessage('Passwords do not match.')
+      setMessage(auth('passwordMismatch'))
       return
     }
 
@@ -639,10 +529,10 @@ export function ResetPasswordPage() {
       sessionStorage.removeItem('resetEmail')
       sessionStorage.removeItem('otpVerified')
       setSuccess(true)
-      setMessage(resultMessage(result, 'Password reset successfully.'))
+      setMessage(resultMessage(result, auth('passwordResetSuccess')))
       window.setTimeout(() => router.push('/login'), 800)
     } catch (error) {
-      setMessage(messageFrom(error, 'Password reset failed.'))
+      setMessage(messageFrom(error, auth('passwordResetFailed'), locale))
     } finally {
       setBusy(false)
     }
@@ -650,12 +540,12 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell
-      title="Create a new password"
+      title={auth('newPasswordTitle')}
       variant="reference"
-      description="Create a new password to secure your Mess Management account."
+      description={auth('newPasswordDescription')}
       footer={
         <Link href="/login" className={authLinkClass}>
-          Back to sign in
+          {auth('backToSignIn')}
         </Link>
       }
     >
@@ -663,27 +553,27 @@ export function ResetPasswordPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthPasswordField
-          label="New password"
+          label={auth('newPassword')}
           value={password}
           onChange={setPassword}
           show={showPassword}
           onToggle={() => setShowPassword((current) => !current)}
-          placeholder="Enter new password"
+          placeholder={auth('enterNewPassword')}
           autoComplete="new-password"
         />
 
         <AuthPasswordField
-          label="Confirm password"
+          label={auth('confirmPassword')}
           value={confirmPassword}
           onChange={setConfirmPassword}
           show={showConfirmPassword}
           onToggle={() => setShowConfirmPassword((current) => !current)}
-          placeholder="Confirm new password"
+          placeholder={auth('confirmNewPassword')}
           autoComplete="new-password"
         />
 
-        <AuthSubmitButton busy={busy} busyLabel="Resetting...">
-          Reset Password
+        <AuthSubmitButton busy={busy} busyLabel={auth('resetting')}>
+          {auth('resetPassword')}
         </AuthSubmitButton>
       </form>
     </AuthShell>

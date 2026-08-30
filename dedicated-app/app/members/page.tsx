@@ -6,47 +6,55 @@ import { FloatingActionLink } from '@/components/mobile/floating-action-link'
 import { IconInput } from '@/components/mobile/icon-input'
 import { MemberCard, type MobileMember } from '@/components/mobile/member-card'
 import { MemberJoinRequestsPanel } from '@/components/mobile/member-join-requests'
+import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
-import { canManageMess } from '@/lib/app-permissions'
+import { canManageMess, getActiveMessId } from '@/lib/app-permissions'
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from '@/lib/member-join-requests'
+import { useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useAuth } from '../providers'
 
 type MemberView = 'members' | 'requests'
 
 export default function MembersPage() {
+  const format = useLocaleFormatters()
+  const t = useTranslations('members')
+  const memberNotice = useLocalizedNotice('members')
+  const joinNotice = useLocalizedNotice('members')
   const { user } = useAuth()
-  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
+  const messId = useMemo(() => getActiveMessId(user), [user])
   const canReviewRequests = canManageMess(user)
   const [members, setMembers] = useState<MobileMember[]>([])
   const [joinRequests, setJoinRequests] = useState<MemberJoinRequest[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
   const [activeView, setActiveView] = useState<MemberView>('members')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false)
-  const [joinRequestFeedback, setJoinRequestFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const [reviewInProgress, setReviewInProgress] = useState<{ requestId: string; status: MemberJoinReviewStatus } | null>(null)
 
-  useAutoDismiss(message, () => setMessage(''))
-  useAutoDismiss(joinRequestFeedback, () => setJoinRequestFeedback(null))
+  useAutoDismiss(memberNotice.notice?.message ?? '', memberNotice.clearNotice)
+  useAutoDismiss(joinNotice.notice?.message ?? '', joinNotice.clearNotice)
+
+  const joinRequestFeedback = joinNotice.notice
+    ? { tone: joinNotice.notice.tone === 'danger' ? 'error' as const : 'success' as const, text: joinNotice.notice.message }
+    : null
 
   async function loadMembers() {
     if (!messId) return
     setLoading(true)
-    setMessage('')
+    memberNotice.clearNotice()
     try {
       const res = await api.getAllMembers({ limit: 500, searchTerm: search.trim() || undefined })
       const list = Array.isArray(res.data) ? res.data : []
       setMembers(list.filter((item: MobileMember) => item.mess_id === messId || item.mess?.id === messId))
     } catch (error) {
       setMembers([])
-      setMessage(error instanceof Error ? error.message : 'Failed to load members.')
+      memberNotice.showError(error, 'loadMembersFailed')
     } finally {
       setLoading(false)
     }
@@ -57,7 +65,7 @@ export default function MembersPage() {
     if (!messId) return
 
     setLoading(true)
-    setMessage('')
+    memberNotice.clearNotice()
     api
       .getAllMembers({ limit: 500, searchTerm: search.trim() || undefined })
       .then((res) => {
@@ -68,7 +76,7 @@ export default function MembersPage() {
       .catch((error) => {
         if (!alive) return
         setMembers([])
-        setMessage(error instanceof Error ? error.message : 'Failed to load members.')
+        memberNotice.showError(error, 'loadMembersFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -84,7 +92,7 @@ export default function MembersPage() {
     let alive = true
 
     setJoinRequestsLoading(true)
-    setJoinRequestFeedback(null)
+    joinNotice.clearNotice()
     api
       .getManagedMemberJoinRequests({ status: 'PENDING', limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
       .then((response) => {
@@ -95,10 +103,7 @@ export default function MembersPage() {
       .catch((error) => {
         if (!alive) return
         setJoinRequests([])
-        setJoinRequestFeedback({
-          tone: 'error',
-          text: error instanceof Error ? error.message : 'Failed to load join requests.',
-        })
+        joinNotice.showError(error, 'loadJoinRequestsFailed')
       })
       .finally(() => {
         if (alive) setJoinRequestsLoading(false)
@@ -127,17 +132,17 @@ export default function MembersPage() {
 
   async function deleteMember(member: MobileMember) {
     setOpenMenuId(null)
-    if (!window.confirm(`Delete ${member.user?.name ?? 'this member'} from this mess?`)) return
+    if (!window.confirm(t('deleteMemberConfirm', { name: member.user?.name ?? t('thisMember') }))) return
 
     setDeletingId(member.id)
-    setMessage('')
+    memberNotice.clearNotice()
     try {
       await api.removeMember(member.mess_id, member.user_id)
       setMembers((current) => current.filter((item) => item.id !== member.id))
-      setMessage('Member deleted successfully.')
+      memberNotice.showMessage('memberDeleted', 'success')
       await loadMembers()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to delete member.')
+      memberNotice.showError(error, 'deleteMemberFailed')
     } finally {
       setDeletingId(null)
     }
@@ -147,33 +152,31 @@ export default function MembersPage() {
     if (reviewInProgress) return
 
     setReviewInProgress({ requestId: request.id, status })
-    setJoinRequestFeedback(null)
+    joinNotice.clearNotice()
     try {
       await api.reviewMemberJoinRequest(request.id, status)
       setJoinRequests((current) => current.filter((item) => item.id !== request.id))
-      setJoinRequestFeedback({
-        tone: 'success',
-        text: `${request.requester.name}'s request was ${status === 'APPROVED' ? 'approved' : 'rejected'}.`,
-      })
+      joinNotice.showMessage(status === 'APPROVED' ? 'joinRequestApproved' : 'joinRequestRejected', 'success', { name: request.requester.name })
       if (status === 'APPROVED') await loadMembers()
     } catch (error) {
-      setJoinRequestFeedback({
-        tone: 'error',
-        text: error instanceof Error ? error.message : 'Failed to review join request.',
-      })
+      joinNotice.showError(error, 'reviewJoinRequestFailed')
     } finally {
       setReviewInProgress(null)
     }
   }
 
   return (
-    <MobileShell hasFloatingAction>
-      <TopScreen title="Members" subtitle="All members in your mess" backHref="/" />
+    <MobileShell hasFloatingAction={Boolean(messId)}>
+      <TopScreen title={t('title')} subtitle={t('allMembersSubtitle')} backHref="/" />
       <div className="screen space-y-3">
+        {!messId ? <MessOnboardingActions compact /> : null}
+
+        {messId ? (
+          <>
         <section className="app-toolbar">
           <IconInput
             icon={Search}
-            placeholder={activeView === 'members' ? 'Search member...' : 'Search join request...'}
+            placeholder={activeView === 'members' ? t('searchMember') : t('searchJoinRequest')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             className="h-12 rounded-[15px] border-[#bfe7e6] bg-[#fbffff] py-3 text-label font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.92)]"
@@ -181,7 +184,7 @@ export default function MembersPage() {
         </section>
 
         <section className="app-section py-0!">
-          <div className="app-tabs grid grid-cols-2 gap-1.5" role="tablist" aria-label="Member view">
+          <div className="app-tabs grid grid-cols-2 gap-1.5" role="tablist" aria-label={t('memberView')}>
             <button
               type="button"
               role="tab"
@@ -194,9 +197,9 @@ export default function MembersPage() {
               }`}
             >
               <Users size={16} />
-              Member
+              {t('member')}
               <span className={`rounded-full px-2 py-0.5 text-caption font-bold ${activeView === 'members' ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white/70 text-[#65838b]'}`}>
-                {filteredMembers.length}
+                {format.number(filteredMembers.length)}
               </span>
             </button>
 
@@ -212,20 +215,20 @@ export default function MembersPage() {
               }`}
             >
               <UserRoundPlus size={16} />
-              Join Request
+              {t('joinRequest')}
               <span className={`rounded-full px-2 py-0.5 text-caption font-bold ${activeView === 'requests' ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white/70 text-[#65838b]'}`}>
-                {filteredJoinRequests.length}
+                {format.number(filteredJoinRequests.length)}
               </span>
             </button>
           </div>
         </section>
 
-        {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+        {memberNotice.notice ? <div className={`ui-notice ui-notice--${memberNotice.notice.tone}`} role="status">{memberNotice.notice.message}</div> : null}
 
         {activeView === 'members' ? (
           <section className="flush-list">
             {loading ? (
-              <LoadingIndicator variant="card" label="Loading members" />
+              <LoadingIndicator variant="card" label={t('loadingMembers')} />
             ) : (
               filteredMembers.map((member) => (
                 <MemberCard
@@ -242,7 +245,7 @@ export default function MembersPage() {
             {!loading && !filteredMembers.length ? (
               <div className="rounded-[20px] bg-white/90 p-6 text-center text-label text-[#65838b]">
                 <Users size={32} className="mx-auto mb-2 text-[#9edddc]" />
-                No members found.
+                {t('noMembersFound')}
               </div>
             ) : null}
           </section>
@@ -255,9 +258,11 @@ export default function MembersPage() {
             onReview={(request, status) => void reviewJoinRequest(request, status)}
           />
         )}
+          </>
+        ) : null}
       </div>
 
-      <FloatingActionLink href="/add-member" label="Add member" icon={<UserPlus size={24} strokeWidth={2.4} />} />
+      {messId ? <FloatingActionLink href="/add-member" label={t('addMember')} icon={<UserPlus size={24} strokeWidth={2.4} />} /> : null}
     </MobileShell>
   )
 }

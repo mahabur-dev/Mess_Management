@@ -14,6 +14,8 @@
     "benchmark:stt": "npm run build && node scripts/benchmark-stt.js",
     "test:billing": "npm run build && node --test test/billing-calculator.test.js test/billing-period.test.js test/billing-month-sequence.test.js test/scheduler-orchestration.test.js",
     "test:scheduling": "node --test test/scheduler-orchestration.test.js",
+    "test:notification": "npm run build && node --test test/notification-localization.test.js",
+    "test:api-contract": "npm run build && node --test test/api-message-contract.test.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node scripts/start-nest.js start",
     "start:dev": "node scripts/start-nest.js start --watch",

@@ -7,6 +7,7 @@ import { LoadingIndicator } from '@/components/loading-indicator'
 import { FieldCard } from '@/components/mobile/form-controls'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 import { useAuth } from '../providers'
 
 type ActiveMess = {
@@ -35,18 +36,10 @@ type JoinRequest = {
   } | null
 }
 
-function formatMeta(mess: ActiveMess) {
-  const pieces = [
-    mess.mess_category,
-    mess.total_seats ? `${mess.total_seats} seats` : null,
-    mess._count?.memberships != null ? `${mess._count.memberships} members` : null,
-  ].filter(Boolean)
-
-  return pieces.length ? pieces.join(' | ') : 'Active mess'
-}
-
 export default function RequestMessPage() {
   const { refresh } = useAuth()
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
   const [searchTerm, setSearchTerm] = useState('')
   const [messes, setMesses] = useState<ActiveMess[]>([])
   const [requests, setRequests] = useState<JoinRequest[]>([])
@@ -66,7 +59,7 @@ export default function RequestMessPage() {
         .catch((error) => {
           if (!cancelled) {
             setMesses([])
-            setMessage(error instanceof Error ? error.message : 'Failed to load messes.')
+            setMessage(localizedErrorMessage(error, locale))
           }
         })
         .finally(() => {
@@ -78,7 +71,7 @@ export default function RequestMessPage() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [searchTerm])
+  }, [locale, searchTerm])
 
   useEffect(() => {
     let cancelled = false
@@ -113,9 +106,9 @@ export default function RequestMessPage() {
       const created = (res.data ?? null) as JoinRequest | null
       if (created) setRequests((prev) => [created, ...prev])
       await refresh()
-      setMessage(`Request sent to ${mess.name}.`)
+      setMessage(auth('requestSent', { name: mess.name }))
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to send request.')
+      setMessage(localizedErrorMessage(error, locale))
     } finally {
       setRequestingId(null)
     }
@@ -123,28 +116,28 @@ export default function RequestMessPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Request Mess" subtitle="Join an existing mess" backHref="/" />
+      <TopScreen title={auth('requestMessTitle')} subtitle={auth('requestMessDescription')} backHref="/" />
       <div className="screen space-y-4">
         <section className="request-mess-hero">
           <div className="request-mess-hero__icon" aria-hidden="true">
             <DoorOpen size={25} strokeWidth={2.25} />
           </div>
           <div className="min-w-0">
-            <p className="request-mess-hero__eyebrow">MEMBER ACCESS</p>
-            <h1>Find your mess workspace</h1>
-            <p className="request-mess-hero__description">Search for an active mess and send a join request to its manager.</p>
+            <p className="request-mess-hero__eyebrow">{auth('memberAccess')}</p>
+            <h1>{auth('findWorkspace')}</h1>
+            <p className="request-mess-hero__description">{auth('findWorkspaceDescription')}</p>
           </div>
         </section>
 
         <section className="app-toolbar">
-          <FieldCard label="Search Mess" hint="Name or location">
+          <FieldCard label={auth('searchMess')} hint={auth('nameOrLocation')}>
             <div className="relative">
               <Search className="field-icon field-icon--leading" size={19} strokeWidth={2.4} />
               <input
                 className="field field--leading-icon min-h-14"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search active mess"
+                placeholder={auth('searchActiveMess')}
               />
             </div>
           </FieldCard>
@@ -154,11 +147,11 @@ export default function RequestMessPage() {
 
         <section className="app-list">
           {loading ? (
-            <LoadingIndicator variant="card" label="Loading messes" />
+            <LoadingIndicator variant="card" label={auth('loadingMesses')} />
           ) : null}
 
           {!loading && !messes.length ? (
-            <div className="app-empty-state">No active mess found.</div>
+            <div className="app-empty-state">{auth('noActiveMess')}</div>
           ) : null}
 
           {!loading &&
@@ -167,6 +160,14 @@ export default function RequestMessPage() {
               const isPending = existingRequest?.status === 'PENDING'
               const isApproved = existingRequest?.status === 'APPROVED'
               const disabled = Boolean(existingRequest) || requestingId === mess.id
+              const metaPieces = [
+                mess.mess_category,
+                mess.total_seats ? auth('seats', { count: mess.total_seats }) : null,
+                mess._count?.memberships != null
+                  ? auth('membersCount', { count: mess._count.memberships })
+                  : null,
+              ].filter(Boolean)
+              const meta = metaPieces.length ? metaPieces.join(' | ') : auth('activeMess')
 
               return (
                 <article key={mess.id} className="app-list-row py-4">
@@ -178,11 +179,11 @@ export default function RequestMessPage() {
                       <div className="truncate text-body font-semibold text-[#1d3a42]">{mess.name}</div>
                       <div className="mt-1 flex items-center gap-1.5 text-caption font-semibold text-[#65838b]">
                         <MapPin size={14} strokeWidth={2.4} />
-                        <span className="min-w-0 truncate">{mess.address ?? 'Location not set'}</span>
+                        <span className="min-w-0 truncate">{mess.address ?? auth('locationNotSet')}</span>
                       </div>
                       <div className="mt-2 flex items-center gap-1.5 text-caption font-bold text-[#008d8c]">
                         <Users size={14} strokeWidth={2.4} />
-                        <span className="min-w-0 truncate">{formatMeta(mess)}</span>
+                        <span className="min-w-0 truncate">{meta}</span>
                       </div>
                     </div>
                   </div>
@@ -196,14 +197,14 @@ export default function RequestMessPage() {
                     {isApproved ? (
                       <>
                         <CheckCircle2 size={18} strokeWidth={2.4} />
-                        Approved
+                        {auth('approved')}
                       </>
                     ) : isPending ? (
-                      'Request Pending'
+                      auth('requestPending')
                     ) : requestingId === mess.id ? (
-                      'Sending...'
+                      auth('sending')
                     ) : (
-                      'Request to Join'
+                      auth('requestToJoin')
                     )}
                   </button>
                 </article>

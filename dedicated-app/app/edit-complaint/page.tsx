@@ -3,10 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MobileShell } from '@/components/mobile-shell'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import { SelectField, SubmitButton, TextAreaField } from '@/components/mobile/form-controls'
+import { InlineNotice } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
-import { COMPLAINT_STATUSES, LABELS, type ComplaintStatus } from '@/lib/form-options'
+import { getActiveMessId } from '@/lib/app-permissions'
+import { COMPLAINT_STATUSES, type ComplaintCategory, type ComplaintStatus } from '@/lib/form-options'
+import { complaintCategoryLabel, complaintStatusLabel, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 
@@ -15,7 +19,7 @@ type ComplaintRecord = {
   title: string
   description: string
   status: ComplaintStatus
-  category?: string
+  category?: ComplaintCategory
   response?: string | null
   created_at?: string | null
 }
@@ -26,26 +30,41 @@ type FormState = {
 }
 
 export default function EditComplaintPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('communication')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('communication')
   const searchParams = useQueryParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const complaintId = searchParams.get('complaintId') ?? ''
-  const messId = searchParams.get('messId') ?? user?.memberships?.[0]?.mess_id ?? ''
+  const messId = searchParams.get('messId') ?? getActiveMessId(user)
 
   const [complaint, setComplaint] = useState<ComplaintRecord | null>(null)
   const [form, setForm] = useState<FormState>({
     status: 'PENDING',
     response: '',
   })
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const complaintLabel = useMemo(() => (complaint ? LABELS.COMPLAINT_STATUSES[complaint.status] : 'Complaint'), [complaint])
+  const complaintLabel = useMemo(
+    () => (complaint ? complaintStatusLabel(complaint.status, locale) : t('complaint')),
+    [complaint, locale, t],
+  )
 
   useEffect(() => {
-    if (!complaintId || !messId) return
+    if (authLoading) return
+    if (!complaintId || !messId) {
+      setComplaint(null)
+      setLoading(false)
+      showMessage('missingComplaintContext', 'danger')
+      return
+    }
 
     let alive = true
+    setLoading(true)
+    clearNotice()
     api
       .getComplaintsByMess(messId, { limit: 500, sortBy: 'created_at', sortOrder: 'desc' })
       .then((res) => {
@@ -59,22 +78,26 @@ export default function EditComplaintPage() {
             response: found.response ?? '',
           })
         } else {
-          setMessage('Complaint not found.')
+          showMessage('complaintNotFound', 'danger')
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
-        setMessage('Failed to load complaint details.')
+        setComplaint(null)
+        showError(error, 'loadComplaintFailed')
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
       })
 
     return () => {
       alive = false
     }
-  }, [complaintId, messId])
+  }, [authLoading, clearNotice, complaintId, messId, showError, showMessage])
 
   async function handleSubmit() {
-    setMessage('')
-    if (!complaintId || !messId) return setMessage('Complaint id or mess id is missing.')
+    clearNotice()
+    if (!complaintId || !messId) return showMessage('missingComplaintContext', 'danger')
 
     setBusy(true)
     try {
@@ -82,10 +105,10 @@ export default function EditComplaintPage() {
         status: form.status,
         response: form.response.trim() || undefined,
       })
-      setMessage('Complaint updated successfully.')
+      showMessage('complaintUpdated', 'success')
       router.push('/complaints')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update complaint.')
+      showError(error, 'updateComplaintFailed')
     } finally {
       setBusy(false)
     }
@@ -93,36 +116,42 @@ export default function EditComplaintPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Edit Complaint" subtitle={complaint?.title ?? complaintLabel} backHref="/complaints" />
+      <TopScreen title={t('editComplaint')} subtitle={complaint?.title ?? complaintLabel} backHref="/complaints" />
       <div className="screen space-y-4">
+        {loading ? <LoadingIndicator variant="card" label={t('loadingComplaint')} /> : null}
+        {!loading && !complaint && notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
+        {!loading && complaint ? (
         <section className="app-section app-form-section space-y-4">
           <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
-            <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Complaint</div>
+            <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('complaint')}</div>
             <div className="mt-1 text-label font-bold text-[#123748]">{complaint?.title ?? complaintId}</div>
-            <div className="mt-1 text-caption text-[#65838b]">{complaint?.description ?? 'No description'}</div>
+            <div className="mt-1 text-caption text-[#65838b]">{complaint?.description ?? t('noDescription')}</div>
+            {complaint?.category ? <div className="mt-2 text-caption font-semibold text-[#008d8c]">{complaintCategoryLabel(complaint.category, locale)}</div> : null}
+            {complaint?.created_at ? <div className="mt-1 text-caption text-[#789096]">{t('submittedOn', { date: format.date(complaint.created_at, { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }) })}</div> : null}
           </div>
 
           <SelectField
-            label="Status"
+            label={t('status')}
             value={form.status}
             onChange={(status) => setForm((prev) => ({ ...prev, status }))}
             options={COMPLAINT_STATUSES}
-            getLabel={(value) => LABELS.COMPLAINT_STATUSES[value]}
+            getLabel={(value) => complaintStatusLabel(value, locale)}
           />
           <TextAreaField
-            label="Response"
+            label={t('response')}
             value={form.response}
             onChange={(response) => setForm((prev) => ({ ...prev, response }))}
-            placeholder="Write the final response for this complaint"
+            placeholder={t('responsePlaceholder')}
             rows={4}
           />
 
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+          {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
-            Save Changes
+            {t('saveChanges')}
           </SubmitButton>
         </section>
+        ) : null}
       </div>
     </MobileShell>
   )

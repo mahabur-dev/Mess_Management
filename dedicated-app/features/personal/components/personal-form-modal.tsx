@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { X, type LucideIcon } from "lucide-react";
 import { useNativeBackAction } from "@/components/native-back-actions";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
 
 export function PersonalFormModal({
   id,
@@ -27,6 +28,8 @@ export function PersonalFormModal({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   useNativeBackAction(open, () => {
     if (!busy) onClose();
     return true;
@@ -36,25 +39,14 @@ export function PersonalFormModal({
     if (!open) return;
 
     const previousOverflow = document.body.style.overflow;
-    const previousActiveElement = document.activeElement as HTMLElement | null;
     document.body.style.overflow = "hidden";
 
     return () => {
       document.body.style.overflow = previousOverflow;
-      previousActiveElement?.focus();
     };
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busy) onClose();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [busy, onClose, open]);
+  useDialogFocus({ open, containerRef: dialogRef, initialFocusRef: closeButtonRef, onClose: () => { if (!busy) onClose(); } });
 
   if (!open) return null;
 
@@ -67,11 +59,13 @@ export function PersonalFormModal({
       }}
     >
       <section
+        ref={dialogRef}
         className="app-modal app-modal--review personal-form-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-description`}
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="flex items-start gap-3 border-b border-[#e9eff1] px-5 pb-4 pt-5">
@@ -93,6 +87,7 @@ export function PersonalFormModal({
             </p>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
             className="app-modal-close shrink-0"
             onClick={onClose}

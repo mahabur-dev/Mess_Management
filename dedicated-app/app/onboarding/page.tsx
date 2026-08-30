@@ -14,16 +14,28 @@ import {
   readPostOnboardingPath,
 } from '@/lib/auth'
 import { onboardingSlides } from '@/lib/onboarding'
+import { useTranslations } from '@/lib/i18n'
+import { useDialogFocus } from '@/hooks/use-dialog-focus'
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const auth = useTranslations('auth')
+  const common = useTranslations('common')
   const [ready, setReady] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [guideOpen, setGuideOpen] = useState(false)
   const [videoNotice, setVideoNotice] = useState(false)
   const touchStartX = useRef<number | null>(null)
+  const guideDialogRef = useRef<HTMLDivElement>(null)
+  const guideCloseRef = useRef<HTMLButtonElement>(null)
   const lastIndex = onboardingSlides.length - 1
   const slide = onboardingSlides[activeIndex]
+  const slideCopy = {
+    welcome: { eyebrow: '', title: auth('onboardingWelcomeTitle'), description: auth('onboardingWelcomeDescription') },
+    workspace: { eyebrow: '', title: auth('onboardingWorkspaceTitle'), description: auth('onboardingWorkspaceDescription') },
+    automation: { eyebrow: auth('onboardingAutomationEyebrow'), title: auth('onboardingAutomationTitle'), description: auth('onboardingAutomationDescription') },
+    start: { eyebrow: '', title: auth('onboardingStartTitle'), description: auth('onboardingStartDescription') },
+  }[slide.id]
 
   useEffect(() => {
     if (hasCompletedOnboarding()) {
@@ -37,6 +49,13 @@ export default function OnboardingPage() {
     if (guideOpen) setGuideOpen(false)
     else setActiveIndex((current) => Math.max(0, current - 1))
     return true
+  })
+
+  useDialogFocus({
+    open: guideOpen,
+    containerRef: guideDialogRef,
+    initialFocusRef: guideCloseRef,
+    onClose: () => setGuideOpen(false),
   })
 
   function finishOnboarding() {
@@ -62,7 +81,7 @@ export default function OnboardingPage() {
     if (distance > 52 && activeIndex > 0) setActiveIndex((current) => current - 1)
   }
 
-  if (!ready) return <LoadingIndicator variant="screen" label="Preparing Messzen" />
+  if (!ready) return <LoadingIndicator variant="screen" label={common('preparingApplication')} />
 
   return (
     <div className="onboarding-screen">
@@ -70,23 +89,25 @@ export default function OnboardingPage() {
       <main className="onboarding-shell" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <header className="onboarding-header">
           <span className="onboarding-mini-brand">MESSZEN</span>
-          {activeIndex < lastIndex ? (
-            <button type="button" className="onboarding-skip" onClick={finishOnboarding}>Skip</button>
-          ) : <span />}
+          <div className="onboarding-header-actions">
+            {activeIndex < lastIndex ? (
+              <button type="button" className="onboarding-skip" onClick={finishOnboarding}>{auth('skip')}</button>
+            ) : null}
+          </div>
         </header>
 
         <section className="onboarding-slide" key={slide.id} aria-live="polite">
           <OnboardingVisual visual={slide.visual} />
           <div className="onboarding-copy">
-            {slide.eyebrow ? <p>{slide.eyebrow}</p> : null}
-            <h1>{slide.title}</h1>
-            <span>{slide.description}</span>
+            {slideCopy.eyebrow ? <p>{slideCopy.eyebrow}</p> : null}
+            <h1>{slideCopy.title}</h1>
+            <span>{slideCopy.description}</span>
           </div>
 
           {slide.visual === 'automation' ? (
             <div className="onboarding-secondary-actions">
               <button type="button" onClick={() => setGuideOpen(true)}>
-                <BookOpenCheck size={17} /> How it works
+                <BookOpenCheck size={17} /> {auth('howMesszenWorks')}
               </button>
               <button
                 type="button"
@@ -95,48 +116,48 @@ export default function OnboardingPage() {
                   window.setTimeout(() => setVideoNotice(false), 2400)
                 }}
               >
-                <Play size={16} fill="currentColor" /> Demo video
+                <Play size={16} fill="currentColor" /> {auth('demoVideo')}
               </button>
             </div>
           ) : null}
 
-          {videoNotice ? <p className="onboarding-video-notice" role="status">Demo video will be added soon.</p> : null}
+          {videoNotice ? <p className="onboarding-video-notice" role="status">{auth('demoComingSoon')}</p> : null}
         </section>
 
         <footer className="onboarding-footer">
-          <div className="onboarding-dots" aria-label={`Slide ${activeIndex + 1} of ${onboardingSlides.length}`}>
+          <div className="onboarding-dots" aria-label={auth('slidePosition', { current: activeIndex + 1, total: onboardingSlides.length })}>
             {onboardingSlides.map((item, index) => (
               <button
                 key={item.id}
                 type="button"
-                aria-label={`Go to slide ${index + 1}`}
+                aria-label={auth('goToSlide', { number: index + 1 })}
                 aria-current={index === activeIndex ? 'step' : undefined}
                 onClick={() => setActiveIndex(index)}
               />
             ))}
           </div>
           <button type="button" className="onboarding-continue" onClick={goForward}>
-            <span>{activeIndex === lastIndex ? 'Get Started' : 'Continue'}</span>
+            <span>{activeIndex === lastIndex ? auth('getStarted') : auth('continue')}</span>
             {activeIndex === lastIndex ? <Check size={19} strokeWidth={2.7} /> : <ArrowRight size={19} strokeWidth={2.5} />}
           </button>
         </footer>
       </main>
 
       {guideOpen ? (
-        <div className="onboarding-guide-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboarding-guide-title" onClick={(event) => {
+        <div ref={guideDialogRef} className="onboarding-guide-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboarding-guide-title" tabIndex={-1} onClick={(event) => {
           if (event.target === event.currentTarget) setGuideOpen(false)
         }}>
           <section className="onboarding-guide-sheet">
             <div className="onboarding-guide-heading">
-              <div><p>QUICK GUIDE</p><h2 id="onboarding-guide-title">How Messzen works</h2></div>
-              <button type="button" aria-label="Close guide" onClick={() => setGuideOpen(false)}><X size={19} /></button>
+              <div><p>{auth('quickGuide')}</p><h2 id="onboarding-guide-title">{auth('howMesszenWorks')}</h2></div>
+              <button ref={guideCloseRef} type="button" aria-label={auth('closeGuide')} onClick={() => setGuideOpen(false)}><X size={19} /></button>
             </div>
             <ol>
-              <li><span>1</span><div><strong>Create or join</strong><small>Connect everyone to one mess workspace.</small></div></li>
-              <li><span>2</span><div><strong>Record daily activity</strong><small>Add meals, expenses, utilities and deposits.</small></div></li>
-              <li><span>3</span><div><strong>Review together</strong><small>See monthly bills and balances with clear records.</small></div></li>
+              <li><span>1</span><div><strong>{auth('guideCreateTitle')}</strong><small>{auth('guideCreateDescription')}</small></div></li>
+              <li><span>2</span><div><strong>{auth('guideRecordTitle')}</strong><small>{auth('guideRecordDescription')}</small></div></li>
+              <li><span>3</span><div><strong>{auth('guideReviewTitle')}</strong><small>{auth('guideReviewDescription')}</small></div></li>
             </ol>
-            <button type="button" className="onboarding-guide-done" onClick={() => setGuideOpen(false)}>Got it</button>
+            <button type="button" className="onboarding-guide-done" onClick={() => setGuideOpen(false)}>{auth('gotIt')}</button>
           </section>
         </div>
       ) : null}

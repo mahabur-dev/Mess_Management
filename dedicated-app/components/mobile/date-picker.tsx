@@ -4,9 +4,9 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { CalendarDays, Check, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useNativeBackAction } from '@/components/native-back-actions'
+import { useDialogFocus } from '@/hooks/use-dialog-focus'
 import { FieldCard } from '@/components/mobile/form-controls'
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+import { formatIsoDate, intlLocale, useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 function parseDateValue(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
@@ -26,9 +26,9 @@ function shiftMonth(date: Date, amount: number) {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1, 12)
 }
 
-function formatSelectedDate(value: string) {
+function formatSelectedDate(value: string, locale: 'en' | 'bn') {
   const date = parseDateValue(value)
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
     weekday: 'short',
     day: 'numeric',
     month: 'long',
@@ -49,12 +49,20 @@ export function DatePicker({
   onChange: (value: string) => void
   disabled?: boolean
 }) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const common = useTranslations('common')
+  const meals = useTranslations('meals')
   const [open, setOpen] = useState(false)
   const [draftValue, setDraftValue] = useState(value)
   const [visibleMonth, setVisibleMonth] = useState(() => monthStart(parseDateValue(value)))
   const dialogRef = useRef<HTMLDivElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const titleId = useId()
-  const today = dateValue(new Date())
+  const today = formatIsoDate()
+  const weekdays = Array.from({ length: 7 }, (_item, index) =>
+    format.weekday(new Date(2026, 7, 2 + index, 12), 'short'),
+  )
 
   const calendarCells = useMemo(() => {
     const leadingDays = visibleMonth.getDay()
@@ -65,10 +73,7 @@ export function DatePicker({
     ]
   }, [visibleMonth])
 
-  const monthLabel = new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    year: 'numeric',
-  }).format(visibleMonth)
+  const monthLabel = format.month(visibleMonth)
 
   function showPicker() {
     if (disabled) return
@@ -86,9 +91,8 @@ export function DatePicker({
   }
 
   function selectToday() {
-    const current = new Date()
     setDraftValue(today)
-    setVisibleMonth(monthStart(current))
+    setVisibleMonth(monthStart(parseDateValue(today)))
   }
 
   function applyDate() {
@@ -106,18 +110,12 @@ export function DatePicker({
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    dialogRef.current?.focus()
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closePicker()
-    }
-    document.addEventListener('keydown', handleKeyDown)
-
     return () => {
       document.body.style.overflow = previousOverflow
-      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [open])
+
+  useDialogFocus({ open, containerRef: dialogRef, initialFocusRef: closeButtonRef, onClose: closePicker })
 
   return (
     <>
@@ -134,8 +132,8 @@ export function DatePicker({
             <CalendarDays size={19} strokeWidth={2.3} />
           </span>
           <span className="min-w-0 flex-1 text-left">
-            <span className="block truncate text-body font-semibold text-[#123748]">{formatSelectedDate(value)}</span>
-            <span className="mt-0.5 block text-caption font-medium text-[#65838b]">Tap to choose another date</span>
+            <span className="block truncate text-body font-semibold text-[#123748]">{formatSelectedDate(value, locale)}</span>
+            <span className="mt-0.5 block text-caption font-medium text-[#65838b]">{meals('tapChooseDate')}</span>
           </span>
           <ChevronRight size={18} className="shrink-0 text-[#789096]" aria-hidden="true" />
         </button>
@@ -155,31 +153,31 @@ export function DatePicker({
               >
                 <div className="date-picker-dialog__header">
                   <div>
-                    <span className="date-picker-dialog__eyebrow">SELECT DATE</span>
-                    <h2 id={titleId}>Meal date</h2>
+                    <span className="date-picker-dialog__eyebrow">{meals('selectDateEyebrow')}</span>
+                    <h2 id={titleId}>{meals('mealDate')}</h2>
                   </div>
-                  <button type="button" onClick={closePicker} aria-label="Close date picker">
+                  <button ref={closeButtonRef} type="button" onClick={closePicker} aria-label={meals('closeDatePicker')}>
                     <X size={19} strokeWidth={2.4} />
                   </button>
                 </div>
 
                 <div className="date-picker-selected">
                   <CalendarDays size={18} strokeWidth={2.35} aria-hidden="true" />
-                  <span>{formatSelectedDate(draftValue)}</span>
+                  <span>{formatSelectedDate(draftValue, locale)}</span>
                 </div>
 
                 <div className="date-picker-month-nav">
-                  <button type="button" onClick={() => setVisibleMonth((month) => shiftMonth(month, -1))} aria-label="Previous month">
+                  <button type="button" onClick={() => setVisibleMonth((month) => shiftMonth(month, -1))} aria-label={meals('previousMonth')}>
                     <ChevronLeft size={19} strokeWidth={2.5} />
                   </button>
                   <strong>{monthLabel}</strong>
-                  <button type="button" onClick={() => setVisibleMonth((month) => shiftMonth(month, 1))} aria-label="Next month">
+                  <button type="button" onClick={() => setVisibleMonth((month) => shiftMonth(month, 1))} aria-label={meals('nextMonth')}>
                     <ChevronRight size={19} strokeWidth={2.5} />
                   </button>
                 </div>
 
                 <div className="date-picker-weekdays" aria-hidden="true">
-                  {WEEKDAYS.map((weekday) => <span key={weekday}>{weekday}</span>)}
+                  {weekdays.map((weekday, index) => <span key={index}>{weekday}</span>)}
                 </div>
 
                 <div className="date-picker-calendar" role="grid" aria-label={monthLabel}>
@@ -195,12 +193,12 @@ export function DatePicker({
                         type="button"
                         role="gridcell"
                         aria-selected={selected}
-                        aria-label={`${formatSelectedDate(cellValue)}${isToday ? ', today' : ''}`}
+                        aria-label={`${formatSelectedDate(cellValue, locale)}${isToday ? `, ${meals('todaySuffix')}` : ''}`}
                         data-selected={selected}
                         data-today={isToday}
                         onClick={() => selectDay(day)}
                       >
-                        <span>{day}</span>
+                        <span>{format.number(day)}</span>
                         {selected ? <Check size={11} strokeWidth={3} aria-hidden="true" /> : null}
                       </button>
                     )
@@ -208,10 +206,10 @@ export function DatePicker({
                 </div>
 
                 <div className="date-picker-dialog__footer">
-                  <button type="button" className="date-picker-today" onClick={selectToday}>Today</button>
+                  <button type="button" className="date-picker-today" onClick={selectToday}>{meals('today')}</button>
                   <span className="flex-1" />
-                  <button type="button" className="date-picker-cancel" onClick={closePicker}>Cancel</button>
-                  <button type="button" className="date-picker-apply" onClick={applyDate}>Apply</button>
+                  <button type="button" className="date-picker-cancel" onClick={closePicker}>{common('cancel')}</button>
+                  <button type="button" className="date-picker-apply" onClick={applyDate}>{meals('apply')}</button>
                 </div>
               </div>
             </div>,

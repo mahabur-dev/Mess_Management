@@ -24,6 +24,7 @@ import {
 } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
 import { useAuth } from '@/app/providers'
+import { useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type MealCountMap = Record<MealName, string>
 
@@ -68,20 +69,28 @@ function nextMealCount(mealName: MealName, value: string, direction: 1 | -1) {
 function EditMemberMealContent() {
   const params = useSearchParams()
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const mealCopy = useTranslations('meals')
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const memberId = params.get('memberId') ?? ''
-  const memberDisplayName = params.get('name') ?? 'Member'
+  const memberDisplayName = params.get('name') ?? mealCopy('memberFallback')
   const date = params.get('date') || todayIsoDate()
   const [mealCounts, setMealCounts] = useState<MealCountMap>(defaultMealCounts)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
 
   useEffect(() => {
-    if (!messId || !memberId) return
+    if (!messId || !memberId) {
+      setMealCounts(defaultMealCounts())
+      setLoading(false)
+      showMessage(messId ? 'memberMissing' : 'noMessSelected', 'warning')
+      return
+    }
     let alive = true
     setLoading(true)
-    setMessage('')
+    clearNotice()
 
     api
       .getMealsByMess(messId, { startDate: date, endDate: date, limit: 20 })
@@ -93,7 +102,7 @@ function EditMemberMealContent() {
       .catch((error) => {
         if (!alive) return
         setMealCounts(defaultMealCounts())
-        setMessage(error instanceof Error ? error.message : 'Failed to load member meals.')
+        showError(error, 'loadMemberMealsFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -102,7 +111,7 @@ function EditMemberMealContent() {
     return () => {
       alive = false
     }
-  }, [date, memberId, messId])
+  }, [clearNotice, date, memberId, messId, showError, showMessage])
 
   function updateMealCount(mealName: MealName, value: string) {
     setMealCounts((current) => ({ ...current, [mealName]: value }))
@@ -117,12 +126,12 @@ function EditMemberMealContent() {
 
   async function saveMeals() {
     if (!messId || !memberId) {
-      setMessage('Member is missing.')
+      showMessage(messId ? 'memberMissing' : 'noMessSelected', 'warning')
       return
     }
 
     setSaving(true)
-    setMessage('')
+    clearNotice()
     try {
       await Promise.all(
         MEAL_ORDER.map((mealName) => {
@@ -146,9 +155,9 @@ function EditMemberMealContent() {
       const res = await api.getMealsByMess(messId, { startDate: date, endDate: date, limit: 20 })
       const mealList = normalizeMeals(res.data)
       setMealCounts(mealCountsFromRecords(mealList, memberId))
-      setMessage('All meals updated successfully.')
+      showMessage('allMealsUpdated', 'success')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update member meals.')
+      showError(error, 'memberMealsUpdateFailed')
     } finally {
       setSaving(false)
     }
@@ -158,7 +167,7 @@ function EditMemberMealContent() {
 
   return (
     <MobileShell>
-      <TopScreen title="Edit Member Meals" subtitle={formatDisplayDate(date)} backHref="/meals/members" />
+      <TopScreen title={mealCopy('editMemberMeals')} subtitle={formatDisplayDate(date, locale)} backHref="/meals/members" />
       <div className="screen space-y-4">
         <MealCard className="flex items-center gap-3">
           <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#edfafa] text-label font-bold text-[#008d8c]">
@@ -167,21 +176,21 @@ function EditMemberMealContent() {
           <div className="min-w-0 flex-1">
             <div className="truncate text-label font-bold text-[#123748]">{memberDisplayName}</div>
             <div className="mt-1 flex items-center gap-1 text-caption font-bold text-[#65838b]">
-              <UserRound size={12} /> {formatDisplayDate(date)}
+              <UserRound size={12} /> {formatDisplayDate(date, locale)}
             </div>
           </div>
           <div className="shrink-0 rounded-full bg-[#edfafa] px-3 py-1.5 text-caption font-bold text-[#00777a]">
-            {activeMeals}/3 active
+            {mealCopy('activeCount', { active: format.number(activeMeals), total: format.number(3) })}
           </div>
         </MealCard>
 
-        {message ? <InlineNotice tone={message.includes('successfully') ? 'success' : 'danger'}>{message}</InlineNotice> : null}
-        {loading ? <LoadingIndicator variant="card" label="Loading member meals" /> : null}
+        {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
+        {loading ? <LoadingIndicator variant="card" label={mealCopy('loadingMemberMeals')} /> : null}
 
         <MealCard className="overflow-hidden p-0">
           <div className="border-b border-[#dce8e9] px-4 py-3">
-            <div className="text-body font-bold text-[#123748]">Daily meal plan</div>
-            <div className="mt-1 text-caption font-semibold text-[#65838b]">Set all meals before saving this member&apos;s plan.</div>
+            <div className="text-body font-bold text-[#123748]">{mealCopy('dailyMealPlan')}</div>
+            <div className="mt-1 text-caption font-semibold text-[#65838b]">{mealCopy('dailyMealPlanHint')}</div>
           </div>
           <div>
             {MEAL_ORDER.map((mealName) => (
@@ -198,10 +207,10 @@ function EditMemberMealContent() {
           </div>
         </MealCard>
 
-        <SaveConfirmNote>All three meal changes will be saved together for this member.</SaveConfirmNote>
+        <SaveConfirmNote>{mealCopy('saveTogetherNote')}</SaveConfirmNote>
 
         <button type="button" className="primary-btn flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60" onClick={saveMeals} disabled={saving || loading || !memberId}>
-          <Save size={18} /> {saving ? 'Saving meals...' : 'Save all meals'}
+          <Save size={18} /> {saving ? mealCopy('savingMeals') : mealCopy('saveAllMeals')}
         </button>
       </div>
     </MobileShell>
@@ -209,8 +218,9 @@ function EditMemberMealContent() {
 }
 
 export default function EditMemberMealPage() {
+  const meals = useTranslations('meals')
   return (
-    <Suspense fallback={<LoadingIndicator variant="screen" label="Loading member meals" />}>
+    <Suspense fallback={<LoadingIndicator variant="screen" label={meals('loadingMemberMeals')} />}>
       <EditMemberMealContent />
     </Suspense>
   )

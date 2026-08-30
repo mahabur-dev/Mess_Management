@@ -6,6 +6,7 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { AssistantInfoCard } from '@/components/mobile/assistant-info-card'
 import { appHref } from '@/lib/routes'
+import { useLocaleFormatters } from '@/lib/i18n'
 
 export type InfoPageSection = {
   title: string
@@ -36,6 +37,8 @@ export function InfoPage({
   sections: InfoPageSection[]
   actions?: InfoPageAction[]
 }) {
+  const format = useLocaleFormatters()
+
   return (
     <MobileShell>
       <TopScreen title={title} subtitle={subtitle} backHref="/" />
@@ -50,7 +53,9 @@ export function InfoPage({
         <div className="space-y-3">
           {sections.map((section, index) => (
             <section key={section.title} className="ui-card info-page-section">
-              <span className="info-page-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+              <span className="info-page-index" aria-hidden="true">
+                {format.number(index + 1, { minimumIntegerDigits: 2, useGrouping: false })}
+              </span>
               <div>
                 <h2>{section.title}</h2>
                 {section.body ? <p>{section.body}</p> : null}

@@ -1,6 +1,9 @@
 'use client'
 
+import { useRef } from 'react'
 import { LogOut } from 'lucide-react'
+import { useTranslations } from '@/lib/i18n'
+import { useDialogFocus } from '@/hooks/use-dialog-focus'
 
 export function LogoutConfirmDialog({
   open,
@@ -13,10 +16,23 @@ export function LogoutConfirmDialog({
   onCancel: () => void
   onConfirm: () => void
 }) {
+  const common = useTranslations('common')
+  const auth = useTranslations('auth')
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null)
+  useDialogFocus({
+    open,
+    containerRef: dialogRef,
+    initialFocusRef: cancelRef,
+    onClose: () => {
+      if (!busy) onCancel()
+    },
+  })
   if (!open) return null
 
   return (
     <div
+      ref={dialogRef}
       className="
         fixed inset-0 z-[100]
         flex items-end justify-center
@@ -29,6 +45,7 @@ export function LogoutConfirmDialog({
       aria-modal="true"
       aria-labelledby="logout-confirm-title"
       aria-describedby="logout-confirm-description"
+      tabIndex={-1}
       onClick={(event) => {
         if (event.target === event.currentTarget && !busy) {
           onCancel()
@@ -62,17 +79,18 @@ export function LogoutConfirmDialog({
           id="logout-confirm-title"
           className="mt-5 text-center text-title font-bold text-[#123748]"
         >
-          Do you want to log out?
+          {auth('logoutQuestion')}
         </h2>
 
         <p id="logout-confirm-description" className="mx-auto mt-2 max-w-[300px] text-center text-body leading-6 text-[#65838b]">
-          You can sign in again whenever you are ready.
+          {auth('logoutDescription')}
         </p>
 
-        {busy ? <p className="mt-4 text-center text-caption font-semibold text-[#008d8c]">Signing you out securely…</p> : null}
+        {busy ? <p className="mt-4 text-center text-caption font-semibold text-[#008d8c]">{auth('signingOut')}</p> : null}
 
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button
+            ref={cancelRef}
             type="button"
             onClick={onCancel}
             disabled={busy}
@@ -90,7 +108,7 @@ export function LogoutConfirmDialog({
               disabled:opacity-60
             "
           >
-            No
+            {common('no')}
           </button>
 
           <button
@@ -112,7 +130,7 @@ export function LogoutConfirmDialog({
           >
             <LogOut size={17} className="shrink-0" strokeWidth={2.3} />
 
-            Yes
+            {common('yes')}
           </button>
         </div>
       </section>

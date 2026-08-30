@@ -4,9 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Check, ChevronRight } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
+import { getActiveMessId } from '@/lib/app-permissions'
+import { localizedNotificationCopy, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
 
@@ -23,25 +26,26 @@ type NotificationItem = {
 function notificationRoute(item: NotificationItem) {
   const source = typeof item.metadata?.source === 'string' ? item.metadata.source : ''
   if (source === 'MEMBER_JOIN_REQUEST') return '/members'
+  if (source === 'MEMBER_JOIN_APPROVED' || source === 'MEMBER_JOIN_REJECTED') return '/'
   if (source === 'EXPENSE' || source === 'EXPENSE_REVIEW') return '/expenses'
   if (source === 'PAYMENT' || source === 'PAYMENT_REVIEW') return '/payments'
   if (source === 'NOTICE') return '/notices'
+  if (source === 'COMPLAINT') return '/complaints'
+  if (item.metadata?.type === 'MEAL_WINDOW_OPENED' || item.metadata?.type === 'MEAL_DEADLINE_WARNING') return '/meals'
+  if (item.metadata?.closeRequestId) return '/monthly-bill'
   return '/notifications'
 }
 
-function formatDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
-}
-
 export default function NotificationsPage() {
+  const { locale } = useLocale()
+  const t = useTranslations('communication')
+  const format = useLocaleFormatters()
+  const { notice, clearNotice, showError } = useLocalizedNotice('communication')
   const { user } = useAuth()
   const router = useRouter()
-  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
+  const messId = useMemo(() => getActiveMessId(user), [user])
   const [items, setItems] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
 
   const load = useCallback(() => {
     if (!messId) {
@@ -51,12 +55,13 @@ export default function NotificationsPage() {
     }
 
     setLoading(true)
+    clearNotice()
     api
       .getNotifications({ messId, limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
       .then((res) => setItems(Array.isArray(res.data) ? (res.data as NotificationItem[]) : []))
-      .catch((requestError) => setError(requestError instanceof Error ? requestError.message : 'Unable to load notifications.'))
+      .catch((requestError) => showError(requestError, 'loadNotificationsFailed'))
       .finally(() => setLoading(false))
-  }, [messId])
+  }, [clearNotice, messId, showError])
 
   useEffect(() => {
     load()
@@ -74,15 +79,19 @@ export default function NotificationsPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Notifications" subtitle="Mess workspace updates" backHref="/" />
+      <TopScreen title={t('notifications')} subtitle={t('notificationSubtitle')} backHref="/" />
       <div className="screen space-y-4">
-        {error ? <div className="ui-notice ui-notice--danger" role="alert">{error}</div> : null}
-        {loading ? <LoadingIndicator variant="card" label="Loading notifications" /> : null}
-        {!loading && !items.length ? <div className="app-empty-state">No notifications yet.</div> : null}
-        <section className="app-section" aria-label="Notification list">
+        {!messId ? <MessOnboardingActions compact /> : null}
+        {messId ? (
+          <>
+        {notice ? <div className={`ui-notice ui-notice--${notice.tone}`} role="alert">{notice.message}</div> : null}
+        {loading ? <LoadingIndicator variant="card" label={t('loadingNotifications')} /> : null}
+        {!loading && !items.length ? <div className="app-empty-state">{t('noNotifications')}</div> : null}
+        <section className="app-section" aria-label={t('notificationList')}>
           <div className="app-list">
             {items.map((item) => {
               const isRead = item.reads?.some((read) => read.user_id === user?.id)
+              const copy = localizedNotificationCopy(item, locale)
               return (
                 <button
                   key={item.id}
@@ -95,18 +104,20 @@ export default function NotificationsPage() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-start justify-between gap-3">
-                      <span className="text-label font-bold text-[#123748]">{item.title}</span>
+                      <span className="text-label font-bold text-[#123748]">{copy.title}</span>
                       <ChevronRight size={17} className="mt-0.5 shrink-0 text-[#65838b]" aria-hidden="true" />
                     </span>
-                    <span className="mt-1 block text-caption text-[#65838b]">{formatDate(item.created_at)}</span>
-                    <span className="mt-2 block text-label text-[#65838b]">{item.body}</span>
-                    {!isRead ? <span className="mt-2 inline-flex items-center gap-1 text-caption font-bold uppercase tracking-[0.1em] text-[#008d8c]"><Check size={13} aria-hidden="true" /> New</span> : null}
+                    <span className="mt-1 block text-caption text-[#65838b]">{format.date(item.created_at, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="mt-2 block text-label text-[#65838b]">{copy.body}</span>
+                    {!isRead ? <span className="mt-2 inline-flex items-center gap-1 text-caption font-bold uppercase tracking-[0.1em] text-[#008d8c]"><Check size={13} aria-hidden="true" /> {t('new')}</span> : null}
                   </span>
                 </button>
               )
             })}
           </div>
         </section>
+          </>
+        ) : null}
       </div>
     </MobileShell>
   )

@@ -6,7 +6,6 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SubmitButton, TextField } from '@/components/mobile/form-controls'
 import {
-  formatProfileRole,
   ProfileDocumentUpload,
   ProfileIdentityCard,
   ProfileSection,
@@ -14,12 +13,18 @@ import {
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { getActiveMemberships } from '@/lib/app-permissions'
 import { api } from '@/lib/api'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 import { useAuth } from '../providers'
 
 const MAX_NID_IMAGE_SIZE = 5 * 1024 * 1024
 
 export default function EditProfilePage() {
   const { user, refresh } = useAuth()
+  const { locale } = useLocale()
+  const common = useTranslations('common')
+  const auth = useTranslations('auth')
+  const members = useTranslations('members')
+  const profile = useTranslations('profile')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const [fullName, setFullName] = useState(user?.name ?? '')
@@ -36,7 +41,12 @@ export default function EditProfilePage() {
   useAutoDismiss(message, () => setMessage(null))
 
   const membership = useMemo(() => getActiveMemberships(user)[0], [user])
-  const accountRole = formatProfileRole(membership?.role ?? user?.role)
+  const rawRole = (membership?.role ?? user?.role ?? 'MEMBER').toUpperCase()
+  const accountRole = rawRole.includes('ADMIN')
+    ? profile('administrator')
+    : rawRole === 'MANAGER'
+      ? members('manager')
+      : members('member')
   const isActive = user?.is_active !== false
 
   useEffect(() => {
@@ -56,12 +66,12 @@ export default function EditProfilePage() {
     setMessage(null)
 
     if (!fullName.trim()) {
-      setMessage({ tone: 'error', text: 'Full name is required.' })
+      setMessage({ tone: 'error', text: profile('fullNameRequired') })
       return
     }
 
     if (!email.trim()) {
-      setMessage({ tone: 'error', text: 'Email address is required.' })
+      setMessage({ tone: 'error', text: profile('emailRequired') })
       return
     }
 
@@ -81,11 +91,11 @@ export default function EditProfilePage() {
       await api.updateProfile(data)
       await refresh()
       setNidImage(null)
-      setMessage({ tone: 'success', text: 'Profile updated successfully.' })
+      setMessage({ tone: 'success', text: profile('profileUpdated') })
     } catch (error) {
       setMessage({
         tone: 'error',
-        text: error instanceof Error ? error.message : 'Failed to update profile.',
+        text: localizedErrorMessage(error, locale),
       })
     } finally {
       setBusy(false)
@@ -99,7 +109,7 @@ export default function EditProfilePage() {
 
     setMessage(null)
     if (!file.type.startsWith('image/')) {
-      setMessage({ tone: 'error', text: 'Please select a valid image file.' })
+      setMessage({ tone: 'error', text: profile('validImageRequired') })
       input.value = ''
       return
     }
@@ -110,11 +120,11 @@ export default function EditProfilePage() {
       data.append('profileImage', file)
       await api.updateProfile(data)
       await refresh()
-      setMessage({ tone: 'success', text: 'Profile photo updated successfully.' })
+      setMessage({ tone: 'success', text: profile('profilePhotoUpdated') })
     } catch (error) {
       setMessage({
         tone: 'error',
-        text: error instanceof Error ? error.message : 'Failed to update profile photo.',
+        text: localizedErrorMessage(error, locale),
       })
     } finally {
       setUploadingPhoto(false)
@@ -129,13 +139,13 @@ export default function EditProfilePage() {
 
     setMessage(null)
     if (!file.type.startsWith('image/')) {
-      setMessage({ tone: 'error', text: 'Please select a valid NID image.' })
+      setMessage({ tone: 'error', text: profile('validNidImageRequired') })
       input.value = ''
       return
     }
 
     if (file.size > MAX_NID_IMAGE_SIZE) {
-      setMessage({ tone: 'error', text: 'NID image must be 5 MB or smaller.' })
+      setMessage({ tone: 'error', text: profile('nidImageTooLarge') })
       input.value = ''
       return
     }
@@ -145,18 +155,18 @@ export default function EditProfilePage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Edit Profile" subtitle="Update your personal information" backHref="/profile" />
+      <TopScreen title={profile('editProfile')} subtitle={profile('editProfileDescription')} backHref="/profile" />
 
       <div className="screen profile-page profile-edit-page">
         <ProfileIdentityCard
           id="edit-profile-name"
           name={user?.name}
           imageUrl={user?.avatar_url}
-          status={isActive ? 'Active' : 'Inactive'}
+          status={isActive ? common('active') : common('inactive')}
           active={isActive}
           role={accountRole}
           avatarAction={(
-            <label className="profile-avatar-action" aria-label="Upload profile photo">
+            <label className="profile-avatar-action" aria-label={profile('uploadProfilePhoto')}>
               {uploadingPhoto ? (
                 <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
               ) : (
@@ -176,20 +186,19 @@ export default function EditProfilePage() {
         <form className="profile-edit-form" onSubmit={handleSave}>
           <ProfileSection
             id="account-information-heading"
-            title="Account information"
-            description="Your primary contact and account details"
+            title={profile('accountInformation')}
           >
             <TextField
-              label="Full Name"
+              label={auth('fullName')}
               value={fullName}
               onChange={setFullName}
-              placeholder="Enter your full name"
+              placeholder={profile('enterFullName')}
               autoComplete="name"
               maxLength={100}
               required
             />
             <TextField
-              label="Email Address"
+              label={auth('emailAddress')}
               value={email}
               onChange={setEmail}
               placeholder="name@example.com"
@@ -199,7 +208,7 @@ export default function EditProfilePage() {
               required
             />
             <TextField
-              label="Phone Number"
+              label={auth('phoneNumber')}
               value={phoneNumber}
               onChange={setPhoneNumber}
               placeholder="017xxxxxxxx"
@@ -211,14 +220,13 @@ export default function EditProfilePage() {
 
           <ProfileSection
             id="identity-information-heading"
-            title="Identity verification"
-            description="Add your NID details for account identification"
+            title={profile('identityVerification')}
           >
             <TextField
-              label="NID Number"
+              label={profile('nidNumber')}
               value={nidNumber}
               onChange={setNidNumber}
-              placeholder="Enter your NID number"
+              placeholder={profile('enterNidNumber')}
               inputMode="numeric"
               maxLength={32}
             />
@@ -232,40 +240,39 @@ export default function EditProfilePage() {
 
           <ProfileSection
             id="address-information-heading"
-            title="Address information"
-            description="Your current location and postal details"
+            title={profile('addressInformation')}
           >
             <TextField
-              label="Location"
+              label={auth('location')}
               value={location}
               onChange={setLocation}
-              placeholder="House, road or area"
+              placeholder={profile('houseRoadArea')}
               autoComplete="address-line1"
               maxLength={255}
             />
             <div className="profile-form-grid">
               <TextField
-                label="State"
+                label={profile('state')}
                 value={state}
                 onChange={setState}
-                placeholder="State or division"
+                placeholder={profile('stateDivision')}
                 autoComplete="address-level1"
                 maxLength={100}
               />
               <TextField
-                label="City"
+                label={profile('city')}
                 value={city}
                 onChange={setCity}
-                placeholder="City"
+                placeholder={profile('city')}
                 autoComplete="address-level2"
                 maxLength={100}
               />
             </div>
             <TextField
-              label="Zip Code"
+              label={profile('zipCode')}
               value={zipcode}
               onChange={setZipcode}
-              placeholder="Postal or zip code"
+              placeholder={profile('postalCode')}
               autoComplete="postal-code"
               inputMode="numeric"
               maxLength={20}
@@ -283,7 +290,7 @@ export default function EditProfilePage() {
 
           <div className="profile-save-action">
             <SubmitButton type="submit" busy={busy}>
-              Save Profile
+              {profile('saveProfile')}
             </SubmitButton>
           </div>
         </form>

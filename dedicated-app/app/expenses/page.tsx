@@ -18,7 +18,6 @@ import {
 } from 'lucide-react'
 import {
   ExpenseListItem,
-  formatTaka,
   type ExpenseListRecord,
 } from '@/components/mobile/expense-design'
 import {
@@ -40,6 +39,14 @@ import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { currentMonthValue } from '@/components/mobile/meals-design'
 import { useAuth } from '../providers'
+import {
+  formatIsoDate,
+  paymentStatusLabel,
+  useLocale,
+  useLocaleFormatters,
+  useLocalizedNotice,
+  useTranslations,
+} from '@/lib/i18n'
 
 type ExpenseSummary = {
   month?: string
@@ -73,22 +80,8 @@ type FundBalances = {
 }
 
 type ViewMode = 'MY' | 'MANAGER'
-type MessageTone = 'SUCCESS' | 'ERROR'
 type ApprovalFilter = 'ALL' | ExpenseApprovalStatus
 type MonthFilter = string
-
-const MONTH_FORMATTER = new Intl.DateTimeFormat('en-US', {
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-})
-
-const APPROVAL_FILTER_OPTIONS: Array<MobileSelectOption<ApprovalFilter>> = [
-  { value: 'ALL', label: 'All' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
-]
 
 function monthKey(value?: string | null) {
   if (!value) return ''
@@ -97,11 +90,6 @@ function monthKey(value?: string | null) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
-function monthLabel(value: string) {
-  if (value === 'ALL') return 'All Months'
-  const date = new Date(`${value}-01T00:00:00Z`)
-  return Number.isNaN(date.getTime()) ? value : MONTH_FORMATTER.format(date)
-}
 
 function getExpenseMonth(expense: ExpenseListRecord) {
   return monthKey(expense.billingMonth ?? expense.billing_month ?? expense.expenseDate ?? expense.expense_date)
@@ -135,8 +123,7 @@ function ExpenseFilterSelect<T extends string>({
             {icon}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-caption font-semibold leading-tight text-[#65838b]">{label}</span>
-            <span className="mt-0.5 block truncate text-label font-bold leading-tight text-[#123748]">{selectedLabel}</span>
+            <span className="block truncate text-label font-bold leading-tight text-[#123748]">{selectedLabel}</span>
           </span>
           <ChevronDown
             size={16}
@@ -168,6 +155,15 @@ function ExpenseRecordsSection({
   onMonthFilterChange: (filter: MonthFilter) => void
   title: string
 }) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('expenses')
+  const approvalOptions: Array<MobileSelectOption<ApprovalFilter>> = [
+    { value: 'ALL', label: t('allStatuses') },
+    { value: 'PENDING', label: paymentStatusLabel('PENDING', locale) },
+    { value: 'APPROVED', label: paymentStatusLabel('APPROVED', locale) },
+    { value: 'REJECTED', label: paymentStatusLabel('REJECTED', locale) },
+  ]
   const filtered = expenses.filter((expense) => {
     const matchesStatus =
       statusFilter === 'ALL' ||
@@ -177,12 +173,12 @@ function ExpenseRecordsSection({
   })
 
   return (
-    <ExpenseSurface title={title} aside={<span className="text-caption font-bold text-[#65838b]">{filtered.length} shown</span>}>
+    <ExpenseSurface title={title} aside={<span className="text-caption font-bold text-[#65838b]">{t('shownCount', { count: format.number(filtered.length) })}</span>}>
       <div className="mb-3 grid grid-cols-2 gap-2.5">
         <ExpenseFilterSelect
-          label="Status"
+          label={t('approvalStatus')}
           value={statusFilter}
-          options={APPROVAL_FILTER_OPTIONS}
+          options={approvalOptions}
           onChange={onStatusFilterChange}
           icon={<SlidersHorizontal size={16} strokeWidth={2.35} />}
         />
@@ -206,14 +202,17 @@ function ExpenseRecordsSection({
             variant="horizontal"
           />
         ))}
-        {loading ? <LoadingIndicator variant="card" label="Loading expenses" /> : null}
-        {!loading && !filtered.length ? <div className="expense-empty-state mx-3">No matching expenses found.</div> : null}
+        {loading ? <LoadingIndicator variant="card" label={t('loadingExpenses')} /> : null}
+        {!loading && !filtered.length ? <div className="expense-empty-state mx-3">{t('noMatchingExpenses')}</div> : null}
       </div>
     </ExpenseSurface>
   )
 }
 
 export default function ExpensesPage() {
+  const format = useLocaleFormatters()
+  const t = useTranslations('expenses')
+  const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('expenses')
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
@@ -222,8 +221,6 @@ export default function ExpensesPage() {
   const [summary, setSummary] = useState<ExpenseSummary | null>(null)
   const [managerData, setManagerData] = useState<ManagerOverview | null>(null)
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [messageTone, setMessageTone] = useState<MessageTone>('ERROR')
   const [fundBalances, setFundBalances] = useState<FundBalances | null>(null)
   const [collectedAmount, setCollectedAmount] = useState('')
   const [collectedNote, setCollectedNote] = useState('')
@@ -237,8 +234,7 @@ export default function ExpensesPage() {
     if (!messId) return
     let active = true
     setLoading(true)
-    setMessage('')
-    setMessageTone('ERROR')
+    clearNotice()
 
     api
       .getExpenseSummary(messId, `${month}-01`)
@@ -246,7 +242,7 @@ export default function ExpensesPage() {
         if (active) setSummary(response.data as ExpenseSummary)
       })
       .catch((error) => {
-        if (active) setMessage(error instanceof Error ? error.message : 'Failed to load expense summary.')
+        if (active) showError(error, 'loadSummaryFailed')
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -270,8 +266,7 @@ export default function ExpensesPage() {
       .catch((error) => {
         if (!active) return
         setExpenses([])
-        setMessageTone('ERROR')
-        setMessage(error instanceof Error ? error.message : 'Failed to load expenses.')
+        showError(error, 'loadExpensesFailed')
       })
       .finally(() => {
         if (active) setRecordsLoading(false)
@@ -310,17 +305,8 @@ export default function ExpensesPage() {
           if (balanceResult.status === 'fulfilled') {
             setFundBalances(balanceResult.value.data)
           }
-          const errors = [memberResult, balanceResult]
-            .filter((result) => result.status === 'rejected')
-            .map((result) =>
-              result.status === 'rejected' && result.reason instanceof Error
-                ? result.reason.message
-                : 'Part of the manager expense overview could not be loaded.',
-            )
-          if (errors.length) {
-            setMessageTone('ERROR')
-            setMessage(errors.join(' '))
-          }
+          const failed = [memberResult, balanceResult].find((result) => result.status === 'rejected')
+          if (failed?.status === 'rejected') showError(failed.reason, 'partialOverviewFailed')
         })
         .finally(() => {
           if (active && initialLoad) setLoading(false)
@@ -336,11 +322,10 @@ export default function ExpensesPage() {
   }, [isManager, messId, month, view])
 
   async function addCollectedFund() {
-    setMessage('')
-    setMessageTone('ERROR')
+    clearNotice()
     const amount = Number(collectedAmount)
     if (!Number.isFinite(amount) || amount <= 0) {
-      setMessage('Enter a valid mess fund amount.')
+      showMessage('validMessFundAmount', 'danger')
       return
     }
 
@@ -349,16 +334,15 @@ export default function ExpensesPage() {
       const response = await api.createCollectedFund({
         messId,
         amount,
-        date: new Date().toISOString().slice(0, 10),
+        date: formatIsoDate(),
         note: collectedNote.trim() || undefined,
       })
       setFundBalances(response.data.balances)
       setCollectedAmount('')
       setCollectedNote('')
-      setMessageTone('SUCCESS')
-      setMessage('Mess fund recorded successfully.')
+      showMessage('messFundRecorded', 'success')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to record mess fund.')
+      showError(error, 'recordMessFundFailed')
     } finally {
       setFundBusy(false)
     }
@@ -369,8 +353,8 @@ export default function ExpensesPage() {
   return (
     <MobileShell showBottomNavigation hasFloatingAction>
       <TopScreen
-        title={view === 'MANAGER' ? 'Manage Expenses' : 'Expense Management'}
-        subtitle={view === 'MANAGER' ? 'Monitor member costs and dues' : user?.memberships?.[0]?.mess?.name ?? 'Mess expenses'}
+        title={view === 'MANAGER' ? t('manageExpenses') : t('expenseManagement')}
+        subtitle={view === 'MANAGER' ? t('managerSubtitle') : user?.memberships?.[0]?.mess?.name ?? t('messExpenses')}
         backHref="/"
       />
 
@@ -380,35 +364,35 @@ export default function ExpensesPage() {
             value={view}
             onChange={(value) => setView(value as ViewMode)}
             options={[
-              { value: 'MY', label: 'My View', icon: UserRound },
-              { value: 'MANAGER', label: 'Manager View', icon: UsersRound },
+              { value: 'MY', label: t('myViewLabel'), icon: UserRound },
+              { value: 'MANAGER', label: t('managerViewLabel'), icon: UsersRound },
             ]}
           />
         ) : null}
 
-        {message ? (
+        {notice ? (
           <div
             className={
-              messageTone === 'SUCCESS'
+              notice.tone === 'success'
                 ? 'rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]'
                 : 'rounded-2xl border border-[#f4c7c7] bg-[#fff5f5] px-4 py-3 text-label font-semibold text-[#b42318]'
             }
           >
-            {message}
+            {notice.message}
           </div>
         ) : null}
 
         {view === 'MY' ? (
           <>
-            <ExpenseSurface title="This Month Overview">
+            <ExpenseSurface title={t('thisMonthOverview')}>
               <div className="expense-summary-grid">
-                <ExpenseSummaryCard icon={CookingPot} label="Food" value={loading ? <LoadingIndicator size="sm" label="Loading food expenses" /> : formatTaka(my?.foodBill)} />
-                <ExpenseSummaryCard icon={Zap} label="Utility" value={loading ? <LoadingIndicator size="sm" label="Loading utility expenses" /> : formatTaka(my?.utilityBill)} accent="blue" />
-                <ExpenseSummaryCard icon={House} label="Rent" value={loading ? <LoadingIndicator size="sm" label="Loading rent" /> : formatTaka(my?.roomRent)} accent="violet" />
-                <ExpenseSummaryCard icon={WalletCards} label="Total" value={loading ? <LoadingIndicator size="sm" label="Loading total expenses" /> : formatTaka(my?.total)} caption={`${my?.transactionCount ?? 0} txns`} accent="green" />
+                <ExpenseSummaryCard icon={CookingPot} label={t('food')} value={loading ? <LoadingIndicator size="sm" label={t('loadingFoodExpenses')} /> : format.money(my?.foodBill)} />
+                <ExpenseSummaryCard icon={Zap} label={t('utility')} value={loading ? <LoadingIndicator size="sm" label={t('loadingUtilityExpenses')} /> : format.money(my?.utilityBill)} accent="blue" />
+                <ExpenseSummaryCard icon={House} label={t('rent')} value={loading ? <LoadingIndicator size="sm" label={t('loadingRent')} /> : format.money(my?.roomRent)} accent="violet" />
+                <ExpenseSummaryCard icon={WalletCards} label={t('total')} value={loading ? <LoadingIndicator size="sm" label={t('loadingTotalExpenses')} /> : format.money(my?.total)} caption={t('transactions', { count: format.number(my?.transactionCount ?? 0) })} accent="green" />
               </div>
 
-              <ExpenseDetailsCta href="/monthly-bill" title="Total Expenses This Month" subtitle="Food, utility and rent" buttonLabel="Details" />
+              <ExpenseDetailsCta href="/monthly-bill" title={t('totalExpensesThisMonth')} subtitle={t('foodUtilityRent')} buttonLabel={t('details')} />
             </ExpenseSurface>
 
           </>
@@ -416,25 +400,25 @@ export default function ExpensesPage() {
           <>
             <ExpenseSurface>
               <div className="grid grid-cols-2 gap-2.5">
-                <ExpenseSummaryCard icon={CircleDollarSign} label="Total" value={formatTaka(manager?.totalExpenses)} />
-                <ExpenseSummaryCard icon={Zap} label="Utility" value={formatTaka(manager?.totalUtility)} accent="blue" />
-                <ExpenseSummaryCard icon={Landmark} label="Deposit" value={formatTaka(manager?.fromDeposit)} accent="green" />
-                <ExpenseSummaryCard icon={UsersRound} label="Members" value={manager?.members ?? 0} accent="violet" />
+                <ExpenseSummaryCard icon={CircleDollarSign} label={t('total')} value={format.money(manager?.totalExpenses)} />
+                <ExpenseSummaryCard icon={Zap} label={t('utility')} value={format.money(manager?.totalUtility)} accent="blue" />
+                <ExpenseSummaryCard icon={Landmark} label={t('fromDeposit')} value={format.money(manager?.fromDeposit)} accent="green" />
+                <ExpenseSummaryCard icon={UsersRound} label={t('members')} value={format.number(manager?.members ?? 0)} accent="violet" />
               </div>
             </ExpenseSurface>
 
-            <ExpenseSurface title="Available Funds">
+            <ExpenseSurface title={t('availableFunds')}>
               <div className="grid grid-cols-2 gap-2.5">
                 <ExpenseSummaryCard
                   icon={Landmark}
-                  label="Mess Deposit"
-                  value={formatTaka(fundBalances?.messDepositBalance)}
+                  label={t('messDeposit')}
+                  value={format.money(fundBalances?.messDepositBalance)}
                   accent="green"
                 />
                 <ExpenseSummaryCard
                   icon={UsersRound}
-                  label="Mess Fund"
-                  value={formatTaka(fundBalances?.collectedFundBalance)}
+                  label={t('messFund')}
+                  value={format.money(fundBalances?.collectedFundBalance)}
                   accent="violet"
                 />
               </div>
@@ -446,13 +430,13 @@ export default function ExpensesPage() {
                   value={collectedAmount}
                   onChange={(event) => setCollectedAmount(event.target.value)}
                   className="h-12 rounded-[15px] border border-[#dce5ec] bg-white px-4 text-label font-medium text-[#123748] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
-                  placeholder="Mess fund amount"
+                  placeholder={t('messFundAmount')}
                 />
                 <input
                   value={collectedNote}
                   onChange={(event) => setCollectedNote(event.target.value.slice(0, 250))}
                   className="h-12 rounded-[15px] border border-[#dce5ec] bg-white px-4 text-label font-medium text-[#123748] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
-                  placeholder="Collection note (optional)"
+                  placeholder={t('collectionNoteOptional')}
                 />
                 <button
                   type="button"
@@ -460,7 +444,7 @@ export default function ExpensesPage() {
                   disabled={fundBusy}
                   className="expense-secondary-action disabled:opacity-60"
                 >
-                  <Plus size={18} /> {fundBusy ? 'Recording...' : 'Record Mess Fund'}
+                  <Plus size={18} /> {fundBusy ? t('recording') : t('recordMessFund')}
                 </button>
               </div>
             </ExpenseSurface>
@@ -479,21 +463,21 @@ export default function ExpensesPage() {
             setRecordsMonthFilter(value)
             setMonth(value)
           }}
-          title={isManager && view === 'MANAGER' ? 'Expense Submissions' : 'All Expenses'}
+          title={isManager && view === 'MANAGER' ? t('expenseSubmissions') : t('allExpenses')}
         />
       </div>
 
       <FloatingActionMenu
-        label="Add expense or utility"
+        label={t('addExpenseOrUtility')}
         items={[
           {
             href: '/add-expense',
-            label: 'Add Expense',
+            label: t('addExpense'),
             icon: <ReceiptText size={20} strokeWidth={2.3} />,
           },
           {
             href: '/add-utility',
-            label: 'Add Utility',
+            label: t('addUtility'),
             icon: <Zap size={20} strokeWidth={2.3} />,
           },
         ]}

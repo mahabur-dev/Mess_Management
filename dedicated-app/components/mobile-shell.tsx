@@ -1,14 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { LoadingIndicator } from '@/components/loading-indicator'
-import { MoreDrawer } from '@/components/more-drawer'
 import { canAccessAppPath, getBottomTabs, getDefaultAppPath, shouldShowDefaultBottomNavigation } from '@/lib/app-permissions'
 import { normalizePathname } from '@/lib/auth'
 import { appHref } from '@/lib/routes'
+import { useTranslations } from '@/lib/i18n'
+import { routeLabel } from '@/lib/i18n/navigation'
 
 export function MobileShell({
   children,
@@ -23,8 +24,9 @@ export function MobileShell({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { isLoading, logout, user } = useAuth()
-  const [moreDrawerOpen, setMoreDrawerOpen] = useState(false)
+  const { isLoading, user } = useAuth()
+  const common = useTranslations('common')
+  const navigation = useTranslations('navigation')
   const normalizedPathname = normalizePathname(pathname)
   const bottomNavigationVisible = showBottomNavigation ?? shouldShowDefaultBottomNavigation(user, normalizedPathname)
   const tabs = getBottomTabs(user)
@@ -36,16 +38,12 @@ export function MobileShell({
     }
   }, [canAccess, isLoading, router, user])
 
-  const closeMoreDrawer = useCallback(() => {
-    setMoreDrawerOpen(false)
-  }, [])
-
   if (isLoading || !user) {
-    return <LoadingIndicator variant="screen" label="Loading application" />
+    return <LoadingIndicator variant="screen" label={common('loadingApplication')} />
   }
 
   if (!canAccess) {
-    return <div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]">Redirecting...</div>
+    return <div className="grid min-h-screen place-items-center text-body font-semibold text-[#65838b]" role="status">{common('redirecting')}</div>
   }
 
   return (
@@ -63,31 +61,11 @@ export function MobileShell({
       </main>
 
       {bottomNavigationVisible ? (
-        <nav className="nav-bar" aria-label="Primary">
+        <nav className="nav-bar" aria-label={navigation('primaryNavigation')}>
           <div className="nav-dock">
             {tabs.map(({ href, label, icon: Icon }) => {
+              const translatedLabel = routeLabel(href, label, navigation)
               const active = href === '/' ? normalizedPathname === href : normalizedPathname === href || normalizedPathname.startsWith(`${href}/`)
-              if (href === '/more') {
-                return (
-                  <button
-                    key={href}
-                    type="button"
-                    className="nav-item"
-                    data-active={moreDrawerOpen}
-                    aria-expanded={moreDrawerOpen}
-                    aria-controls={moreDrawerOpen ? 'more-navigation-drawer' : undefined}
-                    aria-label={label}
-                    title={label}
-                    onClick={() => setMoreDrawerOpen(true)}
-                  >
-                    <span className="nav-icon-shell" aria-hidden="true">
-                      <Icon size={18} strokeWidth={2.5} className="nav-icon" />
-                    </span>
-                    <span>{label}</span>
-                  </button>
-                )
-              }
-
               return (
                 <Link
                   key={href}
@@ -95,13 +73,13 @@ export function MobileShell({
                   className="nav-item"
                   data-active={active}
                   aria-current={active ? 'page' : undefined}
-                  aria-label={label}
-                  title={label}
+                  aria-label={translatedLabel}
+                  title={translatedLabel}
                 >
                   <span className="nav-icon-shell" aria-hidden="true">
                     <Icon size={18} strokeWidth={2.5} className="nav-icon" />
                   </span>
-                  <span>{label}</span>
+                  <span>{translatedLabel}</span>
                 </Link>
               )
             })}
@@ -109,14 +87,6 @@ export function MobileShell({
         </nav>
       ) : null}
 
-      <MoreDrawer
-        open={moreDrawerOpen}
-        user={user}
-        onClose={closeMoreDrawer}
-        onLogout={() => {
-          void logout()
-        }}
-      />
     </div>
   )
 }

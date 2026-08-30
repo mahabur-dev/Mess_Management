@@ -3,12 +3,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bell, Send } from 'lucide-react'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
+import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
+import { LoadingIndicator } from '@/components/loading-indicator'
+import { InlineNotice } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SelectField, SubmitButton, TextAreaField, TextField, ToggleField } from '@/components/mobile/form-controls'
 import { api } from '@/lib/api'
-import { canManageMess } from '@/lib/app-permissions'
-import { LABELS, NOTICE_TYPES, type NoticeType } from '@/lib/form-options'
+import { canManageMess, getActiveMessId } from '@/lib/app-permissions'
+import { NOTICE_TYPES, type NoticeType } from '@/lib/form-options'
+import { noticeTypeLabel, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useAuth } from '../providers'
 
 type FormState = {
@@ -36,38 +40,51 @@ const INITIAL_FORM: FormState = {
 }
 
 export default function NoticesPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('communication')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('communication')
   const { user } = useAuth()
-  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
+  const messId = useMemo(() => getActiveMessId(user), [user])
   const canSendNotice = canManageMess(user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [items, setItems] = useState<NoticeItem[]>([])
 
   useEffect(() => {
-    if (!messId) return
+    if (!messId) {
+      setItems([])
+      setLoading(false)
+      return
+    }
     let alive = true
+    setLoading(true)
 
     api
       .getNoticesByMess(messId, { limit: 30, sortBy: 'created_at', sortOrder: 'desc' })
       .then((res) => {
         if (alive) setItems(Array.isArray(res.data) ? res.data : [])
       })
-      .catch(() => {
+      .catch((error) => {
         if (alive) setItems([])
+        if (alive) showError(error, 'loadNoticesFailed')
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
       })
 
     return () => {
       alive = false
     }
-  }, [messId, busy])
+  }, [busy, messId, showError])
 
   async function handleSubmit() {
-    setMessage('')
-    if (!messId) return setMessage('No mess selected.')
-    if (!form.title.trim()) return setMessage('Title is required.')
-    if (!form.body.trim()) return setMessage('Message is required.')
+    clearNotice()
+    if (!messId) return showMessage('noMessSelected', 'danger')
+    if (!form.title.trim()) return showMessage('titleRequired', 'danger')
+    if (!form.body.trim()) return showMessage('messageRequired', 'danger')
 
     setBusy(true)
     try {
@@ -79,10 +96,10 @@ export default function NoticesPage() {
         isPinned: form.isPinned,
       })
       setForm(INITIAL_FORM)
-      setMessage('Notice sent successfully.')
+      showMessage('noticeSent', 'success')
       setShowForm(false)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to send notice.')
+      showError(error, 'sendNoticeFailed')
     } finally {
       setBusy(false)
     }
@@ -90,55 +107,60 @@ export default function NoticesPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Notices" subtitle="Announcement center" backHref="/" />
+      <TopScreen title={t('notices')} subtitle={t('noticeSubtitle')} backHref="/" />
       <div className="screen space-y-4">
-        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+        {!messId ? <MessOnboardingActions compact /> : null}
+
+        {messId ? (
+          <>
+        {notice && !showForm ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
         {canSendNotice ? (
           <DeferredFormSection
             open={showForm}
-            title="Send Notice"
-            description="Create an announcement when you need to notify members."
-            actionLabel="Send Notice"
+            title={t('sendNotice')}
+            description={t('sendNoticeDescription')}
+            actionLabel={t('sendNotice')}
             icon={<Send size={20} />}
             onOpen={() => setShowForm(true)}
             onClose={() => setShowForm(false)}
           >
             <SelectField
-              label="Notice Type"
+              label={t('noticeType')}
               value={form.type}
               onChange={(type) => setForm((prev) => ({ ...prev, type }))}
               options={NOTICE_TYPES}
-              getLabel={(value) => LABELS.NOTICE_TYPES[value]}
+              getLabel={(value) => noticeTypeLabel(value, locale)}
             />
             <TextField
-              label="Title"
+              label={t('title')}
               value={form.title}
               onChange={(title) => setForm((prev) => ({ ...prev, title }))}
-              placeholder="Deposit deadline"
+              placeholder={t('noticeTitlePlaceholder')}
             />
             <TextAreaField
-              label="Message"
+              label={t('message')}
               value={form.body}
               onChange={(body) => setForm((prev) => ({ ...prev, body }))}
-              placeholder="Please clear all dues by the 10th."
+              placeholder={t('noticeMessagePlaceholder')}
             />
             <ToggleField
-              label="Pinned"
-              hint="Shown at the top of notice board"
+              label={t('pinned')}
+              hint={t('pinnedHint')}
               checked={form.isPinned}
               onChange={(isPinned) => setForm((prev) => ({ ...prev, isPinned }))}
             />
-            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+            {notice && showForm ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
             <SubmitButton busy={busy} onClick={handleSubmit}>
-              Send Notice
+              {t('sendNotice')}
             </SubmitButton>
           </DeferredFormSection>
         ) : null}
 
-        <section className="app-section" aria-label="Notice list">
+        <section className="app-section" aria-label={t('noticeList')}>
           <div className="app-list">
-          {items.map((item) => (
+          {loading ? <LoadingIndicator variant="card" label={t('loadingNotices')} /> : null}
+          {[...items].sort((left, right) => Number(Boolean(right.is_pinned)) - Number(Boolean(left.is_pinned))).map((item) => (
             <article key={item.id} className="app-list-row py-4">
               <div className="flex items-start gap-3">
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#edfafa] text-[#008d8c]">
@@ -147,17 +169,27 @@ export default function NoticesPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="truncate text-label font-bold text-[#123748]">{item.title}</h2>
-                    {item.is_pinned ? <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-bold text-[#008d8c]">PINNED</span> : null}
+                    {item.is_pinned ? <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-bold text-[#008d8c]">{t('pinned')}</span> : null}
                   </div>
-                  <div className="mt-1 text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{LABELS.NOTICE_TYPES[item.type]}</div>
+                  <div className="mt-1 text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{noticeTypeLabel(item.type, locale)}</div>
                   <p className="mt-2 text-label text-[#65838b]">{item.body}</p>
+                  {item.creator?.name || item.created_at ? (
+                    <div className="mt-2 text-caption font-medium text-[#789096]">
+                      {t('noticeMeta', {
+                        author: item.creator?.name ?? t('unknownAuthor'),
+                        date: item.created_at ? format.date(item.created_at, { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }) : t('dateNotAvailable'),
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </article>
           ))}
-          {!items.length ? <div className="app-empty-state">No notices loaded.</div> : null}
+          {!loading && !items.length ? <div className="app-empty-state">{t('noNotices')}</div> : null}
           </div>
         </section>
+          </>
+        ) : null}
       </div>
     </MobileShell>
   )

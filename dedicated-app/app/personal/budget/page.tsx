@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { LoadingIndicator } from "@/components/loading-indicator";
-import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
 import { TopScreen } from "@/components/top-screen";
@@ -21,7 +20,7 @@ import { validatePersonalBudget } from "@/features/personal/schemas/personal.sch
 import type { PersonalBudget } from "@/features/personal/types";
 
 export default function PersonalBudgetPage() {
-  const { locale, toggleLocale } = usePersonalLocale();
+  const { locale } = usePersonalLocale();
   const copy = personalCopy(locale);
   const [month, setMonth] = useState(currentPersonalMonth());
   const { budgets, loading, error, refresh } = useBudget(
@@ -82,7 +81,6 @@ export default function PersonalBudgetPage() {
         title={copy.budget}
         subtitle={copy.budgetSubtitle}
         backHref="/personal"
-        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
       />
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />

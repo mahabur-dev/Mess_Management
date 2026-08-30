@@ -5,8 +5,8 @@ import {
   DesignedInput,
   FormFieldGrid,
   expenseFormIcons,
-  formatTaka,
 } from '@/components/mobile/expense-design'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 export type ExpenseLineItem = {
   id: string
@@ -54,6 +54,8 @@ export function ExpenseLineItemsEditor({
   onChange: (items: ExpenseLineItem[]) => void
   disabled?: boolean
 }) {
+  const t = useTranslations('expenses')
+  const format = useLocaleFormatters()
   const total = expenseLineItemsTotal(items)
 
   const update = (id: string, patch: Partial<ExpenseLineItem>) => {
@@ -65,14 +67,14 @@ export function ExpenseLineItemsEditor({
       {items.map((item, index) => (
         <div key={item.id} className="rounded-[16px] border border-[#dce8ea] bg-[#fbfefe] p-3">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <span className="text-label font-bold text-[#123748]">Item {index + 1}</span>
+            <span className="text-label font-bold text-[#123748]">{t('item', { number: format.number(index + 1) })}</span>
             {items.length > 1 ? (
               <button
                 type="button"
                 onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))}
                 disabled={disabled}
                 className="grid h-9 w-9 place-items-center rounded-[11px] text-[#d92d20] transition active:bg-[#fff0f0] disabled:opacity-50"
-                aria-label={`Remove item ${index + 1}`}
+                aria-label={t('removeItem', { number: format.number(index + 1) })}
               >
                 <Trash2 size={17} />
               </button>
@@ -80,16 +82,16 @@ export function ExpenseLineItemsEditor({
           </div>
 
           <DesignedInput
-            label="Item Name"
+            label={t('itemName')}
             icon={expenseFormIcons.item}
             value={item.itemName}
             onChange={(event) => update(item.id, { itemName: event.target.value })}
-            placeholder="e.g. Rice"
+            placeholder={t('itemNamePlaceholder')}
             required
           />
           <FormFieldGrid>
             <DesignedInput
-              label="Quantity (Optional)"
+              label={t('quantityOptional')}
               icon={expenseFormIcons.item}
               value={item.quantity}
               onChange={(event) => update(item.id, { quantity: event.target.value })}
@@ -99,7 +101,7 @@ export function ExpenseLineItemsEditor({
               step="0.001"
             />
             <DesignedInput
-              label="Unit (Optional)"
+              label={t('unitOptional')}
               icon={expenseFormIcons.item}
               value={item.unit}
               onChange={(event) => update(item.id, { unit: event.target.value })}
@@ -107,11 +109,11 @@ export function ExpenseLineItemsEditor({
             />
           </FormFieldGrid>
           <DesignedInput
-            label="Line Amount"
+            label={t('lineAmount')}
             icon={expenseFormIcons.amount}
             value={item.amount}
             onChange={(event) => update(item.id, { amount: event.target.value })}
-            placeholder="Final paid amount"
+            placeholder={t('lineAmountPlaceholder')}
             type="number"
             min="0.01"
             step="0.01"
@@ -126,15 +128,15 @@ export function ExpenseLineItemsEditor({
         disabled={disabled || items.length >= 100}
         className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[14px] border border-dashed border-[#58bfc0] bg-[#f6ffff] text-label font-bold text-[#00777a] transition active:scale-[0.99] disabled:opacity-50"
       >
-        <Plus size={17} /> Add another item
+        <Plus size={17} /> {t('addAnotherItem')}
       </button>
 
       <div className="flex items-center justify-between rounded-[14px] bg-[#e8f8f7] px-4 py-3">
         <div>
-          <span className="block text-caption font-semibold text-[#65838b]">Purchase total</span>
-          <span className="mt-0.5 block text-label font-bold text-[#123748]">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+          <span className="block text-caption font-semibold text-[#65838b]">{t('purchaseTotal')}</span>
+          <span className="mt-0.5 block text-label font-bold text-[#123748]">{t(items.length === 1 ? 'itemCount' : 'itemsCount', { count: format.number(items.length) })}</span>
         </div>
-        <span className="text-title-sm font-bold text-[#00777a]">{formatTaka(total)}</span>
+        <span className="text-title-sm font-bold text-[#00777a]">{format.money(total)}</span>
       </div>
     </div>
   )

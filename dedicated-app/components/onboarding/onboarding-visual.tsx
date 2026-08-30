@@ -10,7 +10,6 @@ import {
   ClipboardCheck,
   CookingPot,
   FileText,
-  IndianRupee,
   Leaf,
   LockKeyhole,
   Mic,
@@ -82,7 +81,7 @@ export function OnboardingVisual({ visual }: { visual: VisualName }) {
       <VisualPanel modifier="workspace">
         <div className="onboarding-illustration-phone">
           <div className="onboarding-illustration-topline"><strong>Dashboard</strong><Bell size={12} /></div>
-          <div className="onboarding-illustration-balance"><small>Monthly overview</small><strong>৳ 24,850</strong><i /></div>
+          <div className="onboarding-illustration-balance"><small>Monthly overview</small><strong>৳&#8239;24,850</strong><i /></div>
           <div className="onboarding-illustration-grid">
             <span><Users size={17} /><small>Members</small></span>
             <span><UtensilsCrossed size={17} /><small>Meals</small></span>
@@ -127,7 +126,7 @@ export function OnboardingVisual({ visual }: { visual: VisualName }) {
       </div>
       <FloatingBadge position="top-left"><BarChart3 /></FloatingBadge>
       <FloatingBadge position="top-right"><Users /></FloatingBadge>
-      <FloatingBadge position="bottom-left"><IndianRupee /><WalletCards /></FloatingBadge>
+      <FloatingBadge position="bottom-left"><span>৳</span><WalletCards /></FloatingBadge>
       <FloatingBadge position="bottom-right"><LockKeyhole /></FloatingBadge>
     </VisualPanel>
   )

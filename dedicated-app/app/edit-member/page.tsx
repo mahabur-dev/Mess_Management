@@ -3,6 +3,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { User } from 'lucide-react'
+import { LoadingIndicator } from '@/components/loading-indicator'
 import { MobileShell } from '@/components/mobile-shell'
 import {
   DesignedInput,
@@ -18,8 +19,10 @@ import {
   expenseFormIcons,
 } from '@/components/mobile/expense-design'
 import { api } from '@/lib/api'
-import { LABELS, MEMBER_ROLES, type MemberRole } from '@/lib/form-options'
+import { getActiveMessId } from '@/lib/app-permissions'
+import { MEMBER_ROLES, type MemberRole } from '@/lib/form-options'
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
+import { memberRoleLabel, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 
@@ -29,6 +32,7 @@ type MemberRecord = {
   role: MemberRole
   is_active?: boolean
   room_no?: string | null
+  seat_no?: string | null
   monthly_rent?: string | number | null
   deposit_amount?: string | number | null
   user?: { id: string; name: string; email: string }
@@ -38,6 +42,7 @@ type MemberRecord = {
 type FormState = {
   role: MemberRole
   roomNo: string
+  seatNo: string
   monthlyRent: string
   depositAmount: string
   isActive: boolean
@@ -46,27 +51,40 @@ type FormState = {
 const INITIAL_FORM: FormState = {
   role: 'MEMBER',
   roomNo: '',
+  seatNo: '',
   monthlyRent: '',
   depositAmount: '',
   isActive: true,
 }
 
 export default function EditMemberPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('members')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('members')
   const searchParams = useQueryParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const memberId = searchParams.get('memberId') ?? ''
-  const messId = searchParams.get('messId') ?? user?.memberships?.[0]?.mess_id ?? ''
+  const messId = searchParams.get('messId') ?? getActiveMessId(user)
   const [member, setMember] = useState<MemberRecord | null>(null)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
-  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
 
-  useAutoDismiss(message, () => setMessage(''))
+  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   useEffect(() => {
-    if (!memberId || !messId) return
+    if (authLoading) return
+    if (!memberId || !messId) {
+      setMember(null)
+      setLoading(false)
+      showMessage('missingMemberContext', 'danger')
+      return
+    }
     let alive = true
+    setLoading(true)
+    clearNotice()
     api
       .getAllMembers({ limit: 500 })
       .then((res) => {
@@ -74,42 +92,52 @@ export default function EditMemberPage() {
         const list = Array.isArray(res.data) ? res.data : []
         const found = list.find((item: MemberRecord) => item.user_id === memberId && item.mess_id === messId) ?? null
         setMember(found)
-        setForm({
-          role: found?.role ?? 'MEMBER',
-          roomNo: found?.room_no ?? '',
-          monthlyRent: found?.monthly_rent ? String(found.monthly_rent) : '',
-          depositAmount: found?.deposit_amount ? String(found.deposit_amount) : '',
-          isActive: found?.is_active ?? true,
-        })
+        if (found) {
+          setForm({
+            role: found.role ?? 'MEMBER',
+            roomNo: found.room_no ?? '',
+            seatNo: found.seat_no ?? '',
+            monthlyRent: found.monthly_rent ? String(found.monthly_rent) : '',
+            depositAmount: found.deposit_amount ? String(found.deposit_amount) : '',
+            isActive: found.is_active ?? true,
+          })
+        } else {
+          showMessage('memberNotFound', 'danger')
+        }
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
-        setMessage('Failed to load member details.')
+        setMember(null)
+        showError(error, 'loadMemberDetailsFailed')
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
       })
 
     return () => {
       alive = false
     }
-  }, [memberId, messId])
+  }, [authLoading, clearNotice, memberId, messId, showError, showMessage])
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setMessage('')
-    if (!memberId || !messId) return setMessage('Member id or mess id is missing.')
+    clearNotice()
+    if (!memberId || !messId) return showMessage('missingMemberContext', 'danger')
 
     setBusy(true)
     try {
       await api.updateMember(messId, memberId, {
         role: form.role,
         roomNo: form.roomNo.trim() || undefined,
+        seatNo: form.seatNo.trim() || undefined,
         monthlyRent: form.monthlyRent ? Number(form.monthlyRent) : undefined,
         depositAmount: form.depositAmount ? Number(form.depositAmount) : undefined,
         isActive: form.isActive,
       })
-      setMessage('Member updated successfully.')
+      showMessage('memberUpdated', 'success')
       router.push('/members')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update member.')
+      showError(error, 'updateMemberFailed')
     } finally {
       setBusy(false)
     }
@@ -118,63 +146,78 @@ export default function EditMemberPage() {
   return (
     <MobileShell>
       <form onSubmit={handleSubmit}>
-        <FormPageShell title="Edit Member" description={member?.user?.name ?? 'Update member details'} icon={User} backHref="/members">
+        <FormPageShell title={t('editMember')} description={member?.user?.name ?? t('editMemberDescription')} icon={User} backHref="/members">
+          {loading ? (
+            <FormSection>
+              <LoadingIndicator variant="card" label={t('loadingMemberDetails')} />
+            </FormSection>
+          ) : null}
+
+          {!loading && member ? (
+            <>
           <FormSection>
             <FormSummaryCard
-              eyebrow="Member"
+              eyebrow={t('member')}
               title={member?.user?.name ?? memberId}
-              description={member?.user?.email ?? 'Member profile'}
+              description={member?.user?.email ?? t('memberProfile')}
               icon={User}
             />
           </FormSection>
 
-          <FormSection title="Member Details">
+          <FormSection title={t('memberDetails')}>
             <DesignedSelect
-              label="Role"
+              label={t('role')}
               icon={detailIcons.role}
               value={form.role}
               onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as MemberRole }))}
             >
               {MEMBER_ROLES.map((role) => (
                 <option key={role} value={role}>
-                  {LABELS.MEMBER_ROLES[role]}
+                  {memberRoleLabel(role, locale)}
                 </option>
               ))}
             </DesignedSelect>
 
-            <DesignedInput label="Room No" icon={detailIcons.room} value={form.roomNo} onChange={(event) => setForm((prev) => ({ ...prev, roomNo: event.target.value }))} placeholder="A-2" />
+            <FormFieldGrid>
+              <DesignedInput label={t('roomNo')} icon={detailIcons.room} value={form.roomNo} onChange={(event) => setForm((prev) => ({ ...prev, roomNo: event.target.value }))} placeholder="A-2" />
+              <DesignedInput label={t('seatNo')} icon={detailIcons.seat} value={form.seatNo} onChange={(event) => setForm((prev) => ({ ...prev, seatNo: event.target.value }))} placeholder="S-05" />
+            </FormFieldGrid>
 
             <FormFieldGrid>
               <DesignedInput
-                label="Monthly Rent"
+                label={t('monthlyRent')}
                 icon={expenseFormIcons.amount}
                 value={form.monthlyRent}
                 onChange={(event) => setForm((prev) => ({ ...prev, monthlyRent: event.target.value }))}
-                placeholder="4500"
+                placeholder={format.number(4500)}
                 type="number"
               />
               <DesignedInput
-                label="Deposit Amount"
+                label={t('depositAmount')}
                 icon={expenseFormIcons.amount}
                 value={form.depositAmount}
                 onChange={(event) => setForm((prev) => ({ ...prev, depositAmount: event.target.value }))}
-                placeholder="5000"
+                placeholder={format.number(5000)}
                 type="number"
               />
             </FormFieldGrid>
 
             <DesignedToggle
-              label="Active Member"
-              hint="Disable to mark as inactive"
+              label={t('activeMember')}
+              hint={t('inactiveMemberHint')}
               icon={detailIcons.status}
               checked={form.isActive}
               onChange={(isActive) => setForm((prev) => ({ ...prev, isActive }))}
             />
           </FormSection>
 
-          <FormStatusMessage message={message} />
+          <FormStatusMessage message={notice?.message ?? ''} />
 
-          <SubmitGradientButton busy={busy}>Save Changes</SubmitGradientButton>
+          <SubmitGradientButton busy={busy}>{t('saveChanges')}</SubmitGradientButton>
+            </>
+          ) : null}
+
+          {!loading && !member ? <FormStatusMessage message={notice?.message ?? t('memberNotFound')} /> : null}
         </FormPageShell>
       </form>
     </MobileShell>

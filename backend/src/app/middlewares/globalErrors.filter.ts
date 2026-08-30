@@ -11,6 +11,16 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { ValidationError } from 'class-validator';
 import config from '../config';
+import {
+  ERROR_CODES,
+  errorCodeForStatus,
+  type ErrorCode,
+} from '../errors/error-codes';
+import {
+  errorMessageContract,
+  safeErrorMessage,
+  type ApiMessageParams,
+} from '../contracts/api-message.contract';
 
 export interface TErrorSource {
   path: string | number;
@@ -23,10 +33,19 @@ export interface TErrorResponse {
   message: string;
   errorSources: TErrorSource[];
   stack?: string | null;
-  code?: string;
+  code: ErrorCode;
+  params: ApiMessageParams;
 }
 
-const handleClassValidatorErrors = (errors: ValidationError[]) => {
+type NormalizedError = {
+  statusCode: number;
+  message: string;
+  errorSources: TErrorSource[];
+  code: ErrorCode;
+  params?: ApiMessageParams;
+};
+
+const handleClassValidatorErrors = (errors: ValidationError[]): NormalizedError => {
   const errorSources: TErrorSource[] = errors.flatMap((err) =>
     Object.values(err.constraints || {}).map((msg) => ({
       path: err.property,
@@ -37,12 +56,14 @@ const handleClassValidatorErrors = (errors: ValidationError[]) => {
     statusCode: HttpStatus.BAD_REQUEST,
     message: 'Validation failed',
     errorSources,
+    code: ERROR_CODES.VALIDATION_FAILED,
+    params: { fieldCount: errorSources.length },
   };
 };
 
 const handlePrismaKnownError = (
   err: Prisma.PrismaClientKnownRequestError,
-): { statusCode: number; message: string; errorSources: TErrorSource[] } => {
+): NormalizedError => {
   switch (err.code) {
     case 'P2002': {
       const field = (err.meta?.target as string[])?.join(', ') || 'field';
@@ -50,34 +71,37 @@ const handlePrismaKnownError = (
         statusCode: HttpStatus.CONFLICT,
         message: `Duplicate value: ${field} already exists`,
         errorSources: [{ path: field, message: `${field} must be unique` }],
+        code: ERROR_CODES.RESOURCE_CONFLICT,
+        params: { field },
       };
     }
-    case 'P2025': {
+    case 'P2025':
       return {
         statusCode: HttpStatus.NOT_FOUND,
         message: 'Record not found',
         errorSources: [{ path: '', message: err.message }],
+        code: ERROR_CODES.RESOURCE_NOT_FOUND,
       };
-    }
-    case 'P2003': {
+    case 'P2003':
       return {
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Related record not found',
         errorSources: [{ path: '', message: err.message }],
+        code: ERROR_CODES.RELATED_RESOURCE_NOT_FOUND,
       };
-    }
-    case 'P2014': {
+    case 'P2014':
       return {
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Relation violation',
         errorSources: [{ path: '', message: err.message }],
+        code: ERROR_CODES.RELATION_CONFLICT,
       };
-    }
     default:
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Database error',
         errorSources: [{ path: '', message: err.message }],
+        code: ERROR_CODES.DATABASE_ERROR,
       };
   }
 };
@@ -100,74 +124,103 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       err instanceof Error ? err.stack : String(err),
     );
 
-    let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Something went wrong!';
-    let errorSources: TErrorSource[] = [
-      { path: '', message: 'Something went wrong' },
-    ];
-    let code: string | undefined;
+    let normalized: NormalizedError = {
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Something went wrong!',
+      errorSources: [{ path: '', message: 'Something went wrong' }],
+      code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+    };
 
-    // 1. Raw class-validator ValidationError[]
     if (
       Array.isArray(err) &&
       err.length > 0 &&
       err[0] instanceof ValidationError
     ) {
-      ({ statusCode, message, errorSources } = handleClassValidatorErrors(
-        err as ValidationError[],
-      ));
-    }
-
-    // 2. NestJS HttpException (may wrap class-validator errors)
-    else if (err instanceof HttpException) {
-      const res = err.getResponse() as any;
+      normalized = handleClassValidatorErrors(err as ValidationError[]);
+    } else if (err instanceof HttpException) {
+      const exceptionResponse = err.getResponse() as unknown;
+      const statusCode = err.getStatus();
       if (
-        typeof res === 'object' &&
-        Array.isArray(res.message) &&
-        typeof res.message[0] === 'string'
+        exceptionResponse &&
+        typeof exceptionResponse === 'object' &&
+        'message' in exceptionResponse &&
+        Array.isArray(exceptionResponse.message) &&
+        typeof exceptionResponse.message[0] === 'string'
       ) {
-        statusCode = err.getStatus();
-        message = 'Validation failed';
-        errorSources = res.message.map((msg: string) => ({
-          path: '',
-          message: msg,
-        }));
+        normalized = {
+          statusCode,
+          message: 'Validation failed',
+          errorSources: exceptionResponse.message.map((message: string) => ({
+            path: '',
+            message,
+          })),
+          code: ERROR_CODES.VALIDATION_FAILED,
+          params: { fieldCount: exceptionResponse.message.length },
+        };
       } else {
-        statusCode = err.getStatus();
-        message =
-          typeof res === 'string' ? res : (res?.message ?? 'Request failed');
-        code = typeof res === 'object' && typeof res?.code === 'string' ? res.code : undefined;
-        errorSources = [{ path: '', message }];
+        const responseRecord =
+          exceptionResponse && typeof exceptionResponse === 'object'
+            ? (exceptionResponse as Record<string, unknown>)
+            : null;
+        const message =
+          typeof exceptionResponse === 'string'
+            ? exceptionResponse
+            : typeof responseRecord?.message === 'string'
+              ? responseRecord.message
+              : 'Request failed';
+        normalized = {
+          statusCode,
+          message,
+          errorSources: [{ path: '', message }],
+          code:
+            typeof responseRecord?.code === 'string'
+              ? responseRecord.code
+              : errorCodeForStatus(statusCode),
+          params:
+            responseRecord?.params &&
+            typeof responseRecord.params === 'object' &&
+            !Array.isArray(responseRecord.params)
+              ? (responseRecord.params as ApiMessageParams)
+              : {},
+        };
       }
+    } else if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      normalized = handlePrismaKnownError(err);
+    } else if (err instanceof Prisma.PrismaClientValidationError) {
+      normalized = {
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid data provided to database',
+        errorSources: [{ path: '', message: err.message }],
+        code: ERROR_CODES.BAD_REQUEST,
+      };
+    } else if (err instanceof Error) {
+      normalized = {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: safeErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR),
+        errorSources: [
+          {
+            path: '',
+            message: isDev ? err.message : safeErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR),
+          },
+        ],
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+      };
     }
 
-    // 3. Prisma Known Request Error (P2002, P2025, P2003, etc.)
-    else if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      ({ statusCode, message, errorSources } = handlePrismaKnownError(err));
-    }
-
-    // 4. Prisma Validation Error
-    else if (err instanceof Prisma.PrismaClientValidationError) {
-      statusCode = HttpStatus.BAD_REQUEST;
-      message = 'Invalid data provided to database';
-      errorSources = [{ path: '', message: err.message }];
-    }
-
-    // 5. Generic JS Error
-    else if (err instanceof Error) {
-      message = err.message;
-      errorSources = [{ path: '', message: err.message }];
-    }
+    const contract = errorMessageContract({
+      statusCode: normalized.statusCode,
+      message: normalized.message,
+      code: normalized.code,
+      params: normalized.params,
+    });
 
     const body: TErrorResponse = {
       success: false,
-      statusCode,
-      message,
-      errorSources,
+      ...normalized,
+      ...contract,
       stack: isDev && err instanceof Error ? err.stack : null,
-      ...(code ? { code } : {}),
     };
 
-    httpAdapter.reply(response, body, statusCode);
+    httpAdapter.reply(response, body, normalized.statusCode);
   }
 }

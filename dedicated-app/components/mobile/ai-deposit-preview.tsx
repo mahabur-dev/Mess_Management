@@ -12,6 +12,7 @@ import {
   PAYMENT_METHODS,
   type PaymentMethod,
 } from '@/lib/form-options'
+import { useTranslations } from '@/lib/i18n'
 
 export type AiDepositPreviewPayload = Record<string, unknown>
 
@@ -39,6 +40,8 @@ export function AiDepositPreview({
   onCancel: () => void
   onConfirm: () => void
 }) {
+  const t = useTranslations('payments')
+  const common = useTranslations('common')
   const paidBy = String(payload.purchasedBy ?? payload.memberId ?? '')
   const date = String(payload.paymentDate ?? payload.date ?? '')
   const amount = payload.amount == null ? '' : String(payload.amount)
@@ -68,12 +71,12 @@ export function AiDepositPreview({
       />
 
       <ExpenseActionBar>
-        <ExpenseSecondaryAction onClick={onCancel} disabled={disabled}>Cancel</ExpenseSecondaryAction>
+        <ExpenseSecondaryAction onClick={onCancel} disabled={disabled}>{common('cancel')}</ExpenseSecondaryAction>
         <ExpensePrimaryAction
           onClick={onConfirm}
           disabled={disabled || !amount || !date}
         >
-          <Check size={17} /> {disabled ? 'Saving...' : 'Save'}
+          <Check size={17} /> {disabled ? t('saving') : t('save')}
         </ExpensePrimaryAction>
       </ExpenseActionBar>
     </div>

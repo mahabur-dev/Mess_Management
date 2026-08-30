@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ReceiptText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
+import { NotificationLink } from "@/components/app-header";
 import {
   FormPageShell,
   FormSection,
@@ -28,7 +28,7 @@ import { useQueryParams } from "@/lib/use-query-params";
 export default function AddPersonalTransactionPage() {
   const router = useRouter();
   const params = useQueryParams();
-  const { locale, toggleLocale } = usePersonalLocale();
+  const { locale } = usePersonalLocale();
   const copy = personalCopy(locale);
   const [initialType, setInitialType] =
     useState<PersonalTransactionType>("EXPENSE");
@@ -70,9 +70,7 @@ export default function AddPersonalTransactionPage() {
         description={copy.transactionHistory}
         icon={ReceiptText}
         backHref="/personal/transactions"
-        trailing={
-          <CompactLanguageToggle locale={locale} onToggle={toggleLocale} />
-        }
+        trailing={<NotificationLink />}
       >
         <FormSection title={copy.addTransaction}>
           <PersonalTransactionForm

@@ -1,6 +1,7 @@
 'use client'
 
 import { DesignedInput, expenseFormIcons } from '@/components/mobile/expense-design'
+import { useTranslations } from '@/lib/i18n'
 
 export type ExpenseCustomShare = {
   memberId: string
@@ -30,8 +31,9 @@ export function ExpenseCustomShareFields({
   shares: ExpenseCustomShare[]
   onChange: (shares: ExpenseCustomShare[]) => void
 }) {
+  const t = useTranslations('expenses')
   if (!memberIds.length) {
-    return <div className="expense-empty-state">Select members before adding custom shares.</div>
+    return <div className="expense-empty-state">{t('selectMembersBeforeCustom')}</div>
   }
 
   return (

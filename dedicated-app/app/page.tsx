@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ClipboardList,
+  Bell,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -23,19 +24,24 @@ import {
 import { AppHeader } from '@/components/app-header'
 import { HomeCard, HomeEmptyState, HomeMetricCard, HomeQuickAction } from '@/components/home-card'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import { BillingCalculationNotice } from '@/components/mobile/billing-status-notice'
 import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { ExpenseListItem, type ExpenseListRecord } from '@/components/mobile/expense-design'
-import { currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
+import { currentMonthValue } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { useActiveMess } from '@/hooks/use-active-mess'
 import { api } from '@/lib/api'
-import { getHomeQuickActions } from '@/lib/app-permissions'
+import { canManageMess, getHomeQuickActions } from '@/lib/app-permissions'
 import { appHref } from '@/lib/routes'
+import { noticeTypeLabel, useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
+import { routeLabel } from '@/lib/i18n/navigation'
 import { useAuth } from './providers'
 
 type DashboardNotice = {
   id: string
   title: string
+  type?: string
+  is_pinned?: boolean
   created_at: string
 }
 
@@ -62,25 +68,24 @@ type DashboardSummary = {
   notices?: DashboardNotice[]
 }
 
-function formatMoney(value?: number | null) {
-  if (value === undefined || value === null || Number.isNaN(Number(value))) return '--'
-  return `${String.fromCodePoint(0x09f3)} ${Number(value).toLocaleString('en-US')}`
-}
-
 function HomeMonthPill({
   month,
   onChange,
+  label,
+  monthLabel,
 }: {
   month: string
   onChange: (month: string) => void
+  label: string
+  monthLabel: string
 }) {
   return (
     <label className="home-month-pill">
       <CalendarDays size={15} strokeWidth={2.35} aria-hidden="true" />
-      <span>{formatMonthLabel(month)}</span>
+      <span>{monthLabel}</span>
       <ChevronDown size={15} strokeWidth={2.35} aria-hidden="true" />
       <input
-        aria-label="Select overview month"
+        aria-label={label}
         type="month"
         value={month}
         onChange={(event) => {
@@ -94,18 +99,30 @@ function HomeMonthPill({
 export default function HomePage() {
   const router = useRouter()
   const { user, isLoading } = useAuth()
+  const common = useTranslations('common')
+  const navigation = useTranslations('navigation')
+  const communication = useTranslations('communication')
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
   const [month, setMonth] = useState(currentMonthValue())
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [recentExpenses, setRecentExpenses] = useState<ExpenseListRecord[]>([])
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [expensesLoading, setExpensesLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState(false)
+  const [expensesError, setExpensesError] = useState(false)
+  const [summaryRetryToken, setSummaryRetryToken] = useState(0)
+  const [expensesRetryToken, setExpensesRetryToken] = useState(0)
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const { activeMess, isLoading: activeMessLoading, retry: retryActiveMess, status: activeMessStatus } = useActiveMess(user)
 
-  const profileName = user?.name || 'Manager'
+  const profileName = user?.name || common(canManageMess(user) ? 'managerFallback' : 'memberFallback')
   const hasWorkspace = activeMessStatus === 'connected'
   const showOnboarding = activeMessStatus === 'disconnected'
   const quickActions = hasWorkspace ? getHomeQuickActions(user) : []
+  const monthLabel = format.month(`${month}-01`)
+  const money = (value?: number | null) => value == null || Number.isNaN(Number(value)) ? '--' : format.money(value)
+  const number = (value?: number | null) => value == null || Number.isNaN(Number(value)) ? '--' : format.number(value)
 
   useEffect(() => {
     if (!isLoading && !user) router.replace('/login')
@@ -115,12 +132,14 @@ export default function HomePage() {
     if (!activeMess?.id) {
       setSummary(null)
       setRecentExpenses([])
+      setSummaryError(false)
       return
     }
 
     let cancelled = false
     let refreshTimer: ReturnType<typeof setTimeout> | null = null
     setSummaryLoading(true)
+    setSummaryError(false)
 
     const loadSummary = (initialLoad: boolean) => {
       api
@@ -129,6 +148,7 @@ export default function HomePage() {
           if (cancelled) return
           const nextSummary = res.data as DashboardSummary
           setSummary(nextSummary)
+          setSummaryError(false)
           if (
             nextSummary.billingDataFresh === false &&
             nextSummary.billingStatus !== 'FAILED'
@@ -137,7 +157,10 @@ export default function HomePage() {
           }
         })
         .catch(() => {
-          if (!cancelled && initialLoad) setSummary(null)
+          if (!cancelled && initialLoad) {
+            setSummary(null)
+            setSummaryError(true)
+          }
         })
         .finally(() => {
           if (!cancelled && initialLoad) setSummaryLoading(false)
@@ -150,23 +173,31 @@ export default function HomePage() {
       cancelled = true
       if (refreshTimer) clearTimeout(refreshTimer)
     }
-  }, [activeMess?.id, month])
+  }, [activeMess?.id, month, summaryRetryToken])
 
   useEffect(() => {
     if (!activeMess?.id) {
       setRecentExpenses([])
+      setExpensesError(false)
       return
     }
 
     let cancelled = false
     setExpensesLoading(true)
+    setExpensesError(false)
     api
       .getExpensesByMess(activeMess.id, { billingMonth: `${month}-01`, approvalStatus: 'APPROVED', limit: 3, sortBy: 'expense_date', sortOrder: 'desc' })
       .then((res: any) => {
-        if (!cancelled) setRecentExpenses(Array.isArray(res.data) ? res.data.slice(0, 3) : [])
+        if (!cancelled) {
+          setRecentExpenses(Array.isArray(res.data) ? res.data.slice(0, 3) : [])
+          setExpensesError(false)
+        }
       })
       .catch(() => {
-        if (!cancelled) setRecentExpenses([])
+        if (!cancelled) {
+          setRecentExpenses([])
+          setExpensesError(true)
+        }
       })
       .finally(() => {
         if (!cancelled) setExpensesLoading(false)
@@ -175,7 +206,7 @@ export default function HomePage() {
     return () => {
       cancelled = true
     }
-  }, [activeMess?.id, month])
+  }, [activeMess?.id, expensesRetryToken, month])
 
   useEffect(() => {
     if (!user || !activeMess?.id) {
@@ -199,30 +230,30 @@ export default function HomePage() {
   }, [activeMess?.id, user])
 
   const cards = [
-    { label: 'Total Member', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading total members" /> : summary?.activeMembers ?? '--', icon: Users, color: '#008d8c' },
-    { label: 'Today Meal', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading today meals" /> : summary?.todayTotalMeals ?? '--', icon: UtensilsCrossed, color: '#4bbfc0' },
-    { label: 'Total Meals', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading total meals" /> : summary?.totalMeals ?? '--', icon: ReceiptText, color: '#0aa0a0' },
+    { label: common('totalMember'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalMember') })} /> : number(summary?.activeMembers), icon: Users, color: '#008d8c' },
+    { label: common('todayMeal'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('todayMeal') })} /> : number(summary?.todayTotalMeals), icon: UtensilsCrossed, color: '#4bbfc0' },
+    { label: common('totalMeals'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalMeals') })} /> : number(summary?.totalMeals), icon: ReceiptText, color: '#0aa0a0' },
     {
-      label: 'Meal Rate',
-      value: summaryLoading ? <LoadingIndicator size="sm" label="Loading meal rate" /> : summary?.currentMealRate != null ? `${String.fromCodePoint(0x09f3)} ${summary.currentMealRate}` : '--',
+      label: common('mealRate'),
+      value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('mealRate') })} /> : money(summary?.currentMealRate),
       icon: Wallet2,
       color: '#008d8c',
     },
-    { label: 'Food Expenses', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading food expenses" /> : formatMoney(summary?.currentMonthTotalBazar), icon: CreditCard, color: '#00777a' },
-    { label: 'Utility Expenses', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading utility expenses" /> : formatMoney(summary?.extraExpenses), icon: Landmark, color: '#0aa0a0' },
-    { label: 'Per Member Utility', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading member utility" /> : formatMoney(summary?.perExtraExpenses), icon: Coins, color: '#0aa0a0' },
-    { label: 'Total Deposit', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading total deposit" /> : formatMoney(summary?.totalDepositAmount), icon: ClipboardList, color: '#4bbfc0' },
-    { label: 'Due Amount', value: summaryLoading ? <LoadingIndicator size="sm" label="Loading due amount" /> : formatMoney(summary?.totalDue), icon: MessageSquareWarning, color: '#00777a' },
+    { label: common('foodExpenses'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('foodExpenses') })} /> : money(summary?.currentMonthTotalBazar), icon: CreditCard, color: '#00777a' },
+    { label: common('utilityExpenses'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('utilityExpenses') })} /> : money(summary?.extraExpenses), icon: Landmark, color: '#0aa0a0' },
+    { label: common('perMemberUtility'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('perMemberUtility') })} /> : money(summary?.perExtraExpenses), icon: Coins, color: '#0aa0a0' },
+    { label: common('totalDeposit'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalDeposit') })} /> : money(summary?.totalDepositAmount), icon: ClipboardList, color: '#4bbfc0' },
+    { label: common('dueAmount'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('dueAmount') })} /> : money(summary?.totalDue), icon: MessageSquareWarning, color: '#00777a' },
     {
-      label: 'Remaining Amount',
-      value: summaryLoading ? <LoadingIndicator size="sm" label="Loading remaining amount" /> : formatMoney(summary?.remainingAmount),
+      label: common('remainingAmount'),
+      value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('remainingAmount') })} /> : money(summary?.remainingAmount),
       icon: Shield,
       color: '#008d8c',
     },
   ]
 
   if (isLoading || !user) {
-    return <LoadingIndicator variant="screen" label="Loading home" />
+    return <LoadingIndicator variant="screen" label={common('loadingApplication')} />
   }
 
   return (
@@ -232,32 +263,32 @@ export default function HomePage() {
     >
       <AppHeader
         title={profileName}
-        subtitle="Here's what's happening today"
+        subtitle={common('homeGreeting')}
         hasUnreadNotifications={unreadNotificationCount > 0}
         variant={showOnboarding ? 'onboarding' : 'default'}
       />
 
       <div className={`screen ${showOnboarding ? 'no-mess-home' : 'home-screen'}`}>
         {activeMessLoading ? (
-          <HomeCard as="div" role="status" className="home-status-card">Checking mess workspace...</HomeCard>
+          <HomeCard as="div" role="status" className="home-status-card">{common('checkingWorkspace')}</HomeCard>
         ) : activeMessStatus === 'error' ? (
           <HomeCard as="div" role="alert" className="home-status-card">
-            <p className="text-label font-bold text-[#65838b]">Unable to check your mess workspace.</p>
+            <p className="text-label font-bold text-[#65838b]">{common('workspaceCheckFailed')}</p>
             <button
               type="button"
               onClick={retryActiveMess}
               className="home-card-action mt-3 bg-[#008d8c] text-white"
             >
-              Try Again
+              {common('retry')}
             </button>
           </HomeCard>
         ) : hasWorkspace ? (
-          <HomeCard ariaLabel="Quick actions" className="home-quick-actions-card">
+          <HomeCard ariaLabel={common('quickActions')} className="home-quick-actions-card">
             <div className="grid grid-cols-3 gap-1.5">
               {quickActions.map(({ label, href, icon: Icon }) => (
                 <HomeQuickAction
                   key={label}
-                  label={label}
+                  label={routeLabel(href, label, navigation)}
                   icon={Icon}
                   onClick={() => router.push(appHref(href))}
                 />
@@ -274,12 +305,12 @@ export default function HomePage() {
               type="button"
               onClick={() => router.push(appHref('/quick-add'))}
               className="home-ai-entry"
-              aria-label="Open Quick Add with AI"
+              aria-label={common('openQuickAddAi')}
             >
               <span className="home-ai-entry__glow" aria-hidden="true" />
               <span className="home-ai-entry__badge">
                 <Sparkles size={12} strokeWidth={2.5} />
-                AI ASSISTED
+                {common('aiAssisted')}
               </span>
 
               <span className="home-ai-entry__main">
@@ -287,8 +318,8 @@ export default function HomePage() {
                   <Sparkles size={22} strokeWidth={2.3} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="home-ai-entry__title">Quick Add with AI</span>
-                  <span className="home-ai-entry__description">Review-ready entries from text or voice</span>
+                  <span className="home-ai-entry__title">{common('quickAddAi')}</span>
+                  <span className="home-ai-entry__description">{common('quickAddDescription')}</span>
                 </span>
                 <span className="home-ai-entry__arrow" aria-hidden="true">
                   <ChevronRight size={17} strokeWidth={2.6} />
@@ -296,26 +327,37 @@ export default function HomePage() {
               </span>
 
               <span className="home-ai-entry__capabilities" aria-hidden="true">
-                <span><Languages size={13} /> বাংলা + English</span>
-                <span><Mic size={13} /> Voice enabled</span>
+                <span><Languages size={13} /> {common('bilingualCapability')}</span>
+                <span><Mic size={13} /> {common('voiceEnabled')}</span>
               </span>
             </button>
 
             <HomeCard
-              title="Overview"
+              title={common('overview')}
               className="mt-3.5"
-              action={<HomeMonthPill month={month} onChange={setMonth} />}
+              action={<HomeMonthPill month={month} onChange={setMonth} label={common('selectOverviewMonth')} monthLabel={monthLabel} />}
             >
-              <div className="grid grid-cols-2 gap-2">
-                {cards.map((card) => (
-                  <HomeMetricCard key={card.label} label={card.label} value={card.value} icon={card.icon} accent={card.color} />
-                ))}
-              </div>
+              {summaryError ? (
+                <HomeEmptyState>
+                  <span>{common('loadHomeOverviewFailed')}</span>
+                  <button type="button" className="home-card-action mt-2" onClick={() => setSummaryRetryToken((current) => current + 1)}>
+                    {common('retry')}
+                  </button>
+                </HomeEmptyState>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {cards.map((card) => (
+                    <HomeMetricCard key={card.label} label={card.label} value={card.value} icon={card.icon} accent={card.color} />
+                  ))}
+                </div>
+              )}
             </HomeCard>
 
+            {!summaryLoading && !summaryError ? <BillingCalculationNotice status={summary?.billingStatus} /> : null}
+
             <HomeCard
-              title="Recent Expenses"
-              caption={`Latest 3 entries in ${formatMonthLabel(month)}`}
+              title={common('recentExpenses')}
+              caption={common('latestEntries', { month: monthLabel })}
               className="mt-3.5"
               action={
                 <button
@@ -323,7 +365,7 @@ export default function HomePage() {
                   onClick={() => router.push(appHref('/expenses'))}
                   className="home-card-action"
                 >
-                  View All
+                  {common('viewAll')}
                   <ChevronRight size={14} strokeWidth={2.7} />
                 </button>
               }
@@ -331,9 +373,17 @@ export default function HomePage() {
 
               <div className="flush-list flush-list--home-card">
                 {expensesLoading ? (
-                  <LoadingIndicator variant="card" label="Loading expenses" className="mx-3 !w-auto" />
+                  <LoadingIndicator variant="card" label={common('loadingExpenses')} className="mx-3 !w-auto" />
                 ) : null}
-                {!expensesLoading &&
+                {!expensesLoading && expensesError ? (
+                  <HomeEmptyState>
+                    <span>{common('loadRecentExpensesFailed')}</span>
+                    <button type="button" className="home-card-action mt-2" onClick={() => setExpensesRetryToken((current) => current + 1)}>
+                      {common('retry')}
+                    </button>
+                  </HomeEmptyState>
+                ) : null}
+                {!expensesLoading && !expensesError &&
                   recentExpenses.map((item) => (
                     <ExpenseListItem
                       key={item.id}
@@ -342,8 +392,49 @@ export default function HomePage() {
                       variant="horizontal"
                     />
                   ))}
-                {!expensesLoading && !recentExpenses.length ? (
-                  <HomeEmptyState>No recent expenses found.</HomeEmptyState>
+                {!expensesLoading && !expensesError && !recentExpenses.length ? (
+                  <HomeEmptyState>{common('noRecentExpenses')}</HomeEmptyState>
+                ) : null}
+              </div>
+            </HomeCard>
+
+            <HomeCard
+              title={common('recentNotices')}
+              caption={common('communityUpdates')}
+              className="mt-3.5"
+              action={
+                <button type="button" onClick={() => router.push(appHref('/notices'))} className="home-card-action">
+                  {common('viewAll')}
+                  <ChevronRight size={14} strokeWidth={2.7} />
+                </button>
+              }
+            >
+              <div className="flush-list flush-list--home-card">
+                {summaryLoading ? <LoadingIndicator variant="card" label={communication('loadingNotices')} className="mx-3 !w-auto" /> : null}
+                {!summaryLoading && summaryError ? <HomeEmptyState>{common('loadRecentNoticesFailed')}</HomeEmptyState> : null}
+                {(summary?.notices ?? []).slice(0, 3).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => router.push(appHref('/notices'))}
+                    className="app-list-row flex w-full items-center gap-3 text-left"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#edfafa] text-[#008d8c]">
+                      <Bell size={17} aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-label font-bold text-[#123748]">{item.title}</span>
+                      <span className="mt-1 block text-caption text-[#65838b]">
+                        {item.type ? noticeTypeLabel(item.type, locale) : common('notice')}
+                        {' · '}
+                        {format.date(item.created_at, { day: '2-digit', month: 'short' })}
+                      </span>
+                    </span>
+                    <ChevronRight size={16} className="shrink-0 text-[#65838b]" aria-hidden="true" />
+                  </button>
+                ))}
+                {!summaryLoading && !summaryError && !summary?.notices?.length ? (
+                  <HomeEmptyState>{common('noRecentNotices')}</HomeEmptyState>
                 ) : null}
               </div>
             </HomeCard>

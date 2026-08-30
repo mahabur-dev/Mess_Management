@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -66,6 +67,11 @@ export class UpdateUserDto {
   @IsString()
   @MaxLength(20)
   zipcode?: string;
+
+  @ApiPropertyOptional({ enum: ['en', 'bn'], example: 'bn' })
+  @IsOptional()
+  @IsIn(['en', 'bn'])
+  preferredLocale?: 'en' | 'bn';
 
   @ApiPropertyOptional({ type: 'string', format: 'binary' })
   @IsOptional()

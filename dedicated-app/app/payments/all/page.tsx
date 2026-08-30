@@ -10,6 +10,7 @@ import {
   DepositListItem,
   DepositSearchBar,
   DepositSectionTitle,
+  depositCategory,
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
 import { currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
@@ -17,16 +18,17 @@ import { api } from '@/lib/api'
 import { type PaymentStatus } from '@/lib/form-options'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '@/app/providers'
+import { useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type PaymentItem = DepositListRecord & {
   status: PaymentStatus
 }
 
-function categoryLabel(item: PaymentItem) {
-  return item.categories?.[0]?.replaceAll('_', ' ') || item.note || 'Meal Advance'
-}
-
 export default function AllDepositsPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('payments')
+  const { notice, clearNotice, showError } = useLocalizedNotice('payments')
   const { user } = useAuth()
   const searchParams = useQueryParams()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
@@ -49,6 +51,7 @@ export default function AllDepositsPage() {
     let alive = true
 
     setLoading(true)
+    clearNotice()
     api
       .getPaymentsByMess(messId, {
         billMonth: `${month}-01`,
@@ -60,9 +63,10 @@ export default function AllDepositsPage() {
         if (!alive) return
         setItems(Array.isArray(res.data) ? (res.data as PaymentItem[]) : [])
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
         setItems([])
+        showError(error, 'loadDepositsFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -77,18 +81,18 @@ export default function AllDepositsPage() {
     const query = search.trim().toLowerCase()
     return items.filter((item) => {
       if (statusFilter !== 'ALL' && item.status !== statusFilter) return false
-      const category = categoryLabel(item)
+      const category = depositCategory(item, locale)
       if (!query) return true
       const text = `${item.member?.name ?? ''} ${item.method ?? ''} ${item.note ?? ''} ${category}`.toLowerCase()
       return text.includes(query)
     })
-  }, [items, search, statusFilter])
+  }, [items, locale, search, statusFilter])
 
   const totalAmount = visibleItems.reduce((total, item) => total + Number(item.amount ?? 0), 0)
 
   return (
     <MobileShell>
-      <TopScreen title="All Deposits" subtitle={formatMonthLabel(month)} backHref="/payments" />
+      <TopScreen title={t('allDeposits')} subtitle={formatMonthLabel(month, locale)} backHref="/payments" />
       <div className="screen space-y-4">
         <DepositAggregateSummary entries={visibleItems.length} amount={totalAmount} />
 
@@ -103,8 +107,9 @@ export default function AllDepositsPage() {
         />
 
         <section className="app-section space-y-3">
-          <DepositSectionTitle title={`Deposits (${visibleItems.length})`} />
-          {loading ? <LoadingIndicator variant="card" label="Loading deposits" /> : null}
+          <DepositSectionTitle title={t('depositCount', { count: format.number(visibleItems.length) })} />
+          {notice ? <div className="ui-notice ui-notice--danger">{notice.message}</div> : null}
+          {loading ? <LoadingIndicator variant="card" label={t('loadingDeposits')} /> : null}
           {!loading && visibleItems.length ? (
             <div className="flush-list">
               {visibleItems.map((item, index) => (
@@ -118,7 +123,7 @@ export default function AllDepositsPage() {
               ))}
             </div>
           ) : null}
-          {!loading && !visibleItems.length ? <div className="app-empty-state">No deposits found.</div> : null}
+          {!loading && !visibleItems.length ? <div className="app-empty-state">{t('noDeposits')}</div> : null}
         </section>
       </div>
     </MobileShell>

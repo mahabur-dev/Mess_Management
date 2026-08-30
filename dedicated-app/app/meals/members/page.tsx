@@ -10,7 +10,6 @@ import {
   InlineNotice,
   MealCard,
   MealDateCard,
-  MEAL_LABELS,
   MemberMealRow,
   MealTabs,
   MealTotalsGrid,
@@ -18,6 +17,7 @@ import {
   findAttendanceForMember,
   findMeal,
   memberName,
+  mealLabel,
   normalizeMeals,
   todayIsoDate,
   type MealMember,
@@ -26,9 +26,13 @@ import {
 } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
 import { useAuth } from '@/app/providers'
+import { useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 export default function MemberMealsPage() {
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const mealCopy = useTranslations('meals')
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const [date, setDate] = useState(todayIsoDate())
   const [mealName, setMealName] = useState<MealName>('LUNCH')
@@ -36,13 +40,19 @@ export default function MemberMealsPage() {
   const [meals, setMeals] = useState<MealRecord[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
 
   useEffect(() => {
-    if (!messId) return
+    if (!messId) {
+      setMembers([])
+      setMeals([])
+      setLoading(false)
+      showMessage('noMessSelected', 'warning')
+      return
+    }
     let alive = true
     setLoading(true)
-    setMessage('')
+    clearNotice()
 
     Promise.all([
       api.getAllMembers({ limit: 500 }),
@@ -58,7 +68,7 @@ export default function MemberMealsPage() {
         if (!alive) return
         setMembers([])
         setMeals([])
-        setMessage(error instanceof Error ? error.message : 'Failed to load member meals.')
+        showError(error, 'loadMemberMealsFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -67,20 +77,20 @@ export default function MemberMealsPage() {
     return () => {
       alive = false
     }
-  }, [date, messId, user?.id])
+  }, [clearNotice, date, messId, showError, showMessage, user?.id])
 
   const currentMeal = findMeal(meals, mealName)
   const filteredMembers = useMemo(() => {
     const term = search.trim().toLowerCase()
     return members.filter((member) => {
-      const text = `${memberName(member)} ${member.user?.email ?? ''} ${member.room_no ?? ''}`.toLowerCase()
+      const text = `${memberName(member, locale)} ${member.user?.email ?? ''} ${member.room_no ?? ''}`.toLowerCase()
       return !term || text.includes(term)
     })
-  }, [members, search])
+  }, [locale, members, search])
 
   return (
     <MobileShell>
-      <TopScreen title="All Member Meals" subtitle={MEAL_LABELS[mealName]} backHref="/meals/manager" />
+      <TopScreen title={mealCopy('allMemberMeals')} subtitle={mealLabel(mealName, locale)} backHref="/meals/manager" />
       <div className="screen space-y-4">
         <MealDateCard date={date} onChange={setDate} />
         <MealTabs value={mealName} onChange={setMealName} meals={meals} />
@@ -91,19 +101,19 @@ export default function MemberMealsPage() {
 
         <MealCard className="space-y-3">
           <SearchBox value={search} onChange={setSearch} />
-          {message ? <InlineNotice tone="danger">{message}</InlineNotice> : null}
-          {loading ? <LoadingIndicator variant="card" label="Loading member meals" /> : null}
+          {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
+          {loading ? <LoadingIndicator variant="card" label={mealCopy('loadingMemberMeals')} /> : null}
         </MealCard>
 
         <section className="space-y-2.5">
           {filteredMembers.map((member) => {
             const attendance = findAttendanceForMember(currentMeal, member.user?.id ?? member.user_id)
-            const href = `/meals/member-meal?memberId=${encodeURIComponent(member.user?.id ?? member.user_id ?? '')}&meal=${mealName}&date=${date}&name=${encodeURIComponent(memberName(member))}`
+            const href = `/meals/member-meal?memberId=${encodeURIComponent(member.user?.id ?? member.user_id ?? '')}&meal=${mealName}&date=${date}&name=${encodeURIComponent(memberName(member, locale))}`
             return <MemberMealRow key={member.id || member.user?.id} member={member} mealName={mealName} attendance={attendance} href={href} />
           })}
 
           {!loading && !filteredMembers.length ? (
-            <EmptyMealsState title="No members found for this meal." />
+            <EmptyMealsState title={mealCopy('noMembersForMeal')} />
           ) : null}
         </section>
 
@@ -112,8 +122,8 @@ export default function MemberMealsPage() {
             <Users size={19} />
           </div>
           <div>
-            <div className="text-label font-bold text-[#123748]">{filteredMembers.length} members shown</div>
-            <div className="mt-1 text-label text-[#65838b]">Tap a member to update instantly.</div>
+            <div className="text-label font-bold text-[#123748]">{mealCopy('membersShown', { count: format.number(filteredMembers.length) })}</div>
+            <div className="mt-1 text-label text-[#65838b]">{mealCopy('tapMemberToUpdate')}</div>
           </div>
         </MealCard>
       </div>

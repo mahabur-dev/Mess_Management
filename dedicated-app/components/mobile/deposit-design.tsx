@@ -30,9 +30,22 @@ import {
   WalletCards,
   type LucideProps,
 } from 'lucide-react'
-import { LABELS, PAYMENT_METHODS, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
+import { PAYMENT_METHODS, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
+import {
+  formatDate,
+  getDictionary,
+  formatMoney,
+  formatTime,
+  paymentMethodLabel,
+  paymentStatusLabel,
+  depositCategoryLabel,
+  useLocale,
+  useLocaleFormatters,
+  useTranslations,
+  type Locale,
+} from '@/lib/i18n'
 
 type IconType = ComponentType<LucideProps>
 
@@ -61,33 +74,33 @@ const avatarTones = [
   'bg-[#fce7ef] text-[#df4d78]',
 ]
 
-export function formatDepositMoney(value?: string | number | null) {
-  const amount = Number(value ?? 0)
-  const symbol = String.fromCodePoint(0x09f3)
-  if (!Number.isFinite(amount)) return `${symbol} 0`
-  return `${symbol} ${amount.toLocaleString('en-US')}`
+export function formatDepositMoney(value?: string | number | null, locale: Locale = 'en') {
+  return formatMoney(value ?? 0, locale)
 }
 
-export function formatDepositDate(value?: string | null) {
-  if (!value) return 'No date'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
+export function formatDepositDate(value?: string | null, locale: Locale = 'en') {
+  if (!value) return ''
+  return formatDate(value, locale, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export function formatDepositTime(value?: string | null) {
+export function formatDepositTime(value?: string | null, locale: Locale = 'en') {
   if (!value) return '--'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '--'
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return formatTime(date, locale, { hour: 'numeric', minute: '2-digit' })
 }
 
-export function depositMemberName(item?: DepositListRecord | null) {
-  return item?.member?.name || item?.creator?.name || 'Deposit'
+export function depositMemberName(item?: DepositListRecord | null, locale: Locale = 'en') {
+  return item?.member?.name || item?.creator?.name || paymentFallback(locale, 'depositFallback')
 }
 
-export function depositCategory(item?: DepositListRecord | null) {
-  return item?.categories?.[0]?.replaceAll('_', ' ') || item?.note || 'Meal Advance'
+export function depositCategory(item?: DepositListRecord | null, locale: Locale = 'en') {
+  const category = item?.categories?.[0]
+  return category ? depositCategoryLabel(category.replaceAll(' ', '_'), locale) : item?.note || depositCategoryLabel('MEAL_ADVANCE', locale)
+}
+
+function paymentFallback(locale: Locale, key: 'depositFallback' | 'memberFallback') {
+  return getDictionary(locale).payments[key]
 }
 
 export function initials(name?: string | null) {
@@ -95,11 +108,11 @@ export function initials(name?: string | null) {
   return parts.map((part) => part[0]?.toUpperCase()).join('') || 'D'
 }
 
-export function statusTone(status?: string | null) {
+export function statusTone(status?: string | null, locale: Locale = 'en') {
   const normalized = String(status ?? 'PENDING').toUpperCase()
-  if (normalized === 'APPROVED') return { label: 'Approved', bg: '#e8f6ed', fg: '#0f8f42', icon: CheckCircle2 }
-  if (normalized === 'REJECTED') return { label: 'Rejected', bg: '#fff0f0', fg: '#d92d20', icon: ShieldCheck }
-  return { label: 'Pending', bg: '#fff1e7', fg: '#ff6b00', icon: Hourglass }
+  if (normalized === 'APPROVED') return { label: paymentStatusLabel('APPROVED', locale), bg: '#e8f6ed', fg: '#0f8f42', icon: CheckCircle2 }
+  if (normalized === 'REJECTED') return { label: paymentStatusLabel('REJECTED', locale), bg: '#fff0f0', fg: '#d92d20', icon: ShieldCheck }
+  return { label: paymentStatusLabel('PENDING', locale), bg: '#fff1e7', fg: '#ff6b00', icon: Hourglass }
 }
 
 export function methodIcon(method?: string | null): IconType {
@@ -113,7 +126,8 @@ export function methodIcon(method?: string | null): IconType {
 }
 
 export function DepositStatusBadge({ status }: { status?: string | null }) {
-  const tone = statusTone(status)
+  const { locale } = useLocale()
+  const tone = statusTone(status, locale)
   return (
     <span
       className="inline-flex h-8 items-center rounded-[11px] px-3 text-caption font-bold"
@@ -202,8 +216,9 @@ export function DepositStatCard({
 }
 
 export function DepositStatPanel({ children }: { children: ReactNode }) {
+  const t = useTranslations('payments')
   return (
-    <section aria-label="Deposit summary">
+    <section aria-label={t('depositSummary')}>
       <div className="grid grid-cols-2 gap-2.5">{children}</div>
     </section>
   )
@@ -214,6 +229,7 @@ export function DepositManualNotice({
 }: {
   compact?: boolean
 }) {
+  const t = useTranslations('payments')
   return (
     <section className={`relative overflow-hidden rounded-[18px] border ${compact ? 'border-[#b8d7ff] bg-[#f2f8ff]' : 'border-[#f5d7b8] bg-[#fffaf4]'} px-4 ${compact ? 'py-3' : 'py-4'}`}>
       {!compact ? <MoneyNoteArt /> : null}
@@ -222,8 +238,8 @@ export function DepositManualNotice({
         <Info size={22} strokeWidth={2.4} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-body font-semibold text-[#123748]">Deposits are paid manually first, then entered here for tracking.</div>
-        {!compact ? <div className="mt-1 text-label text-[#55727b]">No online payment is connected yet.</div> : null}
+        <div className="text-body font-semibold text-[#123748]">{t('manualNotice')}</div>
+        {!compact ? <div className="mt-1 text-label text-[#55727b]">{t('manualNoticeShort')}</div> : null}
       </div>
       </div>
     </section>
@@ -231,21 +247,23 @@ export function DepositManualNotice({
 }
 
 export function DepositWorkCard() {
+  const t = useTranslations('payments')
+  const common = useTranslations('common')
   const flows = [
     {
       tone: 'teal' as const,
       steps: [
-        { title: 'Member submits', text: 'deposit entry', icon: FileText },
-        { title: 'Manager', text: 'approves', icon: ShieldCheck },
-        { title: 'Deposit', text: 'added', icon: WalletCards },
+        { title: t('memberSubmits'), text: t('depositEntry'), icon: FileText },
+        { title: common('managerFallback'), text: t('approves'), icon: ShieldCheck },
+        { title: t('deposit'), text: t('added'), icon: WalletCards },
       ],
     },
     {
       tone: 'blue' as const,
       steps: [
-        { title: 'Manager adds', text: 'for a member', icon: UserRound },
-        { title: 'Auto', text: 'approved', icon: CheckCircle2 },
-        { title: 'Deposit', text: 'added', icon: WalletCards },
+        { title: t('managerAdds'), text: t('forMember'), icon: UserRound },
+        { title: t('auto'), text: t('approved'), icon: CheckCircle2 },
+        { title: t('deposit'), text: t('added'), icon: WalletCards },
       ],
     },
   ]
@@ -254,11 +272,11 @@ export function DepositWorkCard() {
     <section className="relative overflow-hidden rounded-[20px] border border-[#cfeeed] bg-white px-3.5 py-3.5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-title-sm font-bold text-[#00777a]">How Deposits Work</h2>
-          <p className="mt-0.5 text-caption font-semibold text-[#65838b]">A simple workflow for everyone</p>
+          <h2 className="text-title-sm font-bold text-[#00777a]">{t('howDepositsWork')}</h2>
+          <p className="mt-0.5 text-caption font-semibold text-[#65838b]">{t('simpleWorkflow')}</p>
         </div>
         <div className="rounded-full border border-[#cfeeed] bg-[#f6ffff] px-2.5 py-1 text-caption font-bold text-[#008d8c]">
-          2 ways
+          {t('twoWays')}
         </div>
       </div>
       <div className="relative z-10 mt-3 space-y-2.5">
@@ -290,6 +308,7 @@ export function DepositWorkCard() {
 }
 
 export function DepositSubmitIntro() {
+  const t = useTranslations('payments')
   return (
     <>
       <section className="rounded-[22px] border border-[#cfeeed] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
@@ -301,9 +320,9 @@ export function DepositSubmitIntro() {
             <Info size={22} />
           </div>
           <div className="space-y-2 text-label font-semibold leading-6 text-[#123748]">
-            <p>Deposits are paid manually first, then entered here.</p>
-            <p><span className="mr-2 text-[#008d8c]">•</span>If a member submits a deposit entry, it needs manager approval.</p>
-            <p><span className="mr-2 text-[#008d8c]">•</span>If a manager adds a deposit for a member, it is auto approved.</p>
+            <p>{t('manualNotice')}</p>
+            <p><span className="mr-2 text-[#008d8c]">•</span>{t('approvalRuleMember')}</p>
+            <p><span className="mr-2 text-[#008d8c]">•</span>{t('approvalRuleManager')}</p>
           </div>
         </div>
       </section>
@@ -318,6 +337,9 @@ export function DepositAggregateSummary({
   entries: number
   amount: number
 }) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('payments')
   return (
     <section className="deposit-aggregate-summary grid grid-cols-[1fr_1px_1fr] items-center rounded-[20px] border border-[#dce9ec] bg-white px-4 py-5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
       <div className="flex items-center gap-4">
@@ -325,9 +347,9 @@ export function DepositAggregateSummary({
           <ListChecks size={24} />
         </div>
         <div>
-          <div className="text-caption font-semibold text-[#65838b]">Total Entries</div>
-          <div className="mt-2 text-title font-semibold leading-none text-[#1d3a42]">{entries}</div>
-          <div className="mt-2 text-caption font-semibold text-[#65838b]">This month</div>
+          <div className="text-caption font-semibold text-[#65838b]">{t('totalEntries')}</div>
+          <div className="mt-2 text-title font-semibold leading-none text-[#1d3a42]">{format.number(entries)}</div>
+          <div className="mt-2 text-caption font-semibold text-[#65838b]">{t('thisMonth')}</div>
         </div>
       </div>
       <div className="h-16 bg-[#e0ecef]" />
@@ -336,9 +358,9 @@ export function DepositAggregateSummary({
           <WalletCards size={24} />
         </div>
         <div>
-          <div className="text-caption font-semibold text-[#65838b]">Total Amount</div>
-          <div className="mt-2 text-title font-semibold leading-none text-[#1d3a42]">{formatDepositMoney(amount)}</div>
-          <div className="mt-2 text-caption font-semibold text-[#65838b]">This month</div>
+          <div className="text-caption font-semibold text-[#65838b]">{t('totalAmount')}</div>
+          <div className="mt-2 text-title font-semibold leading-none text-[#1d3a42]">{formatDepositMoney(amount, locale)}</div>
+          <div className="mt-2 text-caption font-semibold text-[#65838b]">{t('thisMonth')}</div>
         </div>
       </div>
     </section>
@@ -410,10 +432,11 @@ export function DepositListItem({
   index?: number
   variant?: 'card' | 'horizontal'
 }) {
-  const name = depositMemberName(item)
-  const category = depositCategory(item)
-  const status = statusTone(item.status)
-  const amountTone = status.label === 'Pending' ? '#ff6b00' : '#00777a'
+  const { locale } = useLocale()
+  const name = depositMemberName(item, locale)
+  const category = depositCategory(item, locale)
+  const status = statusTone(item.status, locale)
+  const amountTone = String(item.status ?? 'PENDING').toUpperCase() === 'PENDING' ? '#ff6b00' : '#00777a'
   const date = item.payment_date ?? item.date ?? item.created_at ?? null
   const isHorizontal = variant === 'horizontal'
   const avatarUrl = item.member?.avatar_url || item.creator?.avatar_url || null
@@ -434,7 +457,7 @@ export function DepositListItem({
         </span>
       </span>
       <strong className="shrink-0 text-label font-extrabold tabular-nums" style={{ color: amountTone }}>
-        {formatDepositMoney(item.amount)}
+        {formatDepositMoney(item.amount, locale)}
       </strong>
     </>
   ) : (
@@ -443,11 +466,11 @@ export function DepositListItem({
       <div className="min-w-0 flex-1">
         <div className="truncate text-label font-semibold text-[#1d3a42]">{name}</div>
         <div className="mt-1 flex min-w-0 items-center gap-1.5 text-caption font-bold">
-          <span style={{ color: amountTone }}>{formatDepositMoney(item.amount)}</span>
+          <span style={{ color: amountTone }}>{formatDepositMoney(item.amount, locale)}</span>
           <span className="text-[#789096]">.</span>
           <span className="truncate text-[#65838b]">{category}</span>
         </div>
-        <div className="mt-1 text-caption font-semibold text-[#65838b]">{formatDepositDate(date)} . {formatDepositTime(date)}</div>
+        <div className="mt-1 text-caption font-semibold text-[#65838b]">{formatDepositDate(date, locale)} · {formatDepositTime(date, locale)}</div>
       </div>
       <DepositStatusBadge status={item.status} />
       <ChevronRight size={18} className="shrink-0 text-[#789096]" />
@@ -514,9 +537,10 @@ export function DepositMonthNavigator({
   onNext: () => void
   onChange: (month: string) => void
 }) {
+  const t = useTranslations('payments')
   return (
-    <div className="deposit-month-navigator" aria-label="Deposit month">
-      <button type="button" onClick={onPrevious} aria-label="Previous month">
+    <div className="deposit-month-navigator" aria-label={t('depositMonth')}>
+      <button type="button" onClick={onPrevious} aria-label={t('previousMonth')}>
         <ChevronLeft size={18} strokeWidth={2.4} />
       </button>
       <label>
@@ -529,10 +553,10 @@ export function DepositMonthNavigator({
           onChange={(event) => {
             if (/^\d{4}-\d{2}$/.test(event.target.value)) onChange(event.target.value)
           }}
-          aria-label="Choose deposit month"
+          aria-label={t('chooseDepositMonth')}
         />
       </label>
-      <button type="button" onClick={onNext} aria-label="Next month">
+      <button type="button" onClick={onNext} aria-label={t('nextMonth')}>
         <ChevronRight size={18} strokeWidth={2.4} />
       </button>
     </div>
@@ -550,12 +574,15 @@ export function DepositOverviewCard({
   average: number
   monthLabel: string
 }) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('payments')
   return (
     <section className="deposit-overview" aria-labelledby="deposit-overview-title">
       <div className="deposit-overview__glow" aria-hidden="true" />
       <div className="deposit-overview__heading">
         <div>
-          <p>COLLECTION OVERVIEW</p>
+          <p>{t('collectionOverview')}</p>
           <h2 id="deposit-overview-title">{monthLabel}</h2>
         </div>
         <span className="deposit-overview__icon" aria-hidden="true">
@@ -563,18 +590,18 @@ export function DepositOverviewCard({
         </span>
       </div>
       <div className="deposit-overview__total">
-        <span>Total collected</span>
-        <strong>{formatDepositMoney(total)}</strong>
+        <span>{t('totalCollected')}</span>
+        <strong>{formatDepositMoney(total, locale)}</strong>
       </div>
       <div className="deposit-overview__metrics">
         <div>
-          <span>Transactions</span>
-          <strong>{entries}</strong>
+          <span>{t('transactions')}</span>
+          <strong>{format.number(entries)}</strong>
         </div>
         <i aria-hidden="true" />
         <div>
-          <span>Average deposit</span>
-          <strong>{formatDepositMoney(average)}</strong>
+          <span>{t('averageDeposit')}</span>
+          <strong>{formatDepositMoney(average, locale)}</strong>
         </div>
       </div>
     </section>
@@ -590,8 +617,10 @@ export function DepositLedgerItem({
   href: string
   index?: number
 }) {
-  const name = depositMemberName(item)
-  const detail = depositCategory(item)
+  const { locale } = useLocale()
+  const t = useTranslations('payments')
+  const name = depositMemberName(item, locale)
+  const detail = depositCategory(item, locale)
   const date = item.payment_date ?? item.date ?? item.created_at ?? null
 
   return (
@@ -602,11 +631,11 @@ export function DepositLedgerItem({
       <span className="deposit-ledger-row__body">
         <strong>{name}</strong>
         <small>{detail}</small>
-        <time>{formatDepositDate(date)}</time>
+        <time>{formatDepositDate(date, locale)}</time>
       </span>
       <span className="deposit-ledger-row__amount">
-        <strong>{formatDepositMoney(item.amount)}</strong>
-        <small><CheckCircle2 size={12} strokeWidth={2.5} /> Recorded</small>
+        <strong>{formatDepositMoney(item.amount, locale)}</strong>
+        <small><CheckCircle2 size={12} strokeWidth={2.5} /> {t('recorded')}</small>
       </span>
       <ChevronRight className="deposit-ledger-row__chevron" size={17} strokeWidth={2.2} aria-hidden="true" />
     </Link>
@@ -614,8 +643,9 @@ export function DepositLedgerItem({
 }
 
 export function DepositLedgerSkeleton() {
+  const t = useTranslations('payments')
   return (
-    <div className="deposit-ledger-skeleton" aria-label="Loading deposits" role="status">
+    <div className="deposit-ledger-skeleton" aria-label={t('loadingDeposits')} role="status">
       {[0, 1, 2].map((item) => (
         <div key={item}>
           <span />
@@ -634,6 +664,7 @@ export function DepositSearchBar({
   value: string
   onChange: (value: string) => void
 }) {
+  const t = useTranslations('payments')
   return (
     <div className="deposit-search-bar grid grid-cols-[minmax(0,1fr)_52px] gap-3">
       <label className="relative">
@@ -642,10 +673,10 @@ export function DepositSearchBar({
           className="h-14 w-full rounded-[16px] border border-[#dce9ec] bg-white pl-12 pr-4 text-body font-medium text-[#123748] outline-none shadow-[0_8px_18px_rgba(18,55,72,0.04)] placeholder:text-[#7c8b98] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Search by member or category..."
+          placeholder={t('searchMemberOrNote')}
         />
       </label>
-      <button type="button" className="grid h-14 place-items-center rounded-[16px] border border-[#dce9ec] bg-white text-[#00777a] shadow-[0_8px_18px_rgba(18,55,72,0.04)]" aria-label="Filter deposits">
+      <button type="button" className="grid h-14 place-items-center rounded-[16px] border border-[#dce9ec] bg-white text-[#00777a] shadow-[0_8px_18px_rgba(18,55,72,0.04)]" aria-label={t('filterDeposits')}>
         <SlidersHorizontal size={22} />
       </button>
     </div>
@@ -659,17 +690,19 @@ export function DepositFilterTabs({
   value: PaymentStatus | 'ALL'
   onChange: (value: PaymentStatus | 'ALL') => void
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('payments')
   const filters: Array<{ value: PaymentStatus | 'ALL'; label: string }> = [
-    { value: 'ALL', label: 'All' },
-    { value: 'APPROVED', label: 'Approved' },
-    { value: 'PENDING', label: 'Pending' },
+    { value: 'ALL', label: t('allStatuses') },
+    { value: 'APPROVED', label: paymentStatusLabel('APPROVED', locale) },
+    { value: 'PENDING', label: paymentStatusLabel('PENDING', locale) },
   ]
 
   return (
     <div className="deposit-filter-tabs grid grid-cols-3 gap-2 rounded-[18px] bg-white/70 p-1.5 shadow-[0_10px_24px_rgba(18,55,72,0.05)]">
       {filters.map((filter) => {
         const active = value === filter.value
-        const tone = statusTone(filter.value)
+        const tone = statusTone(filter.value, locale)
         return (
           <button
             key={filter.value}
@@ -699,19 +732,21 @@ export function DepositCompactFilters({
   onMonthChange: (value: string) => void
   showLabels?: boolean
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('payments')
   const statusOptions: Array<MobileSelectOption<PaymentStatus | 'ALL'>> = [
-    { value: 'ALL', label: 'All Status' },
-    { value: 'APPROVED', label: 'Approved' },
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'REJECTED', label: 'Rejected' },
+    { value: 'ALL', label: t('allStatus') },
+    { value: 'APPROVED', label: paymentStatusLabel('APPROVED', locale) },
+    { value: 'PENDING', label: paymentStatusLabel('PENDING', locale) },
+    { value: 'REJECTED', label: paymentStatusLabel('REJECTED', locale) },
   ]
 
   return (
     <div className="deposit-compact-filters grid grid-cols-2 gap-3">
       <div className="relative block">
-        {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Status</span> : null}
+        {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('status')}</span> : null}
         <MobileSelectSheet
-          label="Status"
+          label={t('status')}
           value={status}
           options={statusOptions}
           onChange={onStatusChange}
@@ -728,12 +763,12 @@ export function DepositCompactFilters({
       </div>
 
       <label className="relative block">
-        {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Month</span> : null}
+        {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('month')}</span> : null}
         <div className="flex h-12 items-center rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)]">
           {month}
         </div>
         <input
-          aria-label="Select month"
+          aria-label={t('selectMonth')}
           type="month"
           value={month}
           onChange={(event) => onMonthChange(event.target.value)}
@@ -752,9 +787,11 @@ export function PaymentMethodGrid({
   value: PaymentMethod
   onChange: (value: PaymentMethod) => void
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('payments')
   return (
     <section>
-      <h2 className="mb-3 text-title-sm font-semibold text-[#1d3a42]">Deposit Method</h2>
+      <h2 className="mb-3 text-title-sm font-semibold text-[#1d3a42]">{t('depositMethod')}</h2>
       <div className="grid grid-cols-2 gap-3">
         {PAYMENT_METHODS.map((method) => {
           const active = value === method
@@ -771,7 +808,7 @@ export function PaymentMethodGrid({
               }`}
             >
               <Icon size={24} strokeWidth={2.25} />
-              <span className="mt-2 text-label font-bold">{LABELS.PAYMENT_METHODS[method]}</span>
+              <span className="mt-2 text-label font-bold">{paymentMethodLabel(method, locale)}</span>
             </button>
           )
         })}
@@ -805,7 +842,9 @@ export function DepositDetailsSummary({
 }: {
   item: DepositListRecord | null
 }) {
-  const status = statusTone(item?.status)
+  const { locale } = useLocale()
+  const t = useTranslations('payments')
+  const status = statusTone(item?.status, locale)
   const StatusIcon = status.icon
   const MethodIcon = methodIcon(item?.method)
   const date = item?.payment_date ?? item?.date ?? item?.created_at ?? null
@@ -817,15 +856,15 @@ export function DepositDetailsSummary({
           <div className="grid h-16 w-16 place-items-center rounded-full" style={{ backgroundColor: status.bg, color: status.fg }}>
             <StatusIcon size={30} strokeWidth={2.25} />
           </div>
-          <div className="mt-3 text-display font-semibold leading-none text-[#1d3a42]">{formatDepositMoney(item?.amount)}</div>
+          <div className="mt-3 text-display font-semibold leading-none text-[#1d3a42]">{formatDepositMoney(item?.amount, locale)}</div>
           <div className="mt-3"><DepositStatusBadge status={item?.status} /></div>
         </div>
         <div className="bg-[#e0ecef]" />
         <div className="space-y-2.5 py-1">
-          <MiniFact icon={Tag} label="Category" value={depositCategory(item)} />
-          <MiniFact icon={MethodIcon} label="Method" value={item?.method ? LABELS.PAYMENT_METHODS[item.method as PaymentMethod] ?? item.method : '--'} />
-          <MiniFact icon={CalendarDays} label="Deposit Date" value={formatDepositDate(date)} />
-          <MiniFact icon={Clock3} label="Time" value={formatDepositTime(date)} />
+          <MiniFact icon={Tag} label={t('category')} value={depositCategory(item, locale)} />
+          <MiniFact icon={MethodIcon} label={t('method')} value={item?.method ? paymentMethodLabel(item.method, locale) : '--'} />
+          <MiniFact icon={CalendarDays} label={t('depositDate')} value={formatDepositDate(date, locale)} />
+          <MiniFact icon={Clock3} label={t('time')} value={formatDepositTime(date, locale)} />
         </div>
       </div>
     </section>

@@ -73,6 +73,7 @@ export function relationLabel(relation: string, locale: PersonalLocale) {
 export const PERSONAL_COPY = {
   en: {
     personal: "Personal",
+    navigationLabel: "Personal finance",
     dashboard: "Dashboard",
     transactions: "Transactions",
     family: "Family",
@@ -112,6 +113,7 @@ export const PERSONAL_COPY = {
     edit: "Edit",
     delete: "Delete",
     search: "Search transactions",
+    clearSearch: "Clear transaction search",
     filterType: "Filter by type",
     transactionType: "Transaction Type",
     familyMembers: "Family Members",
@@ -157,6 +159,7 @@ export const PERSONAL_COPY = {
   },
   bn: {
     personal: "পার্সোনাল",
+    navigationLabel: "ব্যক্তিগত অর্থ ব্যবস্থাপনা",
     dashboard: "ড্যাশবোর্ড",
     transactions: "লেনদেন",
     family: "পরিবার",
@@ -196,6 +199,7 @@ export const PERSONAL_COPY = {
     edit: "সম্পাদনা",
     delete: "মুছুন",
     search: "লেনদেন খুঁজুন",
+    clearSearch: "লেনদেন খোঁজা মুছুন",
     filterType: "ধরন অনুযায়ী ফিল্টার",
     transactionType: "লেনদেনের ধরন",
     familyMembers: "পরিবারের সদস্য",
@@ -247,11 +251,12 @@ export function formatPersonalMoney(
   value: string | number | null | undefined,
   locale: PersonalLocale,
 ) {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat(locale === "bn" ? "bn" : "en", {
+  const numericAmount = Number(value ?? 0);
+  const formattedAmount = new Intl.NumberFormat(locale === "bn" ? "bn" : "en", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(Number.isFinite(amount) ? amount : 0);
+  }).format(Number.isFinite(numericAmount) ? numericAmount : 0);
+  return `৳\u202f${formattedAmount}`;
 }
 
 export function formatPersonalDate(value: string, locale: PersonalLocale) {

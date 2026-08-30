@@ -5,7 +5,6 @@ import { Eye, Zap } from 'lucide-react'
 import {
   FormPageShell,
   FormStatusMessage,
-  formatTaka,
 } from '@/components/mobile/expense-design'
 import {
   ExpensePrimaryAction,
@@ -26,10 +25,20 @@ import {
 } from '@/components/mobile/utility-line-items'
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
-import { LABELS, type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
+import { type ExpensePaymentType, type ExpenseSplitMethod, type ExpenseUsedBy } from '@/lib/form-options'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
+import {
+  expensePaymentSourceLabel,
+  expenseSplitMethodLabel,
+  expenseUsedByLabel,
+  formatIsoDate,
+  useLocale,
+  useLocaleFormatters,
+  useLocalizedNotice,
+  useTranslations,
+} from '@/lib/i18n'
 
 type FormState = {
   paymentBy: string
@@ -57,7 +66,7 @@ type PreviewData = {
 const INITIAL_FORM: FormState = {
   paymentBy: '',
   items: [{ id: 'initial-item', itemName: 'Electricity', quantity: '', unit: '', amount: '' }],
-  billDate: new Date().toISOString().slice(0, 10),
+  billDate: formatIsoDate(),
   description: '',
   paymentType: 'FROM_DEPOSIT',
   usedBy: 'ALL_MEMBERS',
@@ -67,14 +76,16 @@ const INITIAL_FORM: FormState = {
 }
 
 export default function AddUtilityPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('expenses')
+  const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('expenses')
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
   const members = useMessMemberOptions(messId, user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
-  const [message, setMessage] = useState('')
-  const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -123,20 +134,20 @@ export default function AddUtilityPage() {
 
   async function handlePreview(event?: FormEvent) {
     event?.preventDefault()
-    setMessage('')
-    if (!messId) return setMessage('No mess selected.')
+    clearNotice()
+    if (!messId) return showMessage('missingExpenseContext', 'danger')
     if (form.items.some((item) => !item.itemName.trim() || !item.amount || Number(item.amount) <= 0)) {
-      return setMessage('Every item requires a name and a valid line amount.')
+      return showMessage('everyItemRequired', 'danger')
     }
-    if (effectiveUsedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return setMessage('Select members first.')
-    if (effectiveSplitMethod === 'CUSTOM' && !selectedMembers.length) return setMessage('Select members before custom split.')
+    if (effectiveUsedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return showMessage('selectAtLeastOneMember', 'danger')
+    if (effectiveSplitMethod === 'CUSTOM' && !selectedMembers.length) return showMessage('selectMembersBeforeCustom', 'danger')
 
     setBusy(true)
     try {
       const res = await api.previewExpense(payload())
       setPreview(res.data as PreviewData)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to preview utility.')
+      showError(error, 'utilityPreviewFailed')
     } finally {
       setBusy(false)
     }
@@ -144,7 +155,7 @@ export default function AddUtilityPage() {
 
   async function handleSave() {
     setBusy(true)
-    setMessage('')
+    clearNotice()
     try {
       const body = payload()
       if (receiptFile) {
@@ -163,11 +174,10 @@ export default function AddUtilityPage() {
       setReceiptFile(null)
       setPreview(null)
       setAdvancedOpen(false)
-      setSuccess(true)
       const autoApproved = isManager
-      setMessage(autoApproved ? 'Utility saved successfully.' : 'Utility submitted for manager approval.')
+      showMessage(autoApproved ? 'utilitySaved' : 'utilitySubmitted', 'success')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to save utility.')
+      showError(error, 'saveUtilityFailed')
     } finally {
       setBusy(false)
     }
@@ -176,23 +186,23 @@ export default function AddUtilityPage() {
   if (preview) {
     return (
       <MobileShell>
-        <FormPageShell title="Split Preview" icon={Eye} backHref="/add-utility">
+        <FormPageShell title={t('splitPreview')} icon={Eye} backHref="/add-utility">
           <SplitPreviewContent
             title={preview.title}
             amount={preview.amount}
-            paidFrom={LABELS.EXPENSE_PAYMENT_TYPES[effectivePaymentType]}
-            usedBy={LABELS.EXPENSE_USED_BY[preview.usedBy]}
-            splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}
+            paidFrom={expensePaymentSourceLabel(effectivePaymentType, locale)}
+            usedBy={expenseUsedByLabel(preview.usedBy, locale)}
+            splitMethod={expenseSplitMethodLabel(preview.splitMethod, locale)}
             payerCredit={preview.payerCredit}
             totalSharedCost={preview.totalSharedCost}
             items={preview.items}
             shares={preview.shares}
-            formatMoney={formatTaka}
+            formatMoney={format.money}
             busy={busy}
             onBack={() => setPreview(null)}
             onSave={() => void handleSave()}
           />
-          <FormStatusMessage message={message} success={success} />
+          <FormStatusMessage message={notice?.message ?? ''} success={notice?.tone === 'success'} />
         </FormPageShell>
       </MobileShell>
     )
@@ -201,7 +211,7 @@ export default function AddUtilityPage() {
   return (
     <MobileShell>
       <form onSubmit={handlePreview}>
-        <FormPageShell title="Add Utility" icon={Zap} backHref="/expenses">
+        <FormPageShell title={t('addUtility')} icon={Zap} backHref="/expenses">
           <ExpenseEntryForm
             kind="utility"
             paymentType={form.paymentType}
@@ -233,10 +243,10 @@ export default function AddUtilityPage() {
             busy={busy}
             attachment={{ fileName: receiptFile?.name, onChange: setReceiptFile }}
           />
-          <FormStatusMessage message={message} success={success} />
+          <FormStatusMessage message={notice?.message ?? ''} success={notice?.tone === 'success'} />
           <ExpensePrimaryAction type="submit" disabled={busy}>
             <Eye size={17} />
-            {busy ? 'Calculating...' : 'Preview Split'}
+            {busy ? t('calculating') : t('previewSplit')}
           </ExpensePrimaryAction>
         </FormPageShell>
       </form>

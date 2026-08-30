@@ -4,8 +4,12 @@ import { useMemo, useState } from 'react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SelectField, SubmitButton, TextField } from '@/components/mobile/form-controls'
+import { InlineNotice } from '@/components/mobile/meals-design'
+import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { api } from '@/lib/api'
-import { LABELS, MEMBER_ROLES, type MemberRole } from '@/lib/form-options'
+import { getActiveMessId } from '@/lib/app-permissions'
+import { MEMBER_ROLES, type MemberRole } from '@/lib/form-options'
+import { memberRoleLabel, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useAuth } from '../providers'
 
 type FormState = {
@@ -27,16 +31,19 @@ const INITIAL_FORM: FormState = {
 }
 
 export default function AddMemberPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('members')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('members')
   const { user } = useAuth()
-  const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
+  const messId = useMemo(() => getActiveMessId(user), [user])
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
   async function handleSubmit() {
-    setMessage('')
-    if (!messId) return setMessage('No mess selected.')
-    if (!form.email.trim()) return setMessage('Email is required.')
+    clearNotice()
+    if (!messId) return showMessage('noMessSelected', 'danger')
+    if (!form.email.trim()) return showMessage('emailRequired', 'danger')
 
     setBusy(true)
     try {
@@ -49,9 +56,9 @@ export default function AddMemberPage() {
         depositAmount: form.depositAmount ? Number(form.depositAmount) : undefined,
       })
       setForm(INITIAL_FORM)
-      setMessage('Member added successfully.')
+      showMessage('memberAdded', 'success')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to add member.')
+      showError(error, 'addMemberFailed')
     } finally {
       setBusy(false)
     }
@@ -59,28 +66,31 @@ export default function AddMemberPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Add Member" subtitle="Backend DTO aligned" backHref="/members" />
+      <TopScreen title={t('addMember')} subtitle={t('addMemberSubtitle')} backHref="/members" />
       <div className="screen space-y-4">
+        {!messId ? <MessOnboardingActions compact /> : null}
+        {messId ? (
         <section className="app-section app-form-section space-y-4">
-          <TextField label="Email" value={form.email} onChange={(email) => setForm((prev) => ({ ...prev, email }))} placeholder="member@example.com" />
+          <TextField label={t('email')} value={form.email} onChange={(email) => setForm((prev) => ({ ...prev, email }))} placeholder={t('emailPlaceholder')} />
           <SelectField
-            label="Role"
+            label={t('role')}
             value={form.role}
             onChange={(role) => setForm((prev) => ({ ...prev, role }))}
             options={MEMBER_ROLES}
-            getLabel={(value) => LABELS.MEMBER_ROLES[value]}
+            getLabel={(value) => memberRoleLabel(value, locale)}
           />
-          <TextField label="Room No" value={form.roomNo} onChange={(roomNo) => setForm((prev) => ({ ...prev, roomNo }))} placeholder="A-2" />
-          <TextField label="Seat No" value={form.seatNo} onChange={(seatNo) => setForm((prev) => ({ ...prev, seatNo }))} placeholder="S-05" />
-          <TextField label="Monthly Rent" value={form.monthlyRent} onChange={(monthlyRent) => setForm((prev) => ({ ...prev, monthlyRent }))} placeholder="4500" type="number" />
-          <TextField label="Deposit Amount" value={form.depositAmount} onChange={(depositAmount) => setForm((prev) => ({ ...prev, depositAmount }))} placeholder="5000" type="number" />
+          <TextField label={t('roomNo')} value={form.roomNo} onChange={(roomNo) => setForm((prev) => ({ ...prev, roomNo }))} placeholder="A-2" />
+          <TextField label={t('seatNo')} value={form.seatNo} onChange={(seatNo) => setForm((prev) => ({ ...prev, seatNo }))} placeholder="S-05" />
+          <TextField label={t('monthlyRent')} value={form.monthlyRent} onChange={(monthlyRent) => setForm((prev) => ({ ...prev, monthlyRent }))} placeholder={format.number(4500)} type="number" />
+          <TextField label={t('depositAmount')} value={form.depositAmount} onChange={(depositAmount) => setForm((prev) => ({ ...prev, depositAmount }))} placeholder={format.number(5000)} type="number" />
 
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+          {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
-            Save Member
+            {t('saveMember')}
           </SubmitButton>
         </section>
+        ) : null}
       </div>
     </MobileShell>
   )

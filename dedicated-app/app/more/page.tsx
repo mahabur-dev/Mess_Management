@@ -1,17 +1,25 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { LoadingIndicator } from '@/components/loading-indicator'
-import { appHref } from '@/lib/routes'
+import { useAuth } from '@/app/providers'
+import { AuthLanguageToggle } from '@/components/language-control'
+import { MobileShell } from '@/components/mobile-shell'
+import { MoreNavigation } from '@/components/mobile/more-navigation'
+import { TopScreen } from '@/components/top-screen'
+import { useTranslations } from '@/lib/i18n'
 
-/** Legacy deep-link fallback. More is now a drawer opened from bottom navigation. */
 export default function MorePage() {
-  const router = useRouter()
+  const { requestLogout, user } = useAuth()
+  const navigation = useTranslations('navigation')
 
-  useEffect(() => {
-    router.replace(appHref('/'))
-  }, [router])
+  return (
+    <MobileShell showBottomNavigation>
+      <TopScreen
+        title={navigation('menuTitle')}
+        subtitle={navigation('menuSubtitle')}
+        trailing={<AuthLanguageToggle />}
+      />
 
-  return <LoadingIndicator variant="screen" label="Opening application" />
+      {user ? <MoreNavigation user={user} onLogout={requestLogout} /> : null}
+    </MobileShell>
+  )
 }

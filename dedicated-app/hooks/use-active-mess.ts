@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api'
 import type { AuthUser } from '@/lib/auth'
+import { useTranslations } from '@/lib/i18n'
 
 export type ActiveMess = {
   id: string
@@ -18,7 +19,7 @@ type MessLookup = {
   user: AuthUser
 }
 
-function toActiveMess(value: unknown): ActiveMess | null {
+function toActiveMess(value: unknown, fallbackName: string): ActiveMess | null {
   if (!value || typeof value !== 'object') return null
 
   const candidate = value as { id?: unknown; name?: unknown }
@@ -26,23 +27,23 @@ function toActiveMess(value: unknown): ActiveMess | null {
 
   return {
     id: candidate.id,
-    name: typeof candidate.name === 'string' && candidate.name.trim() ? candidate.name : 'Mess',
+    name: typeof candidate.name === 'string' && candidate.name.trim() ? candidate.name : fallbackName,
   }
 }
 
-function getMessFromProfile(user: AuthUser | null): ActiveMess | null {
+function getMessFromProfile(user: AuthUser | null, fallbackName: string): ActiveMess | null {
   const membership = user?.memberships?.find(
     (item) => item.is_active !== false && Boolean(item.mess?.id)
   )
 
-  return toActiveMess(membership?.mess)
+  return toActiveMess(membership?.mess, fallbackName)
 }
 
-function getFirstMess(value: unknown): ActiveMess | null {
+function getFirstMess(value: unknown, fallbackName: string): ActiveMess | null {
   if (!Array.isArray(value)) return null
 
   for (const item of value) {
-    const mess = toActiveMess(item)
+    const mess = toActiveMess(item, fallbackName)
     if (mess) return mess
   }
 
@@ -58,7 +59,9 @@ function toError(value: unknown) {
  * lookup as a confirmed "no mess" result.
  */
 export function useActiveMess(user: AuthUser | null) {
-  const profileMess = useMemo(() => getMessFromProfile(user), [user])
+  const common = useTranslations('common')
+  const fallbackName = common('messFallback')
+  const profileMess = useMemo(() => getMessFromProfile(user, fallbackName), [fallbackName, user])
   const [attempt, setAttempt] = useState(0)
   const [lookup, setLookup] = useState<MessLookup | null>(null)
 
@@ -71,7 +74,7 @@ export function useActiveMess(user: AuthUser | null) {
       .getMesses()
       .then((response) => {
         if (!cancelled) {
-          setLookup({ attempt, error: null, mess: getFirstMess(response.data), user })
+          setLookup({ attempt, error: null, mess: getFirstMess(response.data, fallbackName), user })
         }
       })
       .catch((error: unknown) => {
@@ -83,7 +86,7 @@ export function useActiveMess(user: AuthUser | null) {
     return () => {
       cancelled = true
     }
-  }, [attempt, profileMess, user])
+  }, [attempt, fallbackName, profileMess, user])
 
   const retry = useCallback(() => {
     setAttempt((current) => current + 1)

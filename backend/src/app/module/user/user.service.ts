@@ -55,6 +55,7 @@ export class UserService {
           is_active: true,
           is_verified: true,
           created_at: true,
+          preferred_locale: true,
         },
       }),
     ]);
@@ -84,6 +85,7 @@ export class UserService {
         state: true,
         city: true,
         zipcode: true,
+        preferred_locale: true,
         is_active: true,
         is_verified: true,
         created_at: true,
@@ -181,6 +183,7 @@ export class UserService {
         state: nullableText(dto.state),
         city: nullableText(dto.city),
         zipcode: nullableText(dto.zipcode),
+        preferred_locale: dto.preferredLocale,
         avatar_url,
       },
       select: {
@@ -196,6 +199,7 @@ export class UserService {
         state: true,
         city: true,
         zipcode: true,
+        preferred_locale: true,
         is_active: true,
         is_verified: true,
         created_at: true,

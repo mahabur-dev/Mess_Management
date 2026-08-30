@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { catchError, map, Observable, throwError } from 'rxjs';
+import { successMessageContract } from '../contracts/api-message.contract';
 
 @Injectable()
 export class UtilsInterceptor implements NestInterceptor {
@@ -20,24 +21,31 @@ export class UtilsInterceptor implements NestInterceptor {
           ('data' in response || 'message' in response)
         ) {
           const responseRecord = response as Record<string, unknown>;
+          const contract = successMessageContract(
+            responseRecord.message,
+            responseRecord.code,
+            responseRecord.params,
+          );
           return {
             statusCode: res.statusCode,
             success: res.statusCode >= 200 && res.statusCode < 300,
-            message: responseRecord.message || null,
+            ...contract,
             meta: responseRecord.meta || null,
             ...Object.fromEntries(
               Object.entries(responseRecord).filter(
-                ([key]) => !['message', 'meta', 'data'].includes(key),
+                ([key]) =>
+                  !['code', 'message', 'params', 'meta', 'data'].includes(key),
               ),
             ),
             data: responseRecord.data,
           };
         }
 
+        const contract = successMessageContract(null);
         return {
           statusCode: res.statusCode,
           success: res.statusCode >= 200 && res.statusCode < 300,
-          message: 'Request successfully completed',
+          ...contract,
           meta: null,
           data: response,
         };

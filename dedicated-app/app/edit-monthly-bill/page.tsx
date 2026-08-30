@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SelectField, SubmitButton } from '@/components/mobile/form-controls'
+import { InlineNotice } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
-import { BILL_STATUSES, LABELS, type BillStatus } from '@/lib/form-options'
+import { BILL_STATUSES, type BillStatus } from '@/lib/form-options'
+import { billStatusLabel, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 
@@ -20,6 +22,10 @@ type BillRecord = {
 }
 
 export default function EditMonthlyBillPage() {
+  const { locale } = useLocale()
+  const t = useTranslations('billing')
+  const format = useLocaleFormatters()
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('billing')
   const searchParams = useQueryParams()
   const router = useRouter()
   const { user } = useAuth()
@@ -28,10 +34,12 @@ export default function EditMonthlyBillPage() {
 
   const [bill, setBill] = useState<BillRecord | null>(null)
   const [status, setStatus] = useState<BillStatus>('PENDING')
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const subtitle = useMemo(() => (bill ? `${bill.member?.name ?? 'Bill'} - ${LABELS.BILL_STATUSES[bill.status]}` : 'Update monthly bill status'), [bill])
+  const subtitle = useMemo(
+    () => (bill ? `${bill.member?.name ?? t('bill')} - ${billStatusLabel(bill.status, locale)}` : t('updateBillStatus')),
+    [bill, locale, t],
+  )
 
   useEffect(() => {
     if (!billId || !messId) return
@@ -44,32 +52,32 @@ export default function EditMonthlyBillPage() {
         const found = (res.data ?? null) as BillRecord | null
         setBill(found)
         if (!found) {
-          setMessage('Bill not found.')
+          showMessage('billNotFound', 'danger')
           return
         }
         setStatus(found.status ?? 'PENDING')
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
-        setMessage('Failed to load bill details.')
+        showError(error, 'loadBillFailed')
       })
 
     return () => {
       alive = false
     }
-  }, [billId, messId])
+  }, [billId, messId, showError, showMessage])
 
   async function handleSubmit() {
-    setMessage('')
-    if (!billId || !messId) return setMessage('Bill id or mess id is missing.')
+    clearNotice()
+    if (!billId || !messId) return showMessage('missingBillContext', 'danger')
 
     setBusy(true)
     try {
       await api.updateMonthlyBillStatus(billId, { status })
-      setMessage('Bill status updated successfully.')
+      showMessage('billStatusUpdated', 'success')
       router.push('/monthly-bill')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update bill.')
+      showError(error, 'updateBillFailed')
     } finally {
       setBusy(false)
     }
@@ -77,27 +85,29 @@ export default function EditMonthlyBillPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Edit Monthly Bill" subtitle={subtitle} backHref="/monthly-bill" />
+      <TopScreen title={t('editMonthlyBill')} subtitle={subtitle} backHref="/monthly-bill" />
       <div className="screen space-y-4">
         <section className="app-section app-form-section space-y-4">
           <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
-            <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">Bill</div>
+            <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('bill')}</div>
             <div className="mt-1 text-label font-bold text-[#123748]">{bill?.member?.name ?? billId}</div>
-            <div className="mt-1 text-caption text-[#65838b]">{bill?.month ?? 'No month'} - BDT {Number(bill?.final_due ?? 0).toLocaleString()}</div>
+            <div className="mt-1 text-caption text-[#65838b]">
+              {bill?.month ? format.month(bill.month) : t('noMonth')} - {format.money(bill?.final_due)}
+            </div>
           </div>
 
           <SelectField
-            label="Status"
+            label={t('status')}
             value={status}
             onChange={setStatus}
             options={BILL_STATUSES}
-            getLabel={(value) => LABELS.BILL_STATUSES[value]}
+            getLabel={(value) => billStatusLabel(value, locale)}
           />
 
-          {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+          {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
           <SubmitButton busy={busy} onClick={handleSubmit}>
-            Save Changes
+            {t('saveChanges')}
           </SubmitButton>
         </section>
       </div>

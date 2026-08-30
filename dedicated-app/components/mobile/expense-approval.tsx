@@ -1,6 +1,7 @@
 'use client'
 
 import { Check, X } from 'lucide-react'
+import { paymentStatusLabel, useLocale, useTranslations } from '@/lib/i18n'
 
 export type ExpenseApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
@@ -22,6 +23,7 @@ export function ExpenseApprovalBadge({
   status?: string | null
   recordStatus?: string | null
 }) {
+  const { locale } = useLocale()
   const normalized = normalizeExpenseApprovalStatus(status, recordStatus)
   if (!normalized) return null
 
@@ -31,7 +33,7 @@ export function ExpenseApprovalBadge({
     REJECTED: 'ui-badge--danger',
   }[normalized]
 
-  return <span className={`ui-badge ${tone}`}>{normalized.charAt(0) + normalized.slice(1).toLowerCase()}</span>
+  return <span className={`ui-badge ${tone}`}>{paymentStatusLabel(normalized, locale)}</span>
 }
 
 export function ExpenseReviewActions({
@@ -43,15 +45,16 @@ export function ExpenseReviewActions({
   onApprove: () => void
   onReject: () => void
 }) {
+  const t = useTranslations('expenses')
   return (
     <div className="grid grid-cols-2 gap-3">
       <button type="button" className="ui-btn ui-btn--primary px-3" disabled={busy} onClick={onApprove}>
         <Check size={17} strokeWidth={2.6} aria-hidden="true" />
-        {busy ? 'Reviewing...' : 'Approve'}
+        {busy ? t('reviewing') : t('approve')}
       </button>
       <button type="button" className="ui-btn ui-btn--danger px-3" disabled={busy} onClick={onReject}>
         <X size={17} strokeWidth={2.6} aria-hidden="true" />
-        Reject
+        {t('reject')}
       </button>
     </div>
   )

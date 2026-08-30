@@ -10,7 +10,6 @@ import {
   InlineNotice,
   MealCard,
   MealDateCard,
-  MEAL_LABELS,
   MEAL_META,
   MEAL_ORDER,
   attendanceMealCount,
@@ -19,6 +18,8 @@ import {
   findMeal,
   formatLocalIsoDate,
   mealIsLocked,
+  mealHint,
+  mealLabel,
   MealStateIllustration,
   MealIconBadge,
   normalizeMeals,
@@ -30,6 +31,7 @@ import {
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { useAuth } from '@/app/providers'
+import { useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type MealCountMap = Record<MealName, string>
 
@@ -99,18 +101,21 @@ function SimpleMealInputCard({
   onChange: (value: string) => void
   onStep: (direction: 1 | -1) => void
 }) {
+  const { locale } = useLocale()
+  const meals = useTranslations('meals')
+  const label = mealLabel(mealName, locale)
   return (
     <div className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-3 py-3 last:border-b-0">
       <MealIconBadge mealName={mealName} size="sm" />
       <label htmlFor={`meal-count-${mealName}`} className="min-w-0 flex-1 text-left">
-        <span className="block text-label font-bold text-[#123748]">{MEAL_LABELS[mealName]}</span>
-        <span className="block text-caption text-[#65838b]">{mealName === 'BREAKFAST' ? 'Morning meal' : mealName === 'LUNCH' ? 'Midday meal' : 'Evening meal'}</span>
+        <span className="block text-label font-bold text-[#123748]">{label}</span>
+        <span className="block text-caption text-[#65838b]">{mealHint(mealName, locale)}</span>
       </label>
 
       <div className="flex h-9 shrink-0 items-center overflow-hidden border border-[#9edddc] bg-[#f8fbfb]">
         <button
           type="button"
-          aria-label={`Decrease ${MEAL_LABELS[mealName]} meal`}
+          aria-label={meals('decreaseMeal', { meal: label })}
           onClick={() => onStep(-1)}
           disabled={disabled}
           className="grid h-full w-8 place-items-center text-[#00777a] transition hover:bg-[#dff4f3] disabled:cursor-not-allowed disabled:opacity-50"
@@ -119,7 +124,7 @@ function SimpleMealInputCard({
         </button>
         <input
           id={`meal-count-${mealName}`}
-          aria-label={`${MEAL_LABELS[mealName]} meal count`}
+          aria-label={meals('mealCount', { meal: label })}
           className="h-full w-12 border-x border-[#bfe7e6] bg-transparent px-1 text-center text-label font-semibold tabular-nums text-[#245d66] outline-none disabled:opacity-60"
           type="number"
           inputMode="decimal"
@@ -134,7 +139,7 @@ function SimpleMealInputCard({
         
         <button
           type="button"
-          aria-label={`Increase ${MEAL_LABELS[mealName]} meal`}
+          aria-label={meals('increaseMeal', { meal: label })}
           onClick={() => onStep(1)}
           disabled={disabled}
           className="grid h-full w-8 place-items-center bg-[#008d8c] text-white transition hover:bg-[#00777a] disabled:cursor-not-allowed disabled:opacity-50"
@@ -149,6 +154,8 @@ function SimpleMealInputCard({
 function MyMealContent() {
   const params = useSearchParams()
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const mealCopy = useTranslations('meals')
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
   const initialMeal = params.get('meal')
@@ -162,13 +169,20 @@ function MyMealContent() {
   const [deadline, setDeadline] = useState<MealDeadlineInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
 
   useEffect(() => {
-    if (!messId) return
+    if (!messId) {
+      setMeals([])
+      setDeadline(null)
+      setMealCounts(defaultMealCounts())
+      setLoading(false)
+      showMessage('noMessSelected', 'warning')
+      return
+    }
     let alive = true
     setLoading(true)
-    setMessage('')
+    clearNotice()
 
     Promise.all([
       api.getMealsByMess(messId, { startDate: date, endDate: date, limit: 20 }),
@@ -186,7 +200,7 @@ function MyMealContent() {
         setMeals([])
         setDeadline(null)
         setMealCounts(defaultMealCounts())
-        setMessage(error instanceof Error ? error.message : 'Failed to load your meal.')
+        showError(error, 'loadMyMealFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -195,7 +209,7 @@ function MyMealContent() {
     return () => {
       alive = false
     }
-  }, [date, messId, user?.id])
+  }, [clearNotice, date, messId, showError, showMessage, user?.id])
 
   const hasLockedMeal = MEAL_ORDER.some((mealName) => mealIsLocked(findMeal(meals, mealName)))
   const statusMealName: MealName = isMealName(initialMeal) ? initialMeal : 'LUNCH'
@@ -205,18 +219,18 @@ function MyMealContent() {
   const canSave = Boolean(messId) && (isManager || !closedForMember)
   const datePosition = compareIsoDate(date)
   const statusClosed = !isManager && closedForMember
-  const statusText = statusClosed ? 'closed' : 'open'
+  const statusText = statusClosed ? mealCopy('closed') : mealCopy('open')
   const statusDescription = hasLockedMeal
     ? isManager
-      ? 'This meal is locked, but managers can still update it.'
-      : 'This meal is locked by manager.'
+      ? mealCopy('managerLockedCanUpdate')
+      : mealCopy('lockedByManager')
     : isManager
-      ? 'Managers can update meals anytime.'
+      ? mealCopy('managerAnytime')
       : windowOpen
-        ? 'Choose how you want to take this meal.'
+        ? mealCopy('chooseMealCount')
         : datePosition === 'past'
-          ? 'Previous date meals can only be updated by manager.'
-          : 'Meal updating time is over for this date.'
+          ? mealCopy('pastManagerOnly')
+          : mealCopy('updateTimeOver')
 
   function updateMealCount(mealName: MealName, value: string) {
     setMealCounts((current) => ({ ...current, [mealName]: value }))
@@ -232,7 +246,7 @@ function MyMealContent() {
   async function saveMeal() {
     if (!messId || !canSave) return
     setSaving(true)
-    setMessage('')
+    clearNotice()
 
     try {
       await Promise.all(
@@ -261,9 +275,9 @@ function MyMealContent() {
       setMeals(mealList)
       setDeadline((deadlineRes.data ?? null) as MealDeadlineInfo | null)
       setMealCounts(mealCountsFromRecords(mealList, user?.id))
-      setMessage('Meal saved successfully.')
+      showMessage('mealSaved', 'success')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to save meal.')
+      showError(error, 'mealSaveFailed')
     } finally {
       setSaving(false)
     }
@@ -271,7 +285,7 @@ function MyMealContent() {
 
   return (
     <MobileShell>
-      <TopScreen title="My Meal" subtitle="Add or update your meal" backHref="/meals" />
+      <TopScreen title={mealCopy('myMeal')} subtitle={mealCopy('myMealDescription')} backHref="/meals" />
       <div className="screen space-y-3">
         <MealDateCard date={date} onChange={setDate} onPrevious={() => setDate((current) => shiftIsoDate(current, -1))} onNext={() => setDate((current) => shiftIsoDate(current, 1))} />
 
@@ -279,25 +293,25 @@ function MyMealContent() {
           <MealStateIllustration state={statusClosed ? 'locked' : 'open'} mealName={statusMealName} />
 
           <h2 className={`mt-5 text-title font-bold ${statusClosed ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
-            Yours meal is {statusText}
+            {mealCopy('yourMealState', { state: statusText })}
           </h2>
           <p className="mt-2 text-label font-semibold text-[#65838b]">{statusDescription}</p>
           <div className="mt-3 inline-flex items-center rounded-full bg-[#edfafa] px-4 py-2 text-caption font-bold text-[#123748]">
-            {deadlineLabel(deadline)}
+            {deadlineLabel(deadline, locale)}
           </div>
         </MealCard>
 
-        {message ? <InlineNotice tone={message.includes('successfully') ? 'success' : 'danger'}>{message}</InlineNotice> : null}
+        {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
-        {loading ? <LoadingIndicator variant="card" label="Loading meal preference" /> : null}
+        {loading ? <LoadingIndicator variant="card" label={mealCopy('loadingPreference')} /> : null}
 
         {!canSave ? (
           <InlineNotice tone="warning">
             {hasLockedMeal
-              ? 'This meal is locked by manager.'
+              ? mealCopy('lockedByManager')
               : datePosition === 'past'
-                ? 'Previous date meals can only be changed by manager.'
-                : 'You can no longer add or update this meal.'}
+                ? mealCopy('pastManagerOnly')
+                : mealCopy('cannotUpdate')}
           </InlineNotice>
         ) : null}
 
@@ -315,7 +329,7 @@ function MyMealContent() {
         </div>
 
         <button type="button" className="primary-btn flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60" onClick={saveMeal} disabled={!canSave || saving || loading}>
-          <UtensilsCrossed size={18} /> {saving ? 'Saving...' : 'Save'}
+          <UtensilsCrossed size={18} /> {saving ? mealCopy('saving') : mealCopy('save')}
         </button>
       </div>
     </MobileShell>
@@ -323,8 +337,9 @@ function MyMealContent() {
 }
 
 export default function MyMealPage() {
+  const meals = useTranslations('meals')
   return (
-    <Suspense fallback={<LoadingIndicator variant="screen" label="Loading meal preference" />}>
+    <Suspense fallback={<LoadingIndicator variant="screen" label={meals('loadingPreference')} />}>
       <MyMealContent />
     </Suspense>
   )

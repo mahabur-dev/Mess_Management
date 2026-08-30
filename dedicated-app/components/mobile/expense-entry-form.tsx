@@ -23,12 +23,12 @@ import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
 import type { MemberOption } from '@/hooks/use-mess-member-options'
 import {
   GENERAL_EXPENSE_CATEGORIES,
-  LABELS,
   type ExpenseCategory,
   type ExpensePaymentType,
   type ExpenseSplitMethod,
   type ExpenseUsedBy,
 } from '@/lib/form-options'
+import { expenseCategoryLabel, useLocale, useTranslations } from '@/lib/i18n'
 
 export type ExpenseEntryFormProps = {
   kind: 'expense' | 'utility'
@@ -101,37 +101,39 @@ export function ExpenseEntryForm({
   busy,
   attachment,
 }: ExpenseEntryFormProps) {
+  const { locale } = useLocale()
+  const t = useTranslations('expenses')
   const isUtility = kind === 'utility'
 
   return (
     <>
-      <FormSection title="Payment Details">
+      <FormSection title={t('paymentDetails')}>
         <PaymentTypeSelector value={paymentType} onChange={onPaymentTypeChange} showHeading={false} />
       </FormSection>
 
-      <FormSection title={isUtility ? 'Utility Details' : 'Expense Details'}>
+      <FormSection title={isUtility ? t('utilityDetails') : t('expenseDetails')}>
         {!isUtility ? (
           <DesignedSelect
-            label="Category"
+            label={t('category')}
             icon={expenseFormIcons.category}
             value={category}
             onChange={(event) => onCategoryChange?.(event.target.value as ExpenseCategory)}
           >
             {GENERAL_EXPENSE_CATEGORIES.map((option) => (
-              <option key={option} value={option}>{LABELS.EXPENSE_CATEGORIES[option]}</option>
+              <option key={option} value={option}>{expenseCategoryLabel(option, locale)}</option>
             ))}
           </DesignedSelect>
         ) : null}
 
         {showPaidBy ? (
           <DesignedSelect
-            label="Paid By"
+            label={t('paidBy')}
             icon={expenseFormIcons.member}
             value={paidBy}
             onChange={(event) => onPaidByChange(event.target.value)}
             required={paymentType === 'PERSONAL'}
           >
-            <option value="">Select member</option>
+            <option value="">{t('selectMember')}</option>
             {members.map((member) => (
               <option key={member.id} value={member.id}>{member.name}</option>
             ))}
@@ -139,7 +141,7 @@ export function ExpenseEntryForm({
         ) : null}
 
         <DesignedInput
-          label={isUtility ? 'Bill Date' : 'Expense Date'}
+          label={isUtility ? t('billDate') : t('expenseDate')}
           icon={expenseFormIcons.date}
           value={date}
           onChange={(event) => onDateChange(event.target.value)}
@@ -148,7 +150,7 @@ export function ExpenseEntryForm({
         />
       </FormSection>
 
-      <FormSection title={isUtility ? 'Utility Items' : 'Items'}>
+      <FormSection title={isUtility ? t('utilityItems') : t('items')}>
         {isUtility ? (
           <UtilityLineItemsEditor items={items} onChange={onItemsChange} disabled={busy} />
         ) : (
@@ -185,19 +187,19 @@ export function ExpenseEntryForm({
         ) : null}
       </ExpenseAdvancedOptions>
 
-      <FormSection title="Note">
+      <FormSection title={t('note')}>
         <DesignedTextarea
-          label="Note (Optional)"
+          label={t('noteOptional')}
           icon={expenseFormIcons.description}
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value.slice(0, 250))}
-          placeholder="Add a note"
+          placeholder={t('addNote')}
           count={`${description.length}/250`}
         />
       </FormSection>
 
       {attachment ? (
-        <FormSection title="Attachment">
+        <FormSection title={t('attachment')}>
           <UploadField fileName={attachment.fileName} onChange={attachment.onChange} />
         </FormSection>
       ) : null}

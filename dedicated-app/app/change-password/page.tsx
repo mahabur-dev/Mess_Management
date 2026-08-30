@@ -6,8 +6,12 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SubmitButton, TextField } from '@/components/mobile/form-controls'
 import { api } from '@/lib/api'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
 export default function ChangePasswordPage() {
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
+  const profile = useTranslations('profile')
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -18,17 +22,17 @@ export default function ChangePasswordPage() {
     setMessage(null)
 
     if (!oldPassword || !newPassword || !confirmPassword) {
-      setMessage({ tone: 'error', text: 'All password fields are required.' })
+      setMessage({ tone: 'error', text: profile('allPasswordFieldsRequired') })
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setMessage({ tone: 'error', text: 'New password and confirmation do not match.' })
+      setMessage({ tone: 'error', text: profile('newPasswordMismatch') })
       return
     }
 
     if (newPassword.length < 6) {
-      setMessage({ tone: 'error', text: 'New password must be at least 6 characters.' })
+      setMessage({ tone: 'error', text: profile('newPasswordTooShort') })
       return
     }
 
@@ -38,11 +42,11 @@ export default function ChangePasswordPage() {
       setOldPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      setMessage({ tone: 'success', text: 'Password updated successfully.' })
+      setMessage({ tone: 'success', text: profile('passwordUpdated') })
     } catch (error) {
       setMessage({
         tone: 'error',
-        text: error instanceof Error ? error.message : 'Failed to change password.',
+        text: localizedErrorMessage(error, locale),
       })
     } finally {
       setBusy(false)
@@ -51,7 +55,7 @@ export default function ChangePasswordPage() {
 
   return (
     <MobileShell>
-      <TopScreen title="Change Password" subtitle="Update your account password" backHref="/settings" />
+      <TopScreen title={profile('changePassword')} subtitle={profile('profileSecurityDescription')} backHref="/settings" />
 
       <div className="screen space-y-4">
         <section className="ui-card">
@@ -60,36 +64,36 @@ export default function ChangePasswordPage() {
               <ShieldCheck size={24} />
             </div>
             <div>
-              <div className="ui-body font-bold">Security</div>
-              <div className="ui-caption mt-0.5">Choose a strong, unique password</div>
+              <div className="ui-body font-bold">{profile('security')}</div>
+              <div className="ui-caption mt-0.5">{profile('strongPassword')}</div>
             </div>
           </div>
         </section>
 
         <section className="ui-card space-y-4">
-          <h2 className="ui-section-title">Password</h2>
+          <h2 className="ui-section-title">{auth('password')}</h2>
 
           <TextField
-            label="Old Password"
+            label={profile('oldPassword')}
             value={oldPassword}
             onChange={setOldPassword}
-            placeholder="Current password"
+            placeholder={profile('currentPassword')}
             type="password"
           />
 
           <TextField
-            label="New Password"
+            label={auth('newPassword')}
             value={newPassword}
             onChange={setNewPassword}
-            placeholder="At least 6 characters"
+            placeholder={profile('atLeastSixCharacters')}
             type="password"
           />
 
           <TextField
-            label="Confirm New Password"
+            label={auth('confirmNewPassword')}
             value={confirmPassword}
             onChange={setConfirmPassword}
-            placeholder="Re-enter new password"
+            placeholder={profile('reenterNewPassword')}
             type="password"
           />
 
@@ -104,7 +108,7 @@ export default function ChangePasswordPage() {
 
           <SubmitButton busy={busy} onClick={() => void handleChangePassword()}>
             <KeyRound size={17} aria-hidden="true" />
-            Update Password
+            {profile('updatePassword')}
           </SubmitButton>
         </section>
       </div>

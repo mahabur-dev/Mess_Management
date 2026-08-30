@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Providers } from './providers'
+import { LocaleProvider } from '@/lib/i18n'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -12,7 +13,13 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'Messzen | Mess & Hostel Management',
   description: 'Manage shared meals, expenses, deposits and monthly accounts with Messzen.',
-  manifest: '/manifest.webmanifest',
+  applicationName: 'Messzen',
+  manifest: '/manifest-en.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'Messzen',
+    statusBarStyle: 'default',
+  },
   icons: {
     icon: '/icon.svg',
   },
@@ -20,9 +27,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-locale="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <LocaleProvider>
+          <Providers>{children}</Providers>
+        </LocaleProvider>
       </body>
     </html>
   )

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Eye } from 'lucide-react'
 import {
   FormStatusMessage,
-  formatTaka,
 } from '@/components/mobile/expense-design'
 import {
   ExpenseActionBar,
@@ -25,13 +24,21 @@ import {
   EXPENSE_SPLIT_METHODS,
   EXPENSE_USED_BY,
   GENERAL_EXPENSE_CATEGORIES,
-  LABELS,
   UTILITY_FORM_OPTIONS,
   type ExpenseCategory,
   type ExpensePaymentType,
   type ExpenseSplitMethod,
   type ExpenseUsedBy,
 } from '@/lib/form-options'
+import {
+  expensePaymentSourceLabel,
+  expenseSplitMethodLabel,
+  expenseUsedByLabel,
+  useLocale,
+  useLocaleFormatters,
+  useLocalizedNotice,
+  useTranslations,
+} from '@/lib/i18n'
 
 export type AiExpensePreviewItem = Record<string, unknown>
 
@@ -117,6 +124,11 @@ export function AiExpensePreview({
   onCancel: () => void
   onConfirm: () => void
 }) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('expenses')
+  const common = useTranslations('common')
+  const previewNotice = useLocalizedNotice('expenses')
   const isUtility = intent === 'UTILITY_CREATE'
   const primary = payload
   const paymentType = paymentTypeOf(primary)
@@ -130,7 +142,6 @@ export function AiExpensePreview({
       : members.map((member) => member.id)
   const [preview, setPreview] = useState<SplitPreview | null>(null)
   const [previewBusy, setPreviewBusy] = useState(false)
-  const [previewMessage, setPreviewMessage] = useState('')
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [advancedCustomized, setAdvancedCustomized] = useState(false)
 
@@ -145,7 +156,7 @@ export function AiExpensePreview({
 
   const invalidatePreview = () => {
     setPreview(null)
-    setPreviewMessage('Details changed. Update the split preview to see the new member allocation.')
+    previewNotice.showMessage('detailsChanged', 'info')
   }
 
   const patchAll = (patch: Record<string, unknown>) => {
@@ -168,13 +179,13 @@ export function AiExpensePreview({
 
   const refreshPreview = async () => {
     setPreviewBusy(true)
-    setPreviewMessage('')
+    previewNotice.clearNotice()
     try {
       const response = await api.previewExpense(payload)
       setPreview(response.data as SplitPreview)
     } catch (error) {
       setPreview(null)
-      setPreviewMessage(error instanceof Error ? error.message : 'Failed to calculate the split preview.')
+      previewNotice.showError(error, 'previewFailed')
     } finally {
       setPreviewBusy(false)
     }
@@ -230,21 +241,21 @@ export function AiExpensePreview({
   if (preview) {
     return (
       <SplitPreviewContent
-        title={preview.title || (isUtility ? 'Utility total' : 'Expense total')}
+        title={preview.title || (isUtility ? t('utilityTotal') : t('expenseTotal'))}
         amount={preview.amount ?? 0}
-        paidFrom={LABELS.EXPENSE_PAYMENT_TYPES[preview.paymentType ?? paymentType]}
-        usedBy={LABELS.EXPENSE_USED_BY[preview.usedBy ?? usedBy]}
-        splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod ?? splitMethod]}
+        paidFrom={expensePaymentSourceLabel(preview.paymentType ?? paymentType, locale)}
+        usedBy={expenseUsedByLabel(preview.usedBy ?? usedBy, locale)}
+        splitMethod={expenseSplitMethodLabel(preview.splitMethod ?? splitMethod, locale)}
         payerCredit={preview.payerCredit ?? 0}
         totalSharedCost={preview.totalSharedCost ?? 0}
         items={preview.items}
         shares={preview.shares ?? []}
-        formatMoney={formatTaka}
+        formatMoney={format.money}
         busy={disabled}
         onBack={onCancel}
         onSave={onConfirm}
-        backLabel="Cancel"
-        saveLabel="Save"
+        backLabel={common('cancel')}
+        saveLabel={common('save')}
       />
     )
   }
@@ -296,11 +307,11 @@ export function AiExpensePreview({
         busy={disabled || previewBusy}
       />
 
-      <FormStatusMessage message={previewMessage} />
+      <FormStatusMessage message={previewNotice.notice?.message ?? ''} success={previewNotice.notice?.tone === 'success'} />
       <ExpenseActionBar>
-        <ExpenseSecondaryAction onClick={onCancel} disabled={disabled || previewBusy}>Cancel</ExpenseSecondaryAction>
+        <ExpenseSecondaryAction onClick={onCancel} disabled={disabled || previewBusy}>{common('cancel')}</ExpenseSecondaryAction>
         <ExpensePrimaryAction onClick={() => void refreshPreview()} disabled={disabled || previewBusy}>
-          <Eye size={17} /> {previewBusy ? 'Calculating...' : 'Preview'}
+          <Eye size={17} /> {previewBusy ? t('calculating') : t('preview')}
         </ExpensePrimaryAction>
       </ExpenseActionBar>
     </div>

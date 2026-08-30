@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowDownLeft, ArrowUpRight, PiggyBank } from "lucide-react";
-import { CompactLanguageToggle } from "@/components/mobile/compact-language-toggle";
 import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
 import { MealMonthSelector } from "@/components/mobile/meals-design";
 import { MobileShell } from "@/components/mobile-shell";
@@ -16,7 +15,7 @@ import { usePersonalLocale } from "@/features/personal/hooks/use-personal-locale
 import { useState } from "react";
 
 export default function PersonalPage() {
-  const { locale, toggleLocale } = usePersonalLocale();
+  const { locale } = usePersonalLocale();
   const copy = personalCopy(locale);
   const [month, setMonth] = useState(currentPersonalMonth());
   return (
@@ -25,7 +24,6 @@ export default function PersonalPage() {
         title={copy.personal}
         subtitle={copy.overview}
         backHref="/"
-        trailing={<CompactLanguageToggle locale={locale} onToggle={toggleLocale} />}
       />
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />

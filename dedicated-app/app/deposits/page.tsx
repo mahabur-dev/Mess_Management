@@ -20,6 +20,7 @@ import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-de
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
+import { formatIsoDate, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type DepositItem = {
   id: string
@@ -40,35 +41,38 @@ type FormState = {
 const INITIAL_FORM: FormState = {
   memberId: '',
   amount: '',
-  date: new Date().toISOString().slice(0, 10),
+  date: formatIsoDate(),
   note: '',
 }
 
 export default function DepositsPage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('payments')
+  const common = useTranslations('common')
+  const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('payments')
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? '', [user])
   const members = useMessMemberOptions(messId, user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
-  const [messageTone, setMessageTone] = useState<'success' | 'error'>('success')
   const [items, setItems] = useState<DepositItem[]>([])
   const [totalAmount, setTotalAmount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
+  const [loadError, setLoadError] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
   const [month, setMonth] = useState(currentMonthValue())
 
-  useAutoDismiss(message, () => setMessage(''))
+  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   useEffect(() => {
     if (!messId) return
 
     let alive = true
     setLoading(true)
-    setLoadError('')
+    setLoadError(false)
     api
       .getDepositsByMess(messId, { billMonth: `${month}-01`, limit: 100, sortBy: 'date', sortOrder: 'desc' })
       .then((res) => {
@@ -76,11 +80,12 @@ export default function DepositsPage() {
         setItems(Array.isArray(res.data) ? res.data : [])
         setTotalAmount((res as any).totalAmount ?? 0)
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
         setItems([])
         setTotalAmount(0)
-        setLoadError('Deposits could not be loaded. Pull to retry or try again shortly.')
+        setLoadError(true)
+        showError(error, 'loadDepositsFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -92,11 +97,10 @@ export default function DepositsPage() {
   }, [messId, month, refreshKey])
 
   async function handleSubmit() {
-    setMessage('')
-    setMessageTone('error')
-    if (!messId) return setMessage('No mess selected.')
-    if (!form.memberId) return setMessage('Select the member receiving this deposit.')
-    if (!form.amount) return setMessage('Amount is required.')
+    clearNotice()
+    if (!messId) return showMessage('noMessSelected', 'danger')
+    if (!form.memberId) return showMessage('selectDepositMember', 'danger')
+    if (!form.amount) return showMessage('amountRequired', 'danger')
 
     setBusy(true)
     try {
@@ -108,12 +112,11 @@ export default function DepositsPage() {
         note: form.note.trim() || undefined,
       })
       setForm(INITIAL_FORM)
-      setMessageTone('success')
-      setMessage('Deposit added successfully.')
+      showMessage('depositAddedSuccess', 'success')
       setShowForm(false)
       setRefreshKey((current) => current + 1)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to add deposit.')
+      showError(error, 'addDepositFailed')
     } finally {
       setBusy(false)
     }
@@ -129,11 +132,11 @@ export default function DepositsPage() {
 
   return (
     <MobileShell hasFloatingAction>
-      <TopScreen title="Deposits" subtitle="Member contribution ledger" backHref="/" />
+      <TopScreen title={t('title')} subtitle={t('memberLedger')} backHref="/" />
       <div className="screen deposit-page">
         <DepositMonthNavigator
           month={month}
-          label={formatMonthLabel(month)}
+          label={formatMonthLabel(month, locale)}
           onPrevious={() => setMonth((current) => shiftMonthValue(current, -1))}
           onNext={() => setMonth((current) => shiftMonthValue(current, 1))}
           onChange={setMonth}
@@ -143,28 +146,28 @@ export default function DepositsPage() {
           total={totalAmount}
           entries={items.length}
           average={averageAmount}
-          monthLabel={formatMonthLabel(month)}
+          monthLabel={formatMonthLabel(month, locale)}
         />
 
-        {message && !showForm ? <div className="deposit-page-message" data-tone={messageTone}>{message}</div> : null}
+        {notice && !showForm ? <div className="deposit-page-message" data-tone={notice.tone}>{notice.message}</div> : null}
 
         <DeferredFormSection
           open={showForm}
-          title="Add Deposit"
-          description="Record a member contribution only when you need a new entry."
-          actionLabel="Add Deposit"
+          title={t('addDeposit')}
+          description={t('recordContributionHint')}
+          actionLabel={t('addDeposit')}
           icon={<PlusCircle size={20} />}
           onOpen={() => setShowForm(true)}
           onClose={() => setShowForm(false)}
         >
           <DesignedSelect
-            label="Deposit For"
+            label={t('depositFor')}
             icon={expenseFormIcons.member}
             value={form.memberId}
             onChange={(event) => setForm((prev) => ({ ...prev, memberId: event.target.value }))}
             required
           >
-            <option value="">Select member</option>
+            <option value="">{t('memberRequired')}</option>
             {members.map((member) => (
               <option key={member.id} value={member.id}>
                 {member.name}
@@ -173,29 +176,29 @@ export default function DepositsPage() {
           </DesignedSelect>
           <div className="grid grid-cols-2 gap-3">
             <TextField
-              label="Amount"
+              label={t('amount')}
               value={form.amount}
               onChange={(amount) => setForm((prev) => ({ ...prev, amount }))}
               placeholder="1500"
               type="number"
             />
             <TextField
-              label="Date"
+              label={t('date')}
               value={form.date}
               onChange={(date) => setForm((prev) => ({ ...prev, date }))}
               type="date"
             />
           </div>
           <TextField
-            label="Note"
+            label={t('note')}
             value={form.note}
             onChange={(note) => setForm((prev) => ({ ...prev, note }))}
-            placeholder="Monthly contribution"
+            placeholder={t('monthlyContribution')}
           />
           <DepositManualNotice compact />
-          {message && showForm ? <div className="deposit-page-message" data-tone={messageTone}>{message}</div> : null}
+          {notice && showForm ? <div className="deposit-page-message" data-tone={notice.tone}>{notice.message}</div> : null}
           <SubmitButton busy={busy} onClick={handleSubmit}>
-            Add Deposit
+            {t('addDeposit')}
           </SubmitButton>
         </DeferredFormSection>
 
@@ -203,10 +206,10 @@ export default function DepositsPage() {
           <section className="deposit-ledger" aria-labelledby="deposit-ledger-title">
             <div className="deposit-ledger__heading">
               <div>
-                <p>TRANSACTION HISTORY</p>
-                <h2 id="deposit-ledger-title">Deposit ledger</h2>
+                <p>{t('transactionHistory')}</p>
+                <h2 id="deposit-ledger-title">{t('depositLedger')}</h2>
               </div>
-              <span>{loading ? '—' : `${visibleItems.length} ${visibleItems.length === 1 ? 'entry' : 'entries'}`}</span>
+              <span>{loading ? '—' : t(visibleItems.length === 1 ? 'entryCount' : 'entriesCount', { count: format.number(visibleItems.length) })}</span>
             </div>
 
             <label className="deposit-ledger__search">
@@ -214,8 +217,8 @@ export default function DepositsPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search member or note"
-                aria-label="Search deposits"
+                placeholder={t('searchMemberOrNote')}
+                aria-label={t('searchDeposits')}
               />
             </label>
 
@@ -224,9 +227,9 @@ export default function DepositsPage() {
               {!loading && loadError ? (
                 <div className="deposit-ledger__empty" data-tone="error">
                   <WalletCards size={24} />
-                  <strong>Unable to load ledger</strong>
-                  <span>{loadError}</span>
-                  <button type="button" onClick={() => setRefreshKey((current) => current + 1)}>Try again</button>
+                  <strong>{t('unableToLoadLedger')}</strong>
+                  <span>{t('loadLedgerLong')}</span>
+                  <button type="button" onClick={() => setRefreshKey((current) => current + 1)}>{common('retry')}</button>
                 </div>
               ) : null}
               {!loading && !loadError ? visibleItems.map((item, index) => (
@@ -240,8 +243,8 @@ export default function DepositsPage() {
               {!loading && !loadError && !visibleItems.length ? (
                 <div className="deposit-ledger__empty">
                   <WalletCards size={24} />
-                  <strong>{search ? 'No matching deposits' : 'No deposits this month'}</strong>
-                  <span>{search ? 'Try a different member name or note.' : 'New contributions will appear here once recorded.'}</span>
+                  <strong>{search ? t('noMatchingDeposits') : t('noDepositsThisMonth')}</strong>
+                  <span>{search ? t('differentSearchHint') : t('newContributionHint')}</span>
                 </div>
               ) : null}
             </div>
@@ -251,7 +254,7 @@ export default function DepositsPage() {
         {!showForm ? (
           <button type="button" onClick={() => setShowForm(true)} className="deposit-floating-action">
             <Plus size={21} strokeWidth={2.6} />
-            <span>New deposit</span>
+            <span>{t('newDeposit')}</span>
           </button>
         ) : null}
       </div>

@@ -51,7 +51,7 @@ export function PersonalNavigation({
     <nav
       ref={railRef}
       className="personal-action-rail"
-      aria-label="Personal finance"
+      aria-label={copy.navigationLabel}
     >
       {links.map(({ href, key, icon: Icon }) => (
         <Link

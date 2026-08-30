@@ -5,7 +5,6 @@ import { Eye, ReceiptText } from 'lucide-react'
 import {
   FormPageShell,
   FormStatusMessage,
-  formatTaka,
 } from '@/components/mobile/expense-design'
 import {
   ExpensePrimaryAction,
@@ -24,7 +23,6 @@ import {
 import { MobileShell } from '@/components/mobile-shell'
 import { api } from '@/lib/api'
 import {
-  LABELS,
   type ExpenseCategory,
   type ExpensePaymentType,
   type ExpenseSplitMethod,
@@ -33,6 +31,16 @@ import {
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
+import {
+  expensePaymentSourceLabel,
+  expenseSplitMethodLabel,
+  expenseUsedByLabel,
+  formatIsoDate,
+  useLocale,
+  useLocaleFormatters,
+  useLocalizedNotice,
+  useTranslations,
+} from '@/lib/i18n'
 
 type FormState = {
   category: ExpenseCategory
@@ -70,7 +78,7 @@ const INITIAL_FORM: FormState = {
   category: 'FOOD',
   purchasedBy: '',
   items: [{ id: 'initial-item', itemName: '', quantity: '', unit: '', amount: '' }],
-  expenseDate: new Date().toISOString().slice(0, 10),
+  expenseDate: formatIsoDate(),
   description: '',
   paymentType: 'FROM_DEPOSIT',
   usedBy: 'ALL_MEMBERS',
@@ -80,14 +88,16 @@ const INITIAL_FORM: FormState = {
 }
 
 export default function AddExpensePage() {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('expenses')
+  const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('expenses')
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
   const members = useMessMemberOptions(messId, user)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
-  const [message, setMessage] = useState('')
-  const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -132,13 +142,12 @@ export default function AddExpensePage() {
 
   async function handlePreview(event?: FormEvent) {
     event?.preventDefault()
-    setMessage('')
-    setSuccess(false)
-    if (!messId) return setMessage('No mess selected.')
+    clearNotice()
+    if (!messId) return showMessage('missingExpenseContext', 'danger')
     if (form.items.some((item) => !item.itemName.trim() || !item.amount || Number(item.amount) <= 0)) {
-      return setMessage('Every item requires a name and a valid line amount.')
+      return showMessage('everyItemRequired', 'danger')
     }
-    if (effectiveUsedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return setMessage('Select at least one member.')
+    if (effectiveUsedBy === 'SELECTED_MEMBERS' && !form.selectedMemberIds.length) return showMessage('selectAtLeastOneMember', 'danger')
 
     setBusy(true)
     try {
@@ -146,15 +155,14 @@ export default function AddExpensePage() {
       setPreview((res.data as PreviewData) ?? null)
     } catch (error) {
       setPreview(null)
-      setMessage(error instanceof Error ? error.message : 'Failed to calculate split.')
+      showError(error, 'previewFailed')
     } finally {
       setBusy(false)
     }
   }
 
   async function handleSave() {
-    setMessage('')
-    setSuccess(false)
+    clearNotice()
     setBusy(true)
     try {
       const payload = buildPayload()
@@ -176,11 +184,10 @@ export default function AddExpensePage() {
       setPreview(null)
       setAdvancedOpen(false)
       setAdvancedCustomized(false)
-      setSuccess(true)
       const autoApproved = isManager
-      setMessage(autoApproved ? 'Expense saved successfully.' : 'Expense submitted for manager approval.')
+      showMessage(autoApproved ? 'expenseSaved' : 'expenseSubmitted', 'success')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to save expense.')
+      showError(error, 'saveExpenseFailed')
     } finally {
       setBusy(false)
     }
@@ -189,23 +196,23 @@ export default function AddExpensePage() {
   if (preview) {
     return (
       <MobileShell>
-        <FormPageShell title="Split Preview" icon={Eye} backHref="/add-expense">
+        <FormPageShell title={t('splitPreview')} icon={Eye} backHref="/add-expense">
           <SplitPreviewContent
             title={preview.title}
             amount={preview.amount}
-            paidFrom={LABELS.EXPENSE_PAYMENT_TYPES[effectivePaymentType]}
-            usedBy={LABELS.EXPENSE_USED_BY[preview.usedBy]}
-            splitMethod={LABELS.EXPENSE_SPLIT_METHODS[preview.splitMethod]}
+            paidFrom={expensePaymentSourceLabel(effectivePaymentType, locale)}
+            usedBy={expenseUsedByLabel(preview.usedBy, locale)}
+            splitMethod={expenseSplitMethodLabel(preview.splitMethod, locale)}
             payerCredit={preview.payerCredit}
             totalSharedCost={preview.totalSharedCost}
             items={preview.items}
             shares={preview.shares}
-            formatMoney={formatTaka}
+            formatMoney={format.money}
             busy={busy}
             onBack={() => setPreview(null)}
             onSave={() => void handleSave()}
           />
-          <FormStatusMessage message={message} success={success} />
+          <FormStatusMessage message={notice?.message ?? ''} success={notice?.tone === 'success'} />
         </FormPageShell>
       </MobileShell>
     )
@@ -214,7 +221,7 @@ export default function AddExpensePage() {
   return (
     <MobileShell>
       <form onSubmit={handlePreview}>
-        <FormPageShell title="Add Expense" icon={ReceiptText} backHref="/expenses">
+        <FormPageShell title={t('addExpense')} icon={ReceiptText} backHref="/expenses">
           <ExpenseEntryForm
             kind="expense"
             paymentType={form.paymentType}
@@ -260,10 +267,10 @@ export default function AddExpensePage() {
             attachment={{ fileName: receiptFile?.name, onChange: setReceiptFile }}
           />
 
-          <FormStatusMessage message={message} success={success} />
+          <FormStatusMessage message={notice?.message ?? ''} success={notice?.tone === 'success'} />
           <ExpensePrimaryAction type="submit" disabled={busy}>
             <Eye size={17} />
-            {busy ? 'Calculating...' : 'Preview Split'}
+            {busy ? t('calculating') : t('previewSplit')}
           </ExpensePrimaryAction>
         </FormPageShell>
       </form>

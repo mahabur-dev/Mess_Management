@@ -15,7 +15,6 @@ import {
   DepositSectionTitle,
   DepositStatCard,
   DepositStatPanel,
-  formatDepositMoney,
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
@@ -25,6 +24,7 @@ import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
+import { formatIsoDate, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type PaymentItem = {
   id: string
@@ -53,7 +53,7 @@ type DepositSummary = {
 }
 
 function todayDateValue() {
-  return new Date().toISOString().slice(0, 10)
+  return formatIsoDate()
 }
 
 function createInitialForm(paymentDate = ''): FormState {
@@ -68,20 +68,22 @@ function createInitialForm(paymentDate = ''): FormState {
 }
 
 export default function PaymentsPage() {
+  const format = useLocaleFormatters()
+  const t = useTranslations('payments')
+  const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('payments')
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const members = useMessMemberOptions(messId, user)
   const isManager = canManageMess(user)
   const [items, setItems] = useState<PaymentItem[]>([])
   const [form, setForm] = useState<FormState>(() => createInitialForm())
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [summary, setSummary] = useState<DepositSummary>({ approved: 0, myApproved: 0, pending: 0 })
   const [month, setMonth] = useState(currentMonthValue())
 
-  useAutoDismiss(message, () => setMessage(''))
+  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   useEffect(() => {
     if (!messId) return
@@ -103,10 +105,11 @@ export default function PaymentsPage() {
           myApproved: Number((myApprovedRes as { totalAmount?: number }).totalAmount ?? 0),
         })
       })
-      .catch(() => {
+      .catch((error) => {
         if (!alive) return
         setItems([])
         setSummary({ approved: 0, myApproved: 0, pending: 0 })
+        showError(error, 'loadDepositsFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -118,9 +121,9 @@ export default function PaymentsPage() {
   }, [messId, user?.id, busy, month])
 
   async function handleSubmit() {
-    setMessage('')
-    if (!messId) return setMessage('No mess selected.')
-    if (!form.amount) return setMessage('Amount is required.')
+    clearNotice()
+    if (!messId) return showMessage('noMessSelected', 'danger')
+    if (!form.amount) return showMessage('amountRequired', 'danger')
 
     setBusy(true)
     try {
@@ -135,9 +138,9 @@ export default function PaymentsPage() {
       })
       setForm(createInitialForm())
       setShowForm(false)
-      setMessage(isManager ? 'Deposit added and approved.' : 'Deposit submitted for manager approval.')
+      showMessage(isManager ? 'depositAddedApproved' : 'depositSubmitted', 'success')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to submit deposit.')
+      showError(error, 'submitDepositFailed')
     } finally {
       setBusy(false)
     }
@@ -150,28 +153,28 @@ export default function PaymentsPage() {
 
   return (
     <MobileShell>
-      <TopScreen title={showForm ? 'Submit Deposit' : 'Deposit'} subtitle={showForm ? 'Manual entry' : 'Deposit submissions'} backHref="/" />
+      <TopScreen title={showForm ? t('submitDeposit') : t('deposit')} subtitle={showForm ? t('manualEntry') : t('submissions')} backHref="/" />
       <div className="screen space-y-4">
         {!showForm ? (
           <>
             <MealMonthSelector month={month} onChange={setMonth} />
 
             <DepositStatPanel>
-              <DepositStatCard title="My Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading my deposit" /> : formatDepositMoney(summary.myApproved)} icon={UserRound} compact />
-              <DepositStatCard title="Total Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading total deposit" /> : formatDepositMoney(summary.approved)} icon={WalletCards} tone="blue" compact />
-              <DepositStatCard title="Pending Deposit" value={loading ? <LoadingIndicator size="sm" label="Loading pending deposit" /> : formatDepositMoney(summary.pending)} icon={Hourglass} tone="orange" compact />
+              <DepositStatCard title={t('myDeposit')} value={loading ? <LoadingIndicator size="sm" label={t('loadingMyDeposit')} /> : format.money(summary.myApproved)} icon={UserRound} compact />
+              <DepositStatCard title={t('totalDeposit')} value={loading ? <LoadingIndicator size="sm" label={t('loadingTotalDeposit')} /> : format.money(summary.approved)} icon={WalletCards} tone="blue" compact />
+              <DepositStatCard title={t('pendingDeposit')} value={loading ? <LoadingIndicator size="sm" label={t('loadingPendingDeposit')} /> : format.money(summary.pending)} icon={Hourglass} tone="orange" compact />
             </DepositStatPanel>
           </>
         ) : null}
 
-        {message && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+        {notice && !showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{notice.message}</div> : null}
 
         {showForm ? (
           <DeferredFormSection
             open={showForm}
-            title="Submit Deposit"
-            description="Deposits are paid manually first, then entered here."
-            actionLabel="Submit Deposit"
+            title={t('submitDeposit')}
+            description={t('manualNotice')}
+            actionLabel={t('submitDeposit')}
             icon={<PlusCircle size={20} />}
             onOpen={openDepositForm}
             onClose={() => setShowForm(false)}
@@ -192,9 +195,9 @@ export default function PaymentsPage() {
               note={form.note}
               onNoteChange={(note) => setForm((prev) => ({ ...prev, note }))}
             />
-            {message && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+            {notice && showForm ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{notice.message}</div> : null}
             <SubmitButton busy={busy} onClick={handleSubmit}>
-              Submit Deposit
+              {t('submitDeposit')}
             </SubmitButton>
           </DeferredFormSection>
         ) : null}
@@ -202,15 +205,15 @@ export default function PaymentsPage() {
         {!showForm ? (
           <section className="app-section">
             <DepositSectionTitle
-              title="Recent Deposits"
+              title={t('recentDeposits')}
               action={
                 <Link href={appHref(`/payments/all?month=${encodeURIComponent(month)}`)} className="text-label font-semibold text-[#008d8c]">
-                  View All
+                  {t('viewAll')}
                 </Link>
               }
             />
             <div className="flush-list flush-list--panel mt-4">
-              {loading ? <LoadingIndicator variant="card" label="Loading deposits" className="mx-4 !w-auto" /> : null}
+              {loading ? <LoadingIndicator variant="card" label={t('loadingDeposits')} className="mx-4 !w-auto" /> : null}
               {!loading && items.slice(0, 5).map((item, index) => (
                 <DepositListItem
                   key={item.id}
@@ -220,14 +223,14 @@ export default function PaymentsPage() {
                   variant="horizontal"
                 />
               ))}
-              {!loading && !items.length ? <div className="mx-4 rounded-[12px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">No deposits found.</div> : null}
+              {!loading && !items.length ? <div className="mx-4 rounded-[12px] bg-[#edfafa] p-5 text-label font-semibold text-[#65838b]">{t('noDeposits')}</div> : null}
             </div>
           </section>
         ) : null}
 
       </div>
       {!showForm ? (
-        <button type="button" onClick={openDepositForm} aria-label="Add deposit" title="Add deposit" className="floating-action-link">
+        <button type="button" onClick={openDepositForm} aria-label={t('addDeposit')} title={t('addDeposit')} className="floating-action-link">
           <CircleDollarSign size={25} strokeWidth={2.4} />
         </button>
       ) : null}

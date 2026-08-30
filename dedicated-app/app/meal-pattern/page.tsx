@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, CalendarCheck2, CalendarDays, CalendarRange, Check, ChevronLeft, CircleCheck, RefreshCw, Sparkles, UtensilsCrossed } from 'lucide-react'
 import { AppHeader } from '@/components/app-header'
 import { MobileShell } from '@/components/mobile-shell'
@@ -9,8 +9,9 @@ import { Card } from '@/components/ui/card'
 import { Notice } from '@/components/ui/notice'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { AssistantInfoCard } from '@/components/mobile/assistant-info-card'
-import { MealIconBadge } from '@/components/mobile/meals-design'
+import { MealIconBadge, mealHint, mealLabel, todayIsoDate } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
+import { formatNumber, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations, type Locale } from '@/lib/i18n'
 import { useAuth } from '../providers'
 
 type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
@@ -26,47 +27,55 @@ type Pattern = {
   weekly_schedule?: Record<string, Schedule> | null
 }
 
-const meals: Array<{ key: MealName; label: string; hint: string; icon: string }> = [
-  { key: 'BREAKFAST', label: 'Breakfast', hint: 'Morning meal', icon: '☀️' },
-  { key: 'LUNCH', label: 'Lunch', hint: 'Midday meal', icon: '🥗' },
-  { key: 'DINNER', label: 'Dinner', hint: 'Evening meal', icon: '🍲' },
-]
+const meals: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
 const days = ['SATURDAY', 'SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'] as const
-const dayLabels: Record<string, string> = { SATURDAY: 'Sat', SUNDAY: 'Sun', MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed', THURSDAY: 'Thu', FRIDAY: 'Fri' }
+const dayTranslationKeys = {
+  SATURDAY: 'saturday',
+  SUNDAY: 'sunday',
+  MONDAY: 'monday',
+  TUESDAY: 'tuesday',
+  WEDNESDAY: 'wednesday',
+  THURSDAY: 'thursday',
+  FRIDAY: 'friday',
+} as const
 const mealSteps: Record<MealName, number> = { BREAKFAST: 0.5, LUNCH: 1, DINNER: 1 }
 const emptySchedule = (): Schedule => ({ BREAKFAST: 0, LUNCH: 0, DINNER: 0 })
 
 function mealStep(meal: MealName) { return mealSteps[meal] }
-function mealCountLabel(value: number) { return Number(value).toFixed(value % 1 ? 1 : 0) }
-
-function todayIso() {
-  const now = new Date()
-  const offset = now.getTimezoneOffset() * 60000
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10)
+function mealCountLabel(value: number, locale: Locale) {
+  return formatNumber(value, locale, { maximumFractionDigits: 1 })
 }
 
 function activePattern(patterns: Pattern[]) {
   return patterns.find((pattern) => pattern.status === 'ACTIVE') ?? null
 }
 
-function enabledLabels(schedule?: Schedule | null) {
-  return meals.filter((meal) => Number(schedule?.[meal.key] ?? 0) > 0).map((meal) => `${meal.label} (${mealCountLabel(Number(schedule?.[meal.key] ?? 0))})`)
+function enabledLabels(schedule: Schedule | null | undefined, locale: Locale) {
+  return meals
+    .filter((meal) => Number(schedule?.[meal] ?? 0) > 0)
+    .map((meal) => `${mealLabel(meal, locale)} (${mealCountLabel(Number(schedule?.[meal] ?? 0), locale)})`)
 }
 
 function scheduleTotal(schedule?: Schedule | null) {
-  return meals.reduce((sum, meal) => sum + Number(schedule?.[meal.key] ?? 0), 0)
+  return meals.reduce((sum, meal) => sum + Number(schedule?.[meal] ?? 0), 0)
 }
 
 function PatternTypeCard({ type, selected, onSelect }: { type: PatternType; selected: boolean; onSelect: () => void }) {
   const daily = type === 'DAILY'
+  const copy = useTranslations('meals')
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
+    <label
       className="assistant-pattern-card"
       data-selected={selected ? 'true' : 'false'}
     >
+      <input
+        type="radio"
+        name="meal-pattern-type"
+        value={type}
+        checked={selected}
+        onChange={onSelect}
+        className="sr-only"
+      />
       <span className="assistant-pattern-card__glow" aria-hidden="true" />
       <span className="assistant-pattern-card__dots" aria-hidden="true" />
 
@@ -74,25 +83,23 @@ function PatternTypeCard({ type, selected, onSelect }: { type: PatternType; sele
         <span className="assistant-pattern-card__icon" aria-hidden="true">
           {daily ? <CalendarDays size={24} strokeWidth={2.2} /> : <CalendarRange size={24} strokeWidth={2.2} />}
         </span>
-        <span className="assistant-pattern-card__title">{daily ? 'Daily' : 'Weekly'}</span>
-        <span className="assistant-pattern-card__badge">{daily ? 'Popular' : 'Flexible'}</span>
+        <span className="assistant-pattern-card__title">{daily ? copy('daily') : copy('weekly')}</span>
+        <span className="assistant-pattern-card__badge">{daily ? copy('popular') : copy('flexible')}</span>
       </span>
 
-      <span className="assistant-pattern-card__description">{daily ? 'Same meals every day' : 'Different meals for each day'}</span>
+      <span className="assistant-pattern-card__description">{daily ? copy('sameEveryDay') : copy('differentEachDay')}</span>
 
       <span className="assistant-pattern-card__features">
-        <span><span className="assistant-pattern-card__check"><Check size={12} strokeWidth={3} /></span>{daily ? 'Fast to set up' : 'Plan around your week'}</span>
-        <span><span className="assistant-pattern-card__check"><Check size={12} strokeWidth={3} /></span>{daily ? 'Best for regular routines' : 'Best for changing routines'}</span>
+        <span><span className="assistant-pattern-card__check"><Check size={12} strokeWidth={3} /></span>{daily ? copy('fastSetup') : copy('planWeek')}</span>
+        <span><span className="assistant-pattern-card__check"><Check size={12} strokeWidth={3} /></span>{daily ? copy('regularRoutine') : copy('changingRoutine')}</span>
       </span>
-
-      <span className="assistant-pattern-card__choice">
-        {selected ? <Check size={16} strokeWidth={2.8} /> : null} {selected ? 'Selected' : 'Choose plan'}
-      </span>
-    </button>
+    </label>
   )
 }
 
 function MealScheduleEditor({ schedule, onChange }: { schedule: Schedule; onChange: (next: Schedule) => void }) {
+  const { locale } = useLocale()
+  const copy = useTranslations('meals')
   const total = scheduleTotal(schedule)
   const changeCount = (meal: MealName, direction: -1 | 1) => {
     const next = Math.max(0, Number((schedule[meal] + direction * mealStep(meal)).toFixed(2)))
@@ -105,17 +112,18 @@ function MealScheduleEditor({ schedule, onChange }: { schedule: Schedule; onChan
 
   return (
     <div className="w-full">
-      <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-label font-bold text-[#245d66]">Meals in this pattern</p><p className="mt-0.5 text-caption text-[#65838b]">Add one or more meals to your routine.</p></div><span className="rounded-full bg-[#dff4f3] px-2.5 py-1 text-caption font-bold text-[#00777a]">{mealCountLabel(total)} added</span></div>
+      <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-label font-bold text-[#245d66]">{copy('mealsInPattern')}</p><p className="mt-0.5 text-caption text-[#65838b]">{copy('addMealsRoutine')}</p></div><span className="rounded-full bg-[#dff4f3] px-2.5 py-1 text-caption font-bold text-[#00777a]">{copy('countAdded', { count: mealCountLabel(total, locale) })}</span></div>
       <div className="w-full">
         {meals.map((meal) => {
-          const count = Number(schedule[meal.key] || 0)
-          return <div key={meal.key} className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-0 py-3 first:border-t">
-            <MealIconBadge mealName={meal.key} size="sm" />
-            <span className="min-w-0 flex-1"><span className="block text-label font-bold text-[#245d66]">{meal.label}</span><span className="block text-caption text-[#65838b]">{meal.hint}</span></span>
+          const count = Number(schedule[meal] || 0)
+          const label = mealLabel(meal, locale)
+          return <div key={meal} className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-0 py-3 first:border-t">
+            <MealIconBadge mealName={meal} size="sm" />
+            <span className="min-w-0 flex-1"><span className="block text-label font-bold text-[#245d66]">{label}</span><span className="block text-caption text-[#65838b]">{mealHint(meal, locale)}</span></span>
             <div className="flex h-9 shrink-0 items-center overflow-hidden border border-[#9edddc] bg-[#f8fbfb]">
-              <button type="button" aria-label={`Reduce ${meal.label}`} onClick={() => changeCount(meal.key, -1)} className="grid h-full w-8 place-items-center text-[#00777a] hover:bg-[#dff4f3]">−</button>
-              <input aria-label={`${meal.label} count`} type="number" min="0" step={mealStep(meal.key)} value={count} onChange={(event) => setCount(meal.key, event.target.value)} className="h-full w-12 border-x border-[#bfe7e6] bg-transparent text-center text-label font-bold text-[#245d66] outline-none" />
-              <button type="button" aria-label={`Add more ${meal.label}`} onClick={() => changeCount(meal.key, 1)} className="grid h-full w-8 place-items-center bg-[#008d8c] text-white hover:bg-[#00777a]">+</button>
+              <button type="button" aria-label={copy('reduceMeal', { meal: label })} onClick={() => changeCount(meal, -1)} className="grid h-full w-8 place-items-center text-[#00777a] hover:bg-[#dff4f3]">−</button>
+              <input aria-label={copy('mealCount', { meal: label })} type="number" min="0" step={mealStep(meal)} value={count} onChange={(event) => setCount(meal, event.target.value)} className="h-full w-12 border-x border-[#bfe7e6] bg-transparent text-center text-label font-bold text-[#245d66] outline-none" />
+              <button type="button" aria-label={copy('addMoreMeal', { meal: label })} onClick={() => changeCount(meal, 1)} className="grid h-full w-8 place-items-center bg-[#008d8c] text-white hover:bg-[#00777a]">+</button>
             </div>
           </div>
         })}
@@ -126,6 +134,9 @@ function MealScheduleEditor({ schedule, onChange }: { schedule: Schedule; onChan
 
 export default function MealPatternPage() {
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const copy = useTranslations('meals')
   const membership = user?.memberships?.find((item) => item.is_active !== false) ?? user?.memberships?.[0]
   const membershipId = membership?.id ?? ''
   const [patterns, setPatterns] = useState<Pattern[]>([])
@@ -135,65 +146,84 @@ export default function MealPatternPage() {
   const [daily, setDaily] = useState<Schedule>(() => ({ BREAKFAST: 0.5, LUNCH: 1, DINNER: 1 }))
   const [weekly, setWeekly] = useState<Record<string, Schedule>>(() => Object.fromEntries(days.map((day) => [day, emptySchedule()])))
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+  const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
 
   const current = useMemo(() => activePattern(patterns), [patterns])
-  const schedule = type === 'DAILY' ? daily : null
-  const selectedCount = enabledLabels(schedule).length
+  const hasSelectedMeals = type === 'DAILY'
+    ? scheduleTotal(daily) > 0
+    : days.some((day) => scheduleTotal(weekly[day]) > 0)
 
-  const loadPatterns = () => {
-    if (!membershipId) return
-    setLoading(true)
-    api.getMealPatterns(membershipId).then((res) => setPatterns(Array.isArray(res.data) ? res.data : [])).catch((err) => setError(err instanceof Error ? err.message : 'Unable to load your meal pattern.')).finally(() => setLoading(false))
-  }
-
-  useEffect(() => { loadPatterns() }, [membershipId])
-
-  const startSetup = () => { setError(''); setStep('type') }
-  const submit = async () => {
-    if (!membershipId) return
-    setSaving(true); setError('')
+  const loadPatterns = useCallback(async (showLoading = true) => {
+    if (!membershipId) {
+      showMessage('noMessSelected', 'warning')
+      setLoading(false)
+      return false
+    }
+    if (showLoading) {
+      setLoading(true)
+      clearNotice()
+    }
     try {
-      await api.createMealPattern({ membershipId, patternType: type, startDate: todayIso(), activate: true, ...(type === 'DAILY' ? { dailySchedule: daily } : { weeklySchedule: weekly }) })
+      const response = await api.getMealPatterns(membershipId)
+      setPatterns(Array.isArray(response.data) ? response.data : [])
+      return true
+    } catch (error) {
+      showError(error, 'loadPatternFailed')
+      return false
+    } finally {
+      if (showLoading) setLoading(false)
+    }
+  }, [clearNotice, membershipId, showError, showMessage])
+
+  useEffect(() => { void loadPatterns() }, [loadPatterns])
+
+  const startSetup = () => { clearNotice(); setStep('type') }
+  const submit = async () => {
+    if (!membershipId) return showMessage('noMessSelected', 'warning')
+    if (!hasSelectedMeals) return showMessage('patternMealRequired', 'danger')
+    setSaving(true); clearNotice()
+    try {
+      await api.createMealPattern({ membershipId, patternType: type, startDate: todayIsoDate(), activate: true, ...(type === 'DAILY' ? { dailySchedule: daily } : { weeklySchedule: weekly }) })
+      const refreshed = await loadPatterns(false)
+      if (!refreshed) return
       setStep('success')
-      loadPatterns()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Unable to activate this pattern.') } finally { setSaving(false) }
+    } catch (error) { showError(error, 'activatePatternFailed') } finally { setSaving(false) }
   }
 
-  if (loading) return <MobileShell><AppHeader title="Meal Pattern" subtitle="Simple, automatic meal planning" backHref="/" /><LoadingIndicator variant="screen" label="Loading meal pattern" /></MobileShell>
+  if (loading) return <MobileShell><AppHeader title={copy('mealPattern')} subtitle={copy('patternSubtitle')} backHref="/" /><LoadingIndicator variant="screen" label={copy('loadingPattern')} /></MobileShell>
 
   return (
     <MobileShell>
-      <AppHeader title="Meal Pattern" subtitle="Simple, automatic meal planning" backHref="/" />
+      <AppHeader title={copy('mealPattern')} subtitle={copy('patternSubtitle')} backHref="/" />
       <div className="screen min-h-[calc(100dvh-var(--app-header-inset))] space-y-4 bg-[#f9fbfb] text-[#245d66]">
-        {error ? <Notice tone="danger">{error}</Notice> : null}
+        {notice ? <Notice tone={notice.tone}>{notice.message}</Notice> : null}
 
         {step === 'overview' ? (
           current ? (
             <>
               <AssistantInfoCard
-                eyebrow="Active schedule"
-                title={current.pattern_type === 'DAILY' ? 'Daily pattern' : 'Weekly pattern'}
-                description={<>Meals are added automatically from {new Date(current.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</>}
+                eyebrow={copy('activeSchedule')}
+                title={current.pattern_type === 'DAILY' ? copy('dailyPattern') : copy('weeklyPattern')}
+                description={copy('automaticFromDate', { date: format.date(current.start_date, { month: 'short', day: 'numeric', year: undefined }) })}
                 icon={CircleCheck}
               />
-              <Card title="Your schedule" subtitle="You can change this whenever your routine changes.">
-                {current.pattern_type === 'DAILY' ? <div className="space-y-2">{enabledLabels(current.daily_schedule).map((label) => <div key={label} className="flex items-center gap-2 text-label text-[#245d66]"><span className="grid h-6 w-6 place-items-center rounded-full bg-[#dff4f3] text-[#008d8c]"><Check size={14} /></span>{label}</div>)}</div> : <div className="space-y-2">{days.map((day) => <div key={day} className="flex items-center justify-between border-b border-[#e4eaec] pb-2 text-label"><span className="text-[#245d66]">{dayLabels[day]}</span><span className="text-[#65838b]">{enabledLabels(current.weekly_schedule?.[day]).join(', ') || 'No meals'}</span></div>)}</div>}
+              <Card title={copy('yourSchedule')} subtitle={copy('changeAnytime')}>
+                {current.pattern_type === 'DAILY' ? <div className="space-y-2">{enabledLabels(current.daily_schedule, locale).map((label) => <div key={label} className="flex items-center gap-2 text-label text-[#245d66]"><span className="grid h-6 w-6 place-items-center rounded-full bg-[#dff4f3] text-[#008d8c]"><Check size={14} /></span>{label}</div>)}</div> : <div className="space-y-2">{days.map((day) => <div key={day} className="flex items-center justify-between border-b border-[#e4eaec] pb-2 text-label"><span className="text-[#245d66]">{copy(dayTranslationKeys[day])}</span><span className="text-[#65838b]">{enabledLabels(current.weekly_schedule?.[day], locale).join(', ') || copy('noMeals')}</span></div>)}</div>}
               </Card>
-              <Button className="w-full" onClick={startSetup}><RefreshCw size={17} /> Change pattern</Button>
+              <Button className="w-full" onClick={startSetup}><RefreshCw size={17} /> {copy('changePattern')}</Button>
             </>
           ) : (
             <>
-              <Card variant="tint" className="py-8 text-center"><div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#dff4f3] text-[#008d8c]"><Sparkles size={30} /></div><h1 className="mt-4 text-headline text-[#245d66]">Set your meal pattern</h1><p className="mx-auto mt-2 max-w-[290px] text-body text-[#65838b]">Choose once and MessZen will keep your meal schedule updated automatically.</p></Card>
-              <Button className="w-full" onClick={startSetup}>Create meal pattern <ArrowRight size={18} /></Button>
+              <Card variant="tint" className="py-8 text-center"><div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#dff4f3] text-[#008d8c]"><Sparkles size={30} /></div><h1 className="mt-4 text-headline text-[#245d66]">{copy('setPattern')}</h1><p className="mx-auto mt-2 max-w-[290px] text-body text-[#65838b]">{copy('setPatternDescription')}</p></Card>
+              <Button className="w-full" onClick={startSetup}>{copy('createPattern')} <ArrowRight size={18} /></Button>
             </>
           )
         ) : null}
 
         {step === 'type' ? (
           <>
-            <button type="button" className="flex items-center gap-1 text-label text-[#00777a]" onClick={() => setStep('overview')}><ChevronLeft size={18} /> Back</button>
-            <div className="rounded-[18px] border border-[#dce8e9] bg-white p-4 shadow-[0_6px_16px_rgba(18,55,72,.04)]"><div className="flex items-center justify-between"><p className="text-caption font-bold uppercase tracking-[.12em] text-[#008d8c]">Step 1 of 2</p><span className="text-caption font-semibold text-[#65838b]">Choose a plan</span></div><h1 className="mt-2 text-headline font-semibold text-[#245d66]">How do you schedule meals?</h1><p className="mt-2 text-body text-[#52727b]">Pick the routine that best matches your week.</p></div>
+            <button type="button" className="flex items-center gap-1 text-label text-[#00777a]" onClick={() => setStep('overview')}><ChevronLeft size={18} /> {copy('back')}</button>
+            <div className="rounded-[18px] border border-[#dce8e9] bg-white p-4 shadow-[0_6px_16px_rgba(18,55,72,.04)]"><p className="text-caption font-bold uppercase tracking-[.12em] text-[#008d8c]">{copy('stepOne')}</p><h1 className="mt-2 text-headline font-semibold text-[#245d66]">{copy('scheduleQuestion')}</h1><p className="mt-2 text-body text-[#52727b]">{copy('scheduleQuestionHint')}</p></div>
             <div className="relative overflow-hidden rounded-[14px] border border-[#bfe7e6] bg-gradient-to-br from-[#edfafa] via-white to-[#fff9ed] px-4 py-3 shadow-[0_8px_18px_rgba(0,141,140,.08)]">
               <div className="absolute -right-5 -top-7 h-20 w-20 rounded-full bg-[#dff4f3]/70" />
               <div className="relative flex items-center gap-3">
@@ -205,27 +235,27 @@ export default function MealPatternPage() {
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-[#fff2d8] text-[#d98b10] shadow-sm"><Sparkles size={16} /></span>
                 </div>
                 <div className="min-w-0 border-l border-[#bfe7e6] pl-3">
-                  <p className="text-label font-bold text-[#245d66]">Set it once, stay on track.</p>
-                  <p className="mt-0.5 text-caption leading-4 text-[#52727b]">MessZen will manage your meal routine automatically.</p>
+                  <p className="text-label font-bold text-[#245d66]">{copy('setOnce')}</p>
+                  <p className="mt-0.5 text-caption leading-4 text-[#52727b]">{copy('automaticRoutine')}</p>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3"><PatternTypeCard type="DAILY" selected={type === 'DAILY'} onSelect={() => setType('DAILY')} /><PatternTypeCard type="WEEKLY" selected={type === 'WEEKLY'} onSelect={() => setType('WEEKLY')} /></div>
-            <Button className="w-full" onClick={() => setStep('schedule')}>Continue <ArrowRight size={18} /></Button>
+            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={copy('scheduleQuestion')}><PatternTypeCard type="DAILY" selected={type === 'DAILY'} onSelect={() => setType('DAILY')} /><PatternTypeCard type="WEEKLY" selected={type === 'WEEKLY'} onSelect={() => setType('WEEKLY')} /></div>
+            <Button className="w-full" onClick={() => setStep('schedule')}>{copy('continue')} <ArrowRight size={18} /></Button>
           </>
         ) : null}
 
         {step === 'schedule' ? (
           <>
-            <button type="button" className="flex items-center gap-1 text-label text-[#00777a]" onClick={() => setStep('type')}><ChevronLeft size={18} /> Back</button>
+            <button type="button" className="flex items-center gap-1 text-label text-[#00777a]" onClick={() => setStep('type')}><ChevronLeft size={18} /> {copy('back')}</button>
             <AssistantInfoCard
-              eyebrow="Step 2 of 2"
-              title={type === 'DAILY' ? 'What meals do you take?' : 'Plan each day'}
-              description={type === 'DAILY' ? 'Add the meals you normally take every day.' : 'Add meals for each day. Empty days stay meal-free.'}
+              eyebrow={copy('stepTwo')}
+              title={type === 'DAILY' ? copy('whatMeals') : copy('planEachDay')}
+              description={type === 'DAILY' ? copy('dailyScheduleHint') : copy('weeklyScheduleHint')}
               icon={CalendarCheck2}
             />
-            {type === 'DAILY' ? <div className="w-full rounded-[12px] border border-[#dce8e9] bg-white p-3"><MealScheduleEditor schedule={daily} onChange={setDaily} /></div> : <div className="w-full space-y-3">{days.map((day) => <div key={day} className="w-full rounded-[12px] border border-[#dce8e9] bg-white p-3"><div className="mb-2 flex items-center justify-between"><span className="text-label text-[#245d66]">{dayLabels[day]}</span><span className="text-caption text-[#65838b]">{mealCountLabel(scheduleTotal(weekly[day]))} added</span></div><MealScheduleEditor schedule={weekly[day]} onChange={(next) => setWeekly((old) => ({ ...old, [day]: next }))} /></div>)}</div>}
-            <Button className="w-full" onClick={submit} busy={saving} disabled={type === 'DAILY' && selectedCount === 0}>Activate pattern <ArrowRight size={18} /></Button>
+            {type === 'DAILY' ? <div className="w-full rounded-[12px] border border-[#dce8e9] bg-white p-3"><MealScheduleEditor schedule={daily} onChange={setDaily} /></div> : <div className="w-full space-y-3">{days.map((day) => <div key={day} className="w-full rounded-[12px] border border-[#dce8e9] bg-white p-3"><div className="mb-2 flex items-center justify-between"><span className="text-label text-[#245d66]">{copy(dayTranslationKeys[day])}</span><span className="text-caption text-[#65838b]">{copy('countAdded', { count: mealCountLabel(scheduleTotal(weekly[day]), locale) })}</span></div><MealScheduleEditor schedule={weekly[day]} onChange={(next) => setWeekly((old) => ({ ...old, [day]: next }))} /></div>)}</div>}
+            <Button className="w-full" onClick={submit} busy={saving} disabled={!hasSelectedMeals}>{copy('activatePattern')} <ArrowRight size={18} /></Button>
           </>
         ) : null}
 
@@ -234,9 +264,9 @@ export default function MealPatternPage() {
             <span className="assistant-success-card__glow" aria-hidden="true" />
             <span className="assistant-success-card__dots" aria-hidden="true" />
             <span className="assistant-success-card__icon" aria-hidden="true"><Check size={38} strokeWidth={2.8} /></span>
-            <h1 className="assistant-success-card__title">Meal pattern activated</h1>
-            <p className="assistant-success-card__description">Your {type.toLowerCase()} meal schedule is now active. Meals will be added automatically.</p>
-            <Button className="assistant-success-card__action w-full" onClick={() => setStep('overview')}>View my schedule <ArrowRight size={18} /></Button>
+            <h1 className="assistant-success-card__title">{copy('patternActivated')}</h1>
+            <p className="assistant-success-card__description">{copy('patternActivatedDescription', { type: type === 'DAILY' ? copy('daily').toLocaleLowerCase(locale) : copy('weekly').toLocaleLowerCase(locale) })}</p>
+            <Button className="assistant-success-card__action w-full" onClick={() => setStep('overview')}>{copy('viewSchedule')} <ArrowRight size={18} /></Button>
           </Card>
         ) : null}
       </div>

@@ -18,6 +18,8 @@ import {
 import { IconInput } from '@/components/mobile/icon-input'
 import { BrandBuildingArt } from '@/components/brand-building-art'
 import { Button } from '@/components/ui/button'
+import { AuthLanguageToggle } from '@/components/language-control'
+import { useTranslations } from '@/lib/i18n'
 
 type IconType = ComponentType<LucideProps>
 
@@ -32,6 +34,7 @@ export function AuthShell({
   maxWidth = 'max-w-md',
   variant = 'default',
   icon: HeroIcon = ShieldCheck,
+  showLanguageToggle = false,
 }: {
   title?: string
   description?: string
@@ -40,18 +43,21 @@ export function AuthShell({
   maxWidth?: string
   variant?: 'default' | 'reference'
   icon?: IconType
+  showLanguageToggle?: boolean
 }) {
   const reference = variant === 'reference'
+  const auth = useTranslations('auth')
 
   return (
     <div className={reference ? 'auth-reference' : 'min-h-screen px-4 py-6'}>
       {reference ? <BrandBuildingArt placement="auth" /> : null}
       <div
-        className={reference ? 'auth-reference__inner' : `mx-auto flex min-h-[calc(100vh-3rem)] w-full ${maxWidth} flex-col`}
+        className={reference ? 'auth-reference__inner' : `mx-auto flex min-h-[calc(100dvh-3rem)] w-full ${maxWidth} flex-col`}
       >
         {reference ? (
           <header className="auth-reference__brandbar" aria-label="Messzen">
             <span>MESSZEN</span>
+            {showLanguageToggle ? <AuthLanguageToggle /> : null}
           </header>
         ) : null}
 
@@ -95,7 +101,7 @@ export function AuthShell({
 
               <span className="inline-flex items-center gap-1.5 text-caption font-semibold">
                 <ShieldCheck size={reference ? 22 : 14} className="text-[#008d8c]" />
-                Protected access
+                {auth('protectedAccess')}
               </span>
 
               <span className="h-px flex-1 bg-[#cbd8e1]" />
@@ -185,6 +191,7 @@ export function AuthPasswordField({
   placeholder: string
   autoComplete: string
 }) {
+  const auth = useTranslations('auth')
   return (
     <label className="block">
       <div className="sr-only">
@@ -236,7 +243,7 @@ export function AuthPasswordField({
 
         <button
           type="button"
-          aria-label={show ? 'Hide password' : 'Show password'}
+          aria-label={show ? auth('hidePassword') : auth('showPassword')}
           aria-pressed={show}
           onClick={onToggle}
           className="

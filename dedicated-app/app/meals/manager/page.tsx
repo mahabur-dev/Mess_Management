@@ -4,17 +4,19 @@ import { CalendarClock, LockKeyhole, Settings2, Users, UtensilsCrossed } from 'l
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { ManagerActionCard, MealCard } from '@/components/mobile/meals-design'
+import { useTranslations } from '@/lib/i18n'
 
 export default function MealManagerPage() {
+  const meals = useTranslations('meals')
   return (
     <MobileShell>
-      <TopScreen title="Manager Controls" subtitle="Meal operation tools" backHref="/meals" />
+      <TopScreen title={meals('managerControls')} subtitle={meals('managerTools')} backHref="/meals" />
       <div className="screen space-y-4">
         <MealCard className="space-y-3">
-          <ManagerActionCard href="/meals/time" icon={<CalendarClock size={21} />} title="Set Meal Time" description="Manage meal update window for members" />
-          <ManagerActionCard href="/meals/locks" icon={<LockKeyhole size={21} />} title="Lock / Unlock Meals" description="Lock meals after deadline or reopen when needed" tone="blue" />
-          <ManagerActionCard href="/meals/members" icon={<Users size={21} />} title="View All Meals" description="See and update all members meal status" tone="amber" />
-          <ManagerActionCard href="/meals/settings" icon={<Settings2 size={21} />} title="Meal Settings" description="Configure meal preferences and reminders" tone="aqua" />
+          <ManagerActionCard href="/meals/time" icon={<CalendarClock size={21} />} title={meals('setMealTime')} description={meals('setMealTimeDescription')} />
+          <ManagerActionCard href="/meals/locks" icon={<LockKeyhole size={21} />} title={meals('lockUnlockMeals')} description={meals('lockUnlockDescription')} tone="blue" />
+          <ManagerActionCard href="/meals/members" icon={<Users size={21} />} title={meals('viewAllMeals')} description={meals('viewAllMealsDescription')} tone="amber" />
+          <ManagerActionCard href="/meals/settings" icon={<Settings2 size={21} />} title={meals('settings')} description={meals('settingsDescription')} tone="aqua" />
         </MealCard>
 
         <MealCard className="flex items-center gap-3">
@@ -22,8 +24,8 @@ export default function MealManagerPage() {
             <UtensilsCrossed size={22} />
           </div>
           <div>
-            <div className="text-body font-bold text-[#123748]">Reusable meal feature</div>
-            <div className="mt-1 text-label text-[#65838b]">All manager pages use the same meal cards, tabs and API client methods.</div>
+            <div className="text-body font-bold text-[#123748]">{meals('sharedWorkflowTitle')}</div>
+            <div className="mt-1 text-label text-[#65838b]">{meals('sharedWorkflowDescription')}</div>
           </div>
         </MealCard>
       </div>

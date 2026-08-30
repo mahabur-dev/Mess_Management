@@ -14,8 +14,13 @@ import {
   Zap,
 } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import {
+  BillingCalculationNotice,
+  billingCalculationIsPending,
+  type BillingCalculationStatus,
+} from '@/components/mobile/billing-status-notice'
 import { DepositListItem, type DepositListRecord } from '@/components/mobile/deposit-design'
-import { ExpenseListItem, formatTaka, type ExpenseListRecord } from '@/components/mobile/expense-design'
+import { ExpenseListItem, type ExpenseListRecord } from '@/components/mobile/expense-design'
 import { ExpenseBreakdownList, ExpenseSurface } from '@/components/mobile/expense-ui'
 import {
   InlineNotice,
@@ -32,6 +37,7 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { Button } from '@/components/ui'
 import { api } from '@/lib/api'
+import { useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '@/app/providers'
 
@@ -110,6 +116,8 @@ function AssignedFoodExpensesBreakdown({
   expenses: NonNullable<MyExpenseDetails['assignedFoodExpenses']>
   messId: string
 }) {
+  const t = useTranslations('billing')
+  const format = useLocaleFormatters()
   const [open, setOpen] = useState(false)
 
   return (
@@ -123,8 +131,8 @@ function AssignedFoodExpensesBreakdown({
         <span className="expense-breakdown-row__icon bg-[#edfafa] text-[#0aa0a0]">
           <ReceiptText size={16} strokeWidth={2.35} />
         </span>
-        <span className="min-w-0 flex-1 text-label font-medium text-[#3d5560]">Assigned Food Expenses</span>
-        <span className="text-label font-semibold text-[#1d3a42]">{formatTaka(total)}</span>
+        <span className="min-w-0 flex-1 text-label font-medium text-[#3d5560]">{t('assignedFoodExpenses')}</span>
+        <span className="text-label font-semibold text-[#1d3a42]">{format.money(total)}</span>
         <ChevronDown size={17} className={`shrink-0 text-[#65838b] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -139,14 +147,14 @@ function AssignedFoodExpensesBreakdown({
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-label font-semibold text-[#123748]">{expense.title}</span>
                 <span className="mt-0.5 block text-caption font-medium text-[#65838b]">
-                  {new Date(expense.expenseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                  {format.date(expense.expenseDate, { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </span>
-              <span className="shrink-0 text-label font-bold text-[#00777a]">{formatTaka(expense.memberShare)}</span>
+              <span className="shrink-0 text-label font-bold text-[#00777a]">{format.money(expense.memberShare)}</span>
               <ChevronRight size={16} className="shrink-0 text-[#65838b]" />
             </Link>
           ))}
-          {!expenses.length ? <div className="expense-empty-state">No assigned food expenses.</div> : null}
+          {!expenses.length ? <div className="expense-empty-state">{t('noAssignedFoodExpenses')}</div> : null}
         </div>
       ) : null}
     </div>
@@ -154,6 +162,10 @@ function AssignedFoodExpensesBreakdown({
 }
 
 function MyMonthlyDetailsContent() {
+  const t = useTranslations('billing')
+  const format = useLocaleFormatters()
+  const loadNotice = useLocalizedNotice('billing')
+  const closeNotice = useLocalizedNotice('billing')
   const params = useSearchParams()
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
@@ -163,10 +175,9 @@ function MyMonthlyDetailsContent() {
   const [details, setDetails] = useState<MyExpenseDetails | null>(null)
   const [deposits, setDeposits] = useState<DepositListRecord[]>([])
   const [payments, setPayments] = useState<PaymentItem[]>([])
+  const [billingStatus, setBillingStatus] = useState<BillingCalculationStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [closeBusy, setCloseBusy] = useState(false)
-  const [message, setMessage] = useState('')
-  const [closeMessage, setCloseMessage] = useState('')
 
   const range = useMemo(() => monthBounds(month), [month])
 
@@ -182,31 +193,56 @@ function MyMonthlyDetailsContent() {
           if (!alive) return
           const bills = Array.isArray(response.data) ? (response.data as BillItem[]) : []
           setBill(bills[0] ?? null)
+          setBillingStatus(response.billing?.status ?? null)
           if (response.billing && response.billing.status !== 'READY' && response.billing.status !== 'FAILED') {
             billingTimer = setTimeout(refreshBill, 1500)
           }
         })
-        .catch(() => undefined)
+        .catch((error) => {
+          if (alive) loadNotice.showError(error, 'loadDetailsFailed')
+        })
     }
 
     setLoading(true)
-    setMessage('')
+    setBillingStatus(null)
+    loadNotice.clearNotice()
+
+    let firstLoadError: unknown = null
+    const recordLoadError = (error: unknown) => {
+      firstLoadError ??= error
+    }
 
     Promise.all([
-      api.getBillsByMess(messId, { month: `${month}-01`, memberId: user.id, limit: 1 }).catch(() => ({ data: [], billing: null })),
-      api.getMealsByMess(messId, { startDate: range.startDate, endDate: range.endDate, limit: 300 }).catch(() => ({ data: [] })),
-      api.getMyExpenseDetails(messId, `${month}-01`).catch(() => ({ data: null })),
+      api.getBillsByMess(messId, { month: `${month}-01`, memberId: user.id, limit: 1 }).catch((error) => {
+        recordLoadError(error)
+        return { data: [], billing: null }
+      }),
+      api.getMealsByMess(messId, { startDate: range.startDate, endDate: range.endDate, limit: 300 }).catch((error) => {
+        recordLoadError(error)
+        return { data: [] }
+      }),
+      api.getMyExpenseDetails(messId, `${month}-01`).catch((error) => {
+        recordLoadError(error)
+        return { data: null }
+      }),
       api
         .getDepositsByMess(messId, { userId: user.id, billMonth: `${month}-01`, limit: 50, sortBy: 'date', sortOrder: 'desc' })
-        .catch(() => ({ data: [] })),
+        .catch((error) => {
+          recordLoadError(error)
+          return { data: [] }
+        }),
       api
         .getPaymentsByMess(messId, { memberId: user.id, billMonth: `${month}-01`, limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
-        .catch(() => ({ data: [] })),
+        .catch((error) => {
+          recordLoadError(error)
+          return { data: [] }
+        }),
     ])
       .then(([billRes, mealRes, detailRes, depositRes, paymentRes]) => {
         if (!alive) return
         const billList = Array.isArray(billRes.data) ? (billRes.data as BillItem[]) : []
         setBill(billList[0] ?? null)
+        setBillingStatus(billRes.billing?.status ?? null)
         setMeals(normalizeMeals(mealRes.data))
         setDetails((detailRes.data ?? null) as MyExpenseDetails | null)
         setDeposits(Array.isArray(depositRes.data) ? (depositRes.data as DepositListRecord[]) : [])
@@ -214,10 +250,11 @@ function MyMonthlyDetailsContent() {
         if (billRes.billing && billRes.billing.status !== 'READY' && billRes.billing.status !== 'FAILED') {
           billingTimer = setTimeout(refreshBill, 1500)
         }
+        if (firstLoadError) loadNotice.showError(firstLoadError, 'partialDetailsLoadFailed')
       })
       .catch((error) => {
         if (!alive) return
-        setMessage(error instanceof Error ? error.message : 'Failed to load monthly bill details.')
+        loadNotice.showError(error, 'loadDetailsFailed')
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -227,7 +264,7 @@ function MyMonthlyDetailsContent() {
       alive = false
       if (billingTimer) clearTimeout(billingTimer)
     }
-  }, [messId, month, range.endDate, range.startDate, user?.id])
+  }, [loadNotice.clearNotice, loadNotice.showError, messId, month, range.endDate, range.startDate, user?.id])
 
   const history = useMemo(() => buildMemberMealHistory(meals, user?.id), [meals, user?.id])
   const mealSummary = useMemo(() => summarizeMealHistory(history), [history])
@@ -250,27 +287,29 @@ function MyMonthlyDetailsContent() {
       && latestCloseRequest?.status !== 'APPROVED',
   )
 
-  const closeUnavailableMessage = latestCloseRequest?.status === 'PENDING' || latestCloseRequest?.status === 'APPROVED'
+  const closeUnavailableMessage = billingCalculationIsPending(billingStatus)
+    ? null
+    : latestCloseRequest?.status === 'PENDING' || latestCloseRequest?.status === 'APPROVED'
     ? null
     : !bill
-      ? 'No generated monthly bill is available to close.'
+      ? t('noBillToClose')
       : !isCompletedMonth
-        ? 'This calculation can be closed after the current month is completed.'
+        ? t('closeAfterMonth')
         : toNumber(bill.balance) === 0
-          ? 'This calculation has no remaining balance to close.'
+          ? t('noRemainingBalance')
           : null
 
   const requestClose = async () => {
     if (!bill || !canRequestClose || closeBusy) return
     setCloseBusy(true)
-    setCloseMessage('')
+    closeNotice.clearNotice()
     try {
       const response = await api.requestMonthlyBillClose(bill.id)
       const request = response.data as BillCloseRequest
       setBill((current) => current ? { ...current, close_requests: [request] } : current)
-      setCloseMessage('Request submitted. Your manager has been notified for approval.')
+      closeNotice.showMessage('closeRequestSubmitted', 'success')
     } catch (error) {
-      setCloseMessage(error instanceof Error ? error.message : 'Failed to submit close request.')
+      closeNotice.showError(error, 'closeRequestFailed')
     } finally {
       setCloseBusy(false)
     }
@@ -278,39 +317,40 @@ function MyMonthlyDetailsContent() {
 
   return (
     <MobileShell>
-      <TopScreen title="My Monthly Details" subtitle={range.month} backHref="/monthly-bill" />
+      <TopScreen title={t('myMonthlyDetails')} subtitle={format.month(`${month}-01`)} backHref="/monthly-bill" />
 
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />
 
-        {message ? <InlineNotice tone="danger">{message}</InlineNotice> : null}
-        {loading ? <LoadingIndicator variant="card" label="Loading monthly details" /> : null}
+        {loadNotice.notice ? <InlineNotice tone={loadNotice.notice.tone}>{loadNotice.notice.message}</InlineNotice> : null}
+        <BillingCalculationNotice status={billingStatus} />
+        {loading ? <LoadingIndicator variant="card" label={t('loadingMonthlyDetails')} /> : null}
 
         {!loading ? (
           <>
             <MealHistoryStats totalMeals={mealSummary.totalMeals} days={mealSummary.days} averagePerDay={mealSummary.averagePerDay} />
 
             <ExpenseSurface
-              title="Meal Details"
+              title={t('mealDetails')}
               aside={
                 <Link href={appHref(`/meals/details?month=${month}`)} className="inline-flex items-center gap-1 text-label font-bold text-[#008d8c]">
-                  View <ChevronRight size={14} />
+                  {t('view')} <ChevronRight size={14} />
                 </Link>
               }
             >
               <ExpenseBreakdownList
                 items={[
-                  { icon: UtensilsCrossed, label: 'Total meals eaten', value: billMeals },
-                  { icon: WalletCards, label: 'Meal rate', value: formatTaka(billMealRate) },
-                  { icon: ReceiptText, label: 'Meal total cost', value: formatTaka(regularMealCharge) },
+                  { icon: UtensilsCrossed, label: t('totalMealsEaten'), value: format.number(billMeals) },
+                  { icon: WalletCards, label: t('mealRate'), value: format.money(billMealRate) },
+                  { icon: ReceiptText, label: t('mealTotalCost'), value: format.money(regularMealCharge) },
                 ]}
               />
             </ExpenseSurface>
 
-            <ExpenseSurface title="Bill Breakdown">
+            <ExpenseSurface title={t('billBreakdown')}>
               <ExpenseBreakdownList
                 items={[
-                  { icon: ReceiptText, label: 'Regular Meal Charge', value: formatTaka(regularMealCharge) },
+                  { icon: ReceiptText, label: t('regularMealCharge'), value: format.money(regularMealCharge) },
                 ]}
               />
               <AssignedFoodExpensesBreakdown
@@ -320,35 +360,40 @@ function MyMonthlyDetailsContent() {
               />
               <ExpenseBreakdownList
                 items={[
-                  { icon: ReceiptText, label: 'Total Food Bill', value: formatTaka(totalFoodBill) },
-                  { icon: WalletCards, label: 'Room rent', value: formatTaka(bill?.seat_rent ?? details?.roomRent), accent: 'violet' },
-                  { icon: Zap, label: 'Utility', value: formatTaka(bill?.utility_share ?? details?.utilityBill), accent: 'blue' },
-                  { icon: CalendarDays, label: 'Previous balance', value: formatTaka(bill?.prev_balance), accent: 'green' },
-                  { icon: CircleDollarSign, label: 'Deposit + payment', value: formatTaka(toNumber(bill?.deposit_total) + toNumber(bill?.paid_amount)), accent: 'green' },
-                  { icon: WalletCards, label: 'Final due', value: formatTaka(bill?.final_due), accent: 'orange' },
+                  { icon: ReceiptText, label: t('totalFoodBill'), value: format.money(totalFoodBill) },
+                  { icon: WalletCards, label: t('roomRent'), value: format.money(bill?.seat_rent ?? details?.roomRent), accent: 'violet' },
+                  { icon: Zap, label: t('utility'), value: format.money(bill?.utility_share ?? details?.utilityBill), accent: 'blue' },
+                  { icon: CalendarDays, label: t('previousBalance'), value: format.money(bill?.prev_balance), accent: 'green' },
+                  { icon: CircleDollarSign, label: t('depositAndPayment'), value: format.money(toNumber(bill?.deposit_total) + toNumber(bill?.paid_amount)), accent: 'green' },
+                  { icon: WalletCards, label: t('finalDue'), value: format.money(bill?.final_due), accent: 'orange' },
                 ]}
               />
             </ExpenseSurface>
 
-            <ExpenseSurface title="Close Previous Calculation">
+            <ExpenseSurface title={t('closePreviousCalculation')}>
               <div className="space-y-3 px-3 py-3">
                 {latestCloseRequest?.status === 'PENDING' ? (
-                  <InlineNotice tone="warning">Waiting for manager approval. Your current balance is unchanged until approval.</InlineNotice>
+                  <InlineNotice tone="warning">{t('closePendingMessage')}</InlineNotice>
                 ) : null}
                 {latestCloseRequest?.status === 'APPROVED' ? (
                   <InlineNotice tone="success">
-                    Calculation closed. Displayed and carry-forward balance is now {formatTaka(0)}. Original audit balance: {formatTaka(latestCloseRequest.original_balance)}.
+                    {t('closeApprovedMessage', {
+                      effectiveBalance: format.money(0),
+                      originalBalance: format.money(latestCloseRequest.original_balance),
+                    })}
                   </InlineNotice>
                 ) : null}
                 {latestCloseRequest?.status === 'REJECTED' ? (
                   <InlineNotice tone="danger">
-                    The previous request was rejected{latestCloseRequest.review_note ? `: ${latestCloseRequest.review_note}` : '.'}
+                    {latestCloseRequest.review_note
+                      ? t('closeRejectedWithNote', { note: latestCloseRequest.review_note })
+                      : t('closeRejected')}
                   </InlineNotice>
                 ) : null}
                 {closeUnavailableMessage ? <InlineNotice tone="warning">{closeUnavailableMessage}</InlineNotice> : null}
-                {closeMessage ? <InlineNotice tone={latestCloseRequest?.status === 'PENDING' ? 'success' : 'danger'}>{closeMessage}</InlineNotice> : null}
+                {closeNotice.notice ? <InlineNotice tone={closeNotice.notice.tone}>{closeNotice.notice.message}</InlineNotice> : null}
                 <p className="text-label leading-6 text-[#65838b]">
-                  Ask your manager to settle this month without carrying its positive or negative balance into the next month. The original amount will remain in audit history.
+                  {t('closeExplanation')}
                 </p>
                 <Button
                   type="button"
@@ -357,12 +402,12 @@ function MyMonthlyDetailsContent() {
                   disabled={!canRequestClose}
                   onClick={requestClose}
                 >
-                  Close Previous Calculation
+                  {t('closePreviousCalculation')}
                 </Button>
               </div>
             </ExpenseSurface>
 
-            <ExpenseSurface title="Deposit Section">
+            <ExpenseSurface title={t('depositSection')}>
               <div className="flush-list flush-list--home-card">
                 {deposits.map((item, index) => (
                   <DepositListItem
@@ -372,20 +417,20 @@ function MyMonthlyDetailsContent() {
                     variant="horizontal"
                   />
                 ))}
-                {!deposits.length ? <div className="expense-empty-state mx-3">No direct deposits found.</div> : null}
+                {!deposits.length ? <div className="expense-empty-state mx-3">{t('noDirectDeposits')}</div> : null}
               </div>
             </ExpenseSurface>
 
-            <ExpenseSurface title="Payment Section">
+            <ExpenseSurface title={t('paymentSection')}>
               <div className="flush-list flush-list--home-card">
                 {payments.map((item, index) => (
                   <DepositListItem key={item.id} item={item} index={index} variant="horizontal" />
                 ))}
-                {!payments.length ? <div className="expense-empty-state mx-3">No payment submissions found.</div> : null}
+                {!payments.length ? <div className="expense-empty-state mx-3">{t('noPaymentSubmissions')}</div> : null}
               </div>
             </ExpenseSurface>
 
-            <ExpenseSurface title="Expenses & Utility">
+            <ExpenseSurface title={t('expensesAndUtility')}>
               <div className="flush-list flush-list--home-card">
                 {expenseHistory.map((item) => (
                   <ExpenseListItem
@@ -395,7 +440,7 @@ function MyMonthlyDetailsContent() {
                     variant="horizontal"
                   />
                 ))}
-                {!expenseHistory.length ? <div className="expense-empty-state mx-3">No expenses or utility entries found.</div> : null}
+                {!expenseHistory.length ? <div className="expense-empty-state mx-3">{t('noExpensesOrUtility')}</div> : null}
               </div>
             </ExpenseSurface>
           </>
@@ -406,8 +451,9 @@ function MyMonthlyDetailsContent() {
 }
 
 export default function MyMonthlyDetailsPage() {
+  const t = useTranslations('billing')
   return (
-    <Suspense fallback={<LoadingIndicator variant="screen" label="Loading monthly details" />}>
+    <Suspense fallback={<LoadingIndicator variant="screen" label={t('loadingMonthlyDetails')} />}>
       <MyMonthlyDetailsContent />
     </Suspense>
   )

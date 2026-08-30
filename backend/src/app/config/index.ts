@@ -47,6 +47,16 @@ export default {
     privateKey: process.env.FCM_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   },
 
+  firebaseAuth: {
+    projectId:
+      process.env.FIREBASE_AUTH_PROJECT_ID || process.env.FCM_PROJECT_ID,
+    clientEmail:
+      process.env.FIREBASE_AUTH_CLIENT_EMAIL || process.env.FCM_CLIENT_EMAIL,
+    privateKey: (
+      process.env.FIREBASE_AUTH_PRIVATE_KEY || process.env.FCM_PRIVATE_KEY
+    )?.replace(/\\n/g, '\n'),
+  },
+
   aiAutomation: {
     enabled:
       process.env.AI_AUTOMATION_ENABLED === undefined

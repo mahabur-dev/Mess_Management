@@ -12,12 +12,14 @@ import {
   AuthShell,
   AuthSubmitButton,
   AuthField,
+  GoogleMark,
   authLinkClass,
 } from '@/components/auth-ui'
 import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
+import { googleAuthEnabled, isGoogleSignInCancelled } from '@/lib/native-google-auth'
 
 export default function LoginPage() {
-  const { login, isSubmitting } = useAuth()
+  const { login, loginWithGoogle, isSubmitting } = useAuth()
   const { locale } = useLocale()
   const auth = useTranslations('auth')
 
@@ -27,6 +29,7 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true)
   const [error, setError] = useState('')
   const [redirectTo, setRedirectTo] = useState('/')
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false)
 
   useEffect(() => {
     setRedirectTo(readPostLoginPath())
@@ -39,6 +42,20 @@ export default function LoginPage() {
       await login(email, password, redirectTo)
     } catch (err) {
       setError(localizedErrorMessage(err, locale) || auth('loginFailed'))
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setError('')
+    setIsGoogleSubmitting(true)
+
+    try {
+      await loginWithGoogle(redirectTo)
+    } catch (err) {
+      if (isGoogleSignInCancelled(err)) return
+      setError(localizedErrorMessage(err, locale) || auth('googleLoginFailed'))
+    } finally {
+      setIsGoogleSubmitting(false)
     }
   }
 
@@ -57,6 +74,26 @@ export default function LoginPage() {
       }
     >
       {error ? <AuthMessage>{error}</AuthMessage> : null}
+
+      {googleAuthEnabled ? (
+        <>
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => void handleGoogleSignIn()}
+            className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-[14px] border border-[#bfe7e6] bg-white px-4 text-body font-semibold text-[#163c45] shadow-sm transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <GoogleMark />
+            {isGoogleSubmitting ? auth('connectingGoogle') : auth('continueWithGoogle')}
+          </button>
+
+          <div className="my-4 flex items-center gap-3 text-caption font-semibold text-[#7b9298]">
+            <span className="h-px flex-1 bg-[#dbe7e9]" />
+            <span>{auth('orUseEmail')}</span>
+            <span className="h-px flex-1 bg-[#dbe7e9]" />
+          </div>
+        </>
+      ) : null}
 
       <form
         className="space-y-4"

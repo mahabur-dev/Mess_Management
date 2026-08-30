@@ -46,9 +46,9 @@ jobs:
         working-directory: backend
         run: |
           npm run build
-          node --test test/api-message-contract.test.js test/notification-localization.test.js
+          node --test test/api-message-contract.test.js test/google-auth-login.test.js test/notification-localization.test.js
 
-      - name: Configure Firebase push notifications
+      - name: Configure Firebase features
         id: firebase
         shell: bash
         env:
@@ -57,12 +57,63 @@ jobs:
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > dedicated-app/android/app/google-services.json
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "push_enabled=true" >> "$GITHUB_OUTPUT"
           elif [ -n "$GOOGLE_SERVICES_JSON" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > dedicated-app/android/app/google-services.json
+            echo "push_enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Firebase config was not provided; Firebase features will be disabled in this APK."
+            echo "push_enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Configure stable Android signing
+        id: signing
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "Stable signing secrets were not provided; packaging an ephemeral debug APK."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          keystore_path="$RUNNER_TEMP/messzen-upload.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          keytool -list -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" >/dev/null
+          signing_sha1="$(keytool -list -v -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" | sed -n 's/.*SHA1: //p' | head -n 1)"
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          echo "keystore_path=$keystore_path" >> "$GITHUB_OUTPUT"
+          echo "sha1=$signing_sha1" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Android signing certificate"
+            keytool -list -v -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" | grep -E 'SHA1:|SHA256:'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate Google authentication configuration
+        id: google_auth
+        shell: bash
+        env:
+          EXPECTED_ANDROID_CERT_SHA1: ${{ steps.signing.outputs.sha1 }}
+        run: |
+          if [ "${{ steps.signing.outputs.enabled }}" != "true" ]; then
+            echo "Google authentication is disabled: stable APK signing is not configured."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          elif node dedicated-app/scripts/check-google-services.mjs; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Firebase config was not provided; push notifications will be disabled in this APK."
+            echo "Google authentication is disabled: Firebase OAuth clients do not match the APK signing certificate."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -71,13 +122,8 @@ jobs:
         run: pnpm build
         env:
           NEXT_PUBLIC_API_URL: https://api.messzen.com/api/v1
-          NEXT_PUBLIC_NATIVE_PUSH_ENABLED: ${{ steps.firebase.outputs.enabled }}
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
+          NEXT_PUBLIC_NATIVE_PUSH_ENABLED: ${{ steps.firebase.outputs.push_enabled }}
+          NEXT_PUBLIC_GOOGLE_AUTH_ENABLED: ${{ steps.google_auth.outputs.enabled }}
 
       - name: Sync and smoke-test Capacitor Android
         working-directory: dedicated-app
@@ -89,14 +135,36 @@ jobs:
       - name: Package installable APK
         id: package
         shell: bash
+        env:
+          MESSZEN_KEYSTORE_PATH: ${{ steps.signing.outputs.keystore_path }}
+          MESSZEN_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          MESSZEN_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          MESSZEN_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           release_dir="dedicated-app/release"
-          apk_name="Messzen-debug-${GITHUB_RUN_NUMBER}.apk"
-          zip_name="Messzen-debug-${GITHUB_RUN_NUMBER}.zip"
           mkdir -p "$release_dir"
-          cp dedicated-app/android/app/build/outputs/apk/debug/app-debug.apk "$release_dir/$apk_name"
+
+          if [ "${{ steps.signing.outputs.enabled }}" = "true" ]; then
+            (cd dedicated-app/android && ./gradlew assembleRelease bundleRelease)
+            apk_name="Messzen-test-${GITHUB_RUN_NUMBER}.apk"
+            aab_name="Messzen-play-${GITHUB_RUN_NUMBER}.aab"
+            zip_name="Messzen-test-${GITHUB_RUN_NUMBER}.zip"
+            cp dedicated-app/android/app/build/outputs/apk/release/app-release.apk "$release_dir/$apk_name"
+            cp dedicated-app/android/app/build/outputs/bundle/release/app-release.aab "$release_dir/$aab_name"
+          else
+            apk_name="Messzen-debug-${GITHUB_RUN_NUMBER}.apk"
+            aab_name=""
+            zip_name="Messzen-debug-${GITHUB_RUN_NUMBER}.zip"
+            cp dedicated-app/android/app/build/outputs/apk/debug/app-debug.apk "$release_dir/$apk_name"
+          fi
+
           (cd "$release_dir" && sha256sum "$apk_name" > "$apk_name.sha256")
-          zip -j "$release_dir/$zip_name" "$release_dir/$apk_name" "$release_dir/$apk_name.sha256"
+          if [ -n "$aab_name" ]; then
+            (cd "$release_dir" && sha256sum "$aab_name" > "$aab_name.sha256")
+            zip -j "$release_dir/$zip_name" "$release_dir/$apk_name" "$release_dir/$apk_name.sha256" "$release_dir/$aab_name" "$release_dir/$aab_name.sha256"
+          else
+            zip -j "$release_dir/$zip_name" "$release_dir/$apk_name" "$release_dir/$apk_name.sha256"
+          fi
           echo "apk_name=$apk_name" >> "$GITHUB_OUTPUT"
           echo "zip_name=$zip_name" >> "$GITHUB_OUTPUT"
 
@@ -105,10 +173,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Messzen-Android-${{ github.run_number }}
-          path: |
-            dedicated-app/release/${{ steps.package.outputs.apk_name }}
-            dedicated-app/release/${{ steps.package.outputs.apk_name }}.sha256
-            dedicated-app/release/${{ steps.package.outputs.zip_name }}
+          path: dedicated-app/release/*
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
@@ -134,9 +199,7 @@ jobs:
         run: |
           tag="android-test-${GITHUB_RUN_NUMBER}"
           gh release create "$tag" \
-            "dedicated-app/release/$APK_NAME" \
-            "dedicated-app/release/$APK_NAME.sha256" \
-            "dedicated-app/release/$ZIP_NAME" \
+            dedicated-app/release/* \
             --target "$GITHUB_SHA" \
             --prerelease \
             --title "Android test build #${GITHUB_RUN_NUMBER}" \

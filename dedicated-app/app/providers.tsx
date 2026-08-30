@@ -10,6 +10,7 @@ import { NativeStatusBarProvider } from '@/components/native-status-bar'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { useLocale, useTranslations } from '@/lib/i18n'
 import { api } from '@/lib/api'
+import { signInWithNativeGoogle, signOutNativeGoogle } from '@/lib/native-google-auth'
 import {
   initializeNativePush,
   nativePushActionEventName,
@@ -39,6 +40,7 @@ type AuthContextValue = {
   isSubmitting: boolean
   unreadNotificationCount: number
   login: (email: string, password: string, redirectTo?: string) => Promise<void>
+  loginWithGoogle: (redirectTo?: string) => Promise<void>
   register: (name: string, email: string, phone: string, password: string, redirectTo?: string) => Promise<void>
   logout: () => Promise<void>
   requestLogout: () => void
@@ -259,10 +261,33 @@ export function Providers({ children }: { children: ReactNode }) {
     [clearSession, router]
   )
 
+  const loginWithGoogle = useCallback(
+    async (redirectTo = readPostLoginPath()) => {
+      setIsSubmitting(true)
+      try {
+        const firebaseIdToken = await signInWithNativeGoogle()
+        const res = await api.googleLogin(firebaseIdToken)
+        storeToken(res.data.accessToken)
+        setToken(res.data.accessToken)
+        await api.updatePreferredLocale(locale).catch(() => undefined)
+        const profile = await api.getProfile()
+        receiveUser(profile.data, false)
+        router.replace(redirectTo)
+      } catch (error) {
+        await signOutNativeGoogle().catch(() => undefined)
+        throw error
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    [locale, receiveUser, router]
+  )
+
   const logout = useCallback(async () => {
     setIsLoggingOut(true)
     try {
       await shutdownNativePush()
+      await signOutNativeGoogle().catch(() => undefined)
       await api.logout()
     } catch {
       // Local logout must still complete if the network or cookie clear fails.
@@ -296,13 +321,14 @@ export function Providers({ children }: { children: ReactNode }) {
       isSubmitting,
       unreadNotificationCount,
       login,
+      loginWithGoogle,
       register,
       logout,
       requestLogout: openLogoutPrompt,
       refresh,
       refreshUnreadNotifications,
     }),
-    [user, token, isLoading, isSubmitting, unreadNotificationCount, login, register, logout, openLogoutPrompt, refresh, refreshUnreadNotifications]
+    [user, token, isLoading, isSubmitting, unreadNotificationCount, login, loginWithGoogle, register, logout, openLogoutPrompt, refresh, refreshUnreadNotifications]
   )
 
   if (!hasMounted) {

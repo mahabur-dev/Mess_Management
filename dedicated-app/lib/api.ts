@@ -112,6 +112,13 @@ class Api {
     })
   }
 
+  googleLogin(idToken: string) {
+    return this.request<{ accessToken: string; user: AuthUser }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    })
+  }
+
   register(data: { name: string; email: string; phone?: string; password: string; role?: GlobalRole }) {
     return this.request<AuthUser>('/auth/register', {
       method: 'POST',

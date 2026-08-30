@@ -15,6 +15,7 @@ import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
   ForgotPasswordDto,
+  GoogleLoginDto,
   LoginDto,
   RegisterDto,
   ResetPasswordDto,
@@ -48,9 +49,19 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    console.log('Login request received with DTO:', dto);
     const data = await this.authService.login(dto, res);
     return { message: 'Logged in successfully', data };
+  }
+
+  @Post('google')
+  @ApiOperation({ summary: 'Sign in with a verified Firebase Google identity' })
+  @HttpCode(HttpStatus.OK)
+  async googleLogin(
+    @Body() dto: GoogleLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.authService.googleLogin(dto, res);
+    return { message: 'Logged in with Google successfully', data };
   }
 
   // ─────────────────────────────────────────

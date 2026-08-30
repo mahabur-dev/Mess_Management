@@ -15,6 +15,10 @@ const config: CapacitorConfig = {
       // runtime overrides keep Auth, Onboarding and More surfaces dark-on-light.
       style: 'DARK',
     },
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ['google.com'],
+    },
   },
 }
 

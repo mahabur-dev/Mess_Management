@@ -15,7 +15,8 @@ model User {
   city          String?    @db.VarChar(100)
   zipcode       String?    @db.VarChar(20)
   preferred_locale String? @db.VarChar(5)
-  password_hash String     @db.Text
+  firebase_uid     String? @unique @db.VarChar(128)
+  password_hash    String  @db.Text
   avatar_url    String?    @db.Text
   role          GlobalRole @default(MEMBER)
   is_active     Boolean    @default(true)

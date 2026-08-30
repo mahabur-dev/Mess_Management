@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+def releaseKeystorePath = System.getenv('MESSZEN_KEYSTORE_PATH')
+def releaseKeyAlias = System.getenv('MESSZEN_KEY_ALIAS')
+def releaseKeystorePassword = System.getenv('MESSZEN_KEYSTORE_PASSWORD')
+def releaseKeyPassword = System.getenv('MESSZEN_KEY_PASSWORD')
+def hasReleaseSigning = releaseKeystorePath && releaseKeyAlias && releaseKeystorePassword && releaseKeyPassword
+
 android {
     namespace "com.mess.management"
     compileSdk rootProject.ext.compileSdkVersion
@@ -16,8 +22,21 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -50,5 +69,5 @@ try {
         apply plugin: 'com.google.gms.google-services'
     }
 } catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+    logger.info("google-services.json not found, google-services plugin not applied. Firebase features won't work")
 }

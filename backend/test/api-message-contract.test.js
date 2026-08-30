@@ -31,6 +31,22 @@ test('maps known authentication errors without exposing sentence matching to cli
     }).code,
     'AUTH_INVALID_CREDENTIALS',
   );
+  assert.equal(
+    errorMessageContract({
+      statusCode: 401,
+      message: 'Invalid Google authentication token',
+      code: 'AUTH_UNAUTHORIZED',
+    }).code,
+    'AUTH_GOOGLE_TOKEN_INVALID',
+  );
+  assert.equal(
+    errorMessageContract({
+      statusCode: 409,
+      message: 'Google account is linked to another user',
+      code: 'RESOURCE_CONFLICT',
+    }).code,
+    'AUTH_GOOGLE_LINK_CONFLICT',
+  );
 });
 
 test('preserves explicit domain codes and params', () => {

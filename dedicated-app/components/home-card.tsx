@@ -2,6 +2,7 @@
 
 import type { AriaRole, ComponentType, ReactNode } from 'react'
 import type { LucideProps } from 'lucide-react'
+import { Surface } from '@/components/ui/surface'
 
 function classes(...values: Array<string | undefined | false>) {
   return values.filter(Boolean).join(' ')
@@ -26,10 +27,14 @@ export function HomeCard({
   role?: AriaRole
   ariaLabel?: string
 }) {
-  const Element = as
-
   return (
-    <Element className={classes('home-card ui-card app-section', className)} role={role} aria-label={ariaLabel}>
+    <Surface
+      as={as}
+      elevation="none"
+      className={classes('home-card ui-card app-section', className)}
+      role={role}
+      ariaLabel={ariaLabel}
+    >
       {title || caption || action ? (
         <div className="home-card__header">
           <div className="min-w-0 flex-1">
@@ -40,7 +45,7 @@ export function HomeCard({
         </div>
       ) : null}
       {children}
-    </Element>
+    </Surface>
   )
 }
 
@@ -56,7 +61,7 @@ export function HomeMetricCard({
   accent?: string
 }) {
   return (
-    <article className="home-metric-card">
+    <Surface as="article" elevation="low" className="home-metric-card">
       <span className="home-metric-card__icon" style={{ backgroundColor: `${accent}12`, color: accent }}>
         <Icon size={16} />
       </span>
@@ -64,7 +69,7 @@ export function HomeMetricCard({
         <span className="home-metric-card__label">{label}</span>
         <span className="home-metric-card__value">{value}</span>
       </span>
-    </article>
+    </Surface>
   )
 }
 

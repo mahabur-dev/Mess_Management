@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { ArrowRight, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { BrandLogo } from '@/components/brand-logo'
@@ -18,7 +18,6 @@ const links = [
 ]
 
 export function Navbar() {
-  const router = useRouter()
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [hash, setHash] = useState('')
@@ -45,7 +44,7 @@ export function Navbar() {
 
         <div className="hidden items-center gap-6 xl:flex">
           {links.map((link) => (
-            <Link
+            <a
               key={link.href}
               href={link.href}
               className={cn(
@@ -56,17 +55,17 @@ export function Navbar() {
               )}
             >
               {link.label}
-            </Link>
+            </a>
           ))}
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
-          <button type="button" onClick={() => router.push('/login')} className="ghost-button h-10 min-h-0 px-5">
+          <a href="/login" className="ghost-button h-10 min-h-0 px-5">
             Log in
-          </button>
-          <button type="button" onClick={() => router.push('/register')} className="brand-button h-10 min-h-0 px-5">
+          </a>
+          <a href="/register" className="brand-button h-10 min-h-0 px-5">
             Get Started <ArrowRight size={15} />
-          </button>
+          </a>
           <ThemeToggle />
         </div>
 
@@ -88,7 +87,7 @@ export function Navbar() {
         <div className="border-t border-[var(--marketing-line)] bg-[var(--marketing-page)] px-4 py-4 shadow-xl md:hidden">
           <div className="grid gap-1">
             {links.map((link) => (
-              <Link
+              <a
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
@@ -100,12 +99,12 @@ export function Navbar() {
                 )}
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <button className="ghost-button" onClick={() => router.push('/login')}>Log in</button>
-            <button className="brand-button" onClick={() => router.push('/register')}>Get Started</button>
+            <a href="/login" className="ghost-button" onClick={() => setIsOpen(false)}>Log in</a>
+            <a href="/register" className="brand-button" onClick={() => setIsOpen(false)}>Get Started</a>
           </div>
         </div>
       )}

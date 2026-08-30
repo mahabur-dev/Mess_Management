@@ -138,7 +138,7 @@ export function DashboardSidebar() {
   const content = (
     <aside className={`dashboard-sidebar flex h-full ${sidebarWidth} flex-col overflow-hidden transition-all duration-300`}>
       {/* Logo Area */}
-      <div className="relative flex h-[88px] items-center border-b border-[var(--dashboard-line)] px-5">
+      <div className="relative flex h-[72px] items-center border-b border-[var(--dashboard-line)] px-5">
         {collapsed ? (
           /* When collapsed: center the expand button (desktop only) */
           <div className="hidden lg:flex w-full items-center justify-center">

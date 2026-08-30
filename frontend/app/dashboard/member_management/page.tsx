@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, UserCog, ChevronDown, ChevronUp, MoreHorizontal, Phone, Users, Pencil, Ban, CheckCircle, DoorOpen, DollarSign, Building, UserPlus } from 'lucide-react';
 import { apiClient, ApiError, type MemberJoinRequest, type Mess as ApiMess } from '@/lib/api-client';
 import { DashboardHeader } from '@/components/dashboard-header';
+import { DashboardButton } from '@/components/ui/dashboard-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // ─── Types & Interfaces ─────────────────────────────────────────────────────
@@ -635,14 +636,14 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
             >
               Cancel
             </button>
-            <button
+            <DashboardButton
               type="submit"
               disabled={loading}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70"
+              className="h-12 px-4 font-black"
             >
               {loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
               {loading ? 'Adding...' : 'Add Member'}
-            </button>
+            </DashboardButton>
           </div>
         </form>
       </div>
@@ -1343,14 +1344,14 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
           </div>
         </div>
 
-        <button
+        <DashboardButton
           onClick={() => setShowAddModal(true)}
           disabled={!activeMess}
-          className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 py-3 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition-all hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] active:scale-[0.98] md:w-auto"
+          className="h-[48px] w-full px-5 font-black md:w-auto"
         >
           <Plus size={20} />
           Add Member
-        </button>
+        </DashboardButton>
       </div>
 
       {/* Mobile role filter (scrollable pills) */}

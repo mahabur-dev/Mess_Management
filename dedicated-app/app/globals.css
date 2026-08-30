@@ -1933,7 +1933,8 @@
   box-shadow: 0 2px 8px rgba(18, 55, 72, 0.025);
 }
 
-.auth-reference .ui-btn--primary {
+.auth-reference .ui-btn--primary,
+.onboarding-screen .ui-btn--primary {
   --ui-btn-height: 52px;
   --ui-btn-radius: 14px;
   border-color: transparent;
@@ -1943,13 +1944,15 @@
   box-shadow: 0 3px 8px rgba(0, 119, 122, 0.14);
 }
 
-.auth-reference .ui-btn--primary:hover {
+.auth-reference .ui-btn--primary:hover,
+.onboarding-screen .ui-btn--primary:hover {
   background: linear-gradient(108deg, var(--experience-teal-deep) 0%, #00aaa9 100%);
   box-shadow: 0 5px 12px rgba(0, 119, 122, 0.17);
   filter: saturate(1.05);
 }
 
-.auth-reference .ui-btn--secondary {
+.auth-reference .ui-btn--secondary,
+.onboarding-screen .ui-btn--secondary {
   --ui-btn-height: 48px;
   --ui-btn-radius: 14px;
 }
@@ -8852,4 +8855,269 @@ textarea {
 
 .more-page-item-icon {
   color: var(--default-icon-ink);
+}
+
+/* ============================================================
+   Enterprise White Light Theme
+
+   One white canvas, restrained neutral borders and shallow elevation keep
+   authenticated, auth and onboarding surfaces visually consistent. Brand
+   color is reserved for actions, navigation state and status communication.
+   ============================================================ */
+:root {
+  color-scheme: light;
+  --experience-background: #ffffff;
+  --app-background: #ffffff;
+  --semantic-bg: #ffffff;
+  --bg: #ffffff;
+  --card: #ffffff;
+  --semantic-line: #e3e8eb;
+  --shadow-xs: 0 1px 2px rgba(18, 55, 72, 0.035);
+  --shadow-sm: 0 1px 3px rgba(18, 55, 72, 0.045);
+  --shadow-md: 0 2px 6px rgba(18, 55, 72, 0.055);
+  --shadow-lg: 0 4px 12px rgba(18, 55, 72, 0.07);
+  --shadow-xl: 0 6px 18px rgba(18, 55, 72, 0.08);
+  --shadow-card: var(--shadow-xs);
+  --home-card-shadow: none;
+  --shadow: var(--shadow-sm);
+}
+
+html,
+body,
+.auth-reference,
+.onboarding-screen,
+.phone-frame,
+.app-shell,
+.loading-indicator[data-variant="screen"] {
+  background: #ffffff;
+}
+
+.auth-reference::before,
+.auth-reference::after,
+.auth-reference .brand-building-art {
+  display: none;
+}
+
+.loading-indicator[data-variant="screen"] {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+
+.loading-indicator__dots > span {
+  box-shadow: none;
+}
+
+.ui-surface {
+  border: 1px solid var(--neutral-200);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ui-surface--subtle {
+  background: var(--neutral-50);
+}
+
+.ui-surface--brand {
+  border-color: var(--brand-700);
+  background: var(--brand-700);
+  color: #ffffff;
+}
+
+.ui-surface--none {
+  box-shadow: none;
+}
+
+.ui-surface--low {
+  box-shadow: var(--shadow-xs);
+}
+
+.ui-card,
+.ui-card--flat,
+.ui-card--tint {
+  border-color: var(--neutral-200);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-xs);
+}
+
+.ui-card--flush {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.ui-card--hero {
+  border-radius: 8px;
+  background: var(--brand-700);
+  box-shadow: 0 2px 6px rgba(0, 119, 122, 0.12);
+}
+
+.top-hero {
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+  background: var(--brand-700);
+  box-shadow: none;
+}
+
+.ui-btn--primary,
+.auth-reference .ui-btn--primary,
+.onboarding-screen .ui-btn--primary,
+.primary-btn {
+  border-color: var(--brand-700);
+  background: var(--brand-700);
+  box-shadow: 0 1px 2px rgba(0, 119, 122, 0.12);
+}
+
+@media (hover: hover) {
+  .ui-btn--primary:hover,
+  .auth-reference .ui-btn--primary:hover,
+  .onboarding-screen .ui-btn--primary:hover,
+  .primary-btn:hover {
+    background: var(--brand-800);
+    box-shadow: 0 2px 4px rgba(0, 95, 102, 0.14);
+    filter: none;
+  }
+}
+
+.ui-btn--secondary,
+.auth-reference .ui-btn--secondary,
+.onboarding-screen .ui-btn--secondary {
+  border-color: var(--neutral-300);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.auth-reference .auth-reference__hero-icon {
+  background: var(--brand-700);
+  box-shadow: none;
+}
+
+.auth-reference .field,
+.auth-reference label > div.relative,
+.auth-reference .auth-otp-input {
+  border-color: var(--neutral-300);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.auth-reference .field:focus-within,
+.auth-reference label > div.relative:focus-within,
+.auth-reference .auth-otp-input:focus {
+  border-color: var(--brand-600);
+  box-shadow: 0 0 0 3px rgba(0, 141, 140, 0.08);
+}
+
+.phone-frame[data-appearance="default"],
+.phone-frame[data-appearance="default"] .app-shell,
+.phone-frame[data-appearance="default"] .screen {
+  background: #ffffff;
+}
+
+.phone-frame[data-appearance="default"] {
+  box-shadow: none;
+}
+
+.phone-frame[data-appearance="default"] .home-ai-entry,
+.phone-frame[data-appearance="default"] .quick-add-hero,
+.phone-frame[data-appearance="default"] .assistant-summary-card,
+.phone-frame[data-appearance="default"] .assistant-pattern-card,
+.phone-frame[data-appearance="default"] .assistant-info-card,
+.phone-frame[data-appearance="default"] .assistant-success-card,
+.phone-frame[data-appearance="default"] .assistant-metrics-card,
+.phone-frame[data-appearance="default"] .profile-identity-card {
+  --ai-card-background: #ffffff;
+  --ai-card-shadow: var(--shadow-xs);
+  --ai-card-glow: transparent;
+  border-color: var(--neutral-200);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-xs);
+}
+
+.phone-frame[data-appearance="default"] .home-ai-entry__glow,
+.phone-frame[data-appearance="default"] .assistant-summary-card__glow,
+.phone-frame[data-appearance="default"] .assistant-info-card::before,
+.phone-frame[data-appearance="default"] .assistant-pattern-card::before,
+.phone-frame[data-appearance="default"] .assistant-success-card::before {
+  display: none;
+}
+
+.phone-frame[data-appearance="default"] .home-metric-card,
+.phone-frame[data-appearance="default"] .expense-summary-card,
+.phone-frame[data-appearance="default"] .overview-card,
+.phone-frame[data-appearance="default"] .member-card,
+.phone-frame[data-appearance="default"] .deposit-stat-card,
+.phone-frame[data-appearance="default"] .deposit-aggregate-summary,
+.phone-frame[data-appearance="default"] .deposit-details-summary,
+.phone-frame[data-appearance="default"] .profile-settings-card,
+.phone-frame[data-appearance="default"] .info-page-section {
+  border-color: var(--neutral-200);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-xs);
+}
+
+.phone-frame[data-appearance="default"] .home-metric-card:hover,
+.phone-frame[data-appearance="default"] .expense-summary-card:hover,
+.phone-frame[data-appearance="default"] .overview-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.phone-frame[data-appearance="default"] .expense-segmented,
+.phone-frame[data-appearance="default"] .deposit-filter-tabs,
+.phone-frame[data-appearance="default"] .language-segmented {
+  border-color: var(--neutral-200);
+  background: var(--neutral-50);
+  box-shadow: none;
+}
+
+.phone-frame[data-appearance="default"] .expense-segmented__item[data-active="true"],
+.phone-frame[data-appearance="default"] .deposit-filter-tabs button[data-active="true"],
+.phone-frame[data-appearance="default"] .language-segmented button[data-active="true"] {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(18, 55, 72, 0.06);
+}
+
+.nav-bar {
+  border-top-color: var(--neutral-200);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.nav-dock {
+  background: #ffffff;
+}
+
+.glass,
+.loading-indicator[data-variant="card"] {
+  border-color: var(--neutral-200);
+  background: #ffffff;
+  box-shadow: var(--shadow-xs);
+  backdrop-filter: none;
+}
+
+/* Page components predate the shared Surface primitive and some still carry
+   Tailwind arbitrary shadows. Keep their markup stable while enforcing the
+   same restrained light-mode elevation policy at the application boundary. */
+.phone-frame[data-appearance="default"] [class*="shadow-["],
+.phone-frame[data-appearance="default"] .shadow-sm,
+.phone-frame[data-appearance="default"] .shadow-md,
+.phone-frame[data-appearance="default"] .shadow-lg,
+.phone-frame[data-appearance="default"] .shadow-xl,
+.phone-frame[data-appearance="default"] .shadow-2xl {
+  box-shadow: var(--shadow-xs) !important;
+}
+
+.phone-frame[data-appearance="default"] button:not(.ui-btn--primary):not(.primary-btn) {
+  box-shadow: none;
+}
+
+.phone-frame[data-appearance="default"] :is(input, select, textarea) {
+  border-color: var(--neutral-300);
+  background-color: #ffffff;
+  box-shadow: none;
+}
+
+.phone-frame[data-appearance="default"] :is(input, select, textarea):focus {
+  border-color: var(--brand-600);
+  box-shadow: 0 0 0 3px rgba(0, 141, 140, 0.08);
 }

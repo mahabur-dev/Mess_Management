@@ -1,6 +1,7 @@
 'use client'
 
 import type { AriaRole, ReactNode } from 'react'
+import { Surface } from './surface'
 
 type CardVariant = 'default' | 'flat' | 'flush' | 'tint' | 'hero'
 
@@ -25,8 +26,6 @@ export function Card({
   role?: AriaRole
   ariaLabel?: string
 }) {
-  const Element = as
-
   const variantClass = {
     default: 'ui-card',
     flat: 'ui-card ui-card--flat',
@@ -35,8 +34,18 @@ export function Card({
     hero: 'ui-card ui-card--hero',
   }[variant]
 
+  const tone = variant === 'hero' ? 'brand' : variant === 'tint' ? 'subtle' : 'default'
+  const elevation = variant === 'default' || variant === 'hero' ? 'low' : 'none'
+
   return (
-    <Element className={`${variantClass} ${className}`.trim()} role={role} aria-label={ariaLabel}>
+    <Surface
+      as={as}
+      tone={tone}
+      elevation={elevation}
+      className={`${variantClass} ${className}`.trim()}
+      role={role}
+      ariaLabel={ariaLabel}
+    >
       {title || subtitle || action ? (
         <div className="ui-row-between mb-2">
           <div className="min-w-0">
@@ -47,7 +56,7 @@ export function Card({
         </div>
       ) : null}
       {children}
-    </Element>
+    </Surface>
   )
 }
 

@@ -2426,7 +2426,7 @@ a {
   border-radius: 999px;
   background: #ffffff;
   color: #00777a;
-  font-size: 9px;
+  font-size: var(--text-micro-ui);
   font-weight: 850;
   line-height: 1;
 }

@@ -4,33 +4,19 @@ import { useEffect } from 'react'
 
 export function BrowserRuntimeGuard() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return
+    if (!('serviceWorker' in navigator)) return
 
-    if ('serviceWorker' in navigator) {
-      void navigator.serviceWorker
-        .getRegistrations()
-        .then((registrations) => {
-          registrations.forEach((registration) => {
-            void registration.unregister()
-          })
-        })
-        .catch(() => {
-          // A stale service worker must never block local development.
-        })
-    }
+    void navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+      if (!registrations.length) return
 
-    if ('caches' in window) {
-      void caches
-        .keys()
-        .then((keys) => {
-          keys.forEach((key) => {
-            void caches.delete(key)
-          })
-        })
-        .catch(() => {
-          // Cache cleanup is best-effort only.
-        })
-    }
+      await Promise.all(registrations.map((registration) => registration.unregister()))
+      if ('caches' in window) {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((key) => caches.delete(key)))
+      }
+    }).catch(() => {
+      // Cache cleanup is best-effort; it must never block the application.
+    })
   }, [])
 
   return null

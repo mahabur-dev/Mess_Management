@@ -123,15 +123,18 @@ async function layoutAudit(locale) {
     const visible = (element) => { const style = getComputedStyle(element); const rect = element.getBoundingClientRect(); return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0 }
     const name = (element) => element.getAttribute('aria-label') || element.getAttribute('title') || (element.getAttribute('aria-labelledby') || '').split(/\\s+/).map((id) => document.getElementById(id)?.textContent || '').join(' ').trim() || element.textContent.trim()
     const interactive = [...document.querySelectorAll('button,a[href],input,select,textarea')].filter(visible)
+    const canvas = document.querySelector('.onboarding-screen') || document.querySelector('.auth-reference') || document.body
+    const canvasStyle = getComputedStyle(canvas)
     const unnamed = interactive.filter((element) => !name(element)).map((element) => element.outerHTML.slice(0, 120))
     const undersized = interactive.filter((element) => { const rect = element.getBoundingClientRect(); return rect.width < 44 || rect.height < 44 }).map((element) => ({ tag: element.tagName, className: element.className, width: Math.round(element.getBoundingClientRect().width), height: Math.round(element.getBoundingClientRect().height) }))
     const overflow = [...document.querySelectorAll('body *')].filter((element) => { const style = getComputedStyle(element); const directText = [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim()); return directText && visible(element) && element.scrollWidth > element.clientWidth + 1 && !['auto','scroll','hidden','clip'].includes(style.overflowX) }).map((element) => ({ tag: element.tagName, className: element.className, delta: element.scrollWidth - element.clientWidth })).slice(0, 10)
-    return { lang: document.documentElement.lang, unnamed, undersized, overflow, bodyOverflow: document.documentElement.scrollWidth - innerWidth }
+    return { lang: document.documentElement.lang, unnamed, undersized, overflow, bodyOverflow: document.documentElement.scrollWidth - innerWidth, canvasBackground: canvasStyle.backgroundColor, canvasImage: canvasStyle.backgroundImage }
   })()`)
   if (result.lang !== locale) throw new Error(`html lang did not synchronize for ${locale}`)
   if (result.unnamed.length) throw new Error(`Unnamed interactive controls (${locale}): ${JSON.stringify(result.unnamed)}`)
   if (result.undersized.length) throw new Error(`Touch targets below 44x44 (${locale}): ${JSON.stringify(result.undersized)}`)
   if (result.overflow.length || result.bodyOverflow > 1) throw new Error(`Horizontal overflow (${locale}): ${JSON.stringify(result)}`)
+  if (result.canvasBackground !== 'rgb(255, 255, 255)' || result.canvasImage !== 'none') throw new Error(`Light canvas is not pure white (${locale}): ${JSON.stringify(result)}`)
   console.log(`PASS ${locale} 360x800 copy, accessible names, overflow and 44px touch targets`)
 }
 
@@ -175,6 +178,9 @@ try {
   await waitFor(`document.documentElement.dataset.locale === 'bn' && localStorage.getItem('messzen:locale') === 'bn'`, 'Login language switch persistence')
   await evaluate(`location.reload()`)
   await waitFor(`location.pathname === '/login/' && document.querySelector('input[type="email"]') && document.documentElement.dataset.locale === 'bn'`, 'Bangla login refresh persistence')
+  const authCanvas = await evaluate(`(() => { const style = getComputedStyle(document.querySelector('.auth-reference')); return { background: style.backgroundColor, image: style.backgroundImage } })()`)
+  if (authCanvas.background !== 'rgb(255, 255, 255)' || authCanvas.image !== 'none') throw new Error(`Auth light canvas is not pure white: ${JSON.stringify(authCanvas)}`)
+  console.log('PASS onboarding and authentication pure-white light canvas')
   console.log('PASS Login language switch and refresh persistence (English → Bangla)')
   await call('Emulation.setDeviceMetricsOverride', { width: 360, height: 480, deviceScaleFactor: 1, mobile: true })
   await evaluate(`document.querySelector('input[type="email"]').focus(); document.querySelector('input[type="email"]').scrollIntoView({ block: 'center' })`)

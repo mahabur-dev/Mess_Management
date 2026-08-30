@@ -493,11 +493,38 @@
       var(--dashboard-bg);
   }
 
+  .dashboard-scroll-viewport {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--brand-border) transparent;
+  }
+
+  .dashboard-scroll-viewport::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .dashboard-scroll-viewport::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dashboard-scroll-viewport::-webkit-scrollbar-thumb {
+    min-height: 44px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--brand-border);
+    background-clip: padding-box;
+  }
+
+  .dashboard-scroll-viewport::-webkit-scrollbar-thumb:hover {
+    background: var(--brand);
+    background-clip: padding-box;
+  }
+
   .dashboard-sidebar {
     border-right: 1px solid var(--dashboard-line);
     background: var(--dashboard-bg);
     color: var(--dashboard-ink);
-    box-shadow: 12px 0 36px color-mix(in srgb, var(--brand-dark) 7%, transparent);
+    box-shadow: none;
     backdrop-filter: blur(20px);
   }
 
@@ -710,11 +737,21 @@
   }
 
   .dashboard-theme .gradient-button,
-  .dashboard-theme [data-slot='button']:not([class*='bg-[#22b66f]']):not([class*='bg-green']):not([class*='bg-red']):not([class*='bg-rose']):not([class*='bg-destructive']) {
+  .dashboard-theme [data-slot='button']:not(.dashboard-button):not([class*='bg-[#22b66f]']):not([class*='bg-green']):not([class*='bg-red']):not([class*='bg-rose']):not([class*='bg-destructive']) {
     background: linear-gradient(135deg, var(--brand-dark), var(--brand)) !important;
     border-color: transparent !important;
     color: #ffffff !important;
-    box-shadow: 0 15px 28px var(--brand-shadow) !important;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--dashboard-ink) 7%, transparent), 0 3px 8px color-mix(in srgb, var(--brand-dark) 8%, transparent) !important;
+  }
+
+  .dashboard-button:not(:focus-visible),
+  .dashboard-theme :is(button, a)[class*='shadow-']:not([class*='shadow-none']):not(.dashboard-button):not(:focus-visible) {
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--dashboard-ink) 7%, transparent), 0 3px 8px color-mix(in srgb, var(--brand-dark) 8%, transparent) !important;
+  }
+
+  .dashboard-button:hover:not(:focus-visible),
+  .dashboard-theme :is(button, a)[class*='shadow-']:not([class*='shadow-none']):not(.dashboard-button):hover:not(:focus-visible) {
+    box-shadow: 0 2px 4px color-mix(in srgb, var(--dashboard-ink) 8%, transparent), 0 5px 12px color-mix(in srgb, var(--brand-dark) 10%, transparent) !important;
   }
 
   .dashboard-theme .soft-input,

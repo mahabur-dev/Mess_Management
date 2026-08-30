@@ -36,13 +36,13 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
     return null
   }
 
-  const contentMargin = collapsed ? 'lg:ml-[88px]' : 'lg:ml-[296px]'
+  const contentMargin = collapsed ? 'lg:ml-[72px]' : 'lg:ml-[280px]'
 
   return (
     <div className="dashboard-theme flex h-screen overflow-hidden bg-background">
       <DashboardSidebar />
       {/* Content - full width on tablet, margin adjusts on large screens when sidebar is fixed */}
-      <main className={`flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300 ${contentMargin}`}>
+      <main className={`dashboard-scroll-viewport min-w-0 flex-1 overflow-y-scroll overflow-x-hidden transition-[margin-left] duration-300 ${contentMargin}`}>
         <div className="dashboard-main min-h-screen p-0">
           {children}
         </div>

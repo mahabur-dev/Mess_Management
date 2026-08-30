@@ -180,7 +180,7 @@ export function PushNotificationPermissionModal() {
           <Button
             type="button"
             variant="outline"
-            className="push-not-now-button !text-white w-full rounded-xl font-bold shadow-sm transition"
+            className="w-full rounded-xl border-[var(--brand-border)] bg-background font-bold text-foreground shadow-sm transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand-dark)]"
             onClick={closeForNow}
             disabled={isSaving}
           >

@@ -223,8 +223,8 @@ export function DashboardHeader({
   }
 
   return (
-    <header className="dashboard-header-clean sticky top-0 z-20">
-      <div className="flex min-h-[72px] flex-col gap-2 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+    <header className="dashboard-header-clean sticky top-0 z-20 w-full min-w-0">
+      <div className="flex min-h-[72px] flex-col gap-2 px-4 py-3 sm:px-6 lg:h-[72px] lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-0">
         <div className="flex items-center gap-3 pr-3">
           {/* Hamburger - visible on mobile and tablet */}
           <button

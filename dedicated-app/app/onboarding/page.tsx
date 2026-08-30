@@ -7,6 +7,7 @@ import { BrandBuildingArt } from '@/components/brand-building-art'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { useNativeBackAction } from '@/components/native-back-actions'
 import { OnboardingVisual } from '@/components/onboarding/onboarding-visual'
+import { Button } from '@/components/ui/button'
 import {
   buildLoginPath,
   completeOnboarding,
@@ -91,7 +92,9 @@ export default function OnboardingPage() {
           <span className="onboarding-mini-brand">MESSZEN</span>
           <div className="onboarding-header-actions">
             {activeIndex < lastIndex ? (
-              <button type="button" className="onboarding-skip" onClick={finishOnboarding}>{auth('skip')}</button>
+              <Button type="button" variant="secondary" size="sm" className="onboarding-skip" onClick={finishOnboarding}>
+                {auth('skip')}
+              </Button>
             ) : null}
           </div>
         </header>
@@ -106,18 +109,19 @@ export default function OnboardingPage() {
 
           {slide.visual === 'automation' ? (
             <div className="onboarding-secondary-actions">
-              <button type="button" onClick={() => setGuideOpen(true)}>
+              <Button type="button" variant="secondary" onClick={() => setGuideOpen(true)}>
                 <BookOpenCheck size={17} /> {auth('howMesszenWorks')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => {
                   setVideoNotice(true)
                   window.setTimeout(() => setVideoNotice(false), 2400)
                 }}
               >
                 <Play size={16} fill="currentColor" /> {auth('demoVideo')}
-              </button>
+              </Button>
             </div>
           ) : null}
 
@@ -136,10 +140,10 @@ export default function OnboardingPage() {
               />
             ))}
           </div>
-          <button type="button" className="onboarding-continue" onClick={goForward}>
+          <Button type="button" className="onboarding-continue" onClick={goForward}>
             <span>{activeIndex === lastIndex ? auth('getStarted') : auth('continue')}</span>
             {activeIndex === lastIndex ? <Check size={19} strokeWidth={2.7} /> : <ArrowRight size={19} strokeWidth={2.5} />}
-          </button>
+          </Button>
         </footer>
       </main>
 
@@ -157,7 +161,9 @@ export default function OnboardingPage() {
               <li><span>2</span><div><strong>{auth('guideRecordTitle')}</strong><small>{auth('guideRecordDescription')}</small></div></li>
               <li><span>3</span><div><strong>{auth('guideReviewTitle')}</strong><small>{auth('guideReviewDescription')}</small></div></li>
             </ol>
-            <button type="button" className="onboarding-guide-done" onClick={() => setGuideOpen(false)}>{auth('gotIt')}</button>
+            <Button type="button" className="onboarding-guide-done" onClick={() => setGuideOpen(false)}>
+              {auth('gotIt')}
+            </Button>
           </section>
         </div>
       ) : null}

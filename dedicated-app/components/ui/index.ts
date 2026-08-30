@@ -1,4 +1,5 @@
 export { Card, CardGrid, ListItem } from './card'
+export { Surface } from './surface'
 export { Text, SectionTitle, CardTitle, Subtitle, Label, Caption } from './text'
 export { AddActionButton, Button, IconButton } from './button'
 export { Badge, StatusPill } from './badge'

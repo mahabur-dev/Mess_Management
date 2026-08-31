@@ -5,31 +5,34 @@ import { apiClient, type MealPattern } from '@/lib/api-client'
 
 export type MealPatternsByMembership = Record<string, MealPattern[]>
 
-async function fetchPatternsInBatches(membershipIds: string[]): Promise<MealPatternsByMembership> {
+function groupPatterns(patterns: MealPattern[]): MealPatternsByMembership {
   const result: MealPatternsByMembership = {}
-  const batchSize = 4
-
-  for (let index = 0; index < membershipIds.length; index += batchSize) {
-    const batch = membershipIds.slice(index, index + batchSize)
-    const responses = await Promise.all(batch.map(async (membershipId) => {
-      const response = await apiClient.getMealPatterns(membershipId)
-      return [membershipId, Array.isArray(response.data) ? response.data : []] as const
-    }))
-    responses.forEach(([membershipId, patterns]) => {
-      result[membershipId] = patterns
-    })
-  }
-
+  patterns.forEach((pattern) => {
+    const history = result[pattern.membership_id] ?? []
+    history.push(pattern)
+    result[pattern.membership_id] = history
+  })
   return result
 }
 
-export function useMealPatternDashboard(membershipIds: string[]) {
+async function fetchPatterns(messId: string, membershipIds: string[], canManage: boolean): Promise<MealPatternsByMembership> {
+  if (canManage) {
+    const response = await apiClient.getMealPatternsForMess(messId)
+    return groupPatterns(Array.isArray(response.data) ? response.data : [])
+  }
+  const membershipId = membershipIds[0]
+  if (!membershipId) return {}
+  const response = await apiClient.getMealPatterns(membershipId)
+  return { [membershipId]: Array.isArray(response.data) ? response.data : [] }
+}
+
+export function useMealPatternDashboard(messId: string | undefined, membershipIds: string[], canManage: boolean) {
   const stableIds = [...new Set(membershipIds.filter(Boolean))].sort()
-  const key = stableIds.length ? ['meal-pattern-dashboard', stableIds.join(',')] : null
+  const key = messId && stableIds.length ? ['meal-pattern-dashboard', messId, canManage ? 'manager' : stableIds[0]] : null
 
   return useSWR<MealPatternsByMembership>(
     key,
-    () => fetchPatternsInBatches(stableIds),
+    () => fetchPatterns(messId!, stableIds, canManage),
     {
       revalidateOnFocus: true,
       dedupingInterval: 10_000,

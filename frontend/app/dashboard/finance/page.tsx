@@ -1,9 +1,9 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import {
@@ -55,9 +55,6 @@ const categories: ExpenseCategory[] = [
   'MAINTENANCE',
   'OTHER',
 ]
-const dashboardActionButtonClass =
-  'gap-1 rounded-xl bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] font-black text-white shadow-[0_6px_15px_var(--brand-shadow)] transition hover:from-[var(--brand-darker)] hover:to-[var(--brand-dark)] hover:shadow-[0_8px_20px_var(--brand-shadow)]'
-
 const expenseCategories: ExpenseCategory[] = ['FOOD', 'GROCERY']
 
 const utilityCategories: ExpenseCategory[] = [
@@ -730,22 +727,14 @@ export default function FinancePage() {
 
               {canAddExpense && (
                 <>
-                  <Button
-                    type="button"
-                    onClick={openUtilityModal}
-                    className={`h-[38px] px-3.5 text-[11px] ${dashboardActionButtonClass}`}
-                  >
+                  <EnterpriseButton size="sm" onClick={openUtilityModal}>
                     <Plus size={15} />
                     Add Utility
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={openExpenseModal}
-                    className={`h-[38px] px-3.5 text-[11px] ${dashboardActionButtonClass}`}
-                  >
+                  </EnterpriseButton>
+                  <EnterpriseButton size="sm" onClick={openExpenseModal}>
                     <Plus size={15} />
                     Add Expenses
-                  </Button>
+                  </EnterpriseButton>
                 </>
               )}
             </div>
@@ -772,13 +761,13 @@ export default function FinancePage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                    {['Category', 'Quantity', 'Date', 'Amount', 'Action'].map((heading) => <th key={heading} className={`px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' || heading === 'Action' ? 'text-right' : ''}`}>{heading}</th>)}
+                    {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Action'].map((heading) => <th key={heading} className={`px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' || heading === 'Action' ? 'text-right' : ''}`}>{heading}</th>)}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e6ebf4]">
                   {loading && (
                     <tr>
-                      <td colSpan={5} className="px-5 py-12 text-center">
+                      <td colSpan={6} className="px-5 py-12 text-center">
                         <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
                           <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
                           Loading expenses...
@@ -788,7 +777,7 @@ export default function FinancePage() {
                   )}
                   {!loading && filteredExpenses.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-5 py-12 text-center">
+                      <td colSpan={6} className="px-5 py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <ShoppingBag size={40} className="text-[#d8e6f8]" />
                           <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
@@ -808,6 +797,10 @@ export default function FinancePage() {
                         </td>
                         <td className="px-4 py-4 text-sm font-bold text-[#6b7a99]">
                           {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="truncate text-sm font-bold text-[#172554]">{item.creator?.name ?? 'Unknown'}</p>
+                          <p className="truncate text-xs font-semibold text-[#6b7a99]">{item.creator?.email ?? ''}</p>
                         </td>
                         <td className="px-4 py-4">
                           <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
@@ -919,22 +912,14 @@ export default function FinancePage() {
           {/* Mobile Add Buttons */}
           {canAddExpense && (
             <div className="flex gap-2">
-              <Button
-                type="button"
-                onClick={openUtilityModal}
-                className={`flex-1 h-[42px] px-3 text-[11px] ${dashboardActionButtonClass}`}
-              >
+              <EnterpriseButton size="sm" fullWidth onClick={openUtilityModal}>
                 <Plus size={15} />
                 Add Utility
-              </Button>
-              <Button
-                type="button"
-                onClick={openExpenseModal}
-                className={`flex-1 h-[42px] px-3 text-[11px] ${dashboardActionButtonClass}`}
-              >
+              </EnterpriseButton>
+              <EnterpriseButton size="sm" fullWidth onClick={openExpenseModal}>
                 <Plus size={15} />
                 Add Expenses
-              </Button>
+              </EnterpriseButton>
             </div>
           )}
 
@@ -990,6 +975,11 @@ export default function FinancePage() {
                       {money(item.amount)}
                     </p>
                   </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-[#6b7a99]">
+                  <span>Added by</span>
+                  <span className="truncate font-bold text-[#172554]">{item.creator?.name ?? 'Unknown'}</span>
                 </div>
 
                 <div className="mt-3 flex justify-end">
@@ -1299,23 +1289,15 @@ export default function FinancePage() {
               ))}
             </div>
 
-            <Button
-              variant="outline"
-              onClick={addExpenseItem}
-              className="w-full h-11 border-dashed"
-            >
+            <EnterpriseButton tone="secondary" fullWidth onClick={addExpenseItem} className="border-dashed">
               <Plus size={16} className="mr-2" />
               Add another item
-            </Button>
+            </EnterpriseButton>
               </>
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button
-                onClick={submitAllExpenses}
-                disabled={loading}
-                className={`flex-1 h-12 ${dashboardActionButtonClass}`}
-              >
+              <EnterpriseButton fullWidth size="lg" onClick={submitAllExpenses} disabled={loading}>
                 {loading
                   ? 'Saving...'
                   : isEditing
@@ -1325,7 +1307,7 @@ export default function FinancePage() {
                     : expenseFormMode === 'utility'
                       ? 'Submit Utility'
                     : `Submit ${expenseItems.length} Item(s)`}
-              </Button>
+              </EnterpriseButton>
             </div>
           </div>
       </EnterpriseDetailsDrawer>
@@ -1366,13 +1348,9 @@ export default function FinancePage() {
               />
             </div>
 
-            <Button
-              onClick={submitPriceReviewRequest}
-              disabled={loading || !reviewMessage.trim()}
-              className={`h-12 w-full ${dashboardActionButtonClass}`}
-            >
+            <EnterpriseButton fullWidth size="lg" onClick={submitPriceReviewRequest} disabled={loading || !reviewMessage.trim()}>
               Send Review Request
-            </Button>
+            </EnterpriseButton>
           </div>
         </DialogContent>
       </Dialog>

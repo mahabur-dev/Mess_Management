@@ -2,6 +2,7 @@
 
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
+import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { useAuth } from '@/app/context/auth-context'
@@ -131,11 +132,10 @@ export default function MonthlyBillPage() {
           </div>
           <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-none sm:flex sm:items-center">
             {isManager && activeMess && (
-              <button type="button" onClick={recalculateBills} disabled={generating}
-                className="inline-flex h-[45px] w-full items-center justify-center gap-2 rounded-xl bg-[#2f80ed] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[#1f6fd8] disabled:opacity-60 sm:w-auto">
+              <EnterpriseButton onClick={recalculateBills} disabled={generating} className="w-full gap-2 sm:w-auto">
                 {generating ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                 {generating ? 'Calculating' : 'Recalculate'}
-              </button>
+              </EnterpriseButton>
             )}
             <label className="flex h-[45px] w-full items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb] sm:w-auto">
               <CalendarDays size={17} className="text-[#2f80ed]" />

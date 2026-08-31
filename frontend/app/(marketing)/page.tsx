@@ -91,7 +91,7 @@ function FeatureStrip() {
         {featureStrip.map(({ title, text, icon: Icon, tone }, index) => (
           <article key={title} className={`flex items-center gap-4 p-5 sm:p-6 ${index ? 'border-t border-[var(--marketing-line)] sm:border-l sm:border-t-0' : ''} ${index === 2 ? 'sm:border-l-0 lg:border-l' : ''}`}>
             <span className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${tone}`}><Icon size={21} /></span>
-            <div><h2 className="text-sm font-black text-foreground">{title}</h2><p className="mt-1 text-xs font-medium leading-5 text-muted-foreground">{text}</p></div>
+            <div><h2 className="text-sm font-semibold text-foreground">{title}</h2><p className="mt-1 text-xs font-medium leading-5 text-muted-foreground">{text}</p></div>
           </article>
         ))}
       </div>
@@ -108,7 +108,7 @@ function CoreFeaturesSection() {
           {detailedFeatures.map(({ title, description, icon: Icon }) => (
             <article key={title} className="marketing-card marketing-card-hover rounded-2xl p-6">
               <span className="icon-tile"><Icon size={21} /></span>
-              <h3 className="mt-5 text-base font-black text-foreground">{title}</h3>
+              <h3 className="mt-5 text-base font-semibold text-foreground">{title}</h3>
               <p className="mt-2 text-sm font-medium leading-6 text-muted-foreground">{description}</p>
             </article>
           ))}
@@ -126,14 +126,14 @@ function HowItWorksSection() {
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {steps.map(({ title, text, icon: Icon }, index) => (
             <article key={title} className="marketing-card relative rounded-2xl p-6">
-              <span className="absolute left-3 top-3 flex size-7 items-center justify-center rounded-lg bg-[var(--brand)] text-xs font-black text-white">{index + 1}</span>
+              <span className="absolute left-3 top-3 flex size-7 items-center justify-center rounded-lg bg-[var(--brand)] text-xs font-semibold text-white">{index + 1}</span>
               {index < steps.length - 1 && (
                 <ArrowRight className="absolute -right-4 top-1/2 z-10 hidden -translate-y-1/2 text-[var(--brand)] xl:block" size={18} />
               )}
               <span className="mx-auto mt-2 flex size-14 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)]">
                 <Icon size={25} />
               </span>
-              <h3 className="mt-5 text-center text-base font-black text-foreground">{title}</h3>
+              <h3 className="mt-5 text-center text-base font-semibold text-foreground">{title}</h3>
               <p className="mt-2 text-center text-sm font-medium leading-6 text-muted-foreground">{text}</p>
             </article>
           ))}
@@ -152,10 +152,10 @@ function MessCard({ mess }: { mess: PublicMessCard }) {
         <Building2 size={19} />
       </span>
 
-      <p className="mt-5 text-[10px] font-black uppercase tracking-[0.11em] text-muted-foreground">
+      <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
         Mess community
       </p>
-      <h3 className="mt-1.5 line-clamp-1 text-lg font-black tracking-tight text-foreground">
+      <h3 className="mt-1.5 line-clamp-1 text-lg font-semibold tracking-tight text-foreground">
         {mess.name}
       </h3>
       <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
@@ -311,15 +311,15 @@ function PricingSection() {
             ]
             return (
               <article key={key} className={`marketing-card relative flex min-h-[420px] flex-col rounded-2xl p-6 ${featured ? 'border-[var(--brand)] ring-1 ring-[var(--brand)]/20' : ''}`}>
-                {featured && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--brand)] px-3 py-1 text-[10px] font-black text-white">Most Popular</span>}
-                <h3 className="text-lg font-black text-foreground">{plan.label}</h3>
+                {featured && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--brand)] px-3 py-1 text-[10px] font-semibold text-white">Most Popular</span>}
+                <h3 className="text-lg font-semibold text-foreground">{plan.label}</h3>
                 <div className="mt-3 flex items-end gap-1">
                   {plan.price === 0 ? (
-                    <span className="text-4xl font-black tracking-tight text-foreground">Free</span>
+                    <span className="text-4xl font-semibold tracking-tight text-foreground">Free</span>
                   ) : (
                     <>
-                      <span className="pb-1 text-sm font-black text-muted-foreground">{plan.currency || '৳'}</span>
-                      <span className="text-4xl font-black tracking-tight text-foreground">{plan.price.toLocaleString()}</span>
+                      <span className="pb-1 text-sm font-semibold text-muted-foreground">{plan.currency || '৳'}</span>
+                      <span className="text-4xl font-semibold tracking-tight text-foreground">{plan.price.toLocaleString()}</span>
                       <span className="pb-1 text-xs font-medium text-muted-foreground">/{key === 'YEARLY' ? 'year' : 'month'}</span>
                     </>
                   )}
@@ -340,13 +340,13 @@ function PricingSection() {
 
           <article className="relative min-h-[420px] overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-dark)] to-[var(--brand)] p-7 text-white shadow-[0_20px_50px_var(--brand-shadow)] md:col-span-3 xl:col-span-1">
             <Sparkles className="absolute right-6 top-6 text-white/60" />
-            <h3 className="max-w-[12rem] text-2xl font-black leading-tight">Live better. Manage together.</h3>
+            <h3 className="max-w-[12rem] text-2xl font-semibold leading-tight">Live better. Manage together.</h3>
             <p className="mt-4 max-w-xs text-sm font-medium leading-6 text-white/80">Invite your members and give the whole community a more transparent way to live.</p>
-            <Link href="/register" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-white">Create your mess <ArrowRight size={15} /></Link>
+            <Link href="/register" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white">Create your mess <ArrowRight size={15} /></Link>
             <div className="absolute inset-x-6 bottom-6 rounded-2xl bg-white/12 p-4 backdrop-blur-sm ring-1 ring-white/20">
               <div className="flex items-center gap-3">
                 <span className="flex size-12 items-center justify-center rounded-xl bg-white text-[var(--brand-dark)]"><UsersRound size={23} /></span>
-                <div><p className="text-sm font-black">One shared workspace</p><p className="mt-1 text-xs text-white/70">Managers and members stay aligned</p></div>
+                <div><p className="text-sm font-semibold">One shared workspace</p><p className="mt-1 text-xs text-white/70">Managers and members stay aligned</p></div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
                 {[CalendarDays, CreditCard, ShieldCheck].map((Icon, index) => <span key={index} className="flex h-12 items-center justify-center rounded-xl bg-black/10"><Icon size={18} /></span>)}
@@ -366,9 +366,9 @@ function FinalCta() {
         <MarketingStatsBar />
         <div className="mt-10 overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] px-6 py-10 text-center text-white shadow-[0_20px_50px_var(--brand-shadow)] sm:px-10">
           <Rocket className="mx-auto" size={30} />
-          <h2 className="mt-4 text-3xl font-black tracking-tight">Ready for a calmer mess?</h2>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight">Ready for a calmer mess?</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-white/80">Set up your community, invite your members, and keep every meal and taka accounted for.</p>
-          <Link href="/register" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-black text-[var(--brand-dark)] shadow-lg transition hover:-translate-y-0.5">
+          <Link href="/register" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-semibold text-[var(--brand-dark)] shadow-lg transition hover:-translate-y-0.5">
             Get Started for Free <ArrowRight size={16} />
           </Link>
         </div>

@@ -14,6 +14,12 @@ export default {
   bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS) || 12,
   resendApiKey: process.env.RESEND_API_KEY,
 
+  features: {
+    // Defaults to false so subscription enforcement stays off until explicitly enabled.
+    subscriptionEnabled:
+      process.env.SUBSCRIPTION_FEATURE_ENABLED?.trim().toLowerCase() === 'true',
+  },
+
   database: {
     url: process.env.DATABASE_URL,
   },

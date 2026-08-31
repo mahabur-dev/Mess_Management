@@ -29,7 +29,7 @@ const navigation: Array<{ id: string; label: string; icon: LucideIcon }> = [
 export function TourSidebar({ activeNav, showAccent = false }: { activeNav: string; showAccent?: boolean }) {
   return (
     <aside className="absolute inset-y-0 left-0 w-[20%] border-r border-[#dce9ec] bg-white px-[2.1%] py-[3%]">
-      <div className="flex items-center gap-[7%] px-[4%] text-[clamp(7px,1.25vw,12px)] font-black text-[#007f76]">
+      <div className="flex items-center gap-[7%] px-[4%] text-[clamp(7px,1.25vw,12px)] font-semibold text-[#007f76]">
         <span className="grid aspect-square w-[18%] place-items-center rounded-[30%] border-2 border-[#008d8c] text-[.8em]">M</span>
         <span>messzen</span>
       </div>
@@ -46,11 +46,11 @@ export function TourSidebar({ activeNav, showAccent = false }: { activeNav: stri
       </div>
       <div className="absolute inset-x-[8%] bottom-[10%] rounded-[8px] bg-[#f2f6fb] px-[8%] py-[6%]">
         <div className="flex items-center gap-[8%]">
-          <span className="grid aspect-square w-[24%] place-items-center rounded-full bg-[#ddf5f2] text-[clamp(5px,.8vw,8px)] font-black text-[#007f76]">MR</span>
-          <div className="min-w-0"><p className="truncate text-[clamp(5px,.82vw,8px)] font-black">Mahabur Rahman</p><p className="text-[clamp(4px,.65vw,6px)] font-bold uppercase text-[#74869b]">Manager</p></div>
+          <span className="grid aspect-square w-[24%] place-items-center rounded-full bg-[#ddf5f2] text-[clamp(5px,.8vw,8px)] font-semibold text-[#007f76]">MR</span>
+          <div className="min-w-0"><p className="truncate text-[clamp(5px,.82vw,8px)] font-semibold">Mahabur Rahman</p><p className="text-[clamp(4px,.65vw,6px)] font-bold uppercase text-[#74869b]">Manager</p></div>
         </div>
       </div>
-      <div className="absolute inset-x-[8%] bottom-[3%] flex items-center justify-center gap-1.5 rounded-[8px] border border-rose-200 bg-rose-50 py-[4%] text-[clamp(4px,.65vw,7px)] font-black text-rose-600"><LogOut className="w-[10%]" /> Logout</div>
+      <div className="absolute inset-x-[8%] bottom-[3%] flex items-center justify-center gap-1.5 rounded-[8px] border border-rose-200 bg-rose-50 py-[4%] text-[clamp(4px,.65vw,7px)] font-semibold text-rose-600"><LogOut className="w-[10%]" /> Logout</div>
       {showAccent ? <div className="absolute inset-x-0 top-0 h-1 bg-[#008d8c]" /> : null}
     </aside>
   )
@@ -59,7 +59,7 @@ export function TourSidebar({ activeNav, showAccent = false }: { activeNav: stri
 export function TourHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: ReactNode }) {
   return (
     <header className="flex h-[15%] items-center justify-between border-b border-[#dce9ec] bg-white px-[4%]">
-      <div><p className="text-[clamp(8px,1.35vw,14px)] font-black">{title}</p><p className="mt-0.5 text-[clamp(4px,.7vw,7px)] font-semibold text-[#71839a]">{subtitle}</p></div>
+      <div><p className="text-[clamp(8px,1.35vw,14px)] font-semibold">{title}</p><p className="mt-0.5 text-[clamp(4px,.7vw,7px)] font-semibold text-[#71839a]">{subtitle}</p></div>
       <div className="flex items-center gap-1.5">
         {action}
         <span className="hidden items-center gap-1 rounded-[6px] border border-[#dbe7ee] bg-white px-2 py-1.5 text-[clamp(4px,.65vw,7px)] font-extrabold shadow-sm sm:flex"><CalendarDays className="w-2.5 text-[#008d8c]" /> August 2026</span>
@@ -84,7 +84,7 @@ export function TourField({ label, value, placeholder, active, select, children 
 export function TourPanel({ title, aside, active, children, className = '' }: { title?: string; aside?: ReactNode; active?: boolean; children: ReactNode; className?: string }) {
   return (
     <section className={`rounded-[9px] border bg-white p-[4%] shadow-sm transition-all ${active ? 'border-[#008d8c] ring-2 ring-[#008d8c]/10' : 'border-[#dce7ea]'} ${className}`}>
-      {title || aside ? <div className="mb-[3%] flex items-center justify-between"><p className="text-[clamp(5px,.78vw,8px)] font-black">{title}</p>{aside}</div> : null}
+      {title || aside ? <div className="mb-[3%] flex items-center justify-between"><p className="text-[clamp(5px,.78vw,8px)] font-semibold">{title}</p>{aside}</div> : null}
       {children}
     </section>
   )
@@ -92,5 +92,5 @@ export function TourPanel({ title, aside, active, children, className = '' }: { 
 
 export function TourPrimaryButton({ children, active, tone = 'brand' }: { children: ReactNode; active?: boolean; tone?: 'brand' | 'ai' }) {
   const background = tone === 'ai' ? 'bg-gradient-to-r from-violet-600 to-[#008d8c]' : 'bg-[#008d8c]'
-  return <button type="button" className={`flex items-center gap-1.5 rounded-[7px] ${background} px-4 py-2 text-[clamp(5px,.75vw,8px)] font-black text-white shadow-[0_7px_18px_rgba(0,141,140,.25)] transition-all ${active ? 'scale-105 ring-4 ring-[#008d8c]/15' : ''}`}>{children}</button>
+  return <button type="button" className={`flex items-center gap-1.5 rounded-[7px] ${background} px-4 py-2 text-[clamp(5px,.75vw,8px)] font-semibold text-white shadow-[0_7px_18px_rgba(0,141,140,.25)] transition-all ${active ? 'scale-105 ring-4 ring-[#008d8c]/15' : ''}`}>{children}</button>
 }

@@ -132,7 +132,7 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
             <span key={stepIndex} className="absolute -left-2 -top-2 size-7 animate-ping rounded-full bg-[#ff7a1a]/35" />
             <MousePointer2 className="relative w-[clamp(16px,2.4vw,26px)] fill-[#123748] text-white drop-shadow-[0_3px_4px_rgba(0,0,0,.32)]" strokeWidth={1.5} />
             <div className={`absolute left-5 top-5 w-[165px] rounded-lg bg-[#102f39] px-3 py-2 text-white shadow-xl sm:w-[190px] ${activeStep.x > 65 ? '-ml-6 -translate-x-full' : ''}`}>
-              <p className="text-[9px] font-black sm:text-[11px]">{activeStep.title}</p>
+              <p className="text-[9px] font-semibold sm:text-[11px]">{activeStep.title}</p>
               <p className="mt-0.5 text-[7px] font-medium leading-3 text-white/70 sm:text-[9px] sm:leading-4">{activeStep.detail}</p>
             </div>
           </div>
@@ -148,7 +148,7 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
               className={`h-1.5 rounded-full transition-all ${stepIndex === index ? 'w-4 bg-[#008d8c]' : 'w-1.5 bg-[#bfd3d7] hover:bg-[#7fa9ad]'}`}
             />
           ))}
-          <span className="ml-1 whitespace-nowrap text-[6px] font-black uppercase tracking-wide text-[#5e747a]">{stepIndex + 1}/{steps.length}</span>
+          <span className="ml-1 whitespace-nowrap text-[6px] font-semibold uppercase tracking-wide text-[#5e747a]">{stepIndex + 1}/{steps.length}</span>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { MemberJoinRequestModal } from '@/components/member-join-request-modal'
 import { DashboardPanel } from '@/components/dashboard/dashboard-panel'
 import { useAuth } from '@/app/context/auth-context'
 import { type Mess } from '@/lib/api-client'
+import { APP_FEATURES } from '@/lib/feature-flags'
 import { useRouter } from 'next/navigation'
 import {
   useMesses,
@@ -72,7 +73,7 @@ const adminQuickActions = [
   ['Mess Requests', ClipboardList, '/dashboard/mess_requests'],
   ['All Messes', Home, '/dashboard/mess_management'],
   ['Complaints', Bell, '/dashboard/complaints'],
-  ['Subscriptions', BadgeDollarSign, '/dashboard/subscriptions'],
+  ...(APP_FEATURES.subscriptions ? [['Subscriptions', BadgeDollarSign, '/dashboard/subscriptions'] as const] : []),
   ['Reports', ReceiptText, '/dashboard/reports'],
 ] as const
 
@@ -159,13 +160,7 @@ const adminMobileQuickActions = [
     icon: Bell,
     tone: 'rose',
   },
-  {
-    label: 'Subscriptions',
-    helper: 'Manage plans',
-    href: '/dashboard/subscriptions',
-    icon: BadgeDollarSign,
-    tone: 'purple',
-  },
+  ...(APP_FEATURES.subscriptions ? [{ label: 'Subscriptions', helper: 'Manage plans', href: '/dashboard/subscriptions', icon: BadgeDollarSign, tone: 'purple' as const }] : []),
   {
     label: 'Reports',
     helper: 'Analytics',
@@ -254,10 +249,10 @@ function StatCard({
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl transition group-hover:bg-[var(--brand)]/12" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-muted-foreground">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-black leading-none tracking-tight text-foreground">
+          <p className="mt-2 text-2xl font-semibold leading-none tracking-tight text-foreground">
             {value}
           </p>
           <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
@@ -288,10 +283,10 @@ function MiniStatCard({
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-muted-foreground">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-black leading-none text-foreground">{value}</p>
+          <p className="mt-2 text-2xl font-semibold leading-none text-foreground">{value}</p>
           <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
             <ArrowUpRight size={11} />
             <span>Live update</span>
@@ -326,11 +321,11 @@ function MobileSection({
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             {eyebrow && (
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">
                 {eyebrow}
               </p>
             )}
-            <h2 className="mt-1 text-[17px] font-black tracking-tight text-[#172554]">
+            <h2 className="mt-1 text-[17px] font-semibold tracking-tight text-[#172554]">
               {title}
             </h2>
           </div>
@@ -339,7 +334,7 @@ function MobileSection({
             <button
               type="button"
               onClick={onAction}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#e7f1ff] px-3 py-1.5 text-[11px] font-black text-[#2f80ed] transition active:scale-[0.97]"
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#e7f1ff] px-3 py-1.5 text-[11px] font-semibold text-[#2f80ed] transition active:scale-[0.97]"
             >
               {actionLabel}
               <ArrowUpRight size={12} />
@@ -365,14 +360,14 @@ function MobileQuickActions({
       <div className="relative">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">
               Start Here
             </p>
-            <h2 className="mt-1 text-[18px] font-black tracking-tight text-[#172554]">
+            <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-[#172554]">
               Quick Actions
             </h2>
           </div>
-          <span className="rounded-full bg-[#f0f6ff] px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">
+          <span className="rounded-full bg-[#f0f6ff] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">
             Today
           </span>
         </div>
@@ -395,7 +390,7 @@ function MobileQuickActions({
                 >
                   <Icon size={18} strokeWidth={2.4} />
                 </span>
-                <span className="relative block text-[11px] font-black leading-tight text-[#172554]">
+                <span className="relative block text-[11px] font-semibold leading-tight text-[#172554]">
                   {label}
                 </span>
                 <span className="relative mt-1 block text-[9px] font-bold leading-tight text-[#7a8aaa]">
@@ -428,10 +423,10 @@ function MobileOverviewGrid({ stats }: { stats: readonly MobileStat[] }) {
               <Icon size={18} strokeWidth={2.35} />
             </span>
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[#7a8aaa]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#7a8aaa]">
                 {label}
               </p>
-              <p className="mt-1 truncate text-[18px] font-black leading-none tracking-tight text-[#172554]">
+              <p className="mt-1 truncate text-[18px] font-semibold leading-none tracking-tight text-[#172554]">
                 {value}
               </p>
             </div>
@@ -468,7 +463,7 @@ function MobileNoticeList({
             <Bell size={17} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-black text-[#172554]">
+            <span className="block truncate text-sm font-semibold text-[#172554]">
               {notice.title}
             </span>
             <span className="mt-0.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#7a8aaa]">
@@ -496,7 +491,7 @@ function MobileNoMessPrompt({
           <Home size={20} />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-black text-[#172554]">
+          <h2 className="text-sm font-semibold text-[#172554]">
             No mess found
           </h2>
           <p className="mt-1 text-xs font-semibold leading-relaxed text-[#6b7a99]">
@@ -506,7 +501,7 @@ function MobileNoMessPrompt({
             <button
               type="button"
               onClick={onCreate}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 text-xs font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.24)]"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(47,128,237,0.24)]"
             >
               <Building2 size={14} />
               Create Mess
@@ -514,7 +509,7 @@ function MobileNoMessPrompt({
             <button
               type="button"
               onClick={onRequestMember}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-4 text-xs font-black text-[#2f80ed] shadow-sm"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-4 text-xs font-semibold text-[#2f80ed] shadow-sm"
             >
               <UserPlus size={14} />
               Request Member
@@ -845,7 +840,7 @@ export default function DashboardPage() {
                         <ReceiptText size={17} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-black text-[#172554]">
+                        <span className="block truncate text-sm font-semibold text-[#172554]">
                           {expense.item_name || expense.category}
                         </span>
                         <span className="mt-0.5 block truncate text-xs font-semibold text-[#6b7a99]">
@@ -874,7 +869,7 @@ export default function DashboardPage() {
                   <Home size={22} className="text-amber-600" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-[#172554]">
+                  <h2 className="text-base font-semibold text-[#172554]">
                     No mess found
                   </h2>
                   <p className="mt-0.5 text-sm font-semibold text-[#6b7a99]">
@@ -885,14 +880,14 @@ export default function DashboardPage() {
 
               <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:w-auto">
                 <button
-                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)] sm:min-w-[150px]"
+                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-semibold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)] sm:min-w-[150px]"
                   onClick={() => router.push('/dashboard/mess_management')}
                 >
                   <Building2 size={17} />
                   Create Mess
                 </button>
                 <button
-                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#d8e6f8] bg-white px-5 font-black text-[#2f80ed] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#edf5ff] sm:min-w-[150px]"
+                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#d8e6f8] bg-white px-5 font-semibold text-[#2f80ed] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#edf5ff] sm:min-w-[150px]"
                   onClick={() => setMemberRequestOpen(true)}
                 >
                   <UserPlus size={17} />
@@ -1055,7 +1050,7 @@ export default function DashboardPage() {
                         <Icon size={20} />
                       </span>
 
-                      <span className="text-xs font-black text-[#172554] transition group-hover:text-[var(--brand)]">
+                      <span className="text-xs font-semibold text-[#172554] transition group-hover:text-[var(--brand)]">
                         {label}
                       </span>
                     </button>

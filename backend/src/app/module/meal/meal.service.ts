@@ -20,6 +20,7 @@ import paginationHelper, {
   buildMeta,
 } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import config from 'src/app/config';
 import { apiMessage } from 'src/app/contracts/api-message.contract';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 import { NotificationService } from '../notification/notification.service';
@@ -936,7 +937,7 @@ export class MealService {
     messId: string,
     role: string,
   ): Promise<void> {
-    if (role === 'ADMIN') return;
+    if (!config.features.subscriptionEnabled || role === 'ADMIN') return;
     const subscription = await this.prisma.subscription.findUnique({
       where: { mess_id: messId },
       select: { status: true, end_date: true },

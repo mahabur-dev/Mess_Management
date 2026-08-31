@@ -7,6 +7,7 @@ import { useAuth } from '@/app/context/auth-context'
 import { BrandLogo } from '@/components/brand-logo'
 import { apiClient, type Mess } from '@/lib/api-client'
 import { swrFetcher } from '@/lib/swr-fetcher'
+import { APP_FEATURES } from '@/lib/feature-flags'
 import {
   BarChart3,
   Bell,
@@ -71,7 +72,7 @@ const adminItems = [
   { label: 'Contact Requests', href: '/dashboard/contact-requests', icon: Mail },
   { label: 'All Messes', href: '/dashboard/mess_management', icon: Home },
   // { label: 'Payments/Packages', href: '/dashboard/payments', icon: CreditCard },
-  { label: 'Subscriptions', href: '/dashboard/subscriptions', icon: BarChart3 },
+  ...(APP_FEATURES.subscriptions ? [{ label: 'Subscriptions', href: '/dashboard/subscriptions', icon: BarChart3 }] : []),
   { label: 'Complaints', href: '/dashboard/complaints', icon: MessageSquareWarning },
   { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
@@ -207,7 +208,7 @@ export function DashboardSidebar() {
       <div className="border-t border-[var(--dashboard-line)] p-4">
         <div className={`dashboard-subtle-card flex items-center gap-3 rounded-xl p-3 ${collapsed ? 'justify-center px-2' : ''}`}>
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-black shadow-sm"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold shadow-sm"
             style={{
               backgroundColor: `${avatarBg}18`,
               borderColor: `${avatarBg}55`,

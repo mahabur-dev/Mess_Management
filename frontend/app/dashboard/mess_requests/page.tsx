@@ -85,7 +85,7 @@ export default function MessRequestsPage() {
             <ClipboardList size={24} className="text-[#8b5cf6]" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-[#172554]">Registration Requests</h2>
+            <h2 className="text-lg font-semibold text-[#172554]">Registration Requests</h2>
             <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{requests.length} request{requests.length !== 1 ? 's' : ''} found</p>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function MessRequestsPage() {
                           <Building2 size={20} className="text-[#2f80ed]" />
                         </div>
                         <div className="min-w-0">
-                          <h3 className="text-base font-black text-[#172554] truncate">{request.mess_name}</h3>
+                          <h3 className="text-base font-semibold text-[#172554] truncate">{request.mess_name}</h3>
                           {request.address && (
                             <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-[#6b7a99]">
                               <MapPin size={11} className="text-[#ffb84d]" />
@@ -137,14 +137,14 @@ export default function MessRequestsPage() {
 
                     <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#f8faff] p-3 mb-4">
                       <div>
-                        <p className="flex items-center gap-1 text-[10px] font-black uppercase text-[#6b7a99]">
+                        <p className="flex items-center gap-1 text-[10px] font-semibold uppercase text-[#6b7a99]">
                           <Users size={11} className="text-[#2f80ed]" />
                           Seats
                         </p>
                         <p className="mt-0.5 text-sm font-bold text-[#172554]">{request.total_seats ?? '-'}</p>
                       </div>
                       <div>
-                        <p className="flex items-center gap-1 text-[10px] font-black uppercase text-[#6b7a99]">
+                        <p className="flex items-center gap-1 text-[10px] font-semibold uppercase text-[#6b7a99]">
                           <Banknote size={11} className="text-[#f59e0b]" />
                           Rent
                         </p>
@@ -215,8 +215,8 @@ export default function MessRequestsPage() {
               
               <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Mess Request</p>
-                  <h2 className="mt-1 text-xl font-black text-[#172554] truncate">{viewingRequest.mess_name}</h2>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Mess Request</p>
+                  <h2 className="mt-1 text-xl font-semibold text-[#172554] truncate">{viewingRequest.mess_name}</h2>
                 </div>
                 <button
                   type="button"
@@ -240,22 +240,22 @@ export default function MessRequestsPage() {
                 {/* Basic info */}
                 <div className="mb-4 space-y-3">
                   <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Mess Name</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Mess Name</p>
                     <p className="mt-1 text-sm font-bold text-[#172554]">{viewingRequest.mess_name}</p>
                   </div>
                   {viewingRequest.address && (
                     <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Address</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Address</p>
                       <p className="mt-1 text-sm font-bold text-[#172554]">{viewingRequest.address}</p>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Total Seats</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Total Seats</p>
                       <p className="mt-1 text-sm font-bold text-[#172554]">{viewingRequest.total_seats ?? '-'}</p>
                     </div>
                     <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Monthly Rent</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Monthly Rent</p>
                       <p className="mt-1 text-sm font-bold text-[#172554]">৳ {Number(viewingRequest.monthly_rent ?? 0).toLocaleString()}</p>
                     </div>
                   </div>
@@ -265,7 +265,7 @@ export default function MessRequestsPage() {
                 <div className="mb-4 rounded-lg border border-[#e6ebf4] p-3">
                   <p className="mb-2 text-xs font-bold text-[#6b7a99]">Requested By</p>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/10 to-[#8b5cf6]/10 text-sm font-black text-[#2f80ed]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/10 to-[#8b5cf6]/10 text-sm font-semibold text-[#2f80ed]">
                       {viewingRequest.requester?.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div>
@@ -281,7 +281,7 @@ export default function MessRequestsPage() {
                 {/* Created at */}
                 {viewingRequest.created_at && (
                   <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Submitted</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Submitted</p>
                     <p className="mt-1 text-sm font-bold text-[#172554]">{formatDate(viewingRequest.created_at)}</p>
                   </div>
                 )}
@@ -290,7 +290,7 @@ export default function MessRequestsPage() {
                   <button
                     type="button"
                     onClick={() => setViewingRequest(null)}
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)]"
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-semibold text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)]"
                   >
                     Close
                   </button>

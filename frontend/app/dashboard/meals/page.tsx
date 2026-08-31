@@ -262,22 +262,22 @@ export default function MealsPage() {
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/15 to-[#58d68d]/15 shadow-sm"><UtensilsCrossed size={24} className="text-[#2f80ed]" /></div>
-            <div><h2 className="text-lg font-black text-[#172554]">{activeMess?.name ?? 'No mess selected'}</h2><p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]"><Clock size={13} className="text-[#ffb84d]" />{deadlineLoading ? 'Loading...' : deadlineInfo ? <>Meal window: {formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)} (next day)</> : 'Meal deadline system active'}</p></div>
+            <div><h2 className="text-lg font-semibold text-[#172554]">{activeMess?.name ?? 'No mess selected'}</h2><p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]"><Clock size={13} className="text-[#ffb84d]" />{deadlineLoading ? 'Loading...' : deadlineInfo ? <>Meal window: {formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)} (next day)</> : 'Meal deadline system active'}</p></div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            {isManager && <Button onClick={() => setShowDeadlineSettings(!showDeadlineSettings)} className="h-[45px] rounded-xl border border-blue-200/50 bg-gradient-to-r from-blue-50 to-blue-100/70 px-5 font-black text-blue-700 shadow-sm"><Clock size={16} className="mr-2" />{showDeadlineSettings ? 'Hide Settings' : 'Set Meal Deadline'}</Button>}
+            {isManager && <Button onClick={() => setShowDeadlineSettings(!showDeadlineSettings)} className="h-[45px] rounded-xl border border-blue-200/50 bg-gradient-to-r from-blue-50 to-blue-100/70 px-5 font-semibold text-blue-700 shadow-sm"><Clock size={16} className="mr-2" />{showDeadlineSettings ? 'Hide Settings' : 'Set Meal Deadline'}</Button>}
             <label className="flex h-[45px] items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm"><CalendarDays size={17} className="text-[#2f80ed]" /><input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-transparent text-sm font-bold text-[#172554] outline-none" /></label>
           </div>
         </div>
 
         {isManager && showDeadlineSettings && (
           <div className="mb-6 rounded-xl border border-blue-200/60 bg-blue-50 px-5 py-4 shadow-sm">
-            <h3 className="mb-3 text-sm font-black text-[#172554]">Set Meal Deadline Window</h3>
+            <h3 className="mb-3 text-sm font-semibold text-[#172554]">Set Meal Deadline Window</h3>
             <p className="mb-4 text-xs font-semibold text-[#6b7a99]">Members can only add/update their meals during this window. Default: 10:00 PM → 11:00 AM (next day)</p>
             <div className="flex flex-wrap items-end gap-4">
-              <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">Opens</label><input type="time" value={deadlineStartTime} onChange={e => setDeadlineStartTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none" /></div>
-              <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">Closes (next day)</label><input type="time" value={deadlineEndTime} onChange={e => setDeadlineEndTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none" /></div>
-              <Button onClick={saveDeadlineSettings} disabled={settingDeadline} className="h-[42px] rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white">{settingDeadline ? 'Saving...' : 'Save'}</Button>
+              <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Opens</label><input type="time" value={deadlineStartTime} onChange={e => setDeadlineStartTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none" /></div>
+              <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Closes (next day)</label><input type="time" value={deadlineEndTime} onChange={e => setDeadlineEndTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none" /></div>
+              <Button onClick={saveDeadlineSettings} disabled={settingDeadline} className="h-[42px] rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-semibold text-white">{settingDeadline ? 'Saving...' : 'Save'}</Button>
             </div>
           </div>
         )}
@@ -305,11 +305,11 @@ export default function MealsPage() {
                   <div className="dashboard-meal-icon flex h-11 w-11 items-center justify-center rounded-xl text-[var(--brand)]">{MEAL_ICONS[mealName]}</div>
                   <span className="dashboard-eyebrow rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-[9px] tracking-[0.1em]">{isLoading ? 'Loading' : 'Meal quantity'}</span>
                 </div>
-                <h3 className="text-lg font-black text-foreground">{mealLabels[mealName]}</h3>
+                <h3 className="text-lg font-semibold text-foreground">{mealLabels[mealName]}</h3>
                 <p className="mt-1 text-xs font-semibold text-muted-foreground">For {formatDate(date)} · +{step} per click</p>
                 <div className="mt-5 flex items-center justify-between rounded-2xl bg-[var(--dashboard-surface-subtle)] p-2">
                   <button type="button" aria-label={`Decrease ${mealLabels[mealName]}`} disabled={!activeMess || isLoading || mealControlsLocked || quantity <= 0} onClick={() => setMealDrafts(c => ({ ...c, [mealName]: Math.max(0, +(c[mealName] - step).toFixed(2)) }))} className="dashboard-meal-step grid h-11 w-11 place-items-center rounded-xl text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"><Minus size={18} strokeWidth={2.5} /></button>
-                  <span className="text-3xl font-black tracking-tight text-foreground">{quantity}</span>
+                  <span className="text-3xl font-semibold tracking-tight text-foreground">{quantity}</span>
                   <button type="button" aria-label={`Increase ${mealLabels[mealName]}`} disabled={!activeMess || isLoading || mealControlsLocked} onClick={() => setMealDrafts(c => ({ ...c, [mealName]: +(c[mealName] + step).toFixed(2) }))} className="dashboard-meal-step grid h-11 w-11 place-items-center rounded-xl bg-[var(--brand)] text-white shadow-[0_8px_18px_var(--brand-shadow)] transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} strokeWidth={2.5} /></button>
                 </div>
               </div>
@@ -318,7 +318,7 @@ export default function MealsPage() {
         </div>
 
         <div className="mb-8 flex justify-end">
-          <Button type="button" onClick={saveMyMeals} disabled={!activeMess || userMealsLoading || mealControlsLocked || savingMeals} className="h-11 w-full gap-2 rounded-xl bg-[var(--brand)] px-6 font-black text-white shadow-[0_12px_24px_var(--brand-shadow)] transition hover:bg-[var(--brand-hover)] sm:w-auto">
+          <Button type="button" onClick={saveMyMeals} disabled={!activeMess || userMealsLoading || mealControlsLocked || savingMeals} className="h-11 w-full gap-2 rounded-xl bg-[var(--brand)] px-6 font-semibold text-white shadow-[0_12px_24px_var(--brand-shadow)] transition hover:bg-[var(--brand-hover)] sm:w-auto">
             <Save size={16} /> {savingMeals ? 'Saving meals...' : 'Save meal sheet'}
           </Button>
         </div>
@@ -327,13 +327,13 @@ export default function MealsPage() {
           <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
-                <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Today Meal Sheet</p><h3 className="mt-1 text-base font-black text-[#172554] sm:text-lg">All Member Meals</h3><p className="mt-1 text-xs font-semibold text-[#6b7a99] sm:text-sm">For {formatDate(date)}</p></div>
+                <div><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Today Meal Sheet</p><h3 className="mt-1 text-base font-semibold text-[#172554] sm:text-lg">All Member Meals</h3><p className="mt-1 text-xs font-semibold text-[#6b7a99] sm:text-sm">For {formatDate(date)}</p></div>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] sm:h-11 sm:w-11"><Users size={21} /></div>
               </div>
             </div>
             <div className="p-4 sm:p-5">
               <div className="mb-4 grid grid-cols-3 gap-2 sm:mb-5 sm:gap-3">
-                {mealNames.map(n => <div key={n} className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] px-2 py-3 text-center shadow-sm sm:px-3"><p className="flex items-center justify-center gap-1 text-[9px] font-black uppercase tracking-wide text-[#6b7a99] sm:gap-1.5 sm:text-[10px]"><span className="text-[#2f80ed]">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></p><p className="mt-1.5 text-xl font-black text-[#172554] sm:text-2xl">{mealTotals[n]}</p></div>)}
+                {mealNames.map(n => <div key={n} className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] px-2 py-3 text-center shadow-sm sm:px-3"><p className="flex items-center justify-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-[#6b7a99] sm:gap-1.5 sm:text-[10px]"><span className="text-[#2f80ed]">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></p><p className="mt-1.5 text-xl font-semibold text-[#172554] sm:text-2xl">{mealTotals[n]}</p></div>)}
               </div>
 
               {/* Mobile Cards */}
@@ -348,32 +348,32 @@ export default function MealsPage() {
                     return (
                       <div key={row.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb]">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-black" style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}>{getInitials(row.name)}</div>
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold" style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}>{getInitials(row.name)}</div>
                           <span className="text-sm font-bold text-[#172554]">{row.name}</span>
                         </div>
                         <div className="grid grid-cols-4 gap-2">
                           {mealNames.map(n => (
                             <div key={n} className="rounded-lg bg-[#f8faff] p-2.5 text-center">
-                              <p className="text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">{mealLabels[n].slice(0, 4)}</p>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">{mealLabels[n].slice(0, 4)}</p>
                               {isEditingRow ? (
                                 <input type="number" min={0} value={getManagerDraftStr(row.id, n, row.meals[n])}
                                   onChange={e => setManagerMealDrafts(c => ({ ...c, [row.id]: { ...(c[row.id] ?? { BREAKFAST: '0', LUNCH: '0', DINNER: '0' }), [n]: e.target.value } }))}
-                                  className="mt-1 h-8 w-full rounded-lg border border-[#d8e6f8] bg-white px-1 text-center text-sm font-black text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-2 focus:ring-[#2f80ed]/10" />
+                                  className="mt-1 h-8 w-full rounded-lg border border-[#d8e6f8] bg-white px-1 text-center text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-2 focus:ring-[#2f80ed]/10" />
                               ) : (
-                                <span className={`mt-1 inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-sm font-black ${row.meals[n] > 0 ? 'bg-[#e7f1ff] text-[#2f80ed]' : 'bg-[#f1f3f5] text-[#adb5bd]'}`}>{row.meals[n]}</span>
+                                <span className={`mt-1 inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-sm font-semibold ${row.meals[n] > 0 ? 'bg-[#e7f1ff] text-[#2f80ed]' : 'bg-[#f1f3f5] text-[#adb5bd]'}`}>{row.meals[n]}</span>
                               )}
                             </div>
                           ))}
                           <div className="rounded-lg bg-gradient-to-br from-[#2f80ed]/10 to-[#58d68d]/10 p-2.5 text-center">
-                            <p className="text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">Total</p>
-                            <span className="mt-1 inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-sm font-black text-[#172554]">{isEditingRow ? draftTotal : total}</span>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Total</p>
+                            <span className="mt-1 inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-sm font-semibold text-[#172554]">{isEditingRow ? draftTotal : total}</span>
                           </div>
                         </div>
                         {isManager && <div className="mt-3 flex justify-end gap-2">
                           {isEditingRow ? <>
-                            <button onClick={() => saveMemberMealRow(row)} className="h-8 rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3 text-[11px] font-black text-white">Save</button>
-                            <button onClick={() => cancelEditingMemberMeal(row.id)} className="h-8 rounded-lg border border-[#d8e6f8] px-3 text-[11px] font-black text-[#6b7a99]">Cancel</button>
-                          </> : <button onClick={() => startEditingMemberMeal(row)} className="h-8 rounded-lg border border-[#2f80ed]/30 bg-[#e7f1ff] px-3 text-[11px] font-black text-[#2f80ed]">Edit</button>}
+                            <button onClick={() => saveMemberMealRow(row)} className="h-8 rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-3 text-[11px] font-semibold text-white">Save</button>
+                            <button onClick={() => cancelEditingMemberMeal(row.id)} className="h-8 rounded-lg border border-[#d8e6f8] px-3 text-[11px] font-semibold text-[#6b7a99]">Cancel</button>
+                          </> : <button onClick={() => startEditingMemberMeal(row)} className="h-8 rounded-lg border border-[#2f80ed]/30 bg-[#e7f1ff] px-3 text-[11px] font-semibold text-[#2f80ed]">Edit</button>}
                         </div>}
                       </div>
                     )
@@ -385,10 +385,10 @@ export default function MealsPage() {
                 <table className={`w-full border-separate border-spacing-0 ${isManager ? 'min-w-[560px]' : 'min-w-[480px]'}`}>
                   <thead>
                     <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                      <th className="sticky left-0 z-20 w-[138px] whitespace-nowrap border-b border-[#e6ebf4] bg-[#f8faff] px-3 py-3 text-left text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:static sm:w-auto sm:px-4 sm:py-4 sm:text-[11px]">Member</th>
-                      {mealNames.map(n => <th key={n} className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]"><span className="inline-flex items-center gap-1 sm:gap-1.5"><span className="text-[#2f80ed]">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></span></th>)}
-                      <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Total</th>
-                      {isManager && <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-right text-[10px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Action</th>}
+                      <th className="sticky left-0 z-20 w-[138px] whitespace-nowrap border-b border-[#e6ebf4] bg-[#f8faff] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:static sm:w-auto sm:px-4 sm:py-4 sm:text-[11px]">Member</th>
+                      {mealNames.map(n => <th key={n} className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]"><span className="inline-flex items-center gap-1 sm:gap-1.5"><span className="text-[#2f80ed]">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></span></th>)}
+                      <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Total</th>
+                      {isManager && <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Action</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e6ebf4]">
@@ -403,7 +403,7 @@ export default function MealsPage() {
                           <tr key={row.id} className="transition hover:bg-[#f8faff]">
                             <td className="sticky left-0 z-10 border-b border-[#e6ebf4] bg-white px-3 py-3 sm:static sm:border-b-0 sm:px-4 sm:py-3.5">
                               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-black sm:text-xs" style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}>{getInitials(row.name)}</div>
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold sm:text-xs" style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}>{getInitials(row.name)}</div>
                                 <span className="min-w-0 max-w-[96px] truncate text-xs font-bold text-[#172554] sm:max-w-none sm:text-sm">{row.name}</span>
                               </div>
                             </td>
@@ -412,24 +412,24 @@ export default function MealsPage() {
                                 {isEditingRow ? (
                                   <input type="number" min={0} value={getManagerDraftStr(row.id, n, row.meals[n])}
                                     onChange={e => setManagerMealDrafts(c => ({ ...c, [row.id]: { ...(c[row.id] ?? { BREAKFAST: '0', LUNCH: '0', DINNER: '0' }), [n]: e.target.value } }))}
-                                    className="h-9 w-14 rounded-lg border border-[#d8e6f8] bg-white px-2 text-center text-sm font-black text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-2 focus:ring-[#2f80ed]/10 sm:w-20" />
+                                    className="h-9 w-14 rounded-lg border border-[#d8e6f8] bg-white px-2 text-center text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-2 focus:ring-[#2f80ed]/10 sm:w-20" />
                                 ) : (
-                                  <span className={`inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-black ${row.meals[n] > 0 ? 'bg-[#e7f1ff] text-[#2f80ed]' : 'bg-[#f1f3f5] text-[#adb5bd]'}`}>{row.meals[n]}</span>
+                                  <span className={`inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-semibold ${row.meals[n] > 0 ? 'bg-[#e7f1ff] text-[#2f80ed]' : 'bg-[#f1f3f5] text-[#adb5bd]'}`}>{row.meals[n]}</span>
                                 )}
                               </td>
                             ))}
                             <td className="border-b border-[#e6ebf4] px-3 py-3 text-center sm:border-b-0 sm:px-4 sm:py-3.5">
-                              <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed]/10 to-[#58d68d]/10 px-2 text-sm font-black text-[#172554]">{isEditingRow ? draftTotal : total}</span>
+                              <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed]/10 to-[#58d68d]/10 px-2 text-sm font-semibold text-[#172554]">{isEditingRow ? draftTotal : total}</span>
                             </td>
                             {isManager && (
                               <td className="border-b border-[#e6ebf4] px-3 py-3 text-right sm:border-b-0 sm:px-4 sm:py-3.5">
                                 {isEditingRow ? (
                                   <div className="flex justify-end gap-1.5 sm:gap-2">
-                                    <Button type="button" size="sm" onClick={() => saveMemberMealRow(row)} className="h-8 rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-2.5 text-[11px] font-black text-white sm:px-3">Save</Button>
-                                    <Button type="button" variant="outline" size="sm" onClick={() => cancelEditingMemberMeal(row.id)} className="h-8 rounded-lg border-[#d8e6f8] px-2.5 text-[11px] font-black text-[#6b7a99] sm:px-3">Cancel</Button>
+                                    <Button type="button" size="sm" onClick={() => saveMemberMealRow(row)} className="h-8 rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-2.5 text-[11px] font-semibold text-white sm:px-3">Save</Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => cancelEditingMemberMeal(row.id)} className="h-8 rounded-lg border-[#d8e6f8] px-2.5 text-[11px] font-semibold text-[#6b7a99] sm:px-3">Cancel</Button>
                                   </div>
                                 ) : (
-                                  <Button type="button" variant="outline" size="sm" onClick={() => startEditingMemberMeal(row)} className="h-8 rounded-lg border-[#2f80ed]/30 bg-[#e7f1ff] px-3 text-[11px] font-black text-[#2f80ed]">Edit</Button>
+                                  <Button type="button" variant="outline" size="sm" onClick={() => startEditingMemberMeal(row)} className="h-8 rounded-lg border-[#2f80ed]/30 bg-[#e7f1ff] px-3 text-[11px] font-semibold text-[#2f80ed]">Edit</Button>
                                 )}
                               </td>
                             )}
@@ -440,9 +440,9 @@ export default function MealsPage() {
                   {memberMealRows.length > 0 && (
                     <tfoot>
                       <tr className="border-t-2 border-[#d8e6f8] bg-[#f8faff]">
-                        <td className="sticky left-0 z-10 bg-[#f8faff] px-3 py-3 sm:static sm:px-4 sm:py-3.5"><span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99] sm:gap-2 sm:text-xs"><Users size={14} /><span>{memberMealRows.length}</span><span className="hidden sm:inline"> Members</span></span></td>
-                        {mealNames.map(n => <td key={n} className="px-3 py-3 text-center sm:px-4 sm:py-3.5"><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#2f80ed] px-2 text-sm font-black text-white shadow-sm">{mealTotals[n]}</span></td>)}
-                        <td className="px-3 py-3 text-center sm:px-4 sm:py-3.5"><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#58d68d] px-2 text-sm font-black text-white shadow-sm">{mealNames.reduce((s, n) => s + mealTotals[n], 0)}</span></td>
+                        <td className="sticky left-0 z-10 bg-[#f8faff] px-3 py-3 sm:static sm:px-4 sm:py-3.5"><span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99] sm:gap-2 sm:text-xs"><Users size={14} /><span>{memberMealRows.length}</span><span className="hidden sm:inline"> Members</span></span></td>
+                        {mealNames.map(n => <td key={n} className="px-3 py-3 text-center sm:px-4 sm:py-3.5"><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#2f80ed] px-2 text-sm font-semibold text-white shadow-sm">{mealTotals[n]}</span></td>)}
+                        <td className="px-3 py-3 text-center sm:px-4 sm:py-3.5"><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#58d68d] px-2 text-sm font-semibold text-white shadow-sm">{mealNames.reduce((s, n) => s + mealTotals[n], 0)}</span></td>
                         {isManager && <td className="px-3 py-3 sm:px-4 sm:py-3.5" />}
                       </tr>
                     </tfoot>
@@ -457,7 +457,7 @@ export default function MealsPage() {
           <div className="mt-6 rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-sm">
             <div className="flex items-center gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 shadow-sm"><Shield size={20} className="text-[#f59e0b]" /></div>
-              <div><h3 className="text-sm font-black text-[#172554]">Manager Controls</h3><p className="text-xs font-semibold text-[#6b7a99]">Managers can always edit member meals regardless of deadline. Use "Set Meal Deadline" above to configure the meal window.</p></div>
+              <div><h3 className="text-sm font-semibold text-[#172554]">Manager Controls</h3><p className="text-xs font-semibold text-[#6b7a99]">Managers can always edit member meals regardless of deadline. Use "Set Meal Deadline" above to configure the meal window.</p></div>
             </div>
           </div>
         )}

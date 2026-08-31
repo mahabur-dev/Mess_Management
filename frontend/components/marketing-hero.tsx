@@ -48,7 +48,7 @@ export function MarketingHero() {
               {people.map((person) => (
                 <span
                   key={person.initials}
-                  className={`flex size-9 items-center justify-center rounded-full border-2 border-[var(--marketing-page)] bg-gradient-to-br ${person.color} text-[9px] font-black text-white shadow-sm`}
+                  className={`flex size-9 items-center justify-center rounded-full border-2 border-[var(--marketing-page)] bg-gradient-to-br ${person.color} text-[9px] font-semibold text-white shadow-sm`}
                 >
                   {person.initials}
                 </span>

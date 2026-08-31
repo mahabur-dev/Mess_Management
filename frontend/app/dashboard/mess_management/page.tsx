@@ -3,6 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type Mess, type MessRoom, type SubscriptionPlan, type SubscriptionStatus } from '@/lib/api-client'
+import { APP_FEATURES } from '@/lib/feature-flags'
 import {
   AlertCircle,
   Building2,
@@ -152,7 +153,7 @@ export default function MessManagementPage() {
       setSubscription(null)
 
       if (list[0]) {
-        if (isManager) {
+        if (isManager && APP_FEATURES.subscriptions) {
           const subscriptionResponse = await apiClient.getMessSubscription(list[0].id).catch(() => null)
           const data = subscriptionResponse?.data
           if (data && typeof data === 'object' && 'plan' in data) {
@@ -324,7 +325,7 @@ export default function MessManagementPage() {
                 <Building2 size={24} className="text-[#8b5cf6]" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-[#172554]">All Registered Messes</h2>
+                <h2 className="text-lg font-semibold text-[#172554]">All Registered Messes</h2>
                 <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
                   {messes.length} mess{messes.length !== 1 ? 'es' : ''} found
                 </p>
@@ -345,7 +346,7 @@ export default function MessManagementPage() {
                         <Home size={20} className="text-[#2f80ed]" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-black text-[#172554]">{mess.name}</h3>
+                        <h3 className="text-base font-semibold text-[#172554]">{mess.name}</h3>
                         <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-[#6b7a99]">
                           <MapPin size={12} className="shrink-0 text-[#ffb84d]" />
                           {mess.address || 'No address'}
@@ -355,11 +356,11 @@ export default function MessManagementPage() {
 
                     <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-[#f8faff] p-3">
                       <div>
-                        <p className="text-[10px] font-black uppercase text-[#6b7a99]">Members</p>
+                        <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Members</p>
                         <p className="mt-0.5 text-sm font-bold text-[#172554]">{mess._count?.memberships ?? 0}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black uppercase text-[#6b7a99]">Status</p>
+                        <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Status</p>
                         <span
                           className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
                             mess.settings_completed
@@ -405,8 +406,8 @@ export default function MessManagementPage() {
                     <Settings2 size={22} className="text-[#2f80ed]" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Configuration</p>
-                    <h2 className="mt-1 text-lg font-black text-[#172554]">Complete Mess Setup</h2>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Configuration</p>
+                    <h2 className="mt-1 text-lg font-semibold text-[#172554]">Complete Mess Setup</h2>
                   </div>
                 </div>
               </div>
@@ -414,7 +415,7 @@ export default function MessManagementPage() {
               <div className="p-6">
                 <div className="grid gap-5 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Mess Name
                     </label>
                     <input
@@ -424,7 +425,7 @@ export default function MessManagementPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Address
                     </label>
                     <input
@@ -434,7 +435,7 @@ export default function MessManagementPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Mess Category
                     </label>
                     <input
@@ -445,7 +446,7 @@ export default function MessManagementPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Total Seats
                     </label>
                     <input
@@ -456,7 +457,7 @@ export default function MessManagementPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Monthly Rent
                     </label>
                     <input
@@ -467,7 +468,7 @@ export default function MessManagementPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Payment Deadline Day
                     </label>
                     <input
@@ -478,7 +479,7 @@ export default function MessManagementPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Meal Off Deadline
                     </label>
                     <input
@@ -488,20 +489,20 @@ export default function MessManagementPage() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Rooms
                     </label>
                     <div className="space-y-4">
                       {setup.rooms.map((room, index) => (
                         <div key={room.id} className="rounded-xl border border-[#d8e6f8] bg-[#fafcff] p-4">
                           <div className="mb-3 flex items-center justify-between">
-                            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#172554]">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#172554]">
                               Room {index + 1}
                             </p>
                           </div>
                           <div className="grid gap-4 md:grid-cols-3">
                             <div>
-                              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                                 Room Name
                               </label>
                               <input
@@ -511,7 +512,7 @@ export default function MessManagementPage() {
                               />
                             </div>
                             <div>
-                              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                                 Total Person
                               </label>
                               <input
@@ -522,7 +523,7 @@ export default function MessManagementPage() {
                               />
                             </div>
                             <div>
-                              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                                 Room Price
                               </label>
                               <input
@@ -539,14 +540,14 @@ export default function MessManagementPage() {
                     <button
                       type="button"
                       onClick={addRoom}
-                      className="mt-4 inline-flex h-[44px] items-center justify-center gap-2 rounded-xl border border-[#cfe0fb] bg-[#f8faff] px-4 text-sm font-black text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-white"
+                      className="mt-4 inline-flex h-[44px] items-center justify-center gap-2 rounded-xl border border-[#cfe0fb] bg-[#f8faff] px-4 text-sm font-semibold text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-white"
                     >
                       <Plus size={16} />
                       Add More Room
                     </button>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Bazar Rules
                     </label>
                     <textarea
@@ -561,7 +562,7 @@ export default function MessManagementPage() {
                   <button
                     onClick={saveSetup}
                     disabled={saving}
-                    className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70"
+                    className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-semibold text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70"
                   >
                     {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     {saving ? 'Saving...' : 'Save Setup'}
@@ -577,24 +578,24 @@ export default function MessManagementPage() {
                     <Home size={22} className="text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">Overview</p>
-                    <h2 className="mt-1 text-lg font-black text-[#172554]">{activeMess.name}</h2>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600">Overview</p>
+                    <h2 className="mt-1 text-lg font-semibold text-[#172554]">{activeMess.name}</h2>
                   </div>
                 </div>
               </div>
               <div className="p-6">
                   <div className="space-y-4">
-                    <div className="rounded-xl border border-[#cfe0fb] bg-gradient-to-br from-[#f8faff] to-white p-4 shadow-sm">
+                    {APP_FEATURES.subscriptions && <div className="rounded-xl border border-[#cfe0fb] bg-gradient-to-br from-[#f8faff] to-white p-4 shadow-sm">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">Subscription</p>
-                          <h3 className="mt-1 text-base font-black text-[#172554]">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#2f80ed]">Subscription</p>
+                          <h3 className="mt-1 text-base font-semibold text-[#172554]">
                             {subscription ? planLabel(subscription.plan) : 'Subscription not loaded'}
                           </h3>
                         </div>
                         {subscription && (
                           <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black ${
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${
                               subscription.status === 'ACTIVE'
                                 ? 'bg-emerald-50 text-emerald-700'
                                 : subscription.status === 'EXPIRED'
@@ -612,11 +613,11 @@ export default function MessManagementPage() {
                       {subscription ? (
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
                           <div className="rounded-lg border border-[#e6ebf4] bg-white p-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Started</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Started</p>
                             <p className="mt-1 text-sm font-bold text-[#172554]">{formatDate(subscription.start_date)}</p>
                           </div>
                           <div className="rounded-lg border border-[#e6ebf4] bg-white p-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Ends</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Ends</p>
                             <p className="mt-1 text-sm font-bold text-[#172554]">{formatDate(subscription.end_date)}</p>
                           </div>
                         </div>
@@ -632,7 +633,7 @@ export default function MessManagementPage() {
                           Plan: {planLabel(subscription?.plan)}
                         </span>
                       </div>
-                    </div>
+                    </div>}
 
                     <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-50 to-green-100">
@@ -694,8 +695,8 @@ export default function MessManagementPage() {
                     <Building2 size={22} className="text-[#8b5cf6]" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">New Mess</p>
-                    <h2 className="mt-1 text-lg font-black text-[#172554]">Create Mess</h2>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">New Mess</p>
+                    <h2 className="mt-1 text-lg font-semibold text-[#172554]">Create Mess</h2>
                   </div>
                 </div>
               </div>
@@ -706,7 +707,7 @@ export default function MessManagementPage() {
 
                 <div className="space-y-5">
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Mess Name
                     </label>
                     <input
@@ -717,7 +718,7 @@ export default function MessManagementPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Address
                     </label>
                     <input
@@ -729,7 +730,7 @@ export default function MessManagementPage() {
                   </div>
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                         Total Seats
                       </label>
                       <input
@@ -741,7 +742,7 @@ export default function MessManagementPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                         Monthly Rent (৳)
                       </label>
                       <input
@@ -754,7 +755,7 @@ export default function MessManagementPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                       Description
                     </label>
                     <textarea
@@ -770,7 +771,7 @@ export default function MessManagementPage() {
                   <button
                     onClick={submitRequest}
                     disabled={submitting || !requestForm.messName.trim() || !requestForm.address.trim()}
-                    className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70 sm:w-auto"
+                    className="inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-semibold text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70 sm:w-auto"
                   >
                     {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                     {submitting ? 'Creating...' : 'Create Mess'}
@@ -792,8 +793,8 @@ export default function MessManagementPage() {
               
               <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Mess Details</p>
-                  <h2 className="mt-1 text-xl font-black text-[#172554] truncate">{viewingMess.name}</h2>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Mess Details</p>
+                  <h2 className="mt-1 text-xl font-semibold text-[#172554] truncate">{viewingMess.name}</h2>
                 </div>
                 <button
                   type="button"
@@ -808,32 +809,32 @@ export default function MessManagementPage() {
                 {/* Basic info */}
                 <div className="mb-4 space-y-3">
                   <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Mess Name</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Mess Name</p>
                     <p className="mt-1 text-sm font-bold text-[#172554]">{viewingMess.name}</p>
                   </div>
                   {viewingMess.address && (
                     <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Address</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Address</p>
                       <p className="mt-1 text-sm font-bold text-[#172554]">{viewingMess.address}</p>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Members</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Members</p>
                       <p className="mt-1 text-sm font-bold text-[#172554]">{viewingMess._count?.memberships ?? 0}</p>
                     </div>
                     <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Total Seats</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Total Seats</p>
                       <p className="mt-1 text-sm font-bold text-[#172554]">{viewingMess.total_seats ?? '-'}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Monthly Rent</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Monthly Rent</p>
                       <p className="mt-1 text-sm font-bold text-[#172554]">৳ {Number(viewingMess.monthly_rent ?? 0).toLocaleString()}</p>
                     </div>
                     <div className="rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Category</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Category</p>
                       <p className="mt-1 text-sm font-bold text-[#172554]">{viewingMess.mess_category || 'Not set'}</p>
                     </div>
                   </div>
@@ -875,7 +876,7 @@ export default function MessManagementPage() {
                 {/* Description */}
                 {viewingMess.description && (
                   <div className="mb-4 rounded-lg border border-[#e6ebf4] bg-[#f8faff] p-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#6b7a99]">Description</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6b7a99]">Description</p>
                     <p className="mt-1 text-sm font-semibold text-[#172554]">{viewingMess.description}</p>
                   </div>
                 )}
@@ -884,7 +885,7 @@ export default function MessManagementPage() {
                   <button
                     type="button"
                     onClick={() => setViewingMess(null)}
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)]"
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-semibold text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)]"
                   >
                     Close
                   </button>

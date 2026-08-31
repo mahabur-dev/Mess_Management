@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { CalendarClock, CalendarRange, Edit3, History, Pause, Play, StopCircle, UserRound } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,8 +53,8 @@ function DetailMetric({ icon: Icon, label, value }: { icon: typeof CalendarRange
     <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 py-3 shadow-sm">
       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]"><Icon className="size-4" /></span>
       <div className="min-w-0">
-        <p className="text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
-        <p className="mt-0.5 truncate text-xs font-black text-foreground">{value}</p>
+        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+        <p className="mt-0.5 truncate text-xs font-semibold text-foreground">{value}</p>
       </div>
     </div>
   )
@@ -93,8 +93,8 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><UserRound className="size-5" /></span>
                     <div className="min-w-0">
-                      <p className="mb-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Meal pattern</p>
-                      <SheetTitle className="truncate text-xl font-black tracking-tight">{memberName}</SheetTitle>
+                      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Meal pattern</p>
+                      <SheetTitle className="truncate text-xl font-semibold tracking-tight">{memberName}</SheetTitle>
                       <SheetDescription className="truncate font-semibold">{row.membership.user?.email ?? 'Meal pattern details'}</SheetDescription>
                     </div>
                   </div>
@@ -108,13 +108,13 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
                 <section className="overflow-hidden rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] shadow-[var(--dashboard-shadow)]">
                   <div className="flex flex-col gap-4 border-b border-[var(--dashboard-line)] p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Current routine</p>
-                      <h2 className="mt-1 text-xl font-black tracking-tight text-foreground">{pattern.pattern_type === 'DAILY' ? 'Same meals every day' : 'Weekly meal routine'}</h2>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Current routine</p>
+                      <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">{pattern.pattern_type === 'DAILY' ? 'Same meals every day' : 'Weekly meal routine'}</h2>
                       <p className="mt-1 text-xs font-semibold text-muted-foreground">{pattern.pattern_type === 'DAILY' ? 'One schedule applied every day' : 'A different schedule for each day'} · Version {pattern.version}</p>
                     </div>
                     <div className="rounded-xl bg-[var(--brand-softer)] px-3 py-2 text-left sm:text-right">
-                      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[var(--brand)]">Weekly total</p>
-                      <p className="mt-0.5 text-lg font-black tabular-nums text-foreground">{getPatternWeeklyTotal(pattern)} <span className="text-xs text-muted-foreground">meals</span></p>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">Weekly total</p>
+                      <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">{getPatternWeeklyTotal(pattern)} <span className="text-xs text-muted-foreground">meals</span></p>
                     </div>
                   </div>
 
@@ -129,14 +129,14 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
                 <section className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)] sm:p-5">
                   <div className="mb-3 flex items-center gap-2">
                     <span className="grid size-8 place-items-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]"><History className="size-4" /></span>
-                    <div><h3 className="text-sm font-black text-foreground">Version history</h3><p className="text-[11px] font-semibold text-muted-foreground">Previous changes remain available here.</p></div>
+                    <div><h3 className="text-sm font-semibold text-foreground">Version history</h3><p className="text-[11px] font-semibold text-muted-foreground">Previous changes remain available here.</p></div>
                   </div>
                   <div className="divide-y divide-[var(--dashboard-line)] overflow-hidden rounded-xl border border-[var(--dashboard-line)]">
                     {history.map((version) => (
                       <div key={version.id} className="flex items-center gap-3 bg-[var(--dashboard-surface)] px-3 py-3">
-                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--dashboard-surface-subtle)] text-[10px] font-black text-[var(--brand)]">v{version.version}</span>
+                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--dashboard-surface-subtle)] text-[10px] font-semibold text-[var(--brand)]">v{version.version}</span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-black text-foreground">{version.pattern_type === 'DAILY' ? 'Daily routine' : 'Weekly routine'}</p>
+                          <p className="truncate text-xs font-semibold text-foreground">{version.pattern_type === 'DAILY' ? 'Daily routine' : 'Weekly routine'}</p>
                           <p className="mt-0.5 truncate text-[11px] font-semibold text-muted-foreground">Started {formatPatternDate(version.start_date)} · by {version.creator?.name ?? 'member'}</p>
                         </div>
                         <PatternStatusBadge status={version.status} className="shrink-0" />
@@ -147,17 +147,17 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
               </div>
 
               <div className="shrink-0 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3 shadow-[0_-12px_30px_color-mix(in_srgb,var(--dashboard-ink)_6%,transparent)] sm:p-4">
-                <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-                  {isPatternConfigurable(pattern) && <Button onClick={() => onEdit(row)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] px-5 font-black text-white shadow-[0_8px_18px_var(--brand-shadow)] hover:bg-[var(--brand-hover)]"><Edit3 className="size-4" /> Change pattern</Button>}
-                  {pattern.status === 'ACTIVE' && <Button variant="outline" onClick={() => setPendingAction('pause')} className="min-h-11 rounded-xl px-4 font-black"><Pause className="size-4" /> Pause</Button>}
-                  {(pattern.status === 'PAUSED' || pattern.status === 'DRAFT') && <Button variant="outline" onClick={() => setPendingAction('resume')} className="min-h-11 rounded-xl px-4 font-black text-emerald-700"><Play className="size-4" /> {pattern.status === 'DRAFT' ? 'Activate' : 'Resume'}</Button>}
-                  {!['ENDED', 'CANCELLED'].includes(pattern.status) && <Button variant="ghost" onClick={() => setPendingAction('cancel')} className="min-h-11 rounded-xl px-3 font-black text-rose-600 hover:bg-rose-50 hover:text-rose-700"><StopCircle className="size-4" /> End</Button>}
-                </div>
+                <EnterpriseDrawerFooter>
+                  {isPatternConfigurable(pattern) && <EnterpriseDrawerAction priority="primary" tone="primary" onClick={() => onEdit(row)}><Edit3 className="size-4" /> Change pattern</EnterpriseDrawerAction>}
+                  {pattern.status === 'ACTIVE' && <EnterpriseDrawerAction tone="secondary" onClick={() => setPendingAction('pause')}><Pause className="size-4" /> Pause</EnterpriseDrawerAction>}
+                  {(pattern.status === 'PAUSED' || pattern.status === 'DRAFT') && <EnterpriseDrawerAction tone="success" onClick={() => setPendingAction('resume')}><Play className="size-4" /> {pattern.status === 'DRAFT' ? 'Activate' : 'Resume'}</EnterpriseDrawerAction>}
+                  {!['ENDED', 'CANCELLED'].includes(pattern.status) && <EnterpriseDrawerAction tone="danger" onClick={() => setPendingAction('cancel')}><StopCircle className="size-4" /> End</EnterpriseDrawerAction>}
+                </EnterpriseDrawerFooter>
               </div>
             </>
           ) : (
             <div className="grid min-h-full place-items-center bg-[var(--dashboard-surface)] p-8 text-center">
-              <div><CalendarClock className="mx-auto size-10 text-muted-foreground" /><p className="mt-3 font-black text-foreground">No pattern selected</p></div>
+              <div><CalendarClock className="mx-auto size-10 text-muted-foreground" /><p className="mt-3 font-semibold text-foreground">No pattern selected</p></div>
             </div>
           )}
         </SheetContent>
@@ -166,12 +166,12 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
       <AlertDialog open={Boolean(pendingAction)} onOpenChange={(next) => !next && !saving && setPendingAction(null)}>
         <AlertDialogContent className="rounded-2xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-black text-foreground">{pendingAction ? actionCopy[pendingAction].title : ''}</AlertDialogTitle>
+            <AlertDialogTitle className="font-semibold text-foreground">{pendingAction ? actionCopy[pendingAction].title : ''}</AlertDialogTitle>
             <AlertDialogDescription className="font-semibold leading-6">{pendingAction ? actionCopy[pendingAction].description : ''}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={saving} className="min-h-11 rounded-xl font-black">Keep current pattern</AlertDialogCancel>
-            <AlertDialogAction disabled={saving} onClick={() => void executeAction()} className={`min-h-11 rounded-xl font-black ${pendingAction === 'cancel' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-[var(--brand)] hover:bg-[var(--brand-hover)]'}`}>
+            <AlertDialogCancel disabled={saving} className="min-h-11 rounded-xl font-semibold">Keep current pattern</AlertDialogCancel>
+            <AlertDialogAction disabled={saving} onClick={() => void executeAction()} className={`min-h-11 rounded-xl font-semibold ${pendingAction === 'cancel' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-[var(--brand)] hover:bg-[var(--brand-hover)]'}`}>
               {saving ? 'Saving...' : pendingAction ? actionCopy[pendingAction].confirm : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>

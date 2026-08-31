@@ -4,6 +4,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { apiClient, type Mess, type MessMembershipWithDetails, type Payment, type PaymentMethod, type ExpenseCategory } from '@/lib/api-client'
@@ -278,7 +279,7 @@ export default function PaymentsPage() {
               <Wallet size={24} className="text-emerald-600" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[#172554]">Deposits</h2>
+              <h2 className="text-lg font-semibold text-[#172554]">Deposits</h2>
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{payments.length} deposit{payments.length !== 1 ? 's' : ''} recorded</p>
             </div>
           </div>
@@ -291,20 +292,20 @@ export default function PaymentsPage() {
         {!loading && payments.length > 0 && (
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><CreditCard size={13} className="text-[#2f80ed]" /> Total</p>
-              <p className="mt-1.5 text-2xl font-black text-[#172554]">{payments.length}</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]"><CreditCard size={13} className="text-[#2f80ed]" /> Total</p>
+              <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{payments.length}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-amber-700"><Loader2 size={13} /> Pending</p>
-              <p className="mt-1.5 text-2xl font-black text-amber-700">{pendingCount}</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700"><Loader2 size={13} /> Pending</p>
+              <p className="mt-1.5 text-2xl font-semibold text-amber-700">{pendingCount}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-700"><Check size={13} /> Approved</p>
-              <p className="mt-1.5 text-2xl font-black text-emerald-700">{approvedCount}</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700"><Check size={13} /> Approved</p>
+              <p className="mt-1.5 text-2xl font-semibold text-emerald-700">{approvedCount}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#58d68d]" /> Total Amount</p>
-              <p className="mt-1.5 text-2xl font-black text-[#172554]">{money(totalAmount)}</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#58d68d]" /> Total Amount</p>
+              <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{money(totalAmount)}</p>
             </div>
           </div>
         )}
@@ -329,7 +330,7 @@ export default function PaymentsPage() {
           <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                {['Paid by', 'Added by', 'Amount', 'Status', 'Action'].map((heading) => <th key={heading} className="px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>)}
+                {['Paid by', 'Added by', 'Amount', 'Status', 'Action'].map((heading) => <th key={heading} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
@@ -353,17 +354,17 @@ export default function PaymentsPage() {
                   <tr key={payment.id} onClick={() => { setViewingPayment(payment); setShowViewModal(true) }} className="cursor-pointer transition hover:bg-[#f8faff] focus-within:bg-[#f8faff]">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-semibold text-white shadow-sm">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
                         <div><p className="text-sm font-bold text-[#172554]">{payment.member?.name ?? 'Unknown Member'}</p><p className="text-xs font-semibold text-[#6b7a99]">{payment.member?.email ?? ''}</p></div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">{(payment.creator?.name?.[0] || 'M').toUpperCase()}</div>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-semibold text-white shadow-sm">{(payment.creator?.name?.[0] || 'M').toUpperCase()}</div>
                         <div><p className="text-sm font-bold text-[#172554]">{payment.creator?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-[#6b7a99]">{payment.creator?.email ?? ''}</p></div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-sm font-black text-[#172554]">{money(payment.amount)}</td>
+                    <td className="px-4 py-4 text-sm font-semibold text-[#172554]">{money(payment.amount)}</td>
                     <td className="px-4 py-4">
                       <div>
                         <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
@@ -432,7 +433,7 @@ export default function PaymentsPage() {
               <div key={payment.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb]">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-semibold text-white shadow-sm">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
                     <div className="min-w-0"><p className="truncate text-sm font-bold text-[#172554]">{payment.member?.name ?? 'Unknown Member'}</p><p className="truncate text-xs font-semibold text-[#6b7a99]">{payment.member?.email ?? ''}</p></div>
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
@@ -451,7 +452,7 @@ export default function PaymentsPage() {
                       {payment.payment_date && <div className="text-[10px] text-[#6b7a99]/70 mt-0.5"><CalendarDays size={9} className="inline mr-1 text-[#a0b4d6]" />For: {formatDateShort(payment.payment_date)}</div>}
                     </div>
                   </div>
-                  <p className="text-sm font-black text-[#172554]">{money(payment.amount)}</p>
+                  <p className="text-sm font-semibold text-[#172554]">{money(payment.amount)}</p>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
@@ -507,15 +508,15 @@ export default function PaymentsPage() {
           title="Deposit details"
           description={viewingPayment.member?.email ?? 'Deposit record and transaction information.'}
           headerIcon={<CreditCard className="size-5" />}
-          footer={<div className="flex flex-wrap justify-end gap-2">{(isManager || viewingPayment.creator?.id === user?.id) && <EnterpriseIconButton label="Edit deposit" tone="primary" onClick={() => openEditPayment(viewingPayment)}><Edit3 size={16} /></EnterpriseIconButton>}{viewingPayment.status === 'PENDING' && isManager && <><EnterpriseIconButton label="Approve deposit" tone="success" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }}>{reviewingId === viewingPayment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton><EnterpriseIconButton label="Reject deposit" tone="danger" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }}><X size={16} /></EnterpriseIconButton></>}</div>}
+          footer={<EnterpriseDrawerFooter>{(isManager || viewingPayment.creator?.id === user?.id) && <EnterpriseDrawerAction priority="primary" tone="primary" onClick={() => openEditPayment(viewingPayment)}><Edit3 size={16} /> Edit deposit</EnterpriseDrawerAction>}{viewingPayment.status === 'PENDING' && isManager && <><EnterpriseDrawerAction tone="success" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }}>{reviewingId === viewingPayment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Approve</EnterpriseDrawerAction><EnterpriseDrawerAction tone="danger" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }}><X size={16} /> Reject</EnterpriseDrawerAction></>}</EnterpriseDrawerFooter>}
         >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-sm font-black text-white shadow-sm">{(viewingPayment.member?.name?.[0] || 'M').toUpperCase()}</div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-sm font-semibold text-white shadow-sm">{(viewingPayment.member?.name?.[0] || 'M').toUpperCase()}</div>
                   <div><p className="text-base font-bold text-[#172554]">{viewingPayment.member?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-[#6b7a99]">{viewingPayment.member?.email ?? ''}</p></div>
                 </div>
                 <div className="rounded-xl bg-gradient-to-r from-[#f8faff] to-white border border-[#e6ebf4] p-4">
-                  <div className="flex items-center justify-between mb-2"><span className="text-xs font-bold text-[#6b7a99]">Amount</span><span className="text-2xl font-black text-[#172554]">{money(viewingPayment.amount)}</span></div>
+                  <div className="flex items-center justify-between mb-2"><span className="text-xs font-bold text-[#6b7a99]">Amount</span><span className="text-2xl font-semibold text-[#172554]">{money(viewingPayment.amount)}</span></div>
                   <div className="flex items-center justify-between"><span className="text-xs font-bold text-[#6b7a99]">Method</span>
                     <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.bg ?? '#f9fafb', color: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.color ?? '#6b7280', borderColor: `${PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.color ?? '#6b7280'}33` }}>
                       {PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.icon}{PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.label ?? viewingPayment.method}
@@ -524,11 +525,11 @@ export default function PaymentsPage() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Paid by</p>
+                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Paid by</p>
                     <p className="mt-1 text-sm font-bold text-[#172554]">{viewingPayment.member?.name ?? 'Unknown Member'}</p>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Added By</p>
+                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Added By</p>
                     <p className="mt-1 text-sm font-bold text-[#172554]">{viewingPayment.creator?.name ?? 'Unknown'}</p>
                   </div>
                 </div>
@@ -555,28 +556,29 @@ export default function PaymentsPage() {
           title={editingPayment ? 'Edit deposit' : 'Add deposit'}
           description={editingPayment ? 'Update this deposit amount, method, date, or categories.' : 'Record a deposit with its method, date, and categories.'}
           headerIcon={<CreditCard className="size-5" />}
+          footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={() => { setShowModal(false); setSelectedCategories([]) }} disabled={submitting}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)}>{submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}{submitting ? 'Saving...' : editingPayment ? 'Save changes' : 'Add deposit'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
         >
             <div>
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Amount (৳)</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Amount (৳)</label>
                   <input className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" type="number" placeholder="Enter amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Date</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Date</label>
                   <input className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
                 </div>
 
                 {isManager && purchasedByMemberOptions.length > 0 && (
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Paid by</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Paid by</label>
                     <EnterpriseSelect value={paymentPurchasedBy} onValueChange={setPaymentPurchasedBy} options={purchasedByMemberOptions.map((member) => ({ value: member.id, label: member.name }))} />
                   </div>
                 )}
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Method</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Method</label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {methods.map((m) => {
                       const cfg = PAYMENT_METHOD_CONFIG[m]
@@ -591,7 +593,7 @@ export default function PaymentsPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Category (optional - select multiple)</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Category (optional - select multiple)</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {EXPENSE_CATEGORIES.map((cat) => {
                       const selected = selectedCategories.includes(cat.value)
@@ -615,14 +617,6 @@ export default function PaymentsPage() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
-                <EnterpriseButton tone="secondary" size="lg" onClick={() => { setShowModal(false); setSelectedCategories([]) }} disabled={submitting}>Cancel</EnterpriseButton>
-                <EnterpriseButton size="lg" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)} className="gap-2">
-                  {submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}
-                  {submitting ? 'Saving...' : editingPayment ? 'Save changes' : 'Add deposit'}
-                </EnterpriseButton>
               </div>
             </div>
         </EnterpriseDetailsDrawer>

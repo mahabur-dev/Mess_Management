@@ -44,7 +44,7 @@ export function EnterpriseButton({
       type={type}
       variant="outline"
       className={cn(
-        'rounded-xl border font-black transition focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50',
+        'rounded-xl border font-semibold transition focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50',
         toneClasses[tone],
         sizeClasses[size],
         fullWidth && 'w-full',

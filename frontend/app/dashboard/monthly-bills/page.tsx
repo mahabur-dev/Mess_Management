@@ -126,7 +126,7 @@ export default function MonthlyBillPage() {
               <ReceiptText size={24} className="text-emerald-600" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[#172554]">All Monthly Bills</h2>
+              <h2 className="text-lg font-semibold text-[#172554]">All Monthly Bills</h2>
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">Showing bills for {formatMonth(`${selectedMonth}-01`)}</p>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function MonthlyBillPage() {
               <CalendarDays size={17} className="text-[#2f80ed]" />
               <input type="month" className="w-full bg-transparent text-sm font-bold text-[#172554] outline-none sm:w-auto" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} />
             </label>
-            <div className="flex h-[45px] w-full items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-gradient-to-r from-[#e7f1ff] to-[#f0fdf4] px-4 text-xs font-black text-[#2f80ed] shadow-sm sm:w-auto">
+            <div className="flex h-[45px] w-full items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-gradient-to-r from-[#e7f1ff] to-[#f0fdf4] px-4 text-xs font-semibold text-[#2f80ed] shadow-sm sm:w-auto">
               <ClipboardList size={16} /> {filteredBills.length} Bill{filteredBills.length !== 1 ? 's' : ''}
             </div>
           </div>
@@ -166,23 +166,23 @@ export default function MonthlyBillPage() {
         {filteredBills.length > 0 && (
           <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><TrendingUp size={13} className="text-[#2f80ed]" /> Food</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]"><TrendingUp size={13} className="text-[#2f80ed]" /> Food</p>
               <p className="mt-1.5 text-base font-bold text-[#172554]">{money(summary.totalFood)}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#f59e0b]" /> Rent</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#f59e0b]" /> Rent</p>
               <p className="mt-1.5 text-base font-bold text-[#172554]">{money(summary.totalRent)}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#ec4899]" /> Utility</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#ec4899]" /> Utility</p>
               <p className="mt-1.5 text-base font-bold text-[#172554]">{money(summary.totalUtility)}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-700"><CheckCircle2 size={13} /> Total</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700"><CheckCircle2 size={13} /> Total</p>
               <p className="mt-1.5 text-base font-bold text-emerald-700">{money(summary.totalCost)}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-red-600"><XCircle size={13} /> Due</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-red-600"><XCircle size={13} /> Due</p>
               <p className="mt-1.5 text-base font-bold text-red-600">{money(summary.totalDue)}</p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function MonthlyBillPage() {
               <thead>
                 <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
                   {['Member', 'Meals', 'Total cost', 'Deposit', 'Due', 'Action'].map(h => (
-                    <th key={h} className="px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">{h}</th>
+                    <th key={h} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -261,7 +261,7 @@ export default function MonthlyBillPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-semibold"
                         style={{
                           backgroundColor: 'color-mix(in srgb, var(--brand) 10%, transparent)',
                           borderColor: 'color-mix(in srgb, var(--brand) 34%, transparent)',
@@ -284,36 +284,36 @@ export default function MonthlyBillPage() {
                 <div className="p-4">
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
-                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Meals</p>
+                      <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Meals</p>
                       <p className="mt-1 text-sm font-bold text-[#2f80ed]">{bill.total_meals}</p>
                     </div>
                     <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
-                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Total</p>
+                      <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Total</p>
                       <p className="mt-1 text-sm font-bold text-emerald-600">{money(getTotalCost(bill))}</p>
                     </div>
                     <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
-                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Deposit</p>
+                      <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Deposit</p>
                       <p className="mt-1 text-sm font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</p>
                     </div>
                     <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
-                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Due</p>
+                      <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Due</p>
                       <p className={`mt-1 text-sm font-bold ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</p>
                     </div>
                   </div>
                   <div className="hidden grid-cols-2 gap-2 rounded-xl border border-[#e6ebf4] bg-[#f8faff] p-3 text-xs">
-                    <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Food</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.food_bill)}</p></div>
-                    <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Rent</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.seat_rent)}</p></div>
-                    <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Utility</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.utility_share)}</p></div>
+                    <div className="rounded-lg bg-white p-2.5"><p className="font-semibold uppercase text-[#6b7a99]">Food</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.food_bill)}</p></div>
+                    <div className="rounded-lg bg-white p-2.5"><p className="font-semibold uppercase text-[#6b7a99]">Rent</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.seat_rent)}</p></div>
+                    <div className="rounded-lg bg-white p-2.5"><p className="font-semibold uppercase text-[#6b7a99]">Utility</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.utility_share)}</p></div>
                     <div className="rounded-lg bg-white p-2.5">
-                      <p className="font-black uppercase text-[#6b7a99]">Prev Bal.</p>
+                      <p className="font-semibold uppercase text-[#6b7a99]">Prev Bal.</p>
                       <p className={`mt-0.5 font-bold inline-flex items-center gap-0.5 ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>
                         {Number(bill.prev_balance) > 0 && <span>+</span>}
                         {Number(bill.prev_balance) < 0 && <span>−</span>}
                         {Number(bill.prev_balance) === 0 ? <span className="text-[10px]">Paid</span> : money(Math.abs(Number(bill.prev_balance)))}
                       </p>
                     </div>
-                    <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Deposit</p><p className="mt-0.5 font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</p></div>
-                    <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Remaining</p><p className="mt-0.5 font-bold text-green-600">{money(getRemainingBalance(bill))}</p></div>
+                    <div className="rounded-lg bg-white p-2.5"><p className="font-semibold uppercase text-[#6b7a99]">Deposit</p><p className="mt-0.5 font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</p></div>
+                    <div className="rounded-lg bg-white p-2.5"><p className="font-semibold uppercase text-[#6b7a99]">Remaining</p><p className="mt-0.5 font-bold text-green-600">{money(getRemainingBalance(bill))}</p></div>
                   </div>
                   <div className="mt-3 flex justify-end"><EnterpriseIconButton label="View monthly bill" tone="primary" onClick={() => setViewingBill(bill)}><Eye size={16} /></EnterpriseIconButton></div>
                 </div>
@@ -340,22 +340,22 @@ export default function MonthlyBillPage() {
           title={`${formatMonth(viewingBill.month)} bill`}
           description={viewingBill.member?.email ?? viewingBill.member?.name ?? 'Member bill details'}
           headerIcon={<ReceiptText className="size-5" />}
-          status={<span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black ${viewingBillStatus.bg} ${viewingBillStatus.text} ${viewingBillStatus.border}`}>{viewingBillStatus.icon}{viewingBillStatus.label}</span>}
+          status={<span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${viewingBillStatus.bg} ${viewingBillStatus.text} ${viewingBillStatus.border}`}>{viewingBillStatus.icon}{viewingBillStatus.label}</span>}
         >
           <div className="space-y-5">
             <section className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)] sm:p-5">
               <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Member</p><h2 className="mt-1 truncate text-lg font-black text-foreground">{viewingBill.member?.name ?? 'My bill'}</h2><p className="mt-1 text-xs font-semibold text-muted-foreground">{formatMonth(viewingBill.month)}</p></div>
-                <div className="rounded-xl bg-[var(--brand-softer)] px-3 py-2 text-right"><p className="text-[9px] font-black uppercase tracking-[0.12em] text-[var(--brand)]">Final due</p><p className={`mt-0.5 text-xl font-black tabular-nums ${Number(viewingBill.final_due) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{money(viewingBill.final_due)}</p></div>
+                <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Member</p><h2 className="mt-1 truncate text-lg font-semibold text-foreground">{viewingBill.member?.name ?? 'My bill'}</h2><p className="mt-1 text-xs font-semibold text-muted-foreground">{formatMonth(viewingBill.month)}</p></div>
+                <div className="rounded-xl bg-[var(--brand-softer)] px-3 py-2 text-right"><p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">Final due</p><p className={`mt-0.5 text-xl font-semibold tabular-nums ${Number(viewingBill.final_due) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{money(viewingBill.final_due)}</p></div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[9px] font-black uppercase tracking-wide text-muted-foreground">Meals</p><p className="mt-1 text-base font-black tabular-nums text-foreground">{viewingBill.total_meals}</p></div>
-                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[9px] font-black uppercase tracking-wide text-muted-foreground">Total cost</p><p className="mt-1 text-base font-black tabular-nums text-foreground">{money(getTotalCost(viewingBill))}</p></div>
-                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[9px] font-black uppercase tracking-wide text-muted-foreground">Paid</p><p className="mt-1 text-base font-black tabular-nums text-emerald-600">{money(Number(viewingBill.deposit_total) + Number(viewingBill.paid_amount))}</p></div>
+                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Meals</p><p className="mt-1 text-base font-semibold tabular-nums text-foreground">{viewingBill.total_meals}</p></div>
+                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Total cost</p><p className="mt-1 text-base font-semibold tabular-nums text-foreground">{money(getTotalCost(viewingBill))}</p></div>
+                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Paid</p><p className="mt-1 text-base font-semibold tabular-nums text-emerald-600">{money(Number(viewingBill.deposit_total) + Number(viewingBill.paid_amount))}</p></div>
               </div>
             </section>
             <section className="overflow-hidden rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] shadow-[var(--dashboard-shadow)]">
-              <div className="border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] px-4 py-3"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Bill breakdown</p></div>
+              <div className="border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Bill breakdown</p></div>
               <div className="grid divide-x-0 divide-y divide-[var(--dashboard-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 {[
                   ['Food bill', money(viewingBill.food_bill)],
@@ -364,7 +364,7 @@ export default function MonthlyBillPage() {
                   ['Previous balance', money(viewingBill.prev_balance)],
                   ['Deposit & paid', money(Number(viewingBill.deposit_total) + Number(viewingBill.paid_amount))],
                   ['Remaining balance', money(getRemainingBalance(viewingBill))],
-                ].map(([label, value]) => <div key={label} className="flex items-center justify-between gap-3 px-4 py-3"><span className="text-xs font-semibold text-muted-foreground">{label}</span><span className="text-sm font-black tabular-nums text-foreground">{value}</span></div>)}
+                ].map(([label, value]) => <div key={label} className="flex items-center justify-between gap-3 px-4 py-3"><span className="text-xs font-semibold text-muted-foreground">{label}</span><span className="text-sm font-semibold tabular-nums text-foreground">{value}</span></div>)}
               </div>
             </section>
           </div>

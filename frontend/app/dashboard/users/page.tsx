@@ -61,7 +61,7 @@ export default function UsersPage() {
               <Users size={24} className="text-[#8b5cf6]" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[#172554]">All Users</h2>
+              <h2 className="text-lg font-semibold text-[#172554]">All Users</h2>
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{users.length} user{users.length !== 1 ? 's' : ''} registered</p>
             </div>
           </div>
@@ -83,9 +83,9 @@ export default function UsersPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">User</th>
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Email</th>
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Role</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">User</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Email</th>
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Role</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e6ebf4]">
@@ -117,7 +117,7 @@ export default function UsersPage() {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-black"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold"
                             style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}
                           >
                             {getInitials(u.name)}
@@ -169,7 +169,7 @@ export default function UsersPage() {
                 <div key={u.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb]">
                   <div className="flex items-center gap-3">
                     <div
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-semibold"
                       style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}
                     >
                       {getInitials(u.name)}

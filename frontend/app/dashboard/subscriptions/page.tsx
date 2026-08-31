@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { apiClient, type Mess, type SubscriptionPlan, type SubscriptionPlanInfo, type SubscriptionPlanUpdate, type SubscriptionRecord, type SubscriptionStatus } from '@/lib/api-client'
+import { APP_FEATURES } from '@/lib/feature-flags'
 import {
   BadgeCheck,
   Building2,
@@ -150,6 +152,7 @@ function emptyPlanEdit(planInfo?: SubscriptionPlanInfo): PlanEditState {
 }
 
 export default function SubscriptionsPage() {
+  const router = useRouter()
   const [subscriptions, setSubscriptions] = useState<SubscriptionRecord[]>([])
   const [subscriptionPlans, setSubscriptionPlans] = useState<Record<string, SubscriptionPlanInfo>>({})
   const [messes, setMesses] = useState<Mess[]>([])
@@ -173,6 +176,11 @@ export default function SubscriptionsPage() {
   const [form, setForm] = useState<SubscriptionFormState>(emptyForm())
 
   const loadData = useCallback(async () => {
+    if (!APP_FEATURES.subscriptions) {
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -199,8 +207,13 @@ export default function SubscriptionsPage() {
   }, [])
 
   useEffect(() => {
+    if (!APP_FEATURES.subscriptions) {
+      router.replace('/dashboard')
+      return
+    }
+
     void loadData()
-  }, [loadData])
+  }, [loadData, router])
 
   const filteredSubscriptions = useMemo(() => {
     const term = query.trim().toLowerCase()
@@ -411,16 +424,18 @@ export default function SubscriptionsPage() {
     }
   }
 
+  if (!APP_FEATURES.subscriptions) return null
+
   return (
     <div className="min-h-screen bg-[#fafcff]">
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)] lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-[#f8faff] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-[#f8faff] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#2f80ed]">
               <BadgeCheck size={12} />
               Subscription management
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-[#172554]">Subscriptions</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-[#172554]">Subscriptions</h1>
             <p className="max-w-2xl text-sm font-semibold text-[#6b7a99]">
               Manage subscribed messes, inspect active plans, and create new subscriptions from one place.
             </p>
@@ -504,8 +519,8 @@ export default function SubscriptionsPage() {
               <div key={item.label} className="rounded-2xl border border-[#e6ebf4] bg-white p-4 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.12em] text-[#6b7a99]">{item.label}</p>
-                    <p className="mt-1 text-2xl font-black text-[#172554]">{item.value}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">{item.label}</p>
+                    <p className="mt-1 text-2xl font-semibold text-[#172554]">{item.value}</p>
                   </div>
                   <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-r ${item.gradient} text-white`}>
                     <Icon size={18} />
@@ -566,8 +581,8 @@ export default function SubscriptionsPage() {
               <div className="border-b border-[#e6ebf4] px-5 py-4">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">Active Subscription</p>
-                    <h2 className="text-lg font-black text-[#172554]">Plan pricing and duration</h2>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#2f80ed]">Active Subscription</p>
+                    <h2 className="text-lg font-semibold text-[#172554]">Plan pricing and duration</h2>
                   </div>
                   <p className="text-xs font-semibold text-[#8a9bb5]">Click edit on any plan to change the price or duration.</p>
                 </div>
@@ -583,12 +598,12 @@ export default function SubscriptionsPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black ${style.bg} ${style.text}`}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${style.bg} ${style.text}`}
                         >
                           <Icon size={12} />
                           {info?.label ?? plan}
                         </div>
-                        <h3 className="mt-3 text-lg font-black text-[#172554]">{info?.label ?? plan}</h3>
+                        <h3 className="mt-3 text-lg font-semibold text-[#172554]">{info?.label ?? plan}</h3>
                           <p className="mt-1 text-sm font-semibold leading-6 text-[#6b7a99]">
                             {info?.description ?? 'Subscription plan details are available from the backend plan registry.'}
                           </p>
@@ -596,7 +611,7 @@ export default function SubscriptionsPage() {
                       </div>
                       {info?.features && info.features.length > 0 && (
                         <div className="mt-3 space-y-1.5">
-                          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Features</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Features</p>
                           {info.features.map((feature, i) => (
                             <div key={i} className="flex items-center gap-2 text-sm font-semibold text-[#172554]">
                               <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
@@ -607,8 +622,8 @@ export default function SubscriptionsPage() {
                       )}
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <div className="rounded-xl border border-[#e6ebf4] bg-white px-3 py-2 text-right">
-                          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Price</p>
-                          <p className="mt-1 text-lg font-black text-[#172554]">{info ? formatMoney(info.price) : 'N/A'}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Price</p>
+                          <p className="mt-1 text-lg font-semibold text-[#172554]">{info ? formatMoney(info.price) : 'N/A'}</p>
                           <p className="text-xs font-semibold text-[#8a9bb5]">{info ? `${info.days} days` : 'Plan data pending'}</p>
                         </div>
                         <Button
@@ -637,14 +652,14 @@ export default function SubscriptionsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Mess</th>
-                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Plan</th>
-                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Members</th>
-                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Start</th>
-                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">End</th>
-                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Days left</th>
-                    <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Mess</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Plan</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Members</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Start</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">End</th>
+                    <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Days left</th>
+                    <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e6ebf4]">
@@ -808,7 +823,7 @@ export default function SubscriptionsPage() {
 
                       <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#f8faff] p-3 mb-3">
                         <div>
-                          <p className="text-[10px] font-black uppercase text-[#6b7a99]">Status</p>
+                          <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Status</p>
                           <span className={`mt-1 inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[10px] font-bold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
                             <span className={`h-1.5 w-1.5 rounded-full ${
                               subscription.status === 'ACTIVE' ? 'bg-emerald-500' :
@@ -819,15 +834,15 @@ export default function SubscriptionsPage() {
                           </span>
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase text-[#6b7a99]">Members</p>
+                          <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Members</p>
                           <p className="mt-1 text-sm font-bold text-[#172554]">{memberCount}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase text-[#6b7a99]">Period</p>
+                          <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Period</p>
                           <p className="mt-1 text-xs font-semibold text-[#53617d]">{formatDate(subscription.start_date)} - {formatDate(subscription.end_date)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase text-[#6b7a99]">Days left</p>
+                          <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Days left</p>
                           <p className={`mt-1 text-sm font-bold ${
                             isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'
                           }`}>
@@ -875,7 +890,7 @@ export default function SubscriptionsPage() {
           <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-2xl border border-[#d8e6f8] bg-white p-0 shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
             <div className="border-b border-[#e6ebf4] px-6 py-5">
               <DialogHeader className="text-left">
-                <DialogTitle className="text-xl font-black text-[#172554]">
+                <DialogTitle className="text-xl font-semibold text-[#172554]">
                   {mode === 'create' ? 'Create Subscription' : 'Edit Subscription'}
                 </DialogTitle>
                 <DialogDescription className="text-sm font-semibold text-[#6b7a99]">
@@ -889,7 +904,7 @@ export default function SubscriptionsPage() {
             <div className="space-y-5 px-6 py-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Mess</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Mess</label>
                   <select
                     value={form.messId}
                     onChange={(event) => {
@@ -909,7 +924,7 @@ export default function SubscriptionsPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Plan</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Plan</label>
                   <select
                     value={form.plan}
                     onChange={(event) => handlePlanChange(event.target.value as SubscriptionPlan)}
@@ -925,7 +940,7 @@ export default function SubscriptionsPage() {
               {mode === 'edit' && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Status</label>
                     <select
                       value={form.status}
                       onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SubscriptionStatus }))}
@@ -939,7 +954,7 @@ export default function SubscriptionsPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Days</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Days</label>
                     <input
                       type="number"
                       min={1}
@@ -951,7 +966,7 @@ export default function SubscriptionsPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Start Date</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Start Date</label>
                     <input
                       type="date"
                       value={form.startDate}
@@ -961,7 +976,7 @@ export default function SubscriptionsPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">End Date</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">End Date</label>
                     <input
                       type="date"
                       value={form.endDate}
@@ -1013,7 +1028,7 @@ export default function SubscriptionsPage() {
           <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-2xl border border-[#d8e6f8] bg-white p-0 shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
             <div className="border-b border-[#e6ebf4] px-6 py-5">
               <DialogHeader className="text-left">
-                <DialogTitle className="text-xl font-black text-[#172554]">Subscription details</DialogTitle>
+                <DialogTitle className="text-xl font-semibold text-[#172554]">Subscription details</DialogTitle>
                 <DialogDescription className="text-sm font-semibold text-[#6b7a99]">
                   Full subscription record for {selectedSubscription?.mess.name ?? 'the selected mess'}.
                 </DialogDescription>
@@ -1024,42 +1039,42 @@ export default function SubscriptionsPage() {
               <div className="space-y-5 px-6 py-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-[#e6ebf4] bg-[#f8faff] p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Mess</p>
-                    <p className="mt-1 text-base font-black text-[#172554]">{selectedSubscription.mess.name}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Mess</p>
+                    <p className="mt-1 text-base font-semibold text-[#172554]">{selectedSubscription.mess.name}</p>
                     <p className="mt-1 text-sm font-semibold text-[#6b7a99]">{selectedSubscription.mess.address || 'No address set'}</p>
                   </div>
                   <div className="rounded-2xl border border-[#e6ebf4] bg-[#f8faff] p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Subscription ID</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Subscription ID</p>
                     <p className="mt-1 break-all text-sm font-semibold text-[#172554]">{selectedSubscription.id}</p>
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className={`rounded-2xl border p-4 ${PLAN_STYLES[selectedSubscription.plan].bg}`}>
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Plan</p>
-                    <p className={`mt-1 text-base font-black ${PLAN_STYLES[selectedSubscription.plan].text}`}>{subscriptionLabel(selectedSubscription, subscriptionPlans)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Plan</p>
+                    <p className={`mt-1 text-base font-semibold ${PLAN_STYLES[selectedSubscription.plan].text}`}>{subscriptionLabel(selectedSubscription, subscriptionPlans)}</p>
                   </div>
                   <div className={`rounded-2xl border p-4 ${STATUS_STYLES[selectedSubscription.status].bg}`}>
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Status</p>
-                    <p className={`mt-1 text-base font-black ${STATUS_STYLES[selectedSubscription.status].text}`}>{STATUS_STYLES[selectedSubscription.status].label}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Status</p>
+                    <p className={`mt-1 text-base font-semibold ${STATUS_STYLES[selectedSubscription.status].text}`}>{STATUS_STYLES[selectedSubscription.status].label}</p>
                   </div>
                   <div className="rounded-2xl border border-[#e6ebf4] bg-[#f8faff] p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Members</p>
-                    <p className="mt-1 text-base font-black text-[#172554]">{selectedSubscription.mess._count?.memberships ?? 0}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Members</p>
+                    <p className="mt-1 text-base font-semibold text-[#172554]">{selectedSubscription.mess._count?.memberships ?? 0}</p>
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="rounded-2xl border border-[#e6ebf4] bg-white p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Started</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Started</p>
                     <p className="mt-1 text-sm font-semibold text-[#172554]">{formatDate(selectedSubscription.start_date)}</p>
                   </div>
                   <div className="rounded-2xl border border-[#e6ebf4] bg-white p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Ends</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Ends</p>
                     <p className="mt-1 text-sm font-semibold text-[#172554]">{formatDate(selectedSubscription.end_date)}</p>
                   </div>
                   <div className="rounded-2xl border border-[#e6ebf4] bg-white p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Cancelled at</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Cancelled at</p>
                     <p className="mt-1 text-sm font-semibold text-[#172554]">{formatDate(selectedSubscription.cancelled_at)}</p>
                   </div>
                 </div>
@@ -1093,7 +1108,7 @@ export default function SubscriptionsPage() {
           <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border border-[#d8e6f8] bg-white p-0 shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
             <div className="border-b border-[#e6ebf4] px-6 py-5">
               <DialogHeader className="text-left">
-                <DialogTitle className="text-xl font-black text-[#172554]">
+                <DialogTitle className="text-xl font-semibold text-[#172554]">
                   Edit {editingPlan ? (subscriptionPlans[editingPlan]?.label ?? editingPlan) : 'Plan'}
                 </DialogTitle>
                 <DialogDescription className="text-sm font-semibold text-[#6b7a99]">
@@ -1104,7 +1119,7 @@ export default function SubscriptionsPage() {
 
             <div className="space-y-4 px-6 py-6">
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Label</label>
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Label</label>
                 <input
                   value={planEditForm.label}
                   onChange={(event) => setPlanEditForm((current) => ({ ...current, label: event.target.value }))}
@@ -1113,7 +1128,7 @@ export default function SubscriptionsPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Price</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Price</label>
                   <input
                     type="number"
                     value={planEditForm.price}
@@ -1122,7 +1137,7 @@ export default function SubscriptionsPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Days</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Days</label>
                   <input
                     type="number"
                     value={planEditForm.days}
@@ -1132,7 +1147,7 @@ export default function SubscriptionsPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Currency</label>
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Currency</label>
                 <input
                   value={planEditForm.currency}
                   onChange={(event) => setPlanEditForm((current) => ({ ...current, currency: event.target.value }))}
@@ -1140,7 +1155,7 @@ export default function SubscriptionsPage() {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
                 <textarea
                   value={planEditForm.description}
                   onChange={(event) => setPlanEditForm((current) => ({ ...current, description: event.target.value }))}
@@ -1149,7 +1164,7 @@ export default function SubscriptionsPage() {
               </div>
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Features</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Features</label>
                   <button
                     type="button"
                     onClick={() =>
@@ -1220,7 +1235,7 @@ export default function SubscriptionsPage() {
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <AlertDialogContent className="rounded-2xl border border-[#d8e6f8] bg-white shadow-[0_28px_80px_rgba(65,103,153,0.26)]">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-left text-xl font-black text-[#172554]">Delete subscription?</AlertDialogTitle>
+              <AlertDialogTitle className="text-left text-xl font-semibold text-[#172554]">Delete subscription?</AlertDialogTitle>
               <AlertDialogDescription className="text-left text-sm font-semibold text-[#6b7a99]">
                 This will permanently remove the subscription for {selectedSubscription?.mess.name ?? 'the selected mess'}.
               </AlertDialogDescription>
@@ -1245,7 +1260,7 @@ export default function SubscriptionsPage() {
 
         {/* {messes.length > 0 && !loading && subscriptions.length === 0 && (
           <div className="mt-6 rounded-2xl border border-dashed border-[#cfe0fb] bg-[#f8faff] p-5 text-sm font-semibold text-[#6b7a99]">
-            No subscriptions exist yet. Use <span className="font-black text-[#172554]">New subscription</span> to create one, or initialize a trial for a mess.
+            No subscriptions exist yet. Use <span className="font-semibold text-[#172554]">New subscription</span> to create one, or initialize a trial for a mess.
           </div>
         )} */}
 

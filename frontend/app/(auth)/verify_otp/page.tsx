@@ -95,7 +95,7 @@ export default function VerifyOtp() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-3 block text-center text-[11px] font-black uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-3 block text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
             Verification Code
           </label>
           <InputOTP maxLength={6} value={otp} onChange={setOtp} containerClassName="justify-center gap-2">
@@ -104,7 +104,7 @@ export default function VerifyOtp() {
                 <InputOTPSlot
                   key={index}
                   index={index}
-                  className="h-12 w-11 rounded-md border border-[#d8e8e7] bg-white text-base font-black text-[#071821] shadow-sm data-[active=true]:border-[#008b80] data-[active=true]:ring-4 data-[active=true]:ring-[#008b80]/10"
+                  className="h-12 w-11 rounded-md border border-[#d8e8e7] bg-white text-base font-semibold text-[#071821] shadow-sm data-[active=true]:border-[#008b80] data-[active=true]:ring-4 data-[active=true]:ring-[#008b80]/10"
                 />
               ))}
             </InputOTPGroup>

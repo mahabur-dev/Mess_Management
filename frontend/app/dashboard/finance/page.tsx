@@ -4,6 +4,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
+import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import {
@@ -664,7 +665,7 @@ export default function FinancePage() {
               <ShoppingBag size={24} className="text-red-500" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[#172554]">All Bazar & Expenses</h2>
+              <h2 className="text-lg font-semibold text-[#172554]">All Bazar & Expenses</h2>
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
                 Showing {filteredExpenses.length} expenses for selected month
               </p>
@@ -676,25 +677,25 @@ export default function FinancePage() {
         {filteredExpenses.length > 0 && (
           <div className="hidden md:grid mb-6 grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">
                 <ReceiptText size={13} className="text-[#2f80ed]" />
                 Total Items
               </p>
-              <p className="mt-1.5 text-2xl font-black text-[#172554]">{summary.count}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{summary.count}</p>
             </div>
             <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">
                 <Filter size={13} className="text-[#8b5cf6]" />
                 Categories
               </p>
-              <p className="mt-1.5 text-2xl font-black text-[#172554]">{summary.categories}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{summary.categories}</p>
             </div>
             <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm sm:col-span-2">
-              <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">
                 <TrendingUp size={13} className="text-red-500" />
                 Total Amount
               </p>
-              <p className="mt-1.5 text-2xl font-black text-red-500">{money(summary.total)}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-red-500">{money(summary.total)}</p>
             </div>
           </div>
         )}
@@ -761,7 +762,7 @@ export default function FinancePage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                    {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Action'].map((heading) => <th key={heading} className={`px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' || heading === 'Action' ? 'text-right' : ''}`}>{heading}</th>)}
+                    {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Action'].map((heading) => <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' || heading === 'Action' ? 'text-right' : ''}`}>{heading}</th>)}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e6ebf4]">
@@ -808,7 +809,7 @@ export default function FinancePage() {
                             {formatDate(item.expense_date)}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-right text-sm font-black text-red-500">
+                        <td className="px-4 py-4 text-right text-sm font-semibold text-red-500">
                           {money(item.amount)}
                         </td>
                         <td className="px-4 py-4">
@@ -846,25 +847,25 @@ export default function FinancePage() {
           {filteredExpenses.length > 0 && (
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
-                <p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#6b7a99]">
                   <ReceiptText size={11} className="text-[#2f80ed]" />
                   Total Items
                 </p>
-                <p className="mt-1 text-xl font-black text-[#172554]">{summary.count}</p>
+                <p className="mt-1 text-xl font-semibold text-[#172554]">{summary.count}</p>
               </div>
               <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
-                <p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#6b7a99]">
                   <Filter size={11} className="text-[#8b5cf6]" />
                   Categories
                 </p>
-                <p className="mt-1 text-xl font-black text-[#172554]">{summary.categories}</p>
+                <p className="mt-1 text-xl font-semibold text-[#172554]">{summary.categories}</p>
               </div>
               <div className="col-span-2 rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
-                <p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide text-[#6b7a99]">
+                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#6b7a99]">
                   <TrendingUp size={11} className="text-red-500" />
                   Total Amount
                 </p>
-                <p className="mt-1 text-xl font-black text-red-500">{money(summary.total)}</p>
+                <p className="mt-1 text-xl font-semibold text-red-500">{money(summary.total)}</p>
               </div>
             </div>
           )}
@@ -960,7 +961,7 @@ export default function FinancePage() {
 
                 <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#f8faff] p-3">
                   <div>
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">
+                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">
                       Quantity
                     </p>
                     <p className="mt-1 text-sm font-bold text-[#172554]">
@@ -968,10 +969,10 @@ export default function FinancePage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">
+                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">
                       Amount
                     </p>
-                    <p className="mt-1 text-sm font-black text-red-500">
+                    <p className="mt-1 text-sm font-semibold text-red-500">
                       {money(item.amount)}
                     </p>
                   </div>
@@ -1011,16 +1012,21 @@ export default function FinancePage() {
         title={isEditing ? (expenseFormMode === 'utility' ? 'Edit utility' : 'Edit bazar expense') : (expenseFormMode === 'utility' ? 'Add utility' : 'Add bazar expenses')}
         description={isEditing ? 'Update the record while keeping its existing information clear.' : 'Add a transparent shared-cost record for your mess.'}
         headerIcon={<ReceiptText className="size-5" />}
+        footer={<EnterpriseDrawerFooter>
+          {expenseFormMode !== 'utility' && <EnterpriseDrawerAction tone="secondary" onClick={addExpenseItem}><Plus size={16} /> Add item</EnterpriseDrawerAction>}
+          <EnterpriseDrawerAction tone="secondary" onClick={() => { setIsAddModalOpen(false); resetForm() }} disabled={loading}>Cancel</EnterpriseDrawerAction>
+          <EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitAllExpenses} disabled={loading}>{loading ? <Loader2 size={16} className="animate-spin" /> : <ReceiptText size={16} />}{loading ? 'Saving...' : isEditing ? expenseFormMode === 'utility' ? 'Update utility' : 'Update expense' : expenseFormMode === 'utility' ? 'Submit utility' : `Submit ${expenseItems.length} item(s)`}</EnterpriseDrawerAction>
+        </EnterpriseDrawerFooter>}
       >
           <div className="space-y-6">
             {/* Payment Type Toggle */}
             <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
-              <label className="mb-3 block text-sm font-black text-[#0a1433]">Payment Type</label>
+              <label className="mb-3 block text-sm font-semibold text-[#0a1433]">Payment Type</label>
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setExpensePaymentType('FROM_DEPOSIT')}
-                  className={`flex-1 h-12 rounded-xl border-2 text-sm font-black transition ${
+                  className={`flex-1 h-12 rounded-xl border-2 text-sm font-semibold transition ${
                     expensePaymentType === 'FROM_DEPOSIT'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
                       : 'border-slate-200 bg-white text-slate-500 hover:border-blue-300'
@@ -1031,7 +1037,7 @@ export default function FinancePage() {
                 <button
                   type="button"
                   onClick={() => setExpensePaymentType('PERSONAL')}
-                  className={`flex-1 h-12 rounded-xl border-2 text-sm font-black transition ${
+                  className={`flex-1 h-12 rounded-xl border-2 text-sm font-semibold transition ${
                     expensePaymentType === 'PERSONAL'
                       ? 'border-purple-500 bg-purple-50 text-purple-700'
                       : 'border-slate-200 bg-white text-slate-500 hover:border-purple-300'
@@ -1051,7 +1057,7 @@ export default function FinancePage() {
               <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
               <div className="grid gap-4">
                   <div>
-                    <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Category</label>
+                    <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">Category</label>
                     <EnterpriseSelect
                       className="h-11 border-slate-200 bg-white text-[#0a1433]"
                       value={expenseItems[0].category}
@@ -1062,7 +1068,7 @@ export default function FinancePage() {
 
                   {canManageMess && purchasedByMemberOptions.length > 0 && (
                     <div>
-                      <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                      <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
                         Purchased By
                       </label>
                       <EnterpriseSelect
@@ -1075,7 +1081,7 @@ export default function FinancePage() {
                   )}
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Price (৳)</label>
+                    <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">Price (৳)</label>
                     <input
                       type="number"
                       className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
@@ -1086,7 +1092,7 @@ export default function FinancePage() {
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                    <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
                       Description
                     </label>
                     <textarea
@@ -1098,7 +1104,7 @@ export default function FinancePage() {
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                    <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
                       Receipt Image/PDF (Optional)
                     </label>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -1137,7 +1143,7 @@ export default function FinancePage() {
               <>
             {/* Shared date */}
             <div className="rounded-2xl bg-[#faf9ff] p-4">
-              <label className="mb-2 block text-sm font-black text-[#0a1433]">
+              <label className="mb-2 block text-sm font-semibold text-[#0a1433]">
                 Expense Date
               </label>
               <input
@@ -1150,7 +1156,7 @@ export default function FinancePage() {
 
             {canManageMess && purchasedByMemberOptions.length > 0 && (
               <div className="rounded-2xl bg-[#faf9ff] p-4">
-                <label className="mb-2 block text-sm font-black text-[#0a1433]">
+                <label className="mb-2 block text-sm font-semibold text-[#0a1433]">
                   Purchased By
                 </label>
                 <EnterpriseSelect
@@ -1169,7 +1175,7 @@ export default function FinancePage() {
                   key={item.id}
                   className="relative rounded-2xl border border-slate-200 bg-[#faf9ff] p-5"
                 >
-                  <p className="mb-4 text-xs font-black uppercase tracking-wide text-slate-400">
+                  <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Item {idx + 1}
                   </p>
 
@@ -1185,7 +1191,7 @@ export default function FinancePage() {
                   <div className="grid gap-4">
                     {/* Item Name */}
                     <div>
-                      <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                      <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
                         Item Name
                       </label>
                       <input
@@ -1199,7 +1205,7 @@ export default function FinancePage() {
                     {/* Qty / Unit / Price */}
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="mb-1.5 block text-sm font-black">Quantity</label>
+                        <label className="mb-1.5 block text-sm font-semibold">Quantity</label>
                         <input
                           type="number"
                           className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
@@ -1209,7 +1215,7 @@ export default function FinancePage() {
                         />
                       </div>
                       <div>
-                        <label className="mb-1.5 block text-sm font-black">Unit</label>
+                        <label className="mb-1.5 block text-sm font-semibold">Unit</label>
                         <input
                           className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
                           placeholder="kg, pcs"
@@ -1218,7 +1224,7 @@ export default function FinancePage() {
                         />
                       </div>
                       <div>
-                        <label className="mb-1.5 block text-sm font-black">Price (৳)</label>
+                        <label className="mb-1.5 block text-sm font-semibold">Price (৳)</label>
                         <input
                           type="number"
                           className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
@@ -1231,7 +1237,7 @@ export default function FinancePage() {
 
                     {/* Category */}
                     <div>
-                      <label className="mb-1.5 block text-sm font-black">Category</label>
+                      <label className="mb-1.5 block text-sm font-semibold">Category</label>
                       <EnterpriseSelect
                         className="h-11 border-slate-200 bg-white text-[#0a1433]"
                         value={item.category}
@@ -1241,7 +1247,7 @@ export default function FinancePage() {
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                      <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
                         Description
                       </label>
                       <textarea
@@ -1254,7 +1260,7 @@ export default function FinancePage() {
 
                     {/* Receipt Image Upload */}
                     <div>
-                      <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
+                      <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
                         Receipt Image/PDF (Optional)
                       </label>
                       <div className="flex items-center gap-3">
@@ -1288,27 +1294,8 @@ export default function FinancePage() {
                 </div>
               ))}
             </div>
-
-            <EnterpriseButton tone="secondary" fullWidth onClick={addExpenseItem} className="border-dashed">
-              <Plus size={16} className="mr-2" />
-              Add another item
-            </EnterpriseButton>
               </>
             )}
-
-            <div className="flex gap-3 pt-4">
-              <EnterpriseButton fullWidth size="lg" onClick={submitAllExpenses} disabled={loading}>
-                {loading
-                  ? 'Saving...'
-                  : isEditing
-                    ? expenseFormMode === 'utility'
-                      ? 'Update Utility'
-                      : 'Update Expense'
-                    : expenseFormMode === 'utility'
-                      ? 'Submit Utility'
-                    : `Submit ${expenseItems.length} Item(s)`}
-              </EnterpriseButton>
-            </div>
           </div>
       </EnterpriseDetailsDrawer>
 
@@ -1337,7 +1324,7 @@ export default function FinancePage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-black text-[#0a1433]">
+              <label className="mb-2 block text-sm font-semibold text-[#0a1433]">
                 Message
               </label>
               <textarea
@@ -1365,22 +1352,22 @@ export default function FinancePage() {
         title="Expense details"
         description="Review purchase, payment, and receipt information."
         headerIcon={<ReceiptText className="size-5" />}
-        footer={viewExpense ? <div className="flex flex-wrap justify-end gap-2">
-          {canEditExpense(viewExpense) && <EnterpriseIconButton label="Edit expense" tone="primary" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openEditExpenseModal(expense) }}><Edit3 size={16} /></EnterpriseIconButton>}
-          {canManageMess && <EnterpriseIconButton label="Delete expense" tone="danger" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); void handleDeleteExpense(expense.id) }}><Trash2 size={16} /></EnterpriseIconButton>}
-          {canRequestExpenseReview(viewExpense) && <EnterpriseIconButton label="Request expense review" tone="default" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openReviewModal(expense) }}><MessageSquareWarning size={16} /></EnterpriseIconButton>}
-        </div> : undefined}
+        footer={viewExpense ? <EnterpriseDrawerFooter>
+          {canEditExpense(viewExpense) && <EnterpriseDrawerAction priority="primary" tone="primary" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openEditExpenseModal(expense) }}><Edit3 size={16} /> Edit</EnterpriseDrawerAction>}
+          {canRequestExpenseReview(viewExpense) && <EnterpriseDrawerAction tone="secondary" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openReviewModal(expense) }}><MessageSquareWarning size={16} /> Review</EnterpriseDrawerAction>}
+          {canManageMess && <EnterpriseDrawerAction tone="danger" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); void handleDeleteExpense(expense.id) }}><Trash2 size={16} /> Delete</EnterpriseDrawerAction>}
+        </EnterpriseDrawerFooter> : undefined}
       >
           {viewExpense && (
             <div className="space-y-4">
               <div className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-wide text-[#6b7a99]">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a99]">
                       {viewExpense.category}
                     </p>
                     <div className="mt-1 flex items-center gap-2 flex-wrap">
-                      <h3 className="text-lg font-black text-[#172554]">
+                      <h3 className="text-lg font-semibold text-[#172554]">
                         {viewExpense.item_name || viewExpense.category || 'Unnamed Expense'}
                       </h3>
                       <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPaymentTypeStyle(viewExpense.payment_type).badge}`}>
@@ -1392,7 +1379,7 @@ export default function FinancePage() {
                       {formatDate(viewExpense.expense_date)}
                     </p>
                   </div>
-                  <p className="text-xl font-black text-red-500">
+                  <p className="text-xl font-semibold text-red-500">
                     {money(viewExpense.amount)}
                   </p>
                 </div>
@@ -1401,7 +1388,7 @@ export default function FinancePage() {
               {viewExpense.items?.length ? (
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                   <div className="flex items-center justify-between bg-slate-50 px-4 py-3">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Purchased Items</p>
+                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Purchased Items</p>
                     <span className="text-xs font-bold text-[#6b7a99]">{viewExpense.items.length} {viewExpense.items.length === 1 ? 'item' : 'items'}</span>
                   </div>
                   {viewExpense.items.map((item, index) => (
@@ -1410,7 +1397,7 @@ export default function FinancePage() {
                         <p className="truncate text-sm font-bold text-[#172554]">{item.itemName}</p>
                         {item.quantity != null ? <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{item.quantity} {item.unit ?? ''}</p> : null}
                       </div>
-                      <span className="shrink-0 text-sm font-black text-[#008d8c]">{money(item.amount)}</span>
+                      <span className="shrink-0 text-sm font-semibold text-[#008d8c]">{money(item.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -1418,13 +1405,13 @@ export default function FinancePage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-[10px] font-black uppercase text-[#6b7a99]">Purchased By</p>
+                  <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Purchased By</p>
                   <p className="mt-1 text-sm font-bold text-[#172554]">
                     {viewExpense.purchaser?.name ?? resolveMemberNameById(viewExpense.purchased_by, viewExpense.creator?.name ?? 'Unknown')}
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-[10px] font-black uppercase text-[#6b7a99]">Added By</p>
+                  <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Added By</p>
                   <p className="mt-1 text-sm font-bold text-[#172554]">
                     {viewExpense.creator?.name ?? 'Unknown'}
                   </p>
@@ -1432,14 +1419,14 @@ export default function FinancePage() {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <p className="text-[10px] font-black uppercase text-[#6b7a99]">Description</p>
+                <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Description</p>
                 <p className="mt-2 whitespace-pre-wrap text-sm font-semibold text-[#172554]">
                   {viewExpense.description || 'No description added.'}
                 </p>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <p className="text-[10px] font-black uppercase text-[#6b7a99]">Receipt</p>
+                <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Receipt</p>
                 {viewExpense.receipt_url ? (
                   <div className="mt-3 space-y-3">
                     {/\.(png|jpe?g|webp|gif)(\?|$)/i.test(viewExpense.receipt_url) && (

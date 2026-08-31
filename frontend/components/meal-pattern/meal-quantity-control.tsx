@@ -45,7 +45,7 @@ export function MealQuantityControl({ meal, value, onChange, compact = false, di
       </span>
 
       <div className="min-w-24 flex-1">
-        <p className={cn('font-black text-foreground', compact ? 'text-xs' : 'text-sm')}>{MEAL_PATTERN_LABELS[meal]}</p>
+        <p className={cn('font-semibold text-foreground', compact ? 'text-xs' : 'text-sm')}>{MEAL_PATTERN_LABELS[meal]}</p>
         {!compact && <p className="mt-0.5 text-xs font-semibold text-muted-foreground">Base portion {step}</p>}
       </div>
 
@@ -76,7 +76,7 @@ export function MealQuantityControl({ meal, value, onChange, compact = false, di
           >
             <Minus className="size-4" />
           </button>
-          <output aria-label={`${MEAL_PATTERN_LABELS[meal]} quantity`} className="min-w-9 text-center text-sm font-black tabular-nums text-foreground">{value}</output>
+          <output aria-label={`${MEAL_PATTERN_LABELS[meal]} quantity`} className="min-w-9 text-center text-sm font-semibold tabular-nums text-foreground">{value}</output>
           <button
             type="button"
             aria-label={`Increase ${MEAL_PATTERN_LABELS[meal]}`}

@@ -26,8 +26,8 @@ export function CurrentAppHeader({
 }) {
   return (
     <header className="flex min-h-[9.2%] items-center bg-gradient-to-br from-[#007f7c] to-[#17aaa5] px-[4%] pb-[2%] text-white">
-      <span className="grid size-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10">{back ? <ChevronLeft className="w-4" /> : <span className="text-[9px] font-black">MR</span>}</span>
-      <div className="min-w-0 flex-1 text-center"><h1 className="truncate text-[14px] font-black">{title}</h1>{subtitle ? <p className="mt-0.5 truncate text-[8px] font-medium text-white/80">{subtitle}</p> : null}</div>
+      <span className="grid size-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10">{back ? <ChevronLeft className="w-4" /> : <span className="text-[9px] font-semibold">MR</span>}</span>
+      <div className="min-w-0 flex-1 text-center"><h1 className="truncate text-[14px] font-semibold">{title}</h1>{subtitle ? <p className="mt-0.5 truncate text-[8px] font-medium text-white/80">{subtitle}</p> : null}</div>
       {trailing ?? <span className="grid size-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10"><Bell className="w-4" /></span>}
     </header>
   )
@@ -156,7 +156,7 @@ export function TourField({
         ) : null}
         <div className="min-w-0 flex-1">
           <p className="text-[7px] font-bold text-[#658087]">{label}</p>
-          <p className={`mt-1 truncate text-[9px] font-black ${value ? 'text-[#123748]' : 'text-[#9aabb0]'}`}>
+          <p className={`mt-1 truncate text-[9px] font-semibold ${value ? 'text-[#123748]' : 'text-[#9aabb0]'}`}>
             {value || placeholder || 'Enter value'}
             {active && value ? <span className="ml-0.5 inline-block h-[10px] w-px animate-pulse bg-[#008d8c] align-[-1px]" /> : null}
           </p>
@@ -190,7 +190,7 @@ export function TourChoiceGrid({
           >
             {checked ? <span className="absolute right-2 top-2 grid size-4 place-items-center rounded-full bg-[#008d8c] text-white"><Check className="w-2.5" strokeWidth={3} /></span> : null}
             <span className="grid size-10 place-items-center rounded-[14px] bg-[#e7f7f6] text-[#008d8c]"><Icon className="w-4" /></span>
-            <p className="mt-1.5 text-[8px] font-black text-[#123748]">{label}</p>
+            <p className="mt-1.5 text-[8px] font-semibold text-[#123748]">{label}</p>
             {caption ? <p className="mt-0.5 text-[6px] font-semibold text-[#71858a]">{caption}</p> : null}
           </div>
         )
@@ -229,7 +229,7 @@ export function TourStatusBanner({
   return (
     <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 shadow-sm">
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-emerald-600 text-white"><Check className="w-3.5" strokeWidth={3} /></span>
-      <div><p className="text-[9px] font-black">{title}</p><p className="mt-0.5 text-[7px] font-semibold leading-3 text-emerald-700">{detail}</p></div>
+      <div><p className="text-[9px] font-semibold">{title}</p><p className="mt-0.5 text-[7px] font-semibold leading-3 text-emerald-700">{detail}</p></div>
     </div>
   )
 }

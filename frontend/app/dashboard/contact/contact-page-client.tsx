@@ -102,12 +102,12 @@ export function DashboardContactPageClient({
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-3xl">
           <div className="mb-6 flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-[#f8faff] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#d8e6f8] bg-[#f8faff] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#2f80ed]">
               <BadgeCheck size={12} />
               {currentTitle}
             </span>
             {requestedPlan && (
-              <span className="rounded-full border border-[#ffe3b0] bg-[#fff8e8] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#c77b00]">
+              <span className="rounded-full border border-[#ffe3b0] bg-[#fff8e8] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#c77b00]">
                 {requestedPlan.toLowerCase()} plan
               </span>
             )}
@@ -117,14 +117,14 @@ export function DashboardContactPageClient({
             <div className="p-6 sm:p-8">
               {success ? (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-800">
-                  <p className="text-lg font-black">Request submitted</p>
+                  <p className="text-lg font-semibold">Request submitted</p>
                   <p className="mt-2 text-sm font-semibold leading-7">{success}</p>
                 </div>
               ) : (
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Name</label>
+                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Name</label>
                       <Input
                         value={name}
                         onChange={(event) => setName(event.target.value)}
@@ -134,7 +134,7 @@ export function DashboardContactPageClient({
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Email</label>
+                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Email</label>
                       <Input
                         type="email"
                         value={email}
@@ -147,7 +147,7 @@ export function DashboardContactPageClient({
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Phone</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Phone</label>
                     <Input
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
@@ -157,7 +157,7 @@ export function DashboardContactPageClient({
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
                     <Textarea
                       value={description}
                       onChange={(event) => setDescription(event.target.value)}
@@ -176,7 +176,7 @@ export function DashboardContactPageClient({
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_12px_30px_rgba(47,128,237,0.25)] hover:from-[#1f6de0] hover:to-[#2f80ed]"
+                    className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-semibold text-white shadow-[0_12px_30px_rgba(47,128,237,0.25)] hover:from-[#1f6de0] hover:to-[#2f80ed]"
                   >
                     {loading ? (
                       'Submitting...'

@@ -48,15 +48,15 @@ export function ProductTourPreviewSuite() {
             role="tab"
             aria-selected={selected === id}
             onClick={() => setSelected(id)}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${selected === id ? 'border-[#008d8c] bg-[#008d8c] text-white shadow-[0_8px_22px_rgba(0,141,140,.22)]' : 'border-[#d8e6e8] bg-white text-[#536e75] hover:border-[#8fc9c6] hover:bg-[#f4fbfa]'}`}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${selected === id ? 'border-[#008d8c] bg-[#008d8c] text-white shadow-[0_8px_22px_rgba(0,141,140,.22)]' : 'border-[#d8e6e8] bg-white text-[#536e75] hover:border-[#8fc9c6] hover:bg-[#f4fbfa]'}`}
           >
             <Icon className="w-4" /> {label}
           </button>
         ))}
       </div>
       <div className="mb-3 flex items-center justify-between gap-4 rounded-xl border border-[#d8e6e8] bg-white px-4 py-2">
-        <div><h2 className="text-sm font-black text-[#123748]">{selectedTour.label}</h2><p className="mt-0.5 text-xs font-medium text-[#607981]">{selectedTour.description}</p></div>
-        <span className="shrink-0 rounded-full bg-[#e5f6f4] px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#007f76]">Autoplaying all features</span>
+        <div><h2 className="text-sm font-semibold text-[#123748]">{selectedTour.label}</h2><p className="mt-0.5 text-xs font-medium text-[#607981]">{selectedTour.description}</p></div>
+        <span className="shrink-0 rounded-full bg-[#e5f6f4] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#007f76]">Autoplaying all features</span>
       </div>
       <div role="tabpanel" key={selected} className="animate-in fade-in duration-300">
         <SelectedTour id={selected} onComplete={playNextTour} />

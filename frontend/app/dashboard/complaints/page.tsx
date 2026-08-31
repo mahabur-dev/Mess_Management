@@ -4,6 +4,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { apiClient, type Complaint, type ComplaintCategory, type Mess } from '@/lib/api-client'
@@ -114,7 +115,7 @@ export default function ComplaintsPage() {
               <MessageSquareWarning size={24} className="text-red-500" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[#172554]">{isManager ? 'All Complaints' : 'My Complaints'}</h2>
+              <h2 className="text-lg font-semibold text-[#172554]">{isManager ? 'All Complaints' : 'My Complaints'}</h2>
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{complaints.length} complaint{complaints.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
@@ -131,11 +132,11 @@ export default function ComplaintsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Category</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Description</th>
-                <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-                {isManager && <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>}
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Category</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Description</th>
+                <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                {isManager && <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
@@ -254,11 +255,12 @@ export default function ComplaintsPage() {
           title="Submit complaint"
           description="Share the issue clearly so your manager can resolve it."
           headerIcon={<MessageSquareWarning className="size-5" />}
+          footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={() => setShowModal(false)} disabled={submitting}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={submit} disabled={submitting || !title.trim() || !description.trim() || !activeMess}>{submitting ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}{submitting ? 'Submitting...' : 'Submit Complaint'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
         >
             <div>
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Title</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Title</label>
                   <input
                     className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                     placeholder="Enter complaint title"
@@ -267,11 +269,11 @@ export default function ComplaintsPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Category</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Category</label>
                   <EnterpriseSelect value={category} onValueChange={(value) => setCategory(value as ComplaintCategory)} options={categories.map((item) => ({ value: item, label: CATEGORY_CONFIG[item].label }))} />
                 </div>
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Description</label>
                   <textarea
                     className="min-h-[140px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 py-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                     placeholder="Describe the issue..."
@@ -279,13 +281,6 @@ export default function ComplaintsPage() {
                     onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
-                <EnterpriseButton tone="secondary" size="lg" onClick={() => setShowModal(false)} disabled={submitting}>Cancel</EnterpriseButton>
-                <EnterpriseButton size="lg" onClick={submit} disabled={submitting || !title.trim() || !description.trim() || !activeMess} className="gap-2">
-                  {submitting ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-                  {submitting ? 'Submitting...' : 'Submit Complaint'}
-                </EnterpriseButton>
               </div>
             </div>
         </EnterpriseDetailsDrawer>

@@ -381,7 +381,7 @@ export default function MealsPage() {
               </div>
 
               {/* Desktop/Tablet Table */}
-              <div className="hidden sm:block overflow-x-auto monthly-bills-table-scroll pb-2 rounded-xl border border-[#e6ebf4] shadow-[inset_12px_0_18px_-18px_rgba(23,37,84,0.45),inset_-12px_0_18px_-18px_rgba(23,37,84,0.45)]">
+              <div className="hidden sm:block overflow-x-auto monthly-bills-table-scroll border-t border-[#e6ebf4]">
                 <table className={`w-full border-separate border-spacing-0 ${isManager ? 'min-w-[560px]' : 'min-w-[480px]'}`}>
                   <thead>
                     <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">

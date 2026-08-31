@@ -299,8 +299,8 @@ export function DashboardHeader({
                     <CreditCard size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-[var(--brand)]">Submit Payment</p>
-                    <p className="text-xs font-semibold text-[#6b7a99]">Record a new payment</p>
+                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-[var(--brand)]">Add Deposit</p>
+                    <p className="text-xs font-semibold text-[#6b7a99]">Record a new deposit</p>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -500,7 +500,7 @@ export function DashboardHeader({
                 }`}
               >
                 <CreditCard size={16} />
-                Submit Payment
+                Add Deposit
               </button>
             </div>
 
@@ -584,7 +584,7 @@ export function DashboardHeader({
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Payment Method</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Method</label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {paymentMethods.map((m) => {
                       const selected = payMethod === m
@@ -614,7 +614,7 @@ export function DashboardHeader({
                   className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-semibold ${dashboardActionButtonClass}`}
                 >
                   {paySubmitting ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
-                  {paySubmitting ? 'Submitting...' : 'Submit Payment'}
+                  {paySubmitting ? 'Submitting...' : 'Submit Deposit'}
                 </button>
               </div>
             )}

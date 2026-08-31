@@ -13,7 +13,7 @@ type DrawerActionPriority = 'primary' | 'secondary'
  */
 export function EnterpriseDrawerFooter({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex flex-col gap-2 sm:flex-row sm:items-center', className)}>
+    <div className={cn('flex flex-wrap justify-end gap-2', className)}>
       {children}
     </div>
   )
@@ -30,8 +30,8 @@ export function EnterpriseDrawerAction({ priority = 'secondary', className, ...p
     <EnterpriseButton
       size="md"
       className={cn(
-        'w-full shrink-0 sm:w-auto',
-        priority === 'primary' ? 'sm:flex-1' : 'sm:min-w-32',
+        'w-full max-w-[300px] shrink-0',
+        priority === 'primary' ? 'sm:min-w-48' : 'sm:min-w-32',
         className,
       )}
       {...props}

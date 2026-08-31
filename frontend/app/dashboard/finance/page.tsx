@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
+import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,6 @@ import {
   Banknote,
   Trash2,
 } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
@@ -752,33 +752,19 @@ export default function FinancePage() {
 
             {/* Row 2: Day + Category filters */}
             <div className="flex flex-row flex-wrap items-center gap-2">
-              <Select value={selectedDay} onValueChange={setSelectedDay}>
-                <SelectTrigger className="h-[38px] w-[120px] rounded-xl border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
-                  <SelectValue placeholder="All Days" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
-                  <SelectItem value="ALL" className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#e7f1ff]">All Days</SelectItem>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                    <SelectItem key={day} value={String(day).padStart(2, '0')} className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#42474e]">
-                      Day {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <EnterpriseSelect
+                className="h-[38px] w-[120px] text-xs font-bold"
+                value={selectedDay}
+                onValueChange={setSelectedDay}
+                options={[{ value: 'ALL', label: 'All Days' }, ...Array.from({ length: 31 }, (_, index) => ({ value: String(index + 1).padStart(2, '0'), label: `Day ${index + 1}` }))]}
+              />
 
-              <Select value={selectedCategory} onValueChange={(val) => setSelectedCategory(val as 'ALL' | ExpenseCategory)}>
-                <SelectTrigger className="h-[38px] w-[160px] rounded-xl border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
-                  <SelectItem value="ALL" className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#e7f1ff]">All Categories</SelectItem>
-                  {categories.map((item) => (
-                    <SelectItem key={item} value={item} className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#42474e]">
-                      {item}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <EnterpriseSelect
+                className="h-[38px] w-[160px] text-xs font-bold"
+                value={selectedCategory}
+                onValueChange={(value) => setSelectedCategory(value as 'ALL' | ExpenseCategory)}
+                options={[{ value: 'ALL', label: 'All Categories' }, ...categories.map((category) => ({ value: category, label: category }))]}
+              />
             </div>
           </div>
 
@@ -922,33 +908,19 @@ export default function FinancePage() {
 
           {/* Mobile Filters Row */}
           <div className="flex flex-row flex-wrap items-center gap-2">
-            <Select value={selectedDay} onValueChange={setSelectedDay}>
-              <SelectTrigger className="h-[42px] w-[120px] rounded-xl border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
-                <SelectValue placeholder="All Days" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
-                <SelectItem value="ALL" className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#e7f1ff]">All Days</SelectItem>
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                  <SelectItem key={day} value={String(day).padStart(2, '0')} className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#42474e]">
-                    Day {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <EnterpriseSelect
+              className="h-[42px] w-[120px] text-xs font-bold"
+              value={selectedDay}
+              onValueChange={setSelectedDay}
+              options={[{ value: 'ALL', label: 'All Days' }, ...Array.from({ length: 31 }, (_, index) => ({ value: String(index + 1).padStart(2, '0'), label: `Day ${index + 1}` }))]}
+            />
 
-            <Select value={selectedCategory} onValueChange={(val) => setSelectedCategory(val as 'ALL' | ExpenseCategory)}>
-              <SelectTrigger className="h-[42px] flex-1 min-w-[140px] rounded-xl border border-[#d8e6f8] bg-white px-3 text-xs font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
-                <SelectItem value="ALL" className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#e7f1ff]">All Categories</SelectItem>
-                {categories.map((item) => (
-                  <SelectItem key={item} value={item} className="text-xs font-bold text-[#172554] hover:bg-[#e7f1ff] focus:bg-[#42474e]">
-                    {item}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <EnterpriseSelect
+              className="h-[42px] min-w-[140px] flex-1 text-xs font-bold"
+              value={selectedCategory}
+              onValueChange={(value) => setSelectedCategory(value as 'ALL' | ExpenseCategory)}
+              options={[{ value: 'ALL', label: 'All Categories' }, ...categories.map((category) => ({ value: category, label: category }))]}
+            />
           </div>
 
           {/* Mobile Add Buttons */}
@@ -1105,17 +1077,12 @@ export default function FinancePage() {
               <div className="grid gap-4">
                   <div>
                     <label className="mb-1.5 block text-sm font-black text-[#0a1433]">Category</label>
-                    <select
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                    <EnterpriseSelect
+                      className="h-11 border-slate-200 bg-white text-[#0a1433]"
                       value={expenseItems[0].category}
-                      onChange={(e) =>
-                        updateExpenseItem(1, 'category', e.target.value as ExpenseCategory)
-                      }
-                    >
-                      {utilityCategories.map((category) => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
+                      onValueChange={(value) => updateExpenseItem(1, 'category', value as ExpenseCategory)}
+                      options={utilityCategories.map((category) => ({ value: category, label: category }))}
+                    />
                   </div>
 
                   {canManageMess && purchasedByMemberOptions.length > 0 && (
@@ -1123,17 +1090,12 @@ export default function FinancePage() {
                       <label className="mb-1.5 block text-sm font-black text-[#0a1433]">
                         Purchased By
                       </label>
-                      <select
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                      <EnterpriseSelect
+                        className="h-11 border-slate-200 bg-white text-[#0a1433]"
                         value={expensePurchasedBy}
-                        onChange={(e) => setExpensePurchasedBy(e.target.value)}
-                      >
-                        {purchasedByMemberOptions.map((member) => (
-                          <option key={member.id} value={member.id}>
-                            {member.name}
-                          </option>
-                        ))}
-                      </select>
+                        onValueChange={setExpensePurchasedBy}
+                        options={purchasedByMemberOptions.map((member) => ({ value: member.id, label: member.name }))}
+                      />
                     </div>
                   )}
 
@@ -1216,17 +1178,12 @@ export default function FinancePage() {
                 <label className="mb-2 block text-sm font-black text-[#0a1433]">
                   Purchased By
                 </label>
-                <select
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
+                <EnterpriseSelect
+                  className="border-slate-200 bg-white text-[#0a1433]"
                   value={expensePurchasedBy}
-                  onChange={(e) => setExpensePurchasedBy(e.target.value)}
-                >
-                  {purchasedByMemberOptions.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setExpensePurchasedBy}
+                  options={purchasedByMemberOptions.map((member) => ({ value: member.id, label: member.name }))}
+                />
               </div>
             )}
 
@@ -1300,17 +1257,12 @@ export default function FinancePage() {
                     {/* Category */}
                     <div>
                       <label className="mb-1.5 block text-sm font-black">Category</label>
-                      <select
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                      <EnterpriseSelect
+                        className="h-11 border-slate-200 bg-white text-[#0a1433]"
                         value={item.category}
-                        onChange={(e) =>
-                          updateExpenseItem(item.id, 'category', e.target.value as ExpenseCategory)
-                        }
-                      >
-                        {(isEditing ? categories : expenseCategories).map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
+                        onValueChange={(value) => updateExpenseItem(item.id, 'category', value as ExpenseCategory)}
+                        options={(isEditing ? categories : expenseCategories).map((category) => ({ value: category, label: category }))}
+                      />
                     </div>
 
                     <div>

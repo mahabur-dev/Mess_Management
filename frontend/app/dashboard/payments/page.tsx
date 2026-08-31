@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
+import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { apiClient, type Mess, type MessMembershipWithDetails, type Payment, type PaymentMethod, type ExpenseCategory } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
 import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban, Search, Filter, Trash2, Eye, Edit3 } from 'lucide-react'
@@ -175,11 +176,11 @@ export default function PaymentsPage() {
       setEditingPayment(null)
       setShowModal(false)
       setMessageType('success')
-      setMessage(editingPayment ? 'Payment updated successfully.' : 'Payment submitted successfully.')
+      setMessage(editingPayment ? 'Deposit updated successfully.' : 'Deposit submitted successfully.')
       await load()
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to submit payment.'))
+      setMessage(getErrorMessage(error, 'Failed to submit deposit.'))
     } finally {
       setSubmitting(false)
     }
@@ -191,28 +192,28 @@ export default function PaymentsPage() {
     try {
       await apiClient.reviewPayment(id, { status })
       setMessageType('success')
-      setMessage(`Payment ${status.toLowerCase()} successfully.`)
+      setMessage(`Deposit ${status.toLowerCase()} successfully.`)
       await load()
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to review payment.'))
+      setMessage(getErrorMessage(error, 'Failed to review deposit.'))
     } finally {
       setReviewingId(null)
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this payment?')) return
+    if (!confirm('Are you sure you want to delete this deposit?')) return
     setDeletingId(id)
     setMessage('')
     try {
       await apiClient.deletePayment(id)
       setMessageType('success')
-      setMessage('Payment deleted successfully.')
+      setMessage('Deposit deleted successfully.')
       await load()
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to delete payment.'))
+      setMessage(getErrorMessage(error, 'Failed to delete deposit.'))
     } finally {
       setDeletingId(null)
     }
@@ -261,7 +262,7 @@ export default function PaymentsPage() {
 
   return (
     <div className="min-h-screen bg-[#fafcff]">
-      <DashboardHeader title="Payments" description="Approve member payments and track transaction status" />
+      <DashboardHeader title="Deposits" description="Review member deposits and track their approval status" />
 
       <div className="p-4 sm:p-6 lg:p-8">
         {message && (
@@ -277,12 +278,12 @@ export default function PaymentsPage() {
               <Wallet size={24} className="text-emerald-600" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[#172554]">Payment Requests</h2>
-              <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{payments.length} payment{payments.length !== 1 ? 's' : ''} recorded</p>
+              <h2 className="text-lg font-black text-[#172554]">Deposits</h2>
+              <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{payments.length} deposit{payments.length !== 1 ? 's' : ''} recorded</p>
             </div>
           </div>
           <Button onClick={() => { setEditingPayment(null); setAmount(''); setPaymentDate(''); setSelectedCategories([]); setPaymentPurchasedBy(user?.id ?? ''); setShowModal(true) }} className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
-            <Plus size={18} /> Submit Payment
+            <Plus size={18} /> Add Deposit
           </Button>
         </div>
 
@@ -319,11 +320,11 @@ export default function PaymentsPage() {
             <input className="!min-h-0 h-full w-[110px] min-w-0 border-0 bg-transparent p-0 text-xs font-bold text-[var(--dashboard-ink)] outline-none ring-0" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
           </label>
           {(searchText || selectedMonth !== new Date().toISOString().slice(0, 7)) && (
-            <span className="text-[10px] font-semibold text-[#6b7a99]">Showing {filteredPayments.length} of {payments.length} payments</span>
+            <span className="text-[10px] font-semibold text-[#6b7a99]">Showing {filteredPayments.length} of {payments.length} deposits</span>
           )}
         </div>
 
-        {/* Payments Table - Desktop */}
+        {/* Deposits Table - Desktop */}
         <div className="hidden overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)] sm:block">
           <table className="w-full table-fixed">
             <thead>
@@ -333,13 +334,13 @@ export default function PaymentsPage() {
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
               {loading && (
-                <tr><td colSpan={5} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading payments...</div></td></tr>
+                <tr><td colSpan={5} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading deposits...</div></td></tr>
               )}
               {!loading && filteredPayments.length === 0 && (
                 <tr><td colSpan={5} className="px-5 py-12 text-center">
                   <div className="flex flex-col items-center gap-2"><Wallet size={40} className="text-[#d8e6f8]" />
-                    <p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No payment records yet.' : 'No payments match your filters.'}</p>
-                    <p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Submit Payment" to add one.' : 'Try changing the month or search term.'}</p>
+                    <p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No deposit records yet.' : 'No deposits match your filters.'}</p>
+                    <p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Add Deposit" to add one.' : 'Try changing the month or search term.'}</p>
                   </div>
                 </td></tr>
               )}
@@ -375,11 +376,11 @@ export default function PaymentsPage() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-1.5">
-                        <EnterpriseIconButton label="View payment" tone="primary" onClick={(event) => { event.stopPropagation(); setViewingPayment(payment); setShowViewModal(true) }}>
+                        <EnterpriseIconButton label="View deposit" tone="primary" onClick={(event) => { event.stopPropagation(); setViewingPayment(payment); setShowViewModal(true) }}>
                           <Eye size={16} />
                         </EnterpriseIconButton>
                         {canDelete && (
-                          <EnterpriseIconButton label="Delete payment" tone="danger" disabled={isDeleting} onClick={(event) => { event.stopPropagation(); void handleDelete(payment.id) }}>
+                          <EnterpriseIconButton label="Delete deposit" tone="danger" disabled={isDeleting} onClick={(event) => { event.stopPropagation(); void handleDelete(payment.id) }}>
                             {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                           </EnterpriseIconButton>
                         )}
@@ -395,7 +396,7 @@ export default function PaymentsPage() {
           {!loading && payments.length > 0 && (
             <div className="border-t-2 border-[#d8e6f8] bg-[#f8faff] px-5 py-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#6b7a99]"><User size={14} /> <span><span className="text-[#172554]">{payments.length}</span> payments</span></div>
+                <div className="flex items-center gap-2 text-xs font-bold text-[#6b7a99]"><User size={14} /> <span><span className="text-[#172554]">{payments.length}</span> deposits</span></div>
                 <div className="flex items-center gap-4 text-xs font-bold"><span className="text-amber-600">{pendingCount} pending</span><span className="text-emerald-600">{approvedCount} approved</span></div>
               </div>
             </div>
@@ -414,11 +415,11 @@ export default function PaymentsPage() {
           </label>
         </div>
 
-        {/* Payments - Mobile Cards */}
+        {/* Deposits - Mobile Cards */}
         <div className="space-y-3 sm:hidden">
           {loading && <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-[#2f80ed]" /></div>}
           {!loading && filteredPayments.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12"><Wallet size={40} className="mb-2 text-[#d8e6f8]" /><p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No payment records yet.' : 'No payments match your filters.'}</p><p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Submit Payment" to add one.' : 'Try changing the month or search term.'}</p></div>
+            <div className="flex flex-col items-center justify-center py-12"><Wallet size={40} className="mb-2 text-[#d8e6f8]" /><p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No deposit records yet.' : 'No deposits match your filters.'}</p><p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Add Deposit" to add one.' : 'Try changing the month or search term.'}</p></div>
           )}
           {!loading && filteredPayments.map((payment) => {
             const methodCfg = PAYMENT_METHOD_CONFIG[payment.method as PaymentMethod] || PAYMENT_METHOD_CONFIG.CASH
@@ -454,7 +455,7 @@ export default function PaymentsPage() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
-                  <span>Purchased by</span>
+                  <span>Paid by</span>
                   <span className="text-[#172554]">
                     {payment.member?.name ?? 'Unknown Member'}
                   </span>
@@ -477,36 +478,36 @@ export default function PaymentsPage() {
                 )}
 
                 <div className="mt-3 flex justify-end gap-2">
-                  <EnterpriseIconButton label="View payment" tone="primary" onClick={() => { setViewingPayment(payment); setShowViewModal(true) }}><Eye size={16} /></EnterpriseIconButton>
+                  <EnterpriseIconButton label="View deposit" tone="primary" onClick={() => { setViewingPayment(payment); setShowViewModal(true) }}><Eye size={16} /></EnterpriseIconButton>
                   {payment.status === 'PENDING' && isManager && (
                     <>
-                      <EnterpriseIconButton label="Approve payment" tone="success" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'APPROVED')}>{reviewingId === payment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton>
-                      <EnterpriseIconButton label="Reject payment" tone="danger" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'REJECTED')}><X size={16} /></EnterpriseIconButton>
+                      <EnterpriseIconButton label="Approve deposit" tone="success" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'APPROVED')}>{reviewingId === payment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton>
+                      <EnterpriseIconButton label="Reject deposit" tone="danger" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'REJECTED')}><X size={16} /></EnterpriseIconButton>
                     </>
                   )}
                   {canDelete && (
-                    <EnterpriseIconButton label="Delete payment" tone="danger" disabled={isDeleting} onClick={() => void handleDelete(payment.id)}>{isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}</EnterpriseIconButton>
+                    <EnterpriseIconButton label="Delete deposit" tone="danger" disabled={isDeleting} onClick={() => void handleDelete(payment.id)}>{isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}</EnterpriseIconButton>
                   )}
                 </div>
               </div>
             )
           })}
           {!loading && payments.length > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 py-3"><p className="text-xs font-bold text-[#6b7a99]"><span className="text-[#172554]">{payments.length}</span> payments</p><div className="flex gap-3 text-xs font-bold"><span className="text-amber-600">{pendingCount} pending</span><span className="text-emerald-600">{approvedCount} approved</span></div></div>
+            <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 py-3"><p className="text-xs font-bold text-[#6b7a99]"><span className="text-[#172554]">{payments.length}</span> deposits</p><div className="flex gap-3 text-xs font-bold"><span className="text-amber-600">{pendingCount} pending</span><span className="text-emerald-600">{approvedCount} approved</span></div></div>
           )}
         </div>
       </div>
 
-      {/* View Payment Modal */}
+      {/* View Deposit Drawer */}
       {viewingPayment && (
         <EnterpriseDetailsDrawer
           open={showViewModal}
           onOpenChange={(open) => { setShowViewModal(open); if (!open) setViewingPayment(null) }}
-          eyebrow="Payment"
-          title="Payment details"
-          description={viewingPayment.member?.email ?? 'Payment request and transaction information.'}
+          eyebrow="Deposit"
+          title="Deposit details"
+          description={viewingPayment.member?.email ?? 'Deposit record and transaction information.'}
           headerIcon={<CreditCard className="size-5" />}
-          footer={<div className="flex flex-wrap justify-end gap-2">{(isManager || viewingPayment.creator?.id === user?.id) && <EnterpriseIconButton label="Edit payment" tone="primary" onClick={() => openEditPayment(viewingPayment)}><Edit3 size={16} /></EnterpriseIconButton>}{viewingPayment.status === 'PENDING' && isManager && <><EnterpriseIconButton label="Approve payment" tone="success" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }}>{reviewingId === viewingPayment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton><EnterpriseIconButton label="Reject payment" tone="danger" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }}><X size={16} /></EnterpriseIconButton></>}</div>}
+          footer={<div className="flex flex-wrap justify-end gap-2">{(isManager || viewingPayment.creator?.id === user?.id) && <EnterpriseIconButton label="Edit deposit" tone="primary" onClick={() => openEditPayment(viewingPayment)}><Edit3 size={16} /></EnterpriseIconButton>}{viewingPayment.status === 'PENDING' && isManager && <><EnterpriseIconButton label="Approve deposit" tone="success" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }}>{reviewingId === viewingPayment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton><EnterpriseIconButton label="Reject deposit" tone="danger" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }}><X size={16} /></EnterpriseIconButton></>}</div>}
         >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -523,7 +524,7 @@ export default function PaymentsPage() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Purchased By</p>
+                    <p className="text-[10px] font-black uppercase text-[#6b7a99]">Paid by</p>
                     <p className="mt-1 text-sm font-bold text-[#172554]">{viewingPayment.member?.name ?? 'Unknown Member'}</p>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -545,14 +546,14 @@ export default function PaymentsPage() {
         </EnterpriseDetailsDrawer>
       )}
 
-      {/* Submit Payment Modal */}
+      {/* Add Deposit Drawer */}
       {showModal && (
         <EnterpriseDetailsDrawer
           open={showModal}
           onOpenChange={(open) => { setShowModal(open); if (!open) { setSelectedCategories([]); setEditingPayment(null) } }}
-          eyebrow="Payment"
-          title={editingPayment ? 'Edit payment' : 'Submit payment'}
-          description={editingPayment ? 'Update the amount, method, date, or categories for this payment.' : 'Send a payment request with its method, date, and categories.'}
+          eyebrow="Deposit"
+          title={editingPayment ? 'Edit deposit' : 'Add deposit'}
+          description={editingPayment ? 'Update this deposit amount, method, date, or categories.' : 'Record a deposit with its method, date, and categories.'}
           headerIcon={<CreditCard className="size-5" />}
         >
             <div>
@@ -563,29 +564,19 @@ export default function PaymentsPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Payment Date</label>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Date</label>
                   <input className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
                 </div>
 
                 {isManager && purchasedByMemberOptions.length > 0 && (
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Purchased By</label>
-                    <select
-                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                      value={paymentPurchasedBy}
-                      onChange={(e) => setPaymentPurchasedBy(e.target.value)}
-                    >
-                      {purchasedByMemberOptions.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.name}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Paid by</label>
+                    <EnterpriseSelect value={paymentPurchasedBy} onValueChange={setPaymentPurchasedBy} options={purchasedByMemberOptions.map((member) => ({ value: member.id, label: member.name }))} />
                   </div>
                 )}
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Payment Method</label>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Method</label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {methods.map((m) => {
                       const cfg = PAYMENT_METHOD_CONFIG[m]
@@ -600,7 +591,7 @@ export default function PaymentsPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Payment Category (optional - select multiple)</label>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Category (optional - select multiple)</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {EXPENSE_CATEGORIES.map((cat) => {
                       const selected = selectedCategories.includes(cat.value)
@@ -630,7 +621,7 @@ export default function PaymentsPage() {
                 <button type="button" onClick={() => { setShowModal(false); setSelectedCategories([]) }} disabled={submitting} className="h-12 rounded-xl border border-[#d8e6f8] bg-white px-4 font-black text-[#53617d] transition hover:bg-[#edf5ff] disabled:opacity-60">Cancel</button>
                 <button type="button" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70">
                   {submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}
-                  {submitting ? 'Saving...' : editingPayment ? 'Save changes' : 'Submit payment'}
+                  {submitting ? 'Saving...' : editingPayment ? 'Save changes' : 'Add deposit'}
                 </button>
               </div>
             </div>

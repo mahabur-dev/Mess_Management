@@ -10,6 +10,7 @@ import { swrFetcher } from '@/lib/swr-fetcher'
 import {
   BarChart3,
   Bell,
+  CalendarClock,
   ClipboardList,
   CreditCard,
   Home,
@@ -41,6 +42,7 @@ const onboardingItems = [
 const memberItems = [
   ...commonItems,
   { label: 'My Meals', href: '/dashboard/meals', icon: UtensilsCrossed },
+  { label: 'Meal Pattern', href: '/dashboard/meal-patterns', icon: CalendarClock },
   { label: 'Monthly Bills', href: '/dashboard/monthly-bills', icon: ClipboardList },
   { label: 'My Bill', href: '/dashboard/finance', icon: WalletCards },
   { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },
@@ -53,6 +55,7 @@ const managerItems = [
   ...commonItems,
   { label: 'Members', href: '/dashboard/member_management', icon: Users },
   { label: 'Meal Sheet', href: '/dashboard/meals', icon: UtensilsCrossed },
+  { label: 'Meal Patterns', href: '/dashboard/meal-patterns', icon: CalendarClock },
   { label: 'Bazar/Expenses', href: '/dashboard/finance', icon: WalletCards },
   { label: 'Monthly Bills', href: '/dashboard/monthly-bills', icon: ClipboardList },
   { label: 'Payments', href: '/dashboard/payments', icon: CreditCard },

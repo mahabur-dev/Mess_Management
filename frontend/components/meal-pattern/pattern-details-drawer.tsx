@@ -73,22 +73,24 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full gap-0 overflow-y-auto border-[var(--dashboard-line)] bg-[var(--dashboard-bg)] p-0 sm:max-w-xl">
+        <SheetContent className="w-full gap-0 overflow-hidden border-[var(--dashboard-line)] bg-[var(--dashboard-bg)] p-0 sm:max-w-2xl">
           {pattern && row ? (
             <>
-              <SheetHeader className="border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-5 pr-14 sm:p-6 sm:pr-14">
+              <SheetHeader className="shrink-0 border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--brand-softer),var(--dashboard-surface))] p-5 pr-14 sm:p-6 sm:pr-14">
                 <div className="flex items-center gap-3">
                   <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><UserRound className="size-5" /></span>
                   <div className="min-w-0">
+                    <p className="mb-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Meal pattern</p>
                     <SheetTitle className="truncate text-xl font-black">{memberName}</SheetTitle>
                     <SheetDescription className="truncate font-semibold">{row.membership.user?.email ?? 'Meal pattern details'}</SheetDescription>
                   </div>
                 </div>
               </SheetHeader>
 
-              <div className="space-y-5 p-4 pb-28 sm:p-6 sm:pb-28">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
                 {actionError && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">{actionError}</div>}
-                <section className="dashboard-card p-4 sm:p-5">
+                <section className="dashboard-card overflow-hidden ring-1 ring-[var(--dashboard-line)]/70">
+                  <div className="border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Current schedule</p>
@@ -97,13 +99,14 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
                     </div>
                     <PatternStatusBadge status={pattern.status} />
                   </div>
-                  <div className="mt-5"><SchedulePreview pattern={pattern} /></div>
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3">
+                  </div>
+                  <div className="p-4 sm:p-5"><SchedulePreview pattern={pattern} /></div>
+                  <div className="grid grid-cols-2 gap-3 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)]/45 p-4 sm:p-5">
+                    <div className="rounded-xl bg-[var(--dashboard-surface)] p-3 shadow-sm">
                       <p className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">Starts</p>
                       <p className="mt-1 text-xs font-black text-foreground sm:text-sm">{formatPatternDate(pattern.start_date)}</p>
                     </div>
-                    <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3">
+                    <div className="rounded-xl bg-[var(--dashboard-surface)] p-3 shadow-sm">
                       <p className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">Ends</p>
                       <p className="mt-1 text-xs font-black text-foreground sm:text-sm">{pattern.end_date ? formatPatternDate(pattern.end_date) : 'Until stopped'}</p>
                     </div>
@@ -130,8 +133,8 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
                 </section>
               </div>
 
-              <div className="fixed inset-x-0 bottom-0 z-10 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]/95 p-4 backdrop-blur sm:absolute">
-                <div className="flex flex-wrap gap-2">
+              <div className="shrink-0 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]/95 p-4 shadow-[0_-12px_30px_color-mix(in_srgb,var(--dashboard-ink)_6%,transparent)] backdrop-blur">
+                <div className="flex flex-wrap gap-2 sm:flex-nowrap">
                   {isPatternConfigurable(pattern) && <Button onClick={() => onEdit(row)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] font-black text-white hover:bg-[var(--brand-hover)]"><Edit3 className="size-4" /> Change</Button>}
                   {pattern.status === 'ACTIVE' && <Button variant="outline" onClick={() => setPendingAction('pause')} className="min-h-11 rounded-xl font-black"><Pause className="size-4" /> Pause</Button>}
                   {(pattern.status === 'PAUSED' || pattern.status === 'DRAFT') && <Button variant="outline" onClick={() => setPendingAction('resume')} className="min-h-11 rounded-xl font-black text-emerald-700"><Play className="size-4" /> {pattern.status === 'DRAFT' ? 'Activate' : 'Resume'}</Button>}

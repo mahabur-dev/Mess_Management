@@ -182,12 +182,13 @@ export function DashboardSidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={`group flex h-[50px] items-center gap-3.5 rounded-xl px-3.5 text-sm font-bold transition-all ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`group flex h-[50px] items-center gap-3.5 rounded-xl px-3.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ease-out ${
                   isActive ? sidebarActiveLinkClass : sidebarInactiveLinkClass
                 } ${collapsed ? 'justify-center px-0' : ''}`}
                 title={collapsed ? item.label : undefined}
               >
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all ${
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-200 ${
                   isActive ? 'bg-white/20' : 'bg-[var(--dashboard-surface-subtle)] group-hover:bg-[var(--brand-soft)]'
                 }`}>
                   <Icon size={18} />
@@ -195,7 +196,13 @@ export function DashboardSidebar() {
                 {!collapsed && (
                   <>
                     <span className="flex-1 truncate">{item.label}</span>
-                    {isActive && <ChevronRight size={15} className="text-white/60 shrink-0" />}
+                    <ChevronRight
+                      size={15}
+                      aria-hidden="true"
+                      className={`shrink-0 transition-[opacity,transform,color] duration-200 ease-out ${
+                        isActive ? 'translate-x-0 text-white/60 opacity-100' : '-translate-x-1 text-muted-foreground opacity-0'
+                      }`}
+                    />
                   </>
                 )}
               </Link>

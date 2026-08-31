@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
-import { CalendarClock, CircleCheck, CircleDashed, CirclePause, Search, Sparkles, UsersRound } from 'lucide-react'
+import { Building2, CalendarClock, CircleCheck, CircleDashed, CirclePause, Search, SlidersHorizontal, UsersRound } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { PatternOverviewCard } from '@/components/meal-pattern/pattern-overview-card'
 import { MemberPatternList, type MemberPatternRow } from '@/components/meal-pattern/member-pattern-list'
 import { PatternDetailsDrawer, type PatternAction } from '@/components/meal-pattern/pattern-details-drawer'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type MealPattern, type MealPatternStatus, type Mess } from '@/lib/api-client'
 import { useMealPatternDashboard } from '@/hooks/use-meal-pattern-dashboard'
@@ -140,16 +141,6 @@ export default function MealPatternsPage() {
       <main className="p-4 sm:p-6 lg:p-8">
         {message && <div role="status" className={`mb-5 rounded-xl border px-4 py-3 text-sm font-bold ${messageType === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300' : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300'}`}>{message}</div>}
 
-        <section className="mb-6 flex flex-col gap-4 rounded-2xl bg-[linear-gradient(135deg,var(--brand-dark),var(--brand))] p-5 text-white shadow-[0_18px_42px_var(--brand-shadow)] sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div className="flex items-start gap-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white/15"><Sparkles className="size-6" /></span>
-            <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/70">Set it once, stay on track</p><h1 className="mt-1 text-xl font-black sm:text-2xl">Meals that follow the routine automatically</h1><p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-white/75">Patterns save daily work without taking away manual control over a specific meal.</p></div>
-          </div>
-          {messes.length > 1 && (
-            <label className="shrink-0"><span className="sr-only">Choose mess</span><select value={activeMess?.id ?? ''} onChange={(event) => { setActiveMessId(event.target.value); setSelectedMembershipId(null) }} className="h-12 w-full min-w-52 rounded-xl border border-white/20 bg-white/12 px-3 text-sm font-black text-white outline-none backdrop-blur [&_option]:text-slate-900 sm:w-auto">{messes.map((mess) => <option key={mess.id} value={mess.id}>{mess.name}</option>)}</select></label>
-          )}
-        </section>
-
         {loading ? <PageSkeleton /> : pageError ? (
           <section className="dashboard-card py-14 text-center"><CalendarClock className="mx-auto size-10 text-rose-500" /><h2 className="mt-4 text-lg font-black text-foreground">Could not load meal patterns</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">{pageError instanceof Error ? pageError.message : 'Please try again.'}</p><button type="button" onClick={() => void refreshPatterns()} className="mt-5 min-h-11 rounded-xl bg-[var(--brand)] px-5 text-sm font-black text-white">Try again</button></section>
         ) : !activeMess ? (
@@ -165,11 +156,20 @@ export default function MealPatternsPage() {
               <StatCard label="Not set" value={stats.notSet} icon={UsersRound} tone="bg-slate-100 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300" />
             </div>
 
-            <section className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <section className="dashboard-card mb-5 flex flex-col gap-4 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
               <div><h2 className="text-xl font-black text-foreground">Member schedules</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">{activeMess.name} · {rows.length} active members</p></div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <label className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search member" className="h-11 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] pl-10 pr-3 text-sm font-semibold text-foreground outline-none focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)] sm:w-64" /></label>
-                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className="h-11 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-black text-foreground outline-none focus:border-[var(--brand)]">{statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+              <div className="grid w-full gap-2 sm:grid-cols-2 xl:w-auto xl:grid-cols-[minmax(16rem,20rem)_auto_auto]">
+                <label className="relative sm:col-span-2 xl:col-span-1"><span className="sr-only">Search members</span><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search member" className="h-11 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] pl-10 pr-3 text-sm font-semibold text-foreground outline-none transition focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)]" /></label>
+                {messes.length > 1 && (
+                  <Select value={activeMess.id} onValueChange={(value) => { setActiveMessId(value); setSelectedMembershipId(null) }}>
+                    <SelectTrigger aria-label="Choose mess" className="h-11 w-full min-w-44 rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 font-black shadow-none"><Building2 className="size-4 text-[var(--brand)]" /><SelectValue /></SelectTrigger>
+                    <SelectContent align="end" collisionPadding={16} className="rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface-raised)] p-1 shadow-[var(--dashboard-shadow-lg)]">{messes.map((mess) => <SelectItem key={mess.id} value={mess.id} className="min-h-10 rounded-lg font-bold">{mess.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                )}
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                  <SelectTrigger aria-label="Filter by pattern status" className="h-11 w-full min-w-44 rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 font-black shadow-none"><SlidersHorizontal className="size-4 text-[var(--brand)]" /><SelectValue /></SelectTrigger>
+                  <SelectContent align="end" collisionPadding={16} className="rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface-raised)] p-1 shadow-[var(--dashboard-shadow-lg)]">{statusOptions.map((option) => <SelectItem key={option.value} value={option.value} className="min-h-10 rounded-lg font-bold">{option.label}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
             </section>
 

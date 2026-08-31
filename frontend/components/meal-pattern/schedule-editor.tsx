@@ -1,18 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarDays, Copy, RotateCcw } from 'lucide-react'
+import { Copy, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { MealName, MealPatternSchedule, MealPatternType, MealPatternWeekday, MealPatternWeeklySchedule } from '@/lib/api-client'
+import type { MealPatternSchedule, MealPatternType, MealPatternWeekday, MealPatternWeeklySchedule } from '@/lib/api-client'
 import {
   EMPTY_MEAL_PATTERN_SCHEDULE,
   MEAL_PATTERN_DAYS,
   MEAL_PATTERN_DAY_LABELS,
-  MEAL_PATTERN_MEALS,
   cloneMealPatternSchedule,
   getScheduleTotal,
 } from '@/lib/meal-pattern'
-import { MealQuantityControl } from './meal-quantity-control'
+import { ScheduleCard } from './schedule-card'
 
 interface ScheduleEditorProps {
   type: MealPatternType
@@ -22,45 +21,18 @@ interface ScheduleEditorProps {
   onWeeklyChange: (schedule: MealPatternWeeklySchedule) => void
 }
 
-function ScheduleFields({ schedule, onChange, compact = false }: {
-  schedule: MealPatternSchedule
-  onChange: (schedule: MealPatternSchedule) => void
-  compact?: boolean
-}) {
-  const setMeal = (meal: MealName, value: number) => onChange({ ...schedule, [meal]: value })
-  return (
-    <div className={compact ? 'space-y-2' : 'grid gap-3 md:grid-cols-3'}>
-      {MEAL_PATTERN_MEALS.map((meal) => (
-        <MealQuantityControl
-          key={meal}
-          meal={meal}
-          value={schedule[meal]}
-          onChange={(value) => setMeal(meal, value)}
-          compact={compact}
-        />
-      ))}
-    </div>
-  )
-}
-
 export function ScheduleEditor({ type, dailySchedule, weeklySchedule, onDailyChange, onWeeklyChange }: ScheduleEditorProps) {
   const [mobileDay, setMobileDay] = useState<MealPatternWeekday>('SATURDAY')
 
   if (type === 'DAILY') {
     return (
-      <section className="dashboard-card p-4 sm:p-5">
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="dashboard-eyebrow text-[10px]">Every day</p>
-            <h2 className="mt-1 text-lg font-black text-foreground">Choose your regular meals</h2>
-            <p className="mt-1 text-sm font-semibold text-muted-foreground">This schedule will repeat automatically every day.</p>
-          </div>
-          <span className="shrink-0 rounded-full bg-[var(--brand-soft)] px-3 py-1.5 text-xs font-black text-[var(--brand-dark)]">
-            {getScheduleTotal(dailySchedule)} / day
-          </span>
-        </div>
-        <ScheduleFields schedule={dailySchedule} onChange={onDailyChange} />
-      </section>
+      <ScheduleCard
+        eyebrow="Daily routine"
+        title="Every day"
+        description="This meal schedule repeats automatically seven days a week."
+        schedule={dailySchedule}
+        onChange={onDailyChange}
+      />
     )
   }
 
@@ -114,30 +86,28 @@ export function ScheduleEditor({ type, dailySchedule, weeklySchedule, onDailyCha
             </button>
           ))}
         </div>
-        <div className="dashboard-card p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="size-4 text-[var(--brand)]" />
-              <h3 className="font-black text-foreground">{MEAL_PATTERN_DAY_LABELS[mobileDay]}</h3>
-            </div>
-            <button type="button" onClick={() => updateDay(mobileDay, cloneMealPatternSchedule(EMPTY_MEAL_PATTERN_SCHEDULE))} className="min-h-9 text-xs font-bold text-muted-foreground">Clear day</button>
-          </div>
-          <ScheduleFields schedule={weeklySchedule[mobileDay]} onChange={(schedule) => updateDay(mobileDay, schedule)} />
-        </div>
+        <ScheduleCard
+          eyebrow="Selected day"
+          title={MEAL_PATTERN_DAY_LABELS[mobileDay]}
+          schedule={weeklySchedule[mobileDay]}
+          onChange={(schedule) => updateDay(mobileDay, schedule)}
+          onClear={() => updateDay(mobileDay, cloneMealPatternSchedule(EMPTY_MEAL_PATTERN_SCHEDULE))}
+          compactMeals
+          iconLabel={MEAL_PATTERN_DAY_LABELS[mobileDay].slice(0, 2)}
+        />
       </div>
 
       <div className="hidden gap-4 lg:grid lg:grid-cols-2 2xl:grid-cols-3">
         {MEAL_PATTERN_DAYS.map((day) => (
-          <article key={day} className="dashboard-card p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <h3 className="font-black text-foreground">{MEAL_PATTERN_DAY_LABELS[day]}</h3>
-                <p className="text-xs font-semibold text-muted-foreground">{getScheduleTotal(weeklySchedule[day])} meals</p>
-              </div>
-              <button type="button" onClick={() => updateDay(day, cloneMealPatternSchedule(EMPTY_MEAL_PATTERN_SCHEDULE))} className="min-h-9 rounded-lg px-2 text-xs font-bold text-muted-foreground hover:bg-[var(--dashboard-surface-subtle)]">Clear</button>
-            </div>
-            <ScheduleFields compact schedule={weeklySchedule[day]} onChange={(schedule) => updateDay(day, schedule)} />
-          </article>
+          <ScheduleCard
+            key={day}
+            title={MEAL_PATTERN_DAY_LABELS[day]}
+            schedule={weeklySchedule[day]}
+            onChange={(schedule) => updateDay(day, schedule)}
+            onClear={() => updateDay(day, cloneMealPatternSchedule(EMPTY_MEAL_PATTERN_SCHEDULE))}
+            compactMeals
+            iconLabel={MEAL_PATTERN_DAY_LABELS[day].slice(0, 2)}
+          />
         ))}
       </div>
     </section>

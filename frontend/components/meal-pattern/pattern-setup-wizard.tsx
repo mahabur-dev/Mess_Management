@@ -128,7 +128,7 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
 
   const submit = async (activate: boolean) => {
     setError('')
-    if (!membershipId) return setError('Choose a member before saving this pattern.')
+    if (!membershipId) return setError('Member information is missing. Return to schedules and open this setup again.')
     if (selectedTotal <= 0) return setError('Choose at least one meal before saving.')
     if (!startDate) return setError('Choose when this pattern should start.')
     if (hasEndDate && (!endDate || endDate < startDate)) return setError('The end date must be on or after the start date.')

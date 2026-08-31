@@ -121,14 +121,6 @@ export default function MealPatternSetupPage() {
           </section>
         ) : (
           <>
-            {isManager && allowedMemberships.length > 1 && (
-              <section className="dashboard-card mx-auto mb-5 max-w-6xl p-4 sm:p-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><UserRound className="size-5" /></span><div><p className="font-black text-foreground">Choose a member</p><p className="text-xs font-semibold text-muted-foreground">The pattern will be saved for this person.</p></div></div>
-                  <select value={targetMembershipId} onChange={(event) => setTargetMembershipId(event.target.value)} className="h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-black text-foreground outline-none focus:border-[var(--brand)] sm:w-72">{allowedMemberships.map((membership) => <option key={membership.id} value={membership.id}>{membership.user?.name ?? membership.user_id}</option>)}</select>
-                </div>
-              </section>
-            )}
             {error && <div role="alert" className="mx-auto mb-5 max-w-6xl rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">{error}</div>}
             <PatternSetupWizard key={`${targetMembership.id}:${initialPattern?.id ?? 'new'}`} membershipId={targetMembership.id} memberName={targetMembership.user?.name ?? 'Mess member'} initialPattern={initialPattern} saving={saving} onSubmit={submitPattern} />
           </>

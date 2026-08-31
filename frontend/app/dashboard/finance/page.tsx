@@ -4,6 +4,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import {
   Dialog,
   DialogContent,
@@ -1449,7 +1450,11 @@ export default function FinancePage() {
         title="Expense details"
         description="Review purchase, payment, and receipt information."
         headerIcon={<ReceiptText className="size-5" />}
-        footer={<Button type="button" variant="outline" onClick={() => { setIsViewModalOpen(false); setViewExpense(null) }} className="min-h-11 w-full rounded-xl font-black">Close</Button>}
+        footer={viewExpense ? <div className="flex flex-wrap justify-end gap-2">
+          {canEditExpense(viewExpense) && <EnterpriseIconButton label="Edit expense" tone="primary" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openEditExpenseModal(expense) }}><Edit3 size={16} /></EnterpriseIconButton>}
+          {canManageMess && <EnterpriseIconButton label="Delete expense" tone="danger" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); void handleDeleteExpense(expense.id) }}><Trash2 size={16} /></EnterpriseIconButton>}
+          {canRequestExpenseReview(viewExpense) && <EnterpriseIconButton label="Request expense review" tone="default" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openReviewModal(expense) }}><MessageSquareWarning size={16} /></EnterpriseIconButton>}
+        </div> : undefined}
       >
           {viewExpense && (
             <div className="space-y-4">

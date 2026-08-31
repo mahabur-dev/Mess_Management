@@ -147,29 +147,19 @@ export default function MonthlyBillPage() {
           </div>
         </div>
 
-        <div className="mb-6 rounded-2xl border border-[#d8e6f8] bg-white p-3 shadow-sm sm:p-4">
-          <label className="flex w-full items-center gap-3 rounded-xl border border-[#d8e6f8] bg-[#fafcff] px-4 py-3 shadow-sm transition focus-within:border-[#2f80ed]/50 focus-within:ring-4 focus-within:ring-[#2f80ed]/10">
-            <Search size={18} className="shrink-0 text-[#2f80ed]" />
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="flex h-11 w-full items-center gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 shadow-sm transition focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)] sm:max-w-xl">
+            <Search size={17} className="shrink-0 text-[var(--brand)]" />
             <input
               type="text"
               value={memberSearch}
               onChange={(event) => setMemberSearch(event.target.value)}
-              placeholder="Search by member name..."
-              className="w-full bg-transparent text-sm font-semibold text-[#172554] outline-none placeholder:text-[#94a3b8]"
+              placeholder="Search member by name"
+              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[var(--dashboard-ink)] outline-none placeholder:text-muted-foreground"
             />
+            {memberSearch.trim() && <EnterpriseIconButton label="Clear member search" className="size-7 rounded-lg" onClick={() => setMemberSearch('')}><XCircle size={15} /></EnterpriseIconButton>}
           </label>
-          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] font-semibold text-[#6b7a99]">
-            <span>Search uses member name only.</span>
-            {memberSearch.trim() && (
-              <button
-                type="button"
-                onClick={() => setMemberSearch('')}
-                className="font-bold text-[#2f80ed] hover:underline"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+          <p className="px-1 text-[11px] font-semibold text-muted-foreground">Searches member name only</p>
         </div>
 
         {/* Summary Cards - same icons, same font */}

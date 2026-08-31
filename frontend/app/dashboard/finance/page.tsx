@@ -820,16 +820,9 @@ export default function FinancePage() {
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openViewModal(item)}
-                              className="h-8 rounded-lg border-[#2f80ed]/30 bg-[#e7f1ff] text-[11px] font-bold text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]"
-                            >
-                              <Eye size={13} className="mr-1" />
-                              View
-                            </Button>
+                            <EnterpriseIconButton label="View expense" tone="primary" onClick={() => openViewModal(item)}>
+                              <Eye size={16} />
+                            </EnterpriseIconButton>
                           </div>
                         </td>
                       </tr>
@@ -999,16 +992,8 @@ export default function FinancePage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => openViewModal(item)}
-                    className="flex-1 h-9 rounded-xl border-[#2f80ed]/30 bg-[#e7f1ff] text-xs font-bold text-[#2f80ed]"
-                  >
-                    <Eye size={13} className="mr-1" />
-                    View
-                  </Button>
+                <div className="mt-3 flex justify-end">
+                  <EnterpriseIconButton label="View expense" tone="primary" onClick={() => openViewModal(item)}><Eye size={16} /></EnterpriseIconButton>
                 </div>
               </div>
             ))}

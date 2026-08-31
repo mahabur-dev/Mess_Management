@@ -912,11 +912,11 @@ export default function FinancePage() {
           {/* Mobile Add Buttons */}
           {canAddExpense && (
             <div className="flex gap-2">
-              <EnterpriseButton size="sm" fullWidth onClick={openUtilityModal}>
+              <EnterpriseButton size="sm" onClick={openUtilityModal} className="flex-1">
                 <Plus size={15} />
                 Add Utility
               </EnterpriseButton>
-              <EnterpriseButton size="sm" fullWidth onClick={openExpenseModal}>
+              <EnterpriseButton size="sm" onClick={openExpenseModal} className="flex-1">
                 <Plus size={15} />
                 Add Expenses
               </EnterpriseButton>

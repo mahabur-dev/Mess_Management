@@ -16,9 +16,9 @@ interface EnterpriseIconButtonProps
 
 const toneClasses: Record<EnterpriseIconButtonTone, string> = {
   default: 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)]',
-  primary: 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)] hover:bg-[var(--brand-softer)]',
-  danger: 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+  primary: 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)] hover:bg-[var(--brand-softer)] hover:text-[var(--brand-dark)]',
+  danger: 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700',
+  success: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800',
 }
 
 /** A shared, accessible icon action for tables, cards, and drawer footers. */

@@ -1,8 +1,10 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { EnterpriseButton } from '@/components/ui/enterprise-button'
+import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { apiClient, type Mess, type Notice, type NoticeType } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
 import { Bell, Pin, Plus, X, Loader2, Megaphone, CalendarDays, AlertCircle, MessageCircle, FileText, Home } from 'lucide-react'
@@ -92,13 +94,10 @@ export default function NoticesPage() {
             </div>
           </div>
           {isManager && (
-            <Button
-              onClick={() => setShowModal(true)}
-              className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]"
-            >
+            <EnterpriseButton onClick={() => setShowModal(true)} className="gap-2">
               <Plus size={18} />
               Create Notice
-            </Button>
+            </EnterpriseButton>
           )}
         </div>
 
@@ -221,31 +220,17 @@ export default function NoticesPage() {
         </div>
       </div>
 
-      {/* Create Notice Modal */}
+      {/* Create Notice Drawer */}
       {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
-          onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+        <EnterpriseDetailsDrawer
+          open={showModal}
+          onOpenChange={setShowModal}
+          eyebrow="Notice board"
+          title="Create new notice"
+          description="Share a clear update with everyone in the mess."
+          headerIcon={<Megaphone className="size-5" />}
         >
-          <div className="relative w-full max-w-[520px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
-            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#8b5cf6] to-[#f43f8f]" />
-            <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/12 blur-2xl" />
-
-            <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Notice Board</p>
-                <h2 className="mt-1 text-xl font-black text-[#172554]">Create New Notice</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="relative p-5 sm:p-6">
+            <div>
               <div className="space-y-4">
                 <div>
                   <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
@@ -263,18 +248,7 @@ export default function NoticesPage() {
                   <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
                     Notice Type
                   </label>
-                  <select
-                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                    value={type}
-                    onChange={(e) => setType(e.target.value as NoticeType)}
-                  >
-                    {noticeTypes.map((item) => {
-                      const cfg = NOTICE_CONFIG[item]
-                      return (
-                        <option key={item} value={item}>{cfg.label}</option>
-                      )
-                    })}
-                  </select>
+                  <EnterpriseSelect value={type} onValueChange={(value) => setType(value as NoticeType)} options={noticeTypes.map((item) => ({ value: item, label: NOTICE_CONFIG[item].label }))} />
                 </div>
 
                 <div>
@@ -291,27 +265,14 @@ export default function NoticesPage() {
               </div>
 
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  disabled={publishing}
-                  className="h-12 rounded-xl border border-[#d8e6f8] bg-white px-4 font-black text-[#53617d] transition hover:bg-[#edf5ff] disabled:opacity-60"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={publish}
-                  disabled={publishing || !title.trim() || !body.trim() || !activeMess}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70"
-                >
+                <EnterpriseButton tone="secondary" size="lg" onClick={() => setShowModal(false)} disabled={publishing}>Cancel</EnterpriseButton>
+                <EnterpriseButton size="lg" onClick={publish} disabled={publishing || !title.trim() || !body.trim() || !activeMess} className="gap-2">
                   {publishing ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
                   {publishing ? 'Publishing...' : 'Publish Notice'}
-                </button>
+                </EnterpriseButton>
               </div>
             </div>
-          </div>
-        </div>
+        </EnterpriseDetailsDrawer>
       )}
     </div>
   )

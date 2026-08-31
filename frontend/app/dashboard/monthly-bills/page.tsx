@@ -148,7 +148,7 @@ export default function MonthlyBillPage() {
         </div>
 
         <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label className="flex h-11 w-full items-center gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 shadow-sm transition focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)] sm:max-w-xl">
+          <label className="box-border flex h-11 w-full items-center gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand-ring)] sm:max-w-xl">
             <Search size={17} className="shrink-0 text-[var(--brand)]" />
             <input
               type="text"

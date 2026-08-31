@@ -16,11 +16,11 @@ interface EnterpriseButtonProps extends Omit<ComponentProps<typeof Button>, 'chi
 }
 
 const toneClasses: Record<EnterpriseButtonTone, string> = {
-  primary: 'border-transparent bg-[var(--brand)] text-white shadow-[0_8px_20px_var(--brand-shadow)] hover:bg-[var(--brand-hover)]',
-  secondary: 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] shadow-sm hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)]',
-  danger: 'border-rose-200 bg-rose-50 text-rose-700 shadow-sm hover:bg-rose-100',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm hover:bg-emerald-100',
-  warning: 'border-amber-200 bg-amber-50 text-amber-700 shadow-sm hover:bg-amber-100',
+  primary: 'border-transparent bg-[var(--brand)] text-white shadow-[0_8px_20px_var(--brand-shadow)] hover:bg-[var(--brand-hover)] hover:text-white',
+  secondary: 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] shadow-sm hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--dashboard-ink)]',
+  danger: 'border-rose-200 bg-rose-50 text-rose-700 shadow-sm hover:bg-rose-100 hover:text-rose-800',
+  success: 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm hover:bg-emerald-100 hover:text-emerald-800',
+  warning: 'border-amber-200 bg-amber-50 text-amber-700 shadow-sm hover:bg-amber-100 hover:text-amber-800',
 }
 
 const sizeClasses: Record<EnterpriseButtonSize, string> = {

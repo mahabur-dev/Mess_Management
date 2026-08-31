@@ -199,67 +199,50 @@ export default function MonthlyBillPage() {
 
         {/* Desktop Table */}
         <div className="hidden overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)] sm:block">
-          <div className="monthly-bills-table-scroll overflow-x-auto pb-2">
-            <table className="w-full min-w-[1120px]">
+            <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Member</th>
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Month</th>
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Meals</th>
-                  {['Food Bill', 'Rent', 'Utilities', 'Total Cost', 'Prev Bal', 'Deposit/Paid', 'Due', 'Remaining', 'Status', 'Actions'].map(h => (
-                    <th key={h} className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">{h}</th>
+                  {['Member', 'Meals', 'Total cost', 'Deposit', 'Due', 'Status'].map(h => (
+                    <th key={h} className="px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e6ebf4]">
-                {loading && (<tr><td colSpan={13} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading monthly bills...</div></td></tr>)}
-                {!loading && filteredBills.length === 0 && (<tr><td colSpan={13} className="px-5 py-12 text-center"><div className="flex flex-col items-center gap-2"><ReceiptText size={40} className="text-[#d8e6f8]" /><p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p></div></td></tr>)}
+                {loading && (<tr><td colSpan={6} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading monthly bills...</div></td></tr>)}
+                {!loading && filteredBills.length === 0 && (<tr><td colSpan={6} className="px-5 py-12 text-center"><div className="flex flex-col items-center gap-2"><ReceiptText size={40} className="text-[#d8e6f8]" /><p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p></div></td></tr>)}
                 {!loading && filteredBills.map((bill) => {
                   const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
                   return (
-                    <tr key={bill.id} className="transition hover:bg-[#f8faff]">
-                      <td className="px-5 py-4">
+                    <tr key={bill.id} onClick={() => setViewingBill(bill)} className="cursor-pointer transition hover:bg-[#f8faff]">
+                      <td className="px-4 py-4">
                         <p className="text-sm font-bold text-[#172554]">{bill.member?.name ?? 'My Bill'}</p>
                         {bill.member?.email && <p className="mt-0.5 text-xs font-bold text-[#6b7a99]">{bill.member.email}</p>}
                       </td>
-                      <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
-                          <CalendarDays size={13} className="text-[#ffb84d]" /> {formatMonth(bill.month)}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-4">
                         <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#e7f1ff] px-2 text-sm font-bold text-[#2f80ed]">{bill.total_meals}</span>
                       </td>
-                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.food_bill)}</td>
-                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.seat_rent)}</td>
-                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(bill.utility_share)}</td>
-                      <td className="px-5 py-4 text-sm font-bold text-[#172554]">{money(getTotalCost(bill))}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-4 text-sm font-bold text-[#172554]">{money(getTotalCost(bill))}</td>
+                      <td className="hidden">
                         <span className={`text-sm font-bold inline-flex items-center gap-0.5 ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>
                           {Number(bill.prev_balance) > 0 && <span>+</span>}
                           {Number(bill.prev_balance) < 0 && <span>−</span>}
                           {Number(bill.prev_balance) === 0 ? <span className="text-[10px]">Paid</span> : money(Math.abs(Number(bill.prev_balance)))}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-sm font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-4 text-sm font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</td>
+                      <td className="px-4 py-4">
                         <span className={`text-sm font-bold ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</span>
                       </td>
-                      <td className="px-5 py-4 text-sm font-bold text-[#ff8c00]">{money(getRemainingBalance(bill))}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-4">
                         <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
                           {statusConf.icon}{statusConf.label}
                         </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <button type="button" onClick={() => setViewingBill(bill)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 text-xs font-black text-[var(--brand-dark)] transition hover:bg-[var(--brand-softer)]"><Eye size={14} /> View</button>
                       </td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
-          </div>
           {!loading && filteredBills.length > 0 && (
             <div className="border-t-2 border-[#d8e6f8] bg-[#f8faff] px-5 py-4">
               <div className="flex items-center justify-between">
@@ -307,7 +290,7 @@ export default function MonthlyBillPage() {
                   </div>
                 </div>
                 <div className="p-4">
-                  <div className="mb-3 grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
                       <p className="text-[10px] font-black uppercase text-[#6b7a99]">Meals</p>
                       <p className="mt-1 text-sm font-bold text-[#2f80ed]">{bill.total_meals}</p>
@@ -317,11 +300,15 @@ export default function MonthlyBillPage() {
                       <p className="mt-1 text-sm font-bold text-emerald-600">{money(getTotalCost(bill))}</p>
                     </div>
                     <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
+                      <p className="text-[10px] font-black uppercase text-[#6b7a99]">Deposit</p>
+                      <p className="mt-1 text-sm font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</p>
+                    </div>
+                    <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 text-center">
                       <p className="text-[10px] font-black uppercase text-[#6b7a99]">Due</p>
                       <p className={`mt-1 text-sm font-bold ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#e6ebf4] bg-[#f8faff] p-3 text-xs">
+                  <div className="hidden grid-cols-2 gap-2 rounded-xl border border-[#e6ebf4] bg-[#f8faff] p-3 text-xs">
                     <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Food</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.food_bill)}</p></div>
                     <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Rent</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.seat_rent)}</p></div>
                     <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Utility</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.utility_share)}</p></div>

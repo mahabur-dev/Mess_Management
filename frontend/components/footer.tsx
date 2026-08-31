@@ -57,7 +57,7 @@ export function Footer() {
 
           {footerGroups.map((group) => (
             <div key={group.title}>
-              <h3 className="text-sm font-black text-foreground">{group.title}</h3>
+              <h3 className="text-sm font-semibold text-foreground">{group.title}</h3>
               <ul className="mt-4 space-y-3">
                 {group.links.map((link) => (
                   <li key={link.href}>
@@ -71,7 +71,7 @@ export function Footer() {
           ))}
 
           <div>
-            <h3 className="text-sm font-black text-foreground">Let’s stay connected</h3>
+            <h3 className="text-sm font-semibold text-foreground">Let’s stay connected</h3>
             <p className="mt-4 text-sm font-medium leading-6 text-muted-foreground">
               Questions about your mess setup? Our team is ready to help.
             </p>
@@ -83,7 +83,7 @@ export function Footer() {
                 <Phone size={15} /> 01797515386
               </a>
             </div>
-            <Link href="/contact" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[var(--brand)] hover:text-[var(--brand-hover)]">
+            <Link href="/contact" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]">
               Contact our team <ArrowRight size={15} />
             </Link>
           </div>

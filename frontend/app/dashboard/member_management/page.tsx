@@ -6,6 +6,7 @@ import { apiClient, ApiError, type MemberJoinRequest, type Mess as ApiMess } fro
 import { DashboardHeader } from '@/components/dashboard-header';
 import { EnterpriseButton } from '@/components/ui/enterprise-button';
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer';
+import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer';
 import { EnterpriseSelect } from '@/components/ui/enterprise-select';
 
 // ─── Types & Interfaces ─────────────────────────────────────────────────────
@@ -155,22 +156,23 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
       title="Change member role"
       description={member.user.email}
       headerIcon={<UserCog className="size-5" />}
+      footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={onClose} disabled={loading}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={handleSave} disabled={loading}>{loading && <Loader2 size={15} className="animate-spin" />}{loading ? 'Saving...' : 'Save Role'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
     >
         <div className="space-y-5">
           <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] p-3">
             <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-black"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-semibold"
               style={{ backgroundColor: `${avatarColor(member.user_id)}18`, borderColor: `${avatarColor(member.user_id)}55`, color: avatarColor(member.user_id) }}
             >
               {getInitials(member.user.name)}
             </div>
             <div className="min-w-0">
-              <h3 className="truncate text-base font-black text-[#172554]">{member.user.name}</h3>
+              <h3 className="truncate text-base font-semibold text-[#172554]">{member.user.name}</h3>
               <p className="truncate text-sm font-semibold text-[#6b7a99]">{member.user.email}</p>
             </div>
           </div>
 
-          <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
             Role
           </label>
           <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -182,7 +184,7 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
                   key={r}
                   type="button"
                   onClick={() => setRole(r)}
-                  className={`flex min-h-[54px] items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                  className={`flex min-h-[54px] items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition active:scale-[0.98] ${
                     selected
                       ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-[0_12px_28px_rgba(47,128,237,0.16)]'
                       : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
@@ -193,14 +195,6 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
                 </button>
               );
             })}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
-            <EnterpriseButton tone="secondary" size="lg" onClick={onClose} disabled={loading}>Cancel</EnterpriseButton>
-            <EnterpriseButton size="lg" onClick={handleSave} disabled={loading} className="gap-2">
-              {loading && <Loader2 size={15} className="animate-spin" />}
-              {loading ? 'Saving...' : 'Save Role'}
-            </EnterpriseButton>
           </div>
         </div>
     </EnterpriseDetailsDrawer>
@@ -273,25 +267,26 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
       title="Edit member"
       description={member.user.email}
       headerIcon={<Pencil className="size-5" />}
+      footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={onClose} disabled={loading}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={handleSave} disabled={loading}>{loading && <Loader2 size={15} className="animate-spin" />}{loading ? 'Saving...' : 'Save Changes'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
     >
         <div className="space-y-5">
           {/* Member Info */}
           <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] p-3">
             <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-black"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-semibold"
               style={{ backgroundColor: `${avatarColor(member.user_id)}18`, borderColor: `${avatarColor(member.user_id)}55`, color: avatarColor(member.user_id) }}
             >
               {getInitials(member.user.name)}
             </div>
             <div className="min-w-0">
-              <h3 className="truncate text-base font-black text-[#172554]">{member.user.name}</h3>
+              <h3 className="truncate text-base font-semibold text-[#172554]">{member.user.name}</h3>
               <p className="truncate text-sm font-semibold text-[#6b7a99]">{member.user.email}</p>
             </div>
           </div>
 
           {/* Room Selection */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
               <DoorOpen size={12} className="mr-1 inline" />
               Room Assignment
             </label>
@@ -301,7 +296,7 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
           {/* Financial Fields */}
           <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                 <DollarSign size={12} className="mr-1 inline" />
                 Monthly Rent
               </label>
@@ -316,7 +311,7 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
               />
             </div>
             <div>
-              <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                 <Building size={12} className="mr-1 inline" />
                 Deposit Amount
               </label>
@@ -334,14 +329,14 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
 
           {/* Active Status */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
               Membership Status
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setIsActive(true)}
-                className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition active:scale-[0.98] ${
                   isActive
                     ? 'border-emerald-500/40 bg-emerald-50 text-emerald-600 shadow-[0_8px_20px_rgba(16,185,129,0.16)]'
                     : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
@@ -353,7 +348,7 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
               <button
                 type="button"
                 onClick={() => setIsActive(false)}
-                className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition active:scale-[0.98] ${
+                className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition active:scale-[0.98] ${
                   !isActive
                     ? 'border-red-500/40 bg-red-50 text-red-600 shadow-[0_8px_20px_rgba(239,68,68,0.16)]'
                     : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
@@ -370,14 +365,6 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
               {error}
             </div>
           )}
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
-            <EnterpriseButton tone="secondary" size="lg" onClick={onClose} disabled={loading}>Cancel</EnterpriseButton>
-            <EnterpriseButton size="lg" onClick={handleSave} disabled={loading} className="gap-2">
-              {loading && <Loader2 size={15} className="animate-spin" />}
-              {loading ? 'Saving...' : 'Save Changes'}
-            </EnterpriseButton>
-          </div>
         </div>
     </EnterpriseDetailsDrawer>
   );
@@ -452,11 +439,12 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
       title="Add new member"
       description="Invite a member and set their room assignment."
       headerIcon={<UserPlus className="size-5" />}
+      footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={onClose} disabled={loading}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" type="submit" form="add-member-form" disabled={loading}>{loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}{loading ? 'Adding...' : 'Add Member'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
     >
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form id="add-member-form" onSubmit={handleSubmit} className="space-y-5">
           {/* Email Input */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
               User Email
             </label>
             <input
@@ -470,7 +458,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
 
           {/* Selected Mess */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
               Selected Mess
             </label>
             <div className="flex h-[48px] w-full items-center rounded-xl border border-[#d8e6f8] bg-[#f8faff] px-4 text-sm font-bold text-[#172554]">
@@ -479,7 +467,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
           </div>
 
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
               Select Room
             </label>
             <EnterpriseSelect
@@ -498,7 +486,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
 
           {/* Role Selection */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
               Role
             </label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -529,19 +517,6 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
               {error}
             </div>
           )}
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
-            <EnterpriseButton tone="secondary" size="lg" onClick={onClose} disabled={loading}>Cancel</EnterpriseButton>
-            <EnterpriseButton
-              type="submit"
-              size="lg"
-              disabled={loading}
-              className="gap-2"
-            >
-              {loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
-              {loading ? 'Adding...' : 'Add Member'}
-            </EnterpriseButton>
-          </div>
         </form>
     </EnterpriseDetailsDrawer>
   )
@@ -570,14 +545,14 @@ function MobileMemberRow({
     <div className="rounded-xl border border-[#e6ebf4] bg-white shadow-sm transition-all hover:border-[#a9ccfb] hover:shadow-md">
       <div className="flex items-center gap-3 px-4 py-3">
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-black"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold"
           style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}
         >
           {getInitials(member.user.name)}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-black text-[#172554]">{member.user.name}</h3>
+            <h3 className="truncate text-sm font-semibold text-[#172554]">{member.user.name}</h3>
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
               style={{ backgroundColor: cfg.bgColor, color: cfg.textColor }}
@@ -701,7 +676,7 @@ function MembersTable({
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">
+              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">
                 <button
                   onClick={() => toggleSort('name')}
                   className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
@@ -710,13 +685,13 @@ function MembersTable({
                   <SortIcon field="name" />
                 </button>
               </th>
-              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] md:table-cell">
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] md:table-cell">
                 Email & Phone
               </th>
-              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] lg:table-cell">
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] lg:table-cell">
                 Mess
               </th>
-              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">
+              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">
                 <button
                   onClick={() => toggleSort('role')}
                   className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
@@ -725,7 +700,7 @@ function MembersTable({
                   <SortIcon field="role" />
                 </button>
               </th>
-              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
                 <button
                   onClick={() => toggleSort('joined_at')}
                   className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
@@ -734,10 +709,10 @@ function MembersTable({
                   <SortIcon field="joined_at" />
                 </button>
               </th>
-              <th className="hidden whitespace-nowrap px-4 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
+              <th className="hidden whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
                 Status
               </th>
-              <th className="whitespace-nowrap px-4 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">
+              <th className="whitespace-nowrap px-4 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">
                 Actions
               </th>
             </tr>
@@ -756,7 +731,7 @@ function MembersTable({
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-black"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold"
                         style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}
                       >
                         {getInitials(member.user.name)}
@@ -876,19 +851,19 @@ function MemberJoinRequestsPanel({
           <div className="flex items-center gap-3.5">
             <span className="relative grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-white shadow-[0_8px_20px_rgba(47,128,237,0.28)]">
               <UserPlus size={20} />
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-white ring-2 ring-white">
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-semibold text-white ring-2 ring-white">
                 {requests.length}
               </span>
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Pending Approval</p>
-              <h2 className="text-base font-black text-[#172554]">Member Join Requests</h2>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Pending Approval</p>
+              <h2 className="text-base font-semibold text-[#172554]">Member Join Requests</h2>
               <p className="mt-0.5 text-xs font-semibold text-[#8a9bb5]">
                 Review who wants to join your mess
               </p>
             </div>
           </div>
-          <span className="hidden items-center gap-1.5 rounded-full border border-amber-200/70 bg-amber-50 px-3.5 py-1.5 text-xs font-black text-amber-700 sm:inline-flex">
+          <span className="hidden items-center gap-1.5 rounded-full border border-amber-200/70 bg-amber-50 px-3.5 py-1.5 text-xs font-semibold text-amber-700 sm:inline-flex">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
@@ -924,7 +899,7 @@ function MemberJoinRequestsPanel({
                 <div className="flex items-start gap-3.5">
                   <div className="relative shrink-0">
                     <div
-                      className="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-black shadow-sm ring-2 ring-white"
+                      className="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-semibold shadow-sm ring-2 ring-white"
                       style={{
                         background: `linear-gradient(135deg, ${color}22, ${color}0d)`,
                         border: `1.5px solid ${color}55`,
@@ -938,7 +913,7 @@ function MemberJoinRequestsPanel({
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-[15px] font-black text-[#172554] group-hover:text-[#2f80ed]">
+                    <h3 className="truncate text-[15px] font-semibold text-[#172554] group-hover:text-[#2f80ed]">
                       {request.requester?.name || 'Unknown User'}
                     </h3>
                     <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-semibold text-[#6b7a99]">
@@ -972,7 +947,7 @@ function MemberJoinRequestsPanel({
                     type="button"
                     onClick={() => onReview(request.id, 'APPROVED')}
                     disabled={isReviewing}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-50 text-xs font-black text-emerald-700 shadow-[0_4px_12px_rgba(16,185,129,0.10)] transition hover:border-emerald-500/50 hover:bg-emerald-100 hover:shadow-[0_6px_16px_rgba(16,185,129,0.18)] active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-50 text-xs font-semibold text-emerald-700 shadow-[0_4px_12px_rgba(16,185,129,0.10)] transition hover:border-emerald-500/50 hover:bg-emerald-100 hover:shadow-[0_6px_16px_rgba(16,185,129,0.18)] active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
                   >
                     {isReviewing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={15} />}
                     <span>Accept</span>
@@ -981,7 +956,7 @@ function MemberJoinRequestsPanel({
                     type="button"
                     onClick={() => onReview(request.id, 'REJECTED')}
                     disabled={isReviewing}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-50 text-xs font-black text-red-700 shadow-[0_4px_12px_rgba(239,68,68,0.08)] transition hover:border-red-500/50 hover:bg-red-100 hover:shadow-[0_6px_16px_rgba(239,68,68,0.16)] active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-50 text-xs font-semibold text-red-700 shadow-[0_4px_12px_rgba(239,68,68,0.08)] transition hover:border-red-500/50 hover:bg-red-100 hover:shadow-[0_6px_16px_rgba(239,68,68,0.16)] active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
                   >
                     <X size={15} />
                     <span>Reject</span>

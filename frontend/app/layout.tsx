@@ -1,10 +1,18 @@
 import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
-import type { CSSProperties } from 'react'
+import localFont from 'next/font/local'
 import { AuthProvider } from './context/auth-context'
 import { SWRProvider } from './swr-provider'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
+
+const inter = localFont({
+  src: '../public/fonts/InterVariable.woff2',
+  display: 'swap',
+  variable: '--font-dashboard-sans',
+  weight: '100 900',
+  style: 'normal',
+})
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -46,15 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      style={
-        {
-          '--font-dashboard-sans':
-            'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-          '--font-geist-mono':
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-        } as CSSProperties
-      }
-      className="bg-background"
+      className={`${inter.variable} bg-background`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>

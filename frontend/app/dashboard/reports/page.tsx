@@ -47,7 +47,7 @@ export default function ReportsPage() {
             <BarChart3 size={24} className="text-[#8b5cf6]" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-[#172554]">Dashboard Reports</h2>
+            <h2 className="text-lg font-semibold text-[#172554]">Dashboard Reports</h2>
             <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
               {mess ? `${mess.name} - Summary overview` : 'Reports and analytics'}
             </p>
@@ -67,10 +67,10 @@ export default function ReportsPage() {
                 <div className="relative z-10">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="truncate text-[11px] font-black uppercase tracking-[0.1em] text-muted-foreground">
+                      <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         {label}
                       </p>
-                      <p className="mt-3 text-3xl font-black tracking-tight text-foreground">
+                      <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
                         {value}
                       </p>
                     </div>
@@ -97,7 +97,7 @@ export default function ReportsPage() {
                 <FileText size={22} />
               </div>
               <div>
-                <h3 className="text-base font-black text-foreground">PDF/Excel Export Ready</h3>
+                <h3 className="text-base font-semibold text-foreground">PDF/Excel Export Ready</h3>
                 <p className="mt-1.5 text-sm font-semibold leading-relaxed text-muted-foreground">
                   The report dashboard is connected to backend summary data and ready for export buttons.
                   All key metrics—meal counts, expenses, dues, and payments—are pulled from live data.

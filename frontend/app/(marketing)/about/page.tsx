@@ -43,7 +43,7 @@ export default function AboutPage() {
         <div className="marketing-container relative grid items-center gap-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <span className="marketing-eyebrow">About Messzen</span>
-            <h1 className="mt-5 text-4xl font-black leading-[1.08] tracking-[-0.05em] text-foreground sm:text-5xl">
+            <h1 className="mt-5 text-4xl font-semibold leading-[1.08] tracking-[-0.05em] text-foreground sm:text-5xl">
               Shared living deserves a clearer system.
             </h1>
             <p className="mt-5 text-base font-medium leading-8 text-muted-foreground">
@@ -64,7 +64,7 @@ export default function AboutPage() {
             {values.map(({ title, text, icon: Icon }) => (
               <article key={title} className="marketing-card marketing-card-hover rounded-2xl p-6">
                 <span className="icon-tile"><Icon size={21} /></span>
-                <h2 className="mt-5 text-base font-black text-foreground">{title}</h2>
+                <h2 className="mt-5 text-base font-semibold text-foreground">{title}</h2>
                 <p className="mt-2 text-sm font-medium leading-6 text-muted-foreground">{text}</p>
               </article>
             ))}
@@ -79,14 +79,14 @@ export default function AboutPage() {
               {capabilities.map(({ label, icon: Icon }) => (
                 <div key={label} className="rounded-xl bg-white/12 p-4 ring-1 ring-white/15 backdrop-blur-sm">
                   <Icon size={22} />
-                  <p className="mt-3 text-sm font-black">{label}</p>
+                  <p className="mt-3 text-sm font-semibold">{label}</p>
                 </div>
               ))}
             </div>
           </div>
           <div>
             <span className="marketing-eyebrow">Why we built it</span>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground sm:text-4xl">One source of truth for the whole mess</h2>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">One source of truth for the whole mess</h2>
             <p className="mt-4 text-sm font-medium leading-7 text-muted-foreground sm:text-base">
               When everyone can see the same meal records, expenses, deposits, notices, and bills, daily operations become faster and disagreements become easier to avoid.
             </p>
@@ -108,7 +108,7 @@ export default function AboutPage() {
             </div>
             <div className="text-center lg:text-left">
               <p className="marketing-eyebrow">Founder</p>
-              <h2 className="mt-3 text-2xl font-black text-foreground">Mahabur Rahman</h2>
+              <h2 className="mt-3 text-2xl font-semibold text-foreground">Mahabur Rahman</h2>
               <p className="mt-1 text-sm font-bold text-[var(--brand)]">Founder, Messzen</p>
             </div>
             <blockquote className="border-t border-[var(--marketing-line)] pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">

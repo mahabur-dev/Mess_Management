@@ -60,7 +60,7 @@ function Stat({ stat }: { stat: MarketingStat }) {
     <div ref={ref} className="flex items-center justify-center gap-4 px-5 py-4 text-left">
       <Icon size={25} className="shrink-0 text-[var(--brand)]" />
       <div>
-        <p className="text-xl font-black tabular-nums text-foreground">{shown}{stat.suffix}</p>
+        <p className="text-xl font-semibold tabular-nums text-foreground">{shown}{stat.suffix}</p>
         <p className="mt-0.5 text-xs font-medium text-muted-foreground">{stat.label}</p>
       </div>
     </div>

@@ -27,6 +27,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import { normalizePathname, type AuthUser, type MessMembership } from './auth'
+import { APP_FEATURES } from './feature-flags'
 
 export type AppIcon = ComponentType<LucideProps>
 export type AccessLevel = 'public' | 'mess' | 'manager'
@@ -217,7 +218,9 @@ export function getMoreMenuGroups(user: AuthUser | null | undefined): MoreMenuGr
         { href: '/personal', label: 'Personal', description: 'Income, expenses, savings and family budgets', icon: CircleDollarSign, access: 'public' },
         { href: '/complaints', label: 'Complaints', description: 'Raise and follow up issues', icon: MessageSquareWarning, access: 'mess' },
         { href: '/mess-management', label: 'Mess Management', description: 'Rooms, rules and billing setup', icon: Settings, access: 'manager' },
-        { href: '/subscription', label: 'Subscription', description: 'Current plan and available plans', icon: Crown, access: 'mess' },
+        ...(APP_FEATURES.subscriptions
+          ? [{ href: '/subscription', label: 'Subscription', description: 'Current plan and available plans', icon: Crown, access: 'mess' as const }]
+          : []),
       ],
     },
     {
@@ -244,6 +247,7 @@ export function canAccessAppPath(user: AuthUser | null | undefined, pathname: st
   const normalizedPathname = normalizePathname(pathname)
 
   if (normalizedPathname === '/' || normalizedPathname === '/more') return true
+  if (!APP_FEATURES.subscriptions && normalizedPathname.startsWith('/subscription')) return false
 
   const route = protectedRoutes.find((item) => {
     if (item.exact) return normalizedPathname === item.href

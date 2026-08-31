@@ -22,7 +22,7 @@ function sourceLabel(source: ContactRequestSource, plan?: SubscriptionPlan | nul
 }
 
 const inputClass = 'h-12 rounded-xl border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-4 text-sm font-semibold text-foreground placeholder:text-muted-foreground focus-visible:border-[var(--brand)] focus-visible:ring-[var(--brand-ring)]'
-const labelClass = 'mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground'
+const labelClass = 'mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground'
 
 export function ContactPageClient({ source, requestedPlan }: { source: ContactRequestSource; requestedPlan: SubscriptionPlan | null }) {
   const router = useRouter()
@@ -70,7 +70,7 @@ export function ContactPageClient({ source, requestedPlan }: { source: ContactRe
         <div className="mx-auto max-w-2xl">
           <div className="mb-7 text-center">
             <p className="marketing-eyebrow">{title}</p>
-            <h1 className="mt-4 text-3xl font-black tracking-[-0.035em] text-foreground sm:text-4xl">Let’s talk</h1>
+            <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em] text-foreground sm:text-4xl">Let’s talk</h1>
             <p className="mt-3 text-sm font-medium leading-7 text-muted-foreground">Tell us what you need and our team will get back to you.</p>
           </div>
 
@@ -78,7 +78,7 @@ export function ContactPageClient({ source, requestedPlan }: { source: ContactRe
             <div className="p-6 sm:p-8">
               {success ? (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                  <p className="flex items-center gap-2 text-lg font-black"><CheckCircle2 size={19} /> Request submitted</p>
+                  <p className="flex items-center gap-2 text-lg font-semibold"><CheckCircle2 size={19} /> Request submitted</p>
                   <p className="mt-2 text-sm font-medium leading-7">{success}</p>
                   <Button type="button" onClick={() => router.push('/')} className="brand-button mt-5 h-11 px-5">Back to home</Button>
                 </div>

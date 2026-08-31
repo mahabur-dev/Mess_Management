@@ -84,7 +84,7 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
             Full Name
           </label>
           <div className="relative">
@@ -101,7 +101,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
             Email Address
           </label>
           <div className="relative">
@@ -119,7 +119,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
             Phone Number
           </label>
           <div className="relative">
@@ -138,7 +138,7 @@ export default function RegisterPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#64748b]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
               Password
             </label>
             <div className="relative">
@@ -164,7 +164,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#64748b]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
               Confirm
             </label>
             <div className="relative">

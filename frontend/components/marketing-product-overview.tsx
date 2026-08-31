@@ -82,7 +82,7 @@ export function MarketingProductOverview() {
       aria-label="Animated Messzen dashboard product overview"
     >
       <div className="absolute inset-y-0 left-0 w-[21%] border-r border-[#dce9ec] bg-white px-[2.2%] py-[3%]">
-        <div className="flex items-center gap-[6%] px-[4%] text-[clamp(7px,1.25vw,12px)] font-black text-[#007f76]">
+        <div className="flex items-center gap-[6%] px-[4%] text-[clamp(7px,1.25vw,12px)] font-semibold text-[#007f76]">
           <span className="grid aspect-square w-[18%] place-items-center rounded-[30%] border-2 border-[#008d8c] text-[.8em]">M</span>
           <span>messzen</span>
         </div>
@@ -103,9 +103,9 @@ export function MarketingProductOverview() {
         </div>
         <div className="absolute inset-x-[11%] bottom-[5%] rounded-[8px] bg-[#f2f6fb] px-[9%] py-[8%]">
           <div className="flex items-center gap-[8%]">
-            <span className="grid aspect-square w-[24%] place-items-center rounded-full bg-[#ddf5f2] text-[clamp(5px,.8vw,8px)] font-black text-[#007f76]">MR</span>
+            <span className="grid aspect-square w-[24%] place-items-center rounded-full bg-[#ddf5f2] text-[clamp(5px,.8vw,8px)] font-semibold text-[#007f76]">MR</span>
             <div className="min-w-0">
-              <p className="truncate text-[clamp(5px,.82vw,8px)] font-black">Mahabur Rahman</p>
+              <p className="truncate text-[clamp(5px,.82vw,8px)] font-semibold">Mahabur Rahman</p>
               <p className="text-[clamp(4px,.65vw,6px)] font-bold uppercase text-[#74869b]">Manager</p>
             </div>
           </div>
@@ -115,7 +115,7 @@ export function MarketingProductOverview() {
       <div className="absolute inset-y-0 left-[21%] right-0">
         <header className="flex h-[18%] items-center justify-between border-b border-[#dce9ec] bg-white px-[4%]">
           <div>
-            <p className="text-[clamp(8px,1.45vw,14px)] font-black">Dashboard</p>
+            <p className="text-[clamp(8px,1.45vw,14px)] font-semibold">Dashboard</p>
             <p className="mt-[2%] text-[clamp(5px,.75vw,8px)] font-semibold text-[#71839a]">Together We Dine overview</p>
           </div>
           <div className="flex items-center gap-[5px]">
@@ -142,8 +142,8 @@ export function MarketingProductOverview() {
                   key={id}
                   className={`relative min-h-0 rounded-[8px] bg-gradient-to-br ${tone} px-[8%] py-[7%] text-white shadow-sm transition-all duration-500 ${highlighted ? 'z-10 -translate-y-0.5 scale-[1.045] ring-2 ring-white ring-offset-2 ring-offset-[#e8f0f4]' : activeStep.id !== 'dashboard' && ['members', 'meals', 'deposit', 'expenses'].includes(activeStep.id) ? 'opacity-65' : ''}`}
                 >
-                  <p className="text-[clamp(4px,.65vw,7px)] font-black uppercase tracking-[.08em] opacity-90">{label}</p>
-                  <p className="mt-[7%] text-[clamp(8px,1.5vw,15px)] font-black leading-none">{value}</p>
+                  <p className="text-[clamp(4px,.65vw,7px)] font-semibold uppercase tracking-[.08em] opacity-90">{label}</p>
+                  <p className="mt-[7%] text-[clamp(8px,1.5vw,15px)] font-semibold leading-none">{value}</p>
                   <Icon className="absolute bottom-[15%] right-[8%] w-[15%] opacity-70" />
                 </article>
               )
@@ -153,7 +153,7 @@ export function MarketingProductOverview() {
           <div className="mt-[3%] grid h-[43%] grid-cols-[1.35fr_.75fr] gap-[2.2%]">
             <article className={`rounded-[8px] border border-[#dce7ec] bg-white px-[5%] py-[4%] transition-all duration-500 ${activeStep.id === 'analytics' ? 'scale-[1.025] border-[#008d8c] shadow-lg ring-2 ring-[#008d8c]/10' : ''}`}>
               <div className="flex items-center justify-between">
-                <p className="text-[clamp(5px,.82vw,8px)] font-black">Monthly overview</p>
+                <p className="text-[clamp(5px,.82vw,8px)] font-semibold">Monthly overview</p>
                 <span className="flex items-center gap-1 text-[clamp(4px,.6vw,6px)] font-bold text-emerald-600"><TrendingUp className="w-2" /> Live</span>
               </div>
               <div className="relative mt-[6%] h-[62%] border-b border-l border-[#dce7ec]">
@@ -167,7 +167,7 @@ export function MarketingProductOverview() {
             </article>
 
             <article className={`rounded-[8px] border border-[#dce7ec] bg-white px-[7%] py-[7%] transition-all duration-500 ${activeStep.id === 'quick-add' ? 'scale-[1.025] border-[#008d8c] shadow-lg ring-2 ring-[#008d8c]/10' : ''}`}>
-              <p className="text-[clamp(5px,.82vw,8px)] font-black">Quick actions</p>
+              <p className="text-[clamp(5px,.82vw,8px)] font-semibold">Quick actions</p>
               <div className="mt-[8%] grid grid-cols-2 gap-[6%]">
                 {[
                   { label: 'AI Add', icon: Sparkles },
@@ -194,7 +194,7 @@ export function MarketingProductOverview() {
           <span key={step} className="absolute -left-2 -top-2 size-7 animate-ping rounded-full bg-[#ff7a1a]/35" />
           <MousePointer2 className="relative w-[clamp(16px,2.5vw,26px)] fill-[#123748] text-white drop-shadow-[0_3px_4px_rgba(0,0,0,.32)]" strokeWidth={1.5} />
           <div className={`absolute left-5 top-5 w-[150px] rounded-lg bg-[#102f39] px-3 py-2 text-white shadow-xl transition-opacity sm:w-[180px] ${activeStep.x > 65 ? '-ml-6 -translate-x-full' : ''}`}>
-            <p className="text-[9px] font-black sm:text-[11px]">{activeStep.title}</p>
+            <p className="text-[9px] font-semibold sm:text-[11px]">{activeStep.title}</p>
             <p className="mt-0.5 text-[7px] font-medium leading-3 text-white/70 sm:text-[9px] sm:leading-4">{activeStep.detail}</p>
           </div>
         </div>
@@ -210,7 +210,7 @@ export function MarketingProductOverview() {
             className={`h-1.5 rounded-full transition-all ${step === index ? 'w-4 bg-[#008d8c]' : 'w-1.5 bg-[#bfd3d7] hover:bg-[#7fa9ad]'}`}
           />
         ))}
-        <span className="ml-1 text-[6px] font-black uppercase tracking-wide text-[#5e747a]">{paused ? 'Paused' : 'Overview'}</span>
+        <span className="ml-1 text-[6px] font-semibold uppercase tracking-wide text-[#5e747a]">{paused ? 'Paused' : 'Overview'}</span>
       </div>
     </div>
   )

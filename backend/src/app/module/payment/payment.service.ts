@@ -3,6 +3,7 @@ import { NotificationType, PaymentMethod, PaymentStatus, Prisma } from '@prisma/
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import config from 'src/app/config';
 import {
   CreatePaymentDto,
   PaymentFilterDto,
@@ -144,7 +145,7 @@ export class PaymentService {
   }
 
   private async ensureActiveSubscription(messId: string, role: string) {
-    if (role === 'ADMIN') return;
+    if (!config.features.subscriptionEnabled || role === 'ADMIN') return;
 
     const subscription = await this.prisma.subscription.findUnique({
       where: { mess_id: messId },

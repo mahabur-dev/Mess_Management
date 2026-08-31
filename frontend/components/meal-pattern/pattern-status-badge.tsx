@@ -22,7 +22,7 @@ const icons = {
 export function PatternStatusBadge({ status, className }: { status: MealPatternStatus; className?: string }) {
   const Icon = icons[status]
   return (
-    <span className={cn('inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black', styles[status], className)}>
+    <span className={cn('inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', styles[status], className)}>
       <Icon className="size-3.5" aria-hidden="true" />
       {MEAL_PATTERN_STATUS_LABELS[status]}
     </span>

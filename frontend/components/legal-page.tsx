@@ -39,7 +39,7 @@ export function LegalPage({
           </Link>
           <div className="mt-8 max-w-3xl">
             <span className="marketing-eyebrow gap-2"><HeroIcon size={13} /> {eyebrow}</span>
-            <h1 className="mt-5 text-4xl font-black tracking-[-0.05em] text-foreground sm:text-5xl">{title}</h1>
+            <h1 className="mt-5 text-4xl font-semibold tracking-[-0.05em] text-foreground sm:text-5xl">{title}</h1>
             <p className="mt-5 max-w-2xl text-sm font-medium leading-7 text-muted-foreground sm:text-base">{description}</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-3.5 py-2 text-xs font-bold text-foreground">
@@ -57,12 +57,12 @@ export function LegalPage({
         <div className="marketing-container grid items-start gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="lg:sticky lg:top-24">
             <nav aria-label={`${title} sections`} className="marketing-card rounded-2xl p-5">
-              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--brand)]">On this page</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--brand)]">On this page</p>
               <ol className="mt-4 space-y-1.5">
                 {sections.map((section, index) => (
                   <li key={section.id}>
                     <a href={`#${section.id}`} className="group flex gap-3 rounded-xl px-3 py-2.5 text-xs font-bold leading-5 text-muted-foreground transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
-                      <span className="font-black text-[var(--brand)]/70">{String(index + 1).padStart(2, '0')}</span>
+                      <span className="font-semibold text-[var(--brand)]/70">{String(index + 1).padStart(2, '0')}</span>
                       <span>{section.title}</span>
                     </a>
                   </li>
@@ -71,10 +71,10 @@ export function LegalPage({
             </nav>
 
             <div className="mt-4 rounded-2xl bg-gradient-to-br from-[var(--brand-dark)] to-[var(--brand)] p-5 text-white shadow-[0_16px_38px_var(--brand-shadow)]">
-              <p className="text-sm font-black">Questions about this document?</p>
+              <p className="text-sm font-semibold">Questions about this document?</p>
               <p className="mt-2 text-xs font-medium leading-5 text-white/75">Contact the Messzen team and we will help clarify how these terms apply.</p>
-              <a href="mailto:support@messzen.com" className="mt-4 flex items-center gap-2 text-xs font-black text-white"><Mail size={14} /> support@messzen.com</a>
-              <a href="tel:01797515386" className="mt-2 flex items-center gap-2 text-xs font-black text-white"><Phone size={14} /> 01797515386</a>
+              <a href="mailto:support@messzen.com" className="mt-4 flex items-center gap-2 text-xs font-semibold text-white"><Mail size={14} /> support@messzen.com</a>
+              <a href="tel:01797515386" className="mt-2 flex items-center gap-2 text-xs font-semibold text-white"><Phone size={14} /> 01797515386</a>
             </div>
           </aside>
 
@@ -82,9 +82,9 @@ export function LegalPage({
             {sections.map((section, index) => (
               <section key={section.id} id={section.id} className="marketing-card scroll-mt-24 rounded-2xl p-6 sm:p-8">
                 <div className="flex items-start gap-4">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-xs font-black text-[var(--brand)]">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-xs font-semibold text-[var(--brand)]">{String(index + 1).padStart(2, '0')}</span>
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-black tracking-tight text-foreground sm:text-2xl">{section.title}</h2>
+                    <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{section.title}</h2>
                     <div className="legal-copy mt-4">{section.content}</div>
                   </div>
                 </div>
@@ -93,7 +93,7 @@ export function LegalPage({
 
             <div className="rounded-2xl border border-[var(--brand-border-subtle)] bg-[var(--brand-softer)] p-6 text-center">
               <ShieldCheck className="mx-auto text-[var(--brand)]" size={24} />
-              <p className="mt-3 text-sm font-black text-foreground">Clear policies are part of a trustworthy platform.</p>
+              <p className="mt-3 text-sm font-semibold text-foreground">Clear policies are part of a trustworthy platform.</p>
               <p className="mx-auto mt-2 max-w-xl text-xs font-medium leading-6 text-muted-foreground">If anything here is unclear, contact us before using the relevant feature or continuing your subscription.</p>
             </div>
           </article>

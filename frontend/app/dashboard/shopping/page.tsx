@@ -46,13 +46,13 @@ export default function ShoppingPage() {
               <ShoppingCart size={24} className="text-[#2f80ed]" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[#172554]">Shopping List</h2>
+              <h2 className="text-lg font-semibold text-[#172554]">Shopping List</h2>
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
                 {completedCount} of {items.length} items completed
               </p>
             </div>
           </div>
-          <Button className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
+          <Button className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-semibold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
             <Plus size={18} />
             Add Item
           </Button>
@@ -67,7 +67,7 @@ export default function ShoppingPage() {
               </div>
               <p className="text-sm font-bold text-[#172554]">Overall Progress</p>
             </div>
-            <span className="text-2xl font-black text-[#172554]">{progress}%</span>
+            <span className="text-2xl font-semibold text-[#172554]">{progress}%</span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-[#e6ebf4]">
             <div
@@ -84,11 +84,11 @@ export default function ShoppingPage() {
               <thead>
                 <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
                   <th className="w-12 px-4 py-4"></th>
-                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Item</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Assigned To</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Item</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Assigned To</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e6ebf4]">
@@ -126,7 +126,7 @@ export default function ShoppingPage() {
                       {item.assignedTo ? (
                         <div className="flex items-center gap-2">
                           <div
-                            className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed] to-[#58d68d] text-[10px] font-black text-white shadow-sm"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed] to-[#58d68d] text-[10px] font-semibold text-white shadow-sm"
                           >
                             {item.assignedTo[0].toUpperCase()}
                           </div>
@@ -224,7 +224,7 @@ export default function ShoppingPage() {
                 <div>
                   {item.assignedTo ? (
                     <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed] to-[#58d68d] text-[9px] font-black text-white shadow-sm">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed] to-[#58d68d] text-[9px] font-semibold text-white shadow-sm">
                         {item.assignedTo[0].toUpperCase()}
                       </div>
                       <span className="text-xs font-semibold text-[#6b7a99]">{item.assignedTo}</span>
@@ -250,32 +250,32 @@ export default function ShoppingPage() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
-            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">
               <ShoppingCart size={13} className="text-[#2f80ed]" />
               Total Items
             </p>
-            <p className="mt-1.5 text-2xl font-black text-[#172554]">{items.length}</p>
+            <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{items.length}</p>
           </div>
           <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-4 shadow-sm">
-            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-700">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
               <CircleCheckBig size={13} />
               Completed
             </p>
-            <p className="mt-1.5 text-2xl font-black text-emerald-700">{completedCount}</p>
+            <p className="mt-1.5 text-2xl font-semibold text-emerald-700">{completedCount}</p>
           </div>
           <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 shadow-sm">
-            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-amber-700">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
               <ListChecks size={13} />
               Pending
             </p>
-            <p className="mt-1.5 text-2xl font-black text-amber-700">{items.length - completedCount}</p>
+            <p className="mt-1.5 text-2xl font-semibold text-amber-700">{items.length - completedCount}</p>
           </div>
           <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
-            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">
               <Users size={13} className="text-[#58d68d]" />
               Assigned
             </p>
-            <p className="mt-1.5 text-2xl font-black text-[#172554]">{items.filter((i) => i.assignedTo).length}</p>
+            <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{items.filter((i) => i.assignedTo).length}</p>
           </div>
         </div>
       </div>

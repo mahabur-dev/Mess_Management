@@ -21,6 +21,7 @@ import {
   useTranslations,
 } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
+import { APP_FEATURES } from '@/lib/feature-flags'
 import { useAuth } from '../providers'
 
 type Subscription = {
@@ -56,6 +57,11 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!APP_FEATURES.subscriptions) {
+      setLoading(false)
+      return
+    }
+
     if (messLoading) return
     if (!activeMess?.id) {
       setLoading(false)

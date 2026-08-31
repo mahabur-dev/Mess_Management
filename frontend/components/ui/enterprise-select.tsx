@@ -33,7 +33,7 @@ export function EnterpriseSelect({
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger
         className={cn(
-          'h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 text-sm font-semibold text-[var(--dashboard-ink)] shadow-sm outline-none transition hover:border-[var(--brand-border)] focus:border-[var(--brand)] focus:ring-4 focus:ring-[var(--brand-ring)]',
+          'h-12 min-h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 text-sm font-semibold text-[var(--dashboard-ink)] shadow-sm outline-none transition hover:border-[var(--brand-border)] focus:border-[var(--brand)] focus:ring-4 focus:ring-[var(--brand-ring)]',
           className,
         )}
       >

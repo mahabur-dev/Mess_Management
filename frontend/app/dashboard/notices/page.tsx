@@ -4,6 +4,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { apiClient, type Mess, type Notice, type NoticeType } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
@@ -87,7 +88,7 @@ export default function NoticesPage() {
               <Megaphone size={24} className="text-[#8b5cf6]" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[#172554]">All Notices</h2>
+              <h2 className="text-lg font-semibold text-[#172554]">All Notices</h2>
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
                 {notices.length} notice{notices.length !== 1 ? 's' : ''} posted
               </p>
@@ -106,11 +107,11 @@ export default function NoticesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Type</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Content</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
-                <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Type</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Content</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
+                <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
@@ -229,11 +230,12 @@ export default function NoticesPage() {
           title="Create new notice"
           description="Share a clear update with everyone in the mess."
           headerIcon={<Megaphone className="size-5" />}
+          footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={() => setShowModal(false)} disabled={publishing}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={publish} disabled={publishing || !title.trim() || !body.trim() || !activeMess}>{publishing ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}{publishing ? 'Publishing...' : 'Publish Notice'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
         >
             <div>
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                     Notice Title
                   </label>
                   <input
@@ -245,14 +247,14 @@ export default function NoticesPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                     Notice Type
                   </label>
                   <EnterpriseSelect value={type} onValueChange={(value) => setType(value as NoticeType)} options={noticeTypes.map((item) => ({ value: item, label: NOTICE_CONFIG[item].label }))} />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                     Notice Content
                   </label>
                   <textarea
@@ -262,14 +264,6 @@ export default function NoticesPage() {
                     onChange={(e) => setBody(e.target.value)}
                   />
                 </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
-                <EnterpriseButton tone="secondary" size="lg" onClick={() => setShowModal(false)} disabled={publishing}>Cancel</EnterpriseButton>
-                <EnterpriseButton size="lg" onClick={publish} disabled={publishing || !title.trim() || !body.trim() || !activeMess} className="gap-2">
-                  {publishing ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-                  {publishing ? 'Publishing...' : 'Publish Notice'}
-                </EnterpriseButton>
               </div>
             </div>
         </EnterpriseDetailsDrawer>

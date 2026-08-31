@@ -30,7 +30,7 @@ export function BrandLogo({ className, imageClassName, subtitle, subtitleClassNa
           />
         </svg>
       </span>
-      <span className="text-2xl font-black tracking-tight text-[var(--brand)]">messzen</span>
+      <span className="text-2xl font-semibold tracking-tight text-[var(--brand)]">messzen</span>
       {subtitle && (
         <span className={cn('text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground', subtitleClassName)}>
           {subtitle}

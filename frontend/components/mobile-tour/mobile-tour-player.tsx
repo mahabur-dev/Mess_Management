@@ -67,7 +67,7 @@ export function MobileTourPlayer<TStep extends MobileTourStep>({
       <div className={`mx-auto w-full ${isDevicePresentation ? 'max-w-[340px] [@media(max-height:800px)]:max-w-[320px]' : 'max-w-[390px]'}`}>
         {!isDevicePresentation ? (
           <div className="mb-3 flex items-center justify-between rounded-xl border border-[#d8e5e7] bg-white px-3 py-2 shadow-sm">
-            <div><p className="text-[10px] font-black uppercase tracking-[.13em] text-[#008d8c]">Messzen mobile app</p><p className="mt-0.5 text-xs font-bold text-[#607981]">Automatic app walkthrough</p></div>
+            <div><p className="text-[10px] font-semibold uppercase tracking-[.13em] text-[#008d8c]">Messzen mobile app</p><p className="mt-0.5 text-xs font-bold text-[#607981]">Automatic app walkthrough</p></div>
             <div className="flex gap-1.5">
               <button type="button" onClick={() => setPaused((current) => !current)} className="grid size-8 place-items-center rounded-lg border border-[#d8e5e7] text-[#007f76]" aria-label={paused ? 'Play mobile tour' : 'Pause mobile tour'}>{paused ? <Play className="w-3.5" /> : <Pause className="w-3.5" />}</button>
               <button type="button" onClick={() => { setStepIndex(0); setPaused(false) }} className="grid size-8 place-items-center rounded-lg border border-[#d8e5e7] text-[#007f76]" aria-label="Restart mobile tour"><RefreshCw className="w-3.5" /></button>
@@ -95,14 +95,14 @@ export function MobileTourPlayer<TStep extends MobileTourStep>({
 
         </div>
         <div className={`mt-3 items-center gap-3 rounded-xl border border-[#d8e5e7] bg-white px-3 py-2.5 shadow-sm ${isDevicePresentation ? 'flex' : 'flex lg:hidden'}`}>
-          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e5f6f4] text-[9px] font-black text-[#007f76]">{stepIndex + 1}</span>
-          <div className="min-w-0"><p className="truncate text-[10px] font-black text-[#123748]">{activeStep.title}</p><p className="mt-0.5 line-clamp-2 text-[8px] font-medium leading-3 text-[#607981]">{activeStep.detail}</p></div>
+          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e5f6f4] text-[9px] font-semibold text-[#007f76]">{stepIndex + 1}</span>
+          <div className="min-w-0"><p className="truncate text-[10px] font-semibold text-[#123748]">{activeStep.title}</p><p className="mt-0.5 line-clamp-2 text-[8px] font-medium leading-3 text-[#607981]">{activeStep.detail}</p></div>
         </div>
       </div>
 
       <div className={isDevicePresentation ? 'hidden' : 'hidden lg:block'}>
-        <span className="inline-flex rounded-full bg-[#e2f5f3] px-3 py-1 text-[10px] font-black uppercase tracking-[.13em] text-[#007f76]">Step {stepIndex + 1} of {steps.length}</span>
-        <h2 className="mt-5 max-w-xl text-3xl font-black tracking-[-0.04em] text-[#123748]">{activeStep.title}</h2>
+        <span className="inline-flex rounded-full bg-[#e2f5f3] px-3 py-1 text-[10px] font-semibold uppercase tracking-[.13em] text-[#007f76]">Step {stepIndex + 1} of {steps.length}</span>
+        <h2 className="mt-5 max-w-xl text-3xl font-semibold tracking-[-0.04em] text-[#123748]">{activeStep.title}</h2>
         <p className="mt-3 max-w-lg text-sm font-medium leading-7 text-[#607981]">{activeStep.detail}</p>
         <div className="mt-7 h-1.5 max-w-lg overflow-hidden rounded-full bg-[#dbe9ea]"><div className="h-full rounded-full bg-[#008d8c] transition-[width] duration-500" style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }} /></div>
         <div className="mt-5 flex flex-wrap gap-1.5">{steps.map((step, index) => <button key={step.id} type="button" onClick={() => setStepIndex(index)} aria-label={`Show ${step.title}`} className={`h-2 rounded-full transition-all ${index === stepIndex ? 'w-7 bg-[#008d8c]' : 'w-2 bg-[#c5d7d9] hover:bg-[#86afb0]'}`} />)}</div>

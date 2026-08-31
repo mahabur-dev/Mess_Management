@@ -113,8 +113,8 @@ export default function ContactRequestsPage() {
               <Card key={item.label} className="rounded-2xl border border-[#e6ebf4] bg-white p-5 shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">{item.label}</p>
-                    <p className="mt-1 text-2xl font-black text-[#172554]">{item.value}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">{item.label}</p>
+                    <p className="mt-1 text-2xl font-semibold text-[#172554]">{item.value}</p>
                   </div>
                   <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-r ${item.tone} text-white`}>
                     <Icon size={18} />
@@ -176,8 +176,8 @@ export default function ContactRequestsPage() {
             <div className="border-b border-[#e6ebf4] px-5 py-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#2f80ed]">Contact table</p>
-                  <h2 className="text-lg font-black text-[#172554]">Submitted requests</h2>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#2f80ed]">Contact table</p>
+                  <h2 className="text-lg font-semibold text-[#172554]">Submitted requests</h2>
                 </div>
                 <BadgeCheck size={18} className="text-[#2f80ed]" />
               </div>
@@ -186,7 +186,7 @@ export default function ContactRequestsPage() {
             <div className="hidden overflow-x-auto lg:block">
               <table className="min-w-full divide-y divide-[#e6ebf4]">
                 <thead className="bg-[#fafcff]">
-                  <tr className="text-left text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                  <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                     <th className="px-5 py-3">Name</th>
                     <th className="px-5 py-3">Contact</th>
                     <th className="px-5 py-3">Source</th>
@@ -203,14 +203,14 @@ export default function ContactRequestsPage() {
                     return (
                       <tr key={request.id} className="align-top hover:bg-[#fbfdff]">
                         <td className="px-5 py-4">
-                          <p className="text-sm font-black text-[#172554]">{request.name}</p>
+                          <p className="text-sm font-semibold text-[#172554]">{request.name}</p>
                           <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{request.email}</p>
                         </td>
                         <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">
                           <div>{request.phone || 'N/A'}</div>
                         </td>
                         <td className="px-5 py-4">
-                          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-black ${SOURCE_STYLES[request.source]}`}>
+                          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${SOURCE_STYLES[request.source]}`}>
                             {SOURCE_LABELS[request.source]}
                           </span>
                         </td>
@@ -219,7 +219,7 @@ export default function ContactRequestsPage() {
                           <p className="max-w-[280px] text-sm font-semibold leading-6 text-[#53617d]">{request.description}</p>
                         </td>
                         <td className="px-5 py-4">
-                          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-black ${status.className}`}>
+                          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${status.className}`}>
                             {status.label}
                           </span>
                         </td>
@@ -262,21 +262,21 @@ export default function ContactRequestsPage() {
                   <Card key={request.id} className="rounded-2xl border border-[#e6ebf4] bg-[#fafcff] p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-base font-black text-[#172554]">{request.name}</p>
+                        <p className="text-base font-semibold text-[#172554]">{request.name}</p>
                         <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{request.email}</p>
                       </div>
-                      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-black ${status.className}`}>
+                      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold ${status.className}`}>
                         {status.label}
                       </span>
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                       <div className="rounded-xl bg-white p-3">
-                        <p className="text-[10px] font-black uppercase text-[#6b7a99]">Phone</p>
+                        <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Phone</p>
                         <p className="mt-1 font-bold text-[#172554]">{request.phone || 'N/A'}</p>
                       </div>
                       <div className="rounded-xl bg-white p-3">
-                        <p className="text-[10px] font-black uppercase text-[#6b7a99]">Source</p>
+                        <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Source</p>
                         <p className="mt-1 font-bold text-[#172554]">{SOURCE_LABELS[request.source]}</p>
                       </div>
                     </div>

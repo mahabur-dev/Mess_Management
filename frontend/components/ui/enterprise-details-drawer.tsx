@@ -34,8 +34,8 @@ export function EnterpriseDetailsDrawer({
             <div className="flex min-w-0 items-center gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]">{headerIcon}</span>
               <div className="min-w-0">
-                <p className="mb-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">{eyebrow}</p>
-                <SheetTitle className="truncate text-xl font-black tracking-tight">{title}</SheetTitle>
+                <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">{eyebrow}</p>
+                <SheetTitle className="truncate text-xl font-semibold tracking-tight">{title}</SheetTitle>
                 {description && <SheetDescription className="truncate font-semibold">{description}</SheetDescription>}
               </div>
             </div>

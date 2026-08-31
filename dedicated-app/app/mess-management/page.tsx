@@ -25,6 +25,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 import { getActiveMessId } from '@/lib/app-permissions'
+import { APP_FEATURES } from '@/lib/feature-flags'
 import {
   messPlanLabel,
   messSubscriptionStatusLabel,
@@ -167,10 +168,16 @@ export default function MessManagementPage() {
       if (showLoader) setLoading(true)
       clearNotice()
 
+      const subscriptionRequest: Promise<{ data: SubscriptionSummary | null }> = APP_FEATURES.subscriptions
+        ? api.getMessSubscription(messId)
+        : Promise.resolve({ data: null })
+      const plansRequest: Promise<{ data: Record<string, SubscriptionPlanInfo> }> = APP_FEATURES.subscriptions
+        ? api.getSubscriptionPlans()
+        : Promise.resolve({ data: {} })
       const [messesResult, subscriptionResult, plansResult] = await Promise.allSettled([
         api.getMesses(),
-        api.getMessSubscription(messId),
-        api.getSubscriptionPlans(),
+        subscriptionRequest,
+        plansRequest,
       ])
 
       if (!alive) return
@@ -333,22 +340,24 @@ export default function MessManagementPage() {
                   <span className="truncate">{setup.address || t('addressNotSet')}</span>
                 </>
               )}
-              status={<StatusPill status={subscription?.status} label={subscription?.status ? messSubscriptionStatusLabel(subscription.status, locale) : t('unknown')} />}
+              status={APP_FEATURES.subscriptions ? <StatusPill status={subscription?.status} label={subscription?.status ? messSubscriptionStatusLabel(subscription.status, locale) : t('unknown')} /> : undefined}
               metrics={[
-                {
-                  label: t('plan'),
-                  value: displayPlan(subscription?.plan),
-                },
-                {
-                  label: t('daysLeft'),
-                  value: subscription?.end_date ? format.number(getDaysRemaining(subscription.end_date) ?? 0) : t('notAvailable'),
-                },
+                ...(APP_FEATURES.subscriptions ? [
+                  {
+                    label: t('plan'),
+                    value: displayPlan(subscription?.plan),
+                  },
+                  {
+                    label: t('daysLeft'),
+                    value: subscription?.end_date ? format.number(getDaysRemaining(subscription.end_date) ?? 0) : t('notAvailable'),
+                  },
+                ] : []),
                 { label: t('members'), value: format.number(activeMemberCount) },
               ]}
             />
 
             {/* Subscription summary */}
-            {subscription ? (
+            {APP_FEATURES.subscriptions && subscription ? (
               <SettingsSection id="subscription-heading" title={t('subscription')}>
                 <div className="management-subscription__plan">
                   <div className="management-subscription__identity">

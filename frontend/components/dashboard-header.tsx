@@ -236,7 +236,7 @@ export function DashboardHeader({
             <Menu size={18} />
           </button>
           <div>
-            <h1 className="text-[20px] font-black tracking-tight text-foreground">{title}</h1>
+            <h1 className="text-[20px] font-semibold tracking-tight text-foreground">{title}</h1>
             {description && <p className="mt-1 text-sm font-semibold text-muted-foreground">{description}</p>}
           </div>
         </div>
@@ -311,7 +311,7 @@ export function DashboardHeader({
             <Button
               type="button"
               onClick={() => router.push(upgradeHref)}
-              className="h-11 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#f97316] px-4 font-black text-white shadow-[0_8px_20px_rgba(245,158,11,0.25)] transition hover:from-[#ed8f07] hover:to-[#ea6b12]"
+              className="h-11 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#f97316] px-4 font-semibold text-white shadow-[0_8px_20px_rgba(245,158,11,0.25)] transition hover:from-[#ed8f07] hover:to-[#ea6b12]"
             >
               <Mail size={16} />
               Upgrade
@@ -329,7 +329,7 @@ export function DashboardHeader({
               >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gradient-to-r from-[#ff4d4f] to-[#ff2e55] px-1 text-[9px] font-black leading-none text-white shadow-[0_4px_8px_rgba(255,77,79,0.3)]">
+                  <span className="absolute -right-1 -top-1 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gradient-to-r from-[#ff4d4f] to-[#ff2e55] px-1 text-[9px] font-semibold leading-none text-white shadow-[0_4px_8px_rgba(255,77,79,0.3)]">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
@@ -337,7 +337,7 @@ export function DashboardHeader({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="dashboard-card w-[340px] p-2">
               <div className="flex items-center justify-between px-2 py-1.5">
-                <DropdownMenuLabel className="p-0 text-sm font-black text-[var(--dashboard-ink)]">
+                <DropdownMenuLabel className="p-0 text-sm font-semibold text-[var(--dashboard-ink)]">
                   Notifications
                 </DropdownMenuLabel>
                 <button
@@ -397,7 +397,7 @@ export function DashboardHeader({
                   />
                 ) : (
                   <div
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-black shadow-sm"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold shadow-sm"
                     style={{
                       backgroundColor: `${avatarBg}20`,
                       color: avatarBg,
@@ -414,7 +414,7 @@ export function DashboardHeader({
               <div className="px-3 py-2.5">
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-black"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold"
                     style={{
                       backgroundColor: `${avatarBg}18`,
                       borderColor: `${avatarBg}55`,
@@ -466,8 +466,8 @@ export function DashboardHeader({
             {/* Modal Header */}
             <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--brand)]">Quick Add</p>
-                <h2 className="mt-1 text-xl font-black text-[#172554]">Add New Entry</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">Quick Add</p>
+                <h2 className="mt-1 text-xl font-semibold text-[#172554]">Add New Entry</h2>
               </div>
               <button
                 type="button"
@@ -508,7 +508,7 @@ export function DashboardHeader({
             {quickAddTab === 'expense' && (
               <div className="p-5 sm:p-6 space-y-4">
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Item Name</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Item Name</label>
                   <input
                     className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                     placeholder="e.g. Rice, Eggs..."
@@ -518,7 +518,7 @@ export function DashboardHeader({
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Qty</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Qty</label>
                     <input
                       className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                       placeholder="Qty"
@@ -527,7 +527,7 @@ export function DashboardHeader({
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Unit</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Unit</label>
                     <input
                       className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                       placeholder="kg"
@@ -536,7 +536,7 @@ export function DashboardHeader({
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Price (৳)</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Price (৳)</label>
                     <input
                       className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                       type="number"
@@ -547,7 +547,7 @@ export function DashboardHeader({
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Category</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Category</label>
                   <select
                     className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                     value={expCategory}
@@ -562,7 +562,7 @@ export function DashboardHeader({
                   type="button"
                   onClick={handleQuickAddExpense}
                   disabled={expSubmitting || !expItemName || !expAmount}
-                  className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-black ${dashboardActionButtonClass}`}
+                  className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-semibold ${dashboardActionButtonClass}`}
                 >
                   {expSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ShoppingBag size={16} />}
                   {expSubmitting ? 'Adding...' : 'Add Expense'}
@@ -574,7 +574,7 @@ export function DashboardHeader({
             {quickAddTab === 'payment' && (
               <div className="p-5 sm:p-6 space-y-4">
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Amount (৳)</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Amount (৳)</label>
                   <input
                     className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
                     type="number"
@@ -584,7 +584,7 @@ export function DashboardHeader({
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Payment Method</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Payment Method</label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {paymentMethods.map((m) => {
                       const selected = payMethod === m
@@ -611,7 +611,7 @@ export function DashboardHeader({
                   type="button"
                   onClick={handleQuickAddPayment}
                   disabled={paySubmitting || !payAmount}
-                  className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-black ${dashboardActionButtonClass}`}
+                  className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-semibold ${dashboardActionButtonClass}`}
                 >
                   {paySubmitting ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
                   {paySubmitting ? 'Submitting...' : 'Submit Payment'}

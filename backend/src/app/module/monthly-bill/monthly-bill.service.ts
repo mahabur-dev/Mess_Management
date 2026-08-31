@@ -19,6 +19,7 @@ import {
 import pick from 'src/app/helpers/pick';
 import paginationHelper, { buildMeta } from 'src/app/helpers/pagenation';
 import { PrismaService } from 'src/prisma/prisma.service';
+import config from 'src/app/config';
 import {
   allocateAmountByWeight,
   calculateMemberBalance,
@@ -239,7 +240,7 @@ export class MonthlyBillService {
   }
 
   private async ensureActiveSubscription(messId: string, role: string) {
-    if (role === 'ADMIN') return;
+    if (!config.features.subscriptionEnabled || role === 'ADMIN') return;
 
     const subscription = await this.prisma.subscription.findUnique({
       where: { mess_id: messId },

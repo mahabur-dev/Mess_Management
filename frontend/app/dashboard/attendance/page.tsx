@@ -106,7 +106,7 @@ export default function AttendancePage() {
             <Users size={24} className="text-[#2f80ed]" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-[#172554]">Attendance Records</h2>
+            <h2 className="text-lg font-semibold text-[#172554]">Attendance Records</h2>
             <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">Last {overallStats.totalDays} days overview</p>
           </div>
         </div>
@@ -116,11 +116,11 @@ export default function AttendancePage() {
           <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)]">
             <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
             <div className="relative">
-              <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white/80">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
                 <UserCheck size={14} />
                 Total Present
               </p>
-              <p className="mt-2 text-3xl font-black">{overallStats.totalPresent}</p>
+              <p className="mt-2 text-3xl font-semibold">{overallStats.totalPresent}</p>
               <p className="mt-1 text-xs font-bold text-white/60">Last 3 days</p>
             </div>
           </div>
@@ -128,11 +128,11 @@ export default function AttendancePage() {
           <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-rose-600 p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)]">
             <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
             <div className="relative">
-              <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white/80">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
                 <UserX size={14} />
                 Total Absent
               </p>
-              <p className="mt-2 text-3xl font-black">{overallStats.totalAbsent}</p>
+              <p className="mt-2 text-3xl font-semibold">{overallStats.totalAbsent}</p>
               <p className="mt-1 text-xs font-bold text-white/60">Last 3 days</p>
             </div>
           </div>
@@ -140,11 +140,11 @@ export default function AttendancePage() {
           <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)]">
             <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
             <div className="relative">
-              <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white/80">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
                 <TrendingUp size={14} />
                 Avg Attendance
               </p>
-              <p className="mt-2 text-3xl font-black">{overallStats.avgAttendance}%</p>
+              <p className="mt-2 text-3xl font-semibold">{overallStats.avgAttendance}%</p>
               <p className="mt-1 text-xs font-bold text-white/60">Overall rate</p>
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function AttendancePage() {
 
         {/* Daily Records */}
         <div>
-          <h2 className="mb-5 text-sm font-black text-[#172554]">Daily Records</h2>
+          <h2 className="mb-5 text-sm font-semibold text-[#172554]">Daily Records</h2>
           <div className="space-y-4">
             {attendanceData.map((day) => {
               const isExpanded = expandedDate === day.date
@@ -179,16 +179,16 @@ export default function AttendancePage() {
 
                     <div className="flex items-center gap-5">
                       <div className="text-right hidden sm:block">
-                        <p className="text-lg font-black text-[#172554]">{day.present}</p>
+                        <p className="text-lg font-semibold text-[#172554]">{day.present}</p>
                         <p className="text-[10px] font-bold text-emerald-600">Present</p>
                       </div>
                       <div className="text-right hidden sm:block">
-                        <p className="text-lg font-black text-[#172554]">{day.absent}</p>
+                        <p className="text-lg font-semibold text-[#172554]">{day.absent}</p>
                         <p className="text-[10px] font-bold text-red-500">Absent</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#2f80ed]/10 to-[#58d68d]/10 flex items-center justify-center">
-                          <span className="text-sm font-black text-[#2f80ed]">{rate}%</span>
+                          <span className="text-sm font-semibold text-[#2f80ed]">{rate}%</span>
                         </div>
                         {isExpanded ? <ChevronUp size={16} className="text-[#6b7a99]" /> : <ChevronDown size={16} className="text-[#6b7a99]" />}
                       </div>
@@ -198,7 +198,7 @@ export default function AttendancePage() {
                   {/* Expanded Details */}
                   {isExpanded && (
                     <div className="border-t border-[#e6ebf4] bg-[#f8faff] p-5">
-                      <h4 className="mb-4 text-xs font-black uppercase tracking-wide text-[#6b7a99]">Member Details</h4>
+                      <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide text-[#6b7a99]">Member Details</h4>
                       <div className="space-y-2">
                         {day.users.map((u) => {
                           const bgColor = avatarColor(u.name)
@@ -209,7 +209,7 @@ export default function AttendancePage() {
                             >
                               <div className="flex items-center gap-3">
                                 <div
-                                  className="flex h-8 w-8 items-center justify-center rounded-lg border text-[10px] font-black"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border text-[10px] font-semibold"
                                   style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}
                                 >
                                   {getInitials(u.name)}
@@ -247,17 +247,17 @@ export default function AttendancePage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/10 to-[#58d68d]/10 shadow-sm">
               <TrendingUp size={18} className="text-[#2f80ed]" />
             </div>
-            <h3 className="text-sm font-black text-[#172554]">Attendance Insights</h3>
+            <h3 className="text-sm font-semibold text-[#172554]">Attendance Insights</h3>
           </div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
-              <p className="text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">Best Day</p>
-              <p className="mt-1 text-base font-black text-[#172554]">Wednesday - 98%</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Best Day</p>
+              <p className="mt-1 text-base font-semibold text-[#172554]">Wednesday - 98%</p>
               <p className="text-xs font-semibold text-[#6b7a99] mt-0.5">Highest attendance rate</p>
             </div>
             <div className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
-              <p className="text-[10px] font-black uppercase tracking-wide text-[#6b7a99]">Recurring Absentees</p>
-              <p className="mt-1 text-base font-black text-[#172554]">2 Members</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Recurring Absentees</p>
+              <p className="mt-1 text-base font-semibold text-[#172554]">2 Members</p>
               <p className="text-xs font-semibold text-[#6b7a99] mt-0.5">Need follow-up</p>
             </div>
           </div>

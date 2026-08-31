@@ -246,8 +246,8 @@ export default function SettingsPage() {
                 <User size={22} className="text-[#2f80ed]" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Account</p>
-                <h2 className="mt-1 text-lg font-black text-[#172554]">Profile Information</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Account</p>
+                <h2 className="mt-1 text-lg font-semibold text-[#172554]">Profile Information</h2>
               </div>
             </div>
           </div>
@@ -256,12 +256,12 @@ export default function SettingsPage() {
             <div className="space-y-6">
               {/* Avatar */}
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                   Profile Picture
                 </label>
                 <div className="flex items-center gap-5">
                   <div
-                    className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border-2 text-3xl font-black shadow-inner"
+                    className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border-2 text-3xl font-semibold shadow-inner"
                     style={{
                       backgroundColor: `${avatarBg}18`,
                       borderColor: `${avatarBg}55`,
@@ -306,7 +306,7 @@ export default function SettingsPage() {
 
               {/* Name */}
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                   Full Name
                 </label>
                 <input
@@ -319,7 +319,7 @@ export default function SettingsPage() {
 
               {/* Phone */}
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                   Phone Number
                 </label>
                 <input
@@ -332,7 +332,7 @@ export default function SettingsPage() {
 
               {/* Email — read only */}
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                   Email Address
                 </label>
                 <input
@@ -346,7 +346,7 @@ export default function SettingsPage() {
 
               {/* Role — read only */}
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                   Role
                 </label>
                 <input
@@ -362,7 +362,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleSaveProfile}
                   disabled={isLoadingProfile}
-                  className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-black text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70"
+                  className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-semibold text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70"
                 >
                   {isLoadingProfile ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   {isLoadingProfile ? 'Saving...' : 'Save Changes'}
@@ -380,8 +380,8 @@ export default function SettingsPage() {
                 <Lock size={22} className="text-amber-600" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">Security</p>
-                <h2 className="mt-1 text-lg font-black text-[#172554]">Change Password</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600">Security</p>
+                <h2 className="mt-1 text-lg font-semibold text-[#172554]">Change Password</h2>
               </div>
             </div>
           </div>
@@ -390,7 +390,7 @@ export default function SettingsPage() {
             <div className="space-y-5">
               {/* Current password */}
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                   Current Password
                 </label>
                 <div className="relative">
@@ -415,7 +415,7 @@ export default function SettingsPage() {
 
               {/* New password */}
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                   New Password
                 </label>
                 <div className="relative">
@@ -446,7 +446,7 @@ export default function SettingsPage() {
 
               {/* Confirm password */}
               <div>
-                <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -482,7 +482,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleChangePassword}
                   disabled={isLoadingPassword}
-                  className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 font-black text-white shadow-[0_12px_28px_rgba(245,158,11,0.25)] transition hover:shadow-[0_16px_35px_rgba(245,158,11,0.32)] disabled:opacity-70"
+                  className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 font-semibold text-white shadow-[0_12px_28px_rgba(245,158,11,0.25)] transition hover:shadow-[0_16px_35px_rgba(245,158,11,0.32)] disabled:opacity-70"
                 >
                   {isLoadingPassword ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
                   {isLoadingPassword ? 'Changing...' : 'Change Password'}
@@ -500,8 +500,8 @@ export default function SettingsPage() {
                 <Bell size={22} className="text-purple-600" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-purple-600">Preferences</p>
-                <h2 className="mt-1 text-lg font-black text-[#172554]">Notifications</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-purple-600">Preferences</p>
+                <h2 className="mt-1 text-lg font-semibold text-[#172554]">Notifications</h2>
               </div>
             </div>
           </div>
@@ -567,8 +567,8 @@ export default function SettingsPage() {
                 <ShieldAlert size={22} className="text-red-500" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-500">Danger Zone</p>
-                <h2 className="mt-1 text-lg font-black text-[#172554]">Delete Account</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-red-500">Danger Zone</p>
+                <h2 className="mt-1 text-lg font-semibold text-[#172554]">Delete Account</h2>
               </div>
             </div>
           </div>
@@ -584,7 +584,7 @@ export default function SettingsPage() {
               {!showDeleteConfirm ? (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="inline-flex h-[45px] shrink-0 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-black text-red-600 transition hover:border-red-300 hover:bg-red-100"
+                  className="inline-flex h-[45px] shrink-0 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100"
                 >
                   <Trash2 size={16} />
                   Delete Account
@@ -594,14 +594,14 @@ export default function SettingsPage() {
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     disabled={isDeletingAccount}
-                    className="h-[45px] rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-black text-[#6b7a99] transition hover:bg-[#f8faff] disabled:opacity-60"
+                    className="h-[45px] rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#6b7a99] transition hover:bg-[#f8faff] disabled:opacity-60"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDeleteAccount}
                     disabled={isDeletingAccount}
-                    className="inline-flex h-[45px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 px-5 text-sm font-black text-white shadow-[0_8px_20px_rgba(239,68,68,0.25)] transition hover:shadow-[0_12px_28px_rgba(239,68,68,0.32)] disabled:opacity-70"
+                    className="inline-flex h-[45px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 px-5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(239,68,68,0.25)] transition hover:shadow-[0_12px_28px_rgba(239,68,68,0.32)] disabled:opacity-70"
                   >
                     {isDeletingAccount ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                     {isDeletingAccount ? 'Deleting...' : 'Confirm Delete'}

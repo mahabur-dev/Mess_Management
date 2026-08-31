@@ -67,7 +67,7 @@ function ChoiceCard({ selected, icon: Icon, title, description, bullets, onClick
       <span className={cn('grid size-12 place-items-center rounded-2xl', selected ? 'bg-[var(--brand)] text-white' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>
         <Icon className="size-6" />
       </span>
-      <span className="mt-5 block text-lg font-black text-foreground">{title}</span>
+      <span className="mt-5 block text-lg font-semibold text-foreground">{title}</span>
       <span className="mt-1 block text-sm font-semibold leading-6 text-muted-foreground">{description}</span>
       <span className="mt-4 block space-y-2">
         {bullets.map((bullet) => <span key={bullet} className="flex items-center gap-2 text-xs font-bold text-foreground"><Check className="size-3.5 text-[var(--brand)]" /> {bullet}</span>)}
@@ -150,8 +150,8 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
           {steps.map((item, index) => (
             <div key={item.number} className="flex items-center">
               <button type="button" onClick={() => item.number < step && continueTo(item.number)} disabled={item.number > step} className="flex min-h-11 items-center gap-2 rounded-xl px-2 disabled:cursor-default">
-                <span className={cn('grid size-8 place-items-center rounded-full text-xs font-black', step >= item.number ? 'bg-[var(--brand)] text-white' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>{step > item.number ? <Check className="size-4" /> : item.number}</span>
-                <span className={cn('text-xs font-black', step >= item.number ? 'text-foreground' : 'text-muted-foreground')}>{item.label}</span>
+                <span className={cn('grid size-8 place-items-center rounded-full text-xs font-semibold', step >= item.number ? 'bg-[var(--brand)] text-white' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>{step > item.number ? <Check className="size-4" /> : item.number}</span>
+                <span className={cn('text-xs font-semibold', step >= item.number ? 'text-foreground' : 'text-muted-foreground')}>{item.label}</span>
               </button>
               {index < steps.length - 1 && <span className={cn('mx-1 h-0.5 w-10 sm:w-20', step > item.number ? 'bg-[var(--brand)]' : 'bg-[var(--dashboard-line-strong)]')} />}
             </div>
@@ -162,8 +162,8 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
       <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-softer)] p-4">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><Sparkles className="size-5" /></span>
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Setting up for</p>
-          <p className="truncate text-sm font-black text-foreground">{memberName}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Setting up for</p>
+          <p className="truncate text-sm font-semibold text-foreground">{memberName}</p>
         </div>
       </div>
 
@@ -172,8 +172,8 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
       {step === 1 && (
         <section>
           <div className="mb-5 text-center sm:text-left">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--brand)]">Step 1 of 3</p>
-            <h1 className="mt-2 text-2xl font-black tracking-tight text-foreground sm:text-3xl">How does the meal routine work?</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">Step 1 of 3</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">How does the meal routine work?</h1>
             <p className="mt-2 text-sm font-semibold text-muted-foreground">Choose the option that feels closest. You can change it later.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -186,8 +186,8 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
       {step === 2 && (
         <section>
           <div className="mb-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--brand)]">Step 2 of 3</p>
-            <h1 className="mt-2 text-2xl font-black tracking-tight text-foreground sm:text-3xl">Choose the meals</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">Step 2 of 3</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Choose the meals</h1>
             <p className="mt-2 text-sm font-semibold text-muted-foreground">Turn meals on or off and adjust the quantity only when needed.</p>
           </div>
           <ScheduleEditor type={patternType} dailySchedule={dailySchedule} weeklySchedule={weeklySchedule} onDailyChange={setDailySchedule} onWeeklyChange={setWeeklySchedule} />
@@ -197,8 +197,8 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
       {step === 3 && (
         <section>
           <div className="mb-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--brand)]">Step 3 of 3</p>
-            <h1 className="mt-2 text-2xl font-black tracking-tight text-foreground sm:text-3xl">Choose when it starts</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">Step 3 of 3</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Choose when it starts</h1>
             <p className="mt-2 text-sm font-semibold text-muted-foreground">Review everything before the pattern is saved.</p>
           </div>
 
@@ -207,41 +207,41 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
               <section className="dashboard-card p-4 sm:p-5">
                 <div className="mb-4 flex items-center gap-3">
                   <span className="grid size-10 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><CalendarDays className="size-5" /></span>
-                  <div><h2 className="font-black text-foreground">Start date</h2><p className="text-xs font-semibold text-muted-foreground">When should automation begin?</p></div>
+                  <div><h2 className="font-semibold text-foreground">Start date</h2><p className="text-xs font-semibold text-muted-foreground">When should automation begin?</p></div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setStartDate(today)} className={cn('min-h-11 rounded-xl border text-sm font-black', startDate === today ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}>Today</button>
-                  <button type="button" onClick={() => setStartDate(shiftDateKey(today, 1))} className={cn('min-h-11 rounded-xl border text-sm font-black', startDate === shiftDateKey(today, 1) ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}>Tomorrow</button>
+                  <button type="button" onClick={() => setStartDate(today)} className={cn('min-h-11 rounded-xl border text-sm font-semibold', startDate === today ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}>Today</button>
+                  <button type="button" onClick={() => setStartDate(shiftDateKey(today, 1))} className={cn('min-h-11 rounded-xl border text-sm font-semibold', startDate === shiftDateKey(today, 1) ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}>Tomorrow</button>
                 </div>
                 <label className="mt-3 block">
-                  <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-muted-foreground">Or choose a date</span>
-                  <input type="date" min={today} value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-black text-foreground outline-none focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)]" />
+                  <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Or choose a date</span>
+                  <input type="date" min={today} value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-semibold text-foreground outline-none focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)]" />
                 </label>
               </section>
 
               <section className="dashboard-card p-4 sm:p-5">
                 <div className="mb-4 flex items-center gap-3">
                   <span className="grid size-10 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><Clock3 className="size-5" /></span>
-                  <div><h2 className="font-black text-foreground">How long?</h2><p className="text-xs font-semibold text-muted-foreground">It can continue until you stop it.</p></div>
+                  <div><h2 className="font-semibold text-foreground">How long?</h2><p className="text-xs font-semibold text-muted-foreground">It can continue until you stop it.</p></div>
                 </div>
                 <div className="space-y-2">
-                  <button type="button" disabled={endDateLocked} onClick={() => setHasEndDate(false)} className={cn('flex min-h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-black disabled:cursor-not-allowed disabled:opacity-45', !hasEndDate ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}><span>Continue until I stop it</span>{!hasEndDate && <CircleCheck className="size-4" />}</button>
-                  <button type="button" onClick={() => { setHasEndDate(true); if (!endDate) setEndDate(shiftDateKey(startDate || today, 30)) }} className={cn('flex min-h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-black', hasEndDate ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}><span>End on a date</span>{hasEndDate && <CircleCheck className="size-4" />}</button>
+                  <button type="button" disabled={endDateLocked} onClick={() => setHasEndDate(false)} className={cn('flex min-h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45', !hasEndDate ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}><span>Continue until I stop it</span>{!hasEndDate && <CircleCheck className="size-4" />}</button>
+                  <button type="button" onClick={() => { setHasEndDate(true); if (!endDate) setEndDate(shiftDateKey(startDate || today, 30)) }} className={cn('flex min-h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-semibold', hasEndDate ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}><span>End on a date</span>{hasEndDate && <CircleCheck className="size-4" />}</button>
                 </div>
                 {endDateLocked && <p className="mt-3 text-xs font-semibold leading-5 text-muted-foreground">This pattern keeps its current end date. You can choose a different end date below.</p>}
-                {hasEndDate && <label className="mt-3 block"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-muted-foreground">End date</span><input type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-black text-foreground outline-none focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)]" /></label>}
+                {hasEndDate && <label className="mt-3 block"><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">End date</span><input type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-semibold text-foreground outline-none focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)]" /></label>}
               </section>
             </div>
 
             <section className="dashboard-card p-4 sm:p-5">
               <div className="mb-5 flex items-start justify-between gap-3">
-                <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Final review</p><h2 className="mt-1 text-xl font-black text-foreground">{patternType === 'DAILY' ? 'Same meals every day' : 'Weekly meal routine'}</h2></div>
-                <span className="rounded-full bg-[var(--brand-soft)] px-3 py-1.5 text-xs font-black text-[var(--brand-dark)] dark:text-[var(--brand-bright)]">{patternType === 'DAILY' ? `${selectedTotal} / day` : `${selectedTotal} / week`}</span>
+                <div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Final review</p><h2 className="mt-1 text-xl font-semibold text-foreground">{patternType === 'DAILY' ? 'Same meals every day' : 'Weekly meal routine'}</h2></div>
+                <span className="rounded-full bg-[var(--brand-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--brand-dark)] dark:text-[var(--brand-bright)]">{patternType === 'DAILY' ? `${selectedTotal} / day` : `${selectedTotal} / week`}</span>
               </div>
               <SchedulePreview pattern={previewPattern} />
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">Starts</p><p className="mt-1 text-xs font-black text-foreground">{startDate}</p></div>
-                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">Ends</p><p className="mt-1 text-xs font-black text-foreground">{hasEndDate ? endDate || 'Choose date' : 'When you stop it'}</p></div>
+                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Starts</p><p className="mt-1 text-xs font-semibold text-foreground">{startDate}</p></div>
+                <div className="rounded-xl bg-[var(--dashboard-surface-subtle)] p-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Ends</p><p className="mt-1 text-xs font-semibold text-foreground">{hasEndDate ? endDate || 'Choose date' : 'When you stop it'}</p></div>
               </div>
               <div className="mt-5 flex gap-3 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-softer)] p-4">
                 <Sparkles className="mt-0.5 size-5 shrink-0 text-[var(--brand)]" />
@@ -257,14 +257,14 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
         style={{ '--meal-pattern-sidebar-offset': collapsed ? '72px' : '280px' } as CSSProperties}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
-          <Button type="button" variant="ghost" disabled={step === 1 || saving} onClick={() => continueTo(step - 1)} className="min-h-11 rounded-xl px-3 font-black"><ArrowLeft className="size-4" /> <span className="hidden sm:inline">Back</span></Button>
+          <Button type="button" variant="ghost" disabled={step === 1 || saving} onClick={() => continueTo(step - 1)} className="min-h-11 rounded-xl px-3 font-semibold"><ArrowLeft className="size-4" /> <span className="hidden sm:inline">Back</span></Button>
           <div className="flex flex-1 justify-end gap-2">
             {step < 3 ? (
-              <Button type="button" onClick={() => continueTo(step + 1)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] px-5 font-black text-white hover:bg-[var(--brand-hover)] sm:flex-none">Continue <ArrowRight className="size-4" /></Button>
+              <Button type="button" onClick={() => continueTo(step + 1)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] px-5 font-semibold text-white hover:bg-[var(--brand-hover)] sm:flex-none">Continue <ArrowRight className="size-4" /></Button>
             ) : (
               <>
-                {(!initialPattern || initialPattern.status === 'DRAFT') && <Button type="button" variant="outline" disabled={saving} onClick={() => void submit(false)} className="min-h-11 rounded-xl px-3 font-black sm:px-5"><Save className="size-4" /> <span className="hidden sm:inline">Save draft</span><span className="sm:hidden">Draft</span></Button>}
-                <Button type="button" disabled={saving} onClick={() => void submit(true)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] px-4 font-black text-white shadow-[0_10px_22px_var(--brand-shadow)] hover:bg-[var(--brand-hover)] sm:flex-none sm:px-6">
+                {(!initialPattern || initialPattern.status === 'DRAFT') && <Button type="button" variant="outline" disabled={saving} onClick={() => void submit(false)} className="min-h-11 rounded-xl px-3 font-semibold sm:px-5"><Save className="size-4" /> <span className="hidden sm:inline">Save draft</span><span className="sm:hidden">Draft</span></Button>}
+                <Button type="button" disabled={saving} onClick={() => void submit(true)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] px-4 font-semibold text-white shadow-[0_10px_22px_var(--brand-shadow)] hover:bg-[var(--brand-hover)] sm:flex-none sm:px-6">
                   {saving ? <><Loader2 className="size-4 animate-spin" /> Saving...</> : <>{initialPattern && initialPattern.status !== 'DRAFT' ? 'Save changes' : 'Activate pattern'} <ArrowRight className="size-4" /></>}
                 </Button>
               </>

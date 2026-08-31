@@ -66,8 +66,8 @@ export function AutomationOverviewSection() {
               <div className="relative flex items-start gap-4">
                 <span className="icon-tile size-14"><Icon size={24} /></span>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--brand)]">{eyebrow}</p>
-                  <h3 className="mt-2 text-xl font-black tracking-tight text-foreground sm:text-2xl">{title}</h3>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">{eyebrow}</p>
+                  <h3 className="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{title}</h3>
                 </div>
               </div>
               <p className="relative mt-5 text-sm font-medium leading-7 text-muted-foreground">{text}</p>
@@ -78,7 +78,7 @@ export function AutomationOverviewSection() {
                   </div>
                 ))}
               </div>
-              <span className="absolute bottom-5 right-6 text-7xl font-black text-[var(--brand)]/[0.04]">0{index + 1}</span>
+              <span className="absolute bottom-5 right-6 text-7xl font-semibold text-[var(--brand)]/[0.04]">0{index + 1}</span>
             </article>
           ))}
         </div>
@@ -112,7 +112,7 @@ export function AiWorkflowSection() {
             ))}
           </div>
           <div className="mt-7 rounded-2xl border border-[var(--marketing-line)] bg-[var(--marketing-subtle)] p-4">
-            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--brand)]"><Mic2 size={15} /> Example command</p>
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--brand)]"><Mic2 size={15} /> Example command</p>
             <p className="mt-2 text-sm font-bold leading-6 text-foreground">“Add Rahim deposit 2000”</p>
           </div>
         </div>
@@ -134,18 +134,18 @@ export function MealPatternSection() {
           <div className="marketing-card rounded-2xl p-4 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Weekly meal pattern</p>
-                <h3 className="mt-1 text-base font-black text-foreground">Rahim’s recurring schedule</h3>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Weekly meal pattern</p>
+                <h3 className="mt-1 text-base font-semibold text-foreground">Rahim’s recurring schedule</h3>
               </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Active</span>
+              <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Active</span>
             </div>
             <div className="mt-5 grid grid-cols-7 gap-1.5">
               {weeklyPattern.map((pattern) => (
                 <div key={pattern.day} className="rounded-xl bg-[var(--marketing-subtle)] p-2 text-center">
-                  <p className="text-[9px] font-black text-muted-foreground">{pattern.day}</p>
+                  <p className="text-[9px] font-semibold text-muted-foreground">{pattern.day}</p>
                   <div className="mt-2 space-y-1">
                     {['B', 'L', 'D'].map((meal) => (
-                      <span key={meal} className={`mx-auto flex size-5 items-center justify-center rounded-md text-[8px] font-black ${pattern.meals.includes(meal) ? 'bg-[var(--brand)] text-white' : 'bg-[var(--marketing-line)] text-muted-foreground opacity-50'}`}>{meal}</span>
+                      <span key={meal} className={`mx-auto flex size-5 items-center justify-center rounded-md text-[8px] font-semibold ${pattern.meals.includes(meal) ? 'bg-[var(--brand)] text-white' : 'bg-[var(--marketing-line)] text-muted-foreground opacity-50'}`}>{meal}</span>
                     ))}
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export function MealPatternSection() {
             ].map(({ title, text, icon: Icon }) => (
               <div key={title} className="marketing-card rounded-xl p-4">
                 <Icon size={18} className="text-[var(--brand)]" />
-                <h3 className="mt-3 text-sm font-black text-foreground">{title}</h3>
+                <h3 className="mt-3 text-sm font-semibold text-foreground">{title}</h3>
                 <p className="mt-1 text-xs font-medium leading-5 text-muted-foreground">{text}</p>
               </div>
             ))}
@@ -207,7 +207,7 @@ export function DedicatedAppSection() {
             ].map(({ title, text, icon: Icon }) => (
               <article key={title} className="marketing-card flex gap-4 rounded-2xl p-5">
                 <span className="icon-tile"><Icon size={20} /></span>
-                <div><h3 className="text-base font-black text-foreground">{title}</h3><p className="mt-1.5 text-sm font-medium leading-6 text-muted-foreground">{text}</p></div>
+                <div><h3 className="text-base font-semibold text-foreground">{title}</h3><p className="mt-1.5 text-sm font-medium leading-6 text-muted-foreground">{text}</p></div>
               </article>
             ))}
           </div>
@@ -249,7 +249,7 @@ export function BillingAndAlertsSection() {
               {notifications.map(({ title, text, icon: Icon, tone }, index) => (
                 <div key={title} className="marketing-card flex items-center gap-3 rounded-2xl p-4" style={{ transform: `translateX(${index * 10}px)` }}>
                   <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${tone}`}><Icon size={18} /></span>
-                  <div><p className="text-sm font-black text-foreground">{title}</p><p className="mt-0.5 text-[11px] font-medium leading-5 text-muted-foreground">{text}</p></div>
+                  <div><p className="text-sm font-semibold text-foreground">{title}</p><p className="mt-0.5 text-[11px] font-medium leading-5 text-muted-foreground">{text}</p></div>
                 </div>
               ))}
             </div>
@@ -259,7 +259,7 @@ export function BillingAndAlertsSection() {
             <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.04em] text-foreground sm:text-4xl">Messzen remembers what your mess should not miss.</h2>
             <p className="mt-4 text-sm font-medium leading-7 text-muted-foreground sm:text-base">Proactive alerts keep members and managers ahead of meal deadlines, payment dues, and bazar responsibilities—even when the app is not open.</p>
             <div className="mt-6 rounded-2xl border border-[var(--brand-border-subtle)] bg-[var(--brand-softer)] p-5">
-              <p className="flex items-center gap-2 text-sm font-black text-foreground"><BellRing size={17} className="text-[var(--brand)]" /> Timely, useful, and action-focused</p>
+              <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><BellRing size={17} className="text-[var(--brand)]" /> Timely, useful, and action-focused</p>
               <p className="mt-2 text-xs font-medium leading-6 text-muted-foreground">Each reminder points to a real task, so people know exactly what needs attention.</p>
             </div>
           </div>
@@ -274,9 +274,9 @@ export function AutomationCta() {
     <div className="marketing-container px-4 sm:px-6 lg:px-8">
       <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] px-6 py-9 text-center text-white shadow-[0_20px_50px_var(--brand-shadow)] sm:px-10">
         <WalletCards className="mx-auto" size={28} />
-        <h2 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">Set the routine. Let Messzen handle the repetition.</h2>
+        <h2 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Set the routine. Let Messzen handle the repetition.</h2>
         <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-7 text-white/80">Automate meal patterns, use AI for changes, keep bills calculated, and notify everyone at the right time.</p>
-        <Link href="/register" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-black text-[var(--brand-dark)] shadow-lg transition hover:-translate-y-0.5">Start for Free <ArrowRight size={16} /></Link>
+        <Link href="/register" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-semibold text-[var(--brand-dark)] shadow-lg transition hover:-translate-y-0.5">Start for Free <ArrowRight size={16} /></Link>
       </div>
     </div>
   )

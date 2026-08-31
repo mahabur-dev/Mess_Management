@@ -108,7 +108,7 @@ export default function NotificationsPage() {
             <Bell size={24} className="text-[#8b5cf6]" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-[#172554]">All Notifications</h2>
+            <h2 className="text-lg font-semibold text-[#172554]">All Notifications</h2>
             <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
               {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
               {unreadCount > 0 && <span className="ml-2 text-[#ff2e55]">({unreadCount} unread)</span>}
@@ -121,11 +121,11 @@ export default function NotificationsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Content</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
-                <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Content</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
+                <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">

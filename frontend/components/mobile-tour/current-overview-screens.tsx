@@ -74,7 +74,7 @@ function AssistantSummary({ title, value, unit }: { title: string; value?: strin
       <span className="absolute -right-8 -top-9 size-28 rounded-full border-[18px] border-white/30 bg-violet-200/20" />
       <div className="relative flex items-center gap-3">
         <span className="grid size-11 shrink-0 place-items-center rounded-[14px] border border-[#4f70a5]/15 bg-gradient-to-br from-[#f1efff] to-[#dff4f3] text-[#4f70a5] shadow-[0_7px_16px_rgba(58,82,125,.11)]"><CalendarDays className="w-5" /></span>
-        <div className="min-w-0 flex-1"><p className="text-[8px] font-bold text-[#123748]">{title}</p>{value ? <p className="mt-1 text-[14px] font-black text-[#123748]">{value} <small className="text-[7px] font-bold text-[#008d8c]">{unit}</small></p> : <p className="mt-1 truncate text-[7px] font-semibold text-[#65838b]">Meals, deposits, expenses and utility</p>}</div>
+        <div className="min-w-0 flex-1"><p className="text-[8px] font-bold text-[#123748]">{title}</p>{value ? <p className="mt-1 text-[14px] font-semibold text-[#123748]">{value} <small className="text-[7px] font-bold text-[#008d8c]">{unit}</small></p> : <p className="mt-1 truncate text-[7px] font-semibold text-[#65838b]">Meals, deposits, expenses and utility</p>}</div>
         <span className="relative rounded-[12px] border border-violet-200/70 bg-white/80 px-3 py-2 text-[7px] font-bold text-violet-700">Details</span>
       </div>
     </section>
@@ -107,9 +107,9 @@ function MemberBillRow({ initials, name, email, status }: (typeof memberBills)[n
   const paid = status === 'Paid'
   return (
     <div className="flex min-h-[76px] items-center gap-3 border-b border-[#e3ebed] bg-white px-0.5 py-3 last:border-0">
-      <span className="grid size-[46px] shrink-0 place-items-center rounded-full border border-[#008d8c]/15 bg-[#edfafa] text-[8px] font-black text-[#00777a]">{initials}</span>
+      <span className="grid size-[46px] shrink-0 place-items-center rounded-full border border-[#008d8c]/15 bg-[#edfafa] text-[8px] font-semibold text-[#00777a]">{initials}</span>
       <div className="min-w-0 flex-1"><p className="truncate text-[8px] font-bold text-[#123748]">{name}</p><p className="mt-1 truncate text-[6px] font-semibold text-[#65838b]">{email}</p></div>
-      <span className={`inline-flex min-h-7 min-w-14 items-center justify-center rounded-full px-2 text-[6px] font-black ${paid ? 'bg-[#eaf7ee] text-[#147a37]' : 'bg-[#fff0f0] text-[#c5333d]'}`}>{status}</span>
+      <span className={`inline-flex min-h-7 min-w-14 items-center justify-center rounded-full px-2 text-[6px] font-semibold ${paid ? 'bg-[#eaf7ee] text-[#147a37]' : 'bg-[#fff0f0] text-[#c5333d]'}`}>{status}</span>
     </div>
   )
 }
@@ -121,7 +121,7 @@ export function CurrentMonthlyBillOverviewScreen({ scrollY = 0 }: { scrollY?: nu
         <MonthSelector />
         <section><p className="mb-2.5 text-[7px] font-bold uppercase tracking-[.16em] text-[#65838b]">My Overview</p><div className="grid grid-cols-2 gap-3">{billStats.map((stat) => <OverviewCard key={stat.label} {...stat} />)}</div></section>
         <AssistantSummary title="My Bill Summary" />
-        <section className="bg-white"><div className="flex items-end justify-between gap-3 px-0.5 pb-3"><div><p className="text-[7px] font-black tracking-[.11em] text-[#00777a]">MEMBER BILLS</p><h2 className="mt-1 text-[11px] font-bold tracking-[-.02em]">Member overview</h2></div><span className="grid size-[30px] place-items-center rounded-[10px] border border-[#dfe9ea] bg-[#f8fbfb] text-[7px] font-black text-[#65838b]">7</span></div><div className="border-t border-[#dfe9ea]">{memberBills.map((member) => <MemberBillRow key={member.name} {...member} />)}</div></section>
+        <section className="bg-white"><div className="flex items-end justify-between gap-3 px-0.5 pb-3"><div><p className="text-[7px] font-semibold tracking-[.11em] text-[#00777a]">MEMBER BILLS</p><h2 className="mt-1 text-[11px] font-bold tracking-[-.02em]">Member overview</h2></div><span className="grid size-[30px] place-items-center rounded-[10px] border border-[#dfe9ea] bg-[#f8fbfb] text-[7px] font-semibold text-[#65838b]">7</span></div><div className="border-t border-[#dfe9ea]">{memberBills.map((member) => <MemberBillRow key={member.name} {...member} />)}</div></section>
       </TourScrollContent>
     </CurrentAppScreen>
   )

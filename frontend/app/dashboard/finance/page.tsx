@@ -781,26 +781,17 @@ export default function FinancePage() {
             </div>
           </div>
 
-          {/* Scrollable table section */}
-          <div className="overflow-x-auto monthly-bills-table-scroll pb-2">
-            <div className="min-w-[900px]">
-              <table className="w-full">
+          <div className="overflow-hidden">
+              <table className="w-full table-fixed">
                 <thead>
                   <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Item</th>
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Category</th>
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Purchased By</th>
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Added By</th>
-                    <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Amount</th>
-                    <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                    {['Category', 'Quantity', 'Date', 'Amount', 'Action'].map((heading) => <th key={heading} className={`px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' || heading === 'Action' ? 'text-right' : ''}`}>{heading}</th>)}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e6ebf4]">
                   {loading && (
                     <tr>
-                      <td colSpan={8} className="px-5 py-12 text-center">
+                      <td colSpan={5} className="px-5 py-12 text-center">
                         <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
                           <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
                           Loading expenses...
@@ -810,7 +801,7 @@ export default function FinancePage() {
                   )}
                   {!loading && filteredExpenses.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-5 py-12 text-center">
+                      <td colSpan={5} className="px-5 py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <ShoppingBag size={40} className="text-[#d8e6f8]" />
                           <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
@@ -821,52 +812,27 @@ export default function FinancePage() {
                   {!loading &&
                     filteredExpenses.map((item) => (
                       <tr key={item.id} className="transition hover:bg-[#f8faff] group">
-                        <td className="px-5 py-4">
-                          <p className="font-bold text-[#172554]">
-                            {item.item_name || 'Unnamed Expense'}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4">
+                        <td className="px-4 py-4">
                           <span
                             className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${getCategoryStyle(item.category)}`}
                           >
                             {item.category}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-sm font-bold text-[#6b7a99]">
+                        <td className="px-4 py-4 text-sm font-bold text-[#6b7a99]">
                           {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-4 py-4">
                           <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
                             <CalendarDays size={14} className="text-[#ffb84d]" />
                             {formatDate(item.expense_date)}
                           </span>
                         </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)]/80 to-[var(--brand-bright)]/80 text-[10px] font-black text-white shadow-sm">
-                              {(item.purchaser?.name?.[0] || item.creator?.name?.[0] || '?').toUpperCase()}
-                            </div>
-                            <span className="text-sm font-semibold text-[#6b7a99]">
-                              {item.purchaser?.name ?? resolveMemberNameById(item.purchased_by, item.creator?.name ?? 'Unknown')}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)]/80 to-[var(--brand-bright)]/80 text-[10px] font-black text-white shadow-sm">
-                              {(item.creator?.name?.[0] || '?').toUpperCase()}
-                            </div>
-                            <span className="text-sm font-semibold text-[#6b7a99]">
-                              {item.creator?.name ?? 'Unknown'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-right text-sm font-black text-red-500">
+                        <td className="px-4 py-4 text-right text-sm font-black text-red-500">
                           {money(item.amount)}
                         </td>
-                        <td className="px-5 py-4">
-                          <div className="flex justify-end gap-2">
+                        <td className="px-4 py-4">
+                          <div className="flex justify-end">
                             <Button
                               type="button"
                               variant="outline"
@@ -877,50 +843,6 @@ export default function FinancePage() {
                               <Eye size={13} className="mr-1" />
                               View
                             </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={!canEditExpense(item)}
-                              title={
-                                canEditExpense(item)
-                                  ? 'Edit your expense'
-                                  : 'Only the user who purchased this expense can edit it'
-                              }
-                              onClick={() => {
-                                if (canEditExpense(item)) openEditExpenseModal(item)
-                              }}
-                              className={`h-8 rounded-lg text-[11px] font-bold ${
-                                canEditExpense(item)
-                                  ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed] hover:border-[#2f80ed]/50 hover:bg-[#276bc4]'
-                                  : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-700 opacity-70'
-                              }`}
-                            >
-                              <Edit3 size={13} className="mr-1" />
-                              Edit
-                            </Button>
-                            {canManageMess && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => handleDeleteExpense(item.id)}
-                                className="h-8 rounded-lg border-red-500/20 bg-red-50 text-[11px] font-bold text-red-600 hover:border-red-500/40 hover:bg-red-100"
-                                title="Delete Expense"
-                              >
-                                <Trash2 size={13} />
-                              </Button>
-                            )}
-                            {canRequestExpenseReview(item) && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => openReviewModal(item)}
-                                className="h-8 rounded-lg bg-amber-50 text-[11px] font-bold text-amber-700 border border-amber-200/50 hover:bg-amber-100"
-                              >
-                                <MessageSquareWarning size={13} className="mr-1" />
-                                Review
-                              </Button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -942,7 +864,6 @@ export default function FinancePage() {
                   </div>
                 </div>
               )}
-            </div>
           </div>
         </div>
 
@@ -1105,20 +1026,6 @@ export default function FinancePage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
-                  <span>Purchased by</span>
-                  <span className="text-[#172554]">
-                    {item.purchaser?.name ?? resolveMemberNameById(item.purchased_by, item.creator?.name ?? 'Unknown')}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
-                  <span>Added by</span>
-                  <span className="text-[#172554]">
-                    {item.creator?.name ?? 'Unknown'}
-                  </span>
-                </div>
-
                 <div className="mt-3 flex gap-2">
                   <Button
                     type="button"
@@ -1129,47 +1036,6 @@ export default function FinancePage() {
                     <Eye size={13} className="mr-1" />
                     View
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={!canEditExpense(item)}
-                    title={
-                      canEditExpense(item)
-                        ? 'Edit your expense'
-                        : 'Only the user who purchased this expense can edit it'
-                    }
-                    onClick={() => {
-                      if (canEditExpense(item)) openEditExpenseModal(item)
-                    }}
-                    className={`flex-1 h-9 rounded-xl text-xs font-bold ${
-                      canEditExpense(item)
-                        ? 'border-[#2f80ed]/30 bg-[#e7f1ff] text-[#2f80ed]'
-                        : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-70'
-                    }`}
-                  >
-                    <Edit3 size={13} className="mr-1" />
-                    Edit
-                  </Button>
-                  {canManageMess && (
-                    <Button
-                      type="button"
-                      onClick={() => handleDeleteExpense(item.id)}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-500/20 bg-red-50 text-red-600"
-                      title="Delete Expense"
-                    >
-                      <Trash2 size={13} />
-                    </Button>
-                  )}
-                  {canRequestExpenseReview(item) && (
-                    <Button
-                      type="button"
-                      onClick={() => openReviewModal(item)}
-                      className="flex-1 h-9 rounded-xl bg-amber-50 text-xs font-bold text-amber-700 border border-amber-200/50 hover:bg-amber-100"
-                    >
-                      <MessageSquareWarning size={13} className="mr-1" />
-                      Review
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}

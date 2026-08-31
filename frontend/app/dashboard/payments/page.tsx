@@ -301,26 +301,19 @@ export default function PaymentsPage() {
         </div>
 
         {/* Payments Table - Desktop */}
-        <div className="hidden sm:block overflow-x-auto monthly-bills-table-scroll pb-2 rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-          <table className="w-full">
+        <div className="hidden overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)] sm:block">
+          <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Purchased By</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Added By</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Method</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Amount</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Categories</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
-                <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-                <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                {['Paid by', 'Added by', 'Amount', 'Status'].map((heading) => <th key={heading} className="px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
               {loading && (
-                <tr><td colSpan={8} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading payments...</div></td></tr>
+                <tr><td colSpan={4} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading payments...</div></td></tr>
               )}
               {!loading && filteredPayments.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-12 text-center">
+                <tr><td colSpan={4} className="px-5 py-12 text-center">
                   <div className="flex flex-col items-center gap-2"><Wallet size={40} className="text-[#d8e6f8]" />
                     <p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No payment records yet.' : 'No payments match your filters.'}</p>
                     <p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Submit Payment" to add one.' : 'Try changing the month or search term.'}</p>
@@ -328,69 +321,31 @@ export default function PaymentsPage() {
                 </td></tr>
               )}
               {!loading && filteredPayments.map((payment) => {
-                const methodCfg = PAYMENT_METHOD_CONFIG[payment.method as PaymentMethod] || PAYMENT_METHOD_CONFIG.CASH
                 const statusCfg = STATUS_CONFIG[payment.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
-                const isReviewing = reviewingId === payment.id
-                const isOwn = payment.member?.id === user?.id
-                const canDelete = isOwn || isManager
-                const isDeleting = deletingId === payment.id
 
                 return (
-                  <tr key={payment.id} className="transition hover:bg-[#f8faff] group">
-                    <td className="px-5 py-4">
+                  <tr key={payment.id} onClick={() => { setViewingPayment(payment); setShowViewModal(true) }} className="cursor-pointer transition hover:bg-[#f8faff] focus-within:bg-[#f8faff]">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
                         <div><p className="text-sm font-bold text-[#172554]">{payment.member?.name ?? 'Unknown Member'}</p><p className="text-xs font-semibold text-[#6b7a99]">{payment.member?.email ?? ''}</p></div>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-black text-white shadow-sm">{(payment.creator?.name?.[0] || 'M').toUpperCase()}</div>
                         <div><p className="text-sm font-bold text-[#172554]">{payment.creator?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-[#6b7a99]">{payment.creator?.email ?? ''}</p></div>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: methodCfg.bg, color: methodCfg.color, borderColor: `${methodCfg.color}33` }}>
-                        {methodCfg.icon}{methodCfg.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm font-black text-[#172554]">{money(payment.amount)}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {(payment.categories ?? []).length > 0 ? payment.categories.map((cat) => {
-                          const cfg = EXPENSE_CATEGORIES.find(c => c.value === cat)
-                          return <span key={cat} className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: cfg?.bg ?? '#f9fafb', color: cfg?.color ?? '#6b7280', borderColor: `${cfg?.color ?? '#6b7280'}33` }}>{cfg?.label ?? cat}</span>
-                        }) : <span className="text-[10px] font-semibold text-[#8a9bb5]">-</span>}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]"><CalendarDays size={13} className="text-[#ffb84d]" /> {formatDate(payment.created_at)}</span>
-                        {payment.payment_date && <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#6b7a99]/70"><CalendarDays size={11} className="text-[#a0b4d6]" /> For: {formatDateShort(payment.payment_date)}</span>}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-center">
+                    <td className="px-4 py-4 text-sm font-black text-[#172554]">{money(payment.amount)}</td>
+                    <td className="px-4 py-4">
+                      <div>
                         <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
                           {payment.status === 'PENDING' && <Loader2 size={11} className="animate-spin" />}
                           {payment.status === 'APPROVED' && <Check size={11} />}
                           {payment.status === 'REJECTED' && <Ban size={11} />}
                           {statusCfg.label}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => { setViewingPayment(payment); setShowViewModal(true) }} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#2f80ed]/20 bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff]" title="View Details"><Eye size={14} /></button>
-                        {payment.status === 'PENDING' && isManager && (
-                          <>
-                            <button onClick={() => review(payment.id, 'APPROVED')} disabled={isReviewing} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-50 text-emerald-600 transition hover:border-emerald-500/40 hover:bg-emerald-100 disabled:opacity-60" title="Approve">{isReviewing ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}</button>
-                            <button onClick={() => review(payment.id, 'REJECTED')} disabled={isReviewing} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-50 text-red-600 transition hover:border-red-500/40 hover:bg-red-100 disabled:opacity-60" title="Reject"><X size={14} /></button>
-                          </>
-                        )}
-                        {canDelete && (
-                          <button onClick={() => handleDelete(payment.id)} disabled={isDeleting} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-50 text-red-600 transition hover:border-red-500/40 hover:bg-red-100 disabled:opacity-60" title="Delete">{isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}</button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -514,7 +469,7 @@ export default function PaymentsPage() {
           title="Payment details"
           description={viewingPayment.member?.email ?? 'Payment request and transaction information.'}
           headerIcon={<CreditCard className="size-5" />}
-          footer={<button type="button" onClick={() => { setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 font-black text-muted-foreground transition hover:bg-[var(--dashboard-hover)]">Close</button>}
+          footer={<div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 flex-1 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 font-black text-muted-foreground transition hover:bg-[var(--dashboard-hover)]">Close</button>{viewingPayment.status === 'PENDING' && isManager && <><button type="button" onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700">Approve</button><button type="button" onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-black text-rose-600 hover:bg-rose-100">Reject</button></>}</div>}
         >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">

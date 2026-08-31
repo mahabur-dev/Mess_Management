@@ -4,9 +4,10 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { apiClient, type Mess, type MessMembershipWithDetails, type Payment, type PaymentMethod, type ExpenseCategory } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
-import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban, Search, Filter, Trash2, Eye } from 'lucide-react'
+import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban, Search, Filter, Trash2, Eye, Edit3 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 
@@ -327,15 +328,15 @@ export default function PaymentsPage() {
           <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                {['Paid by', 'Added by', 'Amount', 'Status'].map((heading) => <th key={heading} className="px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>)}
+                {['Paid by', 'Added by', 'Amount', 'Status', 'Action'].map((heading) => <th key={heading} className="px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
               {loading && (
-                <tr><td colSpan={4} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading payments...</div></td></tr>
+                <tr><td colSpan={5} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading payments...</div></td></tr>
               )}
               {!loading && filteredPayments.length === 0 && (
-                <tr><td colSpan={4} className="px-5 py-12 text-center">
+                <tr><td colSpan={5} className="px-5 py-12 text-center">
                   <div className="flex flex-col items-center gap-2"><Wallet size={40} className="text-[#d8e6f8]" />
                     <p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No payment records yet.' : 'No payments match your filters.'}</p>
                     <p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Submit Payment" to add one.' : 'Try changing the month or search term.'}</p>
@@ -344,6 +345,8 @@ export default function PaymentsPage() {
               )}
               {!loading && filteredPayments.map((payment) => {
                 const statusCfg = STATUS_CONFIG[payment.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
+                const canDelete = payment.member?.id === user?.id || isManager
+                const isDeleting = deletingId === payment.id
 
                 return (
                   <tr key={payment.id} onClick={() => { setViewingPayment(payment); setShowViewModal(true) }} className="cursor-pointer transition hover:bg-[#f8faff] focus-within:bg-[#f8faff]">
@@ -368,6 +371,18 @@ export default function PaymentsPage() {
                           {payment.status === 'REJECTED' && <Ban size={11} />}
                           {statusCfg.label}
                         </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-1.5">
+                        <EnterpriseIconButton label="View payment" tone="primary" onClick={(event) => { event.stopPropagation(); setViewingPayment(payment); setShowViewModal(true) }}>
+                          <Eye size={16} />
+                        </EnterpriseIconButton>
+                        {canDelete && (
+                          <EnterpriseIconButton label="Delete payment" tone="danger" disabled={isDeleting} onClick={(event) => { event.stopPropagation(); void handleDelete(payment.id) }}>
+                            {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </EnterpriseIconButton>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -461,16 +476,16 @@ export default function PaymentsPage() {
                   </div>
                 )}
 
-                <div className="mt-3 flex gap-2">
-                  <button onClick={() => { setViewingPayment(payment); setShowViewModal(true) }} className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#2f80ed]/20 bg-[#e7f1ff] text-xs font-bold text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff]"><Eye size={13} /> View</button>
+                <div className="mt-3 flex justify-end gap-2">
+                  <EnterpriseIconButton label="View payment" tone="primary" onClick={() => { setViewingPayment(payment); setShowViewModal(true) }}><Eye size={16} /></EnterpriseIconButton>
                   {payment.status === 'PENDING' && isManager && (
                     <>
-                      <button onClick={() => review(payment.id, 'APPROVED')} disabled={reviewingId === payment.id} className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-50 text-xs font-bold text-emerald-600 transition hover:border-emerald-500/40 hover:bg-emerald-100 disabled:opacity-60">{reviewingId === payment.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}Approve</button>
-                      <button onClick={() => review(payment.id, 'REJECTED')} disabled={reviewingId === payment.id} className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-red-500/20 bg-red-50 text-xs font-bold text-red-600 transition hover:border-red-500/40 hover:bg-red-100 disabled:opacity-60"><X size={13} /> Reject</button>
+                      <EnterpriseIconButton label="Approve payment" tone="success" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'APPROVED')}>{reviewingId === payment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton>
+                      <EnterpriseIconButton label="Reject payment" tone="danger" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'REJECTED')}><X size={16} /></EnterpriseIconButton>
                     </>
                   )}
                   {canDelete && (
-                    <button onClick={() => handleDelete(payment.id)} disabled={isDeleting} className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-50 text-red-600 disabled:opacity-60"><Trash2 size={13} /></button>
+                    <EnterpriseIconButton label="Delete payment" tone="danger" disabled={isDeleting} onClick={() => void handleDelete(payment.id)}>{isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}</EnterpriseIconButton>
                   )}
                 </div>
               </div>
@@ -491,7 +506,7 @@ export default function PaymentsPage() {
           title="Payment details"
           description={viewingPayment.member?.email ?? 'Payment request and transaction information.'}
           headerIcon={<CreditCard className="size-5" />}
-          footer={<div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 flex-1 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 font-black text-muted-foreground transition hover:bg-[var(--dashboard-hover)]">Close</button>{(isManager || viewingPayment.creator?.id === user?.id) && <button type="button" onClick={() => openEditPayment(viewingPayment)} className="min-h-11 rounded-xl bg-[var(--brand)] px-4 text-sm font-black text-white hover:bg-[var(--brand-hover)]">Edit</button>}{viewingPayment.status === 'PENDING' && isManager && <><button type="button" onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700">Approve</button><button type="button" onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-black text-rose-600 hover:bg-rose-100">Reject</button></>}</div>}
+          footer={<div className="flex flex-wrap justify-end gap-2">{(isManager || viewingPayment.creator?.id === user?.id) && <EnterpriseIconButton label="Edit payment" tone="primary" onClick={() => openEditPayment(viewingPayment)}><Edit3 size={16} /></EnterpriseIconButton>}{viewingPayment.status === 'PENDING' && isManager && <><EnterpriseIconButton label="Approve payment" tone="success" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }}>{reviewingId === viewingPayment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton><EnterpriseIconButton label="Reject payment" tone="danger" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }}><X size={16} /></EnterpriseIconButton></>}</div>}
         >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">

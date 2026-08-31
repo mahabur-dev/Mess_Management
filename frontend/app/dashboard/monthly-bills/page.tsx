@@ -3,6 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type Mess, type MonthlyBill } from '@/lib/api-client'
 import {
@@ -202,7 +203,7 @@ export default function MonthlyBillPage() {
             <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                  {['Member', 'Meals', 'Total cost', 'Deposit', 'Due', 'Status'].map(h => (
+                  {['Member', 'Meals', 'Total cost', 'Deposit', 'Due', 'Action'].map(h => (
                     <th key={h} className="px-4 py-4 text-left text-[11px] font-black uppercase tracking-[0.08em] text-[#6b7a99]">{h}</th>
                   ))}
                 </tr>
@@ -211,7 +212,6 @@ export default function MonthlyBillPage() {
                 {loading && (<tr><td colSpan={6} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading monthly bills...</div></td></tr>)}
                 {!loading && filteredBills.length === 0 && (<tr><td colSpan={6} className="px-5 py-12 text-center"><div className="flex flex-col items-center gap-2"><ReceiptText size={40} className="text-[#d8e6f8]" /><p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p></div></td></tr>)}
                 {!loading && filteredBills.map((bill) => {
-                  const statusConf = STATUS_CONFIG[bill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING
                   return (
                     <tr key={bill.id} onClick={() => setViewingBill(bill)} className="cursor-pointer transition hover:bg-[#f8faff]">
                       <td className="px-4 py-4">
@@ -234,9 +234,11 @@ export default function MonthlyBillPage() {
                         <span className={`text-sm font-bold ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</span>
                       </td>
                       <td className="px-4 py-4">
-                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusConf.bg} ${statusConf.text} ${statusConf.border}`}>
-                          {statusConf.icon}{statusConf.label}
-                        </span>
+                        <div className="flex justify-end">
+                          <EnterpriseIconButton label="View monthly bill" tone="primary" onClick={(event) => { event.stopPropagation(); setViewingBill(bill) }}>
+                            <Eye size={16} />
+                          </EnterpriseIconButton>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -323,7 +325,7 @@ export default function MonthlyBillPage() {
                     <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Deposit</p><p className="mt-0.5 font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</p></div>
                     <div className="rounded-lg bg-white p-2.5"><p className="font-black uppercase text-[#6b7a99]">Remaining</p><p className="mt-0.5 font-bold text-green-600">{money(getRemainingBalance(bill))}</p></div>
                   </div>
-                  <button type="button" onClick={() => setViewingBill(bill)} className="mt-3 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] text-xs font-black text-[var(--brand-dark)]"><Eye size={14} /> View bill details</button>
+                  <div className="mt-3 flex justify-end"><EnterpriseIconButton label="View monthly bill" tone="primary" onClick={() => setViewingBill(bill)}><Eye size={16} /></EnterpriseIconButton></div>
                 </div>
               </div>
             )
@@ -349,7 +351,6 @@ export default function MonthlyBillPage() {
           description={viewingBill.member?.email ?? viewingBill.member?.name ?? 'Member bill details'}
           headerIcon={<ReceiptText className="size-5" />}
           status={<span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black ${viewingBillStatus.bg} ${viewingBillStatus.text} ${viewingBillStatus.border}`}>{viewingBillStatus.icon}{viewingBillStatus.label}</span>}
-          footer={<button type="button" onClick={() => setViewingBill(null)} className="min-h-11 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 font-black text-muted-foreground transition hover:bg-[var(--dashboard-hover)]">Close</button>}
         >
           <div className="space-y-5">
             <section className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)] sm:p-5">

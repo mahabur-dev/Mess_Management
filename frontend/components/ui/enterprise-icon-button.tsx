@@ -38,7 +38,7 @@ export function EnterpriseIconButton({
       aria-label={label}
       title={label}
       className={cn(
-        'size-9 shrink-0 rounded-xl border shadow-sm transition focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-50',
+        'size-9 shrink-0 rounded-lg border shadow-sm transition focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-50',
         toneClasses[tone],
         className,
       )}

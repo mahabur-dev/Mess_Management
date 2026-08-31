@@ -98,7 +98,7 @@ const mobileQuickActions = [
     tone: 'green',
   },
   {
-    label: 'Add Payments',
+    label: 'Add Deposit',
     helper: 'Deposit entry',
     href: '/dashboard/payments',
     icon: CreditCard,

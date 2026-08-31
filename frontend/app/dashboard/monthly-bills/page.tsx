@@ -148,18 +148,18 @@ export default function MonthlyBillPage() {
         </div>
 
         <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label className="box-border flex h-11 w-full items-center gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand-ring)] sm:max-w-xl">
-            <Search size={17} className="shrink-0 text-[var(--brand)]" />
+          <label className="relative w-full sm:max-w-xl">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
             <input
               type="text"
               value={memberSearch}
               onChange={(event) => setMemberSearch(event.target.value)}
               placeholder="Search member by name"
-              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[var(--dashboard-ink)] outline-none placeholder:text-muted-foreground"
+              className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-10 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] transition focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
             />
-            {memberSearch.trim() && <EnterpriseIconButton label="Clear member search" className="size-7 rounded-lg" onClick={() => setMemberSearch('')}><XCircle size={15} /></EnterpriseIconButton>}
+            {memberSearch.trim() && <EnterpriseIconButton label="Clear member search" className="absolute right-1.5 top-1/2 size-7 -translate-y-1/2 rounded-lg" onClick={() => setMemberSearch('')}><XCircle size={15} /></EnterpriseIconButton>}
           </label>
-          <p className="px-1 text-[11px] font-semibold text-muted-foreground">Searches member name only</p>
+          <p className="px-1 text-[11px] font-semibold text-[#6b7a99]">Searches member name only</p>
         </div>
 
         {/* Summary Cards - same icons, same font */}

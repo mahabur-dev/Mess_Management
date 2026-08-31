@@ -3,6 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import {
   Dialog,
   DialogContent,
@@ -1591,24 +1592,21 @@ export default function FinancePage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <EnterpriseDetailsDrawer
         open={isViewModalOpen}
         onOpenChange={(open) => {
           setIsViewModalOpen(open)
           if (!open) setViewExpense(null)
         }}
+        eyebrow="Expense"
+        title="Expense details"
+        description="Review purchase, payment, and receipt information."
+        headerIcon={<ReceiptText className="size-5" />}
+        footer={<Button type="button" variant="outline" onClick={() => { setIsViewModalOpen(false); setViewExpense(null) }} className="min-h-11 w-full rounded-xl font-black">Close</Button>}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Expense Details</DialogTitle>
-            <DialogDescription>
-              View expense or utility description and receipt information.
-            </DialogDescription>
-          </DialogHeader>
-
           {viewExpense && (
-            <div className="space-y-4 py-4">
-              <div className="rounded-2xl bg-[#faf9ff] p-4">
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-xs font-black uppercase tracking-wide text-[#6b7a99]">
@@ -1701,8 +1699,7 @@ export default function FinancePage() {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+      </EnterpriseDetailsDrawer>
     </div>
   )
 }

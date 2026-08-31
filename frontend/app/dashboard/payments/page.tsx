@@ -98,6 +98,7 @@ export default function PaymentsPage() {
   )
   const purchasedByMemberOptions = purchasedByOptions.length > 0 ? purchasedByOptions : user ? [user] : []
   const [showModal, setShowModal] = useState(false)
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
   const [showViewModal, setShowViewModal] = useState(false)
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -145,25 +146,35 @@ export default function PaymentsPage() {
   }, [user, isManager])
 
   async function submitPayment() {
-    if (!activeMess || !amount) return
+    if ((!activeMess && !editingPayment) || !amount) return
     setSubmitting(true)
     setMessage('')
     try {
-      await apiClient.submitPayment({
-        messId: activeMess.id,
-        purchasedBy: paymentPurchasedBy || user?.id,
-        amount: Number(amount),
-        method,
-        paymentDate: paymentDate || undefined,
-        categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-      })
+      if (editingPayment) {
+        await apiClient.updatePayment(editingPayment.id, {
+          amount: Number(amount),
+          method,
+          paymentDate: paymentDate || undefined,
+          categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+        })
+      } else {
+        await apiClient.submitPayment({
+          messId: activeMess!.id,
+          purchasedBy: paymentPurchasedBy || user?.id,
+          amount: Number(amount),
+          method,
+          paymentDate: paymentDate || undefined,
+          categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+        })
+      }
       setAmount('')
       setPaymentDate('')
       setSelectedCategories([])
       setPaymentPurchasedBy(user?.id ?? '')
+      setEditingPayment(null)
       setShowModal(false)
       setMessageType('success')
-      setMessage('Payment submitted successfully.')
+      setMessage(editingPayment ? 'Payment updated successfully.' : 'Payment submitted successfully.')
       await load()
     } catch (error) {
       setMessageType('error')
@@ -208,6 +219,17 @@ export default function PaymentsPage() {
 
   function toggleCategory(cat: string) {
     setSelectedCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])
+  }
+
+  function openEditPayment(payment: Payment) {
+    setEditingPayment(payment)
+    setAmount(String(payment.amount ?? ''))
+    setMethod(payment.method)
+    setPaymentDate(payment.payment_date?.slice(0, 10) ?? '')
+    setSelectedCategories(payment.categories ?? [])
+    setShowViewModal(false)
+    setViewingPayment(null)
+    setShowModal(true)
   }
 
   // Filtered payments
@@ -258,7 +280,7 @@ export default function PaymentsPage() {
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{payments.length} payment{payments.length !== 1 ? 's' : ''} recorded</p>
             </div>
           </div>
-          <Button onClick={() => { setPaymentPurchasedBy(user?.id ?? ''); setShowModal(true) }} className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
+          <Button onClick={() => { setEditingPayment(null); setAmount(''); setPaymentDate(''); setSelectedCategories([]); setPaymentPurchasedBy(user?.id ?? ''); setShowModal(true) }} className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
             <Plus size={18} /> Submit Payment
           </Button>
         </div>
@@ -469,7 +491,7 @@ export default function PaymentsPage() {
           title="Payment details"
           description={viewingPayment.member?.email ?? 'Payment request and transaction information.'}
           headerIcon={<CreditCard className="size-5" />}
-          footer={<div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 flex-1 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 font-black text-muted-foreground transition hover:bg-[var(--dashboard-hover)]">Close</button>{viewingPayment.status === 'PENDING' && isManager && <><button type="button" onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700">Approve</button><button type="button" onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-black text-rose-600 hover:bg-rose-100">Reject</button></>}</div>}
+          footer={<div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 flex-1 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 font-black text-muted-foreground transition hover:bg-[var(--dashboard-hover)]">Close</button>{(isManager || viewingPayment.creator?.id === user?.id) && <button type="button" onClick={() => openEditPayment(viewingPayment)} className="min-h-11 rounded-xl bg-[var(--brand)] px-4 text-sm font-black text-white hover:bg-[var(--brand-hover)]">Edit</button>}{viewingPayment.status === 'PENDING' && isManager && <><button type="button" onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700">Approve</button><button type="button" onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-black text-rose-600 hover:bg-rose-100">Reject</button></>}</div>}
         >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -510,17 +532,15 @@ export default function PaymentsPage() {
 
       {/* Submit Payment Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="relative w-full max-w-[520px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
-            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
-            <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/12 blur-2xl" />
-
-            <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
-              <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Payment</p><h2 className="mt-1 text-xl font-black text-[#172554]">Submit Payment</h2></div>
-              <button type="button" onClick={() => { setShowModal(false); setSelectedCategories([]) }} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"><X size={18} /></button>
-            </div>
-
-            <div className="relative p-5 sm:p-6 max-h-[65vh] overflow-y-auto">
+        <EnterpriseDetailsDrawer
+          open={showModal}
+          onOpenChange={(open) => { setShowModal(open); if (!open) { setSelectedCategories([]); setEditingPayment(null) } }}
+          eyebrow="Payment"
+          title={editingPayment ? 'Edit payment' : 'Submit payment'}
+          description={editingPayment ? 'Update the amount, method, date, or categories for this payment.' : 'Send a payment request with its method, date, and categories.'}
+          headerIcon={<CreditCard className="size-5" />}
+        >
+            <div>
               <div className="space-y-4">
                 <div>
                   <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">Amount (৳)</label>
@@ -593,14 +613,13 @@ export default function PaymentsPage() {
 
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
                 <button type="button" onClick={() => { setShowModal(false); setSelectedCategories([]) }} disabled={submitting} className="h-12 rounded-xl border border-[#d8e6f8] bg-white px-4 font-black text-[#53617d] transition hover:bg-[#edf5ff] disabled:opacity-60">Cancel</button>
-                <button type="button" onClick={submitPayment} disabled={submitting || !amount || !activeMess} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70">
+                <button type="button" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70">
                   {submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}
-                  {submitting ? 'Submitting...' : 'Submit Payment'}
+                  {submitting ? 'Saving...' : editingPayment ? 'Save changes' : 'Submit payment'}
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </EnterpriseDetailsDrawer>
       )}
     </div>
   )

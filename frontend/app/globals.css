@@ -585,6 +585,34 @@
     box-shadow: var(--dashboard-shadow-lg);
   }
 
+  /* Shared detail/form drawers: keep portaled content on the dashboard visual system. */
+  .enterprise-details-drawer {
+    color: var(--dashboard-ink);
+    font-family: var(--font-dashboard-sans), system-ui, sans-serif;
+  }
+
+  .enterprise-details-drawer input:not([type='checkbox']):not([type='radio']),
+  .enterprise-details-drawer select,
+  .enterprise-details-drawer textarea {
+    border-color: var(--dashboard-line) !important;
+    background: var(--dashboard-surface) !important;
+    color: var(--dashboard-ink) !important;
+    box-shadow: none;
+  }
+
+  .enterprise-details-drawer input:not([type='checkbox']):not([type='radio']):focus,
+  .enterprise-details-drawer select:focus,
+  .enterprise-details-drawer textarea:focus {
+    border-color: var(--brand) !important;
+    box-shadow: 0 0 0 3px var(--brand-ring) !important;
+  }
+
+  .enterprise-details-drawer [class*='bg-[#faf9ff]'],
+  .enterprise-details-drawer [class*='bg-[#f8faff]'],
+  .enterprise-details-drawer [class*='bg-white/90'] {
+    background: var(--dashboard-surface-subtle) !important;
+  }
+
   .dashboard-stat-card {
     --card-accent: var(--brand);
   }

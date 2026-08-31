@@ -840,6 +840,10 @@ class ApiClient {
     return this.request<Payment>('/payments', { method: 'POST', body: JSON.stringify(data) })
   }
 
+  updatePayment(id: string, data: { amount?: number; method?: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string; paymentDate?: string; categories?: string[] }) {
+    return this.request<Payment>(`/payments/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+  }
+
   getPaymentsByMess(messId: string, params?: QueryParams) {
     return this.requestAllPages<Payment>(`/payments/mess/${messId}`, params)
   }

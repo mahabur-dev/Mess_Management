@@ -32,6 +32,19 @@ export type MembershipRole = 'MANAGER' | 'MEMBER'
 export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
 export type AttendanceStatus = 'ON' | 'OFF'
+export type MealPatternType = 'DAILY' | 'WEEKLY'
+export type MealPatternStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ENDED' | 'CANCELLED'
+export type MealPatternWeekday =
+  | 'SATURDAY'
+  | 'SUNDAY'
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+
+export type MealPatternSchedule = Record<MealName, number>
+export type MealPatternWeeklySchedule = Record<MealPatternWeekday, MealPatternSchedule>
 const MEAL_BASE_VALUES: Record<MealName, number> = {
   BREAKFAST: 0.5,
   LUNCH: 1,
@@ -248,6 +261,39 @@ export interface MealDeadlineInfo {
   timeZone: string
   rule: string
 }
+
+export interface MealPattern {
+  id: string
+  series_id: string
+  version: number
+  membership_id: string
+  pattern_type: MealPatternType
+  status: MealPatternStatus
+  start_date: string
+  end_date?: string | null
+  daily_schedule?: MealPatternSchedule | null
+  weekly_schedule?: MealPatternWeeklySchedule | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  membership?: MessMembership & {
+    user?: Pick<User, 'id' | 'name' | 'email'>
+    mess?: Pick<Mess, 'id' | 'name'>
+  }
+  creator?: Pick<User, 'id' | 'name' | 'email'>
+}
+
+export interface CreateMealPatternInput {
+  membershipId: string
+  patternType: MealPatternType
+  dailySchedule?: MealPatternSchedule
+  weeklySchedule?: MealPatternWeeklySchedule
+  startDate: string
+  endDate?: string
+  activate?: boolean
+}
+
+export type UpdateMealPatternInput = Omit<Partial<CreateMealPatternInput>, 'membershipId' | 'activate'>
 
 export interface MonthlyBill {
   id: string
@@ -713,6 +759,40 @@ class ApiClient {
 
   getMealSummary(messId: string, params?: QueryParams) {
     return this.request(`/meal/mess/${messId}/summary`, { params })
+  }
+
+  getMealPatterns(membershipId?: string) {
+    return this.request<MealPattern[]>('/meal-patterns', { params: { membershipId } })
+  }
+
+  getMealPattern(id: string) {
+    return this.request<MealPattern>(`/meal-patterns/${id}`)
+  }
+
+  createMealPattern(data: CreateMealPatternInput) {
+    return this.request<MealPattern>('/meal-patterns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  updateMealPattern(id: string, data: UpdateMealPatternInput) {
+    return this.request<MealPattern>(`/meal-patterns/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  pauseMealPattern(id: string) {
+    return this.request<MealPattern>(`/meal-patterns/${id}/pause`, { method: 'POST' })
+  }
+
+  resumeMealPattern(id: string) {
+    return this.request<MealPattern>(`/meal-patterns/${id}/resume`, { method: 'POST' })
+  }
+
+  cancelMealPattern(id: string) {
+    return this.request<MealPattern>(`/meal-patterns/${id}/cancel`, { method: 'POST' })
   }
 
   getExpensesByMess(messId: string, params?: QueryParams) {

@@ -1053,36 +1053,18 @@ export default function FinancePage() {
       </div>
 
       {/* Dialogs - Modals for Add, Edit, View, Review */}
-      <Dialog
+      <EnterpriseDetailsDrawer
         open={isAddModalOpen}
         onOpenChange={(open) => {
           setIsAddModalOpen(open)
           if (!open) resetForm()
         }}
+        eyebrow={isEditing ? 'Edit expense' : 'New expense'}
+        title={isEditing ? (expenseFormMode === 'utility' ? 'Edit utility' : 'Edit bazar expense') : (expenseFormMode === 'utility' ? 'Add utility' : 'Add bazar expenses')}
+        description={isEditing ? 'Update the record while keeping its existing information clear.' : 'Add a transparent shared-cost record for your mess.'}
+        headerIcon={<ReceiptText className="size-5" />}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {isEditing
-                ? expenseFormMode === 'utility'
-                  ? 'Edit Utility'
-                  : 'Edit Bazar / Expense'
-                : expenseFormMode === 'utility'
-                  ? 'Add Utility'
-                  : 'Add Bazar / Expenses'}
-            </DialogTitle>
-            <DialogDescription>
-              {isEditing
-                ? expenseFormMode === 'utility'
-                  ? 'Update utility cost, description, or receipt.'
-                  : 'Update your own expense. Upload a new receipt only if you want to replace the old one.'
-                : expenseFormMode === 'utility'
-                  ? 'Add utility cost with category, price, and description.'
-                  : 'Add one or multiple items. You can attach receipt images.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
+          <div className="space-y-6">
             {/* Payment Type Toggle */}
             <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
               <label className="mb-3 block text-sm font-black text-[#0a1433]">Payment Type</label>
@@ -1408,8 +1390,7 @@ export default function FinancePage() {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </EnterpriseDetailsDrawer>
 
       <Dialog
         open={isReviewModalOpen}

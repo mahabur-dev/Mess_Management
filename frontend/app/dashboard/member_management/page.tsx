@@ -5,7 +5,8 @@ import { CalendarDays, Mail, Plus, Search, Loader2, User, X, Trash2, Shield, Use
 import { apiClient, ApiError, type MemberJoinRequest, type Mess as ApiMess } from '@/lib/api-client';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardButton } from '@/components/ui/dashboard-button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer';
+import { EnterpriseSelect } from '@/components/ui/enterprise-select';
 
 // ─── Types & Interfaces ─────────────────────────────────────────────────────
 type MembershipRole = 'MANAGER' | 'MEMBER';
@@ -147,29 +148,15 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <EnterpriseDetailsDrawer
+      open
+      onOpenChange={(open) => !open && onClose()}
+      eyebrow="Members"
+      title="Change member role"
+      description={member.user.email}
+      headerIcon={<UserCog className="size-5" />}
     >
-      <div className="relative w-full max-w-[440px] overflow-hidden rounded-lg border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
-        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/14 blur-2xl" />
-
-        <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Mess Management</p>
-            <h2 className="mt-1 text-xl font-black text-[#172554]">Change Member Role</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="relative p-5 sm:p-6">
+        <div className="space-y-5">
           <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] p-3">
             <div
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-black"
@@ -228,8 +215,7 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </EnterpriseDetailsDrawer>
   );
 }
 
@@ -292,29 +278,15 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
   const availableRooms = activeMess?.rooms?.map(r => r.roomName) ?? [];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <EnterpriseDetailsDrawer
+      open
+      onOpenChange={(open) => !open && onClose()}
+      eyebrow="Members"
+      title="Edit member"
+      description={member.user.email}
+      headerIcon={<Pencil className="size-5" />}
     >
-      <div className="relative w-full max-w-[520px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
-        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/14 blur-2xl" />
-
-        <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Member Management</p>
-            <h2 className="mt-1 text-xl font-black text-[#172554]">Edit Member</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="relative max-h-[calc(100vh-120px)] overflow-y-auto p-5 sm:p-6">
+        <div className="space-y-5">
           {/* Member Info */}
           <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] p-3">
             <div
@@ -335,22 +307,7 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
               <DoorOpen size={12} className="mr-1 inline" />
               Room Assignment
             </label>
-            <Select value={roomNo} onValueChange={setRoomNo}>
-              <SelectTrigger className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
-                <SelectValue placeholder="Select room (optional)" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
-                {availableRooms.map((room) => (
-                  <SelectItem
-                    key={room}
-                    value={room}
-                    className="rounded-lg px-3 py-2 text-sm font-bold text-[#172554] focus:bg-[#edf5ff] focus:text-[#2f80ed]"
-                  >
-                    {room}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <EnterpriseSelect value={roomNo} onValueChange={setRoomNo} placeholder="Select room (optional)" options={availableRooms.map((room) => ({ value: room, label: room }))} />
           </div>
 
           {/* Financial Fields */}
@@ -446,8 +403,7 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </EnterpriseDetailsDrawer>
   );
 }
 
@@ -513,30 +469,15 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <EnterpriseDetailsDrawer
+      open
+      onOpenChange={(open) => !open && onClose()}
+      eyebrow="Members"
+      title="Add new member"
+      description="Invite a member and set their room assignment."
+      headerIcon={<UserPlus className="size-5" />}
     >
-      <div className="relative max-h-[calc(100vh-32px)] w-full max-w-[480px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
-        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/12 blur-2xl" />
-        
-        {/* Header */}
-        <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Members</p>
-            <h2 className="mt-1 text-xl font-black text-[#172554]">Add New Member</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="relative max-h-[calc(100vh-120px)] overflow-y-auto p-5 sm:p-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email Input */}
           <div className="mb-5">
             <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
@@ -565,27 +506,13 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
             <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7a99]">
               Select Room
             </label>
-            <Select
+            <EnterpriseSelect
               value={selectedRoom}
               onValueChange={setSelectedRoom}
               disabled={availableRooms.length === 0}
-            >
-              <SelectTrigger className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] shadow-none outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10">
-                <SelectValue placeholder={availableRooms.length === 0 ? 'No seat-available room' : 'Choose room'} />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border border-[#d8e6f8] bg-white shadow-[0_20px_45px_rgba(65,103,153,0.18)]">
-                {availableRooms.map((room) => (
-                  <SelectItem
-                    key={room.roomName}
-                    value={room.roomName}
-                    className="rounded-lg px-3 py-2 text-sm font-bold text-[#172554] focus:bg-[#edf5ff] focus:text-[#2f80ed]"
-                  >
-                    {room.roomName}
-                    {typeof room.availableSeats === 'number' ? ` (${room.availableSeats} seat left)` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={availableRooms.length === 0 ? 'No seat-available room' : 'Choose room'}
+              options={availableRooms.map((room) => ({ value: room.roomName, label: `${room.roomName}${typeof room.availableSeats === 'number' ? ` (${room.availableSeats} seat left)` : ''}` }))}
+            />
             {availableRooms.length === 0 && (
               <p className="mt-2 text-xs font-semibold text-[#8a9bb5]">
                 All configured rooms are currently full. Add the member without a room or free up a seat first.
@@ -646,8 +573,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
             </DashboardButton>
           </div>
         </form>
-      </div>
-    </div>
+    </EnterpriseDetailsDrawer>
   )
 }
 

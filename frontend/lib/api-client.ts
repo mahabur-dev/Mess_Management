@@ -765,6 +765,10 @@ class ApiClient {
     return this.request<MealPattern[]>('/meal-patterns', { params: { membershipId } })
   }
 
+  getMealPatternsForMess(messId: string) {
+    return this.request<MealPattern[]>(`/meal-patterns/mess/${messId}`)
+  }
+
   getMealPattern(id: string) {
     return this.request<MealPattern>(`/meal-patterns/${id}`)
   }

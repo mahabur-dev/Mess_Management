@@ -4,9 +4,10 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AttendanceStatus, type MealName, type Mess } from '@/lib/api-client'
-import { CalendarDays, Clock, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, Minus, Plus, Save } from 'lucide-react'
+import { CalendarDays, Clock, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, Save } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
+import { MealQuantityControl } from '@/components/meal-pattern/meal-quantity-control'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
 const mealLabels: Record<MealName, string> = {
@@ -181,6 +182,7 @@ export default function MealsPage() {
   }, [members, todayMeals])
 
   const mealTotals = useMemo(() => mealNames.reduce((t, n) => ({ ...t, [n]: memberMealRows.reduce((s, r) => s + r.meals[n], 0) }), { BREAKFAST: 0, LUNCH: 0, DINNER: 0 } as Record<MealName, number>), [memberMealRows])
+  const mealDraftTotal = useMemo(() => mealNames.reduce((total, mealName) => total + mealDrafts[mealName], 0), [mealDrafts])
 
   async function refreshMealsForDate() {
     if (!activeMess?.id) return
@@ -294,28 +296,32 @@ export default function MealsPage() {
           </div>
         )}
 
-        <div className="mb-4 grid gap-4 md:grid-cols-3">
-          {mealNames.map(mealName => {
-            const isLoading = userMealsLoading
-            const quantity = mealDrafts[mealName]
-            const step = getMealBaseValue(mealName)
-            return (
-              <div key={mealName} className="dashboard-card dashboard-meal-card group relative overflow-hidden p-5">
-                <div className="mb-5 flex items-start justify-between gap-3">
-                  <div className="dashboard-meal-icon flex h-11 w-11 items-center justify-center rounded-xl text-[var(--brand)]">{MEAL_ICONS[mealName]}</div>
-                  <span className="dashboard-eyebrow rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-[9px] tracking-[0.1em]">{isLoading ? 'Loading' : 'Meal quantity'}</span>
-                </div>
-                <h3 className="text-lg font-semibold text-foreground">{mealLabels[mealName]}</h3>
-                <p className="mt-1 text-xs font-semibold text-muted-foreground">For {formatDate(date)} · +{step} per click</p>
-                <div className="mt-5 flex items-center justify-between rounded-2xl bg-[var(--dashboard-surface-subtle)] p-2">
-                  <button type="button" aria-label={`Decrease ${mealLabels[mealName]}`} disabled={!activeMess || isLoading || mealControlsLocked || quantity <= 0} onClick={() => setMealDrafts(c => ({ ...c, [mealName]: Math.max(0, +(c[mealName] - step).toFixed(2)) }))} className="dashboard-meal-step grid h-11 w-11 place-items-center rounded-xl text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"><Minus size={18} strokeWidth={2.5} /></button>
-                  <span className="text-3xl font-semibold tracking-tight text-foreground">{quantity}</span>
-                  <button type="button" aria-label={`Increase ${mealLabels[mealName]}`} disabled={!activeMess || isLoading || mealControlsLocked} onClick={() => setMealDrafts(c => ({ ...c, [mealName]: +(c[mealName] + step).toFixed(2) }))} className="dashboard-meal-step grid h-11 w-11 place-items-center rounded-xl bg-[var(--brand)] text-white shadow-[0_8px_18px_var(--brand-shadow)] transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} strokeWidth={2.5} /></button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <section className="dashboard-card mb-4 overflow-hidden ring-1 ring-[var(--dashboard-line)]/70">
+          <header className="flex items-start gap-3 border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--brand-softer),var(--dashboard-surface))] p-4 sm:p-5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] shadow-[0_8px_18px_color-mix(in_srgb,var(--brand)_12%,transparent)]">
+              <CalendarDays className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Manual meal entry</p>
+              <h2 className="font-semibold tracking-tight text-foreground">Meals for {formatDate(date)}</h2>
+              <p className="mt-0.5 text-xs font-semibold leading-5 text-muted-foreground">Turn each meal on, then adjust its quantity for this date.</p>
+            </div>
+            <span className="shrink-0 rounded-lg bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-semibold tabular-nums text-[var(--brand-dark)] shadow-sm dark:text-[var(--brand-bright)]">
+              {userMealsLoading ? 'Loading' : `${mealDraftTotal} meals`}
+            </span>
+          </header>
+          <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
+            {mealNames.map((mealName) => (
+              <MealQuantityControl
+                key={mealName}
+                meal={mealName}
+                value={mealDrafts[mealName]}
+                onChange={(value) => setMealDrafts((current) => ({ ...current, [mealName]: value }))}
+                disabled={!activeMess || userMealsLoading || mealControlsLocked}
+              />
+            ))}
+          </div>
+        </section>
 
         <div className="mb-8 flex justify-end">
           <Button type="button" onClick={saveMyMeals} disabled={!activeMess || userMealsLoading || mealControlsLocked || savingMeals} className="h-11 w-full gap-2 rounded-xl bg-[var(--brand)] px-6 font-semibold text-white shadow-[0_12px_24px_var(--brand-shadow)] transition hover:bg-[var(--brand-hover)] sm:w-auto">

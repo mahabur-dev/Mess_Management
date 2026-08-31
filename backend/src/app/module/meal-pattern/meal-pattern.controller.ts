@@ -16,6 +16,8 @@ export class MealPatternController {
   create(@Req() req: Request, @Body() dto: CreateMealPatternDto) { return this.service.create(req.user!.id, req.user!.role, dto).then((data) => ({ message: 'Meal pattern created successfully', data })); }
   @Get() @ApiOperation({ summary: 'List accessible meal-pattern versions' })
   list(@Req() req: Request, @Query('membershipId') membershipId?: string) { return this.service.findMine(req.user!.id, req.user!.role, membershipId).then((data) => ({ message: 'Meal patterns fetched', data })); }
+  @Get('mess/:messId') @ApiOperation({ summary: 'List all active-member meal-pattern versions for one mess' })
+  listByMess(@Req() req: Request, @Param('messId') messId: string) { return this.service.findByMess(req.user!.id, req.user!.role, messId).then((data) => ({ message: 'Meal patterns fetched', data })); }
   @Get(':id') get(@Req() req: Request, @Param('id') id: string) { return this.service.findOne(id, req.user!.id, req.user!.role).then((data) => ({ message: 'Meal pattern fetched', data })); }
   @Patch(':id') update(@Req() req: Request, @Param('id') id: string, @Body() dto: UpdateMealPatternDto) { return this.service.update(id, req.user!.id, req.user!.role, dto).then((data) => ({ message: 'Meal pattern version created', data })); }
   @Post(':id/pause') pause(@Req() req: Request, @Param('id') id: string) { return this.status(req, id, MealPatternStatus.PAUSED); }

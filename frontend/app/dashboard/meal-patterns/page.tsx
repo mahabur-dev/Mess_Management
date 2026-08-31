@@ -76,7 +76,7 @@ export default function MealPatternsPage() {
   )
   const visibleMemberships = isManager ? activeMemberships : ownMembership ? [ownMembership] : []
   const membershipIds = useMemo(() => visibleMemberships.map((membership) => membership.id), [visibleMemberships])
-  const { data: patternsByMembership = {}, error: patternsError, isLoading: patternsLoading, mutate: refreshPatterns } = useMealPatternDashboard(membershipIds)
+  const { data: patternsByMembership = {}, error: patternsError, isLoading: patternsLoading, mutate: refreshPatterns } = useMealPatternDashboard(activeMess?.id, membershipIds, isManager)
 
   const rows = useMemo<MemberPatternRow[]>(() => visibleMemberships.map((membership) => {
     const history = patternsByMembership[membership.id] ?? []

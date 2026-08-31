@@ -1,6 +1,6 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { MealAttendanceSource, MealName, MealPatternStatus, MealPatternType, MembershipRole, Prisma } from '@prisma/client';
+import { MealAttendanceSource, MealName, MealPatternStatus, MealPatternType, MealStatus, MembershipRole, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -21,10 +21,11 @@ import {
   shiftDateKey,
 } from '../meal/meal-policy';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
+import config from 'src/app/config';
 
 const DAY_MS = 86_400_000;
 const patternInclude = {
-  membership: { include: { user: { select: { id: true, name: true, email: true } }, mess: { select: { id: true, name: true } } } },
+  membership: { include: { user: { select: { id: true, name: true, email: true } }, mess: { select: { id: true, name: true, created_by: true } } } },
   creator: { select: { id: true, name: true, email: true } },
 } satisfies Prisma.MealPatternInclude;
 
@@ -38,15 +39,18 @@ export class MealPatternService {
   async create(actorId: string, role: string, dto: CreateMealPatternDto) {
     const membership = await this.getMembership(dto.membershipId);
     await this.assertAccess(actorId, role, membership, true);
+    await this.ensureActiveSubscription(membership.mess_id, role);
     const start = parseDate(dto.startDate);
     const end = dto.endDate ? parseDate(dto.endDate) : null;
     if (end && end < start) throw new ConflictException('endDate must be on or after startDate');
     const schedule = normalizeSchedule(dto.patternType, dto.dailySchedule, dto.weeklySchedule);
     const activate = dto.activate !== false;
+    let replacedPatternId: string | undefined;
     const pattern = await this.prisma.$transaction(async (tx) => {
       const latest = await tx.mealPattern.findFirst({ where: { membership_id: membership.id }, orderBy: { version: 'desc' } });
       const active = await tx.mealPattern.findFirst({ where: { membership_id: membership.id, status: MealPatternStatus.ACTIVE } });
       if (activate && active) {
+        replacedPatternId = active.id;
         const previousEnd = new Date(start.getTime() - 86400000);
         await tx.mealPattern.update({ where: { id: active.id }, data: { end_date: previousEnd, status: MealPatternStatus.ENDED } });
       }
@@ -55,14 +59,44 @@ export class MealPatternService {
         include: patternInclude,
       });
     });
-    if (activate) await this.generateActivationMeals(pattern);
+    if (activate) {
+      if (replacedPatternId) await this.removeFuturePatternAttendances({ id: replacedPatternId, membership });
+      await this.generateActivationMeals(pattern);
+    }
     return pattern;
   }
 
   async findMine(actorId: string, role: string, membershipId?: string) {
-    const memberships = await this.prisma.messMembership.findMany({ where: membershipId ? { id: membershipId } : { user_id: actorId, is_active: true }, select: { id: true, user_id: true, role: true, mess_id: true, mess: { select: { created_by: true } } } });
-    const allowed = memberships.filter((m) => this.isAllowed(actorId, role, m, false));
-    return this.prisma.mealPattern.findMany({ where: { membership_id: { in: allowed.map((m) => m.id) } }, include: patternInclude, orderBy: [{ membership_id: 'asc' }, { version: 'desc' }] });
+    if (membershipId) {
+      const membership = await this.getMembership(membershipId);
+      await this.assertAccess(actorId, role, membership, false);
+      return this.prisma.mealPattern.findMany({ where: { membership_id: membership.id }, include: patternInclude, orderBy: [{ membership_id: 'asc' }, { version: 'desc' }] });
+    }
+    return this.prisma.mealPattern.findMany({
+      where: { membership: { user_id: actorId, is_active: true } },
+      include: patternInclude,
+      orderBy: [{ membership_id: 'asc' }, { version: 'desc' }],
+    });
+  }
+
+  /** Returns every active member's pattern history in one query for a mess manager. */
+  async findByMess(actorId: string, role: string, messId: string) {
+    const mess = await this.prisma.mess.findUnique({ where: { id: messId }, select: { id: true, created_by: true } });
+    if (!mess) throw new NotFoundException('Mess not found');
+    if (role !== 'ADMIN' && mess.created_by !== actorId) {
+      const actorMembership = await this.prisma.messMembership.findUnique({
+        where: { mess_id_user_id: { mess_id: messId, user_id: actorId } },
+        select: { is_active: true, role: true },
+      });
+      if (!actorMembership?.is_active || actorMembership.role !== MembershipRole.MANAGER) {
+        throw new ForbiddenException('Only a mess manager can view all meal patterns');
+      }
+    }
+    return this.prisma.mealPattern.findMany({
+      where: { membership: { mess_id: messId, is_active: true } },
+      include: patternInclude,
+      orderBy: [{ membership_id: 'asc' }, { version: 'desc' }],
+    });
   }
 
   async findOne(id: string, actorId: string, role: string) {
@@ -77,22 +111,35 @@ export class MealPatternService {
     if (!current) throw new NotFoundException('Meal pattern not found');
     const membership = await this.getMembership(current.membership_id);
     await this.assertAccess(actorId, role, membership, true);
+    await this.ensureActiveSubscription(membership.mess_id, role);
     if (current.status === MealPatternStatus.CANCELLED || current.status === MealPatternStatus.ENDED) throw new ConflictException('Only an active, paused, or draft pattern can be changed');
     const type = dto.patternType ?? current.pattern_type;
     const schedule = normalizeSchedule(type, dto.dailySchedule ?? current.daily_schedule, dto.weeklySchedule ?? current.weekly_schedule);
     const start = dto.startDate ? parseDate(dto.startDate) : current.start_date;
     const end = dto.endDate === undefined ? current.end_date : dto.endDate ? parseDate(dto.endDate) : null;
     if (end && end < start) throw new ConflictException('endDate must be on or after startDate');
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       await tx.mealPattern.update({ where: { id }, data: { status: MealPatternStatus.ENDED, end_date: new Date(start.getTime() - 86400000) } });
       return tx.mealPattern.create({ data: { series_id: current.series_id, version: current.version + 1, membership_id: current.membership_id, pattern_type: type, status: current.status, start_date: start, end_date: end, daily_schedule: schedule.dailySchedule ?? Prisma.JsonNull, weekly_schedule: schedule.weeklySchedule ?? Prisma.JsonNull, created_by: actorId }, include: patternInclude });
     });
+    if (current.status === MealPatternStatus.ACTIVE) {
+      await this.removeFuturePatternAttendances({ id: current.id, membership });
+      await this.generateActivationMeals(updated);
+    }
+    return updated;
   }
 
   async changeStatus(id: string, actorId: string, role: string, status: MealPatternStatus) {
     const pattern = await this.prisma.mealPattern.findUnique({ where: { id }, include: { membership: { include: { mess: true } } } });
     if (!pattern) throw new NotFoundException('Meal pattern not found');
     await this.assertAccess(actorId, role, pattern.membership, true);
+    await this.ensureActiveSubscription(pattern.membership.mess_id, role);
+    const replacedPatterns = status === MealPatternStatus.ACTIVE
+      ? await this.prisma.mealPattern.findMany({
+        where: { membership_id: pattern.membership_id, status: MealPatternStatus.ACTIVE, id: { not: id } },
+        include: { membership: { include: { mess: true } } },
+      })
+      : [];
     if (status === MealPatternStatus.ACTIVE) {
       await this.prisma.$transaction(async (tx) => {
         await tx.mealPattern.updateMany({ where: { membership_id: pattern.membership_id, status: MealPatternStatus.ACTIVE, id: { not: id } }, data: { status: MealPatternStatus.ENDED, end_date: new Date(pattern.start_date.getTime() - 86400000) } });
@@ -101,7 +148,10 @@ export class MealPatternService {
     } else await this.prisma.mealPattern.update({ where: { id }, data: { status } });
     const updated = await this.findOne(id, actorId, role);
     if (status === MealPatternStatus.ACTIVE) {
+      for (const replacedPattern of replacedPatterns) await this.removeFuturePatternAttendances(replacedPattern);
       await this.generateActivationMeals(updated);
+    } else if (status === MealPatternStatus.PAUSED || status === MealPatternStatus.CANCELLED || status === MealPatternStatus.ENDED) {
+      await this.removeFuturePatternAttendances(pattern);
     }
     return updated;
   }
@@ -134,12 +184,20 @@ export class MealPatternService {
   private async generateDate(pattern: any, scheduledDate: Date) {
     const schedule = scheduleForDate(pattern, scheduledDate);
     let changed = false;
-    for (const mealName of Object.keys(schedule) as MealName[]) {
-      if (schedule[mealName] <= 0) continue;
+    for (const mealName of Object.values(MealName)) {
       const attendanceChanged = await this.prisma.$transaction(async (tx) => {
-        const meal = await tx.meal.upsert({ where: { mess_id_name_scheduled_date: { mess_id: pattern.membership.mess_id, name: mealName, scheduled_date: scheduledDate } }, update: {}, create: { mess_id: pattern.membership.mess_id, name: mealName, scheduled_date: scheduledDate, created_by: pattern.created_by, status: 'CONFIRMED' } });
+        const scheduledQuantity = schedule[mealName];
+        const existingMeal = await tx.meal.findUnique({ where: { mess_id_name_scheduled_date: { mess_id: pattern.membership.mess_id, name: mealName, scheduled_date: scheduledDate } } });
+        if (scheduledQuantity <= 0) {
+          if (!existingMeal || existingMeal.is_locked || existingMeal.status === MealStatus.LOCKED || existingMeal.status === MealStatus.CANCELLED) return false;
+          const existing = await tx.mealAttendance.findUnique({ where: { meal_id_member_id: { meal_id: existingMeal.id, member_id: pattern.membership.user_id } } });
+          if (existing?.source !== MealAttendanceSource.PATTERN) return false;
+          await tx.mealAttendance.delete({ where: { id: existing.id } });
+          return true;
+        }
+        const meal = existingMeal ?? await tx.meal.create({ data: { mess_id: pattern.membership.mess_id, name: mealName, scheduled_date: scheduledDate, created_by: pattern.created_by, status: 'CONFIRMED' } });
         if (meal.is_locked || meal.status === 'LOCKED' || meal.status === 'CANCELLED') return false;
-        const guests = Number((schedule[mealName] - getMealBaseValue(mealName)).toFixed(2));
+        const guests = Number((scheduledQuantity - getMealBaseValue(mealName)).toFixed(2));
         const existing = await tx.mealAttendance.findUnique({ where: { meal_id_member_id: { meal_id: meal.id, member_id: pattern.membership.user_id } } });
         if (existing?.source === MealAttendanceSource.PATTERN) {
           await tx.mealAttendance.update({ where: { id: existing.id }, data: { status: 'ON', guests, pattern_id: pattern.id } });
@@ -179,7 +237,45 @@ export class MealPatternService {
     }
   }
 
+  /** Removes only editable, future rows that were generated by this pattern. */
+  private async removeFuturePatternAttendances(pattern: any, now = new Date()) {
+    const firstFutureDate = parseMealDate(shiftDateKey(getDhakaDateKey(now), 1));
+    const attendances = await this.prisma.mealAttendance.findMany({
+      where: {
+        source: MealAttendanceSource.PATTERN,
+        pattern_id: pattern.id,
+        member_id: pattern.membership.user_id,
+        meal: {
+          mess_id: pattern.membership.mess_id,
+          scheduled_date: { gte: firstFutureDate },
+          is_locked: false,
+          status: { notIn: [MealStatus.LOCKED, MealStatus.CANCELLED] },
+        },
+      },
+      select: { id: true, meal: { select: { scheduled_date: true } } },
+    });
+    if (!attendances.length) return;
+    await this.prisma.mealAttendance.deleteMany({ where: { id: { in: attendances.map((attendance) => attendance.id) } } });
+    await this.billReconciliation.reconcile(
+      pattern.membership.mess_id,
+      ...attendances.map((attendance) => attendance.meal.scheduled_date),
+    );
+  }
+
   private async getMembership(id: string) { const membership = await this.prisma.messMembership.findUnique({ where: { id }, include: { mess: true } }); if (!membership) throw new NotFoundException('Mess membership not found'); if (!membership.is_active) throw new ConflictException('Membership is not active'); return membership; }
-  private isAllowed(actorId: string, role: string, membership: any, manage: boolean) { if (role === 'ADMIN' || membership.user_id === actorId) return true; if (!manage) return membership.role === MembershipRole.MANAGER || membership.mess.created_by === actorId || role === 'MANAGER'; return membership.role === MembershipRole.MANAGER || membership.mess.created_by === actorId || role === 'MANAGER'; }
-  private async assertAccess(actorId: string, role: string, membership: any, manage: boolean) { if (!this.isAllowed(actorId, role, membership, manage)) throw new ForbiddenException('You do not have access to this meal pattern'); }
+  private async isAllowed(actorId: string, role: string, membership: any) {
+    if (role === 'ADMIN' || membership.user_id === actorId || membership.mess.created_by === actorId) return true;
+    const actorMembership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: membership.mess_id, user_id: actorId } },
+      select: { is_active: true, role: true },
+    });
+    return Boolean(actorMembership?.is_active && actorMembership.role === MembershipRole.MANAGER);
+  }
+  private async assertAccess(actorId: string, role: string, membership: any, _manage: boolean) { if (!await this.isAllowed(actorId, role, membership)) throw new ForbiddenException('You do not have access to this meal pattern'); }
+  private async ensureActiveSubscription(messId: string, role: string) {
+    if (!config.features.subscriptionEnabled || role === 'ADMIN') return;
+    const subscription = await this.prisma.subscription.findUnique({ where: { mess_id: messId }, select: { status: true, end_date: true } });
+    const active = subscription?.status === 'ACTIVE' && (!subscription.end_date || subscription.end_date.getTime() >= Date.now());
+    if (!active) throw new ForbiddenException('The mess subscription must be active to change meal patterns');
+  }
 }

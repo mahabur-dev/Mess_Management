@@ -9,7 +9,7 @@ type DrawerActionPriority = 'primary' | 'secondary'
 
 /**
  * Shared drawer action layout. It keeps every drawer's actions anchored in the
- * footer, gives all actions a consistent 44px target, and stacks safely on mobile.
+ * footer, uses compact 200px desktop actions, and stacks safely on mobile.
  */
 export function EnterpriseDrawerFooter({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -25,13 +25,12 @@ interface EnterpriseDrawerActionProps extends Omit<ComponentProps<typeof Enterpr
 }
 
 /** A consistently sized, labelled action for a shared drawer footer. */
-export function EnterpriseDrawerAction({ priority = 'secondary', className, ...props }: EnterpriseDrawerActionProps) {
+export function EnterpriseDrawerAction({ priority: _priority = 'secondary', className, ...props }: EnterpriseDrawerActionProps) {
   return (
     <EnterpriseButton
       size="md"
       className={cn(
-        'w-full max-w-[300px] shrink-0',
-        priority === 'primary' ? 'sm:min-w-48' : 'sm:min-w-32',
+        'w-[min(100%,300px)] max-w-[300px] shrink-0 sm:w-[200px]',
         className,
       )}
       {...props}

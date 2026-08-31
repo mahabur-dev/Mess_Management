@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarClock, Edit3, History, Pause, Play, StopCircle, UserRound } from 'lucide-react'
+import { CalendarClock, CalendarRange, Edit3, History, Pause, Play, StopCircle, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -48,6 +48,18 @@ const actionCopy = {
   },
 }
 
+function DetailMetric({ icon: Icon, label, value }: { icon: typeof CalendarRange; label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 py-3 shadow-sm">
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]"><Icon className="size-4" /></span>
+      <div className="min-w-0">
+        <p className="text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+        <p className="mt-0.5 truncate text-xs font-black text-foreground">{value}</p>
+      </div>
+    </div>
+  )
+}
+
 export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction }: PatternDetailsDrawerProps) {
   const [pendingAction, setPendingAction] = useState<PatternAction | null>(null)
   const [saving, setSaving] = useState(false)
@@ -73,58 +85,59 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full gap-0 overflow-hidden border-[var(--dashboard-line)] bg-[var(--dashboard-bg)] p-0 sm:max-w-2xl">
+        <SheetContent className="meal-pattern-details-sheet w-full gap-0 overflow-hidden border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0 shadow-2xl sm:max-w-[42rem]">
           {pattern && row ? (
             <>
-              <SheetHeader className="shrink-0 border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--brand-softer),var(--dashboard-surface))] p-5 pr-14 sm:p-6 sm:pr-14">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><UserRound className="size-5" /></span>
-                  <div className="min-w-0">
-                    <p className="mb-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Meal pattern</p>
-                    <SheetTitle className="truncate text-xl font-black">{memberName}</SheetTitle>
-                    <SheetDescription className="truncate font-semibold">{row.membership.user?.email ?? 'Meal pattern details'}</SheetDescription>
+              <SheetHeader className="shrink-0 border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--dashboard-surface),var(--brand-softer))] p-5 pr-14 sm:p-6 sm:pr-16">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><UserRound className="size-5" /></span>
+                    <div className="min-w-0">
+                      <p className="mb-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Meal pattern</p>
+                      <SheetTitle className="truncate text-xl font-black tracking-tight">{memberName}</SheetTitle>
+                      <SheetDescription className="truncate font-semibold">{row.membership.user?.email ?? 'Meal pattern details'}</SheetDescription>
+                    </div>
                   </div>
+                  <PatternStatusBadge status={pattern.status} className="mt-1 shrink-0" />
                 </div>
               </SheetHeader>
 
-              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-[var(--dashboard-bg)] p-4 sm:p-6">
                 {actionError && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">{actionError}</div>}
-                <section className="dashboard-card overflow-hidden ring-1 ring-[var(--dashboard-line)]/70">
-                  <div className="border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 sm:p-5">
-                  <div className="flex items-start justify-between gap-3">
+
+                <section className="overflow-hidden rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] shadow-[var(--dashboard-shadow)]">
+                  <div className="flex flex-col gap-4 border-b border-[var(--dashboard-line)] p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Current schedule</p>
-                      <h3 className="mt-1 text-lg font-black text-foreground">{pattern.pattern_type === 'DAILY' ? 'Same every day' : 'Weekly routine'}</h3>
-                      <p className="mt-1 text-xs font-semibold text-muted-foreground">{getPatternWeeklyTotal(pattern)} meals per week · Version {pattern.version}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">Current routine</p>
+                      <h2 className="mt-1 text-xl font-black tracking-tight text-foreground">{pattern.pattern_type === 'DAILY' ? 'Same meals every day' : 'Weekly meal routine'}</h2>
+                      <p className="mt-1 text-xs font-semibold text-muted-foreground">{pattern.pattern_type === 'DAILY' ? 'One schedule applied every day' : 'A different schedule for each day'} · Version {pattern.version}</p>
                     </div>
-                    <PatternStatusBadge status={pattern.status} />
+                    <div className="rounded-xl bg-[var(--brand-softer)] px-3 py-2 text-left sm:text-right">
+                      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[var(--brand)]">Weekly total</p>
+                      <p className="mt-0.5 text-lg font-black tabular-nums text-foreground">{getPatternWeeklyTotal(pattern)} <span className="text-xs text-muted-foreground">meals</span></p>
+                    </div>
                   </div>
-                  </div>
+
                   <div className="p-4 sm:p-5"><SchedulePreview pattern={pattern} /></div>
-                  <div className="grid grid-cols-2 gap-3 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)]/45 p-4 sm:p-5">
-                    <div className="rounded-xl bg-[var(--dashboard-surface)] p-3 shadow-sm">
-                      <p className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">Starts</p>
-                      <p className="mt-1 text-xs font-black text-foreground sm:text-sm">{formatPatternDate(pattern.start_date)}</p>
-                    </div>
-                    <div className="rounded-xl bg-[var(--dashboard-surface)] p-3 shadow-sm">
-                      <p className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">Ends</p>
-                      <p className="mt-1 text-xs font-black text-foreground sm:text-sm">{pattern.end_date ? formatPatternDate(pattern.end_date) : 'Until stopped'}</p>
-                    </div>
+
+                  <div className="grid gap-2 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)]/60 p-3 sm:grid-cols-2 sm:p-4">
+                    <DetailMetric icon={CalendarRange} label="Starts" value={formatPatternDate(pattern.start_date)} />
+                    <DetailMetric icon={CalendarClock} label="Ends" value={pattern.end_date ? formatPatternDate(pattern.end_date) : 'Until stopped'} />
                   </div>
                 </section>
 
-                <section className="dashboard-card p-4 sm:p-5">
-                  <div className="mb-4 flex items-center gap-2">
-                    <History className="size-4 text-[var(--brand)]" />
-                    <h3 className="font-black text-foreground">Pattern history</h3>
+                <section className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)] sm:p-5">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="grid size-8 place-items-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]"><History className="size-4" /></span>
+                    <div><h3 className="text-sm font-black text-foreground">Version history</h3><p className="text-[11px] font-semibold text-muted-foreground">Previous changes remain available here.</p></div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="divide-y divide-[var(--dashboard-line)] overflow-hidden rounded-xl border border-[var(--dashboard-line)]">
                     {history.map((version) => (
-                      <div key={version.id} className="flex items-center gap-3 rounded-xl bg-[var(--dashboard-surface-subtle)] p-3">
-                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--dashboard-surface)] text-xs font-black text-[var(--brand)]">v{version.version}</span>
+                      <div key={version.id} className="flex items-center gap-3 bg-[var(--dashboard-surface)] px-3 py-3">
+                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--dashboard-surface-subtle)] text-[10px] font-black text-[var(--brand)]">v{version.version}</span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-black text-foreground">{version.pattern_type === 'DAILY' ? 'Same every day' : 'Weekly routine'}</p>
-                          <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{formatPatternDate(version.start_date)} · by {version.creator?.name ?? 'member'}</p>
+                          <p className="truncate text-xs font-black text-foreground">{version.pattern_type === 'DAILY' ? 'Daily routine' : 'Weekly routine'}</p>
+                          <p className="mt-0.5 truncate text-[11px] font-semibold text-muted-foreground">Started {formatPatternDate(version.start_date)} · by {version.creator?.name ?? 'member'}</p>
                         </div>
                         <PatternStatusBadge status={version.status} className="shrink-0" />
                       </div>
@@ -133,18 +146,18 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
                 </section>
               </div>
 
-              <div className="shrink-0 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]/95 p-4 shadow-[0_-12px_30px_color-mix(in_srgb,var(--dashboard-ink)_6%,transparent)] backdrop-blur">
+              <div className="shrink-0 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3 shadow-[0_-12px_30px_color-mix(in_srgb,var(--dashboard-ink)_6%,transparent)] sm:p-4">
                 <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-                  {isPatternConfigurable(pattern) && <Button onClick={() => onEdit(row)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] font-black text-white hover:bg-[var(--brand-hover)]"><Edit3 className="size-4" /> Change</Button>}
-                  {pattern.status === 'ACTIVE' && <Button variant="outline" onClick={() => setPendingAction('pause')} className="min-h-11 rounded-xl font-black"><Pause className="size-4" /> Pause</Button>}
-                  {(pattern.status === 'PAUSED' || pattern.status === 'DRAFT') && <Button variant="outline" onClick={() => setPendingAction('resume')} className="min-h-11 rounded-xl font-black text-emerald-700"><Play className="size-4" /> {pattern.status === 'DRAFT' ? 'Activate' : 'Resume'}</Button>}
-                  {!['ENDED', 'CANCELLED'].includes(pattern.status) && <Button variant="ghost" onClick={() => setPendingAction('cancel')} className="min-h-11 rounded-xl font-black text-rose-600 hover:bg-rose-50 hover:text-rose-700"><StopCircle className="size-4" /> End</Button>}
+                  {isPatternConfigurable(pattern) && <Button onClick={() => onEdit(row)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] px-5 font-black text-white shadow-[0_8px_18px_var(--brand-shadow)] hover:bg-[var(--brand-hover)]"><Edit3 className="size-4" /> Change pattern</Button>}
+                  {pattern.status === 'ACTIVE' && <Button variant="outline" onClick={() => setPendingAction('pause')} className="min-h-11 rounded-xl px-4 font-black"><Pause className="size-4" /> Pause</Button>}
+                  {(pattern.status === 'PAUSED' || pattern.status === 'DRAFT') && <Button variant="outline" onClick={() => setPendingAction('resume')} className="min-h-11 rounded-xl px-4 font-black text-emerald-700"><Play className="size-4" /> {pattern.status === 'DRAFT' ? 'Activate' : 'Resume'}</Button>}
+                  {!['ENDED', 'CANCELLED'].includes(pattern.status) && <Button variant="ghost" onClick={() => setPendingAction('cancel')} className="min-h-11 rounded-xl px-3 font-black text-rose-600 hover:bg-rose-50 hover:text-rose-700"><StopCircle className="size-4" /> End</Button>}
                 </div>
               </div>
             </>
           ) : (
-            <div className="grid min-h-full place-items-center p-8 text-center">
-              <div><CalendarClock className="mx-auto size-10 text-muted-foreground" /><p className="mt-3 font-black">No pattern selected</p></div>
+            <div className="grid min-h-full place-items-center bg-[var(--dashboard-surface)] p-8 text-center">
+              <div><CalendarClock className="mx-auto size-10 text-muted-foreground" /><p className="mt-3 font-black text-foreground">No pattern selected</p></div>
             </div>
           )}
         </SheetContent>

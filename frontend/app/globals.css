@@ -21,6 +21,16 @@
   --marketing-strong: #073735;
   --marketing-line: #dfe9e8;
   --marketing-glow: rgba(0, 139, 128, 0.1);
+  /* Portaled dialogs live outside .dashboard-theme, so they need the same surface tokens here. */
+  --dashboard-bg: #eef7f5;
+  --dashboard-surface: #ffffff;
+  --dashboard-surface-raised: rgba(255, 255, 255, 0.94);
+  --dashboard-surface-subtle: #e7f3f1;
+  --dashboard-line: #dceae8;
+  --dashboard-line-strong: #c5ddda;
+  --dashboard-hover: #e8f6f4;
+  --dashboard-shadow: 0 2px 4px rgba(7, 55, 53, 0.04), 0 14px 34px rgba(7, 55, 53, 0.08);
+  --dashboard-shadow-lg: 0 22px 52px rgba(7, 55, 53, 0.14);
   --dashboard-ink: #073735;
   --dashboard-muted: #64748b;
   --background: #f8fbff;
@@ -76,6 +86,15 @@
   --marketing-strong: #e8fffc;
   --marketing-line: #234447;
   --marketing-glow: rgba(37, 199, 184, 0.12);
+  --dashboard-bg: #071718;
+  --dashboard-surface: #0d2324;
+  --dashboard-surface-raised: #11292a;
+  --dashboard-surface-subtle: #102c2c;
+  --dashboard-line: #214344;
+  --dashboard-line-strong: #2d5655;
+  --dashboard-hover: #153536;
+  --dashboard-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 12px 34px rgba(0, 0, 0, 0.24);
+  --dashboard-shadow-lg: 0 22px 52px rgba(0, 0, 0, 0.32);
   --background: #0F172A;
   --foreground: #ffffff;
   --card: #1e293b;

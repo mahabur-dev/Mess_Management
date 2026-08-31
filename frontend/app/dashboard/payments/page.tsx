@@ -1,8 +1,8 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
@@ -282,9 +282,9 @@ export default function PaymentsPage() {
               <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{payments.length} deposit{payments.length !== 1 ? 's' : ''} recorded</p>
             </div>
           </div>
-          <Button onClick={() => { setEditingPayment(null); setAmount(''); setPaymentDate(''); setSelectedCategories([]); setPaymentPurchasedBy(user?.id ?? ''); setShowModal(true) }} className="h-[45px] gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-black text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)]">
+          <EnterpriseButton onClick={() => { setEditingPayment(null); setAmount(''); setPaymentDate(''); setSelectedCategories([]); setPaymentPurchasedBy(user?.id ?? ''); setShowModal(true) }} className="gap-2">
             <Plus size={18} /> Add Deposit
-          </Button>
+          </EnterpriseButton>
         </div>
 
         {/* Summary Cards */}
@@ -618,11 +618,11 @@ export default function PaymentsPage() {
               </div>
 
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.6fr]">
-                <button type="button" onClick={() => { setShowModal(false); setSelectedCategories([]) }} disabled={submitting} className="h-12 rounded-xl border border-[#d8e6f8] bg-white px-4 font-black text-[#53617d] transition hover:bg-[#edf5ff] disabled:opacity-60">Cancel</button>
-                <button type="button" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-black text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70">
+                <EnterpriseButton tone="secondary" size="lg" onClick={() => { setShowModal(false); setSelectedCategories([]) }} disabled={submitting}>Cancel</EnterpriseButton>
+                <EnterpriseButton size="lg" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)} className="gap-2">
                   {submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}
                   {submitting ? 'Saving...' : editingPayment ? 'Save changes' : 'Add deposit'}
-                </button>
+                </EnterpriseButton>
               </div>
             </div>
         </EnterpriseDetailsDrawer>

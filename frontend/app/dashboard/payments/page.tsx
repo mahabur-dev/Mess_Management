@@ -3,6 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { apiClient, type Mess, type MessMembershipWithDetails, type Payment, type PaymentMethod, type ExpenseCategory } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
 import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban, Search, Filter, Trash2, Eye } from 'lucide-react'
@@ -505,16 +506,16 @@ export default function PaymentsPage() {
       </div>
 
       {/* View Payment Modal */}
-      {showViewModal && viewingPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md" onClick={(e) => { if (e.target === e.currentTarget) { setShowViewModal(false); setViewingPayment(null) } }}>
-          <div className="relative w-full max-w-[420px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
-            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d]" />
-            <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#2f80ed]/12 blur-2xl" />
-            <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
-              <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f80ed]">Payment</p><h2 className="mt-1 text-xl font-black text-[#172554]">Payment Details</h2></div>
-              <button type="button" onClick={() => { setShowViewModal(false); setViewingPayment(null) }} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e6f8] bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#a9ccfb] hover:bg-[#dcebff]"><X size={18} /></button>
-            </div>
-            <div className="relative p-5 sm:p-6">
+      {viewingPayment && (
+        <EnterpriseDetailsDrawer
+          open={showViewModal}
+          onOpenChange={(open) => { setShowViewModal(open); if (!open) setViewingPayment(null) }}
+          eyebrow="Payment"
+          title="Payment details"
+          description={viewingPayment.member?.email ?? 'Payment request and transaction information.'}
+          headerIcon={<CreditCard className="size-5" />}
+          footer={<button type="button" onClick={() => { setShowViewModal(false); setViewingPayment(null) }} className="min-h-11 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-4 font-black text-muted-foreground transition hover:bg-[var(--dashboard-hover)]">Close</button>}
+        >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-sm font-black text-white shadow-sm">{(viewingPayment.member?.name?.[0] || 'M').toUpperCase()}</div>
@@ -549,10 +550,7 @@ export default function PaymentsPage() {
                 {viewingPayment.note && <div><p className="mb-1 text-xs font-bold text-[#6b7a99]">Note</p><p className="rounded-xl bg-[#f8faff] p-3 text-sm font-semibold text-[#53617d]">{viewingPayment.note}</p></div>}
                 <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6b7a99]"><CalendarDays size={13} className="text-[#ffb84d]" /> Submitted: {formatDate(viewingPayment.created_at)}</p>
               </div>
-              <div className="mt-6"><button type="button" onClick={() => { setShowViewModal(false); setViewingPayment(null) }} className="w-full h-12 rounded-xl border border-[#d8e6f8] bg-white px-4 font-black text-[#53617d] transition hover:bg-[#edf5ff]">Close</button></div>
-            </div>
-          </div>
-        </div>
+        </EnterpriseDetailsDrawer>
       )}
 
       {/* Submit Payment Modal */}

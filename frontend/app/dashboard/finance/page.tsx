@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
+import { ExpenseApprovalControl } from '@/components/expense-approval-control'
 import { Card } from '@/components/ui/card'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
@@ -17,6 +18,7 @@ import {
 import { useAuth } from '@/app/context/auth-context'
 import {
   apiClient,
+  type ExpenseApprovalStatus,
   type ExpenseCategory,
   type ExpensePaymentType,
   type MessMembershipWithDetails,
@@ -74,6 +76,11 @@ type ExpenseItem = {
   id: string
   category: ExpenseCategory
   amount: string | number
+  status?: 'DRAFT' | 'CONFIRMED' | 'CANCELLED'
+  approvalStatus?: ExpenseApprovalStatus
+  reviewedBy?: string | null
+  reviewedAt?: string | null
+  reviewNote?: string | null
   payment_type?: string
   description?: string | null
   receipt_url?: string | null
@@ -182,6 +189,13 @@ function isUtilityCategory(category: ExpenseCategory) {
   return utilityCategories.includes(category) && !expenseCategories.includes(category)
 }
 
+function getExpenseApprovalStatus(expense: ExpenseItem): ExpenseApprovalStatus {
+  if (expense.approvalStatus) return expense.approvalStatus
+  if (expense.status === 'DRAFT') return 'PENDING'
+  if (expense.status === 'CANCELLED') return 'REJECTED'
+  return 'APPROVED'
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
@@ -222,6 +236,7 @@ export default function FinancePage() {
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [loading, setLoading] = useState(false)
+  const [reviewingExpenseId, setReviewingExpenseId] = useState<string | null>(null)
 
   useAutoDismissMessage(message, messageType, setMessage, setMessageType)
   
@@ -566,6 +581,49 @@ export default function FinancePage() {
       setLoading(false)
     }
   }
+
+  async function handleExpenseApprovalChange(
+    expense: ExpenseItem,
+    status: Exclude<ExpenseApprovalStatus, 'PENDING'>,
+  ) {
+    if (!canManageMess || getExpenseApprovalStatus(expense) !== 'PENDING') return
+    if (
+      status === 'REJECTED' &&
+      !confirm('Reject this expense? It will not be included in meal or utility costs.')
+    ) {
+      return
+    }
+
+    setReviewingExpenseId(expense.id)
+    setMessage('')
+    try {
+      const response = await apiClient.reviewExpense(expense.id, { status })
+      const reviewedExpense = response.data
+      const nextExpense: ExpenseItem = {
+        ...expense,
+        status: reviewedExpense.status,
+        approvalStatus: reviewedExpense.approvalStatus,
+      }
+
+      setExpenses((current) =>
+        current.map((item) => (item.id === expense.id ? { ...item, ...nextExpense } : item)),
+      )
+      setViewExpense((current) =>
+        current?.id === expense.id ? { ...current, ...nextExpense } : current,
+      )
+      setMessageType('success')
+      setMessage(
+        status === 'APPROVED'
+          ? 'Expense approved and included in the relevant cost calculation.'
+          : 'Expense rejected successfully.',
+      )
+    } catch (error) {
+      setMessageType('error')
+      setMessage(getErrorMessage(error, 'Failed to update expense status.'))
+    } finally {
+      setReviewingExpenseId(null)
+    }
+  }
   // ─── Payment Type indicator for display ───────────────
   function getPaymentTypeStyle(paymentType?: string) {
     if (paymentType === 'PERSONAL') {
@@ -762,13 +820,13 @@ export default function FinancePage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                    {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Action'].map((heading) => <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' || heading === 'Action' ? 'text-right' : ''}`}>{heading}</th>)}
+                    {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Status', 'Action'].map((heading) => <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' || heading === 'Action' ? 'text-right' : ''}`}>{heading}</th>)}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e6ebf4]">
                   {loading && (
                     <tr>
-                      <td colSpan={6} className="px-5 py-12 text-center">
+                      <td colSpan={7} className="px-5 py-12 text-center">
                         <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
                           <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
                           Loading expenses...
@@ -778,7 +836,7 @@ export default function FinancePage() {
                   )}
                   {!loading && filteredExpenses.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-5 py-12 text-center">
+                      <td colSpan={7} className="px-5 py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <ShoppingBag size={40} className="text-[#d8e6f8]" />
                           <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
@@ -811,6 +869,14 @@ export default function FinancePage() {
                         </td>
                         <td className="px-4 py-4 text-right text-sm font-semibold text-red-500">
                           {money(item.amount)}
+                        </td>
+                        <td className="px-4 py-4">
+                          <ExpenseApprovalControl
+                            status={getExpenseApprovalStatus(item)}
+                            canReview={canManageMess}
+                            updating={reviewingExpenseId === item.id}
+                            onStatusChange={(status) => void handleExpenseApprovalChange(item, status)}
+                          />
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex justify-end">
@@ -981,6 +1047,16 @@ export default function FinancePage() {
                 <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-[#6b7a99]">
                   <span>Added by</span>
                   <span className="truncate font-bold text-[#172554]">{item.creator?.name ?? 'Unknown'}</span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#e6ebf4] pt-3">
+                  <span className="text-xs font-semibold text-[#6b7a99]">Status</span>
+                  <ExpenseApprovalControl
+                    status={getExpenseApprovalStatus(item)}
+                    canReview={canManageMess}
+                    updating={reviewingExpenseId === item.id}
+                    onStatusChange={(status) => void handleExpenseApprovalChange(item, status)}
+                  />
                 </div>
 
                 <div className="mt-3 flex justify-end">
@@ -1373,6 +1449,12 @@ export default function FinancePage() {
                       <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPaymentTypeStyle(viewExpense.payment_type).badge}`}>
                         {getPaymentTypeStyle(viewExpense.payment_type).icon} {getPaymentTypeStyle(viewExpense.payment_type).label}
                       </span>
+                      <ExpenseApprovalControl
+                        status={getExpenseApprovalStatus(viewExpense)}
+                        canReview={canManageMess}
+                        updating={reviewingExpenseId === viewExpense.id}
+                        onStatusChange={(status) => void handleExpenseApprovalChange(viewExpense, status)}
+                      />
                     </div>
                     <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
                       <CalendarDays size={13} className="text-[#ffb84d]" />

@@ -121,12 +121,16 @@ export function DashboardSidebar() {
     : sidebarMessesData
       ? [sidebarMessesData as Mess]
       : []
-  const userMemberships = user?.memberships ?? []
-  const hasAnyMess = sidebarMesses.length > 0 || userMemberships.length > 0
+  const activeUserMemberships = (user?.memberships ?? []).filter(
+    (membership) => membership.is_active,
+  )
+  const hasAnyMess =
+    sidebarMesses.some((mess) => mess.is_active !== false) ||
+    activeUserMemberships.length > 0
   const managesMess = sidebarMesses.some((mess) => (
     mess.created_by === user?.id ||
     mess.memberships?.some((membership) => membership.user_id === user?.id && membership.role === 'MANAGER' && membership.is_active)
-  ))
+  )) || activeUserMemberships.some((membership) => membership.role === 'MANAGER')
   const sidebarItems =
     user?.role === 'ADMIN'
       ? adminItems

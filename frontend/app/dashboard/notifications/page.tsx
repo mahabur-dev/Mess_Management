@@ -3,6 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AppNotification } from '@/lib/api-client'
 import { Bell, Trash2, Loader2, CalendarDays, Mail } from 'lucide-react'
@@ -125,7 +126,7 @@ export default function NotificationsPage() {
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Content</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Date</th>
-                <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                <EnterpriseTableActionHeader size="compact" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
@@ -185,8 +186,7 @@ export default function NotificationsPage() {
                         {formatDate(notification.created_at)}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end">
+                    <EnterpriseTableActionCell size="compact">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -197,8 +197,7 @@ export default function NotificationsPage() {
                         >
                           <Trash2 size={14} />
                         </button>
-                      </div>
-                    </td>
+                    </EnterpriseTableActionCell>
                   </tr>
                 )
               })}

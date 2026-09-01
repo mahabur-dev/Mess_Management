@@ -5,7 +5,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { MemberJoinRequestModal } from '@/components/member-join-request-modal'
 import { DashboardPanel } from '@/components/dashboard/dashboard-panel'
 import { useAuth } from '@/app/context/auth-context'
-import { type Mess, type MessDashboard } from '@/lib/api-client'
+import { type Mess } from '@/lib/api-client'
 import { APP_FEATURES } from '@/lib/feature-flags'
 import { useRouter } from 'next/navigation'
 import {
@@ -232,62 +232,6 @@ function currentMonthValue() {
 
 function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
-}
-
-function previousMonthLabel(monthValue: string) {
-  const [year, month] = monthValue.split('-').map(Number)
-  return new Date(year, month - 2, 1).toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  })
-}
-
-function CarryForwardSummary({
-  dashboard,
-  month,
-  compact = false,
-}: {
-  dashboard?: MessDashboard | null
-  month: string
-  compact?: boolean
-}) {
-  const balance = Number(dashboard?.carryForwardBalance ?? 0)
-  const due = Number(dashboard?.carryForwardDueAmount ?? 0)
-  const credit = Number(dashboard?.carryForwardRemainingAmount ?? 0)
-  const balanceLabel = balance > 0 ? 'Due' : balance < 0 ? 'Credit' : 'Settled'
-  const balanceTone = balance > 0 ? 'text-rose-600' : balance < 0 ? 'text-emerald-600' : 'text-muted-foreground'
-
-  return (
-    <section className={`dashboard-subtle-card rounded-[18px] ${compact ? 'mt-3 p-3.5' : 'mt-5 p-5'}`}>
-      <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#fff3df] text-[#d97706]">
-          <Calculator size={18} strokeWidth={2.35} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d97706]">
-            Previous month carry-forward
-          </p>
-          <p className="mt-1 text-xs font-semibold text-muted-foreground">
-            {previousMonthLabel(month)} balance is included automatically in this month&apos;s member bills.
-          </p>
-        </div>
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-[var(--dashboard-surface)] p-2.5">
-          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Due carried</p>
-          <p className="mt-1 text-sm font-semibold tabular-nums text-rose-600">{money(due)}</p>
-        </div>
-        <div className="rounded-xl bg-[var(--dashboard-surface)] p-2.5">
-          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Credit carried</p>
-          <p className="mt-1 text-sm font-semibold tabular-nums text-emerald-600">{money(credit)}</p>
-        </div>
-        <div className="rounded-xl bg-[var(--dashboard-surface)] p-2.5">
-          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Net · {balanceLabel}</p>
-          <p className={`mt-1 text-sm font-semibold tabular-nums ${balanceTone}`}>{money(Math.abs(balance))}</p>
-        </div>
-      </div>
-    </section>
-  )
 }
 
 // ─── StatCard ─────────────────────────────────────────────────
@@ -761,7 +705,10 @@ export default function DashboardPage() {
       ],
       [
         'Total Deposit',
-        money(dashboard?.totalDepositAmount),
+        money(
+          Number(dashboard?.totalDepositAmount ?? 0) +
+          Number(dashboard?.carryForwardRemainingAmount ?? 0),
+        ),
         'Deposit',
         ReceiptText,
         'from-[#8b5cf6] to-[#6f3df4]',
@@ -770,7 +717,10 @@ export default function DashboardPage() {
       ],
       [
         'Due Amount',
-        money(dashboard?.totalDue),
+        money(
+          Number(dashboard?.totalDue ?? 0) +
+          Number(dashboard?.carryForwardDueAmount ?? 0),
+        ),
         'Due',
         BadgeDollarSign,
         'from-[#ef4444] to-[#f43f7f]',
@@ -841,13 +791,6 @@ export default function DashboardPage() {
             onAction={() => router.push(user.role === 'ADMIN' ? '/dashboard/reports' : '/dashboard/monthly-bills')}
           >
             <MobileOverviewGrid stats={stats as readonly MobileStat[]} />
-            {user.role !== 'ADMIN' && (
-              <CarryForwardSummary
-                dashboard={resolvedDashboard ?? null}
-                month={selectedMonth}
-                compact
-              />
-            )}
           </MobileSection>
 
           {user.role !== 'ADMIN' && (
@@ -1004,13 +947,6 @@ export default function DashboardPage() {
             />
           ))}
         </div>
-
-        {user.role !== 'ADMIN' && (
-          <CarryForwardSummary
-            dashboard={resolvedDashboard ?? null}
-            month={selectedMonth}
-          />
-        )}
 
         {/* Charts Row - only for non-admin users */}
         {user.role !== 'ADMIN' && (

@@ -7,6 +7,7 @@ import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-draw
 import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { apiClient, type Mess, type MessMembershipWithDetails, type Payment, type PaymentMethod, type ExpenseCategory } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
 import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban, Search, Filter, Trash2, Eye, Edit3 } from 'lucide-react'
@@ -330,7 +331,11 @@ export default function PaymentsPage() {
           <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                {['Paid by', 'Added by', 'Amount', 'Status', 'Action'].map((heading) => <th key={heading} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>)}
+                {['Paid by', 'Added by', 'Amount', 'Status', 'Action'].map((heading) =>
+                  heading === 'Action'
+                    ? <EnterpriseTableActionHeader key={heading} />
+                    : <th key={heading} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>,
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
@@ -375,8 +380,7 @@ export default function PaymentsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex justify-end gap-1.5">
+                    <EnterpriseTableActionCell contentClassName="gap-1.5">
                         <EnterpriseIconButton label="View deposit" tone="primary" onClick={(event) => { event.stopPropagation(); setViewingPayment(payment); setShowViewModal(true) }}>
                           <Eye size={16} />
                         </EnterpriseIconButton>
@@ -385,8 +389,7 @@ export default function PaymentsPage() {
                             {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                           </EnterpriseIconButton>
                         )}
-                      </div>
-                    </td>
+                    </EnterpriseTableActionCell>
                   </tr>
                 )
               })}

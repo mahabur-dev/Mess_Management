@@ -3,6 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { Plus, Trash2, CheckCircle2, ShoppingCart, ListChecks, Users, Package, TrendingDown, CircleCheckBig } from 'lucide-react'
 import { useState } from 'react'
 
@@ -88,7 +89,7 @@ export default function ShoppingPage() {
                   <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Quantity</th>
                   <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Assigned To</th>
                   <th className="whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                  <EnterpriseTableActionHeader size="compact" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e6ebf4]">
@@ -150,8 +151,7 @@ export default function ShoppingPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex justify-end">
+                    <EnterpriseTableActionCell size="compact">
                         <button
                           onClick={() => deleteItem(item.id)}
                           className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#ff4d4f]/15 bg-[#fff0f0] text-[#ff4d4f] opacity-0 transition hover:border-[#ff4d4f]/40 hover:bg-[#ffe5e5] group-hover:opacity-100"
@@ -159,8 +159,7 @@ export default function ShoppingPage() {
                         >
                           <Trash2 size={14} />
                         </button>
-                      </div>
-                    </td>
+                    </EnterpriseTableActionCell>
                   </tr>
                 ))}
               </tbody>

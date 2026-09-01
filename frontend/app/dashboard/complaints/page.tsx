@@ -7,6 +7,7 @@ import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-draw
 import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { apiClient, type Complaint, type ComplaintCategory, type Mess } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
 import { CheckCircle2, MessageSquareWarning, Plus, Trash2, X, Loader2, AlertCircle, CalendarDays, User } from 'lucide-react'
@@ -136,7 +137,7 @@ export default function ComplaintsPage() {
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Title</th>
                 <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Description</th>
                 <th className="whitespace-nowrap px-5 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Status</th>
-                {isManager && <th className="whitespace-nowrap px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>}
+                {isManager && <EnterpriseTableActionHeader />}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf4]">
@@ -178,8 +179,7 @@ export default function ComplaintsPage() {
                       </div>
                     </td>
                     {isManager && (
-                      <td className="px-5 py-4">
-                        <div className="flex justify-end gap-2">
+                      <EnterpriseTableActionCell>
                           {complaint.status !== 'SOLVED' && (
                             <EnterpriseButton size="sm" tone="success" onClick={() => solve(complaint.id)}>
                               <CheckCircle2 size={13} />
@@ -189,8 +189,7 @@ export default function ComplaintsPage() {
                           <EnterpriseIconButton label="Delete complaint" tone="danger" className="size-8 rounded-lg" onClick={() => void remove(complaint.id)}>
                             <Trash2 size={14} />
                           </EnterpriseIconButton>
-                        </div>
-                      </td>
+                      </EnterpriseTableActionCell>
                     )}
                   </tr>
                 )

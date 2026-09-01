@@ -8,6 +8,7 @@ import { EnterpriseButton } from '@/components/ui/enterprise-button';
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer';
 import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer';
 import { EnterpriseSelect } from '@/components/ui/enterprise-select';
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions';
 
 // ─── Types & Interfaces ─────────────────────────────────────────────────────
 type MembershipRole = 'MANAGER' | 'MEMBER';
@@ -439,7 +440,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
       title="Add new member"
       description="Invite a member and set their room assignment."
       headerIcon={<UserPlus className="size-5" />}
-      footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={onClose} disabled={loading}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" type="submit" form="add-member-form" disabled={loading}>{loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}{loading ? 'Adding...' : 'Add Member'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
+      footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction className="hidden sm:inline-flex" tone="secondary" onClick={onClose} disabled={loading}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" type="submit" form="add-member-form" disabled={loading}>{loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}{loading ? 'Adding...' : 'Add Member'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
     >
         <form id="add-member-form" onSubmit={handleSubmit} className="space-y-5">
           {/* Email Input */}
@@ -712,9 +713,7 @@ function MembersTable({
               <th className="hidden whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
                 Status
               </th>
-              <th className="whitespace-nowrap px-4 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">
-                Actions
-              </th>
+              <EnterpriseTableActionHeader />
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e6ebf4]">
@@ -787,8 +786,7 @@ function MembersTable({
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center justify-end gap-1.5">
+                  <EnterpriseTableActionCell className="py-3.5" contentClassName="gap-1.5">
                       <button
                         onClick={() => onEditMember(member)}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#2f80ed]/15 bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] sm:h-9 sm:w-9"
@@ -811,8 +809,7 @@ function MembersTable({
                       >
                         {isRemoving ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                       </button>
-                    </div>
-                  </td>
+                  </EnterpriseTableActionCell>
                 </tr>
               );
             })}

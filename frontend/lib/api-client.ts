@@ -64,6 +64,7 @@ export type ExpenseCategory =
   | 'WATER'
   | 'OTHER'
 export type ExpensePaymentType = 'FROM_DEPOSIT' | 'PERSONAL' | 'COLLECTED_FUND'
+export type ExpenseApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type PaymentMethod = 'CASH' | 'BKASH' | 'NAGAD' | 'ROCKET' | 'BANK'
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type BillStatus = 'PENDING' | 'PAID' | 'PARTIAL'
@@ -818,6 +819,20 @@ class ApiClient {
     return this.request(`/expense/${id}`, {
       method: 'PATCH',
       body: data instanceof FormData ? data : JSON.stringify(data),
+    })
+  }
+
+  reviewExpense(
+    id: string,
+    data: { status: Exclude<ExpenseApprovalStatus, 'PENDING'>; note?: string },
+  ) {
+    return this.request<{
+      id: string
+      status: 'DRAFT' | 'CONFIRMED' | 'CANCELLED'
+      approvalStatus: ExpenseApprovalStatus
+    }>(`/expense/${id}/approval`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     })
   }
 

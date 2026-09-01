@@ -41,3 +41,6 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 [Dd]esktop.ini
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat

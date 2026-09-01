@@ -20,7 +20,10 @@ import config from 'src/app/config';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 import { allocateAmountByWeight } from '../monthly-bill/billing-calculator';
 import { NotificationService } from '../notification/notification.service';
-import { FundLedgerService } from '../fund-ledger/fund-ledger.service';
+import {
+  FundLedgerService,
+  type FundLedgerClient,
+} from '../fund-ledger/fund-ledger.service';
 import {
   type CloudinaryResourceType,
   deleteFromCloudinary,
@@ -894,6 +897,19 @@ export class ExpenseService {
     };
   }
 
+  /** Keeps deposit-funded expense validation identical for preview, submit and edit. */
+  private async assertPreparedFundBalance(
+    client: FundLedgerClient,
+    prepared: Pick<PreparedExpense, 'messId' | 'paidFrom' | 'amount'>,
+  ) {
+    await this.fundLedgerService.assertSufficientBalance(
+      client,
+      prepared.messId,
+      prepared.paidFrom,
+      prepared.amount,
+    );
+  }
+
   private approvalStatus(status: string) {
     return toApprovalStatus(status as 'DRAFT' | 'CONFIRMED' | 'CANCELLED');
   }
@@ -982,14 +998,7 @@ export class ExpenseService {
 
   async preview(userId: string, role: AuthRole, dto: ExpensePreviewDto) {
     const prepared = await this.prepareExpense(userId, role, dto);
-    if (!prepared.requiresApproval) {
-      await this.fundLedgerService.assertSufficientBalance(
-        this.prisma,
-        prepared.messId,
-        prepared.paidFrom,
-        prepared.amount,
-      );
-    }
+    await this.assertPreparedFundBalance(this.prisma, prepared);
     return this.previewResponse(prepared);
   }
 
@@ -1009,14 +1018,7 @@ export class ExpenseService {
     dto: CreateExpenseDto,
     prepared: PreparedExpense,
   ) {
-    if (!prepared.requiresApproval) {
-      await this.fundLedgerService.assertSufficientBalance(
-        tx,
-        prepared.messId,
-        prepared.paidFrom,
-        prepared.amount,
-      );
-    }
+    await this.assertPreparedFundBalance(tx, prepared);
 
     const created = await tx.expense.create({
       data: {
@@ -1424,14 +1426,7 @@ export class ExpenseService {
     try {
       updated = await this.runSerializableTransaction(async (tx) => {
         await tx.depositLedger.deleteMany({ where: { expense_id: id } });
-        if (!prepared.requiresApproval) {
-          await this.fundLedgerService.assertSufficientBalance(
-            tx,
-            prepared.messId,
-            prepared.paidFrom,
-            prepared.amount,
-          );
-        }
+        await this.assertPreparedFundBalance(tx, prepared);
         await tx.expenseShare.deleteMany({ where: { expense_id: id } });
         await tx.expenseItem.deleteMany({ where: { expense_id: id } });
 

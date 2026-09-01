@@ -530,7 +530,6 @@ export class MessService {
       this.prisma.memberJoinRequest.findFirst({
         where: {
           requester_id: userId,
-          mess_id: dto.messId,
           status: RequestStatus.PENDING,
         },
       }),
@@ -540,7 +539,7 @@ export class MessService {
     if (!mess) throw new HttpException('Mess not found', 404);
     await this.ensureUserHasNoActiveMess(userId);
     if (pendingRequest) {
-      throw new HttpException('You already have a pending request for this mess', 400);
+      throw new HttpException('You already have a pending request to join a mess', 400);
     }
 
     const request = await this.prisma.memberJoinRequest.create({

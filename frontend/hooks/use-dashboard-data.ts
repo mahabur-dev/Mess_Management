@@ -22,6 +22,14 @@ export function useMesses(enabled = true) {
   return useSWR(enabled ? 'messes' : null, () => swrFetcher(() => apiClient.getMesses()), STATIC_SWR)
 }
 
+export function useMyMemberJoinRequests(enabled = true) {
+  return useSWR(
+    enabled ? 'my-member-join-requests' : null,
+    () => swrFetcher(() => apiClient.getMyMemberJoinRequests()),
+    STATIC_SWR,
+  )
+}
+
 // ─── Mess Dashboard (dynamic) ─────────────────────────────────
 // month format: "YYYY-MM", but backend expects "YYYY-MM-01"
 export function useMessDashboard(messId: string | undefined, month: string) {

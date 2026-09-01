@@ -10,6 +10,7 @@ import { APP_FEATURES } from '@/lib/feature-flags'
 import { useRouter } from 'next/navigation'
 import {
   useMesses,
+  useMyMemberJoinRequests,
   useMessDashboard,
   useAdminDashboard,
   useMonthlyOverview,
@@ -480,9 +481,11 @@ function MobileNoticeList({
 function MobileNoMessPrompt({
   onCreate,
   onRequestMember,
+  requestPending,
 }: {
   onCreate: () => void
   onRequestMember: () => void
+  requestPending: boolean
 }) {
   return (
     <div className="overflow-hidden rounded-[24px] border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-[0_12px_28px_rgba(245,158,11,0.12)]">
@@ -509,10 +512,11 @@ function MobileNoMessPrompt({
             <button
               type="button"
               onClick={onRequestMember}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-4 text-xs font-semibold text-[#2f80ed] shadow-sm"
+              disabled={requestPending}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-4 text-xs font-semibold text-[#2f80ed] shadow-sm disabled:cursor-not-allowed disabled:border-amber-200 disabled:bg-amber-50 disabled:text-amber-700 disabled:opacity-100"
             >
               <UserPlus size={14} />
-              Request Member
+              {requestPending ? 'Request Pending' : 'Request Member'}
             </button>
           </div>
         </div>
@@ -526,11 +530,17 @@ export default function DashboardPage() {
   const router = useRouter()
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue)
   const [memberRequestOpen, setMemberRequestOpen] = useState(false)
+  const [memberRequestSubmitted, setMemberRequestSubmitted] = useState(false)
 
   // ── SWR data fetching (parallel, cached) ────────────────────
   const { data: messesData, isLoading: messesLoading } = useMesses(
     Boolean(user && user.role !== 'ADMIN'),
   )
+  const { data: memberJoinRequestsData, isLoading: memberJoinRequestsLoading, mutate: refreshMemberJoinRequests } = useMyMemberJoinRequests(
+    Boolean(user && user.role !== 'ADMIN'),
+  )
+  const hasPendingMemberJoinRequest = memberRequestSubmitted || (Array.isArray(memberJoinRequestsData) && memberJoinRequestsData.some((request) => request.status === 'PENDING'))
+  const memberRequestUnavailable = memberJoinRequestsLoading || hasPendingMemberJoinRequest
   const { data: adminDashboard } = useAdminDashboard(user?.role === 'ADMIN')
   const { data: messDashboard } = useMessDashboard(
     undefined,
@@ -632,15 +642,6 @@ export default function DashboardPage() {
 
     return [
       [
-        'Total Members',
-        dashboard?.activeMembers ?? 0,
-        'Members',
-        Users,
-        'from-[#2f80ed] to-[#6f3df4]',
-        'bg-[#e8f2ff]',
-        'text-[#2f80ed]',
-      ],
-      [
         'Meals Today',
         dashboard?.todayTotalMeals ?? 0,
         'Today',
@@ -712,6 +713,15 @@ export default function DashboardPage() {
         'bg-[#fee2e2]',
         'text-[#dc2626]',
       ],
+      [
+        'Remaining Amount',
+        money(dashboard?.remainingAmount),
+        'Remaining',
+        WalletCards,
+        'from-[#10b981] to-[#34d399]',
+        'bg-[#e8fff2]',
+        'text-[#059669]',
+      ],
     ] as const
   }, [adminDashboard, resolvedDashboard, user?.role])
 
@@ -751,6 +761,7 @@ export default function DashboardPage() {
             <MobileNoMessPrompt
               onCreate={() => router.push('/dashboard/mess_management')}
               onRequestMember={() => setMemberRequestOpen(true)}
+              requestPending={memberRequestUnavailable}
             />
           )}
 
@@ -887,11 +898,12 @@ export default function DashboardPage() {
                   Create Mess
                 </button>
                 <button
-                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#d8e6f8] bg-white px-5 font-semibold text-[#2f80ed] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#edf5ff] sm:min-w-[150px]"
+                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#d8e6f8] bg-white px-5 font-semibold text-[#2f80ed] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#edf5ff] disabled:cursor-not-allowed disabled:border-amber-200 disabled:bg-amber-50 disabled:text-amber-700 disabled:opacity-100 sm:min-w-[150px]"
                   onClick={() => setMemberRequestOpen(true)}
+                  disabled={memberRequestUnavailable}
                 >
                   <UserPlus size={17} />
-                  Request Member
+                  {memberRequestUnavailable ? 'Request Pending' : 'Request Member'}
                 </button>
               </div>
             </div>
@@ -1065,6 +1077,11 @@ export default function DashboardPage() {
       <MemberJoinRequestModal
         open={memberRequestOpen}
         onClose={() => setMemberRequestOpen(false)}
+        hasPendingRequest={hasPendingMemberJoinRequest}
+        onSubmitted={() => {
+          setMemberRequestSubmitted(true)
+          void refreshMemberJoinRequests()
+        }}
       />
     </div>
   )

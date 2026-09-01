@@ -9,9 +9,10 @@ type MemberJoinRequestModalProps = {
   open: boolean
   onClose: () => void
   onSubmitted?: () => void
+  hasPendingRequest?: boolean
 }
 
-export function MemberJoinRequestModal({ open, onClose, onSubmitted }: MemberJoinRequestModalProps) {
+export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingRequest = false }: MemberJoinRequestModalProps) {
   const [messes, setMesses] = useState<Mess[]>([])
   const [selectedMessId, setSelectedMessId] = useState('')
   const [loading, setLoading] = useState(false)
@@ -55,6 +56,7 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted }: MemberJoi
   if (!open) return null
 
   async function submit() {
+    if (hasPendingRequest) return
     if (!selectedMessId) {
       setError('Please select a mess')
       return
@@ -159,11 +161,11 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted }: MemberJoi
             <button
               type="button"
               onClick={submit}
-              disabled={loading || submitting || !selectedMessId}
+              disabled={loading || submitting || hasPendingRequest || !selectedMessId}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 font-semibold text-white shadow-[0_16px_35px_rgba(47,128,237,0.30)] transition hover:shadow-[0_20px_42px_rgba(47,128,237,0.38)] disabled:opacity-70"
             >
               {submitting || loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-              {submitting ? 'Sending...' : 'Send Request'}
+              {hasPendingRequest ? 'Request Pending' : submitting ? 'Sending...' : 'Send Request'}
             </button>
           </div>
         </div>

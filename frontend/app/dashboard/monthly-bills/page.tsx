@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type Mess, type MonthlyBill } from '@/lib/api-client'
 import {
@@ -221,9 +222,11 @@ export default function MonthlyBillPage() {
             <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                  {['Member', 'Meals', 'Total cost', 'Previous balance', 'Deposit', 'Due', 'Action'].map(h => (
-                    <th key={h} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">{h}</th>
-                  ))}
+                  {['Member', 'Meals', 'Total cost', 'Previous balance', 'Deposit', 'Due', 'Action'].map((heading) =>
+                    heading === 'Action'
+                      ? <EnterpriseTableActionHeader key={heading} size="compact" />
+                      : <th key={heading} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>,
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e6ebf4]">
@@ -245,13 +248,11 @@ export default function MonthlyBillPage() {
                       <td className="px-4 py-4">
                         <span className={`text-sm font-bold ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</span>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="flex justify-end">
+                      <EnterpriseTableActionCell size="compact">
                           <EnterpriseIconButton label="View monthly bill" tone="primary" onClick={(event) => { event.stopPropagation(); setViewingBill(bill) }}>
                             <Eye size={16} />
                           </EnterpriseIconButton>
-                        </div>
-                      </td>
+                      </EnterpriseTableActionCell>
                     </tr>
                   )
                 })}

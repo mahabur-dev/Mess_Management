@@ -2,6 +2,7 @@
 
 import { ArrowRight, CalendarPlus, Eye, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import type { MealPattern, MessMembership } from '@/lib/api-client'
 import { formatPatternDate, getInitials, getPatternWeeklyTotal, isPatternConfigurable } from '@/lib/meal-pattern'
 import { PatternStatusBadge } from './pattern-status-badge'
@@ -86,9 +87,11 @@ export function MemberPatternList({ rows, onView, onSetup }: MemberPatternListPr
           <table className="w-full min-w-[860px]">
             <thead>
               <tr className="border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)]">
-                {['Member', 'Status', 'Routine', 'Weekly total', 'Starts', 'Actions'].map((label) => (
-                  <th key={label} className={`px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground ${label === 'Actions' ? 'text-right' : ''}`}>{label}</th>
-                ))}
+                {['Member', 'Status', 'Routine', 'Weekly total', 'Starts', 'Actions'].map((label) =>
+                  label === 'Actions'
+                    ? <EnterpriseTableActionHeader key={label} />
+                    : <th key={label} className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</th>,
+                )}
               </tr>
             </thead>
             <tbody>
@@ -102,14 +105,12 @@ export function MemberPatternList({ rows, onView, onSetup }: MemberPatternListPr
                     <td className="px-5 py-4 text-sm font-semibold text-foreground">{pattern ? pattern.pattern_type === 'DAILY' ? 'Same every day' : 'Weekly' : '—'}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-foreground">{pattern ? getPatternWeeklyTotal(pattern) : '—'}</td>
                     <td className="px-5 py-4 text-xs font-bold text-muted-foreground">{pattern ? formatPatternDate(pattern.start_date) : '—'}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
+                    <EnterpriseTableActionCell>
                         {pattern && <Button size="icon" variant="outline" onClick={() => onView(row)} aria-label={`View ${row.membership.user?.name ?? 'member'} pattern`} className="size-10 rounded-xl"><Eye className="size-4" /></Button>}
                         <Button onClick={() => onSetup(row)} className="min-h-10 rounded-xl bg-[var(--brand)] px-4 font-semibold text-white hover:bg-[var(--brand-hover)]">
                           {pattern && canEdit ? 'Change' : <><CalendarPlus className="size-4" /> Set pattern</>}
                         </Button>
-                      </div>
-                    </td>
+                    </EnterpriseTableActionCell>
                   </tr>
                 )
               })}

@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import {
   Dialog,
   DialogContent,
@@ -659,7 +660,7 @@ export default function SubscriptionsPage() {
                     <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Start</th>
                     <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">End</th>
                     <th className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Days left</th>
-                    <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">Actions</th>
+                    <EnterpriseTableActionHeader size="wide" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e6ebf4]">
@@ -742,8 +743,7 @@ export default function SubscriptionsPage() {
                               </span>
                             )}
                           </td>
-                          <td className="px-5 py-4">
-                            <div className="flex justify-end gap-2">
+                          <EnterpriseTableActionCell size="wide">
                               <Button
                                 type="button"
                                 variant="outline"
@@ -774,8 +774,7 @@ export default function SubscriptionsPage() {
                                 <Trash2 size={13} />
                                 Delete
                               </Button>
-                            </div>
-                          </td>
+                          </EnterpriseTableActionCell>
                         </tr>
                       )
                     })

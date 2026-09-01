@@ -8,6 +8,7 @@ import { CalendarDays, Clock, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield,
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 import { MealQuantityControl } from '@/components/meal-pattern/meal-quantity-control'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
 const mealLabels: Record<MealName, string> = {
@@ -394,7 +395,7 @@ export default function MealsPage() {
                       <th className="sticky left-0 z-20 w-[138px] whitespace-nowrap border-b border-[#e6ebf4] bg-[#f8faff] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:static sm:w-auto sm:px-4 sm:py-4 sm:text-[11px]">Member</th>
                       {mealNames.map(n => <th key={n} className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]"><span className="inline-flex items-center gap-1 sm:gap-1.5"><span className="text-[#2f80ed]">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></span></th>)}
                       <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Total</th>
-                      {isManager && <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Action</th>}
+                      {isManager && <EnterpriseTableActionHeader className="border-b border-[#e6ebf4] px-3 py-3 text-[10px] sm:px-4 sm:py-4 sm:text-[11px]" />}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e6ebf4]">
@@ -428,16 +429,16 @@ export default function MealsPage() {
                               <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed]/10 to-[#58d68d]/10 px-2 text-sm font-semibold text-[#172554]">{isEditingRow ? draftTotal : total}</span>
                             </td>
                             {isManager && (
-                              <td className="border-b border-[#e6ebf4] px-3 py-3 text-right sm:border-b-0 sm:px-4 sm:py-3.5">
+                              <EnterpriseTableActionCell className="border-b border-[#e6ebf4] px-3 py-3 sm:border-b-0 sm:px-4 sm:py-3.5">
                                 {isEditingRow ? (
-                                  <div className="flex justify-end gap-1.5 sm:gap-2">
+                                  <div className="flex gap-1.5 sm:gap-2">
                                     <Button type="button" size="sm" onClick={() => saveMemberMealRow(row)} className="h-8 rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-2.5 text-[11px] font-semibold text-white sm:px-3">Save</Button>
                                     <Button type="button" variant="outline" size="sm" onClick={() => cancelEditingMemberMeal(row.id)} className="h-8 rounded-lg border-[#d8e6f8] px-2.5 text-[11px] font-semibold text-[#6b7a99] sm:px-3">Cancel</Button>
                                   </div>
                                 ) : (
                                   <Button type="button" variant="outline" size="sm" onClick={() => startEditingMemberMeal(row)} className="h-8 rounded-lg border-[#2f80ed]/30 bg-[#e7f1ff] px-3 text-[11px] font-semibold text-[#2f80ed]">Edit</Button>
                                 )}
-                              </td>
+                              </EnterpriseTableActionCell>
                             )}
                           </tr>
                         )

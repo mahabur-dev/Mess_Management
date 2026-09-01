@@ -4,6 +4,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { apiClient, type ContactRequest, type ContactRequestSource, type ContactRequestStatus } from '@/lib/api-client'
 import { CheckCircle2, Clock3, Loader2, Mail, Search, Send, Sparkles, UserRound, BadgeCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -194,7 +195,7 @@ export default function ContactRequestsPage() {
                     <th className="px-5 py-3">Description</th>
                     <th className="px-5 py-3">Status</th>
                     <th className="px-5 py-3">Submitted</th>
-                    <th className="px-5 py-3">Action</th>
+                    <EnterpriseTableActionHeader size="wide" className="py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#eef2f8]">
@@ -224,8 +225,7 @@ export default function ContactRequestsPage() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-sm font-semibold text-[#53617d]">{formatDate(request.created_at)}</td>
-                        <td className="px-5 py-4">
-                          <div className="flex flex-wrap gap-2">
+                        <EnterpriseTableActionCell size="wide">
                             <Button
                               type="button"
                               size="sm"
@@ -246,8 +246,7 @@ export default function ContactRequestsPage() {
                               <CheckCircle2 size={13} />
                               Resolved
                             </Button>
-                          </div>
-                        </td>
+                        </EnterpriseTableActionCell>
                       </tr>
                     )
                   })}

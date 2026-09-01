@@ -8,6 +8,7 @@ import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
+import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import {
   Dialog,
   DialogContent,
@@ -820,7 +821,11 @@ export default function FinancePage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                    {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Status', 'Action'].map((heading) => <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' || heading === 'Action' ? 'text-right' : ''}`}>{heading}</th>)}
+                    {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Status', 'Action'].map((heading) =>
+                      heading === 'Action'
+                        ? <EnterpriseTableActionHeader key={heading} size="compact" />
+                        : <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' ? 'text-right' : ''}`}>{heading}</th>,
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e6ebf4]">
@@ -878,13 +883,11 @@ export default function FinancePage() {
                             onStatusChange={(status) => void handleExpenseApprovalChange(item, status)}
                           />
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="flex justify-end">
+                        <EnterpriseTableActionCell size="compact">
                             <EnterpriseIconButton label="View expense" tone="primary" onClick={() => openViewModal(item)}>
                               <Eye size={16} />
                             </EnterpriseIconButton>
-                          </div>
-                        </td>
+                        </EnterpriseTableActionCell>
                       </tr>
                     ))}
                 </tbody>

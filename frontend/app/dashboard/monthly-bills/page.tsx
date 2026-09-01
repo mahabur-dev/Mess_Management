@@ -40,9 +40,32 @@ function getTotalCost(bill: MonthlyBill) {
 }
 
 function getRemainingBalance(bill: MonthlyBill) {
-  const deposit = Number(bill.deposit_total || 0) + Number(bill.paid_amount || 0)
-  const remaining = deposit - getTotalCost(bill)
-  return remaining > 0 ? remaining : 0
+  if (bill.credit_balance !== undefined) return Number(bill.credit_balance || 0)
+  return Math.max(-Number(bill.balance || 0), 0)
+}
+
+function carryForwardText(value: number | string) {
+  const balance = Number(value || 0)
+  if (balance > 0) return `Due · ${money(balance)}`
+  if (balance < 0) return `Credit · ${money(Math.abs(balance))}`
+  return 'Settled'
+}
+
+function CarryForwardAmount({ value }: { value: number | string }) {
+  const balance = Number(value || 0)
+  return (
+    <span
+      className={`inline-flex items-center text-sm font-bold tabular-nums ${
+        balance > 0
+          ? 'text-amber-600'
+          : balance < 0
+            ? 'text-emerald-600'
+            : 'text-[#6b7a99]'
+      }`}
+    >
+      {carryForwardText(balance)}
+    </span>
+  )
 }
 
 const STATUS_CONFIG = {
@@ -112,6 +135,7 @@ export default function MonthlyBillPage() {
     totalUtility: filteredBills.reduce((s, b) => s + Number(b.utility_share || 0), 0),
     totalCost: filteredBills.reduce((s, b) => s + getTotalCost(b), 0),
     totalDue: filteredBills.reduce((s, b) => s + Number(b.final_due || 0), 0),
+    previousBalance: filteredBills.reduce((s, b) => s + Number(b.prev_balance || 0), 0),
   }), [filteredBills])
   const viewingBillStatus = viewingBill ? (STATUS_CONFIG[viewingBill.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING) : null
 
@@ -164,7 +188,7 @@ export default function MonthlyBillPage() {
 
         {/* Summary Cards - same icons, same font */}
         {filteredBills.length > 0 && (
-          <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
               <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]"><TrendingUp size={13} className="text-[#2f80ed]" /> Food</p>
               <p className="mt-1.5 text-base font-bold text-[#172554]">{money(summary.totalFood)}</p>
@@ -185,6 +209,10 @@ export default function MonthlyBillPage() {
               <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-red-600"><XCircle size={13} /> Due</p>
               <p className="mt-1.5 text-base font-bold text-red-600">{money(summary.totalDue)}</p>
             </div>
+            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700"><RefreshCw size={13} /> Carry forward</p>
+              <div className="mt-1.5"><CarryForwardAmount value={summary.previousBalance} /></div>
+            </div>
           </div>
         )}
 
@@ -193,14 +221,14 @@ export default function MonthlyBillPage() {
             <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                  {['Member', 'Meals', 'Total cost', 'Deposit', 'Due', 'Action'].map(h => (
+                  {['Member', 'Meals', 'Total cost', 'Previous balance', 'Deposit', 'Due', 'Action'].map(h => (
                     <th key={h} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e6ebf4]">
-                {loading && (<tr><td colSpan={6} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading monthly bills...</div></td></tr>)}
-                {!loading && filteredBills.length === 0 && (<tr><td colSpan={6} className="px-5 py-12 text-center"><div className="flex flex-col items-center gap-2"><ReceiptText size={40} className="text-[#d8e6f8]" /><p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p></div></td></tr>)}
+                {loading && (<tr><td colSpan={7} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading monthly bills...</div></td></tr>)}
+                {!loading && filteredBills.length === 0 && (<tr><td colSpan={7} className="px-5 py-12 text-center"><div className="flex flex-col items-center gap-2"><ReceiptText size={40} className="text-[#d8e6f8]" /><p className="text-sm font-bold text-[#6b7a99]">No bills found for this month.</p></div></td></tr>)}
                 {!loading && filteredBills.map((bill) => {
                   return (
                     <tr key={bill.id} onClick={() => setViewingBill(bill)} className="cursor-pointer transition hover:bg-[#f8faff]">
@@ -212,13 +240,7 @@ export default function MonthlyBillPage() {
                         <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#e7f1ff] px-2 text-sm font-bold text-[#2f80ed]">{bill.total_meals}</span>
                       </td>
                       <td className="px-4 py-4 text-sm font-bold text-[#172554]">{money(getTotalCost(bill))}</td>
-                      <td className="hidden">
-                        <span className={`text-sm font-bold inline-flex items-center gap-0.5 ${Number(bill.prev_balance) > 0 ? 'text-[#ff8c00]' : Number(bill.prev_balance) < 0 ? 'text-emerald-600' : 'text-[#6b7a99]'}`}>
-                          {Number(bill.prev_balance) > 0 && <span>+</span>}
-                          {Number(bill.prev_balance) < 0 && <span>−</span>}
-                          {Number(bill.prev_balance) === 0 ? <span className="text-[10px]">Paid</span> : money(Math.abs(Number(bill.prev_balance)))}
-                        </span>
-                      </td>
+                      <td className="px-4 py-4"><CarryForwardAmount value={bill.prev_balance} /></td>
                       <td className="px-4 py-4 text-sm font-bold text-emerald-600">{money(Number(bill.deposit_total) + Number(bill.paid_amount))}</td>
                       <td className="px-4 py-4">
                         <span className={`text-sm font-bold ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</span>
@@ -299,6 +321,13 @@ export default function MonthlyBillPage() {
                       <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Due</p>
                       <p className={`mt-1 text-sm font-bold ${Number(bill.final_due) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{money(bill.final_due)}</p>
                     </div>
+                    <div className="col-span-2 flex items-center justify-between gap-3 rounded-xl border border-amber-200/70 bg-amber-50/70 p-3 text-left">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Previous balance</p>
+                        <p className="mt-1 text-[10px] font-semibold text-[#6b7a99]">Automatically included in this bill</p>
+                      </div>
+                      <CarryForwardAmount value={bill.prev_balance} />
+                    </div>
                   </div>
                   <div className="hidden grid-cols-2 gap-2 rounded-xl border border-[#e6ebf4] bg-[#f8faff] p-3 text-xs">
                     <div className="rounded-lg bg-white p-2.5"><p className="font-semibold uppercase text-[#6b7a99]">Food</p><p className="mt-0.5 font-bold text-[#172554]">{money(bill.food_bill)}</p></div>
@@ -361,7 +390,7 @@ export default function MonthlyBillPage() {
                   ['Food bill', money(viewingBill.food_bill)],
                   ['Seat rent', money(viewingBill.seat_rent)],
                   ['Utility share', money(viewingBill.utility_share)],
-                  ['Previous balance', money(viewingBill.prev_balance)],
+                  ['Previous balance', carryForwardText(viewingBill.prev_balance)],
                   ['Deposit & paid', money(Number(viewingBill.deposit_total) + Number(viewingBill.paid_amount))],
                   ['Remaining balance', money(getRemainingBalance(viewingBill))],
                 ].map(([label, value]) => <div key={label} className="flex items-center justify-between gap-3 px-4 py-3"><span className="text-xs font-semibold text-muted-foreground">{label}</span><span className="text-sm font-semibold tabular-nums text-foreground">{value}</span></div>)}

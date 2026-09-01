@@ -23,6 +23,7 @@ import {
   Building2,
   Calculator,
   CalendarCheck,
+  Check,
   ClipboardList,
   CreditCard,
   HandCoins,
@@ -34,6 +35,7 @@ import {
   UserPlus,
   WalletCards,
   ArrowUpRight,
+  ShieldCheck,
 } from 'lucide-react'
 import { useMemo, useState, type ElementType, type ReactNode } from 'react'
 
@@ -486,49 +488,101 @@ function MobileNoticeList({
   )
 }
 
-function MobileNoMessPrompt({
+function NoMessOnboarding({
   onCreate,
-  onRequestMember,
+  onRequestAccess,
   requestPending,
+  requestLoading,
 }: {
   onCreate: () => void
-  onRequestMember: () => void
+  onRequestAccess: () => void
   requestPending: boolean
+  requestLoading: boolean
 }) {
+  const platformBenefits = [
+    'Manage meals, deposits, expenses, and monthly bills in one place.',
+    'Give every member the right access based on their role.',
+    'Keep records clear, organized, and ready whenever you need them.',
+  ]
+
   return (
-    <div className="overflow-hidden rounded-[24px] border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-[0_12px_28px_rgba(245,158,11,0.12)]">
-      <div className="flex items-start gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[16px] bg-amber-100 text-amber-600">
-          <Home size={20} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-[#172554]">
-            No mess found
-          </h2>
-          <p className="mt-1 text-xs font-semibold leading-relaxed text-[#6b7a99]">
-            Create your own mess or request access from an active mess manager.
-          </p>
-          <div className="mt-3 grid grid-cols-1 gap-2">
+    <div className="space-y-5">
+      <section className="dashboard-panel relative overflow-hidden p-4 sm:p-5">
+        <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[var(--brand)]/8 blur-3xl" />
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-start gap-3.5 sm:items-center sm:gap-4">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-amber-200 bg-amber-50 text-amber-600 shadow-sm sm:h-12 sm:w-12">
+              <Home size={21} strokeWidth={2.2} />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold tracking-tight text-foreground">
+                No mess found
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Create your own mess or request access from an active mess manager.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:w-auto">
             <button
               type="button"
               onClick={onCreate}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-4 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(47,128,237,0.24)]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] px-5 text-sm font-semibold text-white shadow-[0_10px_22px_var(--brand-shadow)] transition hover:-translate-y-0.5 hover:from-[var(--brand-darker)] hover:to-[var(--brand-dark)] hover:shadow-[0_14px_28px_var(--brand-shadow)] sm:min-w-[170px]"
             >
-              <Building2 size={14} />
+              <Building2 size={16} />
               Create Mess
             </button>
             <button
               type="button"
-              onClick={onRequestMember}
-              disabled={requestPending}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-4 text-xs font-semibold text-[#2f80ed] shadow-sm disabled:cursor-not-allowed disabled:border-amber-200 disabled:bg-amber-50 disabled:text-amber-700 disabled:opacity-100"
+              onClick={onRequestAccess}
+              disabled={requestLoading || requestPending}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-5 text-sm font-semibold text-[var(--brand)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:border-[var(--dashboard-line)] disabled:bg-[var(--dashboard-surface-subtle)] disabled:text-muted-foreground disabled:opacity-100 sm:min-w-[170px]"
             >
-              <UserPlus size={14} />
-              {requestPending ? 'Request Pending' : 'Request Member'}
+              <UserPlus size={16} />
+              {requestLoading
+                ? 'Checking Request'
+                : requestPending
+                  ? 'Request Pending'
+                  : 'Request Access'}
             </button>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className="dashboard-panel relative overflow-hidden p-5 sm:p-7">
+        <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--brand)]/7 blur-3xl" />
+        <div className="relative grid gap-6 lg:grid-cols-[0.9fr_1.35fr] lg:items-center">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">
+              <ShieldCheck size={14} />
+              Built for better management
+            </span>
+            <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              Why use this platform?
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              Run your mess with less manual work, better visibility, and a dependable record for every member.
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            {platformBenefits.map((benefit) => (
+              <div
+                key={benefit}
+                className="dashboard-subtle-card flex items-start gap-3 rounded-xl p-3.5"
+              >
+                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--brand-soft)] text-[var(--brand)]">
+                  <Check size={14} strokeWidth={2.6} />
+                </span>
+                <p className="text-sm font-medium leading-6 text-foreground/85">
+                  {benefit}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
@@ -548,7 +602,6 @@ export default function DashboardPage() {
     Boolean(user && user.role !== 'ADMIN'),
   )
   const hasPendingMemberJoinRequest = memberRequestSubmitted || (Array.isArray(memberJoinRequestsData) && memberJoinRequestsData.some((request) => request.status === 'PENDING'))
-  const memberRequestUnavailable = memberJoinRequestsLoading || hasPendingMemberJoinRequest
   const { data: adminDashboard } = useAdminDashboard(user?.role === 'ADMIN')
   const { data: messDashboard } = useMessDashboard(
     undefined,
@@ -567,11 +620,16 @@ export default function DashboardPage() {
       ? messesData
       : messesData
         ? [messesData]
-        : ((user?.memberships?.map((item) => item.mess).filter(Boolean) ?? []) as Mess[])
+        : ((user?.memberships
+          ?.filter((membership) => membership.is_active)
+          .map((membership) => membership.mess)
+          .filter(Boolean) ?? []) as Mess[])
     return list
   }, [messesData, user])
 
-  const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
+  const activeMess =
+    messes.find((mess) => mess.is_active !== false) ??
+    user?.memberships?.find((membership) => membership.is_active)?.mess
   const messId = activeMess?.id
 
   // Re-invoke hooks with resolved messId
@@ -747,6 +805,43 @@ export default function DashboardPage() {
     )
   }
 
+  const showNoMessOnboarding =
+    user.role !== 'ADMIN' &&
+    !messesLoading &&
+    !loadingMessDashboardResolved &&
+    !activeMess
+
+  if (showNoMessOnboarding) {
+    return (
+      <div className="min-h-screen bg-transparent">
+        <DashboardHeader
+          title="Dashboard"
+          description={`Welcome, ${user.name}`}
+          showQuickAddButton={false}
+        />
+
+        <main className="px-4 py-5 sm:p-6 lg:p-8">
+          <NoMessOnboarding
+            onCreate={() => router.push('/dashboard/mess_management')}
+            onRequestAccess={() => setMemberRequestOpen(true)}
+            requestPending={hasPendingMemberJoinRequest}
+            requestLoading={memberJoinRequestsLoading}
+          />
+        </main>
+
+        <MemberJoinRequestModal
+          open={memberRequestOpen}
+          onClose={() => setMemberRequestOpen(false)}
+          hasPendingRequest={hasPendingMemberJoinRequest}
+          onSubmitted={() => {
+            setMemberRequestSubmitted(true)
+            void refreshMemberJoinRequests()
+          }}
+        />
+      </div>
+    )
+  }
+
   const mobileActions =
     user.role === 'ADMIN'
       ? adminMobileQuickActions
@@ -771,14 +866,6 @@ export default function DashboardPage() {
 
       <div className="p-0 sm:p-6 lg:p-8">
         <div className="space-y-4 px-4 pb-8 pt-4 sm:hidden">
-          {!messesLoading && !loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
-            <MobileNoMessPrompt
-              onCreate={() => router.push('/dashboard/mess_management')}
-              onRequestMember={() => setMemberRequestOpen(true)}
-              requestPending={memberRequestUnavailable}
-            />
-          )}
-
           <MobileQuickActions
             actions={mobileActions}
             onNavigate={(href) => router.push(href)}
@@ -886,44 +973,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="hidden sm:block">
-        {!messesLoading && !loadingMessDashboardResolved && !activeMess && user.role !== 'ADMIN' && (
-          <div className="dashboard-panel mb-7 overflow-hidden p-5">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 shadow-sm">
-                  <Home size={22} className="text-amber-600" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-[#172554]">
-                    No mess found
-                  </h2>
-                  <p className="mt-0.5 text-sm font-semibold text-[#6b7a99]">
-                    Create your own mess or request access from an active mess manager.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:w-auto">
-                <button
-                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-5 font-semibold text-white shadow-[0_8px_20px_rgba(47,128,237,0.25)] transition hover:shadow-[0_12px_28px_rgba(47,128,237,0.32)] sm:min-w-[150px]"
-                  onClick={() => router.push('/dashboard/mess_management')}
-                >
-                  <Building2 size={17} />
-                  Create Mess
-                </button>
-                <button
-                  className="inline-flex h-[45px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#d8e6f8] bg-white px-5 font-semibold text-[#2f80ed] shadow-sm transition hover:border-[#a9ccfb] hover:bg-[#edf5ff] disabled:cursor-not-allowed disabled:border-amber-200 disabled:bg-amber-50 disabled:text-amber-700 disabled:opacity-100 sm:min-w-[150px]"
-                  onClick={() => setMemberRequestOpen(true)}
-                  disabled={memberRequestUnavailable}
-                >
-                  <UserPlus size={17} />
-                  {memberRequestUnavailable ? 'Request Pending' : 'Request Member'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Primary Stats Grid */}
         <div className="dashboard-stat-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {stats.slice(0, 6).map(([label, value, , Icon]) => (

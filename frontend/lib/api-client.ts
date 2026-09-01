@@ -312,6 +312,7 @@ export interface MonthlyBill {
   deposit_total: string
   paid_amount: string
   final_due: string
+  credit_balance: string
   prev_balance: string
   balance: string
   status: BillStatus

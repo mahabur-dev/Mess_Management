@@ -5,7 +5,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { MemberJoinRequestModal } from '@/components/member-join-request-modal'
 import { DashboardPanel } from '@/components/dashboard/dashboard-panel'
 import { useAuth } from '@/app/context/auth-context'
-import { type Mess } from '@/lib/api-client'
+import { type Mess, type MessDashboard } from '@/lib/api-client'
 import { APP_FEATURES } from '@/lib/feature-flags'
 import { useRouter } from 'next/navigation'
 import {
@@ -83,88 +83,87 @@ const dashboardQuickActionButtonClass =
 const dashboardQuickActionIconClass =
   'mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--dashboard-surface)] text-[var(--brand)] shadow-sm transition group-hover:bg-[var(--brand)] group-hover:text-white group-hover:shadow-[0_10px_22px_var(--brand-shadow)]'
 
-const mobileQuickActions = [
+const sharedMobileQuickActions = [
   {
     label: 'Add Meals',
-    helper: 'Daily sheet',
     href: '/dashboard/meals',
     icon: UtensilsCrossed,
     tone: 'blue',
   },
   {
     label: 'Add Expenses',
-    helper: 'Bazar costs',
     href: '/dashboard/finance',
     icon: WalletCards,
     tone: 'green',
   },
   {
     label: 'Add Deposit',
-    helper: 'Deposit entry',
     href: '/dashboard/payments',
     icon: CreditCard,
     tone: 'orange',
   },
   {
     label: 'Monthly Bill',
-    helper: 'View details',
     href: '/dashboard/monthly-bills',
     icon: ClipboardList,
     tone: 'purple',
   },
   {
     label: 'Send Notice',
-    helper: 'Message all',
     href: '/dashboard/notices',
     icon: Bell,
     tone: 'rose',
   },
 ] as const
 
+const mobileQuickActions = [
+  ...sharedMobileQuickActions,
+  {
+    label: 'Meal Pattern',
+    href: '/dashboard/meal-patterns',
+    icon: CalendarCheck,
+    tone: 'cyan',
+  },
+] as const
+
 const managerMobileQuickActions = [
   {
     label: 'Add Member',
-    helper: 'Invite user',
     href: '/dashboard/member_management',
     icon: UserPlus,
     tone: 'blue',
   },
-  ...mobileQuickActions,
+  ...sharedMobileQuickActions,
 ] as const
 
 const adminMobileQuickActions = [
   {
     label: 'Manage Users',
-    helper: 'Accounts',
     href: '/dashboard/users',
     icon: Users,
     tone: 'blue',
   },
   {
     label: 'Mess Requests',
-    helper: 'Approvals',
     href: '/dashboard/mess_requests',
     icon: ClipboardList,
     tone: 'orange',
   },
   {
     label: 'All Messes',
-    helper: 'Overview',
     href: '/dashboard/mess_management',
     icon: Home,
     tone: 'green',
   },
   {
     label: 'Complaints',
-    helper: 'Issues',
     href: '/dashboard/complaints',
     icon: Bell,
     tone: 'rose',
   },
-  ...(APP_FEATURES.subscriptions ? [{ label: 'Subscriptions', helper: 'Manage plans', href: '/dashboard/subscriptions', icon: BadgeDollarSign, tone: 'purple' as const }] : []),
+  ...(APP_FEATURES.subscriptions ? [{ label: 'Subscriptions', href: '/dashboard/subscriptions', icon: BadgeDollarSign, tone: 'purple' as const }] : []),
   {
     label: 'Reports',
-    helper: 'Analytics',
     href: '/dashboard/reports',
     icon: ReceiptText,
     tone: 'cyan',
@@ -233,6 +232,62 @@ function currentMonthValue() {
 
 function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
+}
+
+function previousMonthLabel(monthValue: string) {
+  const [year, month] = monthValue.split('-').map(Number)
+  return new Date(year, month - 2, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+function CarryForwardSummary({
+  dashboard,
+  month,
+  compact = false,
+}: {
+  dashboard?: MessDashboard | null
+  month: string
+  compact?: boolean
+}) {
+  const balance = Number(dashboard?.carryForwardBalance ?? 0)
+  const due = Number(dashboard?.carryForwardDueAmount ?? 0)
+  const credit = Number(dashboard?.carryForwardRemainingAmount ?? 0)
+  const balanceLabel = balance > 0 ? 'Due' : balance < 0 ? 'Credit' : 'Settled'
+  const balanceTone = balance > 0 ? 'text-rose-600' : balance < 0 ? 'text-emerald-600' : 'text-muted-foreground'
+
+  return (
+    <section className={`dashboard-subtle-card rounded-[18px] ${compact ? 'mt-3 p-3.5' : 'mt-5 p-5'}`}>
+      <div className="flex items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#fff3df] text-[#d97706]">
+          <Calculator size={18} strokeWidth={2.35} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d97706]">
+            Previous month carry-forward
+          </p>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground">
+            {previousMonthLabel(month)} balance is included automatically in this month&apos;s member bills.
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="rounded-xl bg-[var(--dashboard-surface)] p-2.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Due carried</p>
+          <p className="mt-1 text-sm font-semibold tabular-nums text-rose-600">{money(due)}</p>
+        </div>
+        <div className="rounded-xl bg-[var(--dashboard-surface)] p-2.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Credit carried</p>
+          <p className="mt-1 text-sm font-semibold tabular-nums text-emerald-600">{money(credit)}</p>
+        </div>
+        <div className="rounded-xl bg-[var(--dashboard-surface)] p-2.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Net · {balanceLabel}</p>
+          <p className={`mt-1 text-sm font-semibold tabular-nums ${balanceTone}`}>{money(Math.abs(balance))}</p>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 // ─── StatCard ─────────────────────────────────────────────────
@@ -355,6 +410,11 @@ function MobileQuickActions({
   actions: readonly MobileAction[]
   onNavigate: (href: string) => void
 }) {
+  const actionRows = Array.from(
+    { length: Math.ceil(actions.length / 3) },
+    (_, index) => actions.slice(index * 3, index * 3 + 3),
+  )
+
   return (
     <section className="dashboard-card relative overflow-hidden rounded-[24px] p-4">
       <div className="absolute -right-8 -top-10 h-24 w-24 rounded-full bg-white/20 blur-xl" />
@@ -373,33 +433,37 @@ function MobileQuickActions({
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5">
-          {actions.map(({ label, helper, href, icon: Icon, tone }) => {
-            const palette = mobileActionTones[tone]
-            return (
-              <button
-                key={label}
-                type="button"
-                onClick={() => onNavigate(href)}
-                className={`group relative min-h-[96px] overflow-hidden rounded-[20px] bg-gradient-to-br ${palette.shell} p-2.5 text-left shadow-[0_8px_18px_rgba(65,103,153,0.08)] transition active:scale-[0.97]`}
-              >
-                <span
-                  className={`absolute -right-5 -top-5 h-12 w-12 rounded-full ${palette.ring} blur-sm transition group-active:scale-125`}
-                />
-                <span
-                  className={`relative mb-2 grid h-10 w-10 place-items-center rounded-[14px] ${palette.icon} shadow-sm`}
-                >
-                  <Icon size={18} strokeWidth={2.4} />
-                </span>
-                <span className="relative block text-[11px] font-semibold leading-tight text-[#172554]">
-                  {label}
-                </span>
-                <span className="relative mt-1 block text-[9px] font-bold leading-tight text-[#7a8aaa]">
-                  {helper}
-                </span>
-              </button>
-            )
-          })}
+        <div className="space-y-2.5">
+          {actionRows.map((row, rowIndex) => (
+            <div
+              key={`quick-action-row-${rowIndex}`}
+              className={`grid gap-2.5 ${row.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}
+            >
+              {row.map(({ label, href, icon: Icon, tone }) => {
+                const palette = mobileActionTones[tone]
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => onNavigate(href)}
+                    className={`group relative min-h-[96px] overflow-hidden rounded-[20px] bg-gradient-to-br ${palette.shell} p-2.5 text-center shadow-[0_8px_18px_rgba(65,103,153,0.08)] transition active:scale-[0.97]`}
+                  >
+                    <span
+                      className={`absolute -right-5 -top-5 h-12 w-12 rounded-full ${palette.ring} blur-sm transition group-active:scale-125`}
+                    />
+                    <span
+                      className={`relative mx-auto mb-2 grid h-10 w-10 place-items-center rounded-[14px] ${palette.icon} shadow-sm`}
+                    >
+                      <Icon size={18} strokeWidth={2.4} />
+                    </span>
+                    <span className="relative block text-[11px] font-semibold leading-tight text-[#172554]">
+                      {label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -777,6 +841,13 @@ export default function DashboardPage() {
             onAction={() => router.push(user.role === 'ADMIN' ? '/dashboard/reports' : '/dashboard/monthly-bills')}
           >
             <MobileOverviewGrid stats={stats as readonly MobileStat[]} />
+            {user.role !== 'ADMIN' && (
+              <CarryForwardSummary
+                dashboard={resolvedDashboard ?? null}
+                month={selectedMonth}
+                compact
+              />
+            )}
           </MobileSection>
 
           {user.role !== 'ADMIN' && (
@@ -933,6 +1004,13 @@ export default function DashboardPage() {
             />
           ))}
         </div>
+
+        {user.role !== 'ADMIN' && (
+          <CarryForwardSummary
+            dashboard={resolvedDashboard ?? null}
+            month={selectedMonth}
+          />
+        )}
 
         {/* Charts Row - only for non-admin users */}
         {user.role !== 'ADMIN' && (

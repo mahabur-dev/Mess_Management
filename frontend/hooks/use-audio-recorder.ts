@@ -58,6 +58,8 @@ export function useAudioRecorder(
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: { ideal: 1 },
+          sampleRate: { ideal: 48_000 },
+          sampleSize: { ideal: 16 },
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -79,8 +81,9 @@ export function useAudioRecorder(
         const blob = new Blob(chunksRef.current, {
           type: recorder.mimeType || "audio/webm",
         });
+        const shouldSend = !discardRef.current && blob.size > 0;
         release();
-        if (!discardRef.current && blob.size > 0) onRecorded(blob);
+        if (shouldSend) onRecorded(blob);
       };
       recorder.onerror = () => {
         setError("Recording failed. Please try again.");

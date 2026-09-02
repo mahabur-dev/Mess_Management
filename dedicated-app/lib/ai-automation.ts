@@ -32,6 +32,12 @@ export type AiCapabilities = {
   supportedInputLanguages: string[]
   intents: AiIntent[]
   voice: { enabled: boolean; maxBytes: number; maxDurationSeconds: number }
+  quota: {
+    limit: number
+    used: number
+    remaining: number
+    exhausted: boolean
+  }
   confirmationRequired: boolean
   multiAction: boolean
 }

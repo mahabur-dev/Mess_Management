@@ -63,8 +63,14 @@ export default function QuickAddPage() {
   const [error, setError] = useState<unknown>(null)
   const [enabled, setEnabled] = useState<boolean | null>(null)
   const [voiceEnabled, setVoiceEnabled] = useState<boolean | null>(null)
+  const [quota, setQuota] = useState<{ limit: number; used: number; remaining: number; exhausted: boolean } | null>(null)
   const copy = aiCopy(locale)
   const errorMessage = error ? localizedErrorMessage(error, locale) : ''
+  const quotaLimit = quota?.limit ?? 10
+  const quotaUsed = quota?.used ?? 0
+  const quotaRemaining = quota?.remaining ?? Math.max(0, quotaLimit - quotaUsed)
+  const quotaExhausted = quota?.exhausted ?? false
+  const quotaProgress = quotaLimit > 0 ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0
   const experienceCopy = locale === 'bn'
     ? {
         assistant: 'MESSZEN AI ASSISTANT',
@@ -74,6 +80,10 @@ export default function QuickAddPage() {
         suggestions: 'টি সাজেশন',
         exampleHint: 'ব্যবহার করতে যেকোনো উদাহরণে চাপ দিন',
         processing: 'AI আপনার কমান্ড বিশ্লেষণ করছে',
+        usage: 'ফ্রি কমান্ড ব্যবহার',
+        used: 'টি কমান্ড ব্যবহার হয়েছে',
+        left: 'বাকি',
+        exhausted: 'ফ্রি AI কমান্ড সীমা শেষ',
       }
     : {
         assistant: 'MESSZEN AI ASSISTANT',
@@ -83,18 +93,28 @@ export default function QuickAddPage() {
         suggestions: 'suggestions',
         exampleHint: 'Tap an example to use it as your command',
         processing: 'AI is analyzing your command',
+        usage: 'Free command usage',
+        used: 'commands used',
+        left: 'left',
+        exhausted: 'Free AI command limit reached',
       }
-  useEffect(() => {
-    api.getAiCapabilities(locale)
+  const loadCapabilities = useCallback(() => {
+    return api.getAiCapabilities(locale)
       .then((response) => {
         setEnabled(response.data.enabled)
         setVoiceEnabled(response.data.voice.enabled)
+        setQuota(response.data.quota)
       })
       .catch(() => {
         setEnabled(null)
         setVoiceEnabled(null)
+        setQuota(null)
       })
   }, [locale])
+
+  useEffect(() => {
+    void loadCapabilities()
+  }, [loadCapabilities])
 
   const receiveCommand = useCallback((next: AiCommand) => {
     setCommand(next)
@@ -103,7 +123,7 @@ export default function QuickAddPage() {
   }, [])
 
   const sendVoice = useCallback(async (blob: Blob) => {
-    if (!activeMess?.id) return
+    if (!activeMess?.id || quotaExhausted) return
     setBusy(true)
     setError(null)
     try {
@@ -117,18 +137,20 @@ export default function QuickAddPage() {
         idempotencyKey: crypto.randomUUID(),
       })
       receiveCommand(response.data)
+      void loadCapabilities()
     } catch (value) {
       setError(value)
+      void loadCapabilities()
     } finally {
       setBusy(false)
     }
-  }, [activeMess?.id, locale, receiveCommand])
+  }, [activeMess?.id, loadCapabilities, locale, quotaExhausted, receiveCommand])
 
   const recorder = useAudioRecorder(sendVoice, 60)
 
   const submitText = async (event: FormEvent) => {
     event.preventDefault()
-    if (!activeMess?.id || !text.trim() || busy) return
+    if (!activeMess?.id || !text.trim() || busy || quotaExhausted) return
     setBusy(true)
     setError(null)
     try {
@@ -139,8 +161,10 @@ export default function QuickAddPage() {
         idempotencyKey: crypto.randomUUID(),
       })
       receiveCommand(response.data)
+      void loadCapabilities()
     } catch (value) {
       setError(value)
+      void loadCapabilities()
     } finally {
       setBusy(false)
     }
@@ -277,13 +301,33 @@ export default function QuickAddPage() {
                 <span className="quick-add-character-count">{text.length}/2000</span>
               </div>
 
+              <section className="quick-add-usage" data-exhausted={quotaExhausted ? 'true' : 'false'} aria-label={experienceCopy.usage}>
+                <div className="quick-add-usage__label">{experienceCopy.usage}</div>
+                <div className="quick-add-usage__summary">
+                  <div>
+                    <strong>{quotaUsed}<span>/{quotaLimit}</span></strong>
+                    <small>{quotaExhausted ? experienceCopy.exhausted : experienceCopy.used}</small>
+                  </div>
+                  <span className="quick-add-usage__remaining">{quotaRemaining} {experienceCopy.left}</span>
+                </div>
+                <div
+                  className="quick-add-usage__track"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={quotaLimit}
+                  aria-valuenow={quotaUsed}
+                >
+                  <span style={{ width: `${quotaProgress}%` }} />
+                </div>
+              </section>
+
               <div className="quick-add-textarea-shell" data-has-value={text.trim() ? 'true' : 'false'}>
                 <textarea
                   value={text}
                   onChange={(event) => setText(event.target.value)}
                   placeholder={copy.placeholder}
                   maxLength={2000}
-                  disabled={busy || recorder.isRecording}
+                  disabled={busy || recorder.isRecording || quotaExhausted}
                   aria-describedby="quick-add-text-help"
                 />
                 <div className="quick-add-textarea-footer">
@@ -302,7 +346,7 @@ export default function QuickAddPage() {
                     className="quick-add-inline-voice"
                     data-recording={recorder.isRecording ? 'true' : 'false'}
                     onClick={() => recorder.isRecording ? recorder.stop() : void recorder.start()}
-                    disabled={!recorder.supported || busy || enabled === false || voiceEnabled === false}
+                    disabled={!recorder.supported || busy || enabled === false || voiceEnabled === false || quotaExhausted}
                     aria-label={recorder.isRecording ? copy.stop : copy.record}
                     aria-pressed={recorder.isRecording}
                     title={recorder.isRecording ? copy.stop : copy.record}
@@ -317,7 +361,7 @@ export default function QuickAddPage() {
                 ) : null}
               </div>
 
-              <button type="submit" className="quick-add-generate" disabled={!text.trim() || busy || enabled === false}>
+              <button type="submit" className="quick-add-generate" disabled={!text.trim() || busy || enabled === false || quotaExhausted}>
                 <span className="quick-add-generate-icon" aria-hidden="true"><Sparkles size={18} /></span>
                 <span>{busy ? copy.generating : copy.generate}</span>
                 <ArrowRight size={18} aria-hidden="true" />
@@ -337,7 +381,7 @@ export default function QuickAddPage() {
                 {QUICK_EXAMPLES.map((example) => {
                   const ExampleIcon = example.icon
                   return (
-                    <button key={example.text} type="button" className="quick-add-example" onClick={() => setText(example.text)} disabled={busy || recorder.isRecording}>
+                    <button key={example.text} type="button" className="quick-add-example" onClick={() => setText(example.text)} disabled={busy || recorder.isRecording || quotaExhausted}>
                       <span className="quick-add-example-icon" aria-hidden="true"><ExampleIcon size={15} /></span>
                       <span className="quick-add-example-copy">
                         <small>{example.language}</small>

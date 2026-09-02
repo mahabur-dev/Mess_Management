@@ -11,6 +11,7 @@ import { MealQuantityControl } from '@/components/meal-pattern/meal-quantity-con
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { clearAiCommandDraft, readAiCommandDraft, type AiCommandDraft } from '@/lib/ai-quick-add'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { MonthlyMealDrawer } from '@/components/meals/monthly-meal-drawer'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
 const mealLabels: Record<MealName, string> = {
@@ -457,8 +458,8 @@ export default function MealsPage() {
           <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
             <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
-                <div><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Today Meal Sheet</p><h3 className="mt-1 text-base font-semibold text-[#172554] sm:text-lg">All Member Meals</h3><p className="mt-1 text-xs font-semibold text-[#6b7a99] sm:text-sm">For {formatDate(date)}</p></div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e7f1ff] text-[#2f80ed] sm:h-11 sm:w-11"><Users size={21} /></div>
+                <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Today Meal Sheet</p><h3 className="mt-1 text-base font-semibold text-[#172554] sm:text-lg">All Member Meals</h3><p className="mt-1 text-xs font-semibold text-[#6b7a99] sm:text-sm">For {formatDate(date)}</p></div>
+                <MonthlyMealDrawer messId={activeMess?.id} members={members} selectedDate={date} />
               </div>
             </div>
             <div className="p-4 sm:p-5">

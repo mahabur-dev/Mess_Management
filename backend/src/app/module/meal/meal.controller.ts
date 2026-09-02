@@ -19,6 +19,7 @@ import {
 import { Request } from 'express';
 import AuthGuard from '../../middlewares/auth.guard';
 import {
+  BulkUpdateMealsDto,
   CreateMealDto,
   LockMealDto,
   MealFilterDto,
@@ -104,16 +105,33 @@ export class MealController {
   @Get('mess/:messId/members')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Get active members available for meal management' })
-  async getMealMembers(
-    @Param('messId') messId: string,
-    @Req() req: Request,
-  ) {
+  async getMealMembers(@Param('messId') messId: string, @Req() req: Request) {
     const data = await this.mealService.getMealMembers(
       messId,
       req.user!.id,
       req.user!.role,
     );
     return { message: 'Meal members fetched', data };
+  }
+
+  @Patch('mess/:messId/attendance/bulk')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @ApiOperation({
+    summary:
+      'Atomically update changed meal-sheet cells for multiple active members',
+  })
+  async bulkUpdateAttendances(
+    @Param('messId') messId: string,
+    @Req() req: Request,
+    @Body() dto: BulkUpdateMealsDto,
+  ) {
+    const data = await this.mealService.bulkUpdateAttendances(
+      messId,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return { message: 'Meal sheet updated successfully', data };
   }
 
   @Post('mess/:messId/deadline')
@@ -180,10 +198,7 @@ export class MealController {
   @Get('mess/:messId/settings')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
   @ApiOperation({ summary: 'Get operational meal settings' })
-  async getMealSettings(
-    @Param('messId') messId: string,
-    @Req() req: Request,
-  ) {
+  async getMealSettings(@Param('messId') messId: string, @Req() req: Request) {
     const data = await this.mealService.getMealSettings(
       messId,
       req.user!.id,
@@ -278,4 +293,3 @@ export class MealController {
     return { message: 'Meal entry deleted successfully', data };
   }
 }
-

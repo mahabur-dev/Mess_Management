@@ -111,7 +111,9 @@ export default function QuickAddPage() {
         messId: activeMess.id,
         audio: blob,
         locale,
-        speechLanguage: locale,
+        // Spoken language is independent from the selected UI locale. Let the
+        // provider detect Bangla, English, Banglish, and mixed speech.
+        speechLanguage: 'auto',
         idempotencyKey: crypto.randomUUID(),
       })
       receiveCommand(response.data)

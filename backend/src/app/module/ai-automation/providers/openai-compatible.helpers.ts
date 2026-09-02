@@ -3,13 +3,12 @@ export type SpeechResponseFormat = 'json' | 'text' | 'verbose_json' | 'none';
 export type SupportedSpeechLanguage = 'auto' | 'en' | 'bn';
 
 const AUTO_TRANSCRIPTION_PROMPT = [
-  'Transcribe the audio verbatim.',
-  'The speaker may use বাংলা, English, Banglish (romanized Bangla), or switch languages mid-sentence.',
-  'Do not translate, answer, summarize, or rewrite.',
-  'Preserve names, item names, spoken numbers, quantities, units, and monetary amounts accurately.',
-  'Write unambiguous spoken monetary numbers as digits (for example, পাঁচশ টাকা as 500 টাকা and তিন হাজার দুইশ টাকা as 3200 টাকা).',
-  'This is a Bangladeshi mess-management command about expenses, bazar or groceries, utility bills, deposits, and meal counts.',
-  'Common words include টাকা, taka, tk, কেজি, kg, বাজার, bazar, আলু, alu, পেঁয়াজ, piyaj, বিদ্যুৎ, current, internet, WiFi, gas, পানি, meal, নাস্তা, lunch, dinner, জমা, and deposit.',
+  'Transcribe verbatim; do not translate, answer, summarize, or rewrite.',
+  'Speech may be Bangla, English, Banglish, or mixed.',
+  'Preserve names, item names, numbers, quantities, units, and monetary amounts.',
+  'Use digits for clear spoken monetary numbers.',
+  'Context: Bangladeshi mess expenses, bazar, utilities, deposits, and meals.',
+  'Vocabulary: taka, tk, kg, bazar, alu, piyaj, current, internet, WiFi, gas, pani, meal, nasta, lunch, dinner, jama, deposit.',
 ].join(' ');
 
 export function buildTranscriptionPrompt(

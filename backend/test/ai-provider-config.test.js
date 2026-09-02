@@ -99,12 +99,21 @@ test('supports JSON and text transcription responses', () => {
 test('uses a mixed-language transcription prompt in auto mode', () => {
   const prompt = buildTranscriptionPrompt('auto');
   assert.match(prompt, /Banglish/);
-  assert.match(prompt, /বাংলা/);
-  assert.match(prompt, /spoken numbers/);
+  assert.match(prompt, /monetary numbers/);
   assert.equal(
     buildTranscriptionPrompt('auto', ' custom vocabulary '),
     'custom vocabulary',
   );
+});
+
+test('keeps every fallback transcription prompt below the Groq size limit', () => {
+  for (const language of ['auto', 'en', 'bn']) {
+    const prompt = buildTranscriptionPrompt(language);
+    assert.ok(
+      Buffer.byteLength(prompt, 'utf8') < 896,
+      `${language} prompt exceeds the Groq 896-byte limit`,
+    );
+  }
 });
 
 test('rejects unsupported speech response formats', () => {

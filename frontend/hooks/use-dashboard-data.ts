@@ -18,13 +18,17 @@ const DYNAMIC_SWR = {
 }
 
 // ─── Mess List (static) ───────────────────────────────────────
-export function useMesses(enabled = true) {
-  return useSWR(enabled ? 'messes' : null, () => swrFetcher(() => apiClient.getMesses()), STATIC_SWR)
+export function useMesses(userId: string | undefined, enabled = true) {
+  return useSWR(
+    enabled && userId ? ['messes', userId] : null,
+    () => swrFetcher(() => apiClient.getMesses()),
+    STATIC_SWR,
+  )
 }
 
-export function useMyMemberJoinRequests(enabled = true) {
+export function useMyMemberJoinRequests(userId: string | undefined, enabled = true) {
   return useSWR(
-    enabled ? 'my-member-join-requests' : null,
+    enabled && userId ? ['my-member-join-requests', userId] : null,
     () => swrFetcher(() => apiClient.getMyMemberJoinRequests()),
     STATIC_SWR,
   )

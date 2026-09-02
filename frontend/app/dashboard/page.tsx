@@ -596,9 +596,11 @@ export default function DashboardPage() {
 
   // ── SWR data fetching (parallel, cached) ────────────────────
   const { data: messesData, isLoading: messesLoading } = useMesses(
+    user?.id,
     Boolean(user && user.role !== 'ADMIN'),
   )
   const { data: memberJoinRequestsData, isLoading: memberJoinRequestsLoading, mutate: refreshMemberJoinRequests } = useMyMemberJoinRequests(
+    user?.id,
     Boolean(user && user.role !== 'ADMIN'),
   )
   const hasPendingMemberJoinRequest = memberRequestSubmitted || (Array.isArray(memberJoinRequestsData) && memberJoinRequestsData.some((request) => request.status === 'PENDING'))
@@ -634,10 +636,7 @@ export default function DashboardPage() {
 
   // Re-invoke hooks with resolved messId
   // (SWR dedupes by key, so these will share the cache if key matches)
-  const {
-    data: messDashboardResolved,
-    isLoading: loadingMessDashboardResolved,
-  } = useMessDashboard(messId, selectedMonth)
+  const { data: messDashboardResolved } = useMessDashboard(messId, selectedMonth)
   const { data: monthlyOverviewResolved, isLoading: loadingChartsResolved } = useMonthlyOverview(
     messId,
     selectedMonth,
@@ -805,10 +804,16 @@ export default function DashboardPage() {
     )
   }
 
+  if (user.role !== 'ADMIN' && messesLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm font-bold text-[#6b7a99]">
+        Loading...
+      </div>
+    )
+  }
+
   const showNoMessOnboarding =
     user.role !== 'ADMIN' &&
-    !messesLoading &&
-    !loadingMessDashboardResolved &&
     !activeMess
 
   if (showNoMessOnboarding) {

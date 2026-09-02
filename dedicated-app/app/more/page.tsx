@@ -9,7 +9,7 @@ import { TopScreen } from '@/components/top-screen'
 import { useTranslations } from '@/lib/i18n'
 
 export default function MorePage() {
-  const { requestLogout, user } = useAuth()
+  const { logout, user } = useAuth()
   const navigation = useTranslations('navigation')
 
   return (
@@ -20,7 +20,7 @@ export default function MorePage() {
         trailing={<div className="flex items-center gap-2"><NotificationLink /><AuthLanguageToggle /></div>}
       />
 
-      {user ? <MoreNavigation user={user} onLogout={requestLogout} /> : null}
+      {user ? <MoreNavigation user={user} onLogout={logout} /> : null}
     </MobileShell>
   )
 }

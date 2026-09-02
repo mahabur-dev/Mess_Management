@@ -31,6 +31,29 @@ async function htmlCount(directory) {
 const [exportedRoutes, nativeRoutes] = await Promise.all([htmlCount(exported), htmlCount(nativeAssets)])
 if (exportedRoutes !== nativeRoutes) throw new Error(`Capacitor assets are stale: export=${exportedRoutes}, Android=${nativeRoutes}`)
 
+async function findQuickAddChunk(directory) {
+  for (const item of await readdir(directory, { withFileTypes: true })) {
+    const target = path.join(directory, item.name)
+    if (item.isDirectory()) {
+      const nested = await findQuickAddChunk(target)
+      if (nested) return nested
+    } else if (/page-[a-f0-9]+\.js$/i.test(item.name) && directory.endsWith(path.join('app', 'quick-add'))) {
+      return target
+    }
+  }
+  return null
+}
+
+const quickAddChunk = await findQuickAddChunk(path.join(nativeAssets, '_next', 'static', 'chunks'))
+if (!quickAddChunk) throw new Error('Capacitor assets are stale: Quick Add bundle is missing.')
+const quickAddSource = await readFile(quickAddChunk, 'utf8')
+if (!quickAddSource.includes('speechLanguage:"auto"')) {
+  throw new Error('Capacitor assets are stale: Quick Add voice must use automatic language detection.')
+}
+if (!quickAddSource.includes('Free command usage')) {
+  throw new Error('Capacitor assets are stale: Quick Add command quota UI is missing.')
+}
+
 const config = await readFile(path.join(root, 'capacitor.config.ts'), 'utf8')
 if (!config.includes("appId: 'com.mess.management'") || !config.includes("webDir: 'out'")) {
   throw new Error('Capacitor appId/webDir contract is invalid.')

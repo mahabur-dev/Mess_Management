@@ -15,6 +15,24 @@ function safeApiErrorMessage(status: number) {
 
 type QueryValue = string | number | boolean | undefined | null
 
+export type BulkMealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
+
+export type BulkMealAttendanceUpdate = {
+  memberId: string
+  mealName: BulkMealName
+  mealCount: number
+  expectedMealCount?: number
+}
+
+export type BulkMealAttendanceResult = {
+  date: string
+  requestedCount: number
+  updatedCount: number
+  unchangedCount: number
+  affectedMemberCount: number
+  billingSync: string
+}
+
 type ApiResponse<T> = {
   success: boolean
   message: string
@@ -408,6 +426,17 @@ class Api {
 
   getMealsByMess(messId: string, params?: Record<string, QueryValue>) {
     return this.request(`/meal/mess/${messId}`, { params })
+  }
+
+  getMealMembers(messId: string) {
+    return this.request<any[]>(`/meal/mess/${messId}/members`, { cache: 'no-store' })
+  }
+
+  bulkUpdateMealAttendances(messId: string, data: { date: string; updates: BulkMealAttendanceUpdate[] }) {
+    return this.request<BulkMealAttendanceResult>(`/meal/mess/${messId}/attendance/bulk`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
   }
 
   getMealDeadline(messId: string, date?: string) {

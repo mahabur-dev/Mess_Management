@@ -43,8 +43,8 @@ function commandError(error: unknown) {
   return "The command could not be processed. Please try again.";
 }
 
-function idempotencyKey(source: "text" | "voice") {
-  return `web-${source}-${crypto.randomUUID()}`;
+function idempotencyKey() {
+  return crypto.randomUUID();
 }
 
 export default function QuickAddAiPage() {
@@ -133,7 +133,7 @@ export default function QuickAddAiPage() {
           audio,
           locale,
           speechLanguage: "auto",
-          idempotencyKey: idempotencyKey("voice"),
+          idempotencyKey: idempotencyKey(),
         });
         await continueToReview(response.data);
       } catch (error) {
@@ -160,7 +160,7 @@ export default function QuickAddAiPage() {
         messId: activeMess.id,
         text: command.trim(),
         locale,
-        idempotencyKey: idempotencyKey("text"),
+        idempotencyKey: idempotencyKey(),
       });
       await continueToReview(response.data);
     } catch (error) {

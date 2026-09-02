@@ -114,6 +114,38 @@ export class AiAutomationService {
       day: '2-digit',
     }).format(new Date());
   }
+  private freeQuotaExceeded() {
+    const limit = config.aiAutomation.freeCommandLimit;
+    return new HttpException(
+      {
+        code: 'AI_FREE_LIMIT_REACHED',
+        message: `You have used all ${limit} free AI commands.`,
+        params: { limit },
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+
+  private async freeQuota(userId: string) {
+    const limit = config.aiAutomation.freeCommandLimit;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { ai_free_commands_used: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    const used = Math.max(0, user.ai_free_commands_used);
+    return {
+      limit,
+      used,
+      remaining: Math.max(0, limit - used),
+      exhausted: used >= limit,
+    };
+  }
+
+  private async assertFreeQuota(userId: string) {
+    const quota = await this.freeQuota(userId);
+    if (quota.exhausted) throw this.freeQuotaExceeded();
+  }
 
   private async accessContext(messId: string, userId: string, role: AuthRole) {
     const mess = await this.prisma.mess.findUnique({
@@ -249,6 +281,8 @@ export class AiAutomationService {
     }
     attempts.push(now);
     this.recentAttempts.set(userId, attempts);
+
+    await this.assertFreeQuota(userId);
 
     const dayStart = new Date(now - 24 * 60 * 60 * 1000);
     const dailyCommands = await this.prisma.aiCommand.count({
@@ -742,36 +776,47 @@ export class AiAutomationService {
       ? AiCommandStatus.NEEDS_CLARIFICATION
       : AiCommandStatus.PENDING;
     const command = await latency.measure('persistPreview', () =>
-      this.prisma.aiCommand.create({
-        data: {
-          mess_id: params.messId,
-          user_id: params.userId,
-          source_type: params.sourceType,
-          intent: resolved.intent as AiCommandIntent,
-          status,
-          locale: params.locale,
-          original_input:
-            params.sourceType === AiCommandSourceType.TEXT ? params.text : null,
-          transcript: params.transcript ?? null,
-          normalized_text: normalizedText,
-          provider: config.aiAutomation.commandProvider,
-          stt_model:
-            params.sourceType === AiCommandSourceType.VOICE
-              ? config.aiAutomation.speechModel
-              : null,
-          command_model: config.aiAutomation.commandModel,
-          parsed_payload: this.jsonSafe({
-            ...parsed,
-            preview,
-          }) as Prisma.InputJsonValue,
-          resolved_payload: resolved.payload
-            ? (this.jsonSafe(resolved.payload) as Prisma.InputJsonValue)
-            : undefined,
-          missing_fields: resolved.missingFields,
-          clarification: resolved.clarification,
-          confidence: parsed.confidence,
-          idempotency_key: idempotencyKey,
-        },
+      this.prisma.$transaction(async (tx) => {
+        const quotaClaim = await tx.user.updateMany({
+          where: {
+            id: params.userId,
+            ai_free_commands_used: { lt: config.aiAutomation.freeCommandLimit },
+          },
+          data: { ai_free_commands_used: { increment: 1 } },
+        });
+        if (quotaClaim.count !== 1) throw this.freeQuotaExceeded();
+
+        return tx.aiCommand.create({
+          data: {
+            mess_id: params.messId,
+            user_id: params.userId,
+            source_type: params.sourceType,
+            intent: resolved.intent as AiCommandIntent,
+            status,
+            locale: params.locale,
+            original_input:
+              params.sourceType === AiCommandSourceType.TEXT ? params.text : null,
+            transcript: params.transcript ?? null,
+            normalized_text: normalizedText,
+            provider: config.aiAutomation.commandProvider,
+            stt_model:
+              params.sourceType === AiCommandSourceType.VOICE
+                ? config.aiAutomation.speechModel
+                : null,
+            command_model: config.aiAutomation.commandModel,
+            parsed_payload: this.jsonSafe({
+              ...parsed,
+              preview,
+            }) as Prisma.InputJsonValue,
+            resolved_payload: resolved.payload
+              ? (this.jsonSafe(resolved.payload) as Prisma.InputJsonValue)
+              : undefined,
+            missing_fields: resolved.missingFields,
+            clarification: resolved.clarification,
+            confidence: parsed.confidence,
+            idempotency_key: idempotencyKey,
+          },
+        });
       }),
     );
     const timing = latency.snapshot();
@@ -994,9 +1039,10 @@ export class AiAutomationService {
     return this.mapCommand(await this.prisma.aiCommand.findUniqueOrThrow({ where: { id: commandId } }));
   }
 
-  capabilities(locale: Locale = 'en') {
+  async capabilities(userId: string, locale: Locale = 'en') {
     const enabled = config.aiAutomation.enabled && Boolean(config.aiAutomation.commandApiKey);
     const voiceEnabled = enabled && Boolean(config.aiAutomation.speechApiKey);
+    const quota = await this.freeQuota(userId);
     return {
       enabled,
       locale,
@@ -1004,6 +1050,7 @@ export class AiAutomationService {
       supportedInputLanguages: ['bn', 'en', 'banglish', 'mixed'],
       intents: ['EXPENSE_CREATE', 'UTILITY_CREATE', 'DEPOSIT_CREATE', 'MEAL_CREATE'],
       voice: { enabled: voiceEnabled, maxBytes: config.aiAutomation.maxAudioBytes, maxDurationSeconds: 60 },
+      quota,
       confirmationRequired: true,
       multiAction: true,
     };

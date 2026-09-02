@@ -1,9 +1,18 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 
-const {
-  AiLatencyTracker,
-} = require('../dist/src/app/module/ai-automation/ai-latency-tracker');
+const trackerPath = fs.existsSync(
+  path.join(
+    __dirname,
+    '../dist/src/app/module/ai-automation/ai-latency-tracker.js',
+  ),
+)
+  ? '../dist/src/app/module/ai-automation/ai-latency-tracker'
+  : '../dist/app/module/ai-automation/ai-latency-tracker';
+
+const { AiLatencyTracker } = require(trackerPath);
 
 test('records reusable AI preview stage timings', async () => {
   const tracker = new AiLatencyTracker();

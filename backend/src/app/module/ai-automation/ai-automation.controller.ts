@@ -33,10 +33,10 @@ export class AiAutomationController {
 
   @Get('capabilities')
   @ApiOperation({ summary: 'Get server-side AI automation capabilities' })
-  capabilities(@Query() query: AiCapabilitiesQueryDto) {
+  async capabilities(@Req() req: Request, @Query() query: AiCapabilitiesQueryDto) {
     return {
       message: 'AI capabilities fetched',
-      data: this.service.capabilities(query.locale),
+      data: await this.service.capabilities(req.user!.id, query.locale),
     };
   }
 

@@ -20,6 +20,7 @@ import {
   MessageSquareWarning,
   Mail,
   Settings,
+  Sparkles,
   UtensilsCrossed,
   Users,
   WalletCards,
@@ -42,6 +43,7 @@ const onboardingItems = [
 
 const memberItems = [
   ...commonItems,
+  { label: 'Quick Add AI', href: '/dashboard/quick-add', icon: Sparkles },
   { label: 'My Meals', href: '/dashboard/meals', icon: UtensilsCrossed },
   { label: 'Meal Pattern', href: '/dashboard/meal-patterns', icon: CalendarClock },
   { label: 'Monthly Bills', href: '/dashboard/monthly-bills', icon: ClipboardList },
@@ -54,6 +56,7 @@ const memberItems = [
 
 const managerItems = [
   ...commonItems,
+  { label: 'Quick Add AI', href: '/dashboard/quick-add', icon: Sparkles },
   { label: 'Members', href: '/dashboard/member_management', icon: Users },
   { label: 'Meal Sheet', href: '/dashboard/meals', icon: UtensilsCrossed },
   { label: 'Meal Patterns', href: '/dashboard/meal-patterns', icon: CalendarClock },

@@ -21,6 +21,7 @@ model User {
   role          GlobalRole @default(MEMBER)
   is_active     Boolean    @default(true)
   is_verified   Boolean    @default(false)
+  ai_free_commands_used Int @default(0)
   otp           String?    @db.VarChar(6)
   otp_expiry    DateTime?  @db.Timestamptz
   created_at    DateTime   @default(now()) @db.Timestamptz

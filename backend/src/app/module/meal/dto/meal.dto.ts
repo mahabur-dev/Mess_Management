@@ -1,5 +1,8 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -12,6 +15,7 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AttendanceStatus, MealName, MealStatus } from '@prisma/client';
@@ -29,7 +33,8 @@ export class CreateMealDto {
 
   @ApiPropertyOptional({
     example: '46083bde-ad97-44bc-94e2-3414160bdb8a',
-    description: 'Only a manager or admin may set attendance for another member',
+    description:
+      'Only a manager or admin may set attendance for another member',
   })
   @IsOptional()
   @IsString()
@@ -38,7 +43,8 @@ export class CreateMealDto {
 
   @ApiPropertyOptional({
     example: 2,
-    description: 'Total count, including the meal-type base value and guest meals',
+    description:
+      'Total count, including the meal-type base value and guest meals',
   })
   @IsOptional()
   @Transform(toOptionalNumber)
@@ -73,6 +79,65 @@ export class CreateMealDto {
   })
   @IsDateString()
   date: string;
+}
+
+export class BulkMealUpdateItemDto {
+  @ApiProperty({ example: '46083bde-ad97-44bc-94e2-3414160bdb8a' })
+  @IsString()
+  @IsNotEmpty()
+  memberId: string;
+
+  @ApiProperty({ enum: MealName, example: MealName.DINNER })
+  @IsEnum(MealName)
+  mealName: MealName;
+
+  @ApiProperty({
+    example: 2,
+    minimum: 0,
+    maximum: 21,
+    description:
+      'The complete meal count for this cell. Zero turns the meal off.',
+  })
+  @Transform(toOptionalNumber)
+  @IsNumber()
+  @Min(0)
+  @Max(21)
+  mealCount: number;
+
+  @ApiPropertyOptional({
+    example: 1,
+    minimum: 0,
+    maximum: 21,
+    description:
+      'The value originally loaded by the editor. A mismatch returns 409 instead of overwriting a newer change.',
+  })
+  @IsOptional()
+  @Transform(toOptionalNumber)
+  @IsNumber()
+  @Min(0)
+  @Max(21)
+  expectedMealCount?: number;
+}
+
+export class BulkUpdateMealsDto {
+  @ApiProperty({
+    example: '2026-08-01',
+    description: 'The single meal-sheet date updated by this request.',
+  })
+  @IsDateString()
+  date: string;
+
+  @ApiProperty({
+    type: [BulkMealUpdateItemDto],
+    description:
+      'Only changed member/meal cells. Duplicate member and meal pairs are rejected.',
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => BulkMealUpdateItemDto)
+  updates: BulkMealUpdateItemDto[];
 }
 
 export class UpdateMealDto {
@@ -112,7 +177,8 @@ export class SetMealDeadlineDto {
 
   @ApiProperty({
     example: '17:00',
-    description: 'Closing time for the meal decision window. Overnight windows may end on the target meal date.',
+    description:
+      'Closing time for the meal decision window. Overnight windows may end on the target meal date.',
   })
   @IsString()
   @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {

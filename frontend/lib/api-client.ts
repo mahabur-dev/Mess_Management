@@ -32,6 +32,22 @@ export type MembershipRole = 'MANAGER' | 'MEMBER'
 export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type MealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
 export type AttendanceStatus = 'ON' | 'OFF'
+export interface BulkMealAttendanceUpdate {
+  memberId: string
+  mealName: MealName
+  mealCount: number
+  expectedMealCount?: number
+}
+
+export interface BulkMealAttendanceResult {
+  date: string
+  requestedCount: number
+  updatedCount: number
+  unchangedCount: number
+  affectedMemberCount: number
+  billingSync: string
+  updates: Array<BulkMealAttendanceUpdate & { attendanceId?: string }>
+}
 export type MealPatternType = 'DAILY' | 'WEEKLY'
 export type MealPatternStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ENDED' | 'CANCELLED'
 export type MealPatternWeekday =
@@ -809,6 +825,13 @@ class ApiClient {
     return this.request('/meal', {
       method: 'POST',
       body: JSON.stringify({ ...data, mealCount }),
+    })
+  }
+
+  bulkUpdateMealAttendances(messId: string, data: { date: string; updates: BulkMealAttendanceUpdate[] }) {
+    return this.request<BulkMealAttendanceResult>(`/meal/mess/${messId}/attendance/bulk`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     })
   }
 

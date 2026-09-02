@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AttendanceStatus, type MealName, type Mess } from '@/lib/api-client'
 import { CalendarDays, Clock, Users, UtensilsCrossed, Coffee, Sun, Moon, Shield, Save } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 import { MealQuantityControl } from '@/components/meal-pattern/meal-quantity-control'
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
+import { clearAiCommandDraft, readAiCommandDraft, type AiCommandDraft } from '@/lib/ai-quick-add'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
 const mealLabels: Record<MealName, string> = {
@@ -58,8 +60,24 @@ const isPastDate = (value: string) => {
 }
 function getErrorMessage(error: unknown, fallback: string) { return error instanceof Error ? error.message : fallback }
 
+function aiMealItems(draft: AiCommandDraft) {
+  if (!draft.payload) return []
+  return (Array.isArray(draft.payload.items) ? draft.payload.items : [draft.payload]) as Record<string, unknown>[]
+}
+
+function aiMealCount(item: Record<string, unknown>, mealName: MealName) {
+  const direct = Number(item.mealCount)
+  if (Number.isFinite(direct)) return Math.max(0, direct)
+  if (item.status === 'OFF') return 0
+  const guests = Number(item.guests ?? 0)
+  return getMealBaseValue(mealName) + (Number.isFinite(guests) ? Math.max(0, guests) : 0)
+}
+
 export default function MealsPage() {
   const { user } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const aiCommandId = searchParams.get('aiCommand')
   const [messes, setMesses] = useState<Mess[]>([])
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [mealDrafts, setMealDrafts] = useState<Record<MealName, number>>({ BREAKFAST: 0, LUNCH: 0, DINNER: 0 })
@@ -81,6 +99,9 @@ export default function MealsPage() {
   const [showDeadlineSettings, setShowDeadlineSettings] = useState(false)
   const [deadlineStartTime, setDeadlineStartTime] = useState('09:00')
   const [deadlineEndTime, setDeadlineEndTime] = useState('17:00')
+  const [aiDraft, setAiDraft] = useState<AiCommandDraft | null>(null)
+  const [aiTargetMemberId, setAiTargetMemberId] = useState<string | null>(null)
+  const aiPrefillKeyRef = useRef<string | null>(null)
 
   const activeMess = messes[0] ?? user?.memberships?.[0]?.mess
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
@@ -106,6 +127,22 @@ export default function MealsPage() {
   useEffect(() => {
     apiClient.getMesses().then(r => setMesses(Array.isArray(r.data) ? r.data : r.data ? [r.data] : [])).catch(() => setMesses(((user?.memberships?.map(i => i.mess).filter(Boolean) ?? []) as Mess[])))
   }, [user?.role])
+
+  useEffect(() => {
+    if (!aiCommandId || !activeMess || !user || aiDraft) return
+    const draft = readAiCommandDraft(aiCommandId)
+    if (!draft || draft.intent !== 'MEAL_CREATE' || !draft.payload) return
+    const items = aiMealItems(draft)
+    if (!items.length) return
+    const targetMemberId = String(items[0].memberId ?? user.id)
+    const targetDate = String(items[0].date ?? new Date().toISOString().slice(0, 10)).slice(0, 10)
+    aiPrefillKeyRef.current = null
+    if (targetMemberId === user.id) setUserMealsLoading(true)
+    else setSheetLoading(true)
+    setDate(targetDate)
+    setAiTargetMemberId(targetMemberId)
+    setAiDraft(draft)
+  }, [activeMess, aiCommandId, aiDraft, user])
 
   useEffect(() => {
     let m = true
@@ -185,6 +222,47 @@ export default function MealsPage() {
   const mealTotals = useMemo(() => mealNames.reduce((t, n) => ({ ...t, [n]: memberMealRows.reduce((s, r) => s + r.meals[n], 0) }), { BREAKFAST: 0, LUNCH: 0, DINNER: 0 } as Record<MealName, number>), [memberMealRows])
   const mealDraftTotal = useMemo(() => mealNames.reduce((total, mealName) => total + mealDrafts[mealName], 0), [mealDrafts])
 
+  useEffect(() => {
+    if (!aiDraft || !aiTargetMemberId || !user) return
+    const items = aiMealItems(aiDraft)
+    const targetDate = String(items[0]?.date ?? date).slice(0, 10)
+    if (targetDate !== date) return
+    const prefillKey = `${aiDraft.id}:${aiTargetMemberId}:${date}`
+    if (aiPrefillKeyRef.current === prefillKey) return
+
+    if (aiTargetMemberId === user.id) {
+      if (userMealsLoading) return
+      setMealDrafts(current => {
+        const next = { ...current }
+        items.forEach(item => {
+          const name = String(item.mealName ?? '').toUpperCase() as MealName
+          if (mealNames.includes(name)) next[name] = aiMealCount(item, name)
+        })
+        return next
+      })
+    } else {
+      if (sheetLoading) return
+      const row = memberMealRows.find(item => item.id === aiTargetMemberId)
+      if (!row) {
+        setMessageType('error')
+        setMessage('The member in this AI command is not available in the current mess.')
+        return
+      }
+      const next = {
+        BREAKFAST: String(row.meals.BREAKFAST),
+        LUNCH: String(row.meals.LUNCH),
+        DINNER: String(row.meals.DINNER),
+      }
+      items.forEach(item => {
+        const name = String(item.mealName ?? '').toUpperCase() as MealName
+        if (mealNames.includes(name)) next[name] = String(aiMealCount(item, name))
+      })
+      setManagerMealDrafts(current => ({ ...current, [row.id]: next }))
+      setEditingMemberId(row.id)
+    }
+    aiPrefillKeyRef.current = prefillKey
+  }, [aiDraft, aiTargetMemberId, date, memberMealRows, sheetLoading, user, userMealsLoading])
+
   async function refreshMealsForDate() {
     if (!activeMess?.id) return
     const r = await apiClient.getMealsByMess(activeMess.id, { startDate: date, endDate: date, limit: 10 })
@@ -202,6 +280,40 @@ export default function MealsPage() {
 
   function parseNum(v: string) { const n = Number(v); return isNaN(n) ? 0 : n }
 
+  function finishAiDraft() {
+    if (!aiDraft) return
+    clearAiCommandDraft(aiDraft.id)
+    setAiDraft(null)
+    setAiTargetMemberId(null)
+    aiPrefillKeyRef.current = null
+    router.replace('/dashboard/meals')
+  }
+
+  function buildAiMealPayload(memberId: string, values: Record<MealName, number>) {
+    if (!aiDraft) return {}
+    const originalItems = aiMealItems(aiDraft)
+    const items = originalItems.map(item => {
+      const mealName = String(item.mealName ?? '').toUpperCase() as MealName
+      const mealCount = mealNames.includes(mealName) ? Math.max(0, values[mealName]) : 0
+      return {
+        ...item,
+        messId: activeMess?.id,
+        memberId,
+        date,
+        mealName,
+        mealCount,
+        status: mealCount > 0 ? 'ON' : 'OFF',
+      }
+    })
+    return Array.isArray(aiDraft.payload?.items) ? { items } : items[0]
+  }
+
+  function cancelAiMealReview() {
+    if (!aiDraft) return
+    void apiClient.cancelAiCommand(aiDraft.id).catch(() => null)
+    finishAiDraft()
+  }
+
   async function saveMyMeals() {
     if (!activeMess) return
     if (isPastSelectedDate && !isManager) { setMessageType('error'); setMessage('Past date meals can only be updated by managers.'); return }
@@ -209,7 +321,10 @@ export default function MealsPage() {
     setSavingMeals(true)
     setMessage('')
     try {
-      await Promise.all(mealNames.map(mealName => {
+      const completedWithAi = Boolean(aiDraft && aiTargetMemberId === user?.id)
+      if (completedWithAi) {
+        await apiClient.confirmAiCommand(aiDraft!.id, buildAiMealPayload(user!.id, mealDrafts))
+      } else await Promise.all(mealNames.map(mealName => {
         const total = Math.max(0, Number(mealDrafts[mealName].toFixed(2)))
         const base = getMealBaseValue(mealName)
         return apiClient.createMeal({
@@ -220,7 +335,8 @@ export default function MealsPage() {
           date,
         })
       }))
-      setMessageType('success'); setMessage('Breakfast, lunch and dinner updated successfully.')
+      if (completedWithAi) finishAiDraft()
+      setMessageType('success'); setMessage(completedWithAi ? 'AI meal entry confirmed successfully.' : 'Breakfast, lunch and dinner updated successfully.')
       await refreshMealsForDate()
     } catch (e) { setMessageType('error'); setMessage(getErrorMessage(e, 'Failed')) }
     finally { setSavingMeals(false) }
@@ -232,12 +348,17 @@ export default function MealsPage() {
     setMessage('')
     try {
       const changed = mealNames.filter(n => parseNum(drafts[n] ?? '0') !== row.meals[n])
-      if (!changed.length) { cancelEditingMemberMeal(row.id); return }
-      for (const n of changed) {
+      const completedWithAi = Boolean(aiDraft && aiTargetMemberId === row.id)
+      if (!changed.length && !completedWithAi) { cancelEditingMemberMeal(row.id); return }
+      if (completedWithAi) {
+        const values = Object.fromEntries(mealNames.map(name => [name, parseNum(drafts[name] ?? '0')])) as Record<MealName, number>
+        await apiClient.confirmAiCommand(aiDraft!.id, buildAiMealPayload(row.id, values))
+      } else for (const n of changed) {
         const total = parseNum(drafts[n] ?? '0')
         await apiClient.createMeal({ messId: activeMess.id, memberId: row.id, mealName: n, status: total > 0 ? 'ON' : 'OFF', guests: total > 0 ? Math.max(0, +(total - getMealBaseValue(n)).toFixed(2)) : 0, date })
       }
-      setMessageType('success'); setMessage(`${row.name} meals updated.`)
+      if (completedWithAi) finishAiDraft()
+      setMessageType('success'); setMessage(completedWithAi ? `AI meal entry confirmed for ${row.name}.` : `${row.name} meals updated.`)
       cancelEditingMemberMeal(row.id)
       await refreshMealsForDate()
     } catch (e) { setMessageType('error'); setMessage(getErrorMessage(e, 'Failed')) }
@@ -261,6 +382,8 @@ export default function MealsPage() {
       <DashboardHeader title={isManager ? 'Meal Sheet' : 'My Meals'} description="Set your breakfast, lunch and dinner quantities" />
       <div className="p-4 sm:p-6 lg:p-8">
         {message && <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${messageType === 'error' ? 'border border-red-200/70 bg-red-50 text-red-700' : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'}`}>{message}</div>}
+
+        {aiDraft && <div className="mb-5 flex flex-col gap-3 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-[var(--dashboard-ink)]">Review the AI meal entry below</p><p className="mt-1 text-xs font-semibold text-[var(--dashboard-muted)]">Adjust the highlighted member's meal quantities, then use the existing Save action to confirm.</p></div><button type="button" onClick={cancelAiMealReview} className="h-9 rounded-lg border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-xs font-bold text-[var(--dashboard-muted)]">Cancel AI review</button></div>}
 
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">

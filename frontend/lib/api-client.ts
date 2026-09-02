@@ -78,6 +78,49 @@ export type ComplaintCategory =
   | 'MAINTENANCE_ISSUE'
   | 'OTHER'
 export type ComplaintStatus = 'PENDING' | 'PROCESSING' | 'SOLVED' | 'REJECTED'
+export type AiLocale = 'en' | 'bn'
+export type AiSpeechLanguage = 'auto' | 'en' | 'bn'
+export type AiCommandIntent = 'EXPENSE_CREATE' | 'UTILITY_CREATE' | 'DEPOSIT_CREATE' | 'MEAL_CREATE' | 'UNKNOWN' | 'NEEDS_CLARIFICATION'
+export type AiCommandStatus = 'PENDING' | 'NEEDS_CLARIFICATION' | 'PROCESSING' | 'CONFIRMED' | 'CANCELLED' | 'FAILED'
+
+export interface AiFreeQuota {
+  limit: number
+  used: number
+  remaining: number
+  exhausted: boolean
+}
+
+export interface AiCapabilities {
+  enabled: boolean
+  locale: AiLocale
+  supportedLocales: AiLocale[]
+  supportedInputLanguages: string[]
+  intents: AiCommandIntent[]
+  voice: { enabled: boolean; maxBytes: number; maxDurationSeconds: number }
+  quota: AiFreeQuota
+  confirmationRequired: boolean
+  multiAction: boolean
+}
+
+export interface AiCommand {
+  id: string
+  messId: string
+  sourceType: 'TEXT' | 'VOICE'
+  intent: AiCommandIntent
+  status: AiCommandStatus
+  locale: AiLocale
+  input?: string | null
+  transcript?: string | null
+  payload?: Record<string, unknown> | null
+  preview?: unknown
+  missingFields: string[]
+  clarification?: string | null
+  confidence?: number | null
+  result?: { id?: string; ids?: string[]; intent?: AiCommandIntent; redirectTo?: string } | null
+  errorCode?: string | null
+  createdAt: string
+  confirmedAt?: string | null
+}
 
 export interface User {
   id: string
@@ -723,6 +766,39 @@ class ApiClient {
 
   getAdminDashboard() {
     return this.request<AdminDashboard>('/dashboard/admin')
+  }
+
+  getAiCapabilities(locale: AiLocale = 'en') {
+    return this.request<AiCapabilities>('/ai/commands/capabilities', { params: { locale } })
+  }
+
+  createAiTextCommand(data: { messId: string; text: string; locale: AiLocale; idempotencyKey: string }) {
+    return this.request<AiCommand>('/ai/commands/text', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  createAiVoiceCommand(data: { messId: string; audio: Blob; locale: AiLocale; speechLanguage?: AiSpeechLanguage; idempotencyKey: string }) {
+    const form = new FormData()
+    const extension = data.audio.type.includes('mp4') ? 'm4a' : data.audio.type.includes('ogg') ? 'ogg' : 'webm'
+    form.append('messId', data.messId)
+    form.append('locale', data.locale)
+    form.append('speechLanguage', data.speechLanguage ?? 'auto')
+    form.append('idempotencyKey', data.idempotencyKey)
+    form.append('audio', data.audio, `messzen-web-command.${extension}`)
+    return this.request<AiCommand>('/ai/commands/voice', { method: 'POST', body: form })
+  }
+
+  confirmAiCommand(commandId: string, payload: Record<string, unknown>) {
+    return this.request<AiCommand>(`/ai/commands/${commandId}/confirm`, {
+      method: 'POST',
+      body: JSON.stringify({ payload }),
+    })
+  }
+
+  cancelAiCommand(commandId: string) {
+    return this.request<AiCommand>(`/ai/commands/${commandId}/cancel`, { method: 'POST' })
   }
 
   createMeal(data: { messId: string; memberId?: string; mealName: MealName; status: AttendanceStatus; guests?: number; date: string; mealCount?: number }) {

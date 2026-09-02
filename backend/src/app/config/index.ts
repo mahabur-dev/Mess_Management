@@ -104,6 +104,7 @@ export default {
     retentionDays: Number(process.env.AI_COMMAND_RETENTION_DAYS) || 30,
     maxRequestsPerMinute: Number(process.env.AI_MAX_REQUESTS_PER_MINUTE) || 10,
     maxCommandsPerDay: Number(process.env.AI_MAX_COMMANDS_PER_DAY) || 100,
+    freeCommandLimit: positiveInteger(process.env.AI_FREE_COMMAND_LIMIT, 10),
   },
 
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',

@@ -13,6 +13,8 @@ import { useAuth } from '@/app/context/auth-context'
 import { Check, CreditCard, Loader2, Plus, X, Wallet, Banknote, Smartphone, Landmark, Building2, CalendarDays, User, Ban, Search, Filter, Trash2, Eye, Edit3 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
+import { clearAiCommandDraft, readAiCommandDraft, type AiCommandDraft } from '@/lib/ai-quick-add'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const methods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
 
@@ -72,6 +74,9 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export default function PaymentsPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const aiCommandId = searchParams.get('aiCommand')
   const [messes, setMesses] = useState<Mess[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [messMembers, setMessMembers] = useState<MessMembershipWithDetails[]>([])
@@ -111,6 +116,7 @@ export default function PaymentsPage() {
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [searchText, setSearchText] = useState('')
+  const [aiDraft, setAiDraft] = useState<AiCommandDraft | null>(null)
 
   useAutoDismissMessage(message, messageType, setMessage, setMessageType)
 
@@ -149,6 +155,39 @@ export default function PaymentsPage() {
     load()
   }, [user, isManager])
 
+  useEffect(() => {
+    if (!aiCommandId || !activeMess || !user || aiDraft) return
+    const draft = readAiCommandDraft(aiCommandId)
+    if (!draft || draft.intent !== 'DEPOSIT_CREATE' || !draft.payload) return
+    const payload = draft.payload
+    const nextMethod = String(payload.method ?? 'BKASH') as PaymentMethod
+    setAmount(String(payload.amount ?? ''))
+    setMethod(methods.includes(nextMethod) ? nextMethod : 'BKASH')
+    setPaymentDate(String(payload.date ?? payload.paymentDate ?? new Date().toISOString().slice(0, 10)).slice(0, 10))
+    setPaymentPurchasedBy(String(payload.memberId ?? payload.purchasedBy ?? user.id))
+    setSelectedCategories(Array.isArray(payload.categories) ? payload.categories.map(String) : [])
+    setEditingPayment(null)
+    setAiDraft(draft)
+    setShowModal(true)
+  }, [activeMess, aiCommandId, aiDraft, user])
+
+  function finishAiDraft() {
+    if (!aiDraft) return
+    clearAiCommandDraft(aiDraft.id)
+    setAiDraft(null)
+    router.replace('/dashboard/payments')
+  }
+
+  function closeDepositForm() {
+    setShowModal(false)
+    setSelectedCategories([])
+    setEditingPayment(null)
+    if (aiDraft) {
+      void apiClient.cancelAiCommand(aiDraft.id).catch(() => null)
+      finishAiDraft()
+    }
+  }
+
   async function submitPayment() {
     if ((!activeMess && !editingPayment) || !amount) return
     setSubmitting(true)
@@ -159,6 +198,17 @@ export default function PaymentsPage() {
           amount: Number(amount),
           method,
           paymentDate: paymentDate || undefined,
+          categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+        })
+      } else if (aiDraft) {
+        await apiClient.confirmAiCommand(aiDraft.id, {
+          messId: activeMess!.id,
+          memberId: paymentPurchasedBy || user?.id,
+          purchasedBy: paymentPurchasedBy || user?.id,
+          amount: Number(amount),
+          method,
+          date: paymentDate || new Date().toISOString().slice(0, 10),
+          paymentDate: paymentDate || new Date().toISOString().slice(0, 10),
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
         })
       } else {
@@ -177,8 +227,10 @@ export default function PaymentsPage() {
       setPaymentPurchasedBy(user?.id ?? '')
       setEditingPayment(null)
       setShowModal(false)
+      const completedWithAi = Boolean(aiDraft)
+      if (completedWithAi) finishAiDraft()
       setMessageType('success')
-      setMessage(editingPayment ? 'Deposit updated successfully.' : 'Deposit submitted successfully.')
+      setMessage(editingPayment ? 'Deposit updated successfully.' : completedWithAi ? 'AI deposit confirmed successfully.' : 'Deposit submitted successfully.')
       await load()
     } catch (error) {
       setMessageType('error')
@@ -554,12 +606,12 @@ export default function PaymentsPage() {
       {showModal && (
         <EnterpriseDetailsDrawer
           open={showModal}
-          onOpenChange={(open) => { setShowModal(open); if (!open) { setSelectedCategories([]); setEditingPayment(null) } }}
+          onOpenChange={(open) => { if (open) setShowModal(true); else closeDepositForm() }}
           eyebrow="Deposit"
           title={editingPayment ? 'Edit deposit' : 'Add deposit'}
           description={editingPayment ? 'Update this deposit amount, method, date, or categories.' : 'Record a deposit with its method, date, and categories.'}
           headerIcon={<CreditCard className="size-5" />}
-          footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={() => { setShowModal(false); setSelectedCategories([]) }} disabled={submitting}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)}>{submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}{submitting ? 'Saving...' : editingPayment ? 'Save changes' : 'Add deposit'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
+          footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={closeDepositForm} disabled={submitting}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)}>{submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}{submitting ? 'Saving...' : editingPayment ? 'Save changes' : aiDraft ? 'Confirm AI deposit' : 'Add deposit'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
         >
             <div>
               <div className="space-y-4">

@@ -46,6 +46,8 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
+import { clearAiCommandDraft, readAiCommandDraft, type AiCommandDraft } from '@/lib/ai-quick-add'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const categories: ExpenseCategory[] = [
   'GROCERY',
@@ -203,6 +205,9 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export default function FinancePage() {
   const { user } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const aiCommandId = searchParams.get('aiCommand')
   const [messes, setMesses] = useState<Mess[]>([])
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
   const [messMembers, setMessMembers] = useState<MessMembershipWithDetails[]>([])
@@ -238,6 +243,7 @@ export default function FinancePage() {
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [loading, setLoading] = useState(false)
   const [reviewingExpenseId, setReviewingExpenseId] = useState<string | null>(null)
+  const [aiDraft, setAiDraft] = useState<AiCommandDraft | null>(null)
 
   useAutoDismissMessage(message, messageType, setMessage, setMessageType)
   
@@ -332,6 +338,64 @@ export default function FinancePage() {
   useEffect(() => {
     load()
   }, [user, selectedMonth])
+
+  useEffect(() => {
+    if (!aiCommandId || !activeMess || !user || aiDraft) return
+    const draft = readAiCommandDraft(aiCommandId)
+    if (!draft || !['EXPENSE_CREATE', 'UTILITY_CREATE'].includes(draft.intent) || !draft.payload) return
+    const payload = draft.payload
+    const isUtility = draft.intent === 'UTILITY_CREATE'
+    const payloadItems = Array.isArray(payload.items) ? payload.items : []
+    const fallbackCategory = String(payload.category ?? (isUtility ? 'GAS' : 'FOOD')) as ExpenseCategory
+    const allowedCategories = isUtility ? utilityCategories : expenseCategories
+    const rows: ExpenseRow[] = (payloadItems.length ? payloadItems : [{
+      itemName: payload.itemName ?? payload.utilityType ?? '',
+      amount: payload.amount ?? '',
+      quantity: payload.quantity,
+      unit: payload.unit,
+    }]).map((raw, index) => {
+      const item = raw as Record<string, unknown>
+      const itemCategory = String(item.category ?? fallbackCategory) as ExpenseCategory
+      return {
+        id: index + 1,
+        itemName: String(item.itemName ?? item.name ?? (isUtility ? payload.utilityType ?? fallbackCategory : '')),
+        amount: String(item.amount ?? ''),
+        quantity: item.quantity == null ? '' : String(item.quantity),
+        unit: item.unit == null ? '' : String(item.unit),
+        category: allowedCategories.includes(itemCategory) ? itemCategory : allowedCategories[0],
+        description: String(item.description ?? payload.description ?? ''),
+        receipt: null,
+      }
+    })
+    const paidFrom = String(payload.paidFrom ?? payload.paymentType ?? 'FROM_DEPOSIT')
+    setExpenseFormMode(isUtility ? 'utility' : 'expense')
+    setSharedDate(String(payload.expenseDate ?? new Date().toISOString().slice(0, 10)).slice(0, 10))
+    setExpensePurchasedBy(String(payload.purchasedBy ?? user.id))
+    setExpenseItems(rows)
+    setRowCounter(rows.length)
+    setExpensePaymentType(
+      paidFrom === 'PERSONAL' || paidFrom === 'COLLECTED_FUND' ? paidFrom : 'FROM_DEPOSIT',
+    )
+    setEditingExpense(null)
+    setAiDraft(draft)
+    setIsAddModalOpen(true)
+  }, [activeMess, aiCommandId, aiDraft, user])
+
+  function finishAiDraft() {
+    if (!aiDraft) return
+    clearAiCommandDraft(aiDraft.id)
+    setAiDraft(null)
+    router.replace('/dashboard/finance')
+  }
+
+  function closeExpenseForm() {
+    setIsAddModalOpen(false)
+    resetForm()
+    if (aiDraft) {
+      void apiClient.cancelAiCommand(aiDraft.id).catch(() => null)
+      finishAiDraft()
+    }
+  }
 
   // ── Multi-item helpers ─────────────────────────────────
   function addExpenseItem() {
@@ -472,6 +536,11 @@ export default function FinancePage() {
       setMessage('Attach one receipt for the complete purchase transaction.')
       return
     }
+    if (aiDraft && expenseItems.some((item) => item.receipt)) {
+      setMessageType('error')
+      setMessage('Confirm the AI entry first, then attach a receipt from the expense page if needed.')
+      return
+    }
 
     setLoading(true)
     setMessage('')
@@ -484,15 +553,38 @@ export default function FinancePage() {
           editingExpense.id,
           buildExpensePayload(expenseItems, false),
         )
+      } else if (aiDraft) {
+        const payload = buildExpensePayload(expenseItems)
+        if (payload instanceof FormData) throw new Error('Receipt upload is not available during AI confirmation.')
+        const utilityTypeByCategory: Partial<Record<ExpenseCategory, string>> = {
+          ELECTRICITY: 'ELECTRICITY',
+          GAS: 'GAS',
+          WATER: 'WATER',
+          WIFI: 'WIFI',
+          CLEANER: 'CLEANING',
+          OTHER: 'OTHER',
+        }
+        await apiClient.confirmAiCommand(aiDraft.id, {
+          ...payload,
+          type: expenseFormMode === 'utility' ? 'UTILITY' : 'EXPENSE',
+          paidFrom: expensePaymentType,
+          utilityType: expenseFormMode === 'utility'
+            ? aiDraft.payload?.utilityType ?? utilityTypeByCategory[expenseItems[0]?.category] ?? 'OTHER'
+            : undefined,
+        })
       } else {
         await apiClient.createExpense(buildExpensePayload(expenseItems))
       }
+      const completedWithAi = Boolean(aiDraft)
       resetForm()
       setIsAddModalOpen(false)
+      if (completedWithAi) finishAiDraft()
       setMessageType('success')
       setMessage(
         wasEditing
           ? 'Expense updated successfully.'
+          : completedWithAi
+            ? 'AI entry confirmed successfully.'
           : wasUtility
             ? 'Utility added successfully.'
           : `${submittedCount} item(s) saved in one expense transaction.`,
@@ -1084,8 +1176,8 @@ export default function FinancePage() {
       <EnterpriseDetailsDrawer
         open={isAddModalOpen}
         onOpenChange={(open) => {
-          setIsAddModalOpen(open)
-          if (!open) resetForm()
+          if (open) setIsAddModalOpen(true)
+          else closeExpenseForm()
         }}
         eyebrow={isEditing ? 'Edit expense' : 'New expense'}
         title={isEditing ? (expenseFormMode === 'utility' ? 'Edit utility' : 'Edit bazar expense') : (expenseFormMode === 'utility' ? 'Add utility' : 'Add bazar expenses')}
@@ -1093,8 +1185,8 @@ export default function FinancePage() {
         headerIcon={<ReceiptText className="size-5" />}
         footer={<EnterpriseDrawerFooter>
           {expenseFormMode !== 'utility' && <EnterpriseDrawerAction tone="secondary" onClick={addExpenseItem}><Plus size={16} /> Add item</EnterpriseDrawerAction>}
-          <EnterpriseDrawerAction tone="secondary" onClick={() => { setIsAddModalOpen(false); resetForm() }} disabled={loading}>Cancel</EnterpriseDrawerAction>
-          <EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitAllExpenses} disabled={loading}>{loading ? <Loader2 size={16} className="animate-spin" /> : <ReceiptText size={16} />}{loading ? 'Saving...' : isEditing ? expenseFormMode === 'utility' ? 'Update utility' : 'Update expense' : expenseFormMode === 'utility' ? 'Submit utility' : `Submit ${expenseItems.length} item(s)`}</EnterpriseDrawerAction>
+          <EnterpriseDrawerAction tone="secondary" onClick={closeExpenseForm} disabled={loading}>Cancel</EnterpriseDrawerAction>
+          <EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitAllExpenses} disabled={loading}>{loading ? <Loader2 size={16} className="animate-spin" /> : <ReceiptText size={16} />}{loading ? 'Saving...' : isEditing ? expenseFormMode === 'utility' ? 'Update utility' : 'Update expense' : aiDraft ? 'Confirm AI entry' : expenseFormMode === 'utility' ? 'Submit utility' : `Submit ${expenseItems.length} item(s)`}</EnterpriseDrawerAction>
         </EnterpriseDrawerFooter>}
       >
           <div className="space-y-6">

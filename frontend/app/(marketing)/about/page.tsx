@@ -52,7 +52,7 @@ export default function AboutPage() {
             <Link href="/register" className="brand-button mt-7 h-12 px-6">Start for Free <ArrowRight size={16} /></Link>
           </div>
           <div className="marketing-card overflow-hidden rounded-2xl p-2 sm:p-3">
-            <Image src="/dashboard.webp" alt="Messzen management dashboard" width={1366} height={1292} priority className="aspect-[1.55/1] w-full rounded-xl object-cover object-top" />
+            <Image src="/labtop-dashboard.webp" alt="Messzen management dashboard" width={1366} height={1292} priority className="aspect-[1.55/1] w-full rounded-xl object-cover object-top" />
           </div>
         </div>
       </section>

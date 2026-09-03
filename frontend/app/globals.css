@@ -616,6 +616,19 @@
     backdrop-filter: blur(20px);
   }
 
+  .sidebar-nav-icon {
+    contain: layout paint;
+    line-height: 0;
+    transform: none;
+  }
+
+  .sidebar-nav-icon > svg {
+    display: block;
+    flex: none;
+    transform: none;
+    transform-origin: center;
+  }
+
   .dashboard-header-clean {
     border-bottom: 1px solid var(--dashboard-line) !important;
     background: var(--dashboard-bg) !important;

@@ -89,3 +89,5 @@ export default function RootLayout({
     </html>
   )
 }
+
+//check if the user is logged in and redirect to login page if not

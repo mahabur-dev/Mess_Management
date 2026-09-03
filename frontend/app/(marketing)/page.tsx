@@ -398,6 +398,20 @@ export default function HomePage() {
   return (
     <main className="marketing-page">
       <MarketingHero />
+      <div className="marketing-container flex justify-center px-4 py-6 sm:px-6 lg:px-8">
+        <a
+          href="https://peerpush.com/p/messzen"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://peerpush.com/p/messzen/badge.png"
+            alt="Messzen on PeerPush"
+            className="h-auto w-[230px] max-w-full"
+          />
+        </a>
+      </div>
       <FeatureStrip />
       <AutomationOverviewSection />
       <AiWorkflowSection />

@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { MemberJoinRequestModal } from '@/components/member-join-request-modal'
 import { DashboardPanel } from '@/components/dashboard/dashboard-panel'
+import { LoadingSkeleton } from '@/components/dashboard/page-skeleton'
 import { useAuth } from '@/app/context/auth-context'
 import { type Mess } from '@/lib/api-client'
 import { APP_FEATURES } from '@/lib/feature-flags'
@@ -797,19 +798,11 @@ export default function DashboardPage() {
   }, [adminDashboard, resolvedDashboard, user?.role])
 
   if (authLoading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm font-bold text-[#6b7a99]">
-        Loading...
-      </div>
-    )
+    return <LoadingSkeleton />
   }
 
   if (user.role !== 'ADMIN' && messesLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm font-bold text-[#6b7a99]">
-        Loading...
-      </div>
-    )
+    return <LoadingSkeleton />
   }
 
   const showNoMessOnboarding =

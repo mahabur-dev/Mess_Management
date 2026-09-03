@@ -112,19 +112,34 @@ interface SidebarLinkContentProps {
   collapsed: boolean
 }
 
-function SidebarLinkContent({ icon: Icon, label, isActive, collapsed }: SidebarLinkContentProps) {
+function SidebarNavigationStatus({ label }: { label: string }) {
   const { pending } = useLinkStatus()
+
+  if (!pending) return null
 
   return (
     <>
-      {pending && (
-        <span className="dashboard-loading-progress fixed inset-x-0 top-0 z-[120] h-1" aria-hidden="true" />
-      )}
+      <span className="dashboard-loading-progress fixed inset-x-0 top-0 z-[120] h-1" aria-hidden="true" />
+      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        Loading {label}
+      </span>
+    </>
+  )
+}
 
-      <div className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-200 ${
+function SidebarLinkContent({ icon: Icon, label, isActive, collapsed }: SidebarLinkContentProps) {
+  return (
+    <>
+      <div className={`sidebar-nav-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-[background-color,color] duration-200 ease-out motion-reduce:transition-none ${
         isActive ? 'bg-white/20' : 'bg-[var(--dashboard-surface-subtle)] group-hover:bg-[var(--brand-soft)]'
       }`}>
-        <Icon size={18} />
+        <Icon
+          size={18}
+          aria-hidden="true"
+          className={`block h-[18px] w-[18px] shrink-0 transition-colors duration-200 ease-out motion-reduce:transition-none ${
+            isActive ? 'text-white' : 'text-[var(--dashboard-muted)] group-hover:text-[var(--brand)]'
+          }`}
+        />
       </div>
 
       {!collapsed && (
@@ -140,9 +155,7 @@ function SidebarLinkContent({ icon: Icon, label, isActive, collapsed }: SidebarL
         </>
       )}
 
-      <span className="sr-only" aria-live="polite" aria-atomic="true">
-        {pending ? `Loading ${label}` : ''}
-      </span>
+      <SidebarNavigationStatus label={label} />
     </>
   )
 }

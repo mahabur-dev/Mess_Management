@@ -385,30 +385,28 @@ export default function HomePage() {
     if (!isLoading && isAuthenticated) router.push('/dashboard')
   }, [isAuthenticated, isLoading, router])
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--marketing-page)]">
-        <div className="size-11 animate-spin rounded-full border-4 border-[var(--brand-soft)] border-t-[var(--brand)]" aria-label="Loading" />
-      </div>
-    )
-  }
-
   if (isAuthenticated) return null
 
   return (
     <main className="marketing-page">
+      {isLoading && (
+        <div className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center bg-[var(--marketing-page)]">
+          <div className="size-11 animate-spin rounded-full border-4 border-[var(--brand-soft)] border-t-[var(--brand)]" aria-label="Loading" />
+        </div>
+      )}
       <MarketingHero />
       <div className="marketing-container flex justify-center px-4 py-6 sm:px-6 lg:px-8">
         <a
           href="https://peerpush.com/p/messzen"
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="https://peerpush.com/p/messzen/badge.png"
             alt="Messzen on PeerPush"
-            className="h-auto w-[230px] max-w-full"
+            className="h-auto max-w-full"
+            style={{ width: '230px' }}
           />
         </a>
       </div>

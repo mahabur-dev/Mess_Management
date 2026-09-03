@@ -1,12 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-import useSWR from 'swr'
+import Link, { useLinkStatus } from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/context/auth-context'
 import { BrandLogo } from '@/components/brand-logo'
-import { apiClient, type Mess } from '@/lib/api-client'
-import { swrFetcher } from '@/lib/swr-fetcher'
 import { APP_FEATURES } from '@/lib/feature-flags'
 import {
   BarChart3,
@@ -108,32 +105,61 @@ const getInitials = (name: string) => {
     .slice(0, 2)
 }
 
+interface SidebarLinkContentProps {
+  icon: typeof LayoutDashboard
+  label: string
+  isActive: boolean
+  collapsed: boolean
+}
+
+function SidebarLinkContent({ icon: Icon, label, isActive, collapsed }: SidebarLinkContentProps) {
+  const { pending } = useLinkStatus()
+
+  return (
+    <>
+      {pending && (
+        <span className="dashboard-loading-progress fixed inset-x-0 top-0 z-[120] h-1" aria-hidden="true" />
+      )}
+
+      <div className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-200 ${
+        isActive ? 'bg-white/20' : 'bg-[var(--dashboard-surface-subtle)] group-hover:bg-[var(--brand-soft)]'
+      }`}>
+        <Icon size={18} />
+      </div>
+
+      {!collapsed && (
+        <>
+          <span className="truncate">{label}</span>
+          <ChevronRight
+            size={15}
+            aria-hidden="true"
+            className={`transition-[opacity,color] duration-200 ease-out ${
+              isActive ? 'text-white/60 opacity-100' : 'text-muted-foreground opacity-0'
+            }`}
+          />
+        </>
+      )}
+
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {pending ? `Loading ${label}` : ''}
+      </span>
+    </>
+  )
+}
+
 export function DashboardSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { logout, user } = useAuth()
   const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar()
-  const { data: sidebarMessesData } = useSWR(
-    user && user.role !== 'ADMIN' ? 'messes' : null,
-    () => swrFetcher(() => apiClient.getMesses()),
-    { revalidateOnFocus: true, dedupingInterval: 15_000 },
-  )
-
-  const sidebarMesses = Array.isArray(sidebarMessesData)
-    ? sidebarMessesData
-    : sidebarMessesData
-      ? [sidebarMessesData as Mess]
-      : []
   const activeUserMemberships = (user?.memberships ?? []).filter(
-    (membership) => membership.is_active,
+    // Login responses only contain active memberships and may omit this field.
+    (membership) => membership.is_active !== false,
   )
-  const hasAnyMess =
-    sidebarMesses.some((mess) => mess.is_active !== false) ||
-    activeUserMemberships.length > 0
-  const managesMess = sidebarMesses.some((mess) => (
-    mess.created_by === user?.id ||
-    mess.memberships?.some((membership) => membership.user_id === user?.id && membership.role === 'MANAGER' && membership.is_active)
-  )) || activeUserMemberships.some((membership) => membership.role === 'MANAGER')
+  const hasAnyMess = activeUserMemberships.length > 0
+  const managesMess = activeUserMemberships.some(
+    (membership) => membership.role === 'MANAGER',
+  )
   const sidebarItems =
     user?.role === 'ADMIN'
       ? adminItems
@@ -147,7 +173,7 @@ export function DashboardSidebar() {
   const sidebarWidth = collapsed ? 'w-[72px]' : 'w-[280px]'
 
   const content = (
-    <aside className={`dashboard-sidebar flex h-full ${sidebarWidth} flex-col overflow-hidden transition-all duration-300`}>
+    <aside className={`dashboard-sidebar flex h-full ${sidebarWidth} flex-col overflow-hidden transition-[width] duration-300`}>
       {/* Logo Area */}
       <div className="relative flex h-[72px] items-center border-b border-[var(--dashboard-line)] px-5">
         {collapsed ? (
@@ -179,7 +205,7 @@ export function DashboardSidebar() {
       </div>
 
       {/* Navigation with custom scrollbar */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-5 sidebar-nav">
+      <nav className="sidebar-nav flex-1 overflow-y-auto overflow-x-hidden px-3 py-5">
         <div className="space-y-1">
           {sidebarItems.map((item) => {
             const Icon = item.icon
@@ -190,28 +216,17 @@ export function DashboardSidebar() {
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`group flex h-[50px] items-center gap-3.5 rounded-xl px-3.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ease-out ${
+                className={`group grid h-[50px] grid-cols-[36px_minmax(0,1fr)_15px] items-center gap-3.5 rounded-xl px-3.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ease-out ${
                   isActive ? sidebarActiveLinkClass : sidebarInactiveLinkClass
-                } ${collapsed ? 'justify-center px-0' : ''}`}
+                } ${collapsed ? 'grid-cols-[36px] justify-center px-0' : ''}`}
                 title={collapsed ? item.label : undefined}
               >
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-200 ${
-                  isActive ? 'bg-white/20' : 'bg-[var(--dashboard-surface-subtle)] group-hover:bg-[var(--brand-soft)]'
-                }`}>
-                  <Icon size={18} />
-                </div>
-                {!collapsed && (
-                  <>
-                    <span className="flex-1 truncate">{item.label}</span>
-                    <ChevronRight
-                      size={15}
-                      aria-hidden="true"
-                      className={`shrink-0 transition-[opacity,transform,color] duration-200 ease-out ${
-                        isActive ? 'translate-x-0 text-white/60 opacity-100' : '-translate-x-1 text-muted-foreground opacity-0'
-                      }`}
-                    />
-                  </>
-                )}
+                <SidebarLinkContent
+                  icon={Icon}
+                  label={item.label}
+                  isActive={isActive}
+                  collapsed={collapsed}
+                />
               </Link>
             )
           })}
@@ -297,6 +312,7 @@ export function DashboardSidebar() {
         .sidebar-nav {
           scrollbar-width: thin;
           scrollbar-color: var(--brand-border-subtle) transparent;
+          scrollbar-gutter: stable;
         }
       `}</style>
     </>

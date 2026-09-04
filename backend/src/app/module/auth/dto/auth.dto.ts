@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -10,7 +9,6 @@ import {
   MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { GlobalRole } from '@prisma/client';
 
 // ─────────────────────────────────────────
 // Register
@@ -24,7 +22,11 @@ export class RegisterDto {
   name: string;
 
   @ApiProperty({ example: 'rakib@example.com' })
-  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
+  @Transform(({ value }) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  )
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   @MaxLength(255)
@@ -35,11 +37,6 @@ export class RegisterDto {
   @MinLength(6, { message: 'Password must be at least 6 characters' })
   @MaxLength(128)
   password: string;
-
-  @ApiPropertyOptional({ enum: GlobalRole, default: GlobalRole.MEMBER })
-  @IsOptional()
-  @IsEnum(GlobalRole)
-  role?: GlobalRole;
 
   @ApiPropertyOptional({ example: '01711234567' })
   @IsOptional()
@@ -57,7 +54,11 @@ export class RegisterDto {
 // ─────────────────────────────────────────
 export class LoginDto {
   @ApiProperty({ example: 'rakib@example.com' })
-  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
+  @Transform(({ value }) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  )
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   @MaxLength(255)
@@ -85,7 +86,11 @@ export class GoogleLoginDto {
 
 export class ForgotPasswordDto {
   @ApiProperty({ example: 'rakib@example.com' })
-  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
+  @Transform(({ value }) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  )
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   @MaxLength(255)
@@ -97,7 +102,11 @@ export class ForgotPasswordDto {
 // ─────────────────────────────────────────
 export class VerifyOtpDto {
   @ApiProperty({ example: 'rakib@example.com' })
-  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
+  @Transform(({ value }) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  )
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   @MaxLength(255)
@@ -112,16 +121,44 @@ export class VerifyOtpDto {
   otp: string;
 }
 
+export class VerifyEmailOtpDto extends VerifyOtpDto {}
+
+export class ResendEmailVerificationDto {
+  @ApiProperty({ example: 'rakib@example.com' })
+  @Transform(({ value }) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  )
+  @IsEmail({}, { message: 'Valid email is required' })
+  @IsNotEmpty()
+  @MaxLength(255)
+  email: string;
+}
+
 // ─────────────────────────────────────────
 // Reset Password
 // ─────────────────────────────────────────
 export class ResetPasswordDto {
   @ApiProperty({ example: 'rakib@example.com' })
-  @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
+  @Transform(({ value }) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  )
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   @MaxLength(255)
   email: string;
+
+  @ApiProperty({
+    description: 'One-time token returned after OTP verification',
+  })
+  @Transform(({ value }) => String(value ?? '').trim())
+  @IsString()
+  @MinLength(32)
+  @MaxLength(256)
+  resetToken: string;
 
   @ApiProperty({ example: 'newSecret123' })
   @IsString()

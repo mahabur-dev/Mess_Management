@@ -32,6 +32,11 @@ const KNOWN_ERROR_CODES = new Map<string, string>([
   ['invalid email or password', 'AUTH_INVALID_CREDENTIALS'],
   ['email already registered', 'AUTH_EMAIL_ALREADY_REGISTERED'],
   ['account is deactivated', 'AUTH_ACCOUNT_DEACTIVATED'],
+  [
+    'please verify your email before signing in',
+    'AUTH_EMAIL_VERIFICATION_REQUIRED',
+  ],
+  ['email already verified', 'AUTH_EMAIL_ALREADY_VERIFIED'],
   ['invalid google authentication token', 'AUTH_GOOGLE_TOKEN_INVALID'],
   ['google email is not verified', 'AUTH_GOOGLE_EMAIL_UNVERIFIED'],
   ['google account is linked to another user', 'AUTH_GOOGLE_LINK_CONFLICT'],
@@ -137,9 +142,13 @@ export function successMessageContract(
 ): ApiMessageContract {
   const fallbackMessage = 'Request successfully completed';
   const normalizedMessage =
-    typeof message === 'string' && message.trim() ? message.trim() : fallbackMessage;
+    typeof message === 'string' && message.trim()
+      ? message.trim()
+      : fallbackMessage;
   const params =
-    explicitParams && typeof explicitParams === 'object' && !Array.isArray(explicitParams)
+    explicitParams &&
+    typeof explicitParams === 'object' &&
+    !Array.isArray(explicitParams)
       ? (explicitParams as ApiMessageParams)
       : {};
 

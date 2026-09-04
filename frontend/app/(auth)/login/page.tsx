@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { useAuth } from '@/app/context/auth-context'
 import {
   ArrowRight,
@@ -31,14 +31,32 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [needsVerification, setNeedsVerification] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const verifiedEmail = params.get('email')
+    if (params.get('verified') === '1') {
+      setNotice('Email verified successfully. Sign in with your password.')
+      if (verifiedEmail) setEmail(verifiedEmail)
+    }
+  }, [])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
+    setNotice('')
+    setNeedsVerification(false)
     try {
       await login(email, password)
       router.push('/dashboard')
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'AUTH_EMAIL_VERIFICATION_REQUIRED') {
+        const normalizedEmail = email.trim().toLowerCase()
+        sessionStorage.setItem('registrationEmail', normalizedEmail)
+        setNeedsVerification(true)
+      }
       setError(error instanceof ApiError ? error.message : 'Unable to sign in. Please try again.')
     }
   }
@@ -56,7 +74,17 @@ export default function LoginPage() {
         </p>
       }
     >
-      {error && <AuthMessage>{error}</AuthMessage>}
+      {notice && <AuthMessage success>{notice}</AuthMessage>}
+      {error && (
+        <AuthMessage>
+          {error}
+          {needsVerification && (
+            <Link href="/verify_email" className="ml-1 underline underline-offset-2">
+              Verify now
+            </Link>
+          )}
+        </AuthMessage>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>

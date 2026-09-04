@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsDecimal, IsEmail, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, Min, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { MembershipRole, RequestStatus } from '@prisma/client';
+import { UpsertBazarScheduleSettingDto } from '../../bazar/dto/bazar-schedule.dto';
 
 export class MessRoomDto {
   @ApiPropertyOptional({ example: 'Room A' })
@@ -81,6 +82,15 @@ export class CreateMessDto {
   @ValidateNested({ each: true })
   @Type(() => MessRoomDto)
   rooms?: MessRoomDto[];
+
+  @ApiPropertyOptional({
+    type: UpsertBazarScheduleSettingDto,
+    description: 'Optional repeating bazar duty settings to save with the new mess',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpsertBazarScheduleSettingDto)
+  bazarScheduleSettings?: UpsertBazarScheduleSettingDto;
 
 }
 

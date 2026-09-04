@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ArrowLeft, ArrowRight, CalendarCheck2, CalendarDays, Check, CircleCheck, Clock3, Loader2, Repeat2, Save, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { EnterpriseDatePicker } from '@/components/ui/enterprise-date-picker'
 import type {
   CreateMealPatternInput,
   MealPattern,
@@ -215,7 +216,7 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
                 </div>
                 <label className="mt-3 block">
                   <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Or choose a date</span>
-                  <input type="date" min={today} value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-semibold text-foreground outline-none focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)]" />
+                  <EnterpriseDatePicker value={startDate} onValueChange={setStartDate} min={today} className="h-12 w-full" align="start" ariaLabel="Select pattern start date" />
                 </label>
               </section>
 
@@ -229,7 +230,7 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
                   <button type="button" onClick={() => { setHasEndDate(true); if (!endDate) setEndDate(shiftDateKey(startDate || today, 30)) }} className={cn('flex min-h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-semibold', hasEndDate ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'border-[var(--dashboard-line)] text-muted-foreground')}><span>End on a date</span>{hasEndDate && <CircleCheck className="size-4" />}</button>
                 </div>
                 {endDateLocked && <p className="mt-3 text-xs font-semibold leading-5 text-muted-foreground">This pattern keeps its current end date. You can choose a different end date below.</p>}
-                {hasEndDate && <label className="mt-3 block"><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">End date</span><input type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-12 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-semibold text-foreground outline-none focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)]" /></label>}
+                {hasEndDate && <label className="mt-3 block"><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">End date</span><EnterpriseDatePicker value={endDate} onValueChange={setEndDate} min={startDate} className="h-12 w-full" align="start" ariaLabel="Select pattern end date" /></label>}
               </section>
             </div>
 

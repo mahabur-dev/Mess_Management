@@ -7,6 +7,7 @@ import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-draw
 import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
+import { EnterpriseDatePicker, EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { apiClient, type Mess, type MessMembershipWithDetails, type Payment, type PaymentMethod, type ExpenseCategory } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
@@ -369,10 +370,7 @@ export default function PaymentsPage() {
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
             <input className="h-[38px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
           </div>
-          <label className="box-border flex h-[38px] items-center gap-1.5 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3 shadow-sm transition hover:border-[var(--brand)] focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)]">
-            <CalendarDays size={15} className="shrink-0 text-[var(--brand)]" />
-            <input className="!min-h-0 h-full w-[110px] min-w-0 border-0 bg-transparent p-0 text-xs font-bold text-[var(--dashboard-ink)] outline-none ring-0" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
-          </label>
+          <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[38px] w-[154px] text-xs font-bold" align="start" />
           {(searchText || selectedMonth !== new Date().toISOString().slice(0, 7)) && (
             <span className="text-[10px] font-semibold text-[#6b7a99]">Showing {filteredPayments.length} of {payments.length} deposits</span>
           )}
@@ -465,10 +463,7 @@ export default function PaymentsPage() {
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
             <input className="h-[46px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-3.5 text-sm font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
           </div>
-          <label className="box-border flex h-[46px] items-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3.5 shadow-sm transition hover:border-[var(--brand)] focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)]">
-            <CalendarDays size={17} className="shrink-0 text-[var(--brand)]" />
-            <input className="!min-h-0 h-full w-full min-w-0 border-0 bg-transparent p-0 text-sm font-bold text-[var(--dashboard-ink)] outline-none ring-0" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
-          </label>
+          <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} className="h-[46px] w-full font-bold" align="start" />
         </div>
 
         {/* Deposits - Mobile Cards */}
@@ -622,7 +617,7 @@ export default function PaymentsPage() {
 
                 <div>
                   <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Date</label>
-                  <input className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+                  <EnterpriseDatePicker value={paymentDate} onValueChange={setPaymentDate} surface="white" className="h-[48px] w-full" align="start" ariaLabel="Select deposit date" />
                 </div>
 
                 {isManager && purchasedByMemberOptions.length > 0 && (

@@ -11,6 +11,7 @@ import {
   UpdateMessDto,
 } from './dto/mess.dto';
 import {
+  BazarFrequency,
   MealPatternStatus,
   MembershipRole,
   NotificationType,
@@ -396,6 +397,18 @@ export class MessService {
   // Create mess (Manager creates own mess)
   // ─────────────────────────────────────────
   async create(managerId: string, dto: CreateMessDto) {
+    if (
+      dto.bazarScheduleSettings?.frequency === BazarFrequency.SPECIFIC_WEEKDAYS &&
+      !dto.bazarScheduleSettings.weekdays?.length
+    ) {
+      throw new HttpException('Select at least one bazar weekday', 400);
+    }
+    if (
+      dto.bazarScheduleSettings?.frequency === BazarFrequency.CUSTOM_DATES &&
+      !dto.bazarScheduleSettings.customDays?.length
+    ) {
+      throw new HttpException('Select at least one custom bazar day', 400);
+    }
     const manager = await this.prisma.user.findUnique({
       where: { id: managerId },
       select: { id: true, name: true, email: true, role: true },
@@ -442,6 +455,21 @@ export class MessService {
                 end_date: endDate,
               },
             },
+            bazar_schedule_setting: dto.bazarScheduleSettings
+              ? {
+                  create: {
+                    frequency: dto.bazarScheduleSettings.frequency,
+                    weekdays: [...new Set(dto.bazarScheduleSettings.weekdays ?? [])].sort((a, b) => a - b),
+                    custom_days: [...new Set(dto.bazarScheduleSettings.customDays ?? [])].sort((a, b) => a - b),
+                    default_members_per_date: dto.bazarScheduleSettings.defaultMembersPerDate,
+                    duty_limit: dto.bazarScheduleSettings.dutyLimit,
+                    include_manager: dto.bazarScheduleSettings.includeManager,
+                    release_notice_days: dto.bazarScheduleSettings.releaseNoticeDays,
+                    strict_fairness: dto.bazarScheduleSettings.strictFairness ?? false,
+                    updated_by: managerId,
+                  },
+                }
+              : undefined,
           },
           select: this.messSelect,
         });

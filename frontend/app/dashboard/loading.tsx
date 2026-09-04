@@ -6,7 +6,7 @@ import {
 
 function StatCardSkeleton({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={`dashboard-card dashboard-stat-card p-5 ${compact ? 'min-h-[104px]' : 'min-h-[112px]'}`}>
+    <div className={`dashboard-card dashboard-stat-card p-4 ${compact ? 'min-h-[96px]' : 'min-h-[100px]'}`}>
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <DashboardSkeletonBlock className="h-3 w-20 rounded-md" />

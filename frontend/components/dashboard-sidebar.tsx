@@ -2,6 +2,7 @@
 
 import Link, { useLinkStatus } from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/app/context/auth-context'
 import { BrandLogo } from '@/components/brand-logo'
 import { APP_FEATURES } from '@/lib/feature-flags'
@@ -9,6 +10,7 @@ import {
   BarChart3,
   Bell,
   CalendarClock,
+  CalendarRange,
   ClipboardList,
   CreditCard,
   Home,
@@ -22,7 +24,6 @@ import {
   Users,
   WalletCards,
   X,
-  ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react'
@@ -43,6 +44,7 @@ const memberItems = [
   { label: 'Quick Add AI', href: '/dashboard/quick-add', icon: Sparkles },
   { label: 'My Meals', href: '/dashboard/meals', icon: UtensilsCrossed },
   { label: 'Meal Pattern', href: '/dashboard/meal-patterns', icon: CalendarClock },
+  { label: 'Bazar Schedule', href: '/dashboard/bazar-schedule', icon: CalendarRange },
   { label: 'Monthly Bills', href: '/dashboard/monthly-bills', icon: ClipboardList },
   { label: 'My Bill', href: '/dashboard/finance', icon: WalletCards },
   { label: 'Deposits', href: '/dashboard/payments', icon: CreditCard },
@@ -57,6 +59,7 @@ const managerItems = [
   { label: 'Members', href: '/dashboard/member_management', icon: Users },
   { label: 'Meal Sheet', href: '/dashboard/meals', icon: UtensilsCrossed },
   { label: 'Meal Patterns', href: '/dashboard/meal-patterns', icon: CalendarClock },
+  { label: 'Bazar Schedule', href: '/dashboard/bazar-schedule', icon: CalendarRange },
   { label: 'Bazar/Expenses', href: '/dashboard/finance', icon: WalletCards },
   { label: 'Monthly Bills', href: '/dashboard/monthly-bills', icon: ClipboardList },
   { label: 'Deposits', href: '/dashboard/payments', icon: CreditCard },
@@ -142,18 +145,7 @@ function SidebarLinkContent({ icon: Icon, label, isActive, collapsed }: SidebarL
         />
       </div>
 
-      {!collapsed && (
-        <>
-          <span className="truncate">{label}</span>
-          <ChevronRight
-            size={15}
-            aria-hidden="true"
-            className={`transition-[opacity,color] duration-200 ease-out ${
-              isActive ? 'text-white/60 opacity-100' : 'text-muted-foreground opacity-0'
-            }`}
-          />
-        </>
-      )}
+      {!collapsed && <span className="truncate">{label}</span>}
 
       <SidebarNavigationStatus label={label} />
     </>
@@ -163,6 +155,7 @@ function SidebarLinkContent({ icon: Icon, label, isActive, collapsed }: SidebarL
 export function DashboardSidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
   const { logout, user } = useAuth()
   const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar()
   const activeUserMemberships = (user?.memberships ?? []).filter(
@@ -184,6 +177,10 @@ export function DashboardSidebar() {
 
   const avatarBg = avatarColor(user?.name || 'User')
   const sidebarWidth = collapsed ? 'w-[72px]' : 'w-[280px]'
+
+  useEffect(() => {
+    setPendingHref(null)
+  }, [pathname])
 
   const content = (
     <aside className={`dashboard-sidebar flex h-full ${sidebarWidth} flex-col overflow-hidden transition-[width] duration-300`}>
@@ -223,21 +220,27 @@ export function DashboardSidebar() {
           {sidebarItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+            const isVisuallyActive = pendingHref ? pendingHref === item.href : isActive
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setMobileOpen(false)}
+                prefetch
+                onClick={() => {
+                  if (!isActive) setPendingHref(item.href)
+                  setMobileOpen(false)
+                }}
                 aria-current={isActive ? 'page' : undefined}
-                className={`group grid h-[50px] grid-cols-[36px_minmax(0,1fr)_15px] items-center gap-3.5 rounded-xl px-3.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-200 ease-out ${
-                  isActive ? sidebarActiveLinkClass : sidebarInactiveLinkClass
+                aria-busy={pendingHref === item.href || undefined}
+                className={`group grid h-[50px] grid-cols-[36px_minmax(0,1fr)] items-center gap-3.5 rounded-xl px-3.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isVisuallyActive ? sidebarActiveLinkClass : sidebarInactiveLinkClass
                 } ${collapsed ? 'grid-cols-[36px] justify-center px-0' : ''}`}
                 title={collapsed ? item.label : undefined}
               >
                 <SidebarLinkContent
                   icon={Icon}
                   label={item.label}
-                  isActive={isActive}
+                  isActive={isVisuallyActive}
                   collapsed={collapsed}
                 />
               </Link>

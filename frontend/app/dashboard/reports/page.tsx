@@ -3,7 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard-header'
 import { apiClient, type Mess, type MessDashboard } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
-import { BarChart3, ClipboardList, CreditCard, UtensilsCrossed, WalletCards, TrendingUp, Users, DollarSign, FileText, ArrowUpRight } from 'lucide-react'
+import { BarChart3, ClipboardList, CreditCard, UtensilsCrossed, WalletCards, TrendingUp, Users, DollarSign, FileText } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export default function ReportsPage() {
@@ -61,28 +61,21 @@ export default function ReportsPage() {
               <div
                 key={label}
                 data-tone={tone}
-                className="dashboard-card dashboard-stat-card report-stat-card group relative min-h-[150px] overflow-hidden p-5 hover:-translate-y-0.5"
+                className="dashboard-card dashboard-stat-card report-stat-card group relative flex min-h-[112px] items-center overflow-hidden p-4 sm:p-[1.125rem]"
               >
-                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[var(--card-accent)]/10 blur-2xl transition group-hover:bg-[var(--card-accent)]/16" />
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                <div className="absolute -right-7 -top-9 size-24 rounded-full bg-[var(--card-accent)]/10 blur-2xl transition-colors duration-300 group-hover:bg-[var(--card-accent)]/15" />
+                <div className="relative z-10 flex w-full items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         {label}
                       </p>
-                      <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+                      <p className="mt-2 text-[1.75rem] font-semibold leading-none tracking-[-0.03em] text-foreground">
                         {value}
                       </p>
                     </div>
-                    <div className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
-                      <Icon size={22} />
+                    <div className="dashboard-stat-icon flex size-11 shrink-0 items-center justify-center rounded-[0.875rem]">
+                      <Icon size={20} strokeWidth={2.2} />
                     </div>
-                  </div>
-                  
-                  <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
-                    <ArrowUpRight size={13} />
-                    <span>Live update</span>
-                  </div>
                 </div>
               </div>
             )

@@ -8,6 +8,7 @@ import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDrawerAction, EnterpriseDrawerFooter } from '@/components/ui/enterprise-drawer-footer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
+import { EnterpriseDatePicker, EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import {
   Dialog,
@@ -867,15 +868,7 @@ export default function FinancePage() {
                 />
               </div>
 
-              <label className="box-border flex h-[38px] items-center gap-1.5 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3 shadow-sm transition hover:border-[var(--brand)] focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)]">
-                <CalendarDays size={15} className="shrink-0 text-[var(--brand)]" />
-                <input
-                  className="!min-h-0 h-full w-[110px] min-w-0 border-0 bg-transparent p-0 text-xs font-bold text-[var(--dashboard-ink)] outline-none ring-0"
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                />
-              </label>
+              <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[38px] w-[154px] text-xs font-bold" align="start" />
 
               {canAddExpense && (
                 <>
@@ -1043,15 +1036,7 @@ export default function FinancePage() {
               />
             </div>
 
-            <label className="box-border flex h-[42px] w-[130px] shrink-0 items-center gap-1.5 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3 shadow-sm transition hover:border-[var(--brand)] focus-within:border-[var(--brand)] focus-within:ring-4 focus-within:ring-[var(--brand-ring)]">
-              <CalendarDays size={15} className="shrink-0 text-[var(--brand)]" />
-              <input
-                className="!min-h-0 h-full w-full min-w-0 border-0 bg-transparent p-0 text-xs font-bold text-[var(--dashboard-ink)] outline-none ring-0"
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              />
-            </label>
+            <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[42px] w-[142px] shrink-0 text-xs font-bold" align="end" />
           </div>
 
           {/* Mobile Filters Row */}
@@ -1317,12 +1302,7 @@ export default function FinancePage() {
               <label className="mb-2 block text-sm font-semibold text-[#0a1433]">
                 Expense Date
               </label>
-              <input
-                className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
-                type="date"
-                value={sharedDate}
-                onChange={(e) => setSharedDate(e.target.value)}
-              />
+              <EnterpriseDatePicker value={sharedDate} onValueChange={setSharedDate} surface="white" className="h-12 w-full" align="start" ariaLabel="Select expense date" />
             </div>
 
             {canManageMess && purchasedByMemberOptions.length > 0 && (

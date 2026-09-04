@@ -3,4 +3,7 @@ export const APP_FEATURES = {
   // Defaults to false. Next.js exposes NEXT_PUBLIC_* values at build time.
   subscriptions:
     process.env.NEXT_PUBLIC_SUBSCRIPTION_FEATURE_ENABLED?.trim().toLowerCase() === 'true',
+  // Keep the marketing pricing cards available without publishing them yet.
+  marketingPricing:
+    process.env.NEXT_PUBLIC_MARKETING_PRICING_ENABLED?.trim().toLowerCase() === 'true',
 } as const

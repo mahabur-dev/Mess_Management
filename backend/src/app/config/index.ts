@@ -39,6 +39,11 @@ export default {
 
   email: {
     resendFrom: process.env.RESEND_FROM_EMAIL || '',
+    smtpHost: process.env.EMAIL_HOST || '',
+    smtpPort: positiveInteger(process.env.EMAIL_PORT, 587),
+    smtpUser: process.env.EMAIL_ADDRESS || '',
+    smtpPass: process.env.EMAIL_PASS || '',
+    smtpFrom: process.env.EMAIL_FROM || '',
   },
   authOtp: {
     pepper:

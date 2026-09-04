@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import config from '../config';
 
 type SendMailerResult = {
@@ -19,10 +20,6 @@ const sendMailer = async (
 ): Promise<SendMailerResult> => {
   try {
     const apiKey = config.resendApiKey?.trim();
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY is not configured');
-    }
-
     const recipient = email?.trim().toLowerCase();
     const emailSubject = subject?.trim();
     const fromAddress = config.email.resendFrom?.trim();
@@ -39,35 +36,58 @@ const sendMailer = async (
       throw new Error('Email HTML content is required');
     }
 
-    if (!fromAddress) {
-      throw new Error('RESEND_FROM_EMAIL is not configured');
+    if (apiKey && fromAddress) {
+      // Resend's testing domain cannot deliver registration OTPs to arbitrary
+      // recipients, so production must use a verified sender domain.
+      if (fromAddress.includes('@resend.dev')) {
+        throw new Error(
+          'Invalid sender address. Use an email address from your verified Resend domain.',
+        );
+      }
+
+      const { data, error } = await new Resend(apiKey).emails.send({
+        from: fromAddress,
+        to: [recipient],
+        subject: emailSubject,
+        html,
+      });
+
+      if (error) {
+        console.error('Resend API error:', error);
+
+        throw new Error(
+          `Resend email failed: ${error.message || 'Unknown Resend error'}`,
+        );
+      }
+
+      return { id: data?.id };
     }
 
-    // Prevent accidentally using Resend testing domain
-    if (fromAddress.includes('@resend.dev')) {
+    const smtpHost = config.email.smtpHost.trim();
+    const smtpUser = config.email.smtpUser.trim();
+    const smtpPass = config.email.smtpPass.trim();
+    const smtpFrom = config.email.smtpFrom.trim();
+    if (!smtpHost || !smtpUser || !smtpPass || !smtpFrom) {
       throw new Error(
-        'Invalid sender address. Use an email address from your verified Resend domain.',
+        'Email transport is not configured. Set RESEND_API_KEY with RESEND_FROM_EMAIL, or configure EMAIL_HOST, EMAIL_PORT, EMAIL_ADDRESS, EMAIL_PASS, and EMAIL_FROM.',
       );
     }
 
-    const { data, error } = await new Resend(apiKey).emails.send({
-      from: fromAddress,
-      to: [recipient],
-      subject: emailSubject,
-      html,
-    });
+    const info = await nodemailer
+      .createTransport({
+        host: smtpHost,
+        port: config.email.smtpPort,
+        secure: config.email.smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      })
+      .sendMail({
+        from: smtpFrom,
+        to: recipient,
+        subject: emailSubject,
+        html,
+      });
 
-    if (error) {
-      console.error('Resend API error:', error);
-
-      throw new Error(
-        `Resend email failed: ${error.message || 'Unknown Resend error'}`,
-      );
-    }
-
-    return {
-      id: data?.id,
-    };
+    return { id: info.messageId };
   } catch (error) {
     console.error('sendMailer error:', error);
 

@@ -16,7 +16,7 @@
     "test:scheduling": "node --test test/scheduler-orchestration.test.js",
     "test:notification": "npm run build && node --test test/notification-localization.test.js",
     "test:api-contract": "npm run build && node --test test/api-message-contract.test.js",
-    "test:auth": "npm run build && node --test test/auth-email-verification.test.js test/google-auth-login.test.js",
+    "test:auth": "npm run build && node --test test/auth-email-verification.test.js test/auth-registration.test.js test/google-auth-login.test.js test/send-mailer.test.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node scripts/start-nest.js start",
     "start:dev": "node scripts/start-nest.js start --watch",

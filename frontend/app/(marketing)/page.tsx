@@ -40,6 +40,7 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel'
 import { apiClient, type PublicMessCard } from '@/lib/api-client'
+import { APP_FEATURES } from '@/lib/feature-flags'
 
 const featureStrip = [
   { title: 'Meal Pattern Automation', text: 'Set once and let it keep running.', icon: CalendarDays, tone: 'text-teal-600 bg-teal-50 dark:bg-teal-950/70 dark:text-teal-300' },
@@ -420,7 +421,7 @@ export default function HomePage() {
       <CoreFeaturesSection />
       <AutomationCta />
       <MessesSection />
-      <PricingSection />
+      {APP_FEATURES.marketingPricing && <PricingSection />}
       <FinalCta />
     </main>
   )

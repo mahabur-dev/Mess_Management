@@ -6,6 +6,7 @@ import { ArrowRight, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { BrandLogo } from '@/components/brand-logo'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { APP_FEATURES } from '@/lib/feature-flags'
 import { cn } from '@/lib/utils'
 
 const links = [
@@ -13,7 +14,7 @@ const links = [
   { label: 'Automation', href: '/#automation' },
   { label: 'Meal Pattern', href: '/#meal-pattern' },
   { label: 'Features', href: '/#features' },
-  { label: 'Pricing', href: '/#pricing' },
+  ...(APP_FEATURES.marketingPricing ? [{ label: 'Pricing', href: '/#pricing' }] : []),
   { label: 'About Us', href: '/about' },
 ]
 

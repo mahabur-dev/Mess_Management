@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, Facebook, Linkedin, Mail, Phone } from 'lucide-react'
 import { BrandLogo } from '@/components/brand-logo'
+import { APP_FEATURES } from '@/lib/feature-flags'
 
 const footerGroups = [
   {
@@ -9,7 +10,7 @@ const footerGroups = [
       { label: 'Automation', href: '/#automation' },
       { label: 'Meal Pattern', href: '/#meal-pattern' },
       { label: 'Features', href: '/#features' },
-      { label: 'Pricing', href: '/#pricing' },
+      ...(APP_FEATURES.marketingPricing ? [{ label: 'Pricing', href: '/#pricing' }] : []),
     ],
   },
   {

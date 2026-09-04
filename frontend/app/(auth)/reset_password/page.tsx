@@ -31,9 +31,9 @@ export default function ResetPassword() {
     setIsSuccess(false)
 
     const email = sessionStorage.getItem('resetEmail')
-    const otpVerified = sessionStorage.getItem('otpVerified')
+    const resetToken = sessionStorage.getItem('passwordResetToken')
 
-    if (!email || otpVerified !== 'true') {
+    if (!email || !resetToken) {
       setMessage('Please verify your OTP before resetting password.')
       return
     }
@@ -48,11 +48,11 @@ export default function ResetPassword() {
 
     setIsSubmitting(true)
     try {
-      const result = await apiClient.resetPassword(email, password)
+      const result = await apiClient.resetPassword(email, resetToken, password)
       setIsSuccess(true)
       setMessage(result.data?.message || result.message || 'Password reset successfully')
       sessionStorage.removeItem('resetEmail')
-      sessionStorage.removeItem('otpVerified')
+      sessionStorage.removeItem('passwordResetToken')
       window.setTimeout(() => router.push('/login'), 900)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Password reset failed')

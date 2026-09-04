@@ -38,8 +38,23 @@ export default {
   },
 
   email: {
-    resendFrom:
-      process.env.RESEND_FROM_EMAIL || 'Mess Management <onboarding@resend.dev>',
+    resendFrom: process.env.RESEND_FROM_EMAIL || '',
+  },
+  authOtp: {
+    pepper:
+      process.env.OTP_PEPPER ||
+      process.env.ACCESS_TOKEN_SECRET ||
+      'local-development-otp-pepper',
+    expiresMinutes: positiveInteger(process.env.OTP_EXPIRES_MINUTES, 10),
+    resendCooldownSeconds: positiveInteger(
+      process.env.OTP_RESEND_COOLDOWN_SECONDS,
+      60,
+    ),
+    maxAttempts: positiveInteger(process.env.OTP_MAX_ATTEMPTS, 5),
+    resetTokenExpiresMinutes: positiveInteger(
+      process.env.PASSWORD_RESET_TOKEN_EXPIRES_MINUTES,
+      10,
+    ),
   },
   webPush: {
     vapidPublicKey: process.env.VAPID_PUBLIC_KEY as string,
@@ -78,8 +93,14 @@ export default {
       process.env.GROQ_COMMAND_MODEL ||
       'openai/gpt-oss-20b',
     commandResponseFormat: process.env.AI_COMMAND_RESPONSE_FORMAT || 'auto',
-    commandTimeoutMs: positiveInteger(process.env.AI_COMMAND_TIMEOUT_MS, 20_000),
-    previewSlowLogMs: positiveInteger(process.env.AI_PREVIEW_SLOW_LOG_MS, 1_000),
+    commandTimeoutMs: positiveInteger(
+      process.env.AI_COMMAND_TIMEOUT_MS,
+      20_000,
+    ),
+    previewSlowLogMs: positiveInteger(
+      process.env.AI_PREVIEW_SLOW_LOG_MS,
+      1_000,
+    ),
     speechProvider: process.env.AI_SPEECH_PROVIDER || 'groq',
     speechApiKey: process.env.AI_SPEECH_API_KEY || process.env.GROQ_API_KEY,
     speechBaseUrl:

@@ -43,8 +43,8 @@ export default function VerifyOtp() {
     try {
       const result = await apiClient.verifyOtp(email, otp)
       setIsSuccess(true)
-      setMessage(result.data?.message || result.message || 'OTP verified successfully')
-      sessionStorage.setItem('otpVerified', 'true')
+      setMessage(result.message || 'OTP verified successfully')
+      sessionStorage.setItem('passwordResetToken', result.data.resetToken)
       window.setTimeout(() => router.push('/reset_password'), 800)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'OTP verification failed')

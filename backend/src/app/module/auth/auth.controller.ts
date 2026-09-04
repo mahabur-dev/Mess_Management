@@ -18,7 +18,9 @@ import {
   GoogleLoginDto,
   LoginDto,
   RegisterDto,
+  ResendEmailVerificationDto,
   ResetPasswordDto,
+  VerifyEmailOtpDto,
   VerifyOtpDto,
 } from './dto/auth.dto';
 import AuthGuard from '../../middlewares/auth.guard';
@@ -32,11 +34,27 @@ export class AuthController {
   // Register
   // ─────────────────────────────────────────
   @Post('register')
-  @ApiOperation({ summary: 'Register a new user (admin / manager / member)' })
+  @ApiOperation({ summary: 'Start a new member registration and send an OTP' })
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterDto) {
     const data = await this.authService.register(dto);
-    return { message: 'User registered successfully', data };
+    return { message: 'Verification code sent to your email', data };
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify a new account email using its OTP' })
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() dto: VerifyEmailOtpDto) {
+    const data = await this.authService.verifyEmail(dto);
+    return { message: 'Email verified successfully', data };
+  }
+
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Send a fresh account verification OTP' })
+  @HttpCode(HttpStatus.OK)
+  async resendEmailVerification(@Body() dto: ResendEmailVerificationDto) {
+    const data = await this.authService.resendEmailVerification(dto);
+    return { message: 'A new verification code was sent', data };
   }
 
   // ─────────────────────────────────────────
@@ -102,7 +120,7 @@ export class AuthController {
   // Verify OTP
   // ─────────────────────────────────────────
   @Post('verify-otp')
-  @ApiOperation({ summary: 'Verify OTP sent to email' })
+  @ApiOperation({ summary: 'Verify a password-reset OTP' })
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() dto: VerifyOtpDto) {
     const data = await this.authService.verifyOtp(dto);

@@ -22,7 +22,11 @@ interface AuthContextType {
   isLoading: boolean
   isSubmitting: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, phone: string, password: string, role: string) => Promise<void>
+  register: (name: string, email: string, phone: string, password: string) => Promise<{
+    email: string
+    expiresInSeconds: number
+    resendAvailableInSeconds: number
+  }>
   logout: () => void
   refreshUser: () => Promise<void>           // ← added
   updateUserLocally: (partial: Partial<User>) => void  // ← added (instant UI update)
@@ -76,17 +80,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const register = useCallback(
-    async (name: string, email: string, phone: string, password: string, role: string) => {
+    async (name: string, email: string, phone: string, password: string) => {
       setIsSubmitting(true)
       try {
         const normalizedEmail = email.trim().toLowerCase()
-        await apiClient.register({ name: name.trim(), email: normalizedEmail, phone: phone.trim(), password, role: role as GlobalRole })
-        await login(normalizedEmail, password)
+        const response = await apiClient.register({
+          name: name.trim(),
+          email: normalizedEmail,
+          phone: phone.trim(),
+          password,
+        })
+        return response.data
       } finally {
         setIsSubmitting(false)
       }
     },
-    [login]
+    []
   )
 
   const logout = useCallback(() => {

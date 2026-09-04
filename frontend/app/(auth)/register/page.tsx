@@ -59,8 +59,13 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(form.name, form.email, form.phone, form.password, 'MEMBER')
-      router.push('/login')
+      const challenge = await register(form.name, form.email, form.phone, form.password)
+      sessionStorage.setItem('registrationEmail', challenge.email)
+      sessionStorage.setItem(
+        'registrationResendAt',
+        String(Date.now() + challenge.resendAvailableInSeconds * 1000),
+      )
+      router.push('/verify_email')
     } catch (error) {
       setError(error instanceof ApiError ? error.message : 'Registration failed. Please try again.')
     }
@@ -69,7 +74,7 @@ export default function RegisterPage() {
   return (
     <AuthShell
       title="Create account"
-      description="Start as a member and request manager access after login."
+      description="Create your member profile, then verify your email before signing in."
       maxWidth="max-w-[500px]"
       footer={
         <p className="text-sm font-semibold text-[#64748b]">

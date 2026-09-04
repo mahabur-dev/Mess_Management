@@ -20,7 +20,8 @@ export class ApiError extends Error {
   constructor(
     public statusCode: number,
     message: string,
-    public errorSources?: { path: string; message: string }[]
+    public errorSources?: { path: string; message: string }[],
+    public code?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -565,7 +566,8 @@ class ApiClient {
         throw new ApiError(
           json.statusCode ?? response.status,
           json.message ?? response.statusText ?? 'Something went wrong',
-          json.errorSources
+          json.errorSources,
+          json.code,
         )
       }
       return json as BackendResponse<T>
@@ -633,8 +635,25 @@ class ApiClient {
     })
   }
 
-  register(data: { name: string; email: string; phone?: string; password: string; role?: GlobalRole }) {
-    return this.request<User>('/auth/register', { method: 'POST', body: JSON.stringify(data) })
+  register(data: { name: string; email: string; phone?: string; password: string }) {
+    return this.request<{ email: string; expiresInSeconds: number; resendAvailableInSeconds: number }>(
+      '/auth/register',
+      { method: 'POST', body: JSON.stringify(data) },
+    )
+  }
+
+  verifyEmail(email: string, otp: string) {
+    return this.request<{ email: string; verified: boolean }>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    })
+  }
+
+  resendEmailVerification(email: string) {
+    return this.request<{ email: string; expiresInSeconds: number; resendAvailableInSeconds: number }>(
+      '/auth/resend-verification',
+      { method: 'POST', body: JSON.stringify({ email }) },
+    )
   }
 
   forgotPassword(email: string) {
@@ -645,16 +664,16 @@ class ApiClient {
   }
 
   verifyOtp(email: string, otp: string) {
-    return this.request<{ message: string }>('/auth/verify-otp', {
+    return this.request<{ resetToken: string; expiresInSeconds: number }>('/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ email, otp }),
     })
   }
 
-  resetPassword(email: string, newPassword: string) {
+  resetPassword(email: string, resetToken: string, newPassword: string) {
     return this.request<{ message: string }>('/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ email, newPassword }),
+      body: JSON.stringify({ email, resetToken, newPassword }),
     })
   }
 

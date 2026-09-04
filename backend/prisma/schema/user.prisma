@@ -65,6 +65,7 @@ model User {
   personal_transactions         PersonalTransaction[]
   family_members                FamilyMember[]
   personal_budgets              PersonalBudget[]
+  auth_otp_challenges           AuthOtpChallenge[]
 
   @@map("users")
 }

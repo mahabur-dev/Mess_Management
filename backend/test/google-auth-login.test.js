@@ -18,7 +18,10 @@ function dependencies(identity, userApi) {
   const cookies = [];
   return {
     service: new AuthService(
-      { user: userApi },
+      {
+        user: userApi,
+        authOtpChallenge: { deleteMany: async () => ({ count: 0 }) },
+      },
       { sign: (_payload, options) => `jwt-${String(options.secret)}` },
       { verifyGoogleIdToken: async () => identity },
     ),

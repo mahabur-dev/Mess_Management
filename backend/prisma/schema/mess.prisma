@@ -57,6 +57,10 @@ model Mess {
   complaints           Complaint[]
   ai_commands          AiCommand[]
   subscription         Subscription?
+  bazar_schedule_setting BazarScheduleSetting?
+  bazar_schedules        BazarSchedule[]
+  bazar_swap_requests    BazarSwapRequest[]
+  bazar_release_requests BazarReleaseRequest[]
 
   @@map("messes")
 }

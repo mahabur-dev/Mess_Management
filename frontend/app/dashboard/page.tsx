@@ -248,7 +248,7 @@ function StatCard({
   icon: ElementType
 }) {
   return (
-    <div className="dashboard-card dashboard-stat-card group relative min-h-[112px] overflow-hidden p-5 hover:-translate-y-0.5">
+    <div className="dashboard-card dashboard-stat-card group relative flex min-h-[100px] items-center overflow-hidden p-4">
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl transition group-hover:bg-[var(--brand)]/12" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -258,10 +258,6 @@ function StatCard({
           <p className="mt-2 text-2xl font-semibold leading-none tracking-tight text-foreground">
             {value}
           </p>
-          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-            <ArrowUpRight size={11} />
-            <span>Live update</span>
-          </div>
         </div>
         <span className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
           <Icon size={20} strokeWidth={2.4} />
@@ -282,7 +278,7 @@ function MiniStatCard({
   icon: ElementType
 }) {
   return (
-    <div className="dashboard-card dashboard-stat-card group relative min-h-[104px] overflow-hidden p-5 hover:-translate-y-0.5">
+    <div className="dashboard-card dashboard-stat-card group relative flex min-h-[96px] items-center overflow-hidden p-4">
       <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl" />
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -290,10 +286,6 @@ function MiniStatCard({
             {label}
           </p>
           <p className="mt-2 text-2xl font-semibold leading-none text-foreground">{value}</p>
-          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-            <ArrowUpRight size={11} />
-            <span>Live update</span>
-          </div>
         </div>
         <div className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
           <Icon size={19} />

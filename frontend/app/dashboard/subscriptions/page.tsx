@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { EnterpriseDatePicker } from '@/components/ui/enterprise-date-picker'
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import {
   Dialog,
@@ -966,21 +967,25 @@ export default function SubscriptionsPage() {
 
                   <div>
                     <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Start Date</label>
-                    <input
-                      type="date"
+                    <EnterpriseDatePicker
                       value={form.startDate}
-                      onChange={(event) => handleStartDateChange(event.target.value)}
-                      className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      onValueChange={handleStartDateChange}
+                      surface="white"
+                      align="start"
+                      className="h-12 w-full px-4 text-sm font-semibold"
+                      ariaLabel="Select subscription start date"
                     />
                   </div>
 
                   <div>
                     <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">End Date</label>
-                    <input
-                      type="date"
+                    <EnterpriseDatePicker
                       value={form.endDate}
-                      onChange={(event) => handleEndDateChange(event.target.value)}
-                      className="h-12 w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                      onValueChange={handleEndDateChange}
+                      surface="white"
+                      align="start"
+                      className="h-12 w-full px-4 text-sm font-semibold"
+                      ariaLabel="Select subscription end date"
                     />
                   </div>
                 </div>

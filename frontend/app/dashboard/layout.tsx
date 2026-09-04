@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/app/context/auth-context'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode, useEffect } from 'react'
 import { SidebarProvider, useSidebar } from '@/app/context/sidebar-context'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
@@ -12,6 +12,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
   const { collapsed } = useSidebar()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -43,7 +44,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
       <DashboardSidebar />
       {/* Content - full width on tablet, margin adjusts on large screens when sidebar is fixed */}
       <main className={`dashboard-scroll-viewport min-w-0 flex-1 overflow-y-scroll overflow-x-hidden transition-[margin-left] duration-300 ${contentMargin}`}>
-        <div className="dashboard-main min-h-screen p-0">
+        <div key={pathname} className="dashboard-main dashboard-route-frame min-h-screen p-0">
           {children}
         </div>
       </main>

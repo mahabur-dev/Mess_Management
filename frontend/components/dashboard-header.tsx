@@ -2,8 +2,9 @@
 
 import { useAuth } from '@/app/context/auth-context'
 import { useSidebar } from '@/app/context/sidebar-context'
-import { Bell, CalendarDays, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight, Menu } from 'lucide-react'
+import { Bell, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
 import { ThemeToggle } from '@/components/theme-toggle'
 import {
   DropdownMenu,
@@ -14,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { apiClient, type AppNotification, type PaymentMethod, type ExpenseCategory, type Mess } from '@/lib/api-client'
 
 interface DashboardHeaderProps {
@@ -25,14 +26,6 @@ interface DashboardHeaderProps {
   showQuickAddButton?: boolean
   showUpgradeButton?: boolean
   upgradeHref?: string
-}
-
-function formatMonthLabel(month?: string) {
-  const date = month ? new Date(`${month}-01T00:00:00`) : new Date()
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    year: 'numeric',
-  }).format(date)
 }
 
 function getCurrentMonthValue() {
@@ -87,7 +80,6 @@ export function DashboardHeader({
   const [imageError, setImageError] = useState(false)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const monthInputRef = useRef<HTMLInputElement>(null)
   const avatarBg = avatarColor(user?.name || 'User')
 
   // Quick Add Modal state
@@ -157,19 +149,6 @@ export function DashboardHeader({
         void loadNotifications()
       })
     }
-  }
-
-  const openMonthPicker = () => {
-    const input = monthInputRef.current as (HTMLInputElement & { showPicker?: () => void }) | null
-    if (!input || !onMonthChange) return
-
-    if (typeof input.showPicker === 'function') {
-      input.showPicker()
-      return
-    }
-
-    input.focus()
-    input.click()
   }
 
   async function handleQuickAddExpense() {
@@ -244,25 +223,12 @@ export function DashboardHeader({
         <div className="flex flex-wrap items-center gap-3">
           {/* Month Picker */}
           {onMonthChange && (
-            <button
-              type="button"
-              onClick={openMonthPicker}
-              className="dashboard-control relative hidden h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-bold sm:flex"
-            >
-              <CalendarDays size={16} className="text-[var(--brand)]" />
-              <span className="min-w-[120px]">{formatMonthLabel(selectedMonth)}</span>
-              {onMonthChange && (
-                <input
-                  ref={monthInputRef}
-                  type="month"
-                  value={selectedMonth ?? getCurrentMonthValue()}
-                  onChange={(event) => onMonthChange(event.target.value)}
-                  onClick={(event) => event.stopPropagation()}
-                  className="absolute left-0 top-full h-0 w-0 opacity-0"
-                  aria-label="Select dashboard month"
-                />
-              )}
-            </button>
+            <EnterpriseMonthPicker
+              value={selectedMonth ?? getCurrentMonthValue()}
+              onValueChange={onMonthChange}
+              className="hidden w-[184px] sm:inline-flex"
+              ariaLabel="Select dashboard month"
+            />
           )}
 
           {/* Quick Add Dropdown - Hidden for Admin */}

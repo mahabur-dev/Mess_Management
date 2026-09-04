@@ -1,0 +1,152 @@
+// Monthly bazar duty scheduling. A schedule stores an immutable snapshot of
+// the current repeating setting, so later setting changes never rewrite history.
+
+model BazarScheduleSetting {
+  id                       String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id                  String         @unique @db.Uuid
+  frequency                BazarFrequency
+  weekdays                 Int[]          @default([])
+  custom_days              Int[]          @default([])
+  default_members_per_date Int            @default(1)
+  duty_limit               Int            @default(1)
+  include_manager          Boolean        @default(false)
+  release_notice_days      Int            @default(5)
+  strict_fairness          Boolean        @default(false)
+  updated_by               String         @db.Uuid
+  created_at               DateTime       @default(now()) @db.Timestamptz
+  updated_at               DateTime       @updatedAt @db.Timestamptz
+
+  mess    Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  updater User @relation("BazarSettingUpdater", fields: [updated_by], references: [id])
+
+  @@map("bazar_schedule_settings")
+}
+
+model BazarSchedule {
+  id                       String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id                  String              @db.Uuid
+  year                     Int
+  month                    Int
+  version                  Int
+  status                   BazarScheduleStatus @default(ACTIVE)
+  frequency                BazarFrequency
+  weekdays                 Int[]               @default([])
+  custom_days              Int[]               @default([])
+  default_members_per_date Int                 @default(1)
+  duty_limit               Int
+  include_manager          Boolean             @default(false)
+  release_notice_days      Int                 @default(5)
+  strict_fairness          Boolean             @default(false)
+  eligible_member_count    Int                 @default(0)
+  recommended_duty_count   Int                 @default(0)
+  created_by               String              @db.Uuid
+  created_at               DateTime            @default(now()) @db.Timestamptz
+  finished_at              DateTime?           @db.Timestamptz
+
+  mess             Mess                  @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  creator          User                  @relation("BazarScheduleCreator", fields: [created_by], references: [id])
+  dates            BazarDate[]
+  swap_requests    BazarSwapRequest[]
+  release_requests BazarReleaseRequest[]
+
+  @@unique([mess_id, year, month])
+  @@unique([mess_id, version])
+  @@index([mess_id, status])
+  @@map("bazar_schedules")
+}
+
+model BazarDate {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schedule_id      String          @db.Uuid
+  duty_date        DateTime        @db.Date
+  required_members Int
+  status           BazarDateStatus @default(OPEN)
+  status_reason    String?         @db.Text
+  created_at       DateTime        @default(now()) @db.Timestamptz
+  updated_at       DateTime        @updatedAt @db.Timestamptz
+
+  schedule BazarSchedule   @relation(fields: [schedule_id], references: [id], onDelete: Cascade)
+  slots    BazarDutySlot[]
+
+  @@unique([schedule_id, duty_date])
+  @@index([duty_date])
+  @@map("bazar_dates")
+}
+
+model BazarDutySlot {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bazar_date_id      String              @db.Uuid
+  slot_number        Int
+  status             BazarDutySlotStatus @default(AVAILABLE)
+  assigned_member_id String?             @db.Uuid
+  assigned_by        String?             @db.Uuid
+  assigned_at        DateTime?           @db.Timestamptz
+  last_reason        String?             @db.Text
+  created_at         DateTime            @default(now()) @db.Timestamptz
+  updated_at         DateTime            @updatedAt @db.Timestamptz
+
+  bazar_date       BazarDate             @relation(fields: [bazar_date_id], references: [id], onDelete: Cascade)
+  assigned_member  User?                 @relation("BazarSlotMember", fields: [assigned_member_id], references: [id])
+  assigner         User?                 @relation("BazarSlotAssigner", fields: [assigned_by], references: [id])
+  outgoing_swaps   BazarSwapRequest[]    @relation("BazarRequesterSlot")
+  incoming_swaps   BazarSwapRequest[]    @relation("BazarTargetSlot")
+  release_requests BazarReleaseRequest[]
+
+  @@unique([bazar_date_id, slot_number])
+  @@unique([bazar_date_id, assigned_member_id])
+  @@index([assigned_member_id, status])
+  @@map("bazar_duty_slots")
+}
+
+model BazarSwapRequest {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id           String             @db.Uuid
+  schedule_id       String             @db.Uuid
+  requester_id      String             @db.Uuid
+  target_member_id  String             @db.Uuid
+  requester_slot_id String             @db.Uuid
+  target_slot_id    String             @db.Uuid
+  status            BazarRequestStatus @default(PENDING)
+  reason            String?            @db.Text
+  responded_at      DateTime?          @db.Timestamptz
+  cancelled_at      DateTime?          @db.Timestamptz
+  created_at        DateTime           @default(now()) @db.Timestamptz
+  updated_at        DateTime           @updatedAt @db.Timestamptz
+
+  mess           Mess          @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  schedule       BazarSchedule @relation(fields: [schedule_id], references: [id], onDelete: Cascade)
+  requester      User          @relation("BazarSwapRequester", fields: [requester_id], references: [id])
+  target_member  User          @relation("BazarSwapTarget", fields: [target_member_id], references: [id])
+  requester_slot BazarDutySlot @relation("BazarRequesterSlot", fields: [requester_slot_id], references: [id], onDelete: Cascade)
+  target_slot    BazarDutySlot @relation("BazarTargetSlot", fields: [target_slot_id], references: [id], onDelete: Cascade)
+
+  @@index([requester_id, status, created_at(sort: Desc)])
+  @@index([target_member_id, status, created_at(sort: Desc)])
+  @@index([mess_id, status])
+  @@map("bazar_swap_requests")
+}
+
+model BazarReleaseRequest {
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id       String             @db.Uuid
+  schedule_id   String             @db.Uuid
+  slot_id       String             @db.Uuid
+  requester_id  String             @db.Uuid
+  reviewer_id   String?            @db.Uuid
+  status        BazarRequestStatus @default(PENDING)
+  reason        String             @db.Text
+  auto_approved Boolean            @default(false)
+  responded_at  DateTime?          @db.Timestamptz
+  created_at    DateTime           @default(now()) @db.Timestamptz
+  updated_at    DateTime           @updatedAt @db.Timestamptz
+
+  mess      Mess          @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  schedule  BazarSchedule @relation(fields: [schedule_id], references: [id], onDelete: Cascade)
+  slot      BazarDutySlot @relation(fields: [slot_id], references: [id], onDelete: Cascade)
+  requester User          @relation("BazarReleaseRequester", fields: [requester_id], references: [id])
+  reviewer  User?         @relation("BazarReleaseReviewer", fields: [reviewer_id], references: [id])
+
+  @@index([mess_id, status, created_at(sort: Desc)])
+  @@index([requester_id, created_at(sort: Desc)])
+  @@map("bazar_release_requests")
+}

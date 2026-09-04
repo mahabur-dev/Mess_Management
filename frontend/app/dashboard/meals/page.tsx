@@ -11,6 +11,7 @@ import { MealQuantityControl } from '@/components/meal-pattern/meal-quantity-con
 import { clearAiCommandDraft, readAiCommandDraft, type AiCommandDraft } from '@/lib/ai-quick-add'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MonthlyMealDrawer } from '@/components/meals/monthly-meal-drawer'
+import { EnterpriseDatePicker } from '@/components/ui/enterprise-date-picker'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
 const mealLabels: Record<MealName, string> = {
@@ -485,7 +486,9 @@ export default function MealsPage() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {isManager && <Button onClick={() => setShowDeadlineSettings(!showDeadlineSettings)} className="h-[45px] rounded-xl border border-blue-200/50 bg-gradient-to-r from-blue-50 to-blue-100/70 px-5 font-semibold text-blue-700 shadow-sm"><Clock size={16} className="mr-2" />{showDeadlineSettings ? 'Hide Settings' : 'Set Meal Deadline'}</Button>}
-            <label className={`flex h-[45px] items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm ${isEditingMealSheet ? 'cursor-not-allowed opacity-60' : ''}`} title={isEditingMealSheet ? 'Save or cancel the current meal-sheet edits before changing the date.' : undefined}><CalendarDays size={17} className="text-[#2f80ed]" /><input type="date" value={date} disabled={isEditingMealSheet} onChange={e => setDate(e.target.value)} className="bg-transparent text-sm font-bold text-[#172554] outline-none disabled:cursor-not-allowed" /></label>
+            <div title={isEditingMealSheet ? 'Save or cancel the current meal-sheet edits before changing the date.' : undefined}>
+              <EnterpriseDatePicker value={date} onValueChange={setDate} disabled={isEditingMealSheet} surface="white" className="h-[48px] min-w-[194px] px-4 font-bold" ariaLabel="Select meal sheet date" />
+            </div>
           </div>
         </div>
 

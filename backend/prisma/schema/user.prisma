@@ -66,6 +66,14 @@ model User {
   family_members                FamilyMember[]
   personal_budgets              PersonalBudget[]
   auth_otp_challenges           AuthOtpChallenge[]
+  bazar_schedule_settings_updated BazarScheduleSetting[]         @relation("BazarSettingUpdater")
+  bazar_schedules_created         BazarSchedule[]                @relation("BazarScheduleCreator")
+  bazar_duty_slots                BazarDutySlot[]                @relation("BazarSlotMember")
+  bazar_duty_slots_assigned       BazarDutySlot[]                @relation("BazarSlotAssigner")
+  bazar_swap_requests_sent        BazarSwapRequest[]             @relation("BazarSwapRequester")
+  bazar_swap_requests_received    BazarSwapRequest[]             @relation("BazarSwapTarget")
+  bazar_release_requests          BazarReleaseRequest[]          @relation("BazarReleaseRequester")
+  bazar_release_requests_reviewed BazarReleaseRequest[]          @relation("BazarReleaseReviewer")
 
   @@map("users")
 }

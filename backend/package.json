@@ -15,6 +15,7 @@
     "test:billing": "npm run build && node --test test/billing-calculator.test.js test/billing-period.test.js test/billing-month-sequence.test.js test/scheduler-orchestration.test.js",
     "test:scheduling": "node --test test/scheduler-orchestration.test.js",
     "test:notification": "npm run build && node --test test/notification-localization.test.js",
+    "test:bazar-schedule": "npm run build && node test/bazar-schedule-policy.test.js",
     "test:api-contract": "npm run build && node --test test/api-message-contract.test.js",
     "test:auth": "npm run build && node --test test/auth-email-verification.test.js test/auth-registration.test.js test/google-auth-login.test.js test/send-mailer.test.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

@@ -144,6 +144,38 @@ enum NotificationType {
   EMERGENCY
   MEETING
   RULE_UPDATE
+  BAZAR_DUTY
+}
+
+// ─── Bazar duty scheduling ──────────────────────────────────
+enum BazarFrequency {
+  EVERY_DAY
+  SPECIFIC_WEEKDAYS
+  CUSTOM_DATES
+}
+
+enum BazarScheduleStatus {
+  ACTIVE
+  FINISHED
+}
+
+enum BazarDateStatus {
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+enum BazarDutySlotStatus {
+  AVAILABLE
+  ASSIGNED
+  CLOSED
+}
+
+enum BazarRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 enum NoticeType {

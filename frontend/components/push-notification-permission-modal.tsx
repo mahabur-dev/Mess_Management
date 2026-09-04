@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Bell, BellOff } from 'lucide-react'
+import { BellOff, BellRing, CheckCircle2, Loader2, ShieldCheck, Smartphone, X } from 'lucide-react'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type PushSubscriptionStatus } from '@/lib/api-client'
-import { Button } from '@/components/ui/button'
+import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import {
   Dialog,
   DialogContent,
@@ -139,62 +139,88 @@ export function PushNotificationPermissionModal() {
       if (!nextOpen) closeForNow()
       else setOpen(true)
     }}>
-      <DialogContent className="dashboard-card w-[calc(100%-2rem)] max-w-sm rounded-2xl border-0 bg-card p-0">
-        <div className="bg-gradient-to-br from-[var(--brand-dark)] via-[var(--brand)] to-[var(--brand-bright)] px-5 py-5 text-white">
-          <DialogHeader className="space-y-2 text-left">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
-              <Bell className="h-5 w-5" />
+      <DialogContent
+        showCloseButton={false}
+        className="w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0 shadow-[0_28px_80px_rgba(15,23,42,0.22)]"
+      >
+        <div className="relative overflow-hidden border-b border-[var(--dashboard-line)] px-5 pb-5 pt-6 sm:px-6">
+          <div className="pointer-events-none absolute -right-16 -top-20 size-52 rounded-full bg-[var(--brand-soft)] opacity-80 blur-3xl" />
+          <button
+            type="button"
+            onClick={closeForNow}
+            disabled={isSaving}
+            className="absolute right-4 top-4 z-10 grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground shadow-sm transition hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--dashboard-ink)] disabled:opacity-50"
+            aria-label="Close notification setup"
+          >
+            <X className="size-4" />
+          </button>
+
+          <DialogHeader className="relative pr-10 text-left">
+            <div className="mb-3 flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-[var(--brand)] text-white shadow-[0_10px_24px_var(--brand-shadow)]">
+                <BellRing className="size-5" />
+              </span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--brand)]">Notification center</p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">Secure browser alerts</p>
+              </div>
             </div>
-            <DialogTitle className="text-xl font-bold text-white">
-              Enable push notifications?
+            <DialogTitle className="text-[1.35rem] font-semibold leading-tight tracking-[-0.025em] text-[var(--dashboard-ink)] sm:text-2xl">
+              {permissionState === 'denied' ? 'Notifications are blocked' : 'Stay informed, wherever you are'}
             </DialogTitle>
-            <DialogDescription className="text-sm text-white/80">
+            <DialogDescription className="max-w-sm text-sm font-medium leading-6 text-muted-foreground">
               {permissionState === 'denied'
-                ? 'Your browser has blocked notifications. Please allow them from browser settings to get mess updates.'
-                : 'Get mess updates, payment reminders, meal changes, and notices even when the dashboard is not open.'}
+                ? 'Enable notifications for MessZen in your browser settings, then retry the connection.'
+                : 'Receive important payment reminders, meal changes and mess notices without keeping the dashboard open.'}
             </DialogDescription>
           </DialogHeader>
         </div>
 
-        <div className="space-y-3 px-5 py-4">
+        <div className="space-y-3 px-5 py-5 sm:px-6">
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold leading-5 text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">
               {error}
             </div>
           )}
-          {isCheckingStatus && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              Checking notification status...
+
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] p-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--dashboard-surface)] text-[var(--brand)] shadow-sm">
+              {isCheckingStatus ? <Loader2 className="size-4 animate-spin" /> : <Smartphone className="size-4" />}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[var(--dashboard-ink)]">This browser</p>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+                {isCheckingStatus
+                  ? 'Checking connection status…'
+                  : permissionState === 'denied'
+                    ? 'Permission blocked in browser settings'
+                    : subscriptionStatus?.hasActiveSubscription
+                      ? 'Another device is connected; add this browser too'
+                      : 'Ready to receive real-time updates'}
+              </p>
             </div>
-          )}
-          <p className="text-sm text-muted-foreground">
-            {permissionState === 'granted' && isCurrentDeviceSubscribed
-              ? 'This device is already connected for notifications. No further action is needed.'
-              : subscriptionStatus?.hasActiveSubscription
-                ? 'Your account has notifications enabled on another device. Allow this browser too for updates here.'
-              : 'Allow notifications from your browser to keep this device connected for instant updates.'}
-          </p>
+            {!isCheckingStatus && (
+              <span className={`rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] ${permissionState === 'denied' ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300' : 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)]'}`}>
+                {permissionState === 'denied' ? 'Action needed' : 'Not connected'}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-start gap-2.5 px-1 text-xs font-medium leading-5 text-muted-foreground">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
+            <span>You stay in control. Notification permission can be changed anytime from your browser settings.</span>
+          </div>
         </div>
 
-        <DialogFooter className="grid grid-cols-1 gap-2 border-t border-[var(--dashboard-line)] px-5 py-4 sm:grid-cols-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full rounded-xl border-[var(--brand-border)] bg-background font-bold text-foreground shadow-sm transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand-dark)]"
-            onClick={closeForNow}
-            disabled={isSaving}
-          >
-            <BellOff className="mr-2 h-4 w-4" />
+        <DialogFooter className="grid grid-cols-1 gap-2 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)]/60 px-5 py-4 sm:grid-cols-2 sm:px-6">
+          <EnterpriseButton tone="secondary" fullWidth onClick={closeForNow} disabled={isSaving}>
+            <BellOff className="size-4" />
             Not now
-          </Button>
-          <Button
-            type="button"
-            className="w-full bg-[var(--brand)] text-white shadow-[0_10px_22px_var(--brand-shadow)] hover:bg-[var(--brand-hover)]"
-            onClick={enableNotifications}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Enabling...' : 'Allow notifications'}
-          </Button>
+          </EnterpriseButton>
+          <EnterpriseButton fullWidth onClick={enableNotifications} disabled={isSaving || isCheckingStatus}>
+            {isSaving ? <Loader2 className="size-4 animate-spin" /> : permissionState === 'denied' ? <CheckCircle2 className="size-4" /> : <BellRing className="size-4" />}
+            {isSaving ? 'Connecting…' : permissionState === 'denied' ? 'Retry connection' : 'Allow notifications'}
+          </EnterpriseButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

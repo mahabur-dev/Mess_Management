@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
 import { EnterpriseIconButton } from '@/components/ui/enterprise-icon-button'
+import { EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type Mess, type MonthlyBill } from '@/lib/api-client'
@@ -162,10 +163,7 @@ export default function MonthlyBillPage() {
                 {generating ? 'Calculating' : 'Recalculate'}
               </EnterpriseButton>
             )}
-            <label className="flex h-[45px] w-full items-center gap-2.5 rounded-xl border border-[#d8e6f8] bg-white px-4 shadow-sm transition hover:border-[#a9ccfb] sm:w-auto">
-              <CalendarDays size={17} className="text-[#2f80ed]" />
-              <input type="month" className="w-full bg-transparent text-sm font-bold text-[#172554] outline-none sm:w-auto" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} />
-            </label>
+            <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} surface="white" className="h-[45px] w-full font-bold sm:w-[190px]" />
             <div className="flex h-[45px] w-full items-center justify-center gap-2 rounded-xl border border-[#d8e6f8] bg-gradient-to-r from-[#e7f1ff] to-[#f0fdf4] px-4 text-xs font-semibold text-[#2f80ed] shadow-sm sm:w-auto">
               <ClipboardList size={16} /> {filteredBills.length} Bill{filteredBills.length !== 1 ? 's' : ''}
             </div>

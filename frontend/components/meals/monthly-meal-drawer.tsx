@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { apiClient, type AttendanceStatus, type MealName } from '@/lib/api-client'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
 
 const MEAL_BASE_VALUE: Record<MealName, number> = {
   BREAKFAST: 0.5,
@@ -219,10 +220,7 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                 <button type="button" aria-label="Previous month" onClick={() => setMonth((current) => moveMonth(current, -1))} className="grid size-9 place-items-center rounded-lg border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
                   <ChevronLeft className="size-4" />
                 </button>
-                <label className="relative">
-                  <span className="sr-only">Select month</span>
-                  <input type="month" value={month} onChange={(event) => event.target.value && setMonth(event.target.value)} className="h-9 min-w-[160px] rounded-lg border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-sm font-semibold text-foreground outline-none focus:border-[var(--brand-border)] focus:ring-4 focus:ring-[var(--brand-ring)]" />
-                </label>
+                <EnterpriseMonthPicker value={month} onValueChange={setMonth} surface="white" className="h-9 min-w-[170px] rounded-lg" align="start" />
                 <button type="button" aria-label="Next month" onClick={() => setMonth((current) => moveMonth(current, 1))} className="grid size-9 place-items-center rounded-lg border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
                   <ChevronRight className="size-4" />
                 </button>

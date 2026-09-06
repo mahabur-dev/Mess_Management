@@ -94,14 +94,14 @@ export function MonthlyOverviewChart({
           stackId="monthly"
           fill="var(--color-expense)"
           fillOpacity={1}
-          maxBarSize={24}
+          barSize={18}
         />
         <Bar
           dataKey="income"
           stackId="monthly"
           fill="var(--color-income)"
           fillOpacity={0.68}
-          maxBarSize={24}
+          barSize={18}
         />
         <Bar
           dataKey="meals"
@@ -109,7 +109,7 @@ export function MonthlyOverviewChart({
           fill="var(--color-meals)"
           fillOpacity={0.36}
           radius={[4, 4, 0, 0]}
-          maxBarSize={24}
+          barSize={18}
         />
       </BarChart>
     </ChartContainer>

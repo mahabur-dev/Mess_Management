@@ -166,7 +166,9 @@ export function DashboardSidebar() {
           ? memberItems
           : onboardingItems
 
-  const sidebarWidth = collapsed ? 'w-[72px]' : 'w-[280px]'
+  const sidebarWidth = collapsed
+    ? 'w-[var(--dashboard-sidebar-collapsed-width)]'
+    : 'w-[var(--dashboard-sidebar-width)]'
 
   useEffect(() => {
     setPendingHref(null)
@@ -277,7 +279,7 @@ export function DashboardSidebar() {
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
-          <div className="relative h-full w-[280px]">
+          <div className="relative h-full w-[var(--dashboard-sidebar-width)]">
             <button
               type="button"
               className="dashboard-icon-button absolute right-3 top-3 z-10 flex size-8 items-center justify-center rounded-md"

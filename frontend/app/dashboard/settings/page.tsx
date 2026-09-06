@@ -15,7 +15,6 @@ function getAuthHeaders(): HeadersInit {
   const token =
     typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
 
-    console.log(token);
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
@@ -242,8 +241,8 @@ export default function SettingsPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-background ">
           <div className="border-b border-border  bg-muted via-white  px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary/10  ">
-                <User size={22} className="text-primary" />
+              <div className="dashboard-section-icon size-11 rounded-lg">
+                <User size={22} />
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Account</p>
@@ -376,8 +375,8 @@ export default function SettingsPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-background ">
           <div className="border-b border-border  bg-muted via-white  px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary  ">
-                <Lock size={22} className="text-primary" />
+              <div className="dashboard-section-icon size-11 rounded-lg">
+                <Lock size={22} />
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Security</p>
@@ -496,8 +495,8 @@ export default function SettingsPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-background ">
           <div className="border-b border-border  bg-muted via-white  px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary  ">
-                <Bell size={22} className="text-primary" />
+              <div className="dashboard-section-icon size-11 rounded-lg">
+                <Bell size={22} />
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Preferences</p>

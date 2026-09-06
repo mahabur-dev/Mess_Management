@@ -141,15 +141,14 @@ export function PushNotificationPermissionModal() {
     }}>
       <DialogContent
         showCloseButton={false}
-        className="w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0 shadow-[0_28px_80px_rgba(15,23,42,0.22)]"
+        className="w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0 "
       >
         <div className="relative overflow-hidden border-b border-[var(--dashboard-line)] px-5 pb-5 pt-6 sm:px-6">
-          <div className="pointer-events-none absolute -right-16 -top-20 size-52 rounded-full bg-[var(--brand-soft)] opacity-80 blur-3xl" />
           <button
             type="button"
             onClick={closeForNow}
             disabled={isSaving}
-            className="absolute right-4 top-4 z-10 grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground shadow-sm transition hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--dashboard-ink)] disabled:opacity-50"
+            className="absolute right-4 top-4 z-10 grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground  transition hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--dashboard-ink)] disabled:opacity-50"
             aria-label="Close notification setup"
           >
             <X className="size-4" />
@@ -157,7 +156,7 @@ export function PushNotificationPermissionModal() {
 
           <DialogHeader className="relative pr-10 text-left">
             <div className="mb-3 flex items-center gap-3">
-              <span className="grid size-12 place-items-center rounded-2xl bg-[var(--brand)] text-white shadow-[0_10px_24px_var(--brand-shadow)]">
+              <span className="grid size-12 place-items-center rounded-2xl bg-[var(--brand)] text-primary-foreground ">
                 <BellRing className="size-5" />
               </span>
               <div>
@@ -178,13 +177,13 @@ export function PushNotificationPermissionModal() {
 
         <div className="space-y-3 px-5 py-5 sm:px-6">
           {error && (
-            <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold leading-5 text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">
+            <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-semibold leading-5 text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive">
               {error}
             </div>
           )}
 
           <div className="flex items-center gap-3 rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] p-4">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--dashboard-surface)] text-[var(--brand)] shadow-sm">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--dashboard-surface)] text-[var(--brand)] ">
               {isCheckingStatus ? <Loader2 className="size-4 animate-spin" /> : <Smartphone className="size-4" />}
             </span>
             <div className="min-w-0 flex-1">
@@ -200,7 +199,7 @@ export function PushNotificationPermissionModal() {
               </p>
             </div>
             {!isCheckingStatus && (
-              <span className={`rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] ${permissionState === 'denied' ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300' : 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)]'}`}>
+              <span className={`rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] ${permissionState === 'denied' ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary' : 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)]'}`}>
                 {permissionState === 'denied' ? 'Action needed' : 'Not connected'}
               </span>
             )}

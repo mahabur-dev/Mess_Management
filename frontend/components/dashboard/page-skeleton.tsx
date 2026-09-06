@@ -18,8 +18,8 @@ export function DashboardSkeletonBlock({
 
 export function DashboardHeaderSkeleton({ showMonth = false }: { showMonth?: boolean }) {
   return (
-    <div className="dashboard-header-clean sticky top-0 z-20" aria-hidden="true">
-      <div className="flex min-h-[72px] flex-col gap-2 px-4 py-3 sm:px-6 lg:h-[72px] lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-0">
+    <div className="dashboard-header-clean sticky top-0 z-20 h-16" aria-hidden="true">
+      <div className="flex h-full items-center justify-between gap-3 px-4 sm:px-6 lg:px-6">
         <div className="flex items-center gap-3 pr-3">
           <DashboardSkeletonBlock className="h-10 w-10 shrink-0 rounded-xl lg:hidden" />
           <div>
@@ -28,14 +28,14 @@ export function DashboardHeaderSkeleton({ showMonth = false }: { showMonth?: boo
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
           {showMonth && (
             <DashboardSkeletonBlock className="hidden h-11 w-44 rounded-xl sm:block" />
           )}
-          <DashboardSkeletonBlock className="h-11 w-28 rounded-xl" />
-          <DashboardSkeletonBlock className="h-11 w-11 rounded-xl" />
-          <DashboardSkeletonBlock className="h-11 w-11 rounded-xl" />
-          <DashboardSkeletonBlock className="h-11 w-28 rounded-xl" />
+          <DashboardSkeletonBlock className="hidden h-9 w-24 rounded-lg sm:block" />
+          <DashboardSkeletonBlock className="h-9 w-9 rounded-lg" />
+          <DashboardSkeletonBlock className="h-9 w-9 rounded-lg" />
+          <DashboardSkeletonBlock className="hidden h-9 w-24 rounded-lg sm:block" />
         </div>
       </div>
     </div>

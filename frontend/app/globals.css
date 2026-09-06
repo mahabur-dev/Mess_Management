@@ -443,19 +443,19 @@
   }
 
   .dashboard-theme {
-    --dashboard-bg: #eef7f5;
+    --dashboard-bg: #ffffff;
     --dashboard-surface: #ffffff;
-    --dashboard-surface-raised: rgba(255, 255, 255, 0.94);
-    --dashboard-surface-subtle: #e7f3f1;
-    --dashboard-header: var(--dashboard-bg);
-    --dashboard-sidebar-bg: var(--dashboard-bg);
-    --dashboard-ink: #0a2f2d;
-    --dashboard-muted: #687b7a;
-    --dashboard-line: #dceae8;
-    --dashboard-line-strong: #c5ddda;
-    --dashboard-hover: #e8f6f4;
-    --dashboard-shadow: 0 2px 4px rgba(7, 55, 53, 0.04), 0 14px 34px rgba(7, 55, 53, 0.08);
-    --dashboard-shadow-lg: 0 22px 52px rgba(7, 55, 53, 0.14);
+    --dashboard-surface-raised: #ffffff;
+    --dashboard-surface-subtle: color-mix(in srgb, var(--brand) 5%, #ffffff);
+    --dashboard-header: #ffffff;
+    --dashboard-sidebar-bg: #ffffff;
+    --dashboard-ink: #090909;
+    --dashboard-muted: color-mix(in srgb, #090909 62%, transparent);
+    --dashboard-line: color-mix(in srgb, var(--brand) 18%, transparent);
+    --dashboard-line-strong: color-mix(in srgb, var(--brand) 30%, transparent);
+    --dashboard-hover: color-mix(in srgb, var(--brand) 8%, #ffffff);
+    --dashboard-shadow: none;
+    --dashboard-shadow-lg: none;
     --background: var(--dashboard-bg);
     --foreground: var(--dashboard-ink);
     --card: var(--dashboard-surface);
@@ -476,10 +476,10 @@
     --input: var(--dashboard-surface);
     --ring: var(--brand);
     --chart-1: var(--brand);
-    --chart-2: var(--brand-bright);
-    --chart-3: #e8a321;
-    --chart-4: #e05265;
-    --chart-5: #6676d9;
+    --chart-2: var(--brand-dark);
+    --chart-3: var(--brand-bright);
+    --chart-4: var(--brand-hover);
+    --chart-5: var(--brand-darker);
     min-height: 100vh;
     color: var(--dashboard-ink);
     background: var(--dashboard-bg);
@@ -487,29 +487,26 @@
   }
 
   .dark .dashboard-theme {
-    --dashboard-bg: #071718;
-    --dashboard-surface: #0d2324;
-    --dashboard-surface-raised: #11292a;
-    --dashboard-surface-subtle: #102c2c;
-    --dashboard-header: var(--dashboard-bg);
-    --dashboard-sidebar-bg: var(--dashboard-bg);
-    --dashboard-ink: #ecfffc;
-    --dashboard-muted: #9bb8b5;
-    --dashboard-line: #214344;
-    --dashboard-line-strong: #2d5655;
-    --dashboard-hover: #153536;
-    --dashboard-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 12px 34px rgba(0, 0, 0, 0.24);
-    --dashboard-shadow-lg: 0 22px 52px rgba(0, 0, 0, 0.32);
-    --primary-foreground: #041414;
-    --destructive: #f26668;
+    --dashboard-bg: #000000;
+    --dashboard-surface: #090909;
+    --dashboard-surface-raised: #090909;
+    --dashboard-surface-subtle: color-mix(in srgb, var(--brand) 12%, #000000);
+    --dashboard-header: #000000;
+    --dashboard-sidebar-bg: #000000;
+    --dashboard-ink: #ffffff;
+    --dashboard-muted: color-mix(in srgb, #ffffff 62%, transparent);
+    --dashboard-line: color-mix(in srgb, var(--brand) 28%, transparent);
+    --dashboard-line-strong: color-mix(in srgb, var(--brand) 42%, transparent);
+    --dashboard-hover: color-mix(in srgb, var(--brand) 16%, #000000);
+    --dashboard-shadow: none;
+    --dashboard-shadow-lg: none;
+    --primary-foreground: #ffffff;
+    --destructive: #ef4444;
     color-scheme: dark;
   }
 
   .dashboard-main {
-    background:
-      radial-gradient(circle at 8% 2%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 25rem),
-      radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--brand-bright) 7%, transparent), transparent 24rem),
-      var(--dashboard-bg);
+    background: var(--dashboard-bg);
   }
 
   .dashboard-scroll-viewport {
@@ -542,7 +539,7 @@
   .dashboard-loading-progress {
     overflow: hidden;
     background: color-mix(in srgb, var(--brand) 16%, var(--dashboard-bg));
-    box-shadow: 0 1px 8px color-mix(in srgb, var(--brand) 22%, transparent);
+    box-shadow: none;
   }
 
   .dashboard-loading-progress::after {
@@ -551,8 +548,8 @@
     left: 0;
     width: 38%;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--brand-dark), var(--brand-bright), var(--brand));
-    box-shadow: 0 0 14px color-mix(in srgb, var(--brand-bright) 55%, transparent);
+    background: var(--brand);
+    box-shadow: none;
     content: '';
     animation: dashboard-progress 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
@@ -566,13 +563,7 @@
   .dashboard-skeleton::after {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      105deg,
-      transparent 18%,
-      color-mix(in srgb, var(--dashboard-surface) 72%, transparent) 42%,
-      color-mix(in srgb, var(--brand-soft) 82%, transparent) 52%,
-      transparent 76%
-    );
+    background: color-mix(in srgb, var(--brand) 5%, transparent);
     content: '';
     transform: translateX(-110%);
     animation: dashboard-shimmer 1.65s ease-in-out infinite;
@@ -614,10 +605,9 @@
 
   .dashboard-sidebar {
     border-right: 1px solid var(--dashboard-line);
-    background: var(--dashboard-bg);
+    background: var(--dashboard-sidebar-bg);
     color: var(--dashboard-ink);
     box-shadow: none;
-    backdrop-filter: blur(20px);
   }
 
   .dashboard-route-frame {
@@ -651,19 +641,14 @@
 
   .dashboard-header-clean {
     border-bottom: 1px solid var(--dashboard-line) !important;
-    background: var(--dashboard-bg) !important;
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--dashboard-line) 70%, transparent);
-    backdrop-filter: blur(18px) saturate(140%);
+    background: var(--dashboard-header) !important;
+    box-shadow: none;
   }
 
   .dashboard-panel {
-    border: 0;
-    border-radius: 1.25rem;
-    background: linear-gradient(
-      155deg,
-      var(--dashboard-surface) 0%,
-      color-mix(in srgb, var(--dashboard-surface) 97%, var(--brand)) 100%
-    );
+    border: 1px solid var(--dashboard-line);
+    border-radius: var(--radius);
+    background: var(--dashboard-surface);
     color: var(--dashboard-ink);
     box-shadow: var(--dashboard-shadow);
     transition: box-shadow 180ms ease, background-color 180ms ease;
@@ -671,20 +656,16 @@
 
   /* Reusable solid dashboard surface. Cards are separated by elevation, not outlines. */
   .dashboard-card {
-    border: 0;
-    border-radius: 1.25rem;
-    background: linear-gradient(
-      155deg,
-      var(--dashboard-surface) 0%,
-      color-mix(in srgb, var(--dashboard-surface) 97%, var(--card-accent, var(--brand))) 100%
-    );
+    border: 1px solid var(--dashboard-line);
+    border-radius: var(--radius);
+    background: var(--dashboard-surface);
     color: var(--dashboard-ink);
     box-shadow: var(--dashboard-shadow);
-    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+    transition: border-color 180ms ease, background-color 180ms ease;
   }
 
   .dashboard-card:hover {
-    box-shadow: var(--dashboard-shadow-lg);
+    border-color: var(--dashboard-line-strong);
   }
 
   /* Shared detail/form drawers: keep portaled content on the dashboard visual system. */
@@ -716,53 +697,47 @@
     box-shadow: 0 0 0 3px var(--brand-ring) !important;
   }
 
-  .enterprise-details-drawer [class*='bg-[#faf9ff]'],
-  .enterprise-details-drawer [class*='bg-[#f8faff]'],
-  .enterprise-details-drawer [class*='bg-white/90'] {
-    background: var(--dashboard-surface-subtle) !important;
-  }
-
   .dashboard-stat-card {
     --card-accent: var(--brand);
   }
 
   .dashboard-stat-grid > .dashboard-stat-card:nth-child(2) {
-    --card-accent: var(--brand-bright);
+    --card-accent: var(--brand);
   }
 
   .dashboard-stat-grid > .dashboard-stat-card:nth-child(3) {
-    --card-accent: #e8a321;
+    --card-accent: var(--brand);
   }
 
   .dashboard-stat-grid > .dashboard-stat-card:nth-child(4) {
-    --card-accent: #d84c4c;
+    --card-accent: var(--brand);
   }
 
   .dashboard-stat-grid > .dashboard-stat-card:nth-child(5) {
-    --card-accent: #7c3aed;
+    --card-accent: var(--brand);
   }
 
   .dashboard-stat-grid > .dashboard-stat-card:nth-child(6) {
-    --card-accent: #0284c7;
+    --card-accent: var(--brand);
   }
 
   .dashboard-stat-card .dashboard-stat-icon {
     background: color-mix(in srgb, var(--card-accent) 11%, var(--dashboard-surface));
     color: var(--card-accent);
-    box-shadow: 0 10px 22px color-mix(in srgb, var(--card-accent) 13%, transparent);
+    box-shadow: none;
   }
 
   .dashboard-meal-card {
-    background: linear-gradient(155deg, var(--dashboard-surface), color-mix(in srgb, var(--dashboard-surface) 97%, var(--brand)));
+    background: var(--dashboard-surface);
   }
 
   .dashboard-meal-icon {
     background: var(--brand-soft);
-    box-shadow: 0 8px 18px color-mix(in srgb, var(--brand) 12%, transparent);
+    box-shadow: none;
   }
 
   .dashboard-meal-step {
-    box-shadow: 0 5px 14px color-mix(in srgb, var(--brand) 10%, transparent);
+    box-shadow: none;
   }
 
   .dashboard-panel-header {
@@ -778,20 +753,20 @@
     height: 0.2rem;
     width: 2rem;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--brand), var(--brand-bright));
+    background: var(--brand);
     opacity: 0.7;
   }
 
   .dashboard-mini-stat-grid > .dashboard-stat-card:nth-child(1) {
-    --card-accent: #e8a321;
+    --card-accent: var(--brand);
   }
 
   .dashboard-mini-stat-grid > .dashboard-stat-card:nth-child(2) {
-    --card-accent: #16a36a;
+    --card-accent: var(--brand);
   }
 
   .dashboard-mini-stat-grid > .dashboard-stat-card:nth-child(3) {
-    --card-accent: #d84c4c;
+    --card-accent: var(--brand);
   }
 
   .dashboard-report-grid > .report-stat-card[data-tone='meal'] {
@@ -799,22 +774,52 @@
   }
 
   .dashboard-report-grid > .report-stat-card[data-tone='expense'] {
-    --card-accent: #e8a321;
+    --card-accent: var(--brand);
   }
 
   .dashboard-report-grid > .report-stat-card[data-tone='due'] {
-    --card-accent: #d84c4c;
+    --card-accent: var(--destructive);
   }
 
   .dashboard-report-grid > .report-stat-card[data-tone='payment'] {
-    --card-accent: #16a36a;
+    --card-accent: var(--brand);
   }
 
   .dashboard-subtle-card {
-    border: 0;
+    border: 1px solid var(--dashboard-line);
     background: var(--dashboard-surface-subtle);
     color: var(--dashboard-ink);
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--dashboard-ink) 4%, transparent);
+    box-shadow: none;
+  }
+
+  /* Compact, consistent framing for dense data tables. */
+  .dashboard-table-frame {
+    overflow: hidden;
+    border: 1px solid var(--dashboard-line);
+    border-radius: calc(var(--radius) - 0.125rem);
+    background: var(--dashboard-surface);
+    box-shadow: none;
+  }
+
+  /* Tinted heading surface keeps brand icons legible in both themes. */
+  .dashboard-section-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+
+  /* Stronger than the base shadcn Tabs active state by design. */
+  .dashboard-brand-tabs [data-slot='tabs-trigger'][data-state='active'] {
+    border-color: var(--brand) !important;
+    background: var(--brand) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-brand-tabs [data-slot='tabs-trigger'][data-state='active'] :is(svg, span) {
+    color: inherit !important;
   }
 
   .dashboard-control,
@@ -822,8 +827,8 @@
     border: 1px solid var(--dashboard-line);
     background: var(--dashboard-surface);
     color: var(--dashboard-muted);
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--dashboard-ink) 6%, transparent);
-    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, transform 180ms ease;
+    box-shadow: none;
+    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
   }
 
   .dashboard-control:hover,
@@ -833,34 +838,6 @@
     border-color: var(--brand-border);
     background: var(--dashboard-hover);
     color: var(--brand);
-  }
-
-  .dashboard-theme .push-not-now-button {
-    border: 1px solid var(--dashboard-line-strong) !important;
-    background: var(--dashboard-surface-subtle) !important;
-    color: var(--dashboard-ink) !important;
-  }
-
-  .dashboard-theme .push-not-now-button:hover {
-    border-color: var(--brand-border) !important;
-    background: var(--dashboard-hover) !important;
-    color: var(--dashboard-ink) !important;
-  }
-
-  .dashboard-theme [data-slot='button'].push-not-now-button:not([class*='bg-[#22b66f]']):not([class*='bg-green']):not([class*='bg-red']):not([class*='bg-rose']):not([class*='bg-destructive']) {
-    border-color: var(--brand-dark) !important;
-    background: var(--brand-dark) !important;
-    color: #ffffff !important;
-  }
-
-  .dashboard-theme [data-slot='button'].push-not-now-button:not([class*='bg-[#22b66f]']):not([class*='bg-green']):not([class*='bg-red']):not([class*='bg-rose']):not([class*='bg-destructive']):hover {
-    border-color: var(--brand) !important;
-    background: var(--brand) !important;
-    color: #ffffff !important;
-  }
-
-  .dashboard-icon-button:hover {
-    transform: translateY(-1px);
   }
 
   .dashboard-eyebrow {
@@ -880,34 +857,121 @@
 
   .dashboard-theme .app-card,
   .dashboard-theme [data-slot='card'] {
-    border: 0 !important;
-    border-radius: 1rem !important;
+    border: 1px solid var(--dashboard-line) !important;
+    border-radius: var(--radius) !important;
     background: var(--dashboard-surface) !important;
     color: var(--dashboard-ink) !important;
-    box-shadow: var(--dashboard-shadow) !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-theme [data-slot='card'][data-featured='true'],
+  .dashboard-theme [data-slot='card'][data-featured='true']:hover {
+    border-color: var(--primary) !important;
+    background: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+  }
+
+  /* Dashboard popovers are portaled outside .dashboard-theme, so carry its palette explicitly. */
+  .dashboard-popover {
+    --popover: #ffffff;
+    --popover-foreground: #090909;
+    --accent: color-mix(in srgb, var(--brand) 10%, #ffffff);
+    --accent-foreground: var(--brand-dark);
+    --muted-foreground: color-mix(in srgb, #090909 62%, transparent);
+    border-color: color-mix(in srgb, var(--brand) 24%, transparent) !important;
+    background: var(--popover) !important;
+    color: var(--popover-foreground) !important;
+    box-shadow: none !important;
+  }
+
+  .dark .dashboard-popover {
+    --popover: #000000;
+    --popover-foreground: #ffffff;
+    --accent: color-mix(in srgb, var(--brand) 18%, #000000);
+    --accent-foreground: #ffffff;
+    --muted-foreground: color-mix(in srgb, #ffffff 62%, transparent);
+  }
+
+  /* Dashboard sheets, dialogs and picker menus are portaled outside the dashboard tree. */
+  .dashboard-portal-surface,
+  [data-slot='dialog-content'],
+  [data-slot='sheet-content'],
+  [data-slot='drawer-content'],
+  [data-slot='alert-dialog-content'],
+  [data-slot='select-content'],
+  [data-slot='popover-content'],
+  [data-slot='dropdown-menu-content'] {
+    --dashboard-bg: #ffffff;
+    --dashboard-surface: #ffffff;
+    --dashboard-surface-raised: #ffffff;
+    --dashboard-surface-subtle: color-mix(in srgb, var(--brand) 5%, #ffffff);
+    --dashboard-ink: #090909;
+    --dashboard-muted: color-mix(in srgb, #090909 62%, transparent);
+    --dashboard-line: color-mix(in srgb, var(--brand) 18%, transparent);
+    --dashboard-line-strong: color-mix(in srgb, var(--brand) 30%, transparent);
+    --dashboard-hover: color-mix(in srgb, var(--brand) 8%, #ffffff);
+    --background: #ffffff;
+    --foreground: #090909;
+    --popover: #ffffff;
+    --popover-foreground: #090909;
+    --primary-foreground: #ffffff;
+    --muted: var(--dashboard-surface-subtle);
+    --muted-foreground: var(--dashboard-muted);
+    --accent: var(--dashboard-hover);
+    --accent-foreground: var(--brand-dark);
+    --border: var(--dashboard-line);
+    --input: var(--dashboard-surface);
+    border-color: var(--dashboard-line) !important;
+    background: var(--dashboard-surface) !important;
+    color: var(--dashboard-ink) !important;
+    box-shadow: none !important;
+  }
+
+  .dark .dashboard-portal-surface,
+  .dark [data-slot='dialog-content'],
+  .dark [data-slot='sheet-content'],
+  .dark [data-slot='drawer-content'],
+  .dark [data-slot='alert-dialog-content'],
+  .dark [data-slot='select-content'],
+  .dark [data-slot='popover-content'],
+  .dark [data-slot='dropdown-menu-content'] {
+    --dashboard-bg: #000000;
+    --dashboard-surface: #000000;
+    --dashboard-surface-raised: #090909;
+    --dashboard-surface-subtle: color-mix(in srgb, var(--brand) 12%, #000000);
+    --dashboard-ink: #ffffff;
+    --dashboard-muted: color-mix(in srgb, #ffffff 62%, transparent);
+    --dashboard-line: color-mix(in srgb, var(--brand) 28%, transparent);
+    --dashboard-line-strong: color-mix(in srgb, var(--brand) 42%, transparent);
+    --dashboard-hover: color-mix(in srgb, var(--brand) 16%, #000000);
+    --background: #000000;
+    --foreground: #ffffff;
+    --popover: #090909;
+    --popover-foreground: #ffffff;
+    --primary-foreground: #ffffff;
+    --muted: var(--dashboard-surface-subtle);
+    --muted-foreground: var(--dashboard-muted);
+    --accent: var(--dashboard-hover);
+    --accent-foreground: #ffffff;
+    --border: var(--dashboard-line);
+    --input: #090909;
+    color-scheme: dark;
   }
 
   .dashboard-theme .app-card:hover,
   .dashboard-theme [data-slot='card']:hover {
-    box-shadow: var(--dashboard-shadow-lg) !important;
-  }
-
-  .dashboard-theme .gradient-button,
-  .dashboard-theme [data-slot='button']:not(.dashboard-button):not([class*='bg-[#22b66f]']):not([class*='bg-green']):not([class*='bg-red']):not([class*='bg-rose']):not([class*='bg-destructive']) {
-    background: linear-gradient(135deg, var(--brand-dark), var(--brand)) !important;
-    border-color: transparent !important;
-    color: #ffffff !important;
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--dashboard-ink) 7%, transparent), 0 3px 8px color-mix(in srgb, var(--brand-dark) 8%, transparent) !important;
+    border-color: var(--dashboard-line-strong) !important;
+    box-shadow: none !important;
   }
 
   .dashboard-button:not(:focus-visible),
   .dashboard-theme :is(button, a)[class*='shadow-']:not([class*='shadow-none']):not(.dashboard-button):not(:focus-visible) {
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--dashboard-ink) 7%, transparent), 0 3px 8px color-mix(in srgb, var(--brand-dark) 8%, transparent) !important;
+    box-shadow: none !important;
   }
 
   .dashboard-button:hover:not(:focus-visible),
   .dashboard-theme :is(button, a)[class*='shadow-']:not([class*='shadow-none']):not(.dashboard-button):hover:not(:focus-visible) {
-    box-shadow: 0 2px 4px color-mix(in srgb, var(--dashboard-ink) 8%, transparent), 0 5px 12px color-mix(in srgb, var(--brand-dark) 10%, transparent) !important;
+    box-shadow: none !important;
   }
 
   .dashboard-theme .soft-input,
@@ -932,154 +996,6 @@
     color: var(--dashboard-muted) !important;
   }
 
-  .dashboard-theme [class*='text-[#0a1433]'],
-  .dashboard-theme [class*='text-[#171044]'],
-  .dashboard-theme [class*='text-[#172554]'],
-  .dashboard-theme [class*='text-foreground'] {
-    color: var(--dashboard-ink) !important;
-  }
-
-  .dashboard-theme [class*='text-[#53617d]'],
-  .dashboard-theme [class*='text-[#667085]'],
-  .dashboard-theme [class*='text-[#6b7a99]'],
-  .dashboard-theme [class*='text-[#7a8aaa]'],
-  .dashboard-theme [class*='text-[#8a9bb5]'],
-  .dashboard-theme [class*='text-[#a0aec5]'] {
-    color: var(--dashboard-muted) !important;
-  }
-
-  .dashboard-theme [class*='border-[#e6ebf4]'],
-  .dashboard-theme [class*='border-[#d8e6f8]'],
-  .dashboard-theme [class*='border-[#dfe9e8]'] {
-    border-color: var(--dashboard-line) !important;
-  }
-
-  /* Keep dashboard surfaces on the same theme background instead of isolated white blocks. */
-  .dashboard-theme [class~='bg-white'],
-  .dashboard-theme [class~='bg-white/90'],
-  .dashboard-theme [class~='bg-white/95'] {
-    background-color: var(--dashboard-bg) !important;
-  }
-
-  .dashboard-theme [class*='bg-[#fafcff]'],
-  .dashboard-theme [class*='bg-[#fbfdff]'],
-  .dashboard-theme [class*='bg-[#f8faff]'],
-  .dashboard-theme [class*='bg-[#f1f5f9]'],
-  .dashboard-theme [class*='bg-[#f0f6ff]'] {
-    background: var(--dashboard-bg) !important;
-  }
-
-  /* Remove page-specific light gradient surfaces in dark dashboard mode. */
-  .dark .dashboard-theme [class*='from-[#f8faff]'][class*='via-white'],
-  .dark .dashboard-theme [class*='from-[#f8faff]'][class*='to-white'],
-  .dark .dashboard-theme [class*='via-white'][class*='to-[#fafcff]'],
-  .dark .dashboard-theme [class*='bg-white/90'],
-  .dark .dashboard-theme [class*='bg-white/95'] {
-    background: var(--dashboard-bg) !important;
-    background-image: none !important;
-  }
-
-  .dashboard-theme [class*='text-[#6f3df4]'],
-  .dashboard-theme [class*='text-[#6d3df4]'],
-  .dashboard-theme [class*='text-[#4c2cc5]'],
-  .dashboard-theme [class*='text-[#2f80ed]'],
-  .dashboard-theme [class*='text-blue-'],
-  .dashboard-theme [class*='text-indigo-'] {
-    color: var(--brand) !important;
-  }
-
-  .dashboard-theme [class*='bg-[#efe9ff]'],
-  .dashboard-theme [class*='bg-[#e8f2ff]'],
-  .dashboard-theme [class*='bg-[#e7f1ff]'],
-  .dashboard-theme [class*='bg-[#eef5ff]'],
-  .dashboard-theme [class*='bg-[#edf5ff]'],
-  .dashboard-theme [class*='bg-blue-50'],
-  .dashboard-theme [class*='bg-blue-100'],
-  .dashboard-theme [class*='bg-violet-50'],
-  .dashboard-theme [class*='bg-violet-100'] {
-    background: var(--brand-soft) !important;
-    border-color: var(--brand-border) !important;
-    color: var(--brand) !important;
-  }
-
-  .dashboard-theme table thead,
-  .dashboard-theme [class*='bg-[#15115d]'] {
-    background: var(--brand-soft) !important;
-    color: var(--dashboard-muted) !important;
-  }
-
-  .dashboard-theme [class*='from-[#2f80ed]'],
-  .dashboard-theme [class*='hover:from-[#2f80ed]']:hover,
-  .dashboard-theme [class*='focus:from-[#2f80ed]']:focus,
-  .dashboard-theme [class*='from-blue-'],
-  .dashboard-theme [class*='from-indigo-'] {
-    background: linear-gradient(135deg, var(--brand-dark), var(--brand)) !important;
-  }
-
-  .dashboard-theme [class*='to-[#3b8cff]'],
-  .dashboard-theme [class*='to-blue-'],
-  .dashboard-theme [class*='to-indigo-'] {
-    --tw-gradient-to: var(--brand) !important;
-  }
-
-  .dashboard-theme [class*='via-[#58d68d]'] {
-    --tw-gradient-via: var(--brand-bright) !important;
-  }
-
-  .dashboard-theme [class*='from-[#2f80ed]/80'] {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--brand) 80%, transparent),
-      color-mix(in srgb, var(--brand-bright) 80%, transparent)
-    ) !important;
-  }
-
-  .dashboard-theme [class*='from-[#2f80ed]/15'],
-  .dashboard-theme [class*='from-[#2f80ed]/10'],
-  .dashboard-theme [class*='from-[#2f80ed]/8'],
-  .dashboard-theme [class*='from-[#2f80ed]/6'] {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--brand) 14%, transparent),
-      color-mix(in srgb, var(--brand-bright) 14%, transparent)
-    ) !important;
-  }
-
-  .dashboard-theme [class*='bg-[#2f80ed]/'] {
-    background: color-mix(in srgb, var(--brand) 12%, transparent) !important;
-  }
-
-  .dashboard-theme [class*='bg-[#2f80ed]']:not([class*='bg-[#2f80ed]/']) {
-    background: var(--brand) !important;
-  }
-
-  .dashboard-theme [class*='hover:bg-[#1f6fd8]']:hover,
-  .dashboard-theme [class*='hover:bg-[#276bc4]']:hover {
-    background: var(--brand-hover) !important;
-  }
-
-  .dashboard-theme [class*='border-[#2f80ed]'],
-  .dashboard-theme [class*='border-blue-'],
-  .dashboard-theme [class*='hover:border-[#a9ccfb]']:hover,
-  .dashboard-theme [class*='data-[state=open]:border-[#a9ccfb]'][data-state='open'] {
-    border-color: var(--brand-border) !important;
-  }
-
-  .dashboard-theme [class*='focus:border-[#2f80ed]']:focus,
-  .dashboard-theme [class*='focus-visible:border-[#2f80ed]']:focus-visible {
-    border-color: color-mix(in srgb, var(--brand) 60%, transparent) !important;
-    box-shadow: 0 0 0 4px var(--brand-ring) !important;
-  }
-
-  .dashboard-theme [class*='focus:ring-[#2f80ed]']:focus,
-  .dashboard-theme [class*='focus-visible:ring-[#2f80ed]']:focus-visible {
-    --tw-ring-color: var(--brand-ring) !important;
-  }
-
-  .dashboard-theme [class*='shadow-[0_'][class*='rgba(47,128,237'] {
-    box-shadow: 0 12px 28px var(--brand-shadow) !important;
-  }
-
   .dashboard-theme .recharts-cartesian-grid-horizontal line,
   .dashboard-theme .recharts-cartesian-grid-vertical line {
     stroke: color-mix(in srgb, var(--dashboard-muted) 18%, transparent);
@@ -1090,117 +1006,9 @@
     font-family: var(--font-dashboard-sans), system-ui, sans-serif;
   }
 
-  .dashboard-theme .dashboard-solid-card {
-    color: #ffffff !important;
-    backdrop-filter: none;
-  }
-
-  .dashboard-solid-card {
-    position: relative;
-    min-height: 92px;
-    overflow: hidden;
-    border-radius: 8px !important;
-    border: 0 !important;
-    padding: 1rem;
-    color: #ffffff !important;
-    box-shadow: 0 18px 34px rgba(65, 103, 153, 0.16) !important;
-  }
-
-  .dashboard-solid-card::before {
-    content: '';
-    position: absolute;
-    right: -2rem;
-    top: -2.5rem;
-    height: 7rem;
-    width: 7rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.16);
-    filter: blur(18px);
-  }
-
-  .dashboard-solid-card .solid-icon {
-    display: flex;
-    height: 2.75rem;
-    width: 2.75rem;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.75rem;
-    background: rgba(255, 255, 255, 0.22);
-    color: #ffffff;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-  }
-
-  .dashboard-solid-card .solid-label {
-    color: rgba(255, 255, 255, 0.86) !important;
-    font-size: 0.7rem;
-    font-weight: 900;
-    letter-spacing: 0.035em;
-    text-transform: uppercase;
-  }
-
-  .dashboard-solid-card .solid-value {
-    color: #ffffff !important;
-    font-size: 1.5rem;
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.02em;
-  }
-
-  .solid-blue {
-    background: linear-gradient(135deg, var(--brand-dark), var(--brand)) !important;
-  }
-
-  .solid-green {
-    background: linear-gradient(135deg, #44d985, #58d68d) !important;
-  }
-
-  .solid-orange {
-    background: linear-gradient(135deg, #ffb84d, #ffa83d) !important;
-  }
-
-  .solid-red {
-    background: linear-gradient(135deg, #ff4d4f, #ff3d55) !important;
-  }
-
-  .solid-purple {
-    background: linear-gradient(135deg, #7462f4, #6f7cff) !important;
-  }
-
-  .solid-cyan {
-    background: linear-gradient(135deg, var(--brand-bright), var(--brand)) !important;
-  }
-
 }
 
 @layer utilities {
-  .sidebar-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
-    scrollbar-gutter: stable;
-  }
-
-  .sidebar-scroll::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .sidebar-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg,
-        rgba(255, 255, 255, 0.45),
-        rgba(139, 92, 246, 0.85));
-    border-radius: 999px;
-  }
-
-  .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg,
-        rgba(255, 255, 255, 0.7),
-        rgba(167, 139, 250, 1));
-  }
-
   .monthly-bills-table-scroll {
     scrollbar-width: thin;
     scrollbar-color: var(--brand-border) var(--brand-softer);
@@ -1213,7 +1021,7 @@
 
   .monthly-bills-table-scroll::-webkit-scrollbar-track {
     background: var(--brand-softer);
-    border-top: 1px solid #e6ebf4;
+    border-top: 1px solid var(--border);
   }
 
   .monthly-bills-table-scroll::-webkit-scrollbar-thumb {

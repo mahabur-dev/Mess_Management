@@ -219,7 +219,7 @@ export default function QuickAddAiPage() {
                       onClick={() => setLocale(item)}
                       className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
                         locale === item
-                          ? "bg-[var(--dashboard-surface)] text-[var(--brand)] shadow-sm"
+                          ? "bg-[var(--dashboard-surface)] text-[var(--brand)] "
                           : "text-[var(--dashboard-muted)]"
                       }`}
                     >
@@ -229,7 +229,7 @@ export default function QuickAddAiPage() {
                 </div>
               </div>
 
-              <div className="mt-7 rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3 shadow-[var(--dashboard-shadow)] sm:p-4">
+              <div className="mt-7 rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3  sm:p-4">
                 <textarea
                   value={command}
                   onChange={(event) =>
@@ -268,7 +268,7 @@ export default function QuickAddAiPage() {
                       }
                       className={`inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
                         recorder.isRecording
-                          ? "border-red-200 bg-red-50 text-red-600"
+                          ? "border-destructive/30 bg-destructive/10 text-destructive"
                           : "border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] text-[var(--dashboard-ink)] hover:border-[var(--brand-border)] hover:text-[var(--brand)]"
                       }`}
                     >
@@ -296,7 +296,7 @@ export default function QuickAddAiPage() {
                     disabled={
                       cannotSubmit || !command.trim() || recorder.isRecording
                     }
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 text-sm font-bold text-white shadow-[0_10px_24px_var(--brand-shadow)] transition hover:bg-[var(--brand-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 text-sm font-bold text-primary-foreground  transition hover:bg-[var(--brand-dark)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {processing === "text" ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -312,7 +312,7 @@ export default function QuickAddAiPage() {
               </div>
 
               {(message || recorder.error) && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-800">
+                <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold leading-6 text-primary">
                   {message || recorder.error}
                 </div>
               )}
@@ -324,7 +324,7 @@ export default function QuickAddAiPage() {
               )}
 
               {capabilities?.enabled === false && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
                   AI Quick Add is temporarily unavailable. You can continue
                   using the regular meal, expense, and deposit forms.
                 </div>
@@ -359,7 +359,7 @@ export default function QuickAddAiPage() {
               </div>
 
               {exhausted ? (
-                <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
+                <div className="mt-5 rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm font-semibold leading-6 text-primary">
                   Your 10 free AI commands have been used. Manual entry pages
                   are still available.
                 </div>

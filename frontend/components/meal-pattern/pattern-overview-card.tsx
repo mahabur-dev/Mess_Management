@@ -18,9 +18,8 @@ export function PatternOverviewCard({ pattern, memberName, onSetup, onView }: Pa
   if (!pattern) {
     return (
       <section className="dashboard-card relative overflow-hidden p-5 sm:p-7">
-        <div className="absolute -right-14 -top-14 size-44 rounded-full bg-[var(--brand)]/10 blur-2xl" />
         <div className="relative max-w-2xl">
-          <span className="grid size-14 place-items-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] shadow-[0_10px_24px_var(--brand-shadow)]">
+          <span className="grid size-14 place-items-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] ">
             <CalendarClock className="size-7" />
           </span>
           <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">Meal automation</p>
@@ -28,7 +27,7 @@ export function PatternOverviewCard({ pattern, memberName, onSetup, onView }: Pa
           <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-muted-foreground">
             Choose the meals you normally take. Messzen will add them automatically, and you can still change an individual meal later.
           </p>
-          <Button onClick={onSetup} className="mt-6 min-h-12 w-full rounded-xl bg-[var(--brand)] px-5 font-semibold text-white shadow-[0_12px_26px_var(--brand-shadow)] hover:bg-[var(--brand-hover)] sm:w-auto">
+          <Button onClick={onSetup} className="mt-6 min-h-12 w-full rounded-xl bg-[var(--brand)] px-5 font-semibold text-primary-foreground  hover:bg-[var(--brand-hover)] sm:w-auto">
             Set my meal pattern <ArrowRight className="size-4" />
           </Button>
         </div>
@@ -38,7 +37,7 @@ export function PatternOverviewCard({ pattern, memberName, onSetup, onView }: Pa
 
   return (
     <section className="dashboard-card overflow-hidden">
-      <div className="border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--brand-softer),var(--dashboard-surface))] p-5 sm:p-6">
+      <div className="border-b border-border bg-muted/50 p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)]">
@@ -75,7 +74,7 @@ export function PatternOverviewCard({ pattern, memberName, onSetup, onView }: Pa
         </div>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <Button onClick={onSetup} className="min-h-11 rounded-xl bg-[var(--brand)] px-5 font-semibold text-white hover:bg-[var(--brand-hover)]">
+          <Button onClick={onSetup} className="min-h-11 rounded-xl bg-[var(--brand)] px-5 font-semibold text-primary-foreground hover:bg-[var(--brand-hover)]">
             {isPatternConfigurable(pattern) ? 'Change pattern' : 'Set a new pattern'} <ArrowRight className="size-4" />
           </Button>
           {onView && (

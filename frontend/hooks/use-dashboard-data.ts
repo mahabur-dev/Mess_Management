@@ -1,6 +1,24 @@
 import useSWR from 'swr'
 import { swrFetcher } from '@/lib/swr-fetcher'
 import { apiClient } from '@/lib/api-client'
+import type { BazarSchedule, Notice, Payment } from '@/lib/api-client'
+
+export type RecentExpense = {
+  id: string
+  item_name?: string | null
+  category?: string | null
+  amount: string | number
+  expense_date: string
+  approvalStatus?: string | null
+  creator?: { name?: string | null } | null
+}
+
+export type DashboardActivity = {
+  expenses: RecentExpense[]
+  payments: Payment[]
+  notices: Notice[]
+  schedule: BazarSchedule | null
+}
 
 // ─── SWR Configs ──────────────────────────────────────────────
 // Static data: rarely changes (mess list, subscription, admin dashboard)
@@ -85,6 +103,64 @@ export function useWeeklyMealCount(messId: string | undefined) {
   return useSWR(
     messId ? ['weekly-meals', messId] : null,
     ([, id]) => swrFetcher(() => apiClient.getWeeklyMealCount(id)),
+    DYNAMIC_SWR,
+  )
+}
+
+export function useDashboardActivity(
+  messId: string | undefined,
+  year: number,
+  month: number,
+  canManagePayments: boolean,
+) {
+  return useSWR<DashboardActivity>(
+    messId ? ['dashboard-activity', messId, year, month, canManagePayments] : null,
+    async () => {
+      const [expenseResult, paymentResult, noticeResult, scheduleResult] =
+        await Promise.allSettled([
+          apiClient.getExpensesByMess(messId!, {
+            limit: 5,
+            sortBy: 'expense_date',
+            sortOrder: 'desc',
+          }),
+          canManagePayments
+            ? apiClient.getPaymentsByMess(messId!, {
+                limit: 5,
+                sortBy: 'created_at',
+                sortOrder: 'desc',
+              })
+            : apiClient.getMyPayments({
+                limit: 5,
+                sortBy: 'created_at',
+                sortOrder: 'desc',
+              }),
+          apiClient.getNoticesByMess(messId!, {
+            limit: 5,
+            sortBy: 'created_at',
+            sortOrder: 'desc',
+          }),
+          apiClient.getBazarSchedule(messId!, year, month),
+        ])
+
+      return {
+        expenses:
+          expenseResult.status === 'fulfilled' && Array.isArray(expenseResult.value.data)
+            ? (expenseResult.value.data as RecentExpense[]).slice(0, 5)
+            : [],
+        payments:
+          paymentResult.status === 'fulfilled' && Array.isArray(paymentResult.value.data)
+            ? paymentResult.value.data
+                .filter((payment) => !payment.mess?.id || payment.mess.id === messId)
+                .slice(0, 5)
+            : [],
+        notices:
+          noticeResult.status === 'fulfilled' && Array.isArray(noticeResult.value.data)
+            ? noticeResult.value.data.slice(0, 5)
+            : [],
+        schedule:
+          scheduleResult.status === 'fulfilled' ? scheduleResult.value.data : null,
+      }
+    },
     DYNAMIC_SWR,
   )
 }

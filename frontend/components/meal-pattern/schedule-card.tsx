@@ -31,8 +31,8 @@ export function ScheduleCard({
 
   return (
     <article className="dashboard-card overflow-hidden ring-1 ring-[var(--dashboard-line)]/70">
-      <header className="flex items-start gap-3 border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--brand-softer),var(--dashboard-surface))] p-4 sm:p-5">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] shadow-[0_8px_18px_color-mix(in_srgb,var(--brand)_12%,transparent)]">
+      <header className="flex items-start gap-3 border-b border-border bg-muted/50 p-4 sm:p-5">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] ">
           {iconLabel ? <span className="text-[11px] font-semibold uppercase tracking-tight">{iconLabel}</span> : <CalendarDays className="size-5" />}
         </span>
         <div className="min-w-0 flex-1">
@@ -41,7 +41,7 @@ export function ScheduleCard({
           {description && <p className="mt-0.5 text-xs font-semibold leading-5 text-muted-foreground">{description}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <span className="rounded-lg bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-semibold tabular-nums text-[var(--brand-dark)] shadow-sm dark:text-[var(--brand-bright)]">{total} meals</span>
+          <span className="rounded-lg bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-semibold tabular-nums text-[var(--brand-dark)]  dark:text-[var(--brand-bright)]">{total} meals</span>
           {onClear && total > 0 && (
             <button type="button" onClick={onClear} aria-label={`Clear ${title}`} className="grid size-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-[var(--dashboard-surface)] hover:text-[var(--brand)]">
               <RotateCcw className="size-3.5" />

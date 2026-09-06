@@ -16,11 +16,11 @@ interface EnterpriseButtonProps extends Omit<ComponentProps<typeof Button>, 'chi
 }
 
 const toneClasses: Record<EnterpriseButtonTone, string> = {
-  primary: 'border-transparent bg-[var(--brand)] text-white shadow-[0_8px_20px_var(--brand-shadow)] hover:bg-[var(--brand-hover)] hover:text-white',
-  secondary: 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] shadow-sm hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--dashboard-ink)]',
-  danger: 'border-rose-200 bg-rose-50 text-rose-700 shadow-sm hover:bg-rose-100 hover:text-rose-800',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm hover:bg-emerald-100 hover:text-emerald-800',
-  warning: 'border-amber-200 bg-amber-50 text-amber-700 shadow-sm hover:bg-amber-100 hover:text-amber-800',
+  primary: 'border-transparent bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)] hover:text-white dark:border-transparent dark:bg-[var(--brand)] dark:text-white dark:hover:bg-[var(--brand-hover)]',
+  secondary: 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--dashboard-ink)] dark:border-[var(--dashboard-line)] dark:bg-[var(--dashboard-surface)] dark:text-white dark:hover:border-[var(--brand-border)] dark:hover:bg-[var(--dashboard-hover)] dark:hover:text-white',
+  danger: 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive dark:border-destructive/50 dark:bg-destructive/15 dark:text-destructive dark:hover:bg-destructive/20',
+  success: 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:border-primary/50 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20',
+  warning: 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:border-primary/50 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20',
 }
 
 const sizeClasses: Record<EnterpriseButtonSize, string> = {
@@ -44,7 +44,7 @@ export function EnterpriseButton({
       type={type}
       variant="outline"
       className={cn(
-        'rounded-lg border font-semibold transition focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50',
+        'rounded-lg border font-semibold transition-colors focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-50',
         toneClasses[tone],
         sizeClasses[size],
         fullWidth && 'w-full',

@@ -47,7 +47,7 @@ function getMealCount(attendance: MealAttendance | undefined, mealName: MealName
   return getMealBaseValue(mealName) + Number(attendance.guests ?? 0)
 }
 
-const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e']
+const AVATAR_COLORS = ['var(--primary)']
 const avatarColor = (name: string) => { let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h); return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length] }
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -472,20 +472,20 @@ export default function MealsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafcff]">
+    <div className="min-h-screen bg-background">
       <DashboardHeader title={isManager ? 'Meal Sheet' : 'My Meals'} description="Set your breakfast, lunch and dinner quantities" />
       <div className="p-4 sm:p-6 lg:p-8">
-        {message && <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${messageType === 'error' ? 'border border-red-200/70 bg-red-50 text-red-700' : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'}`}>{message}</div>}
+        {message && <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold  ${messageType === 'error' ? 'border border-destructive/30 bg-destructive/10 text-destructive' : 'border border-primary/30 bg-primary/10 text-primary'}`}>{message}</div>}
 
         {aiDraft && <div className="mb-5 flex flex-col gap-3 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-[var(--dashboard-ink)]">Review the AI meal entry below</p><p className="mt-1 text-xs font-semibold text-[var(--dashboard-muted)]">Adjust the highlighted member's meal quantities, then use the existing Save action to confirm.</p></div><button type="button" onClick={cancelAiMealReview} className="h-9 rounded-lg border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-xs font-bold text-[var(--dashboard-muted)]">Cancel AI review</button></div>}
 
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/15 to-[#58d68d]/15 shadow-sm"><UtensilsCrossed size={24} className="text-[#2f80ed]" /></div>
-            <div><h2 className="text-lg font-semibold text-[#172554]">{activeMess?.name ?? 'No mess selected'}</h2><p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]"><Clock size={13} className="text-[#ffb84d]" />{deadlineLoading ? 'Loading...' : deadlineInfo ? <>Meal window: {formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)} (next day)</> : 'Meal deadline system active'}</p></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl r bg-primary/10  "><UtensilsCrossed size={24} className="text-primary" /></div>
+            <div><h2 className="text-lg font-semibold text-foreground">{activeMess?.name ?? 'No mess selected'}</h2><p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"><Clock size={13} className="text-primary" />{deadlineLoading ? 'Loading...' : deadlineInfo ? <>Meal window: {formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)} (next day)</> : 'Meal deadline system active'}</p></div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            {isManager && <Button onClick={() => setShowDeadlineSettings(!showDeadlineSettings)} className="h-[45px] rounded-xl border border-blue-200/50 bg-gradient-to-r from-blue-50 to-blue-100/70 px-5 font-semibold text-blue-700 shadow-sm"><Clock size={16} className="mr-2" />{showDeadlineSettings ? 'Hide Settings' : 'Set Meal Deadline'}</Button>}
+            {isManager && <Button onClick={() => setShowDeadlineSettings(!showDeadlineSettings)} className="h-[45px] rounded-xl border border-primary bg-primary px-5 font-semibold text-white hover:bg-[var(--brand-hover)] hover:text-white"><Clock size={16} className="mr-2" />{showDeadlineSettings ? 'Hide Settings' : 'Set Meal Deadline'}</Button>}
             <div title={isEditingMealSheet ? 'Save or cancel the current meal-sheet edits before changing the date.' : undefined}>
               <EnterpriseDatePicker value={date} onValueChange={setDate} disabled={isEditingMealSheet} surface="white" className="h-[48px] min-w-[194px] px-4 font-bold" ariaLabel="Select meal sheet date" />
             </div>
@@ -493,32 +493,32 @@ export default function MealsPage() {
         </div>
 
         {isManager && showDeadlineSettings && (
-          <div className="mb-6 rounded-xl border border-blue-200/60 bg-blue-50 px-5 py-4 shadow-sm">
-            <h3 className="mb-3 text-sm font-semibold text-[#172554]">Set Meal Deadline Window</h3>
-            <p className="mb-4 text-xs font-semibold text-[#6b7a99]">Members can only add/update their meals during this window. Default: 10:00 PM → 11:00 AM (next day)</p>
+          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-5 py-4 ">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Set Meal Deadline Window</h3>
+            <p className="mb-4 text-xs font-semibold text-muted-foreground">Members can only add/update their meals during this window. Default: 10:00 PM → 11:00 AM (next day)</p>
             <div className="flex flex-wrap items-end gap-4">
-              <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Opens</label><input type="time" value={deadlineStartTime} onChange={e => setDeadlineStartTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none" /></div>
-              <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Closes (next day)</label><input type="time" value={deadlineEndTime} onChange={e => setDeadlineEndTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none" /></div>
-              <Button onClick={saveDeadlineSettings} disabled={settingDeadline} className="h-[42px] rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-semibold text-white">{settingDeadline ? 'Saving...' : 'Save'}</Button>
+              <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Opens</label><input type="time" value={deadlineStartTime} onChange={e => setDeadlineStartTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground outline-none" /></div>
+              <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Closes (next day)</label><input type="time" value={deadlineEndTime} onChange={e => setDeadlineEndTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground outline-none" /></div>
+              <Button onClick={saveDeadlineSettings} disabled={settingDeadline} className="h-[42px] rounded-xl  bg-primary  px-6 font-semibold text-primary-foreground">{settingDeadline ? 'Saving...' : 'Save'}</Button>
             </div>
           </div>
         )}
 
         {!deadlineLoading && deadlineInfo && isPastSelectedDate && (
-          <div className="mb-6 rounded-xl border border-amber-200/60 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700 shadow-sm">
+          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-bold text-primary ">
             Past date selected. Only managers can modify meals for previous dates.
           </div>
         )}
 
         {!deadlineLoading && deadlineInfo && !isPastSelectedDate && !deadlineInfo.isWindowOpen && !isManager && (
-          <div className="mb-6 rounded-xl border border-amber-200/60 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700 shadow-sm">
+          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-bold text-primary ">
             Today&apos;s meal window is closed. Only managers can modify meals now.
           </div>
         )}
 
         <section className="dashboard-card mb-4 overflow-hidden ring-1 ring-[var(--dashboard-line)]/70">
-          <header className="flex items-start gap-3 border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--brand-softer),var(--dashboard-surface))] p-4 sm:p-5">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] shadow-[0_8px_18px_color-mix(in_srgb,var(--brand)_12%,transparent)]">
+          <header className="flex items-start gap-3 border-b border-border bg-muted/50 p-4 sm:p-5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] ">
               <CalendarDays className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -526,7 +526,7 @@ export default function MealsPage() {
               <h2 className="font-semibold tracking-tight text-foreground">Meals for {formatDate(date)}</h2>
               <p className="mt-0.5 text-xs font-semibold leading-5 text-muted-foreground">Turn each meal on, then adjust its quantity for this date.</p>
             </div>
-            <span className="shrink-0 rounded-lg bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-semibold tabular-nums text-[var(--brand-dark)] shadow-sm dark:text-[var(--brand-bright)]">
+            <span className="shrink-0 rounded-lg bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-semibold tabular-nums text-[var(--brand-dark)]  dark:text-[var(--brand-bright)]">
               {userMealsLoading ? 'Loading' : `${mealDraftTotal} meals`}
             </span>
           </header>
@@ -544,125 +544,125 @@ export default function MealsPage() {
         </section>
 
         <div className="mb-8 flex justify-end">
-          <Button type="button" onClick={saveMyMeals} disabled={!activeMess || userMealsLoading || mealControlsLocked || savingMeals} className="h-11 w-full gap-2 rounded-xl bg-[var(--brand)] px-6 font-semibold text-white shadow-[0_12px_24px_var(--brand-shadow)] transition hover:bg-[var(--brand-hover)] sm:w-auto">
+          <Button type="button" onClick={saveMyMeals} disabled={!activeMess || userMealsLoading || mealControlsLocked || savingMeals} className="h-11 w-full gap-2 rounded-xl bg-[var(--brand)] px-6 font-semibold text-primary-foreground  transition hover:bg-[var(--brand-hover)] sm:w-auto">
             <Save size={16} /> {savingMeals ? 'Saving meals...' : 'Save meal sheet'}
           </Button>
         </div>
 
         {canViewMemberMealSheet && (
-          <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-            <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] p-4 sm:p-5">
+          <div className="overflow-hidden rounded-xl border border-border bg-background ">
+            <div className="border-b border-border  bg-muted via-white  p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Today Meal Sheet</p><h3 className="mt-1 text-base font-semibold text-[#172554] sm:text-lg">All Member Meals</h3><p className="mt-1 text-xs font-semibold text-[#6b7a99] sm:text-sm">For {formatDate(date)}</p></div>
+                <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Today Meal Sheet</p><h3 className="mt-1 text-base font-semibold text-foreground sm:text-lg">All Member Meals</h3><p className="mt-1 text-xs font-semibold text-muted-foreground sm:text-sm">For {formatDate(date)}</p></div>
                 <MonthlyMealDrawer messId={activeMess?.id} members={members} selectedDate={date} />
               </div>
             </div>
             <div className="p-4 sm:p-5">
               <div className="mb-4 grid grid-cols-3 gap-2 sm:mb-5 sm:gap-3">
-                {mealNames.map(n => <div key={n} className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] px-2 py-3 text-center shadow-sm sm:px-3"><p className="flex items-center justify-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-[#6b7a99] sm:gap-1.5 sm:text-[10px]"><span className="text-[#2f80ed]">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></p><p className="mt-1.5 text-xl font-semibold tabular-nums text-[#172554] sm:text-2xl">{displayedMealTotals[n]}</p></div>)}
+                {mealNames.map(n => <div key={n} className="rounded-xl border border-border bg-muted px-2 py-3 text-center  sm:px-3"><p className="flex items-center justify-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[10px]"><span className="text-primary">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></p><p className="mt-1.5 text-xl font-semibold tabular-nums text-foreground sm:text-2xl">{displayedMealTotals[n]}</p></div>)}
               </div>
 
               {isManager && (
-                <div className={`mb-4 flex flex-col gap-3 rounded-xl border px-3 py-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:px-4 ${isEditingMealSheet ? 'border-[#2f80ed]/25 bg-[#f3f8ff]' : 'border-[#e6ebf4] bg-[#fafcff]'}`}>
+                <div className={`mb-4 flex flex-col gap-3 rounded-xl border px-3 py-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:px-4 ${isEditingMealSheet ? 'border-border bg-muted' : 'border-border bg-muted'}`}>
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${isEditingMealSheet ? 'bg-[#2f80ed] text-white' : 'bg-[#e7f1ff] text-[#2f80ed]'}`}><Pencil size={15} /></span>
+                    <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${isEditingMealSheet ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary'}`}><Pencil size={15} /></span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-[#172554]">{isEditingMealSheet ? (isManagerAiReview ? 'Reviewing AI meal changes' : 'Meal sheet edit mode') : 'Manage all member meals'}</p>
-                      <p className="mt-0.5 text-[11px] font-semibold text-[#6b7a99]">{isEditingMealSheet ? `${managerDirtyUpdates.length} changed ${managerDirtyUpdates.length === 1 ? 'cell' : 'cells'} across ${managerDirtyMemberCount} ${managerDirtyMemberCount === 1 ? 'member' : 'members'}` : 'Edit every member, then save all changes in one request.'}</p>
+                      <p className="text-xs font-bold text-foreground">{isEditingMealSheet ? (isManagerAiReview ? 'Reviewing AI meal changes' : 'Meal sheet edit mode') : 'Manage all member meals'}</p>
+                      <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{isEditingMealSheet ? `${managerDirtyUpdates.length} changed ${managerDirtyUpdates.length === 1 ? 'cell' : 'cells'} across ${managerDirtyMemberCount} ${managerDirtyMemberCount === 1 ? 'member' : 'members'}` : 'Edit every member, then save all changes in one request.'}</p>
                     </div>
                   </div>
-                  {!isEditingMealSheet && <Button type="button" size="sm" disabled={sheetLoading || !memberMealRows.length} onClick={startEditingMealSheet} className="h-9 w-full gap-2 rounded-lg bg-[#2f80ed] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#246fd0] sm:w-auto"><Pencil size={14} /> Edit Meal Sheet</Button>}
+                  {!isEditingMealSheet && <Button type="button" size="sm" disabled={sheetLoading || !memberMealRows.length} onClick={startEditingMealSheet} className="h-9 w-full gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground  hover:bg-primary sm:w-auto"><Pencil size={14} /> Edit Meal Sheet</Button>}
                 </div>
               )}
 
               {/* Mobile Cards */}
               <div className="sm:hidden space-y-3">
-                {sheetLoading ? <div className="py-8 text-center text-sm font-bold text-[#6b7a99]">Loading...</div>
-                : sheetError ? <div className="py-8 text-center text-sm font-bold text-red-500">{sheetError}</div>
+                {sheetLoading ? <div className="py-8 text-center text-sm font-bold text-muted-foreground">Loading...</div>
+                : sheetError ? <div className="py-8 text-center text-sm font-bold text-destructive">{sheetError}</div>
                 : memberMealRows.length ? memberMealRows.map(row => {
                     const isEditingRow = isManager && isEditingMealSheet && (!isManagerAiReview || aiTargetMemberId === row.id)
                     const total = mealNames.reduce((s, n) => s + row.meals[n], 0)
                     const draftTotal = mealNames.reduce((s, n) => s + parseNum(getManagerDraftStr(row.id, n, row.meals[n])), 0)
                     const bgColor = avatarColor(row.name)
                     return (
-                      <div key={row.id} className={`rounded-xl border bg-white p-4 shadow-sm transition ${isEditingRow ? 'border-[#b9d7ff]' : 'border-[#e6ebf4] hover:border-[#a9ccfb]'}`}>
+                      <div key={row.id} className={`rounded-xl border bg-background p-4  transition ${isEditingRow ? 'border-border' : 'border-border hover:border-primary'}`}>
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold" style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}>{getInitials(row.name)}</div>
-                          <span className="text-sm font-bold text-[#172554]">{row.name}</span>
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold" style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: bgColor }}>{getInitials(row.name)}</div>
+                          <span className="text-sm font-bold text-foreground">{row.name}</span>
                         </div>
                         <div className="grid grid-cols-4 gap-2">
                           {mealNames.map(n => (
-                            <div key={n} className={`rounded-lg p-2.5 text-center ${isManagerMealCellInvalid(row, n) ? 'bg-red-50 ring-1 ring-red-300' : isManagerMealCellDirty(row, n) ? 'bg-[#eaf3ff] ring-1 ring-[#2f80ed]/35' : 'bg-[#f8faff]'}`}>
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">{mealLabels[n].slice(0, 4)}{isManagerMealCellDirty(row, n) && <span className="ml-1 text-[#2f80ed]">•</span>}</p>
+                            <div key={n} className={`rounded-lg p-2.5 text-center ${isManagerMealCellInvalid(row, n) ? 'bg-destructive/10 ring-1 ring-destructive/20' : isManagerMealCellDirty(row, n) ? 'bg-muted ring-1 ring-primary/20' : 'bg-muted'}`}>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{mealLabels[n].slice(0, 4)}{isManagerMealCellDirty(row, n) && <span className="ml-1 text-primary">•</span>}</p>
                               {isEditingRow ? (
                                 <input aria-label={`${row.name} ${mealLabels[n]} quantity`} aria-invalid={isManagerMealCellInvalid(row, n)} type="number" min={0} max={21} step={getMealBaseValue(n)} inputMode="decimal" value={getManagerDraftStr(row.id, n, row.meals[n])}
                                   onChange={e => updateManagerMealDraft(row, n, e.target.value)}
-                                  className={`mt-1 h-9 w-full rounded-lg border bg-white px-1 text-center text-sm font-semibold tabular-nums text-[#172554] outline-none focus:ring-2 ${isManagerMealCellInvalid(row, n) ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : isManagerMealCellDirty(row, n) ? 'border-[#2f80ed]/60 focus:ring-[#2f80ed]/10' : 'border-[#d8e6f8] focus:border-[#2f80ed]/60 focus:ring-[#2f80ed]/10'}`} />
+                                  className={`mt-1 h-9 w-full rounded-lg border bg-background px-1 text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:ring-2 ${isManagerMealCellInvalid(row, n) ? 'border-destructive/30 focus:border-destructive/30 focus:ring-destructive/20' : isManagerMealCellDirty(row, n) ? 'border-border focus:ring-primary/20' : 'border-border focus:border-primary focus:ring-primary/20'}`} />
                               ) : (
-                                <span className={`mt-1 inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-sm font-semibold ${row.meals[n] > 0 ? 'bg-[#e7f1ff] text-[#2f80ed]' : 'bg-[#f1f3f5] text-[#adb5bd]'}`}>{row.meals[n]}</span>
+                                <span className={`mt-1 inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-sm font-semibold ${row.meals[n] > 0 ? 'bg-muted text-primary' : 'bg-muted text-muted-foreground'}`}>{row.meals[n]}</span>
                               )}
                             </div>
                           ))}
-                          <div className="rounded-lg bg-gradient-to-br from-[#2f80ed]/10 to-[#58d68d]/10 p-2.5 text-center">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Total</p>
-                            <span className="mt-1 inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-sm font-semibold text-[#172554]">{isEditingRow ? draftTotal : total}</span>
+                          <div className="rounded-lg r bg-primary/10  p-2.5 text-center">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Total</p>
+                            <span className="mt-1 inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-sm font-semibold text-foreground">{isEditingRow ? draftTotal : total}</span>
                           </div>
                         </div>
                       </div>
                     )
-                  }) : <div className="py-8 text-center text-sm font-bold text-[#6b7a99]">No member meals found.</div>}
+                  }) : <div className="py-8 text-center text-sm font-bold text-muted-foreground">No member meals found.</div>}
               </div>
 
               {/* Desktop/Tablet Table */}
-              <div className="hidden sm:block overflow-x-auto monthly-bills-table-scroll border-t border-[#e6ebf4]">
+              <div className="hidden sm:block overflow-x-auto monthly-bills-table-scroll border-t border-border">
                 <table className="w-full min-w-[560px] border-separate border-spacing-0">
                   <thead>
-                    <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-                      <th className="sticky left-0 z-20 w-[138px] whitespace-nowrap border-b border-[#e6ebf4] bg-[#f8faff] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:static sm:w-auto sm:px-4 sm:py-4 sm:text-[11px]">Member</th>
-                      {mealNames.map(n => <th key={n} className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]"><span className="inline-flex items-center gap-1 sm:gap-1.5"><span className="text-[#2f80ed]">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></span></th>)}
-                      <th className="whitespace-nowrap border-b border-[#e6ebf4] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:px-4 sm:py-4 sm:text-[11px]">Total</th>
+                    <tr className="border-b border-border bg-muted">
+                      <th className="sticky left-0 z-20 w-[138px] whitespace-nowrap border-b border-border bg-muted px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:static sm:w-auto sm:px-4 sm:py-4 sm:text-[11px]">Member</th>
+                      {mealNames.map(n => <th key={n} className="whitespace-nowrap border-b border-border px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:px-4 sm:py-4 sm:text-[11px]"><span className="inline-flex items-center gap-1 sm:gap-1.5"><span className="text-primary">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></span></th>)}
+                      <th className="whitespace-nowrap border-b border-border px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:px-4 sm:py-4 sm:text-[11px]">Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#e6ebf4]">
-                    {sheetLoading ? <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-[#6b7a99]">Loading...</td></tr>
-                    : sheetError ? <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-red-500">{sheetError}</td></tr>
+                  <tbody className="divide-y divide-border">
+                    {sheetLoading ? <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-muted-foreground">Loading...</td></tr>
+                    : sheetError ? <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-destructive">{sheetError}</td></tr>
                     : memberMealRows.length ? memberMealRows.map(row => {
                         const isEditingRow = isManager && isEditingMealSheet && (!isManagerAiReview || aiTargetMemberId === row.id)
                         const total = mealNames.reduce((s, n) => s + row.meals[n], 0)
                         const draftTotal = mealNames.reduce((s, n) => s + parseNum(getManagerDraftStr(row.id, n, row.meals[n])), 0)
                         const bgColor = avatarColor(row.name)
                         return (
-                          <tr key={row.id} className="transition hover:bg-[#f8faff]">
-                            <td className="sticky left-0 z-10 border-b border-[#e6ebf4] bg-white px-3 py-3 sm:static sm:border-b-0 sm:px-4 sm:py-3.5">
+                          <tr key={row.id} className="transition hover:bg-muted">
+                            <td className="sticky left-0 z-10 border-b border-border bg-background px-3 py-3 sm:static sm:border-b-0 sm:px-4 sm:py-3.5">
                               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold sm:text-xs" style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}>{getInitials(row.name)}</div>
-                                <span className="min-w-0 max-w-[96px] truncate text-xs font-bold text-[#172554] sm:max-w-none sm:text-sm">{row.name}</span>
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold sm:text-xs" style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: bgColor }}>{getInitials(row.name)}</div>
+                                <span className="min-w-0 max-w-[96px] truncate text-xs font-bold text-foreground sm:max-w-none sm:text-sm">{row.name}</span>
                               </div>
                             </td>
                             {mealNames.map(n => (
-                              <td key={n} className="border-b border-[#e6ebf4] px-3 py-3 text-center sm:border-b-0 sm:px-4 sm:py-3.5">
+                              <td key={n} className="border-b border-border px-3 py-3 text-center sm:border-b-0 sm:px-4 sm:py-3.5">
                                 {isEditingRow ? (
                                   <input aria-label={`${row.name} ${mealLabels[n]} quantity`} aria-invalid={isManagerMealCellInvalid(row, n)} type="number" min={0} max={21} step={getMealBaseValue(n)} inputMode="decimal" value={getManagerDraftStr(row.id, n, row.meals[n])}
                                     onChange={e => updateManagerMealDraft(row, n, e.target.value)}
-                                    className={`h-9 w-16 rounded-lg border bg-white px-2 text-center text-sm font-semibold tabular-nums text-[#172554] outline-none focus:ring-2 lg:w-20 ${isManagerMealCellInvalid(row, n) ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-100' : isManagerMealCellDirty(row, n) ? 'border-[#2f80ed]/60 bg-[#f3f8ff] ring-2 ring-[#2f80ed]/10' : 'border-[#d8e6f8] focus:border-[#2f80ed]/60 focus:ring-[#2f80ed]/10'}`} />
+                                    className={`h-9 w-16 rounded-lg border bg-background px-2 text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:ring-2 lg:w-20 ${isManagerMealCellInvalid(row, n) ? 'border-destructive/30 bg-destructive/10 focus:border-destructive/30 focus:ring-destructive/20' : isManagerMealCellDirty(row, n) ? 'border-border bg-muted ring-2 ring-primary/20' : 'border-border focus:border-primary focus:ring-primary/20'}`} />
                                 ) : (
-                                  <span className={`inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-semibold ${row.meals[n] > 0 ? 'bg-[#e7f1ff] text-[#2f80ed]' : 'bg-[#f1f3f5] text-[#adb5bd]'}`}>{row.meals[n]}</span>
+                                  <span className={`inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-semibold ${row.meals[n] > 0 ? 'bg-muted text-primary' : 'bg-muted text-muted-foreground'}`}>{row.meals[n]}</span>
                                 )}
                               </td>
                             ))}
-                            <td className="border-b border-[#e6ebf4] px-3 py-3 text-center sm:border-b-0 sm:px-4 sm:py-3.5">
-                              <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed]/10 to-[#58d68d]/10 px-2 text-sm font-semibold text-[#172554]">{isEditingRow ? draftTotal : total}</span>
+                            <td className="border-b border-border px-3 py-3 text-center sm:border-b-0 sm:px-4 sm:py-3.5">
+                              <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg  bg-primary/10  px-2 text-sm font-semibold text-foreground">{isEditingRow ? draftTotal : total}</span>
                             </td>
                           </tr>
                         )
-                      }) : <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-[#6b7a99]">No member meals found.</td></tr>}
+                      }) : <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-muted-foreground">No member meals found.</td></tr>}
                   </tbody>
                   {memberMealRows.length > 0 && (
                     <tfoot>
-                      <tr className="border-t-2 border-[#d8e6f8] bg-[#f8faff]">
-                        <td className="sticky left-0 z-10 bg-[#f8faff] px-3 py-3 sm:static sm:px-4 sm:py-3.5"><span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99] sm:gap-2 sm:text-xs"><Users size={14} /><span>{memberMealRows.length}</span><span className="hidden sm:inline"> Members</span></span></td>
-                        {mealNames.map(n => <td key={n} className="px-3 py-3 text-center sm:px-4 sm:py-3.5"><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#2f80ed] px-2 text-sm font-semibold text-white shadow-sm">{displayedMealTotals[n]}</span></td>)}
-                        <td className="px-3 py-3 text-center sm:px-4 sm:py-3.5"><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#2f80ed] to-[#58d68d] px-2 text-sm font-semibold text-white shadow-sm">{mealNames.reduce((s, n) => s + displayedMealTotals[n], 0)}</span></td>
+                      <tr className="border-t-2 border-border bg-muted">
+                        <td className="sticky left-0 z-10 bg-muted px-3 py-3 sm:static sm:px-4 sm:py-3.5"><span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:gap-2 sm:text-xs"><Users size={14} /><span>{memberMealRows.length}</span><span className="hidden sm:inline"> Members</span></span></td>
+                        {mealNames.map(n => <td key={n} className="px-3 py-3 text-center sm:px-4 sm:py-3.5"><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-primary px-2 text-sm font-semibold text-primary-foreground ">{displayedMealTotals[n]}</span></td>)}
+                        <td className="px-3 py-3 text-center sm:px-4 sm:py-3.5"><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg  bg-primary  px-2 text-sm font-semibold text-primary-foreground ">{mealNames.reduce((s, n) => s + displayedMealTotals[n], 0)}</span></td>
                       </tr>
                     </tfoot>
                   )}
@@ -670,14 +670,14 @@ export default function MealsPage() {
               </div>
 
               {isManager && isEditingMealSheet && (
-                <div className="sticky bottom-3 z-30 mt-4 flex flex-col gap-3 rounded-xl border border-[#c8dcf8] bg-white/95 p-3 shadow-[0_14px_36px_rgba(23,37,84,0.18)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:p-4" aria-live="polite">
+                <div className="sticky bottom-3 z-30 mt-4 flex flex-col gap-3 rounded-xl border border-border bg-background p-3  backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:p-4" aria-live="polite">
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-[#172554]">{managerHasInvalidDraft ? 'Some quantities need attention' : managerDirtyUpdates.length ? `${managerDirtyUpdates.length} unsaved ${managerDirtyUpdates.length === 1 ? 'change' : 'changes'}` : isManagerAiReview ? 'AI entry is ready to confirm' : 'No changes yet'}</p>
-                    <p className="mt-0.5 text-[11px] font-semibold text-[#6b7a99]">{managerHasInvalidDraft ? 'Use 0 to turn a meal off, or enter a value up to 21.' : 'All changed cells will be saved together.'}</p>
+                    <p className="text-xs font-bold text-foreground">{managerHasInvalidDraft ? 'Some quantities need attention' : managerDirtyUpdates.length ? `${managerDirtyUpdates.length} unsaved ${managerDirtyUpdates.length === 1 ? 'change' : 'changes'}` : isManagerAiReview ? 'AI entry is ready to confirm' : 'No changes yet'}</p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{managerHasInvalidDraft ? 'Use 0 to turn a meal off, or enter a value up to 21.' : 'All changed cells will be saved together.'}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
-                    <Button type="button" variant="outline" disabled={savingMealSheet} onClick={() => isManagerAiReview ? cancelAiMealReview() : cancelEditingMealSheet()} className="h-10 gap-2 rounded-lg border-[#d8e6f8] px-4 text-xs font-semibold text-[#6b7a99]"><X size={14} /> Cancel</Button>
-                    <Button type="button" disabled={savingMealSheet || managerHasInvalidDraft || (!managerDirtyUpdates.length && !isManagerAiReview)} onClick={saveManagerMealSheet} className="h-10 gap-2 rounded-lg bg-[#2f80ed] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#246fd0] disabled:opacity-50">{savingMealSheet ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}{savingMealSheet ? 'Saving...' : isManagerAiReview ? 'Confirm Entry' : 'Save All Changes'}</Button>
+                    <Button type="button" variant="outline" disabled={savingMealSheet} onClick={() => isManagerAiReview ? cancelAiMealReview() : cancelEditingMealSheet()} className="h-10 gap-2 rounded-lg border-border px-4 text-xs font-semibold text-muted-foreground"><X size={14} /> Cancel</Button>
+                    <Button type="button" disabled={savingMealSheet || managerHasInvalidDraft || (!managerDirtyUpdates.length && !isManagerAiReview)} onClick={saveManagerMealSheet} className="h-10 gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground  hover:bg-primary disabled:opacity-50">{savingMealSheet ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}{savingMealSheet ? 'Saving...' : isManagerAiReview ? 'Confirm Entry' : 'Save All Changes'}</Button>
                   </div>
                 </div>
               )}
@@ -686,10 +686,10 @@ export default function MealsPage() {
         )}
 
         {isManager && (
-          <div className="mt-6 rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-sm">
+          <div className="mt-6 rounded-xl border border-border bg-background p-5 ">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 shadow-sm"><Shield size={20} className="text-[#f59e0b]" /></div>
-              <div><h3 className="text-sm font-semibold text-[#172554]">Manager Controls</h3><p className="text-xs font-semibold text-[#6b7a99]">Managers can always edit member meals regardless of deadline. Use "Set Meal Deadline" above to configure the meal window.</p></div>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10"><Shield size={20} className="text-primary" /></div>
+              <div><h3 className="text-sm font-semibold text-foreground">Manager Controls</h3><p className="text-xs font-semibold text-muted-foreground">Managers can always edit member meals regardless of deadline. Use "Set Meal Deadline" above to configure the meal window.</p></div>
             </div>
           </div>
         )}

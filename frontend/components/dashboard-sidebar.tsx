@@ -81,23 +81,14 @@ const adminItems = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
-const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e']
 const sidebarIconButtonClass =
   'dashboard-icon-button flex h-9 w-9 items-center justify-center rounded-lg border-0 bg-transparent shadow-none'
 const sidebarActiveLinkClass =
-  'bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] text-white shadow-[0_8px_20px_var(--brand-shadow)]'
+  'bg-transparent text-primary'
 const sidebarInactiveLinkClass =
-  'text-muted-foreground hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)]'
+  'bg-transparent text-muted-foreground hover:text-primary'
 const sidebarLogoutButtonClass =
-  'border-red-200 bg-red-50 text-red-600 shadow-[0_8px_18px_rgba(220,38,38,0.08)] hover:border-red-300 hover:bg-red-600 hover:text-white'
-
-const avatarColor = (name: string) => {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
+  'border-destructive/30 bg-transparent text-destructive shadow-none hover:bg-destructive hover:text-primary-foreground'
 
 const getInitials = (name: string) => {
   return name
@@ -134,13 +125,13 @@ function SidebarLinkContent({ icon: Icon, label, isActive, collapsed }: SidebarL
   return (
     <>
       <div className={`sidebar-nav-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-[background-color,color] duration-200 ease-out motion-reduce:transition-none ${
-        isActive ? 'bg-white/20' : 'bg-[var(--dashboard-surface-subtle)] group-hover:bg-[var(--brand-soft)]'
+        isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
       }`}>
         <Icon
           size={18}
           aria-hidden="true"
           className={`block h-[18px] w-[18px] shrink-0 transition-colors duration-200 ease-out motion-reduce:transition-none ${
-            isActive ? 'text-white' : 'text-[var(--dashboard-muted)] group-hover:text-[var(--brand)]'
+            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
           }`}
         />
       </div>
@@ -175,7 +166,6 @@ export function DashboardSidebar() {
           ? memberItems
           : onboardingItems
 
-  const avatarBg = avatarColor(user?.name || 'User')
   const sidebarWidth = collapsed ? 'w-[72px]' : 'w-[280px]'
 
   useEffect(() => {
@@ -185,7 +175,7 @@ export function DashboardSidebar() {
   const content = (
     <aside className={`dashboard-sidebar flex h-full ${sidebarWidth} flex-col overflow-hidden transition-[width] duration-300`}>
       {/* Logo Area */}
-      <div className="relative flex h-[72px] items-center border-b border-[var(--dashboard-line)] px-5">
+      <div className="relative flex h-16 shrink-0 items-center border-b border-[var(--dashboard-line)] px-5">
         {collapsed ? (
           /* When collapsed: center the expand button (desktop only) */
           <div className="hidden lg:flex w-full items-center justify-center">
@@ -232,7 +222,7 @@ export function DashboardSidebar() {
                 }}
                 aria-current={isActive ? 'page' : undefined}
                 aria-busy={pendingHref === item.href || undefined}
-                className={`group grid h-[50px] grid-cols-[36px_minmax(0,1fr)] items-center gap-3.5 rounded-xl px-3.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                className={`group grid h-11 grid-cols-[36px_minmax(0,1fr)] items-center gap-3.5 rounded-md px-3.5 text-sm font-medium transition-colors duration-150 ${
                   isVisuallyActive ? sidebarActiveLinkClass : sidebarInactiveLinkClass
                 } ${collapsed ? 'grid-cols-[36px] justify-center px-0' : ''}`}
                 title={collapsed ? item.label : undefined}
@@ -251,21 +241,14 @@ export function DashboardSidebar() {
 
       {/* User Profile + Logout */}
       <div className="border-t border-[var(--dashboard-line)] p-4">
-        <div className={`dashboard-subtle-card flex items-center gap-3 rounded-xl p-3 ${collapsed ? 'justify-center px-2' : ''}`}>
-          <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold shadow-sm"
-            style={{
-              backgroundColor: `${avatarBg}18`,
-              borderColor: `${avatarBg}55`,
-              color: avatarBg,
-            }}
-          >
+        <div className={`flex items-center gap-3 rounded-md p-2 ${collapsed ? 'justify-center px-2' : ''}`}>
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-medium text-primary">
             {getInitials(user?.name || 'User')}
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-foreground">{user?.name || 'Mess User'}</p>
-              <p className="truncate text-xs font-semibold text-muted-foreground">{user?.role || 'Member'}</p>
+              <p className="truncate text-sm font-medium text-foreground">{user?.name || 'Mess User'}</p>
+              <p className="truncate text-xs text-muted-foreground">{user?.role || 'Member'}</p>
             </div>
           )}
         </div>
@@ -274,7 +257,7 @@ export function DashboardSidebar() {
             logout()
             router.push('/login')
           }}
-          className={`mt-3 flex h-[46px] w-full items-center justify-center gap-2.5 rounded-xl border text-sm font-bold transition ${sidebarLogoutButtonClass} ${collapsed ? 'px-0' : ''}`}
+          className={`mt-2 flex h-10 w-full items-center justify-center gap-2.5 rounded-md border text-sm font-medium transition-colors ${sidebarLogoutButtonClass} ${collapsed ? 'px-0' : ''}`}
           title={collapsed ? 'Logout' : undefined}
         >
           <LogOut size={16} className="shrink-0" />
@@ -293,11 +276,11 @@ export function DashboardSidebar() {
       {/* Overlay - visible on mobile and tablet (hidden on desktop) */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
-          <div className="absolute inset-0 bg-[#120a33]/65 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="relative h-full w-[280px] shadow-[0_28px_80px_rgba(18,10,51,0.35)]">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
+          <div className="relative h-full w-[280px]">
             <button
               type="button"
-              className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] text-white shadow-[0_8px_20px_var(--brand-shadow)]"
+              className="dashboard-icon-button absolute right-3 top-3 z-10 flex size-8 items-center justify-center rounded-md"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
             >

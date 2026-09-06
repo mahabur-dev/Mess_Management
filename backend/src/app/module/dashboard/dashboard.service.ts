@@ -405,7 +405,7 @@ export class DashboardService {
   }
 
   /**
-   * Get daily expense and payment (income) data for the monthly overview chart
+   * Get daily bazar, deposit, and meal data for the monthly overview chart.
    */
   async getMonthlyOverview(
     messId: string,
@@ -452,12 +452,32 @@ export class DashboardService {
       orderBy: [{ payment_date: 'asc' }, { created_at: 'asc' }],
     });
 
-    // Build a map of dates within the month range
-    const dailyMap = new Map<string, { expense: number; income: number }>();
+    const meals = await this.prisma.meal.findMany({
+      where: {
+        mess_id: messId,
+        scheduled_date: { gte: start, lt: end },
+        status: { not: 'CANCELLED' },
+      },
+      select: {
+        name: true,
+        scheduled_date: true,
+        attendances: {
+          where: { status: AttendanceStatus.ON },
+          select: { guests: true },
+        },
+      },
+      orderBy: { scheduled_date: 'asc' },
+    });
+
+    // Build a map of dates within the month range.
+    const dailyMap = new Map<
+      string,
+      { expense: number; income: number; meals: number }
+    >();
     const current = new Date(start);
     while (current < end) {
       const key = current.toISOString().slice(0, 10); // YYYY-MM-DD
-      dailyMap.set(key, { expense: 0, income: 0 });
+      dailyMap.set(key, { expense: 0, income: 0, meals: 0 });
       current.setDate(current.getDate() + 1);
     }
 
@@ -481,8 +501,30 @@ export class DashboardService {
       }
     }
 
-    // Format for chart: each data point has day label, income, expense
-    const data: Array<{ day: string; income: number; expense: number }> = [];
+    // Aggregate all enabled meal attendance by date.
+    for (const meal of meals) {
+      const key = meal.scheduled_date.toISOString().slice(0, 10);
+      const entry = dailyMap.get(key);
+      if (!entry) continue;
+
+      entry.meals += meal.attendances.reduce(
+        (sum, attendance) =>
+          sum +
+          calculateTotalMeals(
+            AttendanceStatus.ON,
+            meal.name,
+            attendance.guests,
+          ),
+        0,
+      );
+    }
+
+    const data: Array<{
+      day: string;
+      income: number;
+      expense: number;
+      meals: number;
+    }> = [];
     for (const [dateStr, values] of dailyMap) {
       const day = new Date(dateStr + 'T00:00:00');
       const label = `${String(day.getDate()).padStart(2, '0')} ${day.toLocaleString('en', { month: 'short' })}`;
@@ -490,6 +532,7 @@ export class DashboardService {
         day: label,
         income: Number(values.income.toFixed(2)),
         expense: Number(values.expense.toFixed(2)),
+        meals: Number(values.meals.toFixed(2)),
       });
     }
 
@@ -520,20 +563,7 @@ export class DashboardService {
       orderBy: { _sum: { amount: 'desc' } },
     });
 
-    const categoryColors: Record<string, string> = {
-      FOOD: '#2f80ed',
-      GROCERY: '#58d68d',
-      UTILITY: '#ffb84d',
-      RENT: '#ff4d4f',
-      GAS: '#8b5cf6',
-      ELECTRICITY: '#f59e0b',
-      WIFI: '#14b8a6',
-      CLEANER: '#ec4899',
-      MAINTENANCE: '#6366f1',
-      BUABILL: '#f97316',
-      WATER: '#06b6d4',
-      OTHER: '#94a3b8',
-    };
+    const categoryColor = '#008b80';
 
     const totalAmount = expenses.reduce(
       (sum, e) => sum + Number(e._sum.amount ?? 0),
@@ -549,7 +579,7 @@ export class DashboardService {
             )
           : 0,
       amount: Number(e._sum.amount ?? 0),
-      color: categoryColors[e.category] || '#94a3b8',
+      color: categoryColor,
     }));
 
     return { data, totalAmount };

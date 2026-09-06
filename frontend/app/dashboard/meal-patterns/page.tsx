@@ -139,10 +139,10 @@ export default function MealPatternsPage() {
       <DashboardHeader title="Meal Patterns" description={isManager ? 'Set up automatic meal routines for every member' : 'Your simple, automatic meal planning'} showQuickAddButton={false} />
 
       <main className="p-4 sm:p-6 lg:p-8">
-        {message && <div role="status" className={`mb-5 rounded-xl border px-4 py-3 text-sm font-bold ${messageType === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300' : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300'}`}>{message}</div>}
+        {message && <div role="status" className={`mb-5 rounded-xl border px-4 py-3 text-sm font-bold ${messageType === 'error' ? 'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive' : 'border-primary/30 bg-primary/10 text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary'}`}>{message}</div>}
 
         {loading ? <PageSkeleton /> : pageError ? (
-          <section className="dashboard-card py-14 text-center"><CalendarClock className="mx-auto size-10 text-rose-500" /><h2 className="mt-4 text-lg font-semibold text-foreground">Could not load meal patterns</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">{pageError instanceof Error ? pageError.message : 'Please try again.'}</p><button type="button" onClick={() => void refreshPatterns()} className="mt-5 min-h-11 rounded-xl bg-[var(--brand)] px-5 text-sm font-semibold text-white">Try again</button></section>
+          <section className="dashboard-card py-14 text-center"><CalendarClock className="mx-auto size-10 text-destructive" /><h2 className="mt-4 text-lg font-semibold text-foreground">Could not load meal patterns</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">{pageError instanceof Error ? pageError.message : 'Please try again.'}</p><button type="button" onClick={() => void refreshPatterns()} className="mt-5 min-h-11 rounded-xl bg-[var(--brand)] px-5 text-sm font-semibold text-primary-foreground">Try again</button></section>
         ) : !activeMess ? (
           <section className="dashboard-card py-14 text-center"><UsersRound className="mx-auto size-10 text-muted-foreground" /><h2 className="mt-4 text-lg font-semibold text-foreground">Join a mess first</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">Meal patterns become available after your mess membership is active.</p></section>
         ) : !visibleMemberships.length ? (
@@ -150,10 +150,10 @@ export default function MealPatternsPage() {
         ) : isManager ? (
           <>
             <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-              <StatCard label="Active" value={stats.active} icon={CircleCheck} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300" />
-              <StatCard label="Paused" value={stats.paused} icon={CirclePause} tone="bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300" />
-              <StatCard label="Draft" value={stats.draft} icon={CircleDashed} tone="bg-sky-100 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300" />
-              <StatCard label="Not set" value={stats.notSet} icon={UsersRound} tone="bg-slate-100 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300" />
+              <StatCard label="Active" value={stats.active} icon={CircleCheck} tone="bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary" />
+              <StatCard label="Paused" value={stats.paused} icon={CirclePause} tone="bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary" />
+              <StatCard label="Draft" value={stats.draft} icon={CircleDashed} tone="bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary" />
+              <StatCard label="Not set" value={stats.notSet} icon={UsersRound} tone="bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground" />
             </div>
 
             <section className="dashboard-card mb-5 flex flex-col gap-4 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
@@ -163,12 +163,12 @@ export default function MealPatternsPage() {
                 {messes.length > 1 && (
                   <Select value={activeMess.id} onValueChange={(value) => { setActiveMessId(value); setSelectedMembershipId(null) }}>
                     <SelectTrigger aria-label="Choose mess" className="h-11 w-full min-w-44 rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 font-semibold shadow-none"><Building2 className="size-4 text-[var(--brand)]" /><SelectValue /></SelectTrigger>
-                    <SelectContent align="end" collisionPadding={16} className="rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface-raised)] p-1 shadow-[var(--dashboard-shadow-lg)]">{messes.map((mess) => <SelectItem key={mess.id} value={mess.id} className="min-h-10 rounded-lg font-bold">{mess.name}</SelectItem>)}</SelectContent>
+                    <SelectContent align="end" collisionPadding={16} className="rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface-raised)] p-1 ">{messes.map((mess) => <SelectItem key={mess.id} value={mess.id} className="min-h-10 rounded-lg font-bold">{mess.name}</SelectItem>)}</SelectContent>
                   </Select>
                 )}
                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
                   <SelectTrigger aria-label="Filter by pattern status" className="h-11 w-full min-w-44 rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 font-semibold shadow-none"><SlidersHorizontal className="size-4 text-[var(--brand)]" /><SelectValue /></SelectTrigger>
-                  <SelectContent align="end" collisionPadding={16} className="rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface-raised)] p-1 shadow-[var(--dashboard-shadow-lg)]">{statusOptions.map((option) => <SelectItem key={option.value} value={option.value} className="min-h-10 rounded-lg font-bold">{option.label}</SelectItem>)}</SelectContent>
+                  <SelectContent align="end" collisionPadding={16} className="rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface-raised)] p-1 ">{statusOptions.map((option) => <SelectItem key={option.value} value={option.value} className="min-h-10 rounded-lg font-bold">{option.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </section>

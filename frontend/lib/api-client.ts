@@ -943,7 +943,7 @@ class ApiClient {
   }
 
   getMonthlyOverview(messId: string, month?: string) {
-    return this.request<Array<{ day: string; income: number; expense: number }>>(`/dashboard/mess/${messId}/monthly-overview`, { params: { month } })
+    return this.request<Array<{ day: string; income: number; expense: number; meals: number }>>(`/dashboard/mess/${messId}/monthly-overview`, { params: { month } })
   }
 
   getExpenseBreakdown(messId: string, month?: string) {

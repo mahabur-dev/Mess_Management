@@ -1,231 +1,35 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Check } from 'lucide-react'
+
+import { useAuth } from '@/app/context/auth-context'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { MemberJoinRequestModal } from '@/components/member-join-request-modal'
-import { DashboardPanel } from '@/components/dashboard/dashboard-panel'
+import { MonthlyOverviewChart } from '@/components/dashboard/monthly-overview-chart'
 import { LoadingSkeleton } from '@/components/dashboard/page-skeleton'
-import { useAuth } from '@/app/context/auth-context'
-import { type Mess } from '@/lib/api-client'
-import { APP_FEATURES } from '@/lib/feature-flags'
-import { useRouter } from 'next/navigation'
+import { RecentActivityTable } from '@/components/dashboard/recent-activity-table'
+import { DashboardStatCard } from '@/components/dashboard/stat-card'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  useMesses,
-  useMyMemberJoinRequests,
-  useMessDashboard,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
   useAdminDashboard,
+  useDashboardActivity,
+  useMessDashboard,
+  useMesses,
   useMonthlyOverview,
-  useExpenseBreakdown,
-  useWeeklyMealCount,
+  useMyMemberJoinRequests,
 } from '@/hooks/use-dashboard-data'
-import {
-  BadgeDollarSign,
-  Bell,
-  Building2,
-  Calculator,
-  CalendarCheck,
-  Check,
-  ClipboardList,
-  CreditCard,
-  HandCoins,
-  Home,
-  ReceiptText,
-  ShoppingCart,
-  UtensilsCrossed,
-  Users,
-  UserPlus,
-  WalletCards,
-  ArrowUpRight,
-  ShieldCheck,
-} from 'lucide-react'
-import { useMemo, useState, type ElementType, type ReactNode } from 'react'
-
-// ─── Lazy-loaded Chart Components ─────────────────────────────
-const MonthlyOverviewChart = dynamic(
-  () =>
-    import('@/components/dashboard/monthly-overview-chart').then(
-      (mod) => ({ default: mod.MonthlyOverviewChart }),
-    ),
-  { ssr: false },
-)
-
-const ExpenseBreakdownChart = dynamic(
-  () =>
-    import('@/components/dashboard/expense-breakdown-chart').then(
-      (mod) => ({ default: mod.ExpenseBreakdownChart }),
-    ),
-  { ssr: false },
-)
-
-const WeeklyMealsChart = dynamic(
-  () =>
-    import('@/components/dashboard/weekly-meals-chart').then(
-      (mod) => ({ default: mod.WeeklyMealsChart }),
-    ),
-  { ssr: false },
-)
-
-const quickActions = [
-  ['Add Member', Users, '/dashboard/member_management'],
-  ['Add Expense', WalletCards, '/dashboard/finance'],
-  ['Add Meal Plan', UtensilsCrossed, '/dashboard/meals'],
-  ['Send Notice', Bell, '/dashboard/notices'],
-] as const
-
-const adminQuickActions = [
-  ['Manage Users', Users, '/dashboard/users'],
-  ['Mess Requests', ClipboardList, '/dashboard/mess_requests'],
-  ['All Messes', Home, '/dashboard/mess_management'],
-  ['Complaints', Bell, '/dashboard/complaints'],
-  ...(APP_FEATURES.subscriptions ? [['Subscriptions', BadgeDollarSign, '/dashboard/subscriptions'] as const] : []),
-  ['Reports', ReceiptText, '/dashboard/reports'],
-] as const
-
-const dashboardQuickActionButtonClass =
-  'dashboard-subtle-card group rounded-xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--dashboard-hover)]'
-const dashboardQuickActionIconClass =
-  'mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--dashboard-surface)] text-[var(--brand)] shadow-sm transition group-hover:bg-[var(--brand)] group-hover:text-white group-hover:shadow-[0_10px_22px_var(--brand-shadow)]'
-
-const sharedMobileQuickActions = [
-  {
-    label: 'Add Meals',
-    href: '/dashboard/meals',
-    icon: UtensilsCrossed,
-    tone: 'blue',
-  },
-  {
-    label: 'Add Expenses',
-    href: '/dashboard/finance',
-    icon: WalletCards,
-    tone: 'green',
-  },
-  {
-    label: 'Add Deposit',
-    href: '/dashboard/payments',
-    icon: CreditCard,
-    tone: 'orange',
-  },
-  {
-    label: 'Monthly Bill',
-    href: '/dashboard/monthly-bills',
-    icon: ClipboardList,
-    tone: 'purple',
-  },
-  {
-    label: 'Send Notice',
-    href: '/dashboard/notices',
-    icon: Bell,
-    tone: 'rose',
-  },
-] as const
-
-const mobileQuickActions = [
-  ...sharedMobileQuickActions,
-  {
-    label: 'Meal Pattern',
-    href: '/dashboard/meal-patterns',
-    icon: CalendarCheck,
-    tone: 'cyan',
-  },
-] as const
-
-const managerMobileQuickActions = [
-  {
-    label: 'Add Member',
-    href: '/dashboard/member_management',
-    icon: UserPlus,
-    tone: 'blue',
-  },
-  ...sharedMobileQuickActions,
-] as const
-
-const adminMobileQuickActions = [
-  {
-    label: 'Manage Users',
-    href: '/dashboard/users',
-    icon: Users,
-    tone: 'blue',
-  },
-  {
-    label: 'Mess Requests',
-    href: '/dashboard/mess_requests',
-    icon: ClipboardList,
-    tone: 'orange',
-  },
-  {
-    label: 'All Messes',
-    href: '/dashboard/mess_management',
-    icon: Home,
-    tone: 'green',
-  },
-  {
-    label: 'Complaints',
-    href: '/dashboard/complaints',
-    icon: Bell,
-    tone: 'rose',
-  },
-  ...(APP_FEATURES.subscriptions ? [{ label: 'Subscriptions', href: '/dashboard/subscriptions', icon: BadgeDollarSign, tone: 'purple' as const }] : []),
-  {
-    label: 'Reports',
-    href: '/dashboard/reports',
-    icon: ReceiptText,
-    tone: 'cyan',
-  },
-] as const
-
-const mobileActionTones = {
-  blue: {
-    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
-    icon: 'bg-[var(--brand-soft)] text-[var(--brand)]',
-    ring: 'bg-[var(--brand)]/10',
-  },
-  green: {
-    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
-    icon: 'bg-[#e8fff2] text-[#22b66f]',
-    ring: 'bg-[#58d68d]/12',
-  },
-  orange: {
-    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
-    icon: 'bg-[#fff3df] text-[#f59e0b]',
-    ring: 'bg-[#ffb84d]/14',
-  },
-  purple: {
-    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
-    icon: 'bg-[#efe9ff] text-[#6f3df4]',
-    ring: 'bg-[#6f3df4]/10',
-  },
-  cyan: {
-    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
-    icon: 'bg-[#e0f2fe] text-[#0284c7]',
-    ring: 'bg-[#19b6ff]/12',
-  },
-  rose: {
-    shell: 'from-[var(--dashboard-surface-subtle)] to-[var(--dashboard-surface)]',
-    icon: 'bg-[#ffe8f0] text-[#f43f7f]',
-    ring: 'bg-[#f43f7f]/12',
-  },
-} as const
-
-type MobileAction = (
-  | typeof mobileQuickActions
-  | typeof managerMobileQuickActions
-  | typeof adminMobileQuickActions
-)[number]
-type MobileStat = readonly [
-  string,
-  string | number,
-  string,
-  ElementType,
-  string,
-  string,
-  string,
-]
-
-type MobileNotice = {
-  id: string
-  title: string
-  type?: string | null
-}
+import type { Mess } from '@/lib/api-client'
 
 function currentMonthValue() {
   const date = new Date()
@@ -237,248 +41,13 @@ function money(value: number | string | undefined | null) {
   return `৳ ${Number(value ?? 0).toLocaleString()}`
 }
 
-// ─── StatCard ─────────────────────────────────────────────────
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string
-  value: string | number
-  icon: ElementType
-}) {
-  return (
-    <div className="dashboard-card dashboard-stat-card group relative flex min-h-[100px] items-center overflow-hidden p-4">
-      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl transition group-hover:bg-[var(--brand)]/12" />
-      <div className="relative flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-            {label}
-          </p>
-          <p className="mt-2 text-2xl font-semibold leading-none tracking-tight text-foreground">
-            {value}
-          </p>
-        </div>
-        <span className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
-          <Icon size={20} strokeWidth={2.4} />
-        </span>
-      </div>
-    </div>
-  )
-}
-
-// ─── MiniStatCard ─────────────────────────────────────────────
-function MiniStatCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string
-  value: string | number
-  icon: ElementType
-}) {
-  return (
-    <div className="dashboard-card dashboard-stat-card group relative flex min-h-[96px] items-center overflow-hidden p-4">
-      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[var(--brand)]/8 blur-2xl" />
-      <div className="relative flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-            {label}
-          </p>
-          <p className="mt-2 text-2xl font-semibold leading-none text-foreground">{value}</p>
-        </div>
-        <div className="dashboard-stat-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
-          <Icon size={19} />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Main Dashboard Page ──────────────────────────────────────
-function MobileSection({
-  eyebrow,
-  title,
-  actionLabel,
-  onAction,
-  children,
-}: {
-  eyebrow?: string
-  title: string
-  actionLabel?: string
-  onAction?: () => void
-  children: ReactNode
-}) {
-  return (
-    <section className="dashboard-panel relative overflow-hidden rounded-[22px] p-4">
-      <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[#2f80ed]/8 blur-2xl" />
-      <div className="relative">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            {eyebrow && (
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">
-                {eyebrow}
-              </p>
-            )}
-            <h2 className="mt-1 text-[17px] font-semibold tracking-tight text-[#172554]">
-              {title}
-            </h2>
-          </div>
-
-          {actionLabel && onAction && (
-            <button
-              type="button"
-              onClick={onAction}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#e7f1ff] px-3 py-1.5 text-[11px] font-semibold text-[#2f80ed] transition active:scale-[0.97]"
-            >
-              {actionLabel}
-              <ArrowUpRight size={12} />
-            </button>
-          )}
-        </div>
-        {children}
-      </div>
-    </section>
-  )
-}
-
-function MobileQuickActions({
-  actions,
-  onNavigate,
-}: {
-  actions: readonly MobileAction[]
-  onNavigate: (href: string) => void
-}) {
-  const actionRows = Array.from(
-    { length: Math.ceil(actions.length / 3) },
-    (_, index) => actions.slice(index * 3, index * 3 + 3),
-  )
-
-  return (
-    <section className="dashboard-card relative overflow-hidden rounded-[24px] p-4">
-      <div className="absolute -right-8 -top-10 h-24 w-24 rounded-full bg-white/20 blur-xl" />
-      <div className="relative">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">
-              Start Here
-            </p>
-            <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-[#172554]">
-              Quick Actions
-            </h2>
-          </div>
-          <span className="rounded-full bg-[#f0f6ff] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">
-            Today
-          </span>
-        </div>
-
-        <div className="space-y-2.5">
-          {actionRows.map((row, rowIndex) => (
-            <div
-              key={`quick-action-row-${rowIndex}`}
-              className={`grid gap-2.5 ${row.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}
-            >
-              {row.map(({ label, href, icon: Icon, tone }) => {
-                const palette = mobileActionTones[tone]
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => onNavigate(href)}
-                    className={`group relative min-h-[96px] overflow-hidden rounded-[20px] bg-gradient-to-br ${palette.shell} p-2.5 text-center shadow-[0_8px_18px_rgba(65,103,153,0.08)] transition active:scale-[0.97]`}
-                  >
-                    <span
-                      className={`absolute -right-5 -top-5 h-12 w-12 rounded-full ${palette.ring} blur-sm transition group-active:scale-125`}
-                    />
-                    <span
-                      className={`relative mx-auto mb-2 grid h-10 w-10 place-items-center rounded-[14px] ${palette.icon} shadow-sm`}
-                    >
-                      <Icon size={18} strokeWidth={2.4} />
-                    </span>
-                    <span className="relative block text-[11px] font-semibold leading-tight text-[#172554]">
-                      {label}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function MobileOverviewGrid({ stats }: { stats: readonly MobileStat[] }) {
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {stats.map(([label, value, , Icon, , iconBg, iconColor], index) => (
-        <div
-          key={label}
-          className={`dashboard-subtle-card relative overflow-hidden rounded-[18px] p-3.5 ${
-            index === 0 ? 'col-span-2' : ''
-          }`}
-        >
-          <div className="absolute -right-7 -top-8 h-20 w-20 rounded-full bg-[#2f80ed]/6 blur-xl" />
-          <div className="relative flex items-start gap-3">
-            <span
-              className={`grid h-10 w-10 shrink-0 place-items-center rounded-[14px] ${iconBg} ${iconColor}`}
-            >
-              <Icon size={18} strokeWidth={2.35} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#7a8aaa]">
-                {label}
-              </p>
-              <p className="mt-1 truncate text-[18px] font-semibold leading-none tracking-tight text-[#172554]">
-                {value}
-              </p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function MobileNoticeList({
-  notices,
-  onNavigate,
-}: {
-  notices: readonly MobileNotice[]
-  onNavigate: (href: string) => void
-}) {
-  const fallbackNotices: MobileNotice[] = [
-    { id: 'fallback-1', title: 'Payment deadline reminder', type: 'PAYMENT' },
-    { id: 'fallback-2', title: 'Dinner will be served at 9 PM', type: 'MEAL' },
-  ]
-  const visibleNotices = notices.length ? notices : fallbackNotices
-
-  return (
-    <div className="space-y-2.5">
-      {visibleNotices.slice(0, 3).map((notice) => (
-        <button
-          key={notice.id}
-          type="button"
-          onClick={() => onNavigate('/dashboard/notices')}
-          className="dashboard-subtle-card flex w-full items-center gap-3 rounded-[16px] p-3 text-left transition hover:bg-[var(--dashboard-hover)] active:scale-[0.98]"
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#e7f1ff] text-[#2f80ed]">
-            <Bell size={17} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold text-[#172554]">
-              {notice.title}
-            </span>
-            <span className="mt-0.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#7a8aaa]">
-              {notice.type ?? 'NOTICE'}
-            </span>
-          </span>
-          <ArrowUpRight size={15} className="text-[#a0aec5]" />
-        </button>
-      ))}
-    </div>
-  )
+function formatDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+  }).format(date)
 }
 
 function NoMessOnboarding({
@@ -492,91 +61,107 @@ function NoMessOnboarding({
   requestPending: boolean
   requestLoading: boolean
 }) {
-  const platformBenefits = [
+  const benefits = [
     'Manage meals, deposits, expenses, and monthly bills in one place.',
     'Give every member the right access based on their role.',
-    'Keep records clear, organized, and ready whenever you need them.',
+    'Keep records organized and ready whenever you need them.',
   ]
 
   return (
-    <div className="space-y-5">
-      <section className="dashboard-panel relative overflow-hidden p-4 sm:p-5">
-        <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[var(--brand)]/8 blur-3xl" />
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex min-w-0 items-start gap-3.5 sm:items-center sm:gap-4">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-amber-200 bg-amber-50 text-amber-600 shadow-sm sm:h-12 sm:w-12">
-              <Home size={21} strokeWidth={2.2} />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold tracking-tight text-foreground">
-                No mess found
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Create your own mess or request access from an active mess manager.
-              </p>
+    <Card className="mx-auto max-w-4xl shadow-none">
+      <CardHeader className="border-b">
+        <p className="text-sm font-medium text-primary">Workspace setup</p>
+        <CardTitle className="text-xl">Connect your account to a mess</CardTitle>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          Create a new mess or request access from an active mess manager before
+          using the dashboard.
+        </p>
+      </CardHeader>
+      <CardContent className="grid gap-6 pt-6 md:grid-cols-[1fr_auto] md:items-end">
+        <div className="space-y-3">
+          {benefits.map((benefit) => (
+            <div key={benefit} className="flex items-start gap-3 text-sm">
+              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Check className="size-3" />
+              </span>
+              <span className="text-muted-foreground">{benefit}</span>
             </div>
-          </div>
-
-          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:w-auto">
-            <button
-              type="button"
-              onClick={onCreate}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] px-5 text-sm font-semibold text-white shadow-[0_10px_22px_var(--brand-shadow)] transition hover:-translate-y-0.5 hover:from-[var(--brand-darker)] hover:to-[var(--brand-dark)] hover:shadow-[0_14px_28px_var(--brand-shadow)] sm:min-w-[170px]"
-            >
-              <Building2 size={16} />
-              Create Mess
-            </button>
-            <button
-              type="button"
-              onClick={onRequestAccess}
-              disabled={requestLoading || requestPending}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-5 text-sm font-semibold text-[var(--brand)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:border-[var(--dashboard-line)] disabled:bg-[var(--dashboard-surface-subtle)] disabled:text-muted-foreground disabled:opacity-100 sm:min-w-[170px]"
-            >
-              <UserPlus size={16} />
-              {requestLoading
-                ? 'Checking Request'
-                : requestPending
-                  ? 'Request Pending'
-                  : 'Request Access'}
-            </button>
-          </div>
+          ))}
         </div>
-      </section>
+        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-1">
+          <Button onClick={onCreate}>Create mess</Button>
+          <Button
+            variant="outline"
+            onClick={onRequestAccess}
+            disabled={requestLoading || requestPending}
+          >
+            {requestLoading
+              ? 'Checking request'
+              : requestPending
+                ? 'Request pending'
+                : 'Request access'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
-      <section className="dashboard-panel relative overflow-hidden p-5 sm:p-7">
-        <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--brand)]/7 blur-3xl" />
-        <div className="relative grid gap-6 lg:grid-cols-[0.9fr_1.35fr] lg:items-center">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">
-              <ShieldCheck size={14} />
-              Built for better management
-            </span>
-            <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              Why use this platform?
-            </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Run your mess with less manual work, better visibility, and a dependable record for every member.
-            </p>
-          </div>
-
-          <div className="grid gap-3">
-            {platformBenefits.map((benefit) => (
-              <div
-                key={benefit}
-                className="dashboard-subtle-card flex items-start gap-3 rounded-xl p-3.5"
-              >
-                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--brand-soft)] text-[var(--brand)]">
-                  <Check size={14} strokeWidth={2.6} />
-                </span>
-                <p className="text-sm font-medium leading-6 text-foreground/85">
-                  {benefit}
-                </p>
-              </div>
+function AdminRecentExpenses({
+  expenses,
+}: {
+  expenses: Array<{
+    id: string
+    item_name?: string | null
+    category: string
+    amount: string | number
+    expense_date: string
+    mess?: { name: string }
+  }>
+}) {
+  return (
+    <Card className="gap-0 py-0 shadow-none">
+      <CardHeader className="border-b px-5 py-4">
+        <CardTitle className="text-base">Recent expense receipts</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-5">Expense</TableHead>
+              <TableHead>Mess</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="pr-5 text-right">Amount</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {!expenses.length ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-28 text-center text-muted-foreground">
+                  No recent expense receipts.
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {expenses.slice(0, 5).map((expense) => (
+              <TableRow key={expense.id}>
+                <TableCell className="pl-5 font-medium">
+                  {expense.item_name || expense.category}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {expense.mess?.name || '—'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(expense.expense_date)}
+                </TableCell>
+                <TableCell className="pr-5 text-right font-medium tabular-nums">
+                  {money(expense.amount)}
+                </TableCell>
+              </TableRow>
             ))}
-          </div>
-        </div>
-      </section>
-    </div>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -587,38 +172,26 @@ export default function DashboardPage() {
   const [memberRequestOpen, setMemberRequestOpen] = useState(false)
   const [memberRequestSubmitted, setMemberRequestSubmitted] = useState(false)
 
-  // ── SWR data fetching (parallel, cached) ────────────────────
   const { data: messesData, isLoading: messesLoading } = useMesses(
     user?.id,
     Boolean(user && user.role !== 'ADMIN'),
   )
-  const { data: memberJoinRequestsData, isLoading: memberJoinRequestsLoading, mutate: refreshMemberJoinRequests } = useMyMemberJoinRequests(
-    user?.id,
-    Boolean(user && user.role !== 'ADMIN'),
-  )
-  const hasPendingMemberJoinRequest = memberRequestSubmitted || (Array.isArray(memberJoinRequestsData) && memberJoinRequestsData.some((request) => request.status === 'PENDING'))
+  const {
+    data: memberJoinRequestsData,
+    isLoading: memberJoinRequestsLoading,
+    mutate: refreshMemberJoinRequests,
+  } = useMyMemberJoinRequests(user?.id, Boolean(user && user.role !== 'ADMIN'))
   const { data: adminDashboard } = useAdminDashboard(user?.role === 'ADMIN')
-  const { data: messDashboard } = useMessDashboard(
-    undefined,
-    selectedMonth,
-  )
-  const { data: monthlyOverview } = useMonthlyOverview(
-    undefined,
-    selectedMonth,
-  )
-  const { data: expenseBreakdown } = useExpenseBreakdown(undefined, selectedMonth)
-  const { data: weeklyMeals } = useWeeklyMealCount(undefined)
 
-  // ── Derive active mess and conditional SWR keys ─────────────
   const messes = useMemo(() => {
     const list = Array.isArray(messesData)
       ? messesData
       : messesData
         ? [messesData]
         : ((user?.memberships
-          ?.filter((membership) => membership.is_active)
-          .map((membership) => membership.mess)
-          .filter(Boolean) ?? []) as Mess[])
+            ?.filter((membership) => membership.is_active)
+            .map((membership) => membership.mess)
+            .filter(Boolean) ?? []) as Mess[])
     return list
   }, [messesData, user])
 
@@ -626,507 +199,136 @@ export default function DashboardPage() {
     messes.find((mess) => mess.is_active !== false) ??
     user?.memberships?.find((membership) => membership.is_active)?.mess
   const messId = activeMess?.id
+  const managesMess = Boolean(
+    user?.role === 'MANAGER' ||
+      user?.memberships?.some(
+        (membership) => membership.is_active && membership.role === 'MANAGER',
+      ),
+  )
 
-  // Re-invoke hooks with resolved messId
-  // (SWR dedupes by key, so these will share the cache if key matches)
-  const { data: messDashboardResolved } = useMessDashboard(messId, selectedMonth)
-  const { data: monthlyOverviewResolved, isLoading: loadingChartsResolved } = useMonthlyOverview(
+  const { data: dashboard } = useMessDashboard(messId, selectedMonth)
+  const { data: monthlyOverview, isLoading: chartLoading } = useMonthlyOverview(
     messId,
     selectedMonth,
   )
-  const { data: expenseBreakdownResolved } = useExpenseBreakdown(messId, selectedMonth)
-  const { data: weeklyMealsResolved } = useWeeklyMealCount(messId)
+  const [year, month] = selectedMonth.split('-').map(Number)
+  const { data: activity, isLoading: activityLoading } = useDashboardActivity(
+    messId,
+    year,
+    month,
+    managesMess,
+  )
 
-  // Use resolved data when available, fall back to initial fetch
-  const resolvedDashboard = messId ? messDashboardResolved : messDashboard
-  const resolvedMonthlyOverview = messId ? monthlyOverviewResolved : monthlyOverview
-  const resolvedExpenseBreakdown = messId ? expenseBreakdownResolved : expenseBreakdown
-  const resolvedWeeklyMeals = messId ? weeklyMealsResolved : weeklyMeals
-  const chartLoading = messId ? loadingChartsResolved : false
-
-  const dashboardQuickActions =
-    user?.role === 'ADMIN' ? adminQuickActions : quickActions
+  const hasPendingMemberJoinRequest =
+    memberRequestSubmitted ||
+    (Array.isArray(memberJoinRequestsData) &&
+      memberJoinRequestsData.some((request) => request.status === 'PENDING'))
 
   const stats = useMemo(() => {
-    const dashboard = resolvedDashboard as
-      | (NonNullable<typeof resolvedDashboard> & {
-        totalMeals?: number
-        extraExpenses?: number
-        perExtraExpenses?: number
-        perMemberExtraCharge?: number
-      })
-      | null
-
     if (user?.role === 'ADMIN') {
       return [
-        [
-          'Total Users',
-          adminDashboard?.users ?? 0,
-          'Users',
-          Users,
-          'from-[#2f80ed] to-[#6f3df4]',
-          'bg-[#e8f2ff]',
-          'text-[#2f80ed]',
-        ],
-        [
-          'All Messes',
-          adminDashboard?.messes ?? 0,
-          'Messes',
-          Home,
-          'from-[#10b981] to-[#34d399]',
-          'bg-[#e8fff2]',
-          'text-[#22b66f]',
-        ],
-        [
-          'Pending Requests',
-          adminDashboard?.pendingRequests ?? 0,
-          'Requests',
-          ClipboardList,
-          'from-[#f59e0b] to-[#f97316]',
-          'bg-[#fff3df]',
-          'text-[#f59e0b]',
-        ],
-        [
-          'Pending Payments',
-          adminDashboard?.pendingPayments ?? 0,
-          'Payments',
-          CreditCard,
-          'from-[#f43f7f] to-[#ef4444]',
-          'bg-[#ffe8f0]',
-          'text-[#f43f7f]',
-        ],
-      ] as const
+        { label: 'Total users', value: adminDashboard?.users ?? 0, description: 'Registered accounts' },
+        { label: 'All messes', value: adminDashboard?.messes ?? 0, description: 'Managed workspaces' },
+        { label: 'Pending requests', value: adminDashboard?.pendingRequests ?? 0, description: 'Awaiting review' },
+        { label: 'Pending payments', value: adminDashboard?.pendingPayments ?? 0, description: 'Awaiting approval' },
+      ]
     }
 
     return [
-      [
-        'Meals Today',
-        dashboard?.todayTotalMeals ?? 0,
-        'Today',
-        UtensilsCrossed,
-        'from-[#10b981] to-[#34d399]',
-        'bg-[#e8fff2]',
-        'text-[#22b66f]',
-      ],
-      [
-        'Total Meals',
-        dashboard?.totalMeals ?? 0,
-        'Monthly',
-        CalendarCheck,
-        'from-[#6f3df4] to-[#8b5cf6]',
-        'bg-[#efe9ff]',
-        'text-[#6f3df4]',
-      ],
-      [
-        'Meal Rate',
-        money(dashboard?.currentMealRate),
-        'Rate',
-        Calculator,
-        'from-[#0ea5e9] to-[#2563eb]',
-        'bg-[#e0f2fe]',
-        'text-[#0284c7]',
-      ],
-      [
-        'Food Expenses',
-        money(dashboard?.currentMonthTotalBazar),
-        'Food',
-        ShoppingCart,
-        'from-[#f59e0b] to-[#f97316]',
-        'bg-[#fff3df]',
-        'text-[#f59e0b]',
-      ],
-      [
-        'Utility Expenses',
-        money(dashboard?.extraExpenses),
-        'Extra',
-        ReceiptText,
-        'from-[#8b5cf6] to-[#6f3df4]',
-        'bg-[#f3e8ff]',
-        'text-[#7c3aed]',
-      ],
-      [
-        'Per Member Utility Charge',
-        money(dashboard?.perMemberExtraCharge ?? dashboard?.perExtraExpenses),
-        'Per Member',
-        HandCoins,
-        'from-[#ec4899] to-[#f43f7f]',
-        'bg-[#fce7f3]',
-        'text-[#db2777]',
-      ],
-      [
-        'Total Deposit',
-        money(
+      {
+        label: 'Total deposit',
+        value: money(
           Number(dashboard?.totalDepositAmount ?? 0) +
-          Number(dashboard?.carryForwardRemainingAmount ?? 0),
+            Number(dashboard?.carryForwardRemainingAmount ?? 0),
         ),
-        'Deposit',
-        ReceiptText,
-        'from-[#8b5cf6] to-[#6f3df4]',
-        'bg-[#f3e8ff]',
-        'text-[#7c3aed]',
-      ],
-      [
-        'Due Amount',
-        money(
+        description: 'Including carry forward',
+        featured: true,
+      },
+      { label: 'Total meals', value: dashboard?.totalMeals ?? 0, description: 'Selected month' },
+      { label: 'Meal rate', value: money(dashboard?.currentMealRate), description: 'Current rate' },
+      { label: 'Food expenses', value: money(dashboard?.currentMonthTotalBazar), description: 'Selected month' },
+      { label: 'Utility expenses', value: money(dashboard?.extraExpenses), description: 'Selected month' },
+      {
+        label: 'Per member utility',
+        value: money(dashboard?.perExtraExpenses),
+        description: 'Current share',
+      },
+      {
+        label: 'Due amount',
+        value: money(
           Number(dashboard?.totalDue ?? 0) +
-          Number(dashboard?.carryForwardDueAmount ?? 0),
+            Number(dashboard?.carryForwardDueAmount ?? 0),
         ),
-        'Due',
-        BadgeDollarSign,
-        'from-[#ef4444] to-[#f43f7f]',
-        'bg-[#fee2e2]',
-        'text-[#dc2626]',
-      ],
-      [
-        'Remaining Amount',
-        money(dashboard?.remainingAmount),
-        'Remaining',
-        WalletCards,
-        'from-[#10b981] to-[#34d399]',
-        'bg-[#e8fff2]',
-        'text-[#059669]',
-      ],
-    ] as const
-  }, [adminDashboard, resolvedDashboard, user?.role])
+        description: 'Outstanding balance',
+        destructive: Number(dashboard?.totalDue ?? 0) > 0,
+      },
+      {
+        label: 'Remaining amount',
+        value: money(dashboard?.remainingAmount),
+        description: 'Available balance',
+      },
+    ]
+  }, [adminDashboard, dashboard, user?.role])
 
-  if (authLoading || !user) {
-    return <LoadingSkeleton />
-  }
+  if (authLoading || !user) return <LoadingSkeleton />
+  if (user.role !== 'ADMIN' && messesLoading) return <LoadingSkeleton />
 
-  if (user.role !== 'ADMIN' && messesLoading) {
-    return <LoadingSkeleton />
-  }
+  const showNoMessOnboarding = user.role !== 'ADMIN' && !activeMess
 
-  const showNoMessOnboarding =
-    user.role !== 'ADMIN' &&
-    !activeMess
+  return (
+    <div className="min-h-screen bg-background xl:flex xl:h-screen xl:min-h-0 xl:flex-col xl:overflow-hidden">
+      <DashboardHeader
+        title={user.role === 'ADMIN' ? 'Super Admin Dashboard' : 'Dashboard'}
+        description={activeMess ? `${activeMess.name} overview` : `Welcome back, ${user.name}`}
+        selectedMonth={selectedMonth}
+        onMonthChange={user.role === 'ADMIN' ? undefined : setSelectedMonth}
+        showQuickAddButton={Boolean(activeMess)}
+      />
 
-  if (showNoMessOnboarding) {
-    return (
-      <div className="min-h-screen bg-transparent">
-        <DashboardHeader
-          title="Dashboard"
-          description={`Welcome, ${user.name}`}
-          showQuickAddButton={false}
-        />
-
-        <main className="px-4 py-5 sm:p-6 lg:p-8">
+      <main className="space-y-4 p-4 sm:p-5 lg:p-6 xl:flex xl:min-h-0 xl:flex-1 xl:flex-col">
+        {showNoMessOnboarding ? (
           <NoMessOnboarding
             onCreate={() => router.push('/dashboard/mess_management')}
             onRequestAccess={() => setMemberRequestOpen(true)}
             requestPending={hasPendingMemberJoinRequest}
             requestLoading={memberJoinRequestsLoading}
           />
-        </main>
+        ) : (
+          <>
+            <section aria-label="Dashboard statistics" className="grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {stats.map((stat) => (
+                <DashboardStatCard key={stat.label} {...stat} />
+              ))}
+            </section>
 
-        <MemberJoinRequestModal
-          open={memberRequestOpen}
-          onClose={() => setMemberRequestOpen(false)}
-          hasPendingRequest={hasPendingMemberJoinRequest}
-          onSubmitted={() => {
-            setMemberRequestSubmitted(true)
-            void refreshMemberJoinRequests()
-          }}
-        />
-      </div>
-    )
-  }
-
-  const mobileActions =
-    user.role === 'ADMIN'
-      ? adminMobileQuickActions
-      : user.role === 'MANAGER'
-        ? managerMobileQuickActions
-        : mobileQuickActions
-  const mobileNotices = (resolvedDashboard?.notices ?? []) as MobileNotice[]
-
-  return (
-    <div className="min-h-screen bg-transparent">
-      <DashboardHeader
-        title={user.role === 'ADMIN' ? 'Super Admin Dashboard' : 'Dashboard'}
-        description={
-          activeMess
-            ? `${activeMess.name} overview`
-            : `Welcome back, ${user.name}`
-        }
-        selectedMonth={selectedMonth}
-        onMonthChange={setSelectedMonth}
-        showQuickAddButton={Boolean(activeMess)}
-      />
-
-      <div className="p-0 sm:p-6 lg:p-8">
-        <div className="space-y-4 px-4 pb-8 pt-4 sm:hidden">
-          <MobileQuickActions
-            actions={mobileActions}
-            onNavigate={(href) => router.push(href)}
-          />
-
-          <MobileSection
-            eyebrow="Live Overview"
-            title={user.role === 'ADMIN' ? 'Platform Details' : 'Mess Details'}
-            actionLabel="View Details"
-            onAction={() => router.push(user.role === 'ADMIN' ? '/dashboard/reports' : '/dashboard/monthly-bills')}
-          >
-            <MobileOverviewGrid stats={stats as readonly MobileStat[]} />
-          </MobileSection>
-
-          {user.role !== 'ADMIN' && (
-            <>
-              <MobileSection
-                eyebrow="This Month"
-                title="Monthly Overview"
-                actionLabel="Reports"
-                onAction={() => router.push('/dashboard/reports')}
-              >
-                <div className="-mx-2 overflow-hidden">
-                  <MonthlyOverviewChart
-                    data={resolvedMonthlyOverview ?? []}
-                    isLoading={chartLoading ?? false}
-                  />
-                </div>
-              </MobileSection>
-
-              <MobileSection eyebrow="Costs" title="Expense Breakdown">
-                <ExpenseBreakdownChart
-                  data={resolvedExpenseBreakdown?.data ?? []}
-                  isLoading={chartLoading ?? false}
-                />
-              </MobileSection>
-
-              <MobileSection
-                eyebrow="Meals"
-                title="Meal Count This Week"
-                actionLabel="Meals"
-                onAction={() => router.push('/dashboard/meals')}
-              >
-                <div className="-mx-2 overflow-hidden">
-                  <WeeklyMealsChart
-                    data={resolvedWeeklyMeals ?? []}
-                    isLoading={chartLoading ?? false}
-                  />
-                </div>
-              </MobileSection>
-
-              <MobileSection
-                eyebrow="Notice Board"
-                title="Recent Notices"
-                actionLabel="All"
-                onAction={() => router.push('/dashboard/notices')}
-              >
-                <MobileNoticeList
-                  notices={mobileNotices}
-                  onNavigate={(href) => router.push(href)}
-                />
-              </MobileSection>
-            </>
-          )}
-
-          {user.role === 'ADMIN' && (
-            <MobileSection
-              eyebrow="Admin"
-              title="Recent Expense Receipts"
-              actionLabel="Reports"
-              onAction={() => router.push('/dashboard/reports')}
-            >
-              <div className="space-y-2.5">
-                {adminDashboard?.recentExpenses?.length ? (
-                  adminDashboard.recentExpenses.slice(0, 4).map((expense) => (
-                    <a
-                      key={expense.id}
-                      href={expense.receipt_url ?? '#'}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="dashboard-subtle-card flex items-center gap-3 rounded-[18px] p-3 transition hover:bg-[var(--dashboard-hover)] active:scale-[0.98]"
-                    >
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#e7f1ff] text-[#2f80ed]">
-                        <ReceiptText size={17} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-[#172554]">
-                          {expense.item_name || expense.category}
-                        </span>
-                        <span className="mt-0.5 block truncate text-xs font-semibold text-[#6b7a99]">
-                          {expense.mess?.name ?? 'Mess'} - {money(expense.amount)}
-                        </span>
-                      </span>
-                      <ArrowUpRight size={15} className="text-[#a0aec5]" />
-                    </a>
-                  ))
-                ) : (
-                  <p className="dashboard-subtle-card rounded-[18px] p-4 text-center text-sm font-semibold text-[#6b7a99]">
-                    No uploaded receipts yet.
-                  </p>
-                )}
-              </div>
-            </MobileSection>
-          )}
-        </div>
-
-        <div className="hidden sm:block">
-        {/* Primary Stats Grid */}
-        <div className="dashboard-stat-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {stats.slice(0, 6).map(([label, value, , Icon]) => (
-            <StatCard
-              key={label}
-              label={label}
-              value={value}
-              icon={Icon}
-            />
-          ))}
-        </div>
-
-        {/* Mini Stats Row */}
-        <div className="dashboard-mini-stat-grid mt-5 grid gap-5 sm:grid-cols-3">
-          {stats.slice(6, 9).map(([label, value, , Icon]) => (
-            <MiniStatCard
-              key={label}
-              label={label}
-              value={value}
-              icon={Icon}
-            />
-          ))}
-        </div>
-
-        {/* Charts Row - only for non-admin users */}
-        {user.role !== 'ADMIN' && (
-          <div className="mt-7 grid gap-6 xl:grid-cols-[1.35fr_.85fr_.7fr]">
-            {/* Monthly Overview - Line Chart */}
-            <DashboardPanel title="Monthly Overview" eyebrow="This month">
-              <MonthlyOverviewChart
-                data={resolvedMonthlyOverview ?? []}
-                isLoading={chartLoading ?? false}
-              />
-            </DashboardPanel>
-
-            {/* Expense Breakdown - Pie Chart */}
-            <DashboardPanel title="Expense Breakdown" eyebrow="Costs">
-              <ExpenseBreakdownChart
-                data={resolvedExpenseBreakdown?.data ?? []}
-                isLoading={chartLoading ?? false}
-              />
-            </DashboardPanel>
-
-            {/* Recent Notices / Receipts */}
-            <DashboardPanel title="Recent Notices" eyebrow="Notice board">
-              <div className="space-y-3">
-                {(resolvedDashboard?.notices?.length
-                  ? resolvedDashboard.notices
-                  : [
-                    {
-                      id: '1',
-                      title: 'Payment deadline reminder',
-                      type: 'PAYMENT',
-                      is_pinned: false,
-                      created_at: '',
-                    },
-                    {
-                      id: '2',
-                      title: 'Dinner will be served at 9 PM',
-                      type: 'MEAL',
-                      is_pinned: false,
-                      created_at: '',
-                    },
-                  ]
-                ).map((notice) => (
-                  <div
-                    key={notice.id}
-                    className="dashboard-subtle-card flex items-start gap-3 rounded-xl p-3 transition hover:bg-[var(--dashboard-hover)]"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-50 to-orange-100 text-amber-600">
-                      <Bell size={16} />
-                    </span>
-
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#172554]">
-                        {notice.title}
-                      </p>
-                      <p className="text-xs font-semibold text-[#6b7a99]">
-                        {notice.type}
+            {user.role === 'ADMIN' ? (
+              <AdminRecentExpenses expenses={adminDashboard?.recentExpenses ?? []} />
+            ) : (
+              <section className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(28rem,.9fr)]">
+                <Card className="gap-0 overflow-hidden py-0 shadow-none xl:flex xl:min-h-0 xl:flex-col">
+                  <CardHeader className="shrink-0 border-b px-4 py-3">
+                    <div>
+                      <CardTitle className="text-base">Monthly overview</CardTitle>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Bazar, deposits, and meals for the selected month
                       </p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </DashboardPanel>
-          </div>
-        )}
+                  </CardHeader>
+                  <CardContent className="min-h-0 flex-1 px-3 py-2 sm:px-4">
+                    <MonthlyOverviewChart
+                      data={monthlyOverview ?? []}
+                      isLoading={chartLoading ?? false}
+                    />
+                  </CardContent>
+                </Card>
 
-        {/* Admin: show expense receipts instead of charts */}
-        {user.role === 'ADMIN' && (
-          <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
-            <DashboardPanel title="Recent Expense Receipts" eyebrow="Admin activity">
-              <div className="space-y-3">
-                {adminDashboard?.recentExpenses?.length ? (
-                  adminDashboard.recentExpenses.map((expense) => (
-                    <a
-                      key={expense.id}
-                      href={expense.receipt_url ?? '#'}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="dashboard-subtle-card flex items-start gap-3 rounded-xl p-3 transition hover:bg-[var(--dashboard-hover)]"
-                    >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2f80ed]/10 to-[#8b5cf6]/10 text-[#2f80ed]">
-                        <ReceiptText size={16} />
-                      </span>
-
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-[#172554]">
-                          {expense.item_name || expense.category}
-                        </p>
-                        <p className="truncate text-xs font-semibold text-[#6b7a99]">
-                          {expense.mess?.name ?? 'Mess'} -{' '}
-                          {money(expense.amount)}
-                        </p>
-                      </div>
-                    </a>
-                  ))
-                ) : (
-                  <p className="text-sm font-semibold text-[#6b7a99]">
-                    No uploaded receipts yet.
-                  </p>
-                )}
-              </div>
-            </DashboardPanel>
-          </div>
-        )}
-
-        {/* Bottom Row - Meals Bar Chart + Quick Actions (non-admin) */}
-        {user.role !== 'ADMIN' && (
-          <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_.75fr]">
-            {/* Weekly Meal Count - Bar Chart */}
-            <DashboardPanel title="Meal Count This Week" eyebrow="Meals">
-              <WeeklyMealsChart
-                data={resolvedWeeklyMeals ?? []}
-                isLoading={chartLoading ?? false}
-              />
-            </DashboardPanel>
-
-            {/* Quick Actions */}
-            {user.role !== 'MEMBER' && (
-              <DashboardPanel title="Quick Actions" eyebrow="Shortcuts">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-2">
-                  {dashboardQuickActions.map(([label, Icon, href]) => (
-                    <button
-                      key={label}
-                      onClick={() => router.push(href)}
-                      className={dashboardQuickActionButtonClass}
-                    >
-                      <span className={dashboardQuickActionIconClass}>
-                        <Icon size={20} />
-                      </span>
-
-                      <span className="text-xs font-semibold text-[#172554] transition group-hover:text-[var(--brand)]">
-                        {label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </DashboardPanel>
+                <RecentActivityTable activity={activity} isLoading={activityLoading} />
+              </section>
             )}
-          </div>
+          </>
         )}
-        </div>
-      </div>
+      </main>
+
       <MemberJoinRequestModal
         open={memberRequestOpen}
         onClose={() => setMemberRequestOpen(false)}

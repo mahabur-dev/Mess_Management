@@ -119,9 +119,9 @@ export function ScheduleSettingsDrawer({ open, onOpenChange, messId, settings, o
       }
     >
       <div className="space-y-6">
-        {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">{error}</div>}
+        {error && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive">{error}</div>}
 
-        <section className="rounded-2xl bg-[var(--dashboard-surface)] p-4 shadow-sm sm:p-5">
+        <section className="rounded-2xl bg-[var(--dashboard-surface)] p-4  sm:p-5">
           <div className="mb-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--brand)]">Frequency</p>
             <h3 className="mt-1 text-base font-semibold text-[var(--dashboard-ink)]">When does bazar happen?</h3>
@@ -131,10 +131,10 @@ export function ScheduleSettingsDrawer({ open, onOpenChange, messId, settings, o
               const Icon = option.icon
               const active = frequency === option.value
               return (
-                <button key={option.value} type="button" onClick={() => setFrequency(option.value)} className={cn('flex items-center gap-3 rounded-xl border p-3.5 text-left transition', active ? 'border-[var(--brand)] bg-[var(--brand-soft)] shadow-[0_0_0_3px_var(--brand-ring)]' : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] hover:border-[var(--brand-border)]')}>
-                  <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl', active ? 'bg-[var(--brand)] text-white' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}><Icon className="size-4.5" /></span>
+                <button key={option.value} type="button" onClick={() => setFrequency(option.value)} className={cn('flex items-center gap-3 rounded-xl border p-3.5 text-left transition', active ? 'border-[var(--brand)] bg-[var(--brand-soft)] ' : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] hover:border-[var(--brand-border)]')}>
+                  <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl', active ? 'bg-[var(--brand)] text-primary-foreground' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}><Icon className="size-4.5" /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-[var(--dashboard-ink)]">{option.title}</span><span className="mt-0.5 block text-xs font-medium leading-5 text-muted-foreground">{option.description}</span></span>
-                  <span className={cn('grid size-5 place-items-center rounded-full border', active ? 'border-[var(--brand)] bg-[var(--brand)] text-white' : 'border-[var(--dashboard-line-strong)]')}><Check className={cn('size-3', !active && 'opacity-0')} /></span>
+                  <span className={cn('grid size-5 place-items-center rounded-full border', active ? 'border-[var(--brand)] bg-[var(--brand)] text-primary-foreground' : 'border-[var(--dashboard-line-strong)]')}><Check className={cn('size-3', !active && 'opacity-0')} /></span>
                 </button>
               )
             })}
@@ -145,7 +145,7 @@ export function ScheduleSettingsDrawer({ open, onOpenChange, messId, settings, o
               <Label className="mb-3 font-semibold">Repeat on</Label>
               <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                 {WEEKDAYS.map((day) => (
-                  <button key={day.value} type="button" onClick={() => toggleValue(weekdays, day.value, setWeekdays)} className={cn('min-h-11 rounded-xl border text-xs font-bold transition', weekdays.includes(day.value) ? 'border-[var(--brand)] bg-[var(--brand)] text-white shadow-sm' : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground hover:border-[var(--brand-border)]')}>{day.short}</button>
+                  <button key={day.value} type="button" onClick={() => toggleValue(weekdays, day.value, setWeekdays)} className={cn('min-h-11 rounded-xl border text-xs font-bold transition', weekdays.includes(day.value) ? 'border-[var(--brand)] bg-[var(--brand)] text-primary-foreground ' : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground hover:border-[var(--brand-border)]')}>{day.short}</button>
                 ))}
               </div>
             </div>
@@ -156,7 +156,7 @@ export function ScheduleSettingsDrawer({ open, onOpenChange, messId, settings, o
               <div className="mb-3 flex items-center justify-between gap-3"><Label className="font-semibold">Monthly dates</Label><span className="text-xs font-semibold text-muted-foreground">{customDays.length} selected</span></div>
               <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-8">
                 {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
-                  <button key={day} type="button" onClick={() => toggleValue(customDays, day, setCustomDays)} className={cn('aspect-square rounded-lg border text-xs font-bold transition', customDays.includes(day) ? 'border-[var(--brand)] bg-[var(--brand)] text-white' : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground hover:border-[var(--brand-border)]')}>{day}</button>
+                  <button key={day} type="button" onClick={() => toggleValue(customDays, day, setCustomDays)} className={cn('aspect-square rounded-lg border text-xs font-bold transition', customDays.includes(day) ? 'border-[var(--brand)] bg-[var(--brand)] text-primary-foreground' : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground hover:border-[var(--brand-border)]')}>{day}</button>
                 ))}
               </div>
               <p className="mt-3 text-xs font-medium leading-5 text-muted-foreground">Dates that do not exist in a shorter month are skipped automatically.</p>
@@ -164,7 +164,7 @@ export function ScheduleSettingsDrawer({ open, onOpenChange, messId, settings, o
           )}
         </section>
 
-        <section className="rounded-2xl bg-[var(--dashboard-surface)] p-4 shadow-sm sm:p-5">
+        <section className="rounded-2xl bg-[var(--dashboard-surface)] p-4  sm:p-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--brand)]">Duty policy</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <label className="space-y-2"><span className="text-xs font-semibold text-muted-foreground">People per bazar</span><Input type="number" min={1} max={50} value={membersPerDate} onChange={(event) => setMembersPerDate(event.target.value === '' ? '' : Number(event.target.value))} className="h-12 rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] font-semibold" /></label>
@@ -178,7 +178,7 @@ export function ScheduleSettingsDrawer({ open, onOpenChange, messId, settings, o
           <SettingToggle icon={ShieldCheck} title="Enforce fair selection" description="Members cannot take extra duties while someone has selected fewer." checked={strictFairness} onCheckedChange={setStrictFairness} />
         </section>
 
-        {settings && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">Changes apply to the next schedule you generate. The active month remains unchanged and auditable.</div>}
+        {settings && <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-xs font-semibold leading-5 text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary">Changes apply to the next schedule you generate. The active month remains unchanged and auditable.</div>}
       </div>
     </EnterpriseDetailsDrawer>
   )
@@ -186,7 +186,7 @@ export function ScheduleSettingsDrawer({ open, onOpenChange, messId, settings, o
 
 function SettingToggle({ icon: Icon, title, description, checked, onCheckedChange }: { icon: typeof Users; title: string; description: string; checked: boolean; onCheckedChange: (checked: boolean) => void }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-[var(--dashboard-surface)] p-4 shadow-sm">
+    <div className="flex items-center gap-3 rounded-2xl bg-[var(--dashboard-surface)] p-4 ">
       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><Icon className="size-4.5" /></span>
       <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--dashboard-ink)]">{title}</p><p className="mt-0.5 text-xs font-medium leading-5 text-muted-foreground">{description}</p></div>
       <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label={title} />

@@ -5,10 +5,10 @@ import { cn } from '@/lib/utils'
 type DashboardButtonTone = 'primary' | 'secondary' | 'danger' | 'warning'
 
 const toneClasses: Record<DashboardButtonTone, string> = {
-  primary: 'border border-transparent bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]',
+  primary: 'border border-transparent bg-[var(--brand)] text-primary-foreground hover:bg-[var(--brand-hover)]',
   secondary: 'border border-[var(--dashboard-line-strong)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)]',
-  danger: 'border border-transparent bg-red-600 text-white hover:bg-red-700',
-  warning: 'border border-transparent bg-amber-500 text-white hover:bg-amber-600',
+  danger: 'border border-transparent bg-destructive text-primary-foreground hover:bg-destructive',
+  warning: 'border border-transparent bg-primary/100 text-primary-foreground hover:bg-primary',
 }
 
 type DashboardButtonProps = React.ComponentProps<typeof Button> & {

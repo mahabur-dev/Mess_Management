@@ -4,11 +4,11 @@ import type { MealPatternStatus } from '@/lib/api-client'
 import { MEAL_PATTERN_STATUS_LABELS } from '@/lib/meal-pattern'
 
 const styles: Record<MealPatternStatus, string> = {
-  ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300',
-  PAUSED: 'bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300',
-  DRAFT: 'bg-sky-100 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300',
-  ENDED: 'bg-slate-100 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300',
-  CANCELLED: 'bg-rose-100 text-rose-700 dark:bg-rose-400/15 dark:text-rose-300',
+  ACTIVE: 'bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary',
+  PAUSED: 'bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary',
+  DRAFT: 'bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary',
+  ENDED: 'bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground',
+  CANCELLED: 'bg-destructive/10 text-destructive dark:bg-destructive/10 dark:text-destructive',
 }
 
 const icons = {

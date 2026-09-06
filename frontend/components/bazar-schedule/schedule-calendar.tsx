@@ -64,11 +64,11 @@ function CalendarSlot({
       className={cn(
         'flex min-h-9 w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition',
         mine
-          ? 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)] shadow-sm'
+          ? 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)] '
           : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] hover:border-[var(--brand-border)]',
       )}
     >
-      <span className={cn('grid size-6 shrink-0 place-items-center rounded-md text-[9px] font-bold', mine ? 'bg-[var(--brand)] text-white' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>
+      <span className={cn('grid size-6 shrink-0 place-items-center rounded-md text-[9px] font-bold', mine ? 'bg-[var(--brand)] text-primary-foreground' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>
         {getInitials(slot.assigned_member?.name ?? 'Member')}
       </span>
       <span className="min-w-0 flex-1 truncate text-[11px] font-semibold">
@@ -94,7 +94,7 @@ export function ScheduleCalendar({ schedule, userId, canManage, busyId, onClaim,
 
   return (
     <>
-      <div className="hidden overflow-hidden rounded-[1.25rem] bg-[var(--dashboard-surface)] shadow-[var(--dashboard-shadow)] lg:block">
+      <div className="hidden overflow-hidden rounded-[1.25rem] bg-[var(--dashboard-surface)]  lg:block">
         <div className="grid grid-cols-7 border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)]/70">
           {WEEKDAYS.map((weekday) => (
             <div key={weekday.value} className="px-3 py-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
@@ -119,7 +119,7 @@ export function ScheduleCalendar({ schedule, userId, canManage, busyId, onClaim,
                 {day && (
                   <>
                     <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className={cn('grid size-7 place-items-center rounded-lg text-xs font-bold', date ? 'bg-[var(--brand)] text-white shadow-sm' : 'text-muted-foreground')}>
+                      <span className={cn('grid size-7 place-items-center rounded-lg text-xs font-bold', date ? 'bg-[var(--brand)] text-primary-foreground ' : 'text-muted-foreground')}>
                         {day}
                       </span>
                       {date && canManage && !date.isPast && (

@@ -15,10 +15,10 @@ interface EnterpriseIconButtonProps
 }
 
 const toneClasses: Record<EnterpriseIconButtonTone, string> = {
-  default: 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)]',
-  primary: 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)] hover:bg-[var(--brand-softer)] hover:text-[var(--brand-dark)]',
-  danger: 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800',
+  default: 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)] dark:border-[var(--dashboard-line)] dark:bg-[var(--dashboard-surface)] dark:text-white/70 dark:hover:text-[var(--brand)]',
+  primary: 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)] hover:bg-[var(--brand-softer)] hover:text-[var(--brand-dark)] dark:border-[var(--brand-border)] dark:bg-[var(--brand-soft)] dark:text-[var(--brand-bright)] dark:hover:bg-[var(--brand-softer)] dark:hover:text-[var(--brand-bright)]',
+  danger: 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive dark:border-destructive/50 dark:bg-destructive/15 dark:text-destructive',
+  success: 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:border-primary/50 dark:bg-primary/15 dark:text-primary',
 }
 
 /** A shared, accessible icon action for tables, cards, and drawer footers. */
@@ -38,7 +38,7 @@ export function EnterpriseIconButton({
       aria-label={label}
       title={label}
       className={cn(
-        'size-9 shrink-0 rounded-lg border shadow-sm transition focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-50',
+        'size-9 shrink-0 rounded-lg border  transition focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-50',
         toneClasses[tone],
         className,
       )}

@@ -51,7 +51,7 @@ const attendanceData = [
   },
 ]
 
-const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e']
+const AVATAR_COLORS = ['var(--primary)']
 
 const avatarColor = (name: string) => {
   let hash = 0
@@ -93,7 +93,7 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafcff]">
+    <div className="min-h-screen bg-background">
       <DashboardHeader
         title="Attendance"
         description="Track and manage member attendance records"
@@ -102,57 +102,54 @@ export default function AttendancePage() {
       <div className="p-4 sm:p-6 lg:p-8 space-y-7">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/15 to-[#58d68d]/15 shadow-sm">
-            <Users size={24} className="text-[#2f80ed]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl r bg-primary/10  ">
+            <Users size={24} className="text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-[#172554]">Attendance Records</h2>
-            <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">Last {overallStats.totalDays} days overview</p>
+            <h2 className="text-lg font-semibold text-foreground">Attendance Records</h2>
+            <p className="mt-0.5 text-xs font-semibold text-muted-foreground">Last {overallStats.totalDays} days overview</p>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)]">
-            <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
+          <div className="group relative overflow-hidden rounded-xl r bg-primary  p-5 text-primary-foreground ">
             <div className="relative">
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary-foreground/80">
                 <UserCheck size={14} />
                 Total Present
               </p>
               <p className="mt-2 text-3xl font-semibold">{overallStats.totalPresent}</p>
-              <p className="mt-1 text-xs font-bold text-white/60">Last 3 days</p>
+              <p className="mt-1 text-xs font-bold text-primary-foreground/60">Last 3 days</p>
             </div>
           </div>
 
-          <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-rose-600 p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)]">
-            <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
+          <div className="group relative overflow-hidden rounded-xl border border-primary/30 bg-primary/10 p-5 text-foreground">
             <div className="relative">
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary">
                 <UserX size={14} />
                 Total Absent
               </p>
               <p className="mt-2 text-3xl font-semibold">{overallStats.totalAbsent}</p>
-              <p className="mt-1 text-xs font-bold text-white/60">Last 3 days</p>
+              <p className="mt-1 text-xs font-bold text-muted-foreground">Last 3 days</p>
             </div>
           </div>
 
-          <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] p-5 text-white shadow-[0_8px_25px_rgba(0,0,0,0.08)]">
-            <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
+          <div className="group relative overflow-hidden rounded-xl r bg-primary  p-5 text-primary-foreground ">
             <div className="relative">
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary-foreground/80">
                 <TrendingUp size={14} />
                 Avg Attendance
               </p>
               <p className="mt-2 text-3xl font-semibold">{overallStats.avgAttendance}%</p>
-              <p className="mt-1 text-xs font-bold text-white/60">Overall rate</p>
+              <p className="mt-1 text-xs font-bold text-primary-foreground/60">Overall rate</p>
             </div>
           </div>
         </div>
 
         {/* Daily Records */}
         <div>
-          <h2 className="mb-5 text-sm font-semibold text-[#172554]">Daily Records</h2>
+          <h2 className="mb-5 text-sm font-semibold text-foreground">Daily Records</h2>
           <div className="space-y-4">
             {attendanceData.map((day) => {
               const isExpanded = expandedDate === day.date
@@ -161,71 +158,71 @@ export default function AttendancePage() {
               return (
                 <div
                   key={day.date}
-                  className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-sm transition hover:border-[#a9ccfb]"
+                  className="overflow-hidden rounded-xl border border-border bg-background  transition hover:border-primary"
                 >
                   <button
                     onClick={() => setExpandedDate(isExpanded ? '' : day.date)}
-                    className="w-full p-5 transition flex items-center justify-between hover:bg-[#f8faff]"
+                    className="w-full p-5 transition flex items-center justify-between hover:bg-muted"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/10 to-[#58d68d]/10 shadow-sm">
-                        <CalendarDays size={18} className="text-[#2f80ed]" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl r bg-primary/10  ">
+                        <CalendarDays size={18} className="text-primary" />
                       </div>
                       <div className="text-left">
-                        <p className="text-sm font-bold text-[#172554]">{day.day}</p>
-                        <p className="text-xs font-semibold text-[#6b7a99]">{formatDate(day.date)}</p>
+                        <p className="text-sm font-bold text-foreground">{day.day}</p>
+                        <p className="text-xs font-semibold text-muted-foreground">{formatDate(day.date)}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-5">
                       <div className="text-right hidden sm:block">
-                        <p className="text-lg font-semibold text-[#172554]">{day.present}</p>
-                        <p className="text-[10px] font-bold text-emerald-600">Present</p>
+                        <p className="text-lg font-semibold text-foreground">{day.present}</p>
+                        <p className="text-[10px] font-bold text-primary">Present</p>
                       </div>
                       <div className="text-right hidden sm:block">
-                        <p className="text-lg font-semibold text-[#172554]">{day.absent}</p>
-                        <p className="text-[10px] font-bold text-red-500">Absent</p>
+                        <p className="text-lg font-semibold text-foreground">{day.absent}</p>
+                        <p className="text-[10px] font-bold text-destructive">Absent</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#2f80ed]/10 to-[#58d68d]/10 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-[#2f80ed]">{rate}%</span>
+                        <div className="h-10 w-10 rounded-lg r bg-primary/10  flex items-center justify-center">
+                          <span className="text-sm font-semibold text-primary">{rate}%</span>
                         </div>
-                        {isExpanded ? <ChevronUp size={16} className="text-[#6b7a99]" /> : <ChevronDown size={16} className="text-[#6b7a99]" />}
+                        {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
                       </div>
                     </div>
                   </button>
 
                   {/* Expanded Details */}
                   {isExpanded && (
-                    <div className="border-t border-[#e6ebf4] bg-[#f8faff] p-5">
-                      <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide text-[#6b7a99]">Member Details</h4>
+                    <div className="border-t border-border bg-muted p-5">
+                      <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Member Details</h4>
                       <div className="space-y-2">
                         {day.users.map((u) => {
                           const bgColor = avatarColor(u.name)
                           return (
                             <div
                               key={u.id}
-                              className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-white p-3 transition hover:border-[#a9ccfb]"
+                              className="flex items-center justify-between rounded-xl border border-border bg-background p-3 transition hover:border-primary"
                             >
                               <div className="flex items-center gap-3">
                                 <div
                                   className="flex h-8 w-8 items-center justify-center rounded-lg border text-[10px] font-semibold"
-                                  style={{ backgroundColor: `${bgColor}18`, borderColor: `${bgColor}55`, color: bgColor }}
+                                  style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: bgColor }}
                                 >
                                   {getInitials(u.name)}
                                 </div>
-                                <span className="text-sm font-bold text-[#172554]">{u.name}</span>
+                                <span className="text-sm font-bold text-foreground">{u.name}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 {u.status === 'present' ? (
                                   <>
-                                    <CheckCircle2 size={16} className="text-emerald-500" />
-                                    <span className="text-[11px] font-bold text-emerald-600">Present</span>
+                                    <CheckCircle2 size={16} className="text-primary" />
+                                    <span className="text-[11px] font-bold text-primary">Present</span>
                                   </>
                                 ) : (
                                   <>
-                                    <XCircle size={16} className="text-red-500" />
-                                    <span className="text-[11px] font-bold text-red-500">Absent</span>
+                                    <XCircle size={16} className="text-destructive" />
+                                    <span className="text-[11px] font-bold text-destructive">Absent</span>
                                   </>
                                 )}
                               </div>
@@ -242,23 +239,23 @@ export default function AttendancePage() {
         </div>
 
         {/* Summary */}
-        <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white p-5 shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-border bg-background p-5 ">
           <div className="flex items-center gap-4 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/10 to-[#58d68d]/10 shadow-sm">
-              <TrendingUp size={18} className="text-[#2f80ed]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl r bg-primary/10  ">
+              <TrendingUp size={18} className="text-primary" />
             </div>
-            <h3 className="text-sm font-semibold text-[#172554]">Attendance Insights</h3>
+            <h3 className="text-sm font-semibold text-foreground">Attendance Insights</h3>
           </div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Best Day</p>
-              <p className="mt-1 text-base font-semibold text-[#172554]">Wednesday - 98%</p>
-              <p className="text-xs font-semibold text-[#6b7a99] mt-0.5">Highest attendance rate</p>
+            <div className="rounded-xl border border-border bg-muted p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Best Day</p>
+              <p className="mt-1 text-base font-semibold text-foreground">Wednesday - 98%</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-0.5">Highest attendance rate</p>
             </div>
-            <div className="rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">Recurring Absentees</p>
-              <p className="mt-1 text-base font-semibold text-[#172554]">2 Members</p>
-              <p className="text-xs font-semibold text-[#6b7a99] mt-0.5">Need follow-up</p>
+            <div className="rounded-xl border border-border bg-muted p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Recurring Absentees</p>
+              <p className="mt-1 text-base font-semibold text-foreground">2 Members</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-0.5">Need follow-up</p>
             </div>
           </div>
         </div>

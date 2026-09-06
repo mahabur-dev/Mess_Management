@@ -58,8 +58,8 @@ export function dateStatus(date: { status: BazarDateStatus; effectiveStatus?: Ba
 }
 
 export function requestTone(status: BazarRequestStatus) {
-  if (status === 'APPROVED') return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300'
-  if (status === 'REJECTED') return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300'
-  if (status === 'CANCELLED') return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-400/20 dark:bg-slate-400/10 dark:text-slate-300'
-  return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300'
+  if (status === 'APPROVED') return 'border-primary/30 bg-primary/10 text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary'
+  if (status === 'REJECTED') return 'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive'
+  if (status === 'CANCELLED') return 'border-border bg-muted text-muted-foreground dark:border-border dark:bg-muted dark:text-muted-foreground'
+  return 'border-primary/30 bg-primary/10 text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary'
 }

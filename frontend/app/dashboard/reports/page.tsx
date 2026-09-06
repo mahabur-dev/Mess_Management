@@ -43,12 +43,12 @@ export default function ReportsPage() {
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Page Header */}
         <div className="mb-7 flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/15 to-[#8b5cf6]/15 shadow-sm">
-            <BarChart3 size={24} className="text-[#8b5cf6]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl r bg-primary/10  ">
+            <BarChart3 size={24} className="text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-[#172554]">Dashboard Reports</h2>
-            <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
+            <h2 className="text-lg font-semibold text-foreground">Dashboard Reports</h2>
+            <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
               {mess ? `${mess.name} - Summary overview` : 'Reports and analytics'}
             </p>
           </div>
@@ -63,7 +63,6 @@ export default function ReportsPage() {
                 data-tone={tone}
                 className="dashboard-card dashboard-stat-card report-stat-card group relative flex min-h-[112px] items-center overflow-hidden p-4 sm:p-[1.125rem]"
               >
-                <div className="absolute -right-7 -top-9 size-24 rounded-full bg-[var(--card-accent)]/10 blur-2xl transition-colors duration-300 group-hover:bg-[var(--card-accent)]/15" />
                 <div className="relative z-10 flex w-full items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -86,7 +85,7 @@ export default function ReportsPage() {
         <div className="dashboard-panel mt-7 overflow-hidden">
           <div className="p-6">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] shadow-sm">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)] ">
                 <FileText size={22} />
               </div>
               <div>

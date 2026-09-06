@@ -43,6 +43,7 @@ import {
   ReceiptText,
   Users,
   Banknote,
+  Clock3,
   Trash2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -169,23 +170,23 @@ function getCategoryStyle(category: string) {
   switch (category) {
     case 'FOOD':
     case 'GROCERY':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200/50'
+      return 'bg-primary/10 text-primary border-primary/30'
     case 'GAS':
-      return 'bg-orange-50 text-orange-700 border-orange-200/50'
+      return 'bg-primary/10 text-primary border-primary/30'
     case 'ELECTRICITY':
-      return 'bg-amber-50 text-amber-700 border-amber-200/50'
+      return 'bg-primary/10 text-primary border-primary/30'
     case 'WIFI':
-      return 'bg-blue-50 text-blue-700 border-blue-200/50'
+      return 'bg-primary/10 text-primary border-primary/30'
     case 'CLEANER':
-      return 'bg-purple-50 text-purple-700 border-purple-200/50'
+      return 'bg-primary/10 text-primary border-primary/30'
     case 'MAINTENANCE':
-      return 'bg-pink-50 text-pink-700 border-pink-200/50'
+      return 'bg-primary/10 text-primary border-primary/30'
     case 'RENT':
-      return 'bg-red-50 text-red-700 border-red-200/50'
+      return 'bg-primary/10 text-primary border-primary/30'
     case 'UTILITY':
-      return 'bg-cyan-50 text-cyan-700 border-cyan-200/50'
+      return 'bg-primary/10 text-primary border-primary/30'
     default:
-      return 'bg-slate-50 text-slate-700 border-slate-200/50'
+      return 'bg-muted text-muted-foreground border-border'
   }
 }
 
@@ -722,13 +723,13 @@ export default function FinancePage() {
   function getPaymentTypeStyle(paymentType?: string) {
     if (paymentType === 'PERSONAL') {
       return {
-        badge: 'bg-purple-50 text-purple-700 border-purple-200/50',
+        badge: 'bg-primary/10 text-primary border-primary/30',
         label: 'Personal',
         icon: '👤',
       }
     }
     return {
-      badge: 'bg-blue-50 text-blue-700 border-blue-200/50',
+      badge: 'bg-primary/10 text-primary border-primary/30',
       label: 'From Deposit',
       icon: '🏦',
     }
@@ -783,11 +784,14 @@ export default function FinancePage() {
       total: filteredExpenses.reduce((s, item) => s + Number(item.amount || 0), 0),
       count: filteredExpenses.length,
       categories: new Set(filteredExpenses.map(e => e.category)).size,
+      pendingBazar: filteredExpenses.filter(
+        (item) => expenseCategories.includes(item.category) && getExpenseApprovalStatus(item) === 'PENDING',
+      ).length,
     }
   }, [filteredExpenses])
 
   return (
-    <div className="min-h-screen bg-[#fafcff]">
+    <div className="min-h-screen bg-background">
       <DashboardHeader
         title={canManageMess ? 'Bazar / Expenses' : 'Expenses'}
         description={
@@ -800,10 +804,10 @@ export default function FinancePage() {
       <div className="p-4 sm:p-6 lg:p-8">
         {message && (
           <div
-            className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${
+            className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold  ${
               messageType === 'error'
-                ? 'border border-red-200/70 bg-red-50 text-red-700'
-                : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'
+                ? 'border border-destructive/30 bg-destructive/10 text-destructive'
+                : 'border border-primary/30 bg-primary/10 text-primary'
             }`}
           >
             {message}
@@ -813,12 +817,12 @@ export default function FinancePage() {
         {/* Header */}
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-rose-50 to-red-100 shadow-sm">
-              <ShoppingBag size={24} className="text-red-500" />
+            <div className="dashboard-section-icon size-12 rounded-lg">
+              <ShoppingBag size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#172554]">All Bazar & Expenses</h2>
-              <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">
+              <h2 className="text-lg font-semibold text-foreground">All Bazar & Expenses</h2>
+              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
                 Showing {filteredExpenses.length} expenses for selected month
               </p>
             </div>
@@ -827,41 +831,48 @@ export default function FinancePage() {
 
         {/* Summary Cards - Desktop/Tablet */}
         {filteredExpenses.length > 0 && (
-          <div className="hidden md:grid mb-6 grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">
-                <ReceiptText size={13} className="text-[#2f80ed]" />
+          <div className="mb-6 hidden grid-cols-2 gap-3 md:grid lg:grid-cols-4">
+            <div className="rounded-xl border border-border bg-background p-4 ">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <ReceiptText size={13} className="text-primary" />
                 Total Items
               </p>
-              <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{summary.count}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-foreground">{summary.count}</p>
             </div>
-            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">
-                <Filter size={13} className="text-[#8b5cf6]" />
+            <div className="rounded-xl border border-border bg-background p-4 ">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Filter size={13} className="text-primary" />
                 Categories
               </p>
-              <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{summary.categories}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-foreground">{summary.categories}</p>
             </div>
-            <div className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm sm:col-span-2">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]">
-                <TrendingUp size={13} className="text-red-500" />
+            <div className="rounded-xl border border-border bg-background p-4">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <TrendingUp size={13} className="text-primary" />
                 Total Amount
               </p>
-              <p className="mt-1.5 text-2xl font-semibold text-red-500">{money(summary.total)}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-primary">{money(summary.total)}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-background p-4">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Clock3 size={13} className="text-primary" />
+                Pending Bazar
+              </p>
+              <p className="mt-1.5 text-2xl font-semibold text-foreground">{summary.pendingBazar}</p>
             </div>
           </div>
         )}
 
         {/* Desktop/Tablet - Filters & Table inside same container */}
-        <div className="hidden md:block rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+        <div className="dashboard-table-frame hidden md:block">
           {/* Filters & Buttons header - matches table width */}
-          <div className="flex flex-col gap-2 p-4 border-b border-[#e6ebf4] bg-[#f8faff]">
+          <div className="flex flex-col gap-2 p-4 border-b border-border bg-muted">
             {/* Row 1: Search + Month + Add buttons */}
             <div className="flex flex-row flex-wrap items-center gap-2">
               <div className="relative w-44">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  className="h-[38px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                  className="h-[38px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
                   placeholder="Search item..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
@@ -903,22 +914,22 @@ export default function FinancePage() {
           </div>
 
           <div className="overflow-hidden">
-              <table className="w-full table-fixed">
+              <table className="w-full table-fixed border-separate border-spacing-0">
                 <thead>
-                  <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+                  <tr className="border-b border-border bg-muted">
                     {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Status', 'Action'].map((heading) =>
                       heading === 'Action'
                         ? <EnterpriseTableActionHeader key={heading} size="compact" />
-                        : <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] ${heading === 'Amount' ? 'text-right' : ''}`}>{heading}</th>,
+                        : <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground ${heading === 'Amount' ? 'text-right' : ''}`}>{heading}</th>,
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#e6ebf4]">
+                <tbody className="divide-y divide-border">
                   {loading && (
                     <tr>
                       <td colSpan={7} className="px-5 py-12 text-center">
-                        <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]">
-                          <Loader2 size={18} className="animate-spin text-[#2f80ed]" />
+                        <div className="flex items-center justify-center gap-2 text-sm font-bold text-muted-foreground">
+                          <Loader2 size={18} className="animate-spin text-primary" />
                           Loading expenses...
                         </div>
                       </td>
@@ -928,15 +939,15 @@ export default function FinancePage() {
                     <tr>
                       <td colSpan={7} className="px-5 py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
-                          <ShoppingBag size={40} className="text-[#d8e6f8]" />
-                          <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
+                          <ShoppingBag size={40} className="text-muted-foreground" />
+                          <p className="text-sm font-bold text-muted-foreground">No expenses found.</p>
                         </div>
                       </td>
                     </tr>
                   )}
                   {!loading &&
                     filteredExpenses.map((item) => (
-                      <tr key={item.id} className="transition hover:bg-[#f8faff] group">
+                      <tr key={item.id} className="transition hover:bg-muted group">
                         <td className="px-4 py-4">
                           <span
                             className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${getCategoryStyle(item.category)}`}
@@ -944,20 +955,20 @@ export default function FinancePage() {
                             {item.category}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-[#6b7a99]">
+                        <td className="px-4 py-4 text-sm font-bold text-muted-foreground">
                           {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
                         </td>
                         <td className="px-4 py-4">
-                          <p className="truncate text-sm font-bold text-[#172554]">{item.creator?.name ?? 'Unknown'}</p>
-                          <p className="truncate text-xs font-semibold text-[#6b7a99]">{item.creator?.email ?? ''}</p>
+                          <p className="truncate text-sm font-bold text-foreground">{item.creator?.name ?? 'Unknown'}</p>
+                          <p className="truncate text-xs font-semibold text-muted-foreground">{item.creator?.email ?? ''}</p>
                         </td>
                         <td className="px-4 py-4">
-                          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6b7a99]">
-                            <CalendarDays size={14} className="text-[#ffb84d]" />
+                          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
+                            <CalendarDays size={14} className="text-primary" />
                             {formatDate(item.expense_date)}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-right text-sm font-semibold text-red-500">
+                        <td className="px-4 py-4 text-right text-sm font-semibold text-foreground">
                           {money(item.amount)}
                         </td>
                         <td className="px-4 py-4">
@@ -979,15 +990,15 @@ export default function FinancePage() {
               </table>
               {/* Footer Summary */}
               {!loading && filteredExpenses.length > 0 && (
-                <div className="border-t-2 border-[#d8e6f8] bg-[#f8faff] px-5 py-4">
+                <div className="border-t-2 border-border bg-muted px-5 py-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[#6b7a99]">
+                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
                       <Users size={14} />
-                      <span><span className="text-[#172554]">{filteredExpenses.length}</span> items</span>
+                      <span><span className="text-foreground">{filteredExpenses.length}</span> items</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-bold">
-                      <Banknote size={14} className="text-red-500" />
-                      <span className="text-red-500">Total: {money(summary.total)}</span>
+                      <Banknote size={14} className="text-primary" />
+                      <span className="text-primary">Total: {money(summary.total)}</span>
                     </div>
                   </div>
                 </div>
@@ -1000,26 +1011,33 @@ export default function FinancePage() {
           {/* Summary Cards - Mobile */}
           {filteredExpenses.length > 0 && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
-                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#6b7a99]">
-                  <ReceiptText size={11} className="text-[#2f80ed]" />
+              <div className="rounded-xl border border-border bg-background p-3 ">
+                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <ReceiptText size={11} className="text-primary" />
                   Total Items
                 </p>
-                <p className="mt-1 text-xl font-semibold text-[#172554]">{summary.count}</p>
+                <p className="mt-1 text-xl font-semibold text-foreground">{summary.count}</p>
               </div>
-              <div className="rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
-                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#6b7a99]">
-                  <Filter size={11} className="text-[#8b5cf6]" />
+              <div className="rounded-xl border border-border bg-background p-3 ">
+                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Filter size={11} className="text-primary" />
                   Categories
                 </p>
-                <p className="mt-1 text-xl font-semibold text-[#172554]">{summary.categories}</p>
+                <p className="mt-1 text-xl font-semibold text-foreground">{summary.categories}</p>
               </div>
-              <div className="col-span-2 rounded-xl border border-[#e6ebf4] bg-white p-3 shadow-sm">
-                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#6b7a99]">
-                  <TrendingUp size={11} className="text-red-500" />
+              <div className="rounded-xl border border-border bg-background p-3">
+                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TrendingUp size={11} className="text-primary" />
                   Total Amount
                 </p>
-                <p className="mt-1 text-xl font-semibold text-red-500">{money(summary.total)}</p>
+                <p className="mt-1 text-xl font-semibold text-primary">{money(summary.total)}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-background p-3">
+                <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Clock3 size={11} className="text-primary" />
+                  Pending Bazar
+                </p>
+                <p className="mt-1 text-xl font-semibold text-foreground">{summary.pendingBazar}</p>
               </div>
             </div>
           )}
@@ -1027,9 +1045,9 @@ export default function FinancePage() {
           {/* Mobile Search & Month Picker - Single Row */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
-                className="h-[42px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                className="h-[42px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
                 placeholder="Search item..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
@@ -1073,28 +1091,28 @@ export default function FinancePage() {
           {/* Mobile Expense Cards */}
           {loading && (
             <div className="flex items-center justify-center py-12">
-              <Loader2 size={24} className="animate-spin text-[#2f80ed]" />
+              <Loader2 size={24} className="animate-spin text-primary" />
             </div>
           )}
           {!loading && filteredExpenses.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
-              <ShoppingBag size={40} className="mb-2 text-[#d8e6f8]" />
-              <p className="text-sm font-bold text-[#6b7a99]">No expenses found.</p>
+              <ShoppingBag size={40} className="mb-2 text-muted-foreground" />
+              <p className="text-sm font-bold text-muted-foreground">No expenses found.</p>
             </div>
           )}
           {!loading &&
             filteredExpenses.map((item) => (
               <div
                 key={item.id}
-                className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb] hover:shadow-md"
+                className="rounded-xl border border-border bg-background p-4  transition hover:border-primary "
               >
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-base font-bold text-[#172554]">
+                    <p className="truncate text-base font-bold text-foreground">
                       {item.item_name || 'Unnamed Expense'}
                     </p>
-                    <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
-                      <CalendarDays size={13} className="text-[#ffb84d]" />
+                    <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                      <CalendarDays size={13} className="text-primary" />
                       {formatDate(item.expense_date)}
                     </p>
                   </div>
@@ -1105,32 +1123,32 @@ export default function FinancePage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#f8faff] p-3">
+                <div className="grid grid-cols-2 gap-3 rounded-xl bg-muted p-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">
                       Quantity
                     </p>
-                    <p className="mt-1 text-sm font-bold text-[#172554]">
+                    <p className="mt-1 text-sm font-bold text-foreground">
                       {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">
                       Amount
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-red-500">
+                    <p className="mt-1 text-sm font-semibold text-foreground">
                       {money(item.amount)}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-[#6b7a99]">
+                <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-muted-foreground">
                   <span>Added by</span>
-                  <span className="truncate font-bold text-[#172554]">{item.creator?.name ?? 'Unknown'}</span>
+                  <span className="truncate font-bold text-foreground">{item.creator?.name ?? 'Unknown'}</span>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#e6ebf4] pt-3">
-                  <span className="text-xs font-semibold text-[#6b7a99]">Status</span>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+                  <span className="text-xs font-semibold text-muted-foreground">Status</span>
                   <ExpenseApprovalControl
                     status={getExpenseApprovalStatus(item)}
                     canReview={canManageMess}
@@ -1146,11 +1164,11 @@ export default function FinancePage() {
             ))}
           {/* Footer Summary - Mobile */}
           {!loading && filteredExpenses.length > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 py-3">
-              <p className="text-xs font-bold text-[#6b7a99]"><span className="text-[#172554]">{filteredExpenses.length}</span> items</p>
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3">
+              <p className="text-xs font-bold text-muted-foreground"><span className="text-foreground">{filteredExpenses.length}</span> items</p>
               <div className="flex items-center gap-1.5 text-xs font-bold">
-                <Banknote size={14} className="text-red-500" />
-                <span className="text-red-500">Total: {money(summary.total)}</span>
+                <Banknote size={14} className="text-primary" />
+                <span className="text-primary">Total: {money(summary.total)}</span>
               </div>
             </div>
           )}
@@ -1176,16 +1194,16 @@ export default function FinancePage() {
       >
           <div className="space-y-6">
             {/* Payment Type Toggle */}
-            <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
-              <label className="mb-3 block text-sm font-semibold text-[#0a1433]">Payment Type</label>
+            <div className="rounded-2xl border border-border bg-muted p-5">
+              <label className="mb-3 block text-sm font-semibold text-foreground">Payment Type</label>
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setExpensePaymentType('FROM_DEPOSIT')}
                   className={`flex-1 h-12 rounded-xl border-2 text-sm font-semibold transition ${
                     expensePaymentType === 'FROM_DEPOSIT'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-500 hover:border-blue-300'
+                      ? 'border-primary/30 bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:border-primary/30'
                   }`}
                 >
                   🏦 From Deposit
@@ -1195,14 +1213,14 @@ export default function FinancePage() {
                   onClick={() => setExpensePaymentType('PERSONAL')}
                   className={`flex-1 h-12 rounded-xl border-2 text-sm font-semibold transition ${
                     expensePaymentType === 'PERSONAL'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-slate-200 bg-white text-slate-500 hover:border-purple-300'
+                      ? 'border-primary/30 bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:border-primary/30'
                   }`}
                 >
                   👤 Personal
                 </button>
               </div>
-              <p className="mt-2 text-[10px] font-semibold text-[#6b7a99]">
+              <p className="mt-2 text-[10px] font-semibold text-muted-foreground">
                 {expensePaymentType === 'FROM_DEPOSIT'
                   ? 'Amount will be split among all members in monthly bill calculation.'
                   : 'Amount will be added as your personal deposit contribution. Not split with others.'}
@@ -1210,12 +1228,12 @@ export default function FinancePage() {
             </div>
 
             {expenseFormMode === 'utility' && (
-              <div className="rounded-2xl border border-slate-200 bg-[#faf9ff] p-5">
+              <div className="rounded-2xl border border-border bg-muted p-5">
               <div className="grid gap-4">
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">Category</label>
+                    <label className="mb-1.5 block text-sm font-semibold text-foreground">Category</label>
                     <EnterpriseSelect
-                      className="h-11 border-slate-200 bg-white text-[#0a1433]"
+                      className="h-11 border-border bg-background text-foreground"
                       value={expenseItems[0].category}
                       onValueChange={(value) => updateExpenseItem(1, 'category', value as ExpenseCategory)}
                       options={utilityCategories.map((category) => ({ value: category, label: category }))}
@@ -1224,11 +1242,11 @@ export default function FinancePage() {
 
                   {canManageMess && purchasedByMemberOptions.length > 0 && (
                     <div>
-                      <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
+                      <label className="mb-1.5 block text-sm font-semibold text-foreground">
                         Purchased By
                       </label>
                       <EnterpriseSelect
-                        className="h-11 border-slate-200 bg-white text-[#0a1433]"
+                        className="h-11 border-border bg-background text-foreground"
                         value={expensePurchasedBy}
                         onValueChange={setExpensePurchasedBy}
                         options={purchasedByMemberOptions.map((member) => ({ value: member.id, label: member.name }))}
@@ -1237,10 +1255,10 @@ export default function FinancePage() {
                   )}
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">Price (৳)</label>
+                    <label className="mb-1.5 block text-sm font-semibold text-foreground">Price (৳)</label>
                     <input
                       type="number"
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                      className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground"
                       placeholder="Amount"
                       value={expenseItems[0].amount}
                       onChange={(e) => updateExpenseItem(1, 'amount', e.target.value)}
@@ -1248,11 +1266,11 @@ export default function FinancePage() {
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
+                    <label className="mb-1.5 block text-sm font-semibold text-foreground">
                       Description
                     </label>
                     <textarea
-                      className="min-h-28 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
+                      className="min-h-28 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground"
                       placeholder="Add utility note..."
                       value={expenseItems[0].description}
                       onChange={(e) => updateExpenseItem(1, 'description', e.target.value)}
@@ -1260,11 +1278,11 @@ export default function FinancePage() {
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
+                    <label className="mb-1.5 block text-sm font-semibold text-foreground">
                       Receipt Image/PDF (Optional)
                     </label>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
+                      <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-3 text-sm font-semibold hover:border-primary/30">
                         <Upload size={18} />
                         Upload Receipt
                         <input
@@ -1278,12 +1296,12 @@ export default function FinancePage() {
                         />
                       </label>
                       {expenseItems[0].receipt && (
-                        <div className="flex items-center gap-2 text-sm text-green-600">
+                        <div className="flex items-center gap-2 text-sm text-primary">
                           <span className="truncate">{expenseItems[0].receipt.name}</span>
                           <button
                             type="button"
                             onClick={() => updateReceipt(1, null)}
-                            className="text-red-500 hover:text-red-700"
+                            className="text-destructive hover:text-destructive"
                           >
                             ✕
                           </button>
@@ -1298,20 +1316,20 @@ export default function FinancePage() {
             {expenseFormMode !== 'utility' && (
               <>
             {/* Shared date */}
-            <div className="rounded-2xl bg-[#faf9ff] p-4">
-              <label className="mb-2 block text-sm font-semibold text-[#0a1433]">
+            <div className="rounded-2xl bg-muted p-4">
+              <label className="mb-2 block text-sm font-semibold text-foreground">
                 Expense Date
               </label>
               <EnterpriseDatePicker value={sharedDate} onValueChange={setSharedDate} surface="white" className="h-12 w-full" align="start" ariaLabel="Select expense date" />
             </div>
 
             {canManageMess && purchasedByMemberOptions.length > 0 && (
-              <div className="rounded-2xl bg-[#faf9ff] p-4">
-                <label className="mb-2 block text-sm font-semibold text-[#0a1433]">
+              <div className="rounded-2xl bg-muted p-4">
+                <label className="mb-2 block text-sm font-semibold text-foreground">
                   Purchased By
                 </label>
                 <EnterpriseSelect
-                  className="border-slate-200 bg-white text-[#0a1433]"
+                  className="border-border bg-background text-foreground"
                   value={expensePurchasedBy}
                   onValueChange={setExpensePurchasedBy}
                   options={purchasedByMemberOptions.map((member) => ({ value: member.id, label: member.name }))}
@@ -1324,16 +1342,16 @@ export default function FinancePage() {
               {expenseItems.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="relative rounded-2xl border border-slate-200 bg-[#faf9ff] p-5"
+                  className="relative rounded-2xl border border-border bg-muted p-5"
                 >
-                  <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Item {idx + 1}
                   </p>
 
                   {expenseItems.length > 1 && (
                     <button
                       onClick={() => removeExpenseItem(item.id)}
-                      className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
+                      className="absolute right-4 top-4 text-muted-foreground hover:text-destructive"
                     >
                       <X size={18} />
                     </button>
@@ -1342,11 +1360,11 @@ export default function FinancePage() {
                   <div className="grid gap-4">
                     {/* Item Name */}
                     <div>
-                      <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
+                      <label className="mb-1.5 block text-sm font-semibold text-foreground">
                         Item Name
                       </label>
                       <input
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#0a1433]"
+                        className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground"
                         placeholder="e.g. Rice, Eggs..."
                         value={item.itemName}
                         onChange={(e) => updateExpenseItem(item.id, 'itemName', e.target.value)}
@@ -1359,7 +1377,7 @@ export default function FinancePage() {
                         <label className="mb-1.5 block text-sm font-semibold">Quantity</label>
                         <input
                           type="number"
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                          className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
                           placeholder="Qty"
                           value={item.quantity}
                           onChange={(e) => updateExpenseItem(item.id, 'quantity', e.target.value)}
@@ -1368,7 +1386,7 @@ export default function FinancePage() {
                       <div>
                         <label className="mb-1.5 block text-sm font-semibold">Unit</label>
                         <input
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                          className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
                           placeholder="kg, pcs"
                           value={item.unit}
                           onChange={(e) => updateExpenseItem(item.id, 'unit', e.target.value)}
@@ -1378,7 +1396,7 @@ export default function FinancePage() {
                         <label className="mb-1.5 block text-sm font-semibold">Price (৳)</label>
                         <input
                           type="number"
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                          className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
                           placeholder="Amount"
                           value={item.amount}
                           onChange={(e) => updateExpenseItem(item.id, 'amount', e.target.value)}
@@ -1390,7 +1408,7 @@ export default function FinancePage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold">Category</label>
                       <EnterpriseSelect
-                        className="h-11 border-slate-200 bg-white text-[#0a1433]"
+                        className="h-11 border-border bg-background text-foreground"
                         value={item.category}
                         onValueChange={(value) => updateExpenseItem(item.id, 'category', value as ExpenseCategory)}
                         options={(isEditing ? categories : expenseCategories).map((category) => ({ value: category, label: category }))}
@@ -1398,11 +1416,11 @@ export default function FinancePage() {
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
+                      <label className="mb-1.5 block text-sm font-semibold text-foreground">
                         Description
                       </label>
                       <textarea
-                        className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433]"
+                        className="min-h-24 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground"
                         placeholder="Add useful note or market detail..."
                         value={item.description}
                         onChange={(e) => updateExpenseItem(item.id, 'description', e.target.value)}
@@ -1411,11 +1429,11 @@ export default function FinancePage() {
 
                     {/* Receipt Image Upload */}
                     <div>
-                      <label className="mb-1.5 block text-sm font-semibold text-[#0a1433]">
+                      <label className="mb-1.5 block text-sm font-semibold text-foreground">
                         Receipt Image/PDF (Optional)
                       </label>
                       <div className="flex items-center gap-3">
-                        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold hover:border-violet-400">
+                        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-3 text-sm font-semibold hover:border-primary/30">
                           <Upload size={18} />
                           Upload Receipt
                           <input
@@ -1429,11 +1447,11 @@ export default function FinancePage() {
                           />
                         </label>
                         {item.receipt && (
-                          <div className="flex items-center gap-2 text-sm text-green-600">
+                          <div className="flex items-center gap-2 text-sm text-primary">
                             <span>{item.receipt.name}</span>
                             <button
                               onClick={() => updateReceipt(item.id, null)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-destructive hover:text-destructive"
                             >
                               ✕
                             </button>
@@ -1469,17 +1487,17 @@ export default function FinancePage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="rounded-2xl bg-[#faf9ff] p-4 text-sm font-bold text-[#0a1433]">
+            <div className="rounded-2xl bg-muted p-4 text-sm font-bold text-foreground">
               {reviewExpense?.item_name || reviewExpense?.category || 'Expense'} -{' '}
               {money(reviewExpense?.amount)}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-[#0a1433]">
+              <label className="mb-2 block text-sm font-semibold text-foreground">
                 Message
               </label>
               <textarea
-                className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0a1433] outline-none transition focus:border-[#6f3df4] focus:ring-4 focus:ring-violet-100"
+                className="min-h-32 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/20"
                 placeholder="Explain what price or item data should be reviewed..."
                 value={reviewMessage}
                 onChange={(event) => setReviewMessage(event.target.value)}
@@ -1511,14 +1529,14 @@ export default function FinancePage() {
       >
           {viewExpense && (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)]">
+              <div className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 ">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a99]">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       {viewExpense.category}
                     </p>
                     <div className="mt-1 flex items-center gap-2 flex-wrap">
-                      <h3 className="text-lg font-semibold text-[#172554]">
+                      <h3 className="text-lg font-semibold text-foreground">
                         {viewExpense.item_name || viewExpense.category || 'Unnamed Expense'}
                       </h3>
                       <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPaymentTypeStyle(viewExpense.payment_type).badge}`}>
@@ -1531,79 +1549,79 @@ export default function FinancePage() {
                         onStatusChange={(status) => void handleExpenseApprovalChange(viewExpense, status)}
                       />
                     </div>
-                    <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
-                      <CalendarDays size={13} className="text-[#ffb84d]" />
+                    <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                      <CalendarDays size={13} className="text-primary" />
                       {formatDate(viewExpense.expense_date)}
                     </p>
                   </div>
-                  <p className="text-xl font-semibold text-red-500">
+                  <p className="text-xl font-semibold text-foreground">
                     {money(viewExpense.amount)}
                   </p>
                 </div>
               </div>
 
               {viewExpense.items?.length ? (
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                  <div className="flex items-center justify-between bg-slate-50 px-4 py-3">
-                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Purchased Items</p>
-                    <span className="text-xs font-bold text-[#6b7a99]">{viewExpense.items.length} {viewExpense.items.length === 1 ? 'item' : 'items'}</span>
+                <div className="overflow-hidden rounded-xl border border-border bg-background">
+                  <div className="flex items-center justify-between bg-muted px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">Purchased Items</p>
+                    <span className="text-xs font-bold text-muted-foreground">{viewExpense.items.length} {viewExpense.items.length === 1 ? 'item' : 'items'}</span>
                   </div>
                   {viewExpense.items.map((item, index) => (
-                    <div key={item.id ?? `${item.itemName}-${index}`} className="flex items-center justify-between gap-4 border-t border-slate-100 px-4 py-3">
+                    <div key={item.id ?? `${item.itemName}-${index}`} className="flex items-center justify-between gap-4 border-t border-border px-4 py-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-[#172554]">{item.itemName}</p>
-                        {item.quantity != null ? <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{item.quantity} {item.unit ?? ''}</p> : null}
+                        <p className="truncate text-sm font-bold text-foreground">{item.itemName}</p>
+                        {item.quantity != null ? <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{item.quantity} {item.unit ?? ''}</p> : null}
                       </div>
-                      <span className="shrink-0 text-sm font-semibold text-[#008d8c]">{money(item.amount)}</span>
+                      <span className="shrink-0 text-sm font-semibold text-primary">{money(item.amount)}</span>
                     </div>
                   ))}
                 </div>
               ) : null}
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Purchased By</p>
-                  <p className="mt-1 text-sm font-bold text-[#172554]">
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">Purchased By</p>
+                  <p className="mt-1 text-sm font-bold text-foreground">
                     {viewExpense.purchaser?.name ?? resolveMemberNameById(viewExpense.purchased_by, viewExpense.creator?.name ?? 'Unknown')}
                   </p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Added By</p>
-                  <p className="mt-1 text-sm font-bold text-[#172554]">
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">Added By</p>
+                  <p className="mt-1 text-sm font-bold text-foreground">
                     {viewExpense.creator?.name ?? 'Unknown'}
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Description</p>
-                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold text-[#172554]">
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-[10px] font-semibold uppercase text-muted-foreground">Description</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold text-foreground">
                   {viewExpense.description || 'No description added.'}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Receipt</p>
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-[10px] font-semibold uppercase text-muted-foreground">Receipt</p>
                 {viewExpense.receipt_url ? (
                   <div className="mt-3 space-y-3">
                     {/\.(png|jpe?g|webp|gif)(\?|$)/i.test(viewExpense.receipt_url) && (
                       <img
                         src={viewExpense.receipt_url}
                         alt={`${viewExpense.item_name || viewExpense.category} receipt`}
-                        className="max-h-80 w-full rounded-xl border border-slate-200 object-contain"
+                        className="max-h-80 w-full rounded-xl border border-border object-contain"
                       />
                     )}
                     <a
                       href={viewExpense.receipt_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-[#2f80ed]/30 bg-[#e7f1ff] px-4 text-sm font-bold text-[#2f80ed]"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-muted px-4 text-sm font-bold text-primary"
                     >
                       View Receipt
                     </a>
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm font-semibold text-[#6b7a99]">
+                  <p className="mt-2 text-sm font-semibold text-muted-foreground">
                     No receipt uploaded.
                   </p>
                 )}

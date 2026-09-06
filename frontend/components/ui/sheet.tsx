@@ -36,7 +36,7 @@ function SheetOverlay({
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-[#2A2A2E]/50',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50',
         className,
       )}
       {...props}
@@ -76,7 +76,7 @@ function SheetContent({
         {children}
         <SheetPrimitive.Close
           className={cn(
-            'absolute top-4 right-4 grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground shadow-sm transition hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:pointer-events-none disabled:opacity-50',
+            'absolute top-4 right-4 grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground transition-colors hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:pointer-events-none disabled:opacity-50',
             closeClassName,
           )}
         >

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, CalendarCheck2, CalendarDays, Check, CircleCheck, Clock3, Loader2, Repeat2, Save, Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { EnterpriseDatePicker } from '@/components/ui/enterprise-date-picker'
 import type {
   CreateMealPatternInput,
@@ -21,7 +21,6 @@ import {
   normalizeWeeklyMealPatternSchedule,
 } from '@/lib/meal-pattern'
 import { cn } from '@/lib/utils'
-import { useSidebar } from '@/app/context/sidebar-context'
 import { ScheduleEditor } from './schedule-editor'
 import { SchedulePreview } from './schedule-preview'
 
@@ -61,11 +60,11 @@ function ChoiceCard({ selected, icon: Icon, title, description, bullets, onClick
       className={cn(
         'relative min-h-60 rounded-2xl border p-5 text-left transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[var(--brand-ring)]',
         selected
-          ? 'border-[var(--brand)] bg-[var(--brand-softer)] shadow-[0_16px_36px_var(--brand-shadow)]'
-          : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] hover:border-[var(--brand-border)] hover:shadow-[var(--dashboard-shadow)]',
+          ? 'border-[var(--brand)] bg-[var(--brand-softer)] '
+          : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] hover:border-[var(--brand-border)] ',
       )}
     >
-      <span className={cn('grid size-12 place-items-center rounded-2xl', selected ? 'bg-[var(--brand)] text-white' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>
+      <span className={cn('grid size-12 place-items-center rounded-2xl', selected ? 'bg-[var(--brand)] text-primary-foreground' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>
         <Icon className="size-6" />
       </span>
       <span className="mt-5 block text-lg font-semibold text-foreground">{title}</span>
@@ -73,7 +72,7 @@ function ChoiceCard({ selected, icon: Icon, title, description, bullets, onClick
       <span className="mt-4 block space-y-2">
         {bullets.map((bullet) => <span key={bullet} className="flex items-center gap-2 text-xs font-bold text-foreground"><Check className="size-3.5 text-[var(--brand)]" /> {bullet}</span>)}
       </span>
-      <span className={cn('absolute right-4 top-4 grid size-6 place-items-center rounded-full border', selected ? 'border-[var(--brand)] bg-[var(--brand)] text-white' : 'border-[var(--dashboard-line-strong)]')}>
+      <span className={cn('absolute right-4 top-4 grid size-6 place-items-center rounded-full border', selected ? 'border-[var(--brand)] bg-[var(--brand)] text-primary-foreground' : 'border-[var(--dashboard-line-strong)]')}>
         {selected && <Check className="size-3.5" />}
       </span>
     </button>
@@ -81,7 +80,6 @@ function ChoiceCard({ selected, icon: Icon, title, description, bullets, onClick
 }
 
 export function PatternSetupWizard({ membershipId, memberName, initialPattern, saving, onSubmit }: PatternSetupWizardProps) {
-  const { collapsed } = useSidebar()
   const today = useMemo(() => getDhakaDateKey(), [])
   const [step, setStep] = useState(1)
   const [patternType, setPatternType] = useState<MealPatternType>('DAILY')
@@ -145,13 +143,13 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-28">
+    <div className="mx-auto max-w-6xl pb-8">
       <div className="mb-5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="mx-auto flex min-w-[420px] max-w-2xl items-center justify-center">
           {steps.map((item, index) => (
             <div key={item.number} className="flex items-center">
               <button type="button" onClick={() => item.number < step && continueTo(item.number)} disabled={item.number > step} className="flex min-h-11 items-center gap-2 rounded-xl px-2 disabled:cursor-default">
-                <span className={cn('grid size-8 place-items-center rounded-full text-xs font-semibold', step >= item.number ? 'bg-[var(--brand)] text-white' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>{step > item.number ? <Check className="size-4" /> : item.number}</span>
+                <span className={cn('grid size-8 place-items-center rounded-full text-xs font-semibold', step >= item.number ? 'bg-[var(--brand)] text-primary-foreground' : 'bg-[var(--dashboard-surface-subtle)] text-muted-foreground')}>{step > item.number ? <Check className="size-4" /> : item.number}</span>
                 <span className={cn('text-xs font-semibold', step >= item.number ? 'text-foreground' : 'text-muted-foreground')}>{item.label}</span>
               </button>
               {index < steps.length - 1 && <span className={cn('mx-1 h-0.5 w-10 sm:w-20', step > item.number ? 'bg-[var(--brand)]' : 'bg-[var(--dashboard-line-strong)]')} />}
@@ -168,7 +166,7 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
         </div>
       </div>
 
-      {error && <div role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">{error}</div>}
+      {error && <div role="alert" className="mb-5 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive">{error}</div>}
 
       {step === 1 && (
         <section>
@@ -253,25 +251,26 @@ export function PatternSetupWizard({ membershipId, memberName, initialPattern, s
         </section>
       )}
 
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]/95 p-3 backdrop-blur-lg lg:left-[var(--meal-pattern-sidebar-offset)]"
-        style={{ '--meal-pattern-sidebar-offset': collapsed ? '72px' : '280px' } as CSSProperties}
-      >
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
-          <Button type="button" variant="ghost" disabled={step === 1 || saving} onClick={() => continueTo(step - 1)} className="min-h-11 rounded-xl px-3 font-semibold"><ArrowLeft className="size-4" /> <span className="hidden sm:inline">Back</span></Button>
-          <div className="flex flex-1 justify-end gap-2">
-            {step < 3 ? (
-              <Button type="button" onClick={() => continueTo(step + 1)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] px-5 font-semibold text-white hover:bg-[var(--brand-hover)] sm:flex-none">Continue <ArrowRight className="size-4" /></Button>
-            ) : (
-              <>
-                {(!initialPattern || initialPattern.status === 'DRAFT') && <Button type="button" variant="outline" disabled={saving} onClick={() => void submit(false)} className="min-h-11 rounded-xl px-3 font-semibold sm:px-5"><Save className="size-4" /> <span className="hidden sm:inline">Save draft</span><span className="sm:hidden">Draft</span></Button>}
-                <Button type="button" disabled={saving} onClick={() => void submit(true)} className="min-h-11 flex-1 rounded-xl bg-[var(--brand)] px-4 font-semibold text-white shadow-[0_10px_22px_var(--brand-shadow)] hover:bg-[var(--brand-hover)] sm:flex-none sm:px-6">
-                  {saving ? <><Loader2 className="size-4 animate-spin" /> Saving...</> : <>{initialPattern && initialPattern.status !== 'DRAFT' ? 'Save changes' : 'Activate pattern'} <ArrowRight className="size-4" /></>}
-                </Button>
-              </>
+      <div className="mt-8 flex flex-wrap items-center justify-end gap-2">
+        <EnterpriseButton tone="secondary" disabled={step === 1 || saving} onClick={() => continueTo(step - 1)}>
+          <ArrowLeft className="size-4" /> Back
+        </EnterpriseButton>
+        {step < 3 ? (
+          <EnterpriseButton onClick={() => continueTo(step + 1)}>
+            Continue <ArrowRight className="size-4" />
+          </EnterpriseButton>
+        ) : (
+          <>
+            {(!initialPattern || initialPattern.status === 'DRAFT') && (
+              <EnterpriseButton tone="secondary" disabled={saving} onClick={() => void submit(false)}>
+                <Save className="size-4" /> Save draft
+              </EnterpriseButton>
             )}
-          </div>
-        </div>
+            <EnterpriseButton disabled={saving} onClick={() => void submit(true)}>
+              {saving ? <><Loader2 className="size-4 animate-spin" /> Saving...</> : <>{initialPattern && initialPattern.status !== 'DRAFT' ? 'Save changes' : 'Activate pattern'} <ArrowRight className="size-4" /></>}
+            </EnterpriseButton>
+          </>
+        )}
       </div>
     </div>
   )

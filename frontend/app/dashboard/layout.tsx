@@ -43,7 +43,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
     <div className="dashboard-theme flex h-screen overflow-hidden bg-background">
       <DashboardSidebar />
       {/* Content - full width on tablet, margin adjusts on large screens when sidebar is fixed */}
-      <main className={`dashboard-scroll-viewport min-w-0 flex-1 overflow-y-scroll overflow-x-hidden transition-[margin-left] duration-300 ${contentMargin}`}>
+      <main className={`dashboard-scroll-viewport min-w-0 flex-1 overflow-y-auto overflow-x-hidden transition-[margin-left] duration-300 ${contentMargin}`}>
         <div key={pathname} className="dashboard-main dashboard-route-frame min-h-screen p-0">
           {children}
         </div>

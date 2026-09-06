@@ -93,16 +93,16 @@ const ROLE_CONFIG: Record<MembershipRole, { label: string; icon: React.ReactNode
   MANAGER: {
     label: 'Manager',
     icon: <Shield size={12} />,
-    color: '#6d28d922',
-    textColor: '#6d28d9',
-    bgColor: '#f5f3ff',
+    color: 'var(--primary)',
+    textColor: 'var(--primary)',
+    bgColor: 'color-mix(in srgb, var(--primary) 10%, transparent)',
   },
   MEMBER: {
     label: 'Member',
     icon: <User size={12} />,
-    color: '#0f766e1a',
-    textColor: '#0f766e',
-    bgColor: '#f0fdfa',
+    color: 'var(--primary)',
+    textColor: 'var(--primary)',
+    bgColor: 'color-mix(in srgb, var(--primary) 10%, transparent)',
   },
 };
 
@@ -124,7 +124,7 @@ const formatDate = (iso: string) => {
   });
 };
 
-const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e'];
+const AVATAR_COLORS = ['var(--primary)'];
 
 const avatarColor = (userId: string) => {
   let hash = 0;
@@ -160,20 +160,20 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
       footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={onClose} disabled={loading}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={handleSave} disabled={loading}>{loading && <Loader2 size={15} className="animate-spin" />}{loading ? 'Saving...' : 'Save Role'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
     >
         <div className="space-y-5">
-          <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] p-3">
+          <div className="mb-5 flex items-center gap-3 rounded-lg border border-border bg-muted p-3">
             <div
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-semibold"
-              style={{ backgroundColor: `${avatarColor(member.user_id)}18`, borderColor: `${avatarColor(member.user_id)}55`, color: avatarColor(member.user_id) }}
+              style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: avatarColor(member.user_id) }}
             >
               {getInitials(member.user.name)}
             </div>
             <div className="min-w-0">
-              <h3 className="truncate text-base font-semibold text-[#172554]">{member.user.name}</h3>
-              <p className="truncate text-sm font-semibold text-[#6b7a99]">{member.user.email}</p>
+              <h3 className="truncate text-base font-semibold text-foreground">{member.user.name}</h3>
+              <p className="truncate text-sm font-semibold text-muted-foreground">{member.user.email}</p>
             </div>
           </div>
 
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Role
           </label>
           <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -187,8 +187,8 @@ function EditRoleModal({ member, onClose, onSave }: EditRoleModalProps) {
                   onClick={() => setRole(r)}
                   className={`flex min-h-[54px] items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition active:scale-[0.98] ${
                     selected
-                      ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-[0_12px_28px_rgba(47,128,237,0.16)]'
-                      : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
+                      ? 'border-border bg-muted text-primary '
+                      : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'
                   }`}
                 >
                   <span style={{ color: selected ? cfg.textColor : undefined }}>{cfg.icon}</span>
@@ -272,22 +272,22 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
     >
         <div className="space-y-5">
           {/* Member Info */}
-          <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] p-3">
+          <div className="mb-5 flex items-center gap-3 rounded-lg border border-border bg-muted p-3">
             <div
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg font-semibold"
-              style={{ backgroundColor: `${avatarColor(member.user_id)}18`, borderColor: `${avatarColor(member.user_id)}55`, color: avatarColor(member.user_id) }}
+              style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: avatarColor(member.user_id) }}
             >
               {getInitials(member.user.name)}
             </div>
             <div className="min-w-0">
-              <h3 className="truncate text-base font-semibold text-[#172554]">{member.user.name}</h3>
-              <p className="truncate text-sm font-semibold text-[#6b7a99]">{member.user.email}</p>
+              <h3 className="truncate text-base font-semibold text-foreground">{member.user.name}</h3>
+              <p className="truncate text-sm font-semibold text-muted-foreground">{member.user.email}</p>
             </div>
           </div>
 
           {/* Room Selection */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               <DoorOpen size={12} className="mr-1 inline" />
               Room Assignment
             </label>
@@ -297,7 +297,7 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
           {/* Financial Fields */}
           <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 <DollarSign size={12} className="mr-1 inline" />
                 Monthly Rent
               </label>
@@ -308,11 +308,11 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
                 value={monthlyRent}
                 onChange={(e) => setMonthlyRent(e.target.value)}
                 placeholder="0.00"
-                className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
               />
             </div>
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 <Building size={12} className="mr-1 inline" />
                 Deposit Amount
               </label>
@@ -323,14 +323,14 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
                 placeholder="0.00"
-                className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
               />
             </div>
           </div>
 
           {/* Active Status */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Membership Status
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -339,8 +339,8 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
                 onClick={() => setIsActive(true)}
                 className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition active:scale-[0.98] ${
                   isActive
-                    ? 'border-emerald-500/40 bg-emerald-50 text-emerald-600 shadow-[0_8px_20px_rgba(16,185,129,0.16)]'
-                    : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
+                    ? 'border-primary/40 bg-primary/10 text-primary '
+                    : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'
                 }`}
               >
                 <CheckCircle size={16} />
@@ -351,8 +351,8 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
                 onClick={() => setIsActive(false)}
                 className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition active:scale-[0.98] ${
                   !isActive
-                    ? 'border-red-500/40 bg-red-50 text-red-600 shadow-[0_8px_20px_rgba(239,68,68,0.16)]'
-                    : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#edf5ff]'
+                    ? 'border-destructive/30 bg-destructive/10 text-destructive '
+                    : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'
                 }`}
               >
                 <Ban size={16} />
@@ -362,7 +362,7 @@ function EditMemberModal({ member, activeMess, onClose, onSave }: EditMemberModa
           </div>
 
           {error && (
-            <div className="mb-5 rounded-xl border border-red-200/60 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+            <div className="mb-5 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive">
               {error}
             </div>
           )}
@@ -445,7 +445,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
         <form id="add-member-form" onSubmit={handleSubmit} className="space-y-5">
           {/* Email Input */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               User Email
             </label>
             <input
@@ -453,22 +453,22 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="member@example.com"
-              className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
             />
           </div>
 
           {/* Selected Mess */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Selected Mess
             </label>
-            <div className="flex h-[48px] w-full items-center rounded-xl border border-[#d8e6f8] bg-[#f8faff] px-4 text-sm font-bold text-[#172554]">
+            <div className="flex h-[48px] w-full items-center rounded-xl border border-border bg-muted px-4 text-sm font-bold text-foreground">
               {activeMess?.name || 'No mess available'}
             </div>
           </div>
 
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Select Room
             </label>
             <EnterpriseSelect
@@ -479,7 +479,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
               options={availableRooms.map((room) => ({ value: room.roomName, label: `${room.roomName}${typeof room.availableSeats === 'number' ? ` (${room.availableSeats} seat left)` : ''}` }))}
             />
             {availableRooms.length === 0 && (
-              <p className="mt-2 text-xs font-semibold text-[#8a9bb5]">
+              <p className="mt-2 text-xs font-semibold text-muted-foreground">
                 All configured rooms are currently full. Add the member without a room or free up a seat first.
               </p>
             )}
@@ -487,7 +487,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
 
           {/* Role Selection */}
           <div className="mb-5">
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Role
             </label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -501,8 +501,8 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
                     onClick={() => setRole(r)}
                     className={`flex min-h-[62px] flex-col items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold transition active:scale-[0.98] ${
                       selected
-                        ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-[0_8px_20px_rgba(47,128,237,0.16)]'
-                        : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'
+                        ? 'border-border bg-muted text-primary '
+                        : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'
                     }`}
                   >
                     <span style={{ color: selected ? cfg.textColor : undefined }}>{cfg.icon}</span>
@@ -514,7 +514,7 @@ function AddMemberModal({ activeMess, members, onClose, onAdd }: AddMemberModalP
           </div>
 
           {error && (
-            <div className="mb-5 rounded-xl border border-red-200/60 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+            <div className="mb-5 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive">
               {error}
             </div>
           )}
@@ -543,17 +543,17 @@ function MobileMemberRow({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-xl border border-[#e6ebf4] bg-white shadow-sm transition-all hover:border-[#a9ccfb] hover:shadow-md">
+    <div className="rounded-xl border border-border bg-background  transition-all hover:border-primary ">
       <div className="flex items-center gap-3 px-4 py-3">
         <div
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold"
-          style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}
+          style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: avatarBg }}
         >
           {getInitials(member.user.name)}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-[#172554]">{member.user.name}</h3>
+            <h3 className="truncate text-sm font-semibold text-foreground">{member.user.name}</h3>
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
               style={{ backgroundColor: cfg.bgColor, color: cfg.textColor }}
@@ -562,42 +562,42 @@ function MobileMemberRow({
               {cfg.label}
             </span>
           </div>
-          <p className="truncate text-xs font-semibold text-[#6b7a99]">{member.user.email}</p>
+          <p className="truncate text-xs font-semibold text-muted-foreground">{member.user.email}</p>
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e6ebf4] text-[#6b7a99] transition hover:bg-[#edf5ff] hover:text-[#2f80ed]"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted hover:text-primary"
         >
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
 
       {expanded && (
-        <div className="border-t border-[#e6ebf4] px-4 py-3">
+        <div className="border-t border-border px-4 py-3">
           <div className="mb-3 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#6b7a99]">
-              <Mail size={13} className="shrink-0 text-[#2f80ed]" />
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <Mail size={13} className="shrink-0 text-primary" />
               <span className="truncate">{member.user.email}</span>
             </div>
             {member.user.phone && (
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#6b7a99]">
-                <Phone size={13} className="shrink-0 text-[#58d68d]" />
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                <Phone size={13} className="shrink-0 text-primary" />
                 <span>{member.user.phone}</span>
               </div>
             )}
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#6b7a99]">
-              <CalendarDays size={13} className="shrink-0 text-[#ffb84d]" />
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <CalendarDays size={13} className="shrink-0 text-primary" />
               <span>Joined {formatDate(member.joined_at)}</span>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#6b7a99]">
-              <span className="shrink-0 text-[#2f80ed]">🏠</span>
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <span className="shrink-0 text-primary">🏠</span>
               <span className="truncate">{member.mess.name}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/100" />
               Active
             </span>
           </div>
@@ -605,14 +605,14 @@ function MobileMemberRow({
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               onClick={() => onEditMember(member)}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#2f80ed]/20 bg-[#e7f1ff] text-xs font-bold text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] active:scale-[0.98]"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-muted text-xs font-bold text-primary transition hover:border-primary hover:bg-muted active:scale-[0.98]"
             >
               <Pencil size={14} />
               Edit
             </button>
             <button
               onClick={() => onEditRole(member)}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#2f80ed]/20 bg-[#e7f1ff] text-xs font-bold text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] active:scale-[0.98]"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-muted text-xs font-bold text-primary transition hover:border-primary hover:bg-muted active:scale-[0.98]"
             >
               <UserCog size={14} />
               Role
@@ -620,7 +620,7 @@ function MobileMemberRow({
             <button
               onClick={() => onRemove(member)}
               disabled={isRemoving}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#ff4d4f]/20 bg-[#fff0f0] text-xs font-bold text-[#ff4d4f] transition hover:border-[#ff4d4f]/40 hover:bg-[#ffe5e5] active:scale-[0.98] disabled:opacity-60"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 text-xs font-bold text-destructive transition hover:border-destructive/30 hover:bg-destructive/10 active:scale-[0.98] disabled:opacity-60"
             >
               {isRemoving ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               {isRemoving ? 'Removing' : 'Remove'}
@@ -672,51 +672,51 @@ function MembersTable({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
+    <div className="dashboard-table-frame">
       <div className="overflow-x-auto monthly-bills-table-scroll pb-2">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
-              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">
+            <tr className="border-b border-border bg-muted">
+              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 <button
                   onClick={() => toggleSort('name')}
-                  className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
+                  className="inline-flex items-center gap-0.5 transition hover:text-primary"
                 >
                   Member
                   <SortIcon field="name" />
                 </button>
               </th>
-              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] md:table-cell">
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground md:table-cell">
                 Email & Phone
               </th>
-              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] lg:table-cell">
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground lg:table-cell">
                 Mess
               </th>
-              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">
+              <th className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 <button
                   onClick={() => toggleSort('role')}
-                  className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
+                  className="inline-flex items-center gap-0.5 transition hover:text-primary"
                 >
                   Role
                   <SortIcon field="role" />
                 </button>
               </th>
-              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
+              <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:table-cell">
                 <button
                   onClick={() => toggleSort('joined_at')}
-                  className="inline-flex items-center gap-0.5 transition hover:text-[#2f80ed]"
+                  className="inline-flex items-center gap-0.5 transition hover:text-primary"
                 >
                   Joined
                   <SortIcon field="joined_at" />
                 </button>
               </th>
-              <th className="hidden whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99] sm:table-cell">
+              <th className="hidden whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:table-cell">
                 Status
               </th>
               <EnterpriseTableActionHeader />
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#e6ebf4]">
+          <tbody className="divide-y divide-border">
             {sorted.map((member) => {
               const cfg = ROLE_CONFIG[member.role];
               const isRemoving = removingId === member.id;
@@ -725,21 +725,21 @@ function MembersTable({
               return (
                 <tr
                   key={member.id}
-                  className="transition hover:bg-[#f8faff] group"
+                  className="transition hover:bg-muted group"
                 >
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold"
-                        style={{ backgroundColor: `${avatarBg}18`, borderColor: `${avatarBg}55`, color: avatarBg }}
+                        style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: avatarBg }}
                       >
                         {getInitials(member.user.name)}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-[#172554]">
+                        <p className="truncate text-sm font-bold text-foreground">
                           {member.user.name}
                         </p>
-                        <p className="truncate text-xs font-semibold text-[#6b7a99] md:hidden">
+                        <p className="truncate text-xs font-semibold text-muted-foreground md:hidden">
                           {member.user.email}
                         </p>
                       </div>
@@ -747,11 +747,11 @@ function MembersTable({
                   </td>
                   <td className="hidden px-4 py-3.5 md:table-cell">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[#6b7a99]">
+                      <p className="truncate text-sm font-semibold text-muted-foreground">
                         {member.user.email}
                       </p>
                       {member.user.phone && (
-                        <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-[#8a9bb5]">
+                        <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
                           <Phone size={11} />
                           {member.user.phone}
                         </p>
@@ -759,7 +759,7 @@ function MembersTable({
                     </div>
                   </td>
                   <td className="hidden px-4 py-3.5 lg:table-cell">
-                    <span className="inline-flex items-center rounded-lg border border-[#d8e6f8] bg-[#edf5ff] px-2.5 py-1 text-xs font-bold text-[#2f80ed]">
+                    <span className="inline-flex items-center rounded-lg border border-border bg-muted px-2.5 py-1 text-xs font-bold text-primary">
                       {member.mess.name}
                     </span>
                   </td>
@@ -773,15 +773,15 @@ function MembersTable({
                     </span>
                   </td>
                   <td className="hidden px-4 py-3.5 sm:table-cell">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b7a99]">
-                      <CalendarDays size={13} className="text-[#ffb84d]" />
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                      <CalendarDays size={13} className="text-primary" />
                       {formatDate(member.joined_at)}
                     </span>
                   </td>
                   <td className="hidden px-4 py-3.5 sm:table-cell">
                     <div className="flex justify-center">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/15 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary/100" />
                         Active
                       </span>
                     </div>
@@ -789,14 +789,14 @@ function MembersTable({
                   <EnterpriseTableActionCell className="py-3.5" contentClassName="gap-1.5">
                       <button
                         onClick={() => onEditMember(member)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#2f80ed]/15 bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] sm:h-9 sm:w-9"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-muted text-primary transition hover:border-primary hover:bg-muted sm:h-9 sm:w-9"
                         title="Edit Member"
                       >
                         <Pencil size={15} />
                       </button>
                       <button
                         onClick={() => onEditRole(member)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#2f80ed]/15 bg-[#e7f1ff] text-[#2f80ed] transition hover:border-[#2f80ed]/40 hover:bg-[#dcebff] sm:h-9 sm:w-9"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-muted text-primary transition hover:border-primary hover:bg-muted sm:h-9 sm:w-9"
                         title="Change Role"
                       >
                         <UserCog size={15} />
@@ -804,7 +804,7 @@ function MembersTable({
                       <button
                         onClick={() => onRemove(member)}
                         disabled={isRemoving}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#ff4d4f]/15 bg-[#fff0f0] text-[#ff4d4f] transition hover:border-[#ff4d4f]/40 hover:bg-[#ffe5e5] disabled:opacity-60 sm:h-9 sm:w-9"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10 text-destructive transition hover:border-destructive/30 hover:bg-destructive/10 disabled:opacity-60 sm:h-9 sm:w-9"
                         title="Remove Member"
                       >
                         {isRemoving ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
@@ -819,9 +819,9 @@ function MembersTable({
 
       {sorted.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16">
-          <Users size={48} className="mb-3 text-[#d8e6f8]" />
-          <p className="text-sm font-bold text-[#6b7a99]">No members found</p>
-          <p className="mt-1 text-xs font-semibold text-[#8a9bb5]">Try adjusting your search or filter</p>
+          <Users size={48} className="mb-3 text-muted-foreground" />
+          <p className="text-sm font-bold text-muted-foreground">No members found</p>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground">Try adjusting your search or filter</p>
         </div>
       )}
     </div>
@@ -841,29 +841,28 @@ function MemberJoinRequestsPanel({
   if (requests.length === 0) return null;
 
   return (
-    <div className="mb-8 overflow-hidden rounded-2xl border border-[#e0e8f5] bg-white shadow-[0_10px_40px_rgba(65,103,153,0.10)]">
-      <div className="relative overflow-hidden border-b border-[#e6ebf4] bg-gradient-to-r from-[#f0f6ff] via-white to-[#fafcff] px-5 py-5">
-        <div className="pointer-events-none absolute -right-10 -top-16 h-36 w-36 rounded-full bg-[#2f80ed]/8 blur-2xl" />
+    <div className="mb-8 overflow-hidden rounded-2xl border border-border bg-background ">
+      <div className="relative overflow-hidden border-b border-border  bg-muted via-white  px-5 py-5">
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3.5">
-            <span className="relative grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#2f80ed] to-[#3b8cff] text-white shadow-[0_8px_20px_rgba(47,128,237,0.28)]">
+            <span className="relative grid h-11 w-11 place-items-center rounded-xl r bg-primary  text-primary-foreground ">
               <UserPlus size={20} />
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-semibold text-white ring-2 ring-white">
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-primary-foreground ring-2 ring-background">
                 {requests.length}
               </span>
             </span>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Pending Approval</p>
-              <h2 className="text-base font-semibold text-[#172554]">Member Join Requests</h2>
-              <p className="mt-0.5 text-xs font-semibold text-[#8a9bb5]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Pending Approval</p>
+              <h2 className="text-base font-semibold text-foreground">Member Join Requests</h2>
+              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
                 Review who wants to join your mess
               </p>
             </div>
           </div>
-          <span className="hidden items-center gap-1.5 rounded-full border border-amber-200/70 bg-amber-50 px-3.5 py-1.5 text-xs font-semibold text-amber-700 sm:inline-flex">
+          <span className="hidden items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary sm:inline-flex">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary/100" />
             </span>
             {requests.length} Pending {requests.length === 1 ? 'Request' : 'Requests'}
           </span>
@@ -888,38 +887,38 @@ function MemberJoinRequestsPanel({
           return (
             <div
               key={request.id}
-              className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e6ebf4] bg-white shadow-[0_4px_16px_rgba(65,103,153,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#a9ccfb] hover:shadow-[0_12px_30px_rgba(65,103,153,0.14)]"
+              className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-background transition-colors duration-200 hover:border-primary"
             >
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#2f80ed] via-[#58d68d] to-[#ffb84d] opacity-70 transition-opacity group-hover:opacity-100" />
+              <div className="absolute inset-x-0 top-0 h-1  bg-primary   opacity-70 transition-opacity group-hover:opacity-100" />
 
               <div className="flex flex-1 flex-col p-4 pt-5 sm:p-5 sm:pt-6">
                 <div className="flex items-start gap-3.5">
                   <div className="relative shrink-0">
                     <div
-                      className="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-semibold shadow-sm ring-2 ring-white"
+                      className="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-semibold  ring-2 ring-background"
                       style={{
-                        background: `linear-gradient(135deg, ${color}22, ${color}0d)`,
-                        border: `1.5px solid ${color}55`,
+                        background: 'var(--muted)',
+                        border: '1px solid var(--border)',
                         color,
                       }}
                     >
                       {getInitials(request.requester?.name || 'User')}
                     </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-amber-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                    <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-primary-foreground/30 bg-primary">
+                      <span className="h-1.5 w-1.5 rounded-full bg-background" />
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-[15px] font-semibold text-[#172554] group-hover:text-[#2f80ed]">
+                    <h3 className="truncate text-[15px] font-semibold text-foreground group-hover:text-primary">
                       {request.requester?.name || 'Unknown User'}
                     </h3>
-                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-semibold text-[#6b7a99]">
-                      <Mail size={11} className="shrink-0 text-[#2f80ed]" />
+                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-semibold text-muted-foreground">
+                      <Mail size={11} className="shrink-0 text-primary" />
                       <span className="truncate">{request.requester?.email || 'No email'}</span>
                     </p>
                     {request.requester?.phone && (
-                      <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-semibold text-[#8a9bb5]">
-                        <Phone size={11} className="shrink-0 text-[#58d68d]" />
+                      <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-semibold text-muted-foreground">
+                        <Phone size={11} className="shrink-0 text-primary" />
                         <span className="truncate">{request.requester.phone}</span>
                       </p>
                     )}
@@ -927,24 +926,24 @@ function MemberJoinRequestsPanel({
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[#d8e6f8] bg-[#edf5ff] px-2.5 py-1 text-[11px] font-bold text-[#2f80ed]">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2f80ed]" />
+                  <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1 text-[11px] font-bold text-primary">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span className="truncate">{request.mess?.name || 'Selected mess'}</span>
                   </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#e6ebf4] bg-[#f8faff] px-2.5 py-1 text-[11px] font-bold text-[#6b7a99]">
-                    <CalendarDays size={11} className="text-[#ffb84d]" />
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+                    <CalendarDays size={11} className="text-primary" />
                     {dateLabel} · {timeLabel}
                   </span>
                 </div>
 
-                <div className="mt-5 border-t border-dashed border-[#dbe5f5]" />
+                <div className="mt-5 border-t border-dashed border-border" />
 
                 <div className="mt-4 grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={() => onReview(request.id, 'APPROVED')}
                     disabled={isReviewing}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-50 text-xs font-semibold text-emerald-700 shadow-[0_4px_12px_rgba(16,185,129,0.10)] transition hover:border-emerald-500/50 hover:bg-emerald-100 hover:shadow-[0_6px_16px_rgba(16,185,129,0.18)] active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 text-xs font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/10 active:scale-[0.98] disabled:opacity-60"
                   >
                     {isReviewing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={15} />}
                     <span>Accept</span>
@@ -953,7 +952,7 @@ function MemberJoinRequestsPanel({
                     type="button"
                     onClick={() => onReview(request.id, 'REJECTED')}
                     disabled={isReviewing}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-50 text-xs font-semibold text-red-700 shadow-[0_4px_12px_rgba(239,68,68,0.08)] transition hover:border-red-500/50 hover:bg-red-100 hover:shadow-[0_6px_16px_rgba(239,68,68,0.16)] active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 text-xs font-semibold text-destructive  transition hover:border-destructive/30 hover:bg-destructive/10  active:scale-[0.98] disabled:opacity-60 disabled:hover:shadow-none"
                   >
                     <X size={15} />
                     <span>Reject</span>
@@ -1163,12 +1162,12 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
   });
 
   return (
-  <div className="min-h-screen bg-[#fafcff]">
+  <div className="min-h-screen bg-background">
     <DashboardHeader title="Members" description="Manage your mess members and roles" />
 
     <div className="px-4 py-5 sm:px-6 lg:px-8">
       {error && (
-        <div className="mb-6 flex items-center justify-between rounded-2xl border border-red-500/25 bg-red-50 p-4 text-red-600">
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
           <span>{error}</span>
           <button onClick={() => setError(null)} className="text-xl">✕</button>
         </div>
@@ -1184,13 +1183,13 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
       <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full md:max-w-sm">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c70a8]" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
             <input
               type="text"
               placeholder="Search by name, email, or mess..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white py-3 pl-11 pr-4 text-sm font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+              className="h-[48px] w-full rounded-xl border border-border bg-background py-3 pl-11 pr-4 text-sm font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
             />
           </div>
 
@@ -1202,8 +1201,8 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
                 onClick={() => setFilterRole(r)}
                 className={`rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition active:scale-[0.97] ${
                   filterRole === r
-                    ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-sm'
-                    : 'border-[#e6ebf4] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'
+                    ? 'border-border bg-muted text-primary '
+                    : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'
                 }`}
               >
                 {r === 'ALL' ? 'All' : ROLE_CONFIG[r].label}
@@ -1231,8 +1230,8 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
             onClick={() => setFilterRole(r)}
             className={`shrink-0 rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition active:scale-[0.97] ${
               filterRole === r
-                ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-sm'
-                : 'border-[#e6ebf4] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'
+                ? 'border-border bg-muted text-primary '
+                : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'
             }`}
           >
             {r === 'ALL' ? 'All' : ROLE_CONFIG[r].label}
@@ -1243,7 +1242,7 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
       {/* Loading state */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 size={32} className="animate-spin text-[#2f80ed]" />
+          <Loader2 size={32} className="animate-spin text-primary" />
         </div>
       ) : (
         <>
@@ -1261,9 +1260,9 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
             ))}
             {filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16">
-                <Users size={48} className="mb-3 text-[#d8e6f8]" />
-                <p className="text-sm font-bold text-[#6b7a99]">No members found</p>
-                <p className="mt-1 text-xs font-semibold text-[#8a9bb5]">Try adjusting your search or filter</p>
+                <Users size={48} className="mb-3 text-muted-foreground" />
+                <p className="text-sm font-bold text-muted-foreground">No members found</p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">Try adjusting your search or filter</p>
               </div>
             )}
           </div>
@@ -1283,18 +1282,18 @@ export default function MembersSection({ organizerId }: MembersSectionProps) {
 
       {/* Member count summary */}
       {!loading && filtered.length > 0 && (
-        <div className="mt-4 flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-white px-4 py-3 shadow-sm">
-          <p className="text-xs font-bold text-[#6b7a99]">
-            Showing <span className="text-[#172554]">{filtered.length}</span> of{' '}
-            <span className="text-[#172554]">{members.length}</span> members
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 ">
+          <p className="text-xs font-bold text-muted-foreground">
+            Showing <span className="text-foreground">{filtered.length}</span> of{' '}
+            <span className="text-foreground">{members.length}</span> members
           </p>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-xs font-bold text-[#6b7a99]">
-              <span className="h-2 w-2 rounded-full bg-[#0f766e]" />
+            <span className="flex items-center gap-1 text-xs font-bold text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-primary" />
               {members.filter(m => m.role === 'MEMBER').length} Members
             </span>
-            <span className="flex items-center gap-1 text-xs font-bold text-[#6b7a99]">
-              <span className="h-2 w-2 rounded-full bg-[#6d28d9]" />
+            <span className="flex items-center gap-1 text-xs font-bold text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-primary" />
               {members.filter(m => m.role === 'MANAGER').length} Managers
             </span>
           </div>

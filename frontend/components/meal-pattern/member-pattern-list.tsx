@@ -73,7 +73,7 @@ export function MemberPatternList({ rows, onView, onSetup }: MemberPatternListPr
 
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {pattern && <Button variant="outline" onClick={() => onView(row)} className="min-h-11 rounded-xl font-semibold"><Eye className="size-4" /> Details</Button>}
-                <Button onClick={() => onSetup(row)} className={`${pattern ? '' : 'col-span-2'} min-h-11 rounded-xl bg-[var(--brand)] font-semibold text-white hover:bg-[var(--brand-hover)]`}>
+                <Button onClick={() => onSetup(row)} className={`${pattern ? '' : 'col-span-2'} min-h-11 rounded-xl bg-[var(--brand)] font-semibold text-primary-foreground hover:bg-[var(--brand-hover)]`}>
                   {pattern && canEdit ? 'Change' : 'Set pattern'} <ArrowRight className="size-4" />
                 </Button>
               </div>
@@ -107,7 +107,7 @@ export function MemberPatternList({ rows, onView, onSetup }: MemberPatternListPr
                     <td className="px-5 py-4 text-xs font-bold text-muted-foreground">{pattern ? formatPatternDate(pattern.start_date) : '—'}</td>
                     <EnterpriseTableActionCell>
                         {pattern && <Button size="icon" variant="outline" onClick={() => onView(row)} aria-label={`View ${row.membership.user?.name ?? 'member'} pattern`} className="size-10 rounded-xl"><Eye className="size-4" /></Button>}
-                        <Button onClick={() => onSetup(row)} className="min-h-10 rounded-xl bg-[var(--brand)] px-4 font-semibold text-white hover:bg-[var(--brand-hover)]">
+                        <Button onClick={() => onSetup(row)} className="min-h-10 rounded-xl bg-[var(--brand)] px-4 font-semibold text-primary-foreground hover:bg-[var(--brand-hover)]">
                           {pattern && canEdit ? 'Change' : <><CalendarPlus className="size-4" /> Set pattern</>}
                         </Button>
                     </EnterpriseTableActionCell>

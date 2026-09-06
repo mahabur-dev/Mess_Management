@@ -82,7 +82,7 @@ function ReleaseCard({ request, canManage, busy, onReview }: { request: BazarRel
     <article className="dashboard-card overflow-hidden p-4 sm:p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         <div className="flex min-w-0 flex-1 items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300"><Clock3 className="size-5" /></span>
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary"><Clock3 className="size-5" /></span>
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-[var(--dashboard-ink)]">Duty release</h3><StatusBadge status={request.status} />{request.auto_approved && <span className="rounded-full bg-[var(--brand-soft)] px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[var(--brand-dark)]">Automatic</span>}</div><p className="mt-1 text-sm font-medium text-muted-foreground"><span className="font-semibold text-[var(--dashboard-ink)]">{request.requester.name}</span> · {formatBazarDate(request.slot.bazar_date.duty_date)}</p><p className="mt-2 text-xs font-medium italic text-muted-foreground">“{request.reason}”</p></div>
         </div>
         {request.status === 'PENDING' && canManage && (

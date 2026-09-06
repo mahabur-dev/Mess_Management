@@ -20,32 +20,32 @@ import { useRouter, useSearchParams } from 'next/navigation'
 const methods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
 
 const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string; color: string; bg: string }[] = [
-  { value: 'GROCERY', label: 'Grocery', color: '#059669', bg: '#ecfdf5' },
-  { value: 'UTILITY', label: 'Utility', color: '#d97706', bg: '#fffbeb' },
-  { value: 'RENT', label: 'Rent', color: '#dc2626', bg: '#fef2f2' },
-  { value: 'FOOD', label: 'Food', color: '#7c3aed', bg: '#f5f3ff' },
-  { value: 'GAS', label: 'Gas', color: '#2563eb', bg: '#eff6ff' },
-  { value: 'ELECTRICITY', label: 'Electricity', color: '#0891b2', bg: '#ecfeff' },
-  { value: 'WIFI', label: 'WiFi', color: '#0d9488', bg: '#f0fdfa' },
-  { value: 'CLEANER', label: 'Cleaner', color: '#be185d', bg: '#fdf2f8' },
-  { value: 'MAINTENANCE', label: 'Maintenance', color: '#b45309', bg: '#fff7ed' },
-  { value: 'BUABILL', label: 'Bua Bill', color: '#1d4ed8', bg: '#eef2ff' },
-  { value: 'WATER', label: 'Water', color: '#0284c7', bg: '#f0f9ff' },
-  { value: 'OTHER', label: 'Other', color: '#6b7280', bg: '#f9fafb' },
+  { value: 'GROCERY', label: 'Grocery', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'UTILITY', label: 'Utility', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'RENT', label: 'Rent', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'FOOD', label: 'Food', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'GAS', label: 'Gas', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'ELECTRICITY', label: 'Electricity', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'WIFI', label: 'WiFi', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'CLEANER', label: 'Cleaner', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'MAINTENANCE', label: 'Maintenance', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'BUABILL', label: 'Bua Bill', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'WATER', label: 'Water', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  { value: 'OTHER', label: 'Other', color: 'var(--muted-foreground)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
 ]
 
 const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
-  CASH: { label: 'Cash', icon: <Banknote size={14} />, color: '#059669', bg: '#ecfdf5' },
-  BKASH: { label: 'bKash', icon: <Smartphone size={14} />, color: '#dc2626', bg: '#fef2f2' },
-  NAGAD: { label: 'Nagad', icon: <Smartphone size={14} />, color: '#d97706', bg: '#fffbeb' },
-  ROCKET: { label: 'Rocket', icon: <Smartphone size={14} />, color: '#7c3aed', bg: '#f5f3ff' },
-  BANK: { label: 'Bank', icon: <Landmark size={14} />, color: '#2563eb', bg: '#eff6ff' },
+  CASH: { label: 'Cash', icon: <Banknote size={14} />, color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  BKASH: { label: 'bKash', icon: <Smartphone size={14} />, color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  NAGAD: { label: 'Nagad', icon: <Smartphone size={14} />, color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  ROCKET: { label: 'Rocket', icon: <Smartphone size={14} />, color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
+  BANK: { label: 'Bank', icon: <Landmark size={14} />, color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)' },
 }
 
 const STATUS_CONFIG = {
-  PENDING: { label: 'Pending', color: '#d97706', bg: '#fffbeb', border: 'border-amber-200/60' },
-  APPROVED: { label: 'Approved', color: '#059669', bg: '#ecfdf5', border: 'border-emerald-200/60' },
-  REJECTED: { label: 'Rejected', color: '#dc2626', bg: '#fef2f2', border: 'border-red-200/60' },
+  PENDING: { label: 'Pending', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)', border: 'color-mix(in srgb, var(--primary) 30%, transparent)' },
+  APPROVED: { label: 'Approved', color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 10%, transparent)', border: 'color-mix(in srgb, var(--primary) 30%, transparent)' },
+  REJECTED: { label: 'Rejected', color: 'var(--destructive)', bg: 'color-mix(in srgb, var(--destructive) 10%, transparent)', border: 'color-mix(in srgb, var(--destructive) 30%, transparent)' },
 }
 
 const formatDate = (iso: string) => {
@@ -316,12 +316,12 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafcff]">
+    <div className="min-h-screen bg-background">
       <DashboardHeader title="Deposits" description="Review member deposits and track their approval status" />
 
       <div className="p-4 sm:p-6 lg:p-8">
         {message && (
-          <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold shadow-sm ${messageType === 'error' ? 'border border-red-200/70 bg-red-50 text-red-700' : 'border border-emerald-200/60 bg-emerald-50 text-emerald-700'}`}>
+          <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold  ${messageType === 'error' ? 'border border-destructive/30 bg-destructive/10 text-destructive' : 'border border-primary/30 bg-primary/10 text-primary'}`}>
             {message}
           </div>
         )}
@@ -329,12 +329,12 @@ export default function PaymentsPage() {
         {/* Header */}
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-green-100 shadow-sm">
-              <Wallet size={24} className="text-emerald-600" />
+            <div className="dashboard-section-icon size-12 rounded-lg">
+              <Wallet size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#172554]">Deposits</h2>
-              <p className="mt-0.5 text-xs font-semibold text-[#6b7a99]">{payments.length} deposit{payments.length !== 1 ? 's' : ''} recorded</p>
+              <h2 className="text-lg font-semibold text-foreground">Deposits</h2>
+              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{payments.length} deposit{payments.length !== 1 ? 's' : ''} recorded</p>
             </div>
           </div>
           <EnterpriseButton onClick={() => { setEditingPayment(null); setAmount(''); setPaymentDate(''); setSelectedCategories([]); setPaymentPurchasedBy(user?.id ?? ''); setShowModal(true) }} className="gap-2">
@@ -345,21 +345,21 @@ export default function PaymentsPage() {
         {/* Summary Cards */}
         {!loading && payments.length > 0 && (
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]"><CreditCard size={13} className="text-[#2f80ed]" /> Total</p>
-              <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{payments.length}</p>
+            <div className="dashboard-subtle-card rounded-xl p-4 ">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><CreditCard size={13} className="text-primary" /> Total</p>
+              <p className="mt-1.5 text-2xl font-semibold text-foreground">{payments.length}</p>
             </div>
-            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700"><Loader2 size={13} /> Pending</p>
-              <p className="mt-1.5 text-2xl font-semibold text-amber-700">{pendingCount}</p>
+            <div className="dashboard-subtle-card rounded-xl p-4 ">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary"><Loader2 size={13} /> Pending</p>
+              <p className="mt-1.5 text-2xl font-semibold text-primary">{pendingCount}</p>
             </div>
-            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700"><Check size={13} /> Approved</p>
-              <p className="mt-1.5 text-2xl font-semibold text-emerald-700">{approvedCount}</p>
+            <div className="dashboard-subtle-card rounded-xl p-4 ">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary"><Check size={13} /> Approved</p>
+              <p className="mt-1.5 text-2xl font-semibold text-primary">{approvedCount}</p>
             </div>
-            <div className="dashboard-subtle-card rounded-xl p-4 shadow-sm">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7a99]"><Banknote size={13} className="text-[#58d68d]" /> Total Amount</p>
-              <p className="mt-1.5 text-2xl font-semibold text-[#172554]">{money(totalAmount)}</p>
+            <div className="dashboard-subtle-card rounded-xl p-4 ">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><Banknote size={13} className="text-primary" /> Total Amount</p>
+              <p className="mt-1.5 text-2xl font-semibold text-foreground">{money(totalAmount)}</p>
             </div>
           </div>
         )}
@@ -367,36 +367,36 @@ export default function PaymentsPage() {
         {/* Desktop Filter Toolbar */}
         <div className="hidden sm:flex flex-row flex-wrap items-center gap-2 mb-4">
           <div className="relative w-52">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
-            <input className="h-[38px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-9 pr-3 text-xs font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input className="h-[38px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
           </div>
           <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[38px] w-[154px] text-xs font-bold" align="start" />
           {(searchText || selectedMonth !== new Date().toISOString().slice(0, 7)) && (
-            <span className="text-[10px] font-semibold text-[#6b7a99]">Showing {filteredPayments.length} of {payments.length} deposits</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">Showing {filteredPayments.length} of {payments.length} deposits</span>
           )}
         </div>
 
         {/* Deposits Table - Desktop */}
-        <div className="hidden overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)] sm:block">
+        <div className="dashboard-table-frame hidden sm:block">
           <table className="w-full table-fixed">
             <thead>
-              <tr className="border-b border-[#e6ebf4] bg-[#f8faff]">
+              <tr className="border-b border-border bg-muted">
                 {['Paid by', 'Added by', 'Amount', 'Status', 'Action'].map((heading) =>
                   heading === 'Action'
                     ? <EnterpriseTableActionHeader key={heading} />
-                    : <th key={heading} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7a99]">{heading}</th>,
+                    : <th key={heading} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{heading}</th>,
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e6ebf4]">
+            <tbody className="divide-y divide-border">
               {loading && (
-                <tr><td colSpan={5} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-[#6b7a99]"><Loader2 size={18} className="animate-spin text-[#2f80ed]" /> Loading deposits...</div></td></tr>
+                <tr><td colSpan={5} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-muted-foreground"><Loader2 size={18} className="animate-spin text-primary" /> Loading deposits...</div></td></tr>
               )}
               {!loading && filteredPayments.length === 0 && (
                 <tr><td colSpan={5} className="px-5 py-12 text-center">
-                  <div className="flex flex-col items-center gap-2"><Wallet size={40} className="text-[#d8e6f8]" />
-                    <p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No deposit records yet.' : 'No deposits match your filters.'}</p>
-                    <p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Add Deposit" to add one.' : 'Try changing the month or search term.'}</p>
+                  <div className="flex flex-col items-center gap-2"><Wallet size={40} className="text-muted-foreground" />
+                    <p className="text-sm font-bold text-muted-foreground">{payments.length === 0 ? 'No deposit records yet.' : 'No deposits match your filters.'}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">{payments.length === 0 ? 'Click "Add Deposit" to add one.' : 'Try changing the month or search term.'}</p>
                   </div>
                 </td></tr>
               )}
@@ -406,20 +406,20 @@ export default function PaymentsPage() {
                 const isDeleting = deletingId === payment.id
 
                 return (
-                  <tr key={payment.id} onClick={() => { setViewingPayment(payment); setShowViewModal(true) }} className="cursor-pointer transition hover:bg-[#f8faff] focus-within:bg-[#f8faff]">
+                  <tr key={payment.id} onClick={() => { setViewingPayment(payment); setShowViewModal(true) }} className="cursor-pointer transition hover:bg-muted focus-within:bg-muted">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-semibold text-white shadow-sm">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
-                        <div><p className="text-sm font-bold text-[#172554]">{payment.member?.name ?? 'Unknown Member'}</p><p className="text-xs font-semibold text-[#6b7a99]">{payment.member?.email ?? ''}</p></div>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
+                        <div><p className="text-sm font-bold text-foreground">{payment.member?.name ?? 'Unknown Member'}</p><p className="text-xs font-semibold text-muted-foreground">{payment.member?.email ?? ''}</p></div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-semibold text-white shadow-sm">{(payment.creator?.name?.[0] || 'M').toUpperCase()}</div>
-                        <div><p className="text-sm font-bold text-[#172554]">{payment.creator?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-[#6b7a99]">{payment.creator?.email ?? ''}</p></div>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{(payment.creator?.name?.[0] || 'M').toUpperCase()}</div>
+                        <div><p className="text-sm font-bold text-foreground">{payment.creator?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-muted-foreground">{payment.creator?.email ?? ''}</p></div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-sm font-semibold text-[#172554]">{money(payment.amount)}</td>
+                    <td className="px-4 py-4 text-sm font-semibold text-foreground">{money(payment.amount)}</td>
                     <td className="px-4 py-4">
                       <div>
                         <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
@@ -448,10 +448,10 @@ export default function PaymentsPage() {
 
           {/* Footer Summary */}
           {!loading && payments.length > 0 && (
-            <div className="border-t-2 border-[#d8e6f8] bg-[#f8faff] px-5 py-4">
+            <div className="border-t-2 border-border bg-muted px-5 py-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#6b7a99]"><User size={14} /> <span><span className="text-[#172554]">{payments.length}</span> deposits</span></div>
-                <div className="flex items-center gap-4 text-xs font-bold"><span className="text-amber-600">{pendingCount} pending</span><span className="text-emerald-600">{approvedCount} approved</span></div>
+                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground"><User size={14} /> <span><span className="text-foreground">{payments.length}</span> deposits</span></div>
+                <div className="flex items-center gap-4 text-xs font-bold"><span className="text-primary">{pendingCount} pending</span><span className="text-primary">{approvedCount} approved</span></div>
               </div>
             </div>
           )}
@@ -460,17 +460,17 @@ export default function PaymentsPage() {
         {/* Mobile Filter Toolbar */}
         <div className="flex flex-col gap-3 sm:hidden mb-4">
           <div className="relative w-full">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7c70a8]" />
-            <input className="h-[46px] w-full rounded-xl border border-[#d8e6f8] bg-white pl-10 pr-3.5 text-sm font-semibold text-[#172554] shadow-sm outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input className="h-[46px] w-full rounded-xl border border-border bg-background pl-10 pr-3.5 text-sm font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
           </div>
           <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} className="h-[46px] w-full font-bold" align="start" />
         </div>
 
         {/* Deposits - Mobile Cards */}
         <div className="space-y-3 sm:hidden">
-          {loading && <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-[#2f80ed]" /></div>}
+          {loading && <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-primary" /></div>}
           {!loading && filteredPayments.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12"><Wallet size={40} className="mb-2 text-[#d8e6f8]" /><p className="text-sm font-bold text-[#6b7a99]">{payments.length === 0 ? 'No deposit records yet.' : 'No deposits match your filters.'}</p><p className="text-xs font-semibold text-[#8a9bb5]">{payments.length === 0 ? 'Click "Add Deposit" to add one.' : 'Try changing the month or search term.'}</p></div>
+            <div className="flex flex-col items-center justify-center py-12"><Wallet size={40} className="mb-2 text-muted-foreground" /><p className="text-sm font-bold text-muted-foreground">{payments.length === 0 ? 'No deposit records yet.' : 'No deposits match your filters.'}</p><p className="text-xs font-semibold text-muted-foreground">{payments.length === 0 ? 'Click "Add Deposit" to add one.' : 'Try changing the month or search term.'}</p></div>
           )}
           {!loading && filteredPayments.map((payment) => {
             const methodCfg = PAYMENT_METHOD_CONFIG[payment.method as PaymentMethod] || PAYMENT_METHOD_CONFIG.CASH
@@ -480,11 +480,11 @@ export default function PaymentsPage() {
             const isDeleting = deletingId === payment.id
 
             return (
-              <div key={payment.id} className="rounded-xl border border-[#e6ebf4] bg-white p-4 shadow-sm transition hover:border-[#a9ccfb]">
+              <div key={payment.id} className="rounded-xl border border-border bg-background p-4  transition hover:border-primary">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-[10px] font-semibold text-white shadow-sm">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
-                    <div className="min-w-0"><p className="truncate text-sm font-bold text-[#172554]">{payment.member?.name ?? 'Unknown Member'}</p><p className="truncate text-xs font-semibold text-[#6b7a99]">{payment.member?.email ?? ''}</p></div>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
+                    <div className="min-w-0"><p className="truncate text-sm font-bold text-foreground">{payment.member?.name ?? 'Unknown Member'}</p><p className="truncate text-xs font-semibold text-muted-foreground">{payment.member?.email ?? ''}</p></div>
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
                     {payment.status === 'PENDING' && <Loader2 size={10} className="animate-spin" />}
@@ -494,27 +494,27 @@ export default function PaymentsPage() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl bg-[#f8faff] p-3">
+                <div className="flex items-center justify-between rounded-xl bg-muted p-3">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-bold" style={{ backgroundColor: methodCfg.bg, color: methodCfg.color, borderColor: `${methodCfg.color}33` }}>{methodCfg.icon}{methodCfg.label}</span>
-                    <div className="text-xs font-semibold text-[#6b7a99]">
-                      <span><CalendarDays size={11} className="inline mr-1 text-[#ffb84d]" />{formatDate(payment.created_at)}</span>
-                      {payment.payment_date && <div className="text-[10px] text-[#6b7a99]/70 mt-0.5"><CalendarDays size={9} className="inline mr-1 text-[#a0b4d6]" />For: {formatDateShort(payment.payment_date)}</div>}
+                    <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-bold" style={{ backgroundColor: methodCfg.bg, color: methodCfg.color, borderColor: 'var(--border)' }}>{methodCfg.icon}{methodCfg.label}</span>
+                    <div className="text-xs font-semibold text-muted-foreground">
+                      <span><CalendarDays size={11} className="inline mr-1 text-primary" />{formatDate(payment.created_at)}</span>
+                      {payment.payment_date && <div className="text-[10px] text-muted-foreground mt-0.5"><CalendarDays size={9} className="inline mr-1 text-muted-foreground" />For: {formatDateShort(payment.payment_date)}</div>}
                     </div>
                   </div>
-                  <p className="text-sm font-semibold text-[#172554]">{money(payment.amount)}</p>
+                  <p className="text-sm font-semibold text-foreground">{money(payment.amount)}</p>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
+                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-muted-foreground">
                   <span>Paid by</span>
-                  <span className="text-[#172554]">
+                  <span className="text-foreground">
                     {payment.member?.name ?? 'Unknown Member'}
                   </span>
                 </div>
 
-                <div className="mt-1 flex items-center justify-between text-xs font-semibold text-[#6b7a99]">
+                <div className="mt-1 flex items-center justify-between text-xs font-semibold text-muted-foreground">
                   <span>Added by</span>
-                  <span className="text-[#172554]">
+                  <span className="text-foreground">
                     {payment.creator?.name ?? 'Unknown'}
                   </span>
                 </div>
@@ -523,7 +523,7 @@ export default function PaymentsPage() {
                   <div className="flex flex-wrap gap-1 mt-2">
                     {payment.categories.map((cat) => {
                       const cfg = EXPENSE_CATEGORIES.find(c => c.value === cat)
-                      return <span key={cat} className="inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: cfg?.bg ?? '#f9fafb', color: cfg?.color ?? '#6b7280', borderColor: `${cfg?.color ?? '#6b7280'}33` }}>{cfg?.label ?? cat}</span>
+                      return <span key={cat} className="inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>{cfg?.label ?? cat}</span>
                     })}
                   </div>
                 )}
@@ -544,7 +544,7 @@ export default function PaymentsPage() {
             )
           })}
           {!loading && payments.length > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 py-3"><p className="text-xs font-bold text-[#6b7a99]"><span className="text-[#172554]">{payments.length}</span> deposits</p><div className="flex gap-3 text-xs font-bold"><span className="text-amber-600">{pendingCount} pending</span><span className="text-emerald-600">{approvedCount} approved</span></div></div>
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3"><p className="text-xs font-bold text-muted-foreground"><span className="text-foreground">{payments.length}</span> deposits</p><div className="flex gap-3 text-xs font-bold"><span className="text-primary">{pendingCount} pending</span><span className="text-primary">{approvedCount} approved</span></div></div>
           )}
         </div>
       </div>
@@ -562,37 +562,37 @@ export default function PaymentsPage() {
         >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#2f80ed]/80 to-[#58d68d]/80 text-sm font-semibold text-white shadow-sm">{(viewingPayment.member?.name?.[0] || 'M').toUpperCase()}</div>
-                  <div><p className="text-base font-bold text-[#172554]">{viewingPayment.member?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-[#6b7a99]">{viewingPayment.member?.email ?? ''}</p></div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{(viewingPayment.member?.name?.[0] || 'M').toUpperCase()}</div>
+                  <div><p className="text-base font-bold text-foreground">{viewingPayment.member?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-muted-foreground">{viewingPayment.member?.email ?? ''}</p></div>
                 </div>
-                <div className="rounded-xl bg-gradient-to-r from-[#f8faff] to-white border border-[#e6ebf4] p-4">
-                  <div className="flex items-center justify-between mb-2"><span className="text-xs font-bold text-[#6b7a99]">Amount</span><span className="text-2xl font-semibold text-[#172554]">{money(viewingPayment.amount)}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-xs font-bold text-[#6b7a99]">Method</span>
-                    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.bg ?? '#f9fafb', color: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.color ?? '#6b7280', borderColor: `${PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.color ?? '#6b7280'}33` }}>
+                <div className="rounded-xl  bg-muted to-white border border-border p-4">
+                  <div className="flex items-center justify-between mb-2"><span className="text-xs font-bold text-muted-foreground">Amount</span><span className="text-2xl font-semibold text-foreground">{money(viewingPayment.amount)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-xs font-bold text-muted-foreground">Method</span>
+                    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.bg ?? 'var(--primary)', color: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
                       {PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.icon}{PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.label ?? viewingPayment.method}
                     </span>
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Paid by</p>
-                    <p className="mt-1 text-sm font-bold text-[#172554]">{viewingPayment.member?.name ?? 'Unknown Member'}</p>
+                  <div className="rounded-xl border border-border bg-background p-4">
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">Paid by</p>
+                    <p className="mt-1 text-sm font-bold text-foreground">{viewingPayment.member?.name ?? 'Unknown Member'}</p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-[10px] font-semibold uppercase text-[#6b7a99]">Added By</p>
-                    <p className="mt-1 text-sm font-bold text-[#172554]">{viewingPayment.creator?.name ?? 'Unknown'}</p>
+                  <div className="rounded-xl border border-border bg-background p-4">
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">Added By</p>
+                    <p className="mt-1 text-sm font-bold text-foreground">{viewingPayment.creator?.name ?? 'Unknown'}</p>
                   </div>
                 </div>
                 {viewingPayment.categories && viewingPayment.categories.length > 0 && (
-                  <div><p className="mb-2 text-xs font-bold text-[#6b7a99]">Categories</p>
+                  <div><p className="mb-2 text-xs font-bold text-muted-foreground">Categories</p>
                     <div className="flex flex-wrap gap-1.5">{viewingPayment.categories.map((cat) => {
                       const cfg = EXPENSE_CATEGORIES.find(c => c.value === cat)
-                      return <span key={cat} className="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: cfg?.bg ?? '#f9fafb', color: cfg?.color ?? '#6b7280', borderColor: `${cfg?.color ?? '#6b7280'}33` }}>{cfg?.label ?? cat}</span>
+                      return <span key={cat} className="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>{cfg?.label ?? cat}</span>
                     })}</div>
                   </div>
                 )}
-                {viewingPayment.note && <div><p className="mb-1 text-xs font-bold text-[#6b7a99]">Note</p><p className="rounded-xl bg-[#f8faff] p-3 text-sm font-semibold text-[#53617d]">{viewingPayment.note}</p></div>}
-                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6b7a99]"><CalendarDays size={13} className="text-[#ffb84d]" /> Submitted: {formatDate(viewingPayment.created_at)}</p>
+                {viewingPayment.note && <div><p className="mb-1 text-xs font-bold text-muted-foreground">Note</p><p className="rounded-xl bg-muted p-3 text-sm font-semibold text-muted-foreground">{viewingPayment.note}</p></div>}
+                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground"><CalendarDays size={13} className="text-primary" /> Submitted: {formatDate(viewingPayment.created_at)}</p>
               </div>
         </EnterpriseDetailsDrawer>
       )}
@@ -611,30 +611,30 @@ export default function PaymentsPage() {
             <div>
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Amount (৳)</label>
-                  <input className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10" type="number" placeholder="Enter amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Amount (৳)</label>
+                  <input className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" type="number" placeholder="Enter amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Date</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Deposit Date</label>
                   <EnterpriseDatePicker value={paymentDate} onValueChange={setPaymentDate} surface="white" className="h-[48px] w-full" align="start" ariaLabel="Select deposit date" />
                 </div>
 
                 {isManager && purchasedByMemberOptions.length > 0 && (
                   <div>
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Paid by</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Paid by</label>
                     <EnterpriseSelect value={paymentPurchasedBy} onValueChange={setPaymentPurchasedBy} options={purchasedByMemberOptions.map((member) => ({ value: member.id, label: member.name }))} />
                   </div>
                 )}
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Method</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Deposit Method</label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {methods.map((m) => {
                       const cfg = PAYMENT_METHOD_CONFIG[m]
                       const selected = method === m
                       return (
-                        <button key={m} type="button" onClick={() => setMethod(m)} className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-bold transition active:scale-[0.98] ${selected ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-sm' : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'}`}>
+                        <button key={m} type="button" onClick={() => setMethod(m)} className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-bold transition active:scale-[0.98] ${selected ? 'border-border bg-muted text-primary ' : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'}`}>
                           <span className="text-base">{cfg.icon}</span>{cfg.label}
                         </button>
                       )
@@ -643,12 +643,12 @@ export default function PaymentsPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Category (optional - select multiple)</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Deposit Category (optional - select multiple)</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {EXPENSE_CATEGORIES.map((cat) => {
                       const selected = selectedCategories.includes(cat.value)
                       return (
-                        <button key={cat.value} type="button" onClick={() => toggleCategory(cat.value)} className={`flex items-center gap-1.5 rounded-xl border py-2.5 px-3 text-xs font-bold transition active:scale-[0.98] ${selected ? 'border-[#2f80ed]/40 bg-[#e7f1ff] text-[#2f80ed] shadow-sm' : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[#a9ccfb] hover:bg-[#f8faff]'}`}>
+                        <button key={cat.value} type="button" onClick={() => toggleCategory(cat.value)} className={`flex items-center gap-1.5 rounded-xl border py-2.5 px-3 text-xs font-bold transition active:scale-[0.98] ${selected ? 'border-border bg-muted text-primary ' : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'}`}>
                           {selected && <CheckIcon size={12} className="shrink-0" />}{cat.label}
                         </button>
                       )
@@ -659,7 +659,7 @@ export default function PaymentsPage() {
                       {selectedCategories.map((cat) => {
                         const cfg = EXPENSE_CATEGORIES.find(c => c.value === cat)
                         return (
-                          <span key={cat} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: cfg?.bg ?? '#f9fafb', color: cfg?.color ?? '#6b7280', borderColor: `${cfg?.color ?? '#6b7280'}33` }}>
+                          <span key={cat} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
                             {cfg?.label ?? cat}<button onClick={() => toggleCategory(cat)} className="hover:opacity-70"><X size={10} /></button>
                           </span>
                         )

@@ -189,7 +189,7 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
         type="button"
         onClick={openDrawer}
         disabled={!messId}
-        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--dashboard-surface)] px-3.5 text-xs font-semibold text-[var(--brand)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:pointer-events-none disabled:opacity-50 sm:h-11 sm:px-4 sm:text-sm"
+        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-3.5 text-xs font-medium text-primary transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 sm:h-11 sm:px-4 sm:text-sm"
       >
         <CalendarRange className="size-4" />
         <span className="hidden sm:inline">View full month</span>
@@ -198,10 +198,10 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
-          className="w-[calc(100vw-0.5rem)] max-w-none gap-0 overflow-hidden border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0 shadow-2xl sm:max-w-none"
+          className="dashboard-portal-surface w-[calc(100vw-0.5rem)] max-w-none gap-0 overflow-hidden border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0 sm:max-w-none"
           style={{ width: `min(${preferredDrawerWidth}px, calc(100vw - 16px))` }}
         >
-          <SheetHeader className="shrink-0 border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--dashboard-surface),var(--brand-softer))] p-4 pr-14 sm:p-6 sm:pr-16">
+          <SheetHeader className="shrink-0 border-b border-border bg-background p-4 pr-14 sm:p-6 sm:pr-16">
             <div className="flex items-start gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]">
                 <CalendarRange className="size-5" />
@@ -215,7 +215,7 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
           </SheetHeader>
 
           <div className="flex min-h-0 flex-1 flex-col bg-[var(--dashboard-bg)] p-3 sm:p-5">
-            <div className="mb-3 flex flex-col gap-3 rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3 shadow-[var(--dashboard-shadow)] sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+            <div className="mb-3 flex flex-col gap-3 rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3  sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:p-4">
               <div className="flex items-center gap-2">
                 <button type="button" aria-label="Previous month" onClick={() => setMonth((current) => moveMonth(current, -1))} className="grid size-9 place-items-center rounded-lg border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
                   <ChevronLeft className="size-4" />
@@ -240,13 +240,13 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] shadow-[var(--dashboard-shadow)]">
+            <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] ">
               {loading ? (
                 <div className="grid h-full min-h-56 place-items-center">
                   <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Loader2 className="size-4 animate-spin text-[var(--brand)]" /> Loading monthly meals...</div>
                 </div>
               ) : error ? (
-                <div className="grid h-full min-h-56 place-items-center p-6 text-center text-sm font-semibold text-rose-600">{error}</div>
+                <div className="grid h-full min-h-56 place-items-center p-6 text-center text-sm font-semibold text-destructive">{error}</div>
               ) : drawerMembers.length === 0 ? (
                 <div className="grid h-full min-h-56 place-items-center p-6 text-center"><div><Users className="mx-auto mb-2 size-7 text-muted-foreground" /><p className="text-sm font-semibold text-foreground">No active members found</p><p className="mt-1 text-xs font-medium text-muted-foreground">Members will appear here when they join this mess.</p></div></div>
               ) : (
@@ -279,7 +279,7 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                         return (
                           <tr key={dateItem.iso} className="group hover:bg-[var(--dashboard-hover)]">
                             <th className={`sticky left-0 z-10 border-b border-r border-[var(--dashboard-line)] px-3 py-2.5 text-left group-hover:bg-[var(--dashboard-hover)] ${isToday ? 'bg-[var(--brand-softer)]' : 'bg-[var(--dashboard-surface)]'}`}>
-                              <span className={`inline-flex min-w-8 items-center justify-center rounded-lg px-2 py-1 text-xs font-semibold tabular-nums ${isToday ? 'bg-[var(--brand)] text-white' : 'bg-[var(--dashboard-surface-subtle)] text-foreground'}`}>{dateItem.day}</span>
+                              <span className={`inline-flex min-w-8 items-center justify-center rounded-lg px-2 py-1 text-xs font-semibold tabular-nums ${isToday ? 'bg-[var(--brand)] text-primary-foreground' : 'bg-[var(--dashboard-surface-subtle)] text-foreground'}`}>{dateItem.day}</span>
                               <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{dateItem.weekday}</span>
                             </th>
                             {drawerMembers.map((member) => {
@@ -299,11 +299,11 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                     </tbody>
                     <tfoot>
                       <tr>
-                        <th className="sticky bottom-0 left-0 z-30 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-white">Month total</th>
+                        <th className="sticky bottom-0 left-0 z-30 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-primary-foreground">Month total</th>
                         {drawerMembers.map((member) => (
-                          <td key={member.id} className="sticky bottom-0 z-20 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-center text-xs font-semibold tabular-nums text-white">{memberTotals.get(member.id) ?? 0}</td>
+                          <td key={member.id} className="sticky bottom-0 z-20 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-center text-xs font-semibold tabular-nums text-primary-foreground">{memberTotals.get(member.id) ?? 0}</td>
                         ))}
-                        <td className="sticky bottom-0 right-0 z-30 border-t border-[var(--brand-border)] bg-[var(--brand)] px-3 py-3 text-center text-sm font-semibold tabular-nums text-white">{monthlyTotal}</td>
+                        <td className="sticky bottom-0 right-0 z-30 border-t border-[var(--brand-border)] bg-[var(--brand)] px-3 py-3 text-center text-sm font-semibold tabular-nums text-primary-foreground">{monthlyTotal}</td>
                       </tr>
                     </tfoot>
                   </table>

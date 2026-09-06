@@ -58,7 +58,7 @@ async function apiDeleteAccount(userId: string) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e']
+const AVATAR_COLORS = ['var(--primary)']
 
 const avatarColor = (name: string) => {
   let hash = 0
@@ -230,7 +230,7 @@ export default function SettingsPage() {
   const avatarBg = avatarColor(user?.name || 'User')
 
   return (
-    <div className="min-h-screen bg-[#fafcff]">
+    <div className="min-h-screen bg-background">
       <DashboardHeader
         title="Settings"
         description="Manage your account and preferences"
@@ -239,15 +239,15 @@ export default function SettingsPage() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-7">
 
         {/* ── Profile Section ── */}
-        <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-          <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] px-6 py-5">
+        <div className="overflow-hidden rounded-xl border border-border bg-background ">
+          <div className="border-b border-border  bg-muted via-white  px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f80ed]/15 to-[#58d68d]/15 shadow-sm">
-                <User size={22} className="text-[#2f80ed]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary/10  ">
+                <User size={22} className="text-primary" />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2f80ed]">Account</p>
-                <h2 className="mt-1 text-lg font-semibold text-[#172554]">Profile Information</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Account</p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">Profile Information</h2>
               </div>
             </div>
           </div>
@@ -256,15 +256,15 @@ export default function SettingsPage() {
             <div className="space-y-6">
               {/* Avatar */}
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Profile Picture
                 </label>
                 <div className="flex items-center gap-5">
                   <div
                     className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border-2 text-3xl font-semibold shadow-inner"
                     style={{
-                      backgroundColor: `${avatarBg}18`,
-                      borderColor: `${avatarBg}55`,
+                      backgroundColor: 'var(--muted)',
+                      borderColor: 'var(--border)',
                       color: avatarBg,
                     }}
                   >
@@ -288,14 +288,14 @@ export default function SettingsPage() {
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#d8e6f8] bg-white px-4 text-xs font-bold text-[#6b7a99] transition hover:border-[#a9ccfb] hover:bg-[#f8faff]"
+                      className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-4 text-xs font-bold text-muted-foreground transition hover:border-primary hover:bg-muted"
                     >
-                      <Camera size={15} className="text-[#2f80ed]" />
+                      <Camera size={15} className="text-primary" />
                       Choose Image
                     </button>
-                    <p className="text-[10px] font-semibold text-[#8a9bb5]">JPG, PNG or GIF (max 5MB)</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground">JPG, PNG or GIF (max 5MB)</p>
                     {avatarFile && (
-                      <p className="flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                      <p className="flex items-center gap-1 text-[11px] font-bold text-primary">
                         <CheckCircle2 size={13} />
                         {avatarFile.name}
                       </p>
@@ -306,63 +306,63 @@ export default function SettingsPage() {
 
               {/* Name */}
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Full Name
                 </label>
                 <input
                   type="text"
                   value={profileData.name}
                   onChange={(e) => setProfileData((prev) => ({ ...prev, name: e.target.value }))}
-                  className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                  className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
                 />
               </div>
 
               {/* Phone */}
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Phone Number
                 </label>
                 <input
                   type="tel"
                   value={profileData.phone}
                   onChange={(e) => setProfileData((prev) => ({ ...prev, phone: e.target.value }))}
-                  className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                  className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
                 />
               </div>
 
               {/* Email — read only */}
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Email Address
                 </label>
                 <input
                   type="email"
                   value={user?.email || ''}
                   disabled
-                  className="h-[48px] w-full rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 text-sm font-semibold text-[#6b7a99] outline-none cursor-not-allowed"
+                  className="h-[48px] w-full rounded-xl border border-border bg-muted px-4 text-sm font-semibold text-muted-foreground outline-none cursor-not-allowed"
                 />
-                <p className="mt-1.5 text-[11px] font-semibold text-[#8a9bb5]">Email cannot be changed</p>
+                <p className="mt-1.5 text-[11px] font-semibold text-muted-foreground">Email cannot be changed</p>
               </div>
 
               {/* Role — read only */}
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Role
                 </label>
                 <input
                   type="text"
                   value={user?.role || ''}
                   disabled
-                  className="h-[48px] w-full rounded-xl border border-[#e6ebf4] bg-[#f8faff] px-4 text-sm font-semibold text-[#6b7a99] outline-none cursor-not-allowed"
+                  className="h-[48px] w-full rounded-xl border border-border bg-muted px-4 text-sm font-semibold text-muted-foreground outline-none cursor-not-allowed"
                 />
-                <p className="mt-1.5 text-[11px] font-semibold text-[#8a9bb5]">Role cannot be changed</p>
+                <p className="mt-1.5 text-[11px] font-semibold text-muted-foreground">Role cannot be changed</p>
               </div>
 
               <div className="pt-2">
                 <button
                   onClick={handleSaveProfile}
                   disabled={isLoadingProfile}
-                  className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2f80ed] to-[#3b8cff] px-6 font-semibold text-white shadow-[0_12px_28px_rgba(47,128,237,0.25)] transition hover:shadow-[0_16px_35px_rgba(47,128,237,0.32)] disabled:opacity-70"
+                  className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl  bg-primary  px-6 font-semibold text-primary-foreground  transition  disabled:opacity-70"
                 >
                   {isLoadingProfile ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   {isLoadingProfile ? 'Saving...' : 'Save Changes'}
@@ -373,15 +373,15 @@ export default function SettingsPage() {
         </div>
 
         {/* ── Security Section ── */}
-        <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-          <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] px-6 py-5">
+        <div className="overflow-hidden rounded-xl border border-border bg-background ">
+          <div className="border-b border-border  bg-muted via-white  px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 shadow-sm">
-                <Lock size={22} className="text-amber-600" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary  ">
+                <Lock size={22} className="text-primary" />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600">Security</p>
-                <h2 className="mt-1 text-lg font-semibold text-[#172554]">Change Password</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Security</p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">Change Password</h2>
               </div>
             </div>
           </div>
@@ -390,7 +390,7 @@ export default function SettingsPage() {
             <div className="space-y-5">
               {/* Current password */}
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Current Password
                 </label>
                 <div className="relative">
@@ -401,12 +401,12 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setPasswordData((prev) => ({ ...prev, oldPassword: e.target.value }))
                     }
-                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 pr-12 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    className="h-[48px] w-full rounded-xl border border-border bg-background px-4 pr-12 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswords((prev) => ({ ...prev, old: !prev.old }))}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8a9bb5] transition hover:text-[#6b7a99]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-muted-foreground"
                   >
                     {showPasswords.old ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -415,7 +415,7 @@ export default function SettingsPage() {
 
               {/* New password */}
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   New Password
                 </label>
                 <div className="relative">
@@ -426,18 +426,18 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))
                     }
-                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 pr-12 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    className="h-[48px] w-full rounded-xl border border-border bg-background px-4 pr-12 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswords((prev) => ({ ...prev, new: !prev.new }))}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8a9bb5] transition hover:text-[#6b7a99]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-muted-foreground"
                   >
                     {showPasswords.new ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
                 {passwordData.newPassword && passwordData.newPassword.length < 6 && (
-                  <p className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-red-500">
+                  <p className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-destructive">
                     <XCircle size={13} />
                     At least 6 characters required
                   </p>
@@ -446,7 +446,7 @@ export default function SettingsPage() {
 
               {/* Confirm password */}
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -457,21 +457,21 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))
                     }
-                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 pr-12 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
+                    className="h-[48px] w-full rounded-xl border border-border bg-background px-4 pr-12 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
                   />
                   <button
                     type="button"
                     onClick={() =>
                       setShowPasswords((prev) => ({ ...prev, confirm: !prev.confirm }))
                     }
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8a9bb5] transition hover:text-[#6b7a99]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-muted-foreground"
                   >
                     {showPasswords.confirm ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
                 {passwordData.confirmPassword &&
                   passwordData.newPassword !== passwordData.confirmPassword && (
-                    <p className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-red-500">
+                    <p className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-destructive">
                       <XCircle size={13} />
                       Passwords do not match
                     </p>
@@ -482,7 +482,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleChangePassword}
                   disabled={isLoadingPassword}
-                  className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 font-semibold text-white shadow-[0_12px_28px_rgba(245,158,11,0.25)] transition hover:shadow-[0_16px_35px_rgba(245,158,11,0.32)] disabled:opacity-70"
+                  className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl  bg-primary  px-6 font-semibold text-primary-foreground  transition  disabled:opacity-70"
                 >
                   {isLoadingPassword ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
                   {isLoadingPassword ? 'Changing...' : 'Change Password'}
@@ -493,64 +493,64 @@ export default function SettingsPage() {
         </div>
 
         {/* ── Notifications Section ── */}
-        <div className="overflow-hidden rounded-xl border border-[#e6ebf4] bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-          <div className="border-b border-[#e6ebf4] bg-gradient-to-r from-[#f8faff] via-white to-[#fafcff] px-6 py-5">
+        <div className="overflow-hidden rounded-xl border border-border bg-background ">
+          <div className="border-b border-border  bg-muted via-white  px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-purple-50 to-violet-100 shadow-sm">
-                <Bell size={22} className="text-purple-600" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary  ">
+                <Bell size={22} className="text-primary" />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-purple-600">Preferences</p>
-                <h2 className="mt-1 text-lg font-semibold text-[#172554]">Notifications</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Preferences</p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">Notifications</h2>
               </div>
             </div>
           </div>
 
           <div className="p-6">
             <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4 transition hover:border-[#a9ccfb]">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-muted p-4 transition hover:border-primary">
                 <div>
-                  <p className="text-sm font-bold text-[#172554]">Email Notifications</p>
-                  <p className="text-xs font-semibold text-[#6b7a99] mt-0.5">Receive updates via email</p>
+                  <p className="text-sm font-bold text-foreground">Email Notifications</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-0.5">Receive updates via email</p>
                 </div>
                 <button
                   onClick={() => setEmailNotifications(!emailNotifications)}
                   className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition ${
-                    emailNotifications ? 'bg-[#2f80ed]' : 'bg-[#e6ebf4]'
+                    emailNotifications ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition ${
+                    className={`inline-block h-6 w-6 transform rounded-full bg-background  transition ${
                       emailNotifications ? 'translate-x-7' : 'translate-x-1'
                     }`}
                   />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between rounded-xl border border-[#e6ebf4] bg-[#fafcff] p-4 transition hover:border-[#a9ccfb]">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-muted p-4 transition hover:border-primary">
                 <div>
-                  <p className="text-sm font-bold text-[#172554]">Push Notifications</p>
-                  <p className="text-xs font-semibold text-[#6b7a99] mt-0.5">Receive instant alerts</p>
+                  <p className="text-sm font-bold text-foreground">Push Notifications</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-0.5">Receive instant alerts</p>
                 </div>
                 <button
                   onClick={() => setPushNotifications(!pushNotifications)}
                   className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition ${
-                    pushNotifications ? 'bg-[#2f80ed]' : 'bg-[#e6ebf4]'
+                    pushNotifications ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition ${
+                    className={`inline-block h-6 w-6 transform rounded-full bg-background  transition ${
                       pushNotifications ? 'translate-x-7' : 'translate-x-1'
                     }`}
                   />
                 </button>
               </div>
 
-              <div className="flex items-start gap-3 rounded-xl border border-[#d8e6f8] bg-gradient-to-r from-[#e7f1ff] to-[#f0fdf4] p-4">
-                <Bell size={18} className="shrink-0 text-[#2f80ed] mt-0.5" />
+              <div className="flex items-start gap-3 rounded-xl border border-border  bg-muted  p-4">
+                <Bell size={18} className="shrink-0 text-primary mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-[#172554]">Smart Notifications</p>
-                  <p className="text-xs font-semibold text-[#6b7a99] mt-0.5">
+                  <p className="text-sm font-bold text-foreground">Smart Notifications</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-0.5">
                     Get notified about important updates and reminders
                   </p>
                 </div>
@@ -560,15 +560,15 @@ export default function SettingsPage() {
         </div>
 
         {/* ── Danger Zone ── */}
-        <div className="overflow-hidden rounded-xl border border-red-200/60 bg-white shadow-[0_8px_30px_rgba(65,103,153,0.08)]">
-          <div className="border-b border-red-100 bg-gradient-to-r from-red-50 via-white to-red-50/50 px-6 py-5">
+        <div className="overflow-hidden rounded-xl border border-destructive/30 bg-background ">
+          <div className="border-b border-destructive/30  bg-destructive/10 via-white  px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-red-50 to-rose-100 shadow-sm">
-                <ShieldAlert size={22} className="text-red-500" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-destructive/10  ">
+                <ShieldAlert size={22} className="text-destructive" />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-red-500">Danger Zone</p>
-                <h2 className="mt-1 text-lg font-semibold text-[#172554]">Delete Account</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-destructive">Danger Zone</p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">Delete Account</h2>
               </div>
             </div>
           </div>
@@ -576,15 +576,15 @@ export default function SettingsPage() {
           <div className="p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex-1">
-                <p className="text-sm font-bold text-[#172554]">Delete Your Account</p>
-                <p className="mt-1 text-xs font-semibold text-[#6b7a99]">
+                <p className="text-sm font-bold text-foreground">Delete Your Account</p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">
                   Permanently delete your account and all associated data. This cannot be undone.
                 </p>
               </div>
               {!showDeleteConfirm ? (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="inline-flex h-[45px] shrink-0 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100"
+                  className="inline-flex h-[45px] shrink-0 items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-5 text-sm font-semibold text-destructive transition hover:border-destructive/30 hover:bg-destructive/10"
                 >
                   <Trash2 size={16} />
                   Delete Account
@@ -594,14 +594,14 @@ export default function SettingsPage() {
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     disabled={isDeletingAccount}
-                    className="h-[45px] rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#6b7a99] transition hover:bg-[#f8faff] disabled:opacity-60"
+                    className="h-[45px] rounded-xl border border-border bg-background px-4 text-sm font-semibold text-muted-foreground transition hover:bg-muted disabled:opacity-60"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDeleteAccount}
                     disabled={isDeletingAccount}
-                    className="inline-flex h-[45px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 px-5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(239,68,68,0.25)] transition hover:shadow-[0_12px_28px_rgba(239,68,68,0.32)] disabled:opacity-70"
+                    className="inline-flex h-[45px] items-center justify-center gap-2 rounded-xl bg-destructive px-5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-70"
                   >
                     {isDeletingAccount ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                     {isDeletingAccount ? 'Deleting...' : 'Confirm Delete'}
@@ -611,8 +611,8 @@ export default function SettingsPage() {
             </div>
 
             {showDeleteConfirm && (
-              <div className="mt-4 rounded-xl border border-red-200/60 bg-red-50 px-4 py-3">
-                <p className="flex items-center gap-2 text-sm font-bold text-red-600">
+              <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
+                <p className="flex items-center gap-2 text-sm font-bold text-destructive">
                   <XCircle size={16} />
                   ⚠ Are you sure? This will permanently delete your account and cannot be undone.
                 </p>

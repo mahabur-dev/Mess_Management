@@ -16,17 +16,17 @@ const approvalPresentation = {
   PENDING: {
     label: 'Pending',
     icon: Clock3,
-    className: 'border-amber-200 bg-amber-50 text-amber-700',
+    className: 'border-primary/30 bg-primary/10 text-primary',
   },
   APPROVED: {
     label: 'Approved',
     icon: CheckCircle2,
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    className: 'border-primary/30 bg-primary/10 text-primary',
   },
   REJECTED: {
     label: 'Rejected',
     icon: XCircle,
-    className: 'border-rose-200 bg-rose-50 text-rose-700',
+    className: 'border-destructive/30 bg-destructive/10 text-destructive',
   },
 } satisfies Record<ExpenseApprovalStatus, { label: string; icon: typeof Clock3; className: string }>
 

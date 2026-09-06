@@ -50,7 +50,7 @@ const actionCopy = {
 
 function DetailMetric({ icon: Icon, label, value }: { icon: typeof CalendarRange; label: string; value: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 py-3 shadow-sm">
+    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 py-3 ">
       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]"><Icon className="size-4" /></span>
       <div className="min-w-0">
         <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
@@ -85,10 +85,10 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="meal-pattern-details-sheet w-full gap-0 overflow-hidden border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0 shadow-2xl sm:max-w-[42rem]">
+        <SheetContent className="dashboard-portal-surface meal-pattern-details-sheet w-full gap-0 overflow-hidden border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0 sm:max-w-[42rem]">
           {pattern && row ? (
             <>
-              <SheetHeader className="shrink-0 border-b border-[var(--dashboard-line)] bg-[linear-gradient(135deg,var(--dashboard-surface),var(--brand-softer))] p-5 pr-14 sm:p-6 sm:pr-16">
+              <SheetHeader className="shrink-0 border-b border-border bg-background p-5 pr-14 sm:p-6 sm:pr-16">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><UserRound className="size-5" /></span>
@@ -103,9 +103,9 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
               </SheetHeader>
 
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-[var(--dashboard-bg)] p-4 sm:p-6">
-                {actionError && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">{actionError}</div>}
+                {actionError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive">{actionError}</div>}
 
-                <section className="overflow-hidden rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] shadow-[var(--dashboard-shadow)]">
+                <section className="overflow-hidden rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] ">
                   <div className="flex flex-col gap-4 border-b border-[var(--dashboard-line)] p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Current routine</p>
@@ -126,7 +126,7 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)] sm:p-5">
+                <section className="rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-4  sm:p-5">
                   <div className="mb-3 flex items-center gap-2">
                     <span className="grid size-8 place-items-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]"><History className="size-4" /></span>
                     <div><h3 className="text-sm font-semibold text-foreground">Version history</h3><p className="text-[11px] font-semibold text-muted-foreground">Previous changes remain available here.</p></div>
@@ -146,7 +146,7 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
                 </section>
               </div>
 
-              <div className="shrink-0 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3 shadow-[0_-12px_30px_color-mix(in_srgb,var(--dashboard-ink)_6%,transparent)] sm:p-4">
+              <div className="shrink-0 px-4 pb-4 sm:px-6 sm:pb-6">
                 <EnterpriseDrawerFooter>
                   {isPatternConfigurable(pattern) && <EnterpriseDrawerAction priority="primary" tone="primary" onClick={() => onEdit(row)}><Edit3 className="size-4" /> Change pattern</EnterpriseDrawerAction>}
                   {pattern.status === 'ACTIVE' && <EnterpriseDrawerAction tone="secondary" onClick={() => setPendingAction('pause')}><Pause className="size-4" /> Pause</EnterpriseDrawerAction>}
@@ -164,14 +164,14 @@ export function PatternDetailsDrawer({ row, open, onOpenChange, onEdit, onAction
       </Sheet>
 
       <AlertDialog open={Boolean(pendingAction)} onOpenChange={(next) => !next && !saving && setPendingAction(null)}>
-        <AlertDialogContent className="rounded-2xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]">
+        <AlertDialogContent className="dashboard-portal-surface rounded-2xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-semibold text-foreground">{pendingAction ? actionCopy[pendingAction].title : ''}</AlertDialogTitle>
             <AlertDialogDescription className="font-semibold leading-6">{pendingAction ? actionCopy[pendingAction].description : ''}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={saving} className="min-h-11 rounded-xl font-semibold">Keep current pattern</AlertDialogCancel>
-            <AlertDialogAction disabled={saving} onClick={() => void executeAction()} className={`min-h-11 rounded-xl font-semibold ${pendingAction === 'cancel' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-[var(--brand)] hover:bg-[var(--brand-hover)]'}`}>
+            <AlertDialogAction disabled={saving} onClick={() => void executeAction()} className={`min-h-11 rounded-xl font-semibold ${pendingAction === 'cancel' ? 'bg-destructive hover:bg-destructive' : 'bg-[var(--brand)] hover:bg-[var(--brand-hover)]'}`}>
               {saving ? 'Saving...' : pendingAction ? actionCopy[pendingAction].confirm : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -80,7 +80,7 @@ export function ScheduleEditor({ type, dailySchedule, weeklySchedule, onDailyCha
               key={day}
               type="button"
               onClick={() => setMobileDay(day)}
-              className={`min-h-11 shrink-0 rounded-xl px-3 text-xs font-semibold transition ${mobileDay === day ? 'bg-[var(--brand)] text-white shadow-[0_8px_18px_var(--brand-shadow)]' : 'bg-[var(--dashboard-surface)] text-muted-foreground'}`}
+              className={`min-h-11 shrink-0 rounded-xl px-3 text-xs font-semibold transition ${mobileDay === day ? 'bg-[var(--brand)] text-primary-foreground ' : 'bg-[var(--dashboard-surface)] text-muted-foreground'}`}
             >
               {MEAL_PATTERN_DAY_LABELS[day].slice(0, 3)} · {getScheduleTotal(weeklySchedule[day])}
             </button>

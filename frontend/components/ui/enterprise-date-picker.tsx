@@ -75,8 +75,8 @@ function toMonthKey(year: number, month: number) {
 
 function triggerSurface(surface: PickerSurface) {
   return surface === 'white'
-    ? 'border-[#dbe6ea] bg-white text-[#17363d] hover:bg-white dark:border-[#dbe6ea] dark:bg-white dark:text-[#17363d]'
-    : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)]'
+    ? 'border-[var(--brand-border)] bg-[var(--brand-softer)] text-foreground hover:bg-[var(--brand-soft)] dark:border-[var(--brand-border)] dark:bg-[var(--brand-softer)] dark:text-white dark:hover:bg-[var(--brand-soft)]'
+    : 'border-[var(--brand-border)] bg-[var(--brand-softer)] text-[var(--dashboard-ink)] hover:bg-[var(--brand-soft)] dark:bg-[var(--brand-softer)] dark:text-white dark:hover:bg-[var(--brand-soft)]'
 }
 
 export function EnterpriseDatePicker({
@@ -113,7 +113,7 @@ export function EnterpriseDatePicker({
           disabled={disabled}
           aria-label={ariaLabel}
           className={cn(
-            'inline-flex h-11 min-w-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-55',
+            'inline-flex h-11 min-w-0 items-center gap-2.5 rounded-xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-55',
             triggerSurface(surface),
             className,
           )}
@@ -123,7 +123,7 @@ export function EnterpriseDatePicker({
           <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition-transform duration-200', open && 'rotate-180')} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align={align} sideOffset={8} className="z-[80] w-auto max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-2 shadow-[0_20px_55px_rgba(15,23,42,0.18)]">
+      <PopoverContent align={align} sideOffset={10} className="dashboard-portal-surface z-[80] w-auto max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-2">
         <Calendar
           mode="single"
           month={visibleMonth}
@@ -138,7 +138,8 @@ export function EnterpriseDatePicker({
           startMonth={minimum}
           endMonth={maximum}
           showOutsideDays={false}
-          className="bg-transparent p-2 [--cell-size:--spacing(9)] [&_[data-selected-single=true]]:!bg-[var(--brand)] [&_[data-selected-single=true]]:!text-white"
+          className="bg-transparent p-2 [--cell-size:--spacing(9)] [&_[data-selected-single=true]]:!border [&_[data-selected-single=true]]:!border-[var(--brand-border)] [&_[data-selected-single=true]]:!bg-[var(--brand-soft)] [&_[data-selected-single=true]]:!text-[var(--brand-dark)] dark:[&_[data-selected-single=true]]:!text-[var(--brand-bright)]"
+          classNames={{ weekdays: 'flex gap-1', week: 'mt-2 flex w-full gap-1' }}
         />
       </PopoverContent>
     </Popover>
@@ -185,7 +186,7 @@ export function EnterpriseMonthPicker({
           disabled={disabled}
           aria-label={ariaLabel}
           className={cn(
-            'inline-flex h-11 min-w-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-55',
+            'inline-flex h-11 min-w-0 items-center gap-2.5 rounded-xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-55',
             triggerSurface(surface),
             className,
           )}
@@ -196,14 +197,14 @@ export function EnterpriseMonthPicker({
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align={align} sideOffset={8} className="z-[80] w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3 shadow-[0_20px_55px_rgba(15,23,42,0.18)]">
+      <PopoverContent align={align} sideOffset={10} className="dashboard-portal-surface z-[80] w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3">
         <div className="flex items-center justify-between border-b border-[var(--dashboard-line)] pb-3">
           <button type="button" disabled={!canGoPrevious} onClick={() => setVisibleYear((year) => year - 1)} className="grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] disabled:opacity-35" aria-label="Previous year"><ChevronLeft className="size-4" /></button>
           <div className="text-center"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Choose month</p><p className="mt-0.5 text-base font-semibold text-[var(--dashboard-ink)]">{visibleYear}</p></div>
           <button type="button" disabled={!canGoNext} onClick={() => setVisibleYear((year) => year + 1)} className="grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] disabled:opacity-35" aria-label="Next year"><ChevronRight className="size-4" /></button>
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-3 gap-2.5">
           {MONTHS.map((month) => {
             const monthValue = toMonthKey(visibleYear, month.index + 1)
             const isSelected = monthValue === value
@@ -220,7 +221,7 @@ export function EnterpriseMonthPicker({
                 className={cn(
                   'relative h-11 rounded-xl border text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-30',
                   isSelected
-                    ? 'border-[var(--brand)] bg-[var(--brand)] text-white shadow-[0_8px_18px_var(--brand-shadow)]'
+                    ? 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]'
                     : 'border-transparent bg-[var(--dashboard-surface-subtle)] text-[var(--dashboard-ink)] hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)]',
                 )}
               >

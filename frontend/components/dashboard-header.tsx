@@ -1,11 +1,25 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  Bell,
+  ChevronDown,
+  CreditCard,
+  LogOut,
+  Mail,
+  Menu,
+  Plus,
+  Settings,
+  ShoppingBag,
+} from 'lucide-react'
+
 import { useAuth } from '@/app/context/auth-context'
 import { useSidebar } from '@/app/context/sidebar-context'
-import { Bell, ChevronDown, Plus, LogOut, Settings, Mail, ChevronRight, X, Loader2, ShoppingBag, CreditCard, ArrowRight, Menu } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
-import { ThemeToggle } from '@/components/theme-toggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { apiClient, type AppNotification, type PaymentMethod, type ExpenseCategory, type Mess } from '@/lib/api-client'
+import { apiClient, type AppNotification } from '@/lib/api-client'
 
 interface DashboardHeaderProps {
   title: string
@@ -30,40 +42,17 @@ interface DashboardHeaderProps {
 
 function getCurrentMonthValue() {
   const date = new Date()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  return `${date.getFullYear()}-${month}`
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
-const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e']
-
-const avatarColor = (name: string) => {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
-
-const getInitials = (name: string) => {
+function getInitials(name: string) {
   return name
     .split(' ')
-    .map((n) => n[0])
+    .map((part) => part[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
 }
-
-const expenseCategories: ExpenseCategory[] = [
-  'GROCERY', 'FOOD', 'UTILITY', 'RENT', 'GAS', 'ELECTRICITY', 'WIFI', 'CLEANER', 'MAINTENANCE', 'OTHER',
-]
-
-const paymentMethods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
-const quickAddMenuItemClass =
-  'group cursor-pointer gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-[var(--brand-soft)] focus:bg-[var(--brand-soft)]'
-const quickAddIconClass =
-  'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition group-hover:bg-white'
-const dashboardActionButtonClass =
-  'bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] text-white shadow-[0_16px_35px_var(--brand-shadow)] transition hover:from-[var(--brand-darker)] hover:to-[var(--brand-dark)] hover:shadow-[0_20px_42px_var(--brand-shadow)] disabled:opacity-70'
 
 export function DashboardHeader({
   title,
@@ -77,30 +66,8 @@ export function DashboardHeader({
   const { user, logout } = useAuth()
   const { setMobileOpen } = useSidebar()
   const router = useRouter()
-  const [imageError, setImageError] = useState(false)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const avatarBg = avatarColor(user?.name || 'User')
-
-  // Quick Add Modal state
-  const [showQuickAdd, setShowQuickAdd] = useState(false)
-  const [quickAddTab, setQuickAddTab] = useState<'expense' | 'payment'>('expense')
-
-  // Expense form state
-  const [expItemName, setExpItemName] = useState('')
-  const [expAmount, setExpAmount] = useState('')
-  const [expCategory, setExpCategory] = useState<ExpenseCategory>('FOOD')
-  const [expQuantity, setExpQuantity] = useState('')
-  const [expUnit, setExpUnit] = useState('')
-  const [expSubmitting, setExpSubmitting] = useState(false)
-
-  // Payment form state
-  const [payAmount, setPayAmount] = useState('')
-  const [payMethod, setPayMethod] = useState<PaymentMethod>('BKASH')
-  const [paySubmitting, setPaySubmitting] = useState(false)
-
-  const isAdmin = user?.role === 'ADMIN'
-  const canUseQuickAdd = showQuickAddButton && !isAdmin // Hide for admin and onboarding users
 
   const loadNotifications = async () => {
     try {
@@ -118,203 +85,125 @@ export function DashboardHeader({
 
   useEffect(() => {
     void loadNotifications()
-    const handleFocus = () => void loadNotifications()
-    const handleNotificationsChanged = () => void loadNotifications()
-    window.addEventListener('focus', handleFocus)
-    window.addEventListener('notifications:changed', handleNotificationsChanged)
+    const refresh = () => void loadNotifications()
+    window.addEventListener('focus', refresh)
+    window.addEventListener('notifications:changed', refresh)
     return () => {
-      window.removeEventListener('focus', handleFocus)
-      window.removeEventListener('notifications:changed', handleNotificationsChanged)
+      window.removeEventListener('focus', refresh)
+      window.removeEventListener('notifications:changed', refresh)
     }
   }, [])
 
   const markAsRead = async (notification: AppNotification) => {
-    const alreadyRead = notification.reads?.some((read) => read.user_id === user?.id)
-    if (!alreadyRead) {
-      setUnreadCount((current) => Math.max(0, current - 1))
-      setNotifications((current) =>
-        current.map((item) =>
-          item.id === notification.id
-            ? {
-                ...item,
-                reads: [
-                  ...(item.reads ?? []),
-                  { user_id: user?.id ?? '', read_at: new Date().toISOString() },
-                ],
-              }
-            : item,
-        ),
-      )
-      await apiClient.markNotificationAsRead(notification.id).catch(() => {
-        void loadNotifications()
-      })
-    }
-  }
+    if (notification.reads?.some((read) => read.user_id === user?.id)) return
 
-  async function handleQuickAddExpense() {
-    if (!expAmount || !expItemName) return
-    setExpSubmitting(true)
-    try {
-      const messRes = await apiClient.getMesses().catch(() => null)
-      const list = Array.isArray(messRes?.data) ? messRes.data : messRes?.data ? [messRes.data] : []
-      const activeMess = list[0] ?? user?.memberships?.[0]?.mess
-      if (!activeMess) return
-
-      await apiClient.createExpense({
-        messId: activeMess.id,
-        category: expCategory,
-        amount: Number(expAmount),
-        itemName: expItemName,
-        quantity: expQuantity ? Number(expQuantity) : undefined,
-        unit: expUnit || undefined,
-        expenseDate: new Date().toISOString().slice(0, 10),
-      })
-      setShowQuickAdd(false)
-      resetExpenseForm()
-    } finally {
-      setExpSubmitting(false)
-    }
-  }
-
-  async function handleQuickAddPayment() {
-    if (!payAmount) return
-    setPaySubmitting(true)
-    try {
-      const messRes = await apiClient.getMesses().catch(() => null)
-      const list = Array.isArray(messRes?.data) ? messRes.data : messRes?.data ? [messRes.data] : []
-      const activeMess = list[0] ?? user?.memberships?.[0]?.mess
-      if (!activeMess) return
-
-      await apiClient.submitPayment({ messId: activeMess.id, amount: Number(payAmount), method: payMethod })
-      setShowQuickAdd(false)
-      setPayAmount('')
-    } finally {
-      setPaySubmitting(false)
-    }
-  }
-
-  function resetExpenseForm() {
-    setExpItemName('')
-    setExpAmount('')
-    setExpCategory('FOOD')
-    setExpQuantity('')
-    setExpUnit('')
+    setUnreadCount((current) => Math.max(0, current - 1))
+    setNotifications((current) =>
+      current.map((item) =>
+        item.id === notification.id
+          ? {
+              ...item,
+              reads: [
+                ...(item.reads ?? []),
+                { user_id: user?.id ?? '', read_at: new Date().toISOString() },
+              ],
+            }
+          : item,
+      ),
+    )
+    await apiClient.markNotificationAsRead(notification.id).catch(() => {
+      void loadNotifications()
+    })
   }
 
   return (
-    <header className="dashboard-header-clean sticky top-0 z-20 w-full min-w-0">
-      <div className="flex min-h-[72px] flex-col gap-2 px-4 py-3 sm:px-6 lg:h-[72px] lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-0">
-        <div className="flex items-center gap-3 pr-3">
-          {/* Hamburger - visible on mobile and tablet */}
-          <button
+    <header className="dashboard-header-clean sticky top-0 z-20 h-16 w-full min-w-0 shrink-0">
+      <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button
             type="button"
-            className="dashboard-icon-button flex h-10 w-10 shrink-0 items-center justify-center rounded-xl lg:hidden"
+            variant="outline"
+            size="icon"
+            className="shrink-0 lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
           >
-            <Menu size={18} />
-          </button>
-          <div>
-            <h1 className="text-[20px] font-semibold tracking-tight text-foreground">{title}</h1>
-            {description && <p className="mt-1 text-sm font-semibold text-muted-foreground">{description}</p>}
+            <Menu />
+          </Button>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">{title}</h1>
+            {description ? (
+              <p className="truncate text-sm text-muted-foreground">{description}</p>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Month Picker */}
-          {onMonthChange && (
+        <div className="flex shrink-0 items-center gap-2">
+          {onMonthChange ? (
             <EnterpriseMonthPicker
               value={selectedMonth ?? getCurrentMonthValue()}
               onValueChange={onMonthChange}
-              className="hidden w-[184px] sm:inline-flex"
+              className="hidden w-44 sm:inline-flex"
               ariaLabel="Select dashboard month"
             />
-          )}
+          ) : null}
 
-          {/* Quick Add Dropdown - Hidden for Admin */}
-          {canUseQuickAdd && (
+          {showQuickAddButton && user?.role !== 'ADMIN' ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="dashboard-control flex h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-bold"
-                >
-                  <Plus size={16} className="text-[var(--brand)]" />
-                  Quick Add
-                </button>
+                <Button variant="outline" className="hidden sm:inline-flex">
+                  <Plus />
+                  Quick add
+                </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[280px] border border-[#e6ebf4] shadow-[0_8px_30px_rgba(65,103,153,0.12)] p-2">
-                <DropdownMenuItem
-                  onClick={() => router.push('/dashboard/finance')}
-                  className={quickAddMenuItemClass}
-                >
-                  <div className={`${quickAddIconClass} border-red-100 bg-red-50 text-red-500`}>
-                    <ShoppingBag size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-[var(--brand)]">Add Expense</p>
-                    <p className="text-xs font-semibold text-[#6b7a99]">Record a new expense</p>
+              <DropdownMenuContent align="end" className="dashboard-popover w-56">
+                <DropdownMenuItem onClick={() => router.push('/dashboard/finance')}>
+                  <ShoppingBag className="text-primary" />
+                  <div>
+                    <p className="font-medium">Add expense</p>
+                    <p className="text-xs text-muted-foreground">Record a new expense</p>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-[#e6ebf4] my-1.5" />
-                <DropdownMenuItem
-                  onClick={() => router.push('/dashboard/payments')}
-                  className={quickAddMenuItemClass}
-                >
-                  <div className={`${quickAddIconClass} border-emerald-100 bg-emerald-50 text-emerald-600`}>
-                    <CreditCard size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#172554] transition group-hover:text-[var(--brand)]">Add Deposit</p>
-                    <p className="text-xs font-semibold text-[#6b7a99]">Record a new deposit</p>
+                <DropdownMenuItem onClick={() => router.push('/dashboard/payments')}>
+                  <CreditCard className="text-primary" />
+                  <div>
+                    <p className="font-medium">Add deposit</p>
+                    <p className="text-xs text-muted-foreground">Record a new deposit</p>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          ) : null}
 
-          {showUpgradeButton && (
-            <Button
-              type="button"
-              onClick={() => router.push(upgradeHref)}
-              className="h-11 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#f97316] px-4 font-semibold text-white shadow-[0_8px_20px_rgba(245,158,11,0.25)] transition hover:from-[#ed8f07] hover:to-[#ea6b12]"
-            >
-              <Mail size={16} />
+          {showUpgradeButton ? (
+            <Button onClick={() => router.push(upgradeHref)} className="hidden sm:inline-flex">
+              <Mail />
               Upgrade
             </Button>
-          )}
+          ) : null}
 
-          <ThemeToggle className="dashboard-icon-button h-11 w-11 rounded-xl" />
+          <ThemeToggle />
 
-          {/* Notifications */}
           <DropdownMenu onOpenChange={(open) => open && void loadNotifications()}>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="dashboard-icon-button relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl"
-              >
-                <Bell size={18} />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gradient-to-r from-[#ff4d4f] to-[#ff2e55] px-1 text-[9px] font-semibold leading-none text-white shadow-[0_4px_8px_rgba(255,77,79,0.3)]">
+              <Button type="button" variant="outline" size="icon" className="relative">
+                <Bell />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] leading-none text-white">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
-                )}
-              </button>
+                ) : null}
+                <span className="sr-only">Notifications</span>
+              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="dashboard-card w-[340px] p-2">
+            <DropdownMenuContent align="end" className="dashboard-popover w-80">
               <div className="flex items-center justify-between px-2 py-1.5">
-                <DropdownMenuLabel className="p-0 text-sm font-semibold text-[var(--dashboard-ink)]">
-                  Notifications
-                </DropdownMenuLabel>
-                <button
-                  type="button"
-                  onClick={() => router.push('/dashboard/notifications')}
-                  className="cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold text-[var(--brand)] transition hover:bg-[var(--brand-soft)]"
-                >
+                <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/notifications')}>
                   View all
-                </button>
+                </Button>
               </div>
-              <DropdownMenuSeparator className="bg-[var(--dashboard-line)]" />
+              <DropdownMenuSeparator />
               {notifications.length ? (
                 notifications.map((notification) => {
                   const isRead = notification.reads?.some((read) => read.user_id === user?.id)
@@ -325,14 +214,18 @@ export function DashboardHeader({
                         await markAsRead(notification)
                         router.push('/dashboard/notifications')
                       }}
-                      className="cursor-pointer items-start gap-3 rounded-lg p-3 transition hover:bg-[var(--dashboard-hover)] focus:bg-[var(--dashboard-hover)]"
+                      className="items-start gap-3 py-3"
                     >
-                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${isRead ? 'bg-[var(--dashboard-line-strong)]' : 'bg-[var(--brand-bright)]'}`} />
+                      <span
+                        className={
+                          isRead
+                            ? 'mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground/30'
+                            : 'mt-1.5 size-2 shrink-0 rounded-full bg-primary'
+                        }
+                      />
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold text-[var(--dashboard-ink)]">
-                          {notification.title}
-                        </span>
-                        <span className="mt-0.5 line-clamp-2 block text-xs font-semibold text-[var(--dashboard-muted)]">
+                        <span className="block truncate font-medium">{notification.title}</span>
+                        <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">
                           {notification.body}
                         </span>
                       </span>
@@ -340,253 +233,51 @@ export function DashboardHeader({
                   )
                 })
               ) : (
-                <div className="px-2 py-8 text-center text-sm font-semibold text-[var(--dashboard-muted)]">
+                <div className="px-3 py-8 text-center text-sm text-muted-foreground">
                   No notifications yet.
                 </div>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="dashboard-control flex h-11 cursor-pointer items-center gap-2 rounded-xl px-2 pr-3"
-              >
-                {user?.avatar_url && !imageError ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.name}
-                    className="h-7 w-7 rounded-full object-cover"
-                    onError={() => setImageError(true)}
-                  />
-                ) : (
-                  <div
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold shadow-sm"
-                    style={{
-                      backgroundColor: `${avatarBg}20`,
-                      color: avatarBg,
-                    }}
-                  >
-                    {getInitials(user?.name || 'M')}
-                  </div>
-                )}
-                <span className="hidden max-w-[100px] truncate text-sm font-bold text-foreground sm:inline">{user?.name}</span>
-                <ChevronDown size={14} className="text-muted-foreground" />
-              </button>
+              <Button variant="ghost" className="gap-2 px-2">
+                <Avatar className="size-7">
+                  <AvatarImage src={user?.avatar_url || undefined} alt={user?.name || 'User'} />
+                  <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                    {getInitials(user?.name || 'User')}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden max-w-28 truncate sm:inline">{user?.name}</span>
+                <ChevronDown className="text-muted-foreground" />
+              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border border-[#e6ebf4] shadow-[0_8px_30px_rgba(65,103,153,0.12)]">
-              <div className="px-3 py-2.5">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold"
-                    style={{
-                      backgroundColor: `${avatarBg}18`,
-                      borderColor: `${avatarBg}55`,
-                      color: avatarBg,
-                    }}
-                  >
-                    {getInitials(user?.name || 'U')}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-[#172554]">{user?.name}</p>
-                    <p className="truncate text-xs font-semibold text-[#6b7a99]">{user?.email}</p>
-                  </div>
-                </div>
-              </div>
-              <DropdownMenuSeparator className="bg-[#e6ebf4]" />
-              <DropdownMenuItem
-                onClick={() => router.push('/dashboard/settings')}
-                className="cursor-pointer gap-2 px-3 py-2.5 text-sm font-semibold text-[#53617d] transition hover:bg-[#f8faff]"
-              >
-                <Settings size={16} className="text-[#2f80ed]" />
-                Profile Settings
+            <DropdownMenuContent align="end" className="dashboard-popover w-60">
+              <DropdownMenuLabel>
+                <span className="block truncate font-medium">{user?.name}</span>
+                <span className="block truncate text-xs font-normal text-muted-foreground">{user?.email}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+                <Settings className="text-primary" />
+                Profile settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-[#e6ebf4]" />
+              <DropdownMenuSeparator />
               <DropdownMenuItem
+                variant="destructive"
                 onClick={() => {
                   logout()
                   router.push('/login')
                 }}
-                className="cursor-pointer gap-2 px-3 py-2.5 text-sm font-semibold text-red-500 transition hover:bg-red-50"
               >
-                <LogOut size={16} />
+                <LogOut />
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
-
-      {/* Quick Add Modal */}
-      {showQuickAdd && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#120a33]/65 p-4 backdrop-blur-md"
-          onClick={(e) => e.target === e.currentTarget && setShowQuickAdd(false)}
-        >
-          <div className="relative w-full max-w-[480px] overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-[0_28px_80px_rgba(65,103,153,0.26)] backdrop-blur-xl">
-            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--brand-dark)] via-[var(--brand)] to-[#ffb84d]" />
-            <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[var(--brand)]/12 blur-2xl" />
-
-            {/* Modal Header */}
-            <div className="relative flex items-center justify-between border-b border-[#d8e6f8] px-5 py-5 sm:px-6">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">Quick Add</p>
-                <h2 className="mt-1 text-xl font-semibold text-[#172554]">Add New Entry</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowQuickAdd(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)] transition hover:border-[var(--brand)] hover:bg-[var(--brand-softer)]"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Tab Switcher */}
-            <div className="flex border-b border-[#e6ebf4]">
-              <button
-                onClick={() => setQuickAddTab('expense')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition ${
-                  quickAddTab === 'expense'
-                    ? 'text-[var(--brand)] border-b-2 border-[var(--brand)] bg-[var(--brand-soft)]'
-                    : 'text-[#6b7a99] hover:text-[var(--brand)] hover:bg-[var(--brand-soft)]'
-                }`}
-              >
-                <ShoppingBag size={16} />
-                Add Expense
-              </button>
-              <button
-                onClick={() => setQuickAddTab('payment')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition ${
-                  quickAddTab === 'payment'
-                    ? 'text-[var(--brand)] border-b-2 border-[var(--brand)] bg-[var(--brand-soft)]'
-                    : 'text-[#6b7a99] hover:text-[var(--brand)] hover:bg-[var(--brand-soft)]'
-                }`}
-              >
-                <CreditCard size={16} />
-                Add Deposit
-              </button>
-            </div>
-
-            {/* Expense Form */}
-            {quickAddTab === 'expense' && (
-              <div className="p-5 sm:p-6 space-y-4">
-                <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Item Name</label>
-                  <input
-                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                    placeholder="e.g. Rice, Eggs..."
-                    value={expItemName}
-                    onChange={(e) => setExpItemName(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Qty</label>
-                    <input
-                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                      placeholder="Qty"
-                      value={expQuantity}
-                      onChange={(e) => setExpQuantity(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Unit</label>
-                    <input
-                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                      placeholder="kg"
-                      value={expUnit}
-                      onChange={(e) => setExpUnit(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Price (৳)</label>
-                    <input
-                      className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-3 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                      type="number"
-                      placeholder="Amount"
-                      value={expAmount}
-                      onChange={(e) => setExpAmount(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Category</label>
-                  <select
-                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-bold text-[#172554] outline-none focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                    value={expCategory}
-                    onChange={(e) => setExpCategory(e.target.value as ExpenseCategory)}
-                  >
-                    {expenseCategories.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleQuickAddExpense}
-                  disabled={expSubmitting || !expItemName || !expAmount}
-                  className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-semibold ${dashboardActionButtonClass}`}
-                >
-                  {expSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ShoppingBag size={16} />}
-                  {expSubmitting ? 'Adding...' : 'Add Expense'}
-                </button>
-              </div>
-            )}
-
-            {/* Payment Form */}
-            {quickAddTab === 'payment' && (
-              <div className="p-5 sm:p-6 space-y-4">
-                <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Amount (৳)</label>
-                  <input
-                    className="h-[48px] w-full rounded-xl border border-[#d8e6f8] bg-white px-4 text-sm font-semibold text-[#172554] outline-none placeholder:text-[#7a8aaa] focus:border-[#2f80ed]/60 focus:ring-4 focus:ring-[#2f80ed]/10"
-                    type="number"
-                    placeholder="Enter amount"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b7a99]">Deposit Method</label>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {paymentMethods.map((m) => {
-                      const selected = payMethod === m
-                      const labels: Record<string, string> = { CASH: 'Cash', BKASH: 'bKash', NAGAD: 'Nagad', ROCKET: 'Rocket', BANK: 'Bank' }
-                      return (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => setPayMethod(m)}
-                          className={`flex items-center justify-center gap-1.5 rounded-xl border py-3 text-xs font-bold transition active:scale-[0.98] ${
-                            selected
-                              ? 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)] shadow-sm'
-                              : 'border-[#d8e6f8] bg-white text-[#6b7a99] hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)]'
-                          }`}
-                        >
-                          <CreditCard size={14} />
-                          {labels[m] || m}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleQuickAddPayment}
-                  disabled={paySubmitting || !payAmount}
-                  className={`inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 font-semibold ${dashboardActionButtonClass}`}
-                >
-                  {paySubmitting ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
-                  {paySubmitting ? 'Submitting...' : 'Submit Deposit'}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </header>
   )
 }

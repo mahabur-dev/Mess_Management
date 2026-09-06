@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { EnterpriseDatePicker } from '@/components/ui/enterprise-date-picker'
+import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import {
   Dialog,
@@ -546,34 +547,32 @@ export default function SubscriptionsPage() {
               />
             </div>
 
-            <div className="relative">
-              <Filter size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <select
-                value={filterPlan}
-                onChange={(event) => setFilterPlan(event.target.value as '' | SubscriptionPlan)}
-                className="h-11 w-full appearance-none rounded-xl border border-border bg-background pl-10 pr-4 text-sm font-semibold text-muted-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-              >
-                <option value="">All plans</option>
-                <option value="TRIAL">Trial</option>
-                <option value="MONTHLY">Monthly</option>
-                <option value="YEARLY">Yearly</option>
-              </select>
-            </div>
+            <EnterpriseSelect
+              value={filterPlan || 'ALL'}
+              onValueChange={(value) => setFilterPlan(value === 'ALL' ? '' : value as SubscriptionPlan)}
+              ariaLabel="Filter subscriptions by plan"
+              icon={<Filter size={16} />}
+              options={[
+                { value: 'ALL', label: 'All plans' },
+                { value: 'TRIAL', label: 'Trial' },
+                { value: 'MONTHLY', label: 'Monthly' },
+                { value: 'YEARLY', label: 'Yearly' },
+              ]}
+            />
 
-            <div className="relative">
-              <Filter size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <select
-                value={filterStatus}
-                onChange={(event) => setFilterStatus(event.target.value as '' | SubscriptionStatus)}
-                className="h-11 w-full appearance-none rounded-xl border border-border bg-background pl-10 pr-4 text-sm font-semibold text-muted-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-              >
-                <option value="">All</option>
-                <option value="ACTIVE">Active</option>
-                <option value="EXPIRED">Expired</option>
-                <option value="CANCELLED">Cancelled</option>
-                <option value="PENDING">Pending</option>
-              </select>
-            </div>
+            <EnterpriseSelect
+              value={filterStatus || 'ALL'}
+              onValueChange={(value) => setFilterStatus(value === 'ALL' ? '' : value as SubscriptionStatus)}
+              ariaLabel="Filter subscriptions by status"
+              icon={<Filter size={16} />}
+              options={[
+                { value: 'ALL', label: 'All status' },
+                { value: 'ACTIVE', label: 'Active' },
+                { value: 'EXPIRED', label: 'Expired' },
+                { value: 'CANCELLED', label: 'Cancelled' },
+                { value: 'PENDING', label: 'Pending' },
+              ]}
+            />
           </div>
         </div>
 
@@ -905,35 +904,30 @@ export default function SubscriptionsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Mess</label>
-                  <select
+                  <EnterpriseSelect
                     value={form.messId}
-                    onChange={(event) => {
-                      const messId = event.target.value
-                      setForm((current) => ({ ...current, messId }))
-                    }}
+                    onValueChange={(messId) => setForm((current) => ({ ...current, messId }))}
                     disabled={mode === 'edit'}
-                    className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-muted"
-                  >
-                    <option value="">Select a mess</option>
-                    {messes.map((mess) => (
-                      <option key={mess.id} value={mess.id}>
-                        {mess.name}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Select a mess"
+                    ariaLabel="Select a mess"
+                    icon={<Building2 size={16} />}
+                    options={messes.map((mess) => ({ value: mess.id, label: mess.name }))}
+                  />
                 </div>
 
                 <div>
                   <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Plan</label>
-                  <select
+                  <EnterpriseSelect
                     value={form.plan}
-                    onChange={(event) => handlePlanChange(event.target.value as SubscriptionPlan)}
-                    className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-                  >
-                    <option value="TRIAL">Trial</option>
-                    <option value="MONTHLY">Monthly</option>
-                    <option value="YEARLY">Yearly</option>
-                  </select>
+                    onValueChange={(value) => handlePlanChange(value as SubscriptionPlan)}
+                    ariaLabel="Select subscription plan"
+                    icon={<CreditCard size={16} />}
+                    options={[
+                      { value: 'TRIAL', label: 'Trial' },
+                      { value: 'MONTHLY', label: 'Monthly' },
+                      { value: 'YEARLY', label: 'Yearly' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -941,16 +935,17 @@ export default function SubscriptionsPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Status</label>
-                    <select
+                    <EnterpriseSelect
                       value={form.status}
-                      onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as SubscriptionStatus }))}
-                      className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-                    >
-                      <option value="ACTIVE">Active</option>
-                      <option value="PENDING">Pending</option>
-                      <option value="EXPIRED">Expired</option>
-                      <option value="CANCELLED">Cancelled</option>
-                    </select>
+                      onValueChange={(value) => setForm((current) => ({ ...current, status: value as SubscriptionStatus }))}
+                      ariaLabel="Select subscription status"
+                      options={[
+                        { value: 'ACTIVE', label: 'Active' },
+                        { value: 'PENDING', label: 'Pending' },
+                        { value: 'EXPIRED', label: 'Expired' },
+                        { value: 'CANCELLED', label: 'Cancelled' },
+                      ]}
+                    />
                   </div>
 
                   <div>

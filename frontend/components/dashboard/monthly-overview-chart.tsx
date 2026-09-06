@@ -59,7 +59,7 @@ export function MonthlyOverviewChart({
 
   return (
     <ChartContainer config={chartConfig} className="h-[240px] min-h-[210px] w-full aspect-auto xl:h-full xl:min-h-0">
-      <BarChart data={data} margin={{ top: 12, right: 10, left: -12, bottom: 0 }} barGap={1}>
+      <BarChart data={data} margin={{ top: 12, right: 10, left: -12, bottom: 0 }} barCategoryGap="15%">
         <CartesianGrid vertical={false} strokeDasharray="2 4" />
         <XAxis
           dataKey="day"
@@ -79,7 +79,7 @@ export function MonthlyOverviewChart({
                   <span className="text-muted-foreground">
                     {chartConfig[name as keyof typeof chartConfig]?.label || String(name)}
                   </span>
-                  <span className="font-mono font-medium tabular-nums text-foreground">
+                  <span className="font-medium tabular-nums text-foreground">
                     {name === 'meals'
                       ? Number(value).toLocaleString()
                       : `৳ ${Number(value).toLocaleString()}`}
@@ -91,24 +91,25 @@ export function MonthlyOverviewChart({
         />
         <Bar
           dataKey="expense"
+          stackId="monthly"
           fill="var(--color-expense)"
           fillOpacity={1}
-          radius={[3, 3, 0, 0]}
-          maxBarSize={9}
+          maxBarSize={24}
         />
         <Bar
           dataKey="income"
+          stackId="monthly"
           fill="var(--color-income)"
           fillOpacity={0.68}
-          radius={[3, 3, 0, 0]}
-          maxBarSize={9}
+          maxBarSize={24}
         />
         <Bar
           dataKey="meals"
+          stackId="monthly"
           fill="var(--color-meals)"
           fillOpacity={0.36}
-          radius={[3, 3, 0, 0]}
-          maxBarSize={9}
+          radius={[4, 4, 0, 0]}
+          maxBarSize={24}
         />
       </BarChart>
     </ChartContainer>

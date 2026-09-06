@@ -36,7 +36,7 @@ export function MealQuantityControl({ meal, value, onChange, compact = false, di
           : 'border-transparent bg-[var(--dashboard-surface-subtle)]/70',
       )}>
         <span aria-hidden="true" className={cn('absolute inset-y-3 left-0 w-0.5 rounded-r-full transition-colors', enabled ? 'bg-[var(--brand)]' : 'bg-transparent')} />
-        <span className={cn('grid size-9 shrink-0 place-items-center rounded-lg transition-colors', enabled ? 'bg-[var(--brand-soft)] text-[var(--brand)]' : 'bg-[var(--dashboard-surface)] text-muted-foreground')}>
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-[var(--brand-border-subtle)] bg-[var(--brand-soft)] text-[var(--brand)] transition-colors">
           <Icon className="size-4" aria-hidden="true" />
         </span>
         <div className="min-w-24 flex-1">
@@ -50,11 +50,11 @@ export function MealQuantityControl({ meal, value, onChange, compact = false, di
           disabled={disabled}
           onClick={() => setEnabled(!enabled)}
           className={cn(
-            'relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[var(--brand-ring)] disabled:opacity-50',
+            'relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-75',
             enabled ? 'bg-[var(--brand)]' : 'bg-[var(--dashboard-line-strong)]',
           )}
         >
-          <span className={cn('absolute left-1 top-1 size-4 rounded-full bg-background shadow transition-transform', enabled ? 'translate-x-4' : 'translate-x-0')} />
+          <span className={cn('absolute left-1 top-1 size-4 rounded-full transition-transform', enabled ? 'translate-x-4 bg-white' : 'translate-x-0 bg-[var(--dashboard-ink)]')} />
         </button>
         {enabled && (
           <div className="ml-auto flex h-10 items-center rounded-lg border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-0.5 ">
@@ -79,9 +79,7 @@ export function MealQuantityControl({ meal, value, onChange, compact = false, di
       <div className="flex min-w-0 items-center gap-3">
         <span className={cn(
           'grid size-10 shrink-0 place-items-center rounded-xl border transition-colors',
-          enabled
-            ? 'border-[var(--brand-border-subtle)] bg-[var(--brand-soft)] text-[var(--brand)]'
-            : 'border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground',
+          'border-[var(--brand-border-subtle)] bg-[var(--brand-soft)] text-[var(--brand)]',
         )}>
           <Icon className="size-[1.125rem]" aria-hidden="true" />
         </span>
@@ -97,13 +95,13 @@ export function MealQuantityControl({ meal, value, onChange, compact = false, di
           disabled={disabled}
           onClick={() => setEnabled(!enabled)}
           className={cn(
-            'relative h-6 w-10 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[var(--brand-ring)] disabled:opacity-50',
+            'relative h-6 w-10 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-75',
             enabled
               ? 'border-transparent bg-[var(--brand)]'
               : 'border-[var(--dashboard-line-strong)] bg-[var(--dashboard-surface)]',
           )}
         >
-          <span className={cn('absolute left-[3px] top-[3px] size-4 rounded-full bg-background  transition-transform', enabled ? 'translate-x-4' : 'translate-x-0')} />
+          <span className={cn('absolute left-[3px] top-[3px] size-4 rounded-full transition-transform', enabled ? 'translate-x-4 bg-white' : 'translate-x-0 bg-[var(--dashboard-ink)]')} />
         </button>
       </div>
 
@@ -116,25 +114,30 @@ export function MealQuantityControl({ meal, value, onChange, compact = false, di
           {enabled ? 'Active' : 'Not included'}
         </span>
         <div className={cn(
-          'flex h-10 shrink-0 items-center rounded-xl border bg-[var(--dashboard-surface)] p-0.5  transition-opacity',
-          enabled ? 'border-[var(--dashboard-line)] opacity-100' : 'pointer-events-none border-[var(--dashboard-line)] opacity-45',
+          'flex h-10 shrink-0 items-center rounded-lg border bg-[var(--dashboard-surface)] p-0.5 transition-colors',
+          enabled ? 'border-[var(--dashboard-line)]' : 'pointer-events-none border-[var(--brand-border-subtle)]',
         )}>
           <button
             type="button"
             aria-label={`Decrease ${MEAL_PATTERN_LABELS[meal]}`}
             disabled={disabled || !enabled || value <= 0}
             onClick={decrease}
-            className="grid size-8 place-items-center rounded-md text-[var(--brand)] transition hover:bg-[var(--brand-soft)] disabled:opacity-40"
+            className="grid size-8 place-items-center rounded-md text-[var(--brand)] transition hover:bg-[var(--brand-soft)] disabled:opacity-60"
           >
             <Minus className="size-4" />
           </button>
-          <output aria-label={`${MEAL_PATTERN_LABELS[meal]} quantity`} className="min-w-9 text-center text-sm font-semibold tabular-nums text-foreground">{value}</output>
+          <output aria-label={`${MEAL_PATTERN_LABELS[meal]} quantity`} className={cn('min-w-9 text-center text-sm font-semibold tabular-nums', enabled ? 'text-foreground' : 'text-muted-foreground')}>{value}</output>
           <button
             type="button"
             aria-label={`Increase ${MEAL_PATTERN_LABELS[meal]}`}
             disabled={disabled || !enabled || value >= 20}
             onClick={increase}
-            className="grid size-8 place-items-center rounded-md bg-[var(--brand)] text-primary-foreground transition hover:bg-[var(--brand-hover)] disabled:opacity-40"
+            className={cn(
+              'grid size-8 place-items-center rounded-md transition disabled:opacity-60',
+              enabled
+                ? 'bg-[var(--brand)] text-primary-foreground hover:bg-[var(--brand-hover)]'
+                : 'bg-[var(--brand-soft)] text-[var(--brand)]',
+            )}
           >
             <Plus className="size-4" />
           </button>

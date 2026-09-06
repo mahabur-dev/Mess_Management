@@ -239,7 +239,7 @@ export default function FinancePage() {
 
   const [selectedCategory, setSelectedCategory] = useState<'ALL' | ExpenseCategory>('ALL')
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
-  const [selectedDay, setSelectedDay] = useState<string>('')
+  const [selectedDay, setSelectedDay] = useState<string>('ALL')
   const [searchText, setSearchText] = useState('')
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')

@@ -321,8 +321,8 @@ export default function MessManagementPage() {
         ) : isAdmin ? (
           <div>
             <div className="mb-7 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl r bg-primary/10  ">
-                <Building2 size={24} className="text-primary" />
+              <div className="dashboard-section-icon size-12 rounded-lg">
+                <Building2 size={24} />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">All Registered Messes</h2>
@@ -342,8 +342,8 @@ export default function MessManagementPage() {
                   <div className="absolute inset-x-0 top-0 h-1  bg-primary  " />
                   <div className="p-5">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl r bg-primary/10  ">
-                        <Home size={20} className="text-primary" />
+                      <div className="dashboard-section-icon size-11 rounded-lg">
+                        <Home size={20} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-base font-semibold text-foreground">{mess.name}</h3>
@@ -402,8 +402,8 @@ export default function MessManagementPage() {
             <div className="overflow-hidden rounded-xl border border-border bg-background ">
               <div className="border-b border-border  bg-muted via-white  px-6 py-5">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary/10  ">
-                    <Settings2 size={22} className="text-primary" />
+                  <div className="dashboard-section-icon size-11 rounded-lg">
+                    <Settings2 size={22} />
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Configuration</p>
@@ -574,8 +574,8 @@ export default function MessManagementPage() {
             <div className="h-fit overflow-hidden rounded-xl border border-border bg-background ">
               <div className="border-b border-border  bg-muted via-white  px-6 py-5">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary  ">
-                    <Home size={22} className="text-primary" />
+                  <div className="dashboard-section-icon size-11 rounded-lg">
+                    <Home size={22} />
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Overview</p>
@@ -636,8 +636,8 @@ export default function MessManagementPage() {
                     </div>}
 
                     <div className="flex items-center gap-3 rounded-xl border border-border bg-muted p-4">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg r bg-primary ">
-                        <CheckCircle2 size={16} className="text-primary" />
+                      <div className="dashboard-section-icon size-9 rounded-md">
+                        <CheckCircle2 size={16} />
                       </div>
                     <div>
                       <p className="text-xs font-bold text-foreground">Setup Status</p>
@@ -647,7 +647,7 @@ export default function MessManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-border bg-muted p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)]">
+                    <div className="dashboard-section-icon size-9 rounded-md">
                       <Tags size={17} />
                     </div>
                     <div>
@@ -656,8 +656,8 @@ export default function MessManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-border bg-muted p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg r bg-primary ">
-                      <Settings2 size={16} className="text-primary" />
+                    <div className="dashboard-section-icon size-9 rounded-md">
+                      <Settings2 size={16} />
                     </div>
                     <div>
                       <p className="text-xs font-bold text-foreground">Rooms</p>
@@ -665,8 +665,8 @@ export default function MessManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-border bg-muted p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg r bg-primary ">
-                      <CalendarDays size={16} className="text-primary" />
+                    <div className="dashboard-section-icon size-9 rounded-md">
+                      <CalendarDays size={16} />
                     </div>
                     <div>
                       <p className="text-xs font-bold text-foreground">Payment Deadline</p>
@@ -674,7 +674,7 @@ export default function MessManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-border bg-muted p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10 text-destructive">
+                    <div className="dashboard-section-icon size-9 rounded-md">
                       <UtensilsCrossed size={17} />
                     </div>
                     <div>
@@ -691,8 +691,8 @@ export default function MessManagementPage() {
             <div className="overflow-hidden rounded-xl border border-border bg-background ">
               <div className="border-b border-border  bg-muted via-white  px-6 py-5">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl r bg-primary/10  ">
-                    <Building2 size={22} className="text-primary" />
+                  <div className="dashboard-section-icon size-11 rounded-lg">
+                    <Building2 size={22} />
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">New Mess</p>

@@ -443,6 +443,8 @@
   }
 
   .dashboard-theme {
+    --dashboard-sidebar-width: 16rem;
+    --dashboard-sidebar-collapsed-width: 4.5rem;
     --dashboard-bg: #ffffff;
     --dashboard-surface: #ffffff;
     --dashboard-surface-raised: #ffffff;

@@ -37,7 +37,9 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
     return null
   }
 
-  const contentMargin = collapsed ? 'lg:ml-[72px]' : 'lg:ml-[280px]'
+  const contentMargin = collapsed
+    ? 'lg:ml-[var(--dashboard-sidebar-collapsed-width)]'
+    : 'lg:ml-[var(--dashboard-sidebar-width)]'
 
   return (
     <div className="dashboard-theme flex h-screen overflow-hidden bg-background">

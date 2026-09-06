@@ -5,13 +5,7 @@ import { ListFilter } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import {
   Table,
   TableBody,
@@ -88,23 +82,20 @@ export function RecentActivityTable({
             <CardTitle className="text-base">Recent activity</CardTitle>
             <div className="flex items-center gap-2">
               <span className="hidden text-xs font-medium text-muted-foreground sm:inline">Show</span>
-              <Select value={activeView} onValueChange={setActiveView}>
-                <SelectTrigger
-                  size="sm"
-                  className="h-9 w-[176px] border-primary/40 bg-primary/5 font-medium hover:bg-primary/10"
-                  style={{ minHeight: '2.25rem' }}
-                  aria-label="Filter recent activity"
-                >
-                  <ListFilter className="text-primary" />
-                  <SelectValue placeholder="Select activity" />
-                </SelectTrigger>
-                <SelectContent align="end" className="dashboard-popover">
-                  <SelectItem value="expenses">Recent expenses</SelectItem>
-                  <SelectItem value="deposits">Recent deposits</SelectItem>
-                  <SelectItem value="notices">Recent notices</SelectItem>
-                  <SelectItem value="bazar">Bazar schedule</SelectItem>
-                </SelectContent>
-              </Select>
+              <EnterpriseSelect
+                value={activeView}
+                onValueChange={setActiveView}
+                ariaLabel="Filter recent activity"
+                align="end"
+                icon={<ListFilter className="size-4" />}
+                className="h-9 min-h-9 w-[176px]"
+                options={[
+                  { value: 'expenses', label: 'Recent expenses' },
+                  { value: 'deposits', label: 'Recent deposits' },
+                  { value: 'notices', label: 'Recent notices' },
+                  { value: 'bazar', label: 'Bazar schedule' },
+                ]}
+              />
             </div>
           </div>
         </CardHeader>

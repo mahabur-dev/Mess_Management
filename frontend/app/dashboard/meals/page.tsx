@@ -481,7 +481,7 @@ export default function MealsPage() {
 
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl r bg-primary/10  "><UtensilsCrossed size={24} className="text-primary" /></div>
+            <div className="dashboard-section-icon size-12 rounded-lg"><UtensilsCrossed size={24} /></div>
             <div><h2 className="text-lg font-semibold text-foreground">{activeMess?.name ?? 'No mess selected'}</h2><p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"><Clock size={13} className="text-primary" />{deadlineLoading ? 'Loading...' : deadlineInfo ? <>Meal window: {formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)} (next day)</> : 'Meal deadline system active'}</p></div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

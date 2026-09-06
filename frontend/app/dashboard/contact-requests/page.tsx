@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
+import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { apiClient, type ContactRequest, type ContactRequestSource, type ContactRequestStatus } from '@/lib/api-client'
 import { CheckCircle2, Clock3, Loader2, Mail, Search, Send, Sparkles, UserRound, BadgeCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -138,27 +139,29 @@ export default function ContactRequestsPage() {
               />
             </div>
 
-            <select
-              value={filterStatus}
-              onChange={(event) => setFilterStatus(event.target.value as '' | ContactRequestStatus)}
-              className="h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-muted-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-            >
-              <option value="">All status</option>
-              <option value="PENDING">Pending</option>
-              <option value="CONTACTED">Contacted</option>
-              <option value="RESOLVED">Resolved</option>
-            </select>
+            <EnterpriseSelect
+              value={filterStatus || 'ALL'}
+              onValueChange={(value) => setFilterStatus(value === 'ALL' ? '' : value as ContactRequestStatus)}
+              ariaLabel="Filter contact requests by status"
+              options={[
+                { value: 'ALL', label: 'All status' },
+                { value: 'PENDING', label: 'Pending' },
+                { value: 'CONTACTED', label: 'Contacted' },
+                { value: 'RESOLVED', label: 'Resolved' },
+              ]}
+            />
 
-            <select
-              value={filterSource}
-              onChange={(event) => setFilterSource(event.target.value as '' | ContactRequestSource)}
-              className="h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-muted-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-            >
-              <option value="">All source</option>
-              <option value="CONTACT">Contact</option>
-              <option value="SUBSCRIPTION">Subscription</option>
-              <option value="UPGRADE">Upgrade</option>
-            </select>
+            <EnterpriseSelect
+              value={filterSource || 'ALL'}
+              onValueChange={(value) => setFilterSource(value === 'ALL' ? '' : value as ContactRequestSource)}
+              ariaLabel="Filter contact requests by source"
+              options={[
+                { value: 'ALL', label: 'All source' },
+                { value: 'CONTACT', label: 'Contact' },
+                { value: 'SUBSCRIPTION', label: 'Subscription' },
+                { value: 'UPGRADE', label: 'Upgrade' },
+              ]}
+            />
           </div>
         </div>
 

@@ -8,7 +8,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { PatternOverviewCard } from '@/components/meal-pattern/pattern-overview-card'
 import { MemberPatternList, type MemberPatternRow } from '@/components/meal-pattern/member-pattern-list'
 import { PatternDetailsDrawer, type PatternAction } from '@/components/meal-pattern/pattern-details-drawer'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type MealPattern, type MealPatternStatus, type Mess } from '@/lib/api-client'
 import { useMealPatternDashboard } from '@/hooks/use-meal-pattern-dashboard'
@@ -161,15 +161,25 @@ export default function MealPatternsPage() {
               <div className="grid w-full gap-2 sm:grid-cols-2 xl:w-auto xl:grid-cols-[minmax(16rem,20rem)_auto_auto]">
                 <label className="relative sm:col-span-2 xl:col-span-1"><span className="sr-only">Search members</span><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search member" className="h-11 w-full rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] pl-10 pr-3 text-sm font-semibold text-foreground outline-none transition focus:border-[var(--brand)] focus:ring-3 focus:ring-[var(--brand-ring)]" /></label>
                 {messes.length > 1 && (
-                  <Select value={activeMess.id} onValueChange={(value) => { setActiveMessId(value); setSelectedMembershipId(null) }}>
-                    <SelectTrigger aria-label="Choose mess" className="h-11 w-full min-w-44 rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 font-semibold shadow-none"><Building2 className="size-4 text-[var(--brand)]" /><SelectValue /></SelectTrigger>
-                    <SelectContent align="end" collisionPadding={16} className="rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface-raised)] p-1 ">{messes.map((mess) => <SelectItem key={mess.id} value={mess.id} className="min-h-10 rounded-lg font-bold">{mess.name}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <EnterpriseSelect
+                    value={activeMess.id}
+                    onValueChange={(value) => { setActiveMessId(value); setSelectedMembershipId(null) }}
+                    options={messes.map((mess) => ({ value: mess.id, label: mess.name }))}
+                    ariaLabel="Choose mess"
+                    align="end"
+                    icon={<Building2 className="size-4" />}
+                    className="w-full min-w-44"
+                  />
                 )}
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-                  <SelectTrigger aria-label="Filter by pattern status" className="h-11 w-full min-w-44 rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 font-semibold shadow-none"><SlidersHorizontal className="size-4 text-[var(--brand)]" /><SelectValue /></SelectTrigger>
-                  <SelectContent align="end" collisionPadding={16} className="rounded-xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface-raised)] p-1 ">{statusOptions.map((option) => <SelectItem key={option.value} value={option.value} className="min-h-10 rounded-lg font-bold">{option.label}</SelectItem>)}</SelectContent>
-                </Select>
+                <EnterpriseSelect
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+                  options={statusOptions}
+                  ariaLabel="Filter by pattern status"
+                  align="end"
+                  icon={<SlidersHorizontal className="size-4" />}
+                  className="w-full min-w-44"
+                />
               </div>
             </section>
 

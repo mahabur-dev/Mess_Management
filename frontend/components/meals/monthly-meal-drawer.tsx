@@ -12,6 +12,7 @@ import {
 import { apiClient, type AttendanceStatus, type MealName } from '@/lib/api-client'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
+import { localizedErrorMessage, useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 const MEAL_BASE_VALUE: Record<MealName, number> = {
   BREAKFAST: 0.5,
@@ -44,14 +45,6 @@ interface MonthlyMealDrawerProps {
   selectedDate: string
 }
 
-function monthLabel(value: string) {
-  const [year, month] = value.split('-').map(Number)
-  return new Date(year, month - 1, 1).toLocaleDateString('en-GB', {
-    month: 'long',
-    year: 'numeric',
-  })
-}
-
 function moveMonth(value: string, amount: number) {
   const [year, month] = value.split('-').map(Number)
   const next = new Date(year, month - 1 + amount, 1)
@@ -64,11 +57,9 @@ function monthDates(value: string) {
   return Array.from({ length: numberOfDays }, (_, index) => {
     const day = index + 1
     const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    const date = new Date(year, month - 1, day)
     return {
       iso,
-      day: String(day).padStart(2, '0'),
-      weekday: date.toLocaleDateString('en-GB', { weekday: 'short' }),
+      day,
     }
   })
 }
@@ -89,6 +80,9 @@ function initials(name: string) {
 }
 
 export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMealDrawerProps) {
+  const { locale } = useLocale()
+  const t = useTranslations('monthlyMeals')
+  const format = useLocaleFormatters()
   const [open, setOpen] = useState(false)
   const [month, setMonth] = useState(selectedDate.slice(0, 7))
   const [meals, setMeals] = useState<Meal[]>([])
@@ -113,7 +107,7 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
       .catch((requestError: unknown) => {
         if (!active) return
         setMeals([])
-        setError(requestError instanceof Error ? requestError.message : 'Unable to load monthly meals.')
+        setError(localizedErrorMessage(requestError, locale, t('loadError')))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -122,25 +116,25 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
     return () => {
       active = false
     }
-  }, [messId, month, open])
+  }, [locale, messId, month, open, t])
 
   const dates = useMemo(() => monthDates(month), [month])
   const drawerMembers = useMemo(() => {
     const memberMap = new Map<string, string>()
     members
       .filter((member) => member.is_active)
-      .forEach((member) => memberMap.set(member.user_id, member.user?.name?.trim() || 'Unknown member'))
+      .forEach((member) => memberMap.set(member.user_id, member.user?.name?.trim() || t('unknownMember')))
 
     meals.forEach((meal) => {
       meal.attendances?.forEach((attendance) => {
         if (!memberMap.has(attendance.member_id)) {
-          memberMap.set(attendance.member_id, attendance.member?.name?.trim() || 'Unknown member')
+          memberMap.set(attendance.member_id, attendance.member?.name?.trim() || t('unknownMember'))
         }
       })
     })
 
-    return Array.from(memberMap, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
-  }, [meals, members])
+    return Array.from(memberMap, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, locale === 'bn' ? 'bn-BD' : 'en-BD'))
+  }, [locale, meals, members, t])
 
   const mealMatrix = useMemo(() => {
     const matrix = new Map<string, Map<string, number>>()
@@ -192,8 +186,8 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
         className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-3.5 text-xs font-medium text-primary transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 sm:h-11 sm:px-4 sm:text-sm"
       >
         <CalendarRange className="size-4" />
-        <span className="hidden sm:inline">View full month</span>
-        <span className="sm:hidden">Full month</span>
+        <span className="hidden sm:inline">{t('viewFullMonth')}</span>
+        <span className="sm:hidden">{t('fullMonth')}</span>
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
@@ -207,9 +201,9 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                 <CalendarRange className="size-5" />
               </span>
               <div className="min-w-0">
-                <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Monthly meal register</p>
-                <SheetTitle className="text-lg font-semibold tracking-tight sm:text-xl">All member meals</SheetTitle>
-                <SheetDescription className="mt-0.5 font-semibold">Daily totals for {monthLabel(month)}</SheetDescription>
+                <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">{t('register')}</p>
+                <SheetTitle className="text-lg font-semibold tracking-tight sm:text-xl">{t('allMemberMeals')}</SheetTitle>
+                <SheetDescription className="mt-0.5 font-semibold">{t('dailyTotalsFor', { month: format.month(`${month}-01`) })}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
@@ -217,24 +211,24 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
           <div className="flex min-h-0 flex-1 flex-col bg-[var(--dashboard-bg)] p-3 sm:p-5">
             <div className="mb-3 flex flex-col gap-3 rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3  sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:p-4">
               <div className="flex items-center gap-2">
-                <button type="button" aria-label="Previous month" onClick={() => setMonth((current) => moveMonth(current, -1))} className="grid size-9 place-items-center rounded-lg border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
+                <button type="button" aria-label={t('previousMonth')} onClick={() => setMonth((current) => moveMonth(current, -1))} className="grid size-9 place-items-center rounded-lg border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
                   <ChevronLeft className="size-4" />
                 </button>
                 <EnterpriseMonthPicker value={month} onValueChange={setMonth} surface="white" className="h-9 min-w-[170px] rounded-lg" align="start" />
-                <button type="button" aria-label="Next month" onClick={() => setMonth((current) => moveMonth(current, 1))} className="grid size-9 place-items-center rounded-lg border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
+                <button type="button" aria-label={t('nextMonth')} onClick={() => setMonth((current) => moveMonth(current, 1))} className="grid size-9 place-items-center rounded-lg border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
                   <ChevronRight className="size-4" />
                 </button>
               </div>
 
               <div className="grid grid-cols-3 gap-2 sm:flex">
                 {[
-                  { label: 'Members', value: drawerMembers.length, icon: <Users className="size-3.5" /> },
-                  { label: 'Active days', value: trackedDays, icon: <CalendarRange className="size-3.5" /> },
-                  { label: 'Total meals', value: monthlyTotal, icon: <UtensilsCrossed className="size-3.5" /> },
+                  { label: t('members'), value: drawerMembers.length, icon: <Users className="size-3.5" /> },
+                  { label: t('activeDays'), value: trackedDays, icon: <CalendarRange className="size-3.5" /> },
+                  { label: t('totalMeals'), value: monthlyTotal, icon: <UtensilsCrossed className="size-3.5" /> },
                 ].map((item) => (
                   <div key={item.label} className="rounded-xl bg-[var(--dashboard-surface-subtle)] px-3 py-2 sm:min-w-[96px]">
                     <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">{item.icon}{item.label}</p>
-                    <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">{item.value}</p>
+                    <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">{format.number(item.value)}</p>
                   </div>
                 ))}
               </div>
@@ -243,12 +237,12 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
             <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] ">
               {loading ? (
                 <div className="grid h-full min-h-56 place-items-center">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Loader2 className="size-4 animate-spin text-[var(--brand)]" /> Loading monthly meals...</div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Loader2 className="size-4 animate-spin text-[var(--brand)]" /> {t('loading')}</div>
                 </div>
               ) : error ? (
                 <div className="grid h-full min-h-56 place-items-center p-6 text-center text-sm font-semibold text-destructive">{error}</div>
               ) : drawerMembers.length === 0 ? (
-                <div className="grid h-full min-h-56 place-items-center p-6 text-center"><div><Users className="mx-auto mb-2 size-7 text-muted-foreground" /><p className="text-sm font-semibold text-foreground">No active members found</p><p className="mt-1 text-xs font-medium text-muted-foreground">Members will appear here when they join this mess.</p></div></div>
+                <div className="grid h-full min-h-56 place-items-center p-6 text-center"><div><Users className="mx-auto mb-2 size-7 text-muted-foreground" /><p className="text-sm font-semibold text-foreground">{t('emptyTitle')}</p><p className="mt-1 text-xs font-medium text-muted-foreground">{t('emptyDescription')}</p></div></div>
               ) : (
                 <div className="h-full overflow-auto [scrollbar-gutter:stable]">
                   <table className="w-full border-separate border-spacing-0" style={{ minWidth: tableWidth }}>
@@ -259,7 +253,7 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                     </colgroup>
                     <thead>
                       <tr>
-                        <th className="sticky left-0 top-0 z-30 border-b border-r border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Date</th>
+                        <th className="sticky left-0 top-0 z-30 border-b border-r border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{t('date')}</th>
                         {drawerMembers.map((member) => (
                           <th key={member.id} className="sticky top-0 z-20 border-b border-r border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] px-3 py-2.5 text-left">
                             <div className="flex min-w-0 items-center gap-2">
@@ -268,7 +262,7 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                             </div>
                           </th>
                         ))}
-                        <th className="sticky right-0 top-0 z-30 border-b border-[var(--dashboard-line)] bg-[var(--brand-softer)] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--brand)]">Daily total</th>
+                        <th className="sticky right-0 top-0 z-30 border-b border-[var(--dashboard-line)] bg-[var(--brand-softer)] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--brand)]">{t('dailyTotal')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -279,19 +273,19 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                         return (
                           <tr key={dateItem.iso} className="group hover:bg-[var(--dashboard-hover)]">
                             <th className={`sticky left-0 z-10 border-b border-r border-[var(--dashboard-line)] px-3 py-2.5 text-left group-hover:bg-[var(--dashboard-hover)] ${isToday ? 'bg-[var(--brand-softer)]' : 'bg-[var(--dashboard-surface)]'}`}>
-                              <span className={`inline-flex min-w-8 items-center justify-center rounded-lg px-2 py-1 text-xs font-semibold tabular-nums ${isToday ? 'bg-[var(--brand)] text-primary-foreground' : 'bg-[var(--dashboard-surface-subtle)] text-foreground'}`}>{dateItem.day}</span>
-                              <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{dateItem.weekday}</span>
+                              <span className={`inline-flex min-w-8 items-center justify-center rounded-lg px-2 py-1 text-xs font-semibold tabular-nums ${isToday ? 'bg-[var(--brand)] text-primary-foreground' : 'bg-[var(--dashboard-surface-subtle)] text-foreground'}`}>{format.number(dateItem.day, { minimumIntegerDigits: 2, useGrouping: false })}</span>
+                              <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{format.weekday(dateItem.iso, 'short')}</span>
                             </th>
                             {drawerMembers.map((member) => {
                               const count = dateMeals?.get(member.id) ?? 0
                               return (
                                 <td key={member.id} className="border-b border-r border-[var(--dashboard-line)] px-3 py-2.5 text-center">
-                                  <span className={`inline-flex h-7 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold tabular-nums ${count > 0 ? 'bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'text-muted-foreground/60'}`}>{count}</span>
+                                  <span className={`inline-flex h-7 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold tabular-nums ${count > 0 ? 'bg-[var(--brand-soft)] text-[var(--brand-dark)] dark:text-[var(--brand-bright)]' : 'text-muted-foreground/60'}`}>{format.number(count)}</span>
                                 </td>
                               )
                             })}
                             <td className="sticky right-0 z-10 border-b border-[var(--dashboard-line)] bg-[var(--brand-softer)] px-3 py-2.5 text-center group-hover:bg-[var(--brand-soft)]">
-                              <span className="text-xs font-semibold tabular-nums text-[var(--brand-dark)] dark:text-[var(--brand-bright)]">{dailyTotal}</span>
+                              <span className="text-xs font-semibold tabular-nums text-[var(--brand-dark)] dark:text-[var(--brand-bright)]">{format.number(dailyTotal)}</span>
                             </td>
                           </tr>
                         )
@@ -299,11 +293,11 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                     </tbody>
                     <tfoot>
                       <tr>
-                        <th className="sticky bottom-0 left-0 z-30 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-primary-foreground">Month total</th>
+                        <th className="sticky bottom-0 left-0 z-30 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-primary-foreground">{t('monthTotal')}</th>
                         {drawerMembers.map((member) => (
-                          <td key={member.id} className="sticky bottom-0 z-20 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-center text-xs font-semibold tabular-nums text-primary-foreground">{memberTotals.get(member.id) ?? 0}</td>
+                          <td key={member.id} className="sticky bottom-0 z-20 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-center text-xs font-semibold tabular-nums text-primary-foreground">{format.number(memberTotals.get(member.id) ?? 0)}</td>
                         ))}
-                        <td className="sticky bottom-0 right-0 z-30 border-t border-[var(--brand-border)] bg-[var(--brand)] px-3 py-3 text-center text-sm font-semibold tabular-nums text-primary-foreground">{monthlyTotal}</td>
+                        <td className="sticky bottom-0 right-0 z-30 border-t border-[var(--brand-border)] bg-[var(--brand)] px-3 py-3 text-center text-sm font-semibold tabular-nums text-primary-foreground">{format.number(monthlyTotal)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -312,7 +306,7 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
             </div>
 
             <p className="mt-2 flex shrink-0 items-center gap-1.5 px-1 text-[10px] font-medium text-muted-foreground">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--brand)]" /> Each cell shows that member&apos;s combined breakfast, lunch and dinner for the day. Scroll horizontally when more members are shown.
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--brand)]" /> {t('tableHint')}
             </p>
           </div>
         </SheetContent>

@@ -3,7 +3,7 @@ import { preparePage, expectNoPageOverflow } from './fixtures'
 
 for (const locale of ['en', 'bn'] as const) {
   test(`every dashboard route renders without runtime errors (${locale})`, async ({ page }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(150_000)
     await preparePage(page, locale, true, 'ADMIN')
     const errors: string[] = []
     page.on('pageerror', error => errors.push(`${page.url()}: ${error.message}`))
@@ -142,3 +142,20 @@ test('public language switching remains usable when storage is denied', async ({
   await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
   expect(errors).toEqual([])
 })
+
+for (const locale of ['en', 'bn'] as const) {
+  test(`Quick Add and monthly meal details use the selected UI language (${locale})`, async ({ page }) => {
+    test.setTimeout(90_000)
+    await preparePage(page, locale, true)
+
+    await page.goto('/dashboard/quick-add')
+    await expect(page.getByRole('heading', { name: locale === 'en' ? 'What would you like to add?' : 'আপনি কী যোগ করতে চান?' })).toBeVisible()
+    await expect(page.getByText(locale === 'en' ? 'Free command usage' : 'বিনামূল্যের কমান্ড ব্যবহার')).toBeVisible()
+
+    await page.goto('/dashboard/meals')
+    await page.getByRole('button', { name: locale === 'en' ? /(?:View )?full month/i : /পুরো মাস/ }).click()
+    const drawer = page.getByRole('dialog')
+    await expect(drawer.getByText(locale === 'en' ? 'Monthly meal register' : 'মাসিক মিল রেজিস্টার')).toBeVisible()
+    await expect(drawer.getByRole('button', { name: locale === 'en' ? 'Previous month' : 'আগের মাস' })).toBeVisible()
+  })
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -43,10 +43,10 @@ import { apiClient, type PublicMessCard } from '@/lib/api-client'
 import { APP_FEATURES } from '@/lib/feature-flags'
 
 const featureStrip = [
-  { title: 'Meal Pattern Automation', text: 'Set once and let it keep running.', icon: CalendarDays, tone: 'text-teal-600 bg-teal-50 dark:bg-teal-950/70 dark:text-teal-300' },
-  { title: 'AI Voice & Text', text: 'Say the change and review it.', icon: Sparkles, tone: 'text-violet-600 bg-violet-50 dark:bg-violet-950/70 dark:text-violet-300' },
-  { title: 'Live Monthly Billing', text: 'Every update flows into the bill.', icon: ReceiptText, tone: 'text-sky-600 bg-sky-50 dark:bg-sky-950/70 dark:text-sky-300' },
-  { title: 'Smart Push Alerts', text: 'Meals, payments, and bazar reminders.', icon: BellRing, tone: 'text-orange-600 bg-orange-50 dark:bg-orange-950/70 dark:text-orange-300' },
+  { title: 'Meal Pattern Automation', text: 'Set once and let it keep running.', icon: CalendarDays, tone: 'text-[var(--brand)] bg-[var(--brand-soft)]' },
+  { title: 'AI Voice & Text', text: 'Say the change and review it.', icon: Sparkles, tone: 'text-[var(--brand)] bg-[var(--brand-soft)]' },
+  { title: 'Live Monthly Billing', text: 'Every update flows into the bill.', icon: ReceiptText, tone: 'text-[var(--brand)] bg-[var(--brand-soft)]' },
+  { title: 'Smart Push Alerts', text: 'Meals, payments, and bazar reminders.', icon: BellRing, tone: 'text-[var(--brand)] bg-[var(--brand-soft)]' },
 ]
 
 const detailedFeatures = [
@@ -183,6 +183,9 @@ function MessesSection() {
   const [loading, setLoading] = useState(true)
   const [api, setApi] = useState<CarouselApi | null>(null)
   const [selected, setSelected] = useState(0)
+  const [isVisible, setIsVisible] = useState(false)
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const visibleMesses = messes.length ? messes : demoMesses
 
   useEffect(() => {
     let active = true
@@ -198,7 +201,15 @@ function MessesSection() {
   }, [])
 
   useEffect(() => {
-    if (!api) return
+    const node = sectionRef.current
+    if (!node) return
+    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { threshold: 0.05 })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!api || !isVisible || visibleMesses.length < 2) return
     const sync = () => setSelected(api.selectedScrollSnap())
     sync()
     api.on('select', sync)
@@ -207,12 +218,10 @@ function MessesSection() {
       api.off('select', sync)
       window.clearInterval(timer)
     }
-  }, [api])
-
-  const visibleMesses = messes.length ? messes : demoMesses
+  }, [api, isVisible, visibleMesses.length])
 
   return (
-    <section id="messes" className="marketing-section scroll-mt-24">
+    <section ref={sectionRef} id="messes" className="marketing-section scroll-mt-24">
       <div className="marketing-container">
         <SectionHeading
           eyebrow="Growing communities"
@@ -224,7 +233,7 @@ function MessesSection() {
             type="button"
             onClick={() => api?.scrollPrev()}
             aria-label="View previous mess"
-            className="absolute -left-2 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[var(--brand-border)] bg-[var(--marketing-surface)] text-[var(--brand)] shadow-[0_10px_28px_rgba(0,107,99,0.14)] transition-all duration-200 hover:-translate-x-1 hover:border-[var(--brand)] hover:bg-[var(--brand)] hover:text-white hover:shadow-[0_14px_34px_var(--brand-shadow)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] active:scale-95 sm:flex"
+            className="absolute -left-2 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--brand-border)] bg-[var(--marketing-surface)] text-[var(--brand)] transition-all duration-200 hover:border-[var(--brand)] hover:bg-[var(--brand)] hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] active:scale-95 sm:flex"
           >
             <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
@@ -247,7 +256,7 @@ function MessesSection() {
             type="button"
             onClick={() => api?.scrollNext()}
             aria-label="View next mess"
-            className="absolute -right-2 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[var(--brand-border)] bg-[var(--marketing-surface)] text-[var(--brand)] shadow-[0_10px_28px_rgba(0,107,99,0.14)] transition-all duration-200 hover:translate-x-1 hover:border-[var(--brand)] hover:bg-[var(--brand)] hover:text-white hover:shadow-[0_14px_34px_var(--brand-shadow)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] active:scale-95 sm:flex"
+            className="absolute -right-2 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--brand-border)] bg-[var(--marketing-surface)] text-[var(--brand)] transition-all duration-200 hover:border-[var(--brand)] hover:bg-[var(--brand)] hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] active:scale-95 sm:flex"
           >
             <ArrowRight size={20} strokeWidth={2.5} />
           </button>
@@ -339,7 +348,7 @@ function PricingSection() {
             )
           })}
 
-          <article className="relative min-h-[420px] overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-dark)] to-[var(--brand)] p-7 text-white shadow-[0_20px_50px_var(--brand-shadow)] md:col-span-3 xl:col-span-1">
+          <article className="relative min-h-[420px] overflow-hidden rounded-2xl bg-[var(--brand)] p-7 text-white md:col-span-3 xl:col-span-1">
             <Sparkles className="absolute right-6 top-6 text-white/60" />
             <h3 className="max-w-[12rem] text-2xl font-semibold leading-tight">Live better. Manage together.</h3>
             <p className="mt-4 max-w-xs text-sm font-medium leading-6 text-white/80">Invite your members and give the whole community a more transparent way to live.</p>
@@ -365,11 +374,11 @@ function FinalCta() {
     <section className="marketing-section">
       <div className="marketing-container">
         <MarketingStatsBar />
-        <div className="mt-10 overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] px-6 py-10 text-center text-white shadow-[0_20px_50px_var(--brand-shadow)] sm:px-10">
+        <div className="mt-10 overflow-hidden rounded-2xl bg-[var(--brand)] px-6 py-10 text-center text-white sm:px-10">
           <Rocket className="mx-auto" size={30} />
           <h2 className="mt-4 text-3xl font-semibold tracking-tight">Ready for a calmer mess?</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-white/80">Set up your community, invite your members, and keep every meal and taka accounted for.</p>
-          <Link href="/register" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-semibold text-[var(--brand-dark)] shadow-lg transition hover:-translate-y-0.5">
+          <Link href="/register" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-semibold text-[var(--brand-dark)] transition hover:bg-[var(--brand-soft)]">
             Get Started for Free <ArrowRight size={16} />
           </Link>
         </div>

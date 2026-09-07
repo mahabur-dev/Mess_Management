@@ -66,7 +66,7 @@ export default function LoginPage() {
       title="Welcome back"
       description="Sign in to continue managing your Messzen workspace."
       footer={
-        <p className="text-sm font-semibold text-[#64748b]">
+        <p className="text-sm font-semibold text-muted-foreground">
           Don't have an account?{' '}
           <Link href="/register" className={authLinkClass}>
             Create one
@@ -88,7 +88,7 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Email Address
           </label>
           <div className="relative">
@@ -106,7 +106,7 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Password
           </label>
           <div className="relative">
@@ -132,8 +132,8 @@ export default function LoginPage() {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#64748b]">
-            <ShieldCheck size={14} className="text-emerald-500" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+            <ShieldCheck size={14} className="text-[var(--brand)]" />
             Protected access
           </span>
           <Link href="/forget_password" className={`text-sm ${authLinkClass}`}>

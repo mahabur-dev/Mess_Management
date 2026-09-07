@@ -25,7 +25,7 @@ export function CurrentAppHeader({
   trailing?: ReactNode
 }) {
   return (
-    <header className="flex min-h-[9.2%] items-center bg-gradient-to-br from-[#007f7c] to-[#17aaa5] px-[4%] pb-[2%] text-white">
+    <header className="flex min-h-[9.2%] items-center bg-[var(--brand)] px-[4%] pb-[2%] text-white">
       <span className="grid size-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10">{back ? <ChevronLeft className="w-4" /> : <span className="text-[9px] font-semibold">MR</span>}</span>
       <div className="min-w-0 flex-1 text-center"><h1 className="truncate text-[14px] font-semibold">{title}</h1>{subtitle ? <p className="mt-0.5 truncate text-[8px] font-medium text-white/80">{subtitle}</p> : null}</div>
       {trailing ?? <span className="grid size-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10"><Bell className="w-4" /></span>}
@@ -35,7 +35,7 @@ export function CurrentAppHeader({
 
 export function CurrentAppBottomNav({ active }: { active: string }) {
   return (
-    <nav className="absolute inset-x-0 bottom-0 z-20 grid h-[8.3%] grid-cols-4 border-t border-[#dfe9ea] bg-white px-1 shadow-[0_-8px_25px_rgba(18,55,72,.07)]">
+    <nav className="absolute inset-x-0 bottom-0 z-20 grid h-[8.3%] grid-cols-4 border-t border-[#dfe9ea] bg-white px-1">
       {currentBottomTabs.map(({ id, label, icon: Icon }) => <div key={id} className={`flex flex-col items-center justify-center gap-0.5 text-[7px] font-bold ${active === id ? 'text-[#008d8c]' : 'text-[#708388]'}`}><Icon className="w-4" strokeWidth={2.4} /><span>{label}</span></div>)}
     </nav>
   )
@@ -99,9 +99,9 @@ export function TourSectionCard({
   variant?: 'default' | 'flat' | 'tint' | 'flush'
 }) {
   const surfaces = {
-    default: 'rounded-[20px] border border-[#dfe9ea] bg-white p-4 shadow-[0_10px_24px_rgba(0,119,122,.08)]',
+    default: 'rounded-[20px] border border-[#dfe9ea] bg-white p-4',
     flat: 'rounded-[16px] border border-[#edf2f3] bg-white p-4 shadow-none',
-    tint: 'rounded-[20px] border border-[#cfeeed] bg-gradient-to-br from-white to-[#edfafa] p-4 shadow-[0_10px_24px_rgba(0,119,122,.08)]',
+    tint: 'rounded-[20px] border border-[#cfeeed] bg-white p-4',
     flush: 'border-y border-[#dfe9ea] bg-white py-3 shadow-none',
   } as const
 
@@ -144,7 +144,7 @@ export function TourField({
     <div
       className={`relative rounded-[16px] border bg-white px-3.5 py-3 transition-all duration-300 ${
         active
-          ? 'border-[#008d8c] bg-white shadow-[0_0_0_3px_rgba(0,141,140,.13)]'
+          ? 'border-[var(--brand)] bg-white ring-2 ring-[var(--brand-ring)]'
           : 'border-[#dce8ea]'
       } ${multiline ? 'min-h-[72px]' : 'min-h-[50px]'}`}
     >
@@ -184,7 +184,7 @@ export function TourChoiceGrid({
         return (
           <div
             key={value}
-            className={`relative min-h-[78px] overflow-hidden rounded-[16px] border bg-gradient-to-b from-white to-[#f8fdfd] p-2.5 shadow-[0_8px_20px_rgba(18,55,72,.045)] ${
+            className={`relative min-h-[78px] overflow-hidden rounded-[16px] border bg-white p-2.5 ${
               checked ? 'border-[#008d8c] ring-3 ring-[#008d8c]/8' : 'border-[#cfe5e8]'
             }`}
           >
@@ -210,9 +210,7 @@ export function TourPrimaryAction({
 }) {
   return (
     <div
-      className={`flex min-h-[50px] items-center justify-center gap-2 rounded-[16px] px-4 text-[9px] font-bold text-white shadow-[0_10px_22px_rgba(0,119,122,.18)] transition-all ${
-        tone === 'success' ? 'bg-emerald-600' : 'bg-[#008d8c]'
-      } ${active ? 'scale-[1.02] ring-4 ring-[#008d8c]/15' : ''}`}
+      className={`flex min-h-[50px] items-center justify-center gap-2 rounded-[16px] bg-[var(--brand)] px-4 text-[9px] font-bold text-white transition-all ${active ? 'scale-[1.02] ring-4 ring-[var(--brand-ring)]' : ''}`}
     >
       {children}
     </div>
@@ -227,9 +225,9 @@ export function TourStatusBanner({
   detail: string
 }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 shadow-sm">
-      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-emerald-600 text-white"><Check className="w-3.5" strokeWidth={3} /></span>
-      <div><p className="text-[9px] font-semibold">{title}</p><p className="mt-0.5 text-[7px] font-semibold leading-3 text-emerald-700">{detail}</p></div>
+    <div className="flex items-start gap-2.5 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-[var(--brand-dark)]">
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--brand)] text-white"><Check className="w-3.5" strokeWidth={3} /></span>
+      <div><p className="text-[9px] font-semibold">{title}</p><p className="mt-0.5 text-[7px] font-semibold leading-3 text-[var(--brand-dark)]">{detail}</p></div>
     </div>
   )
 }

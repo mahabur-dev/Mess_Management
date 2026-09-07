@@ -37,7 +37,7 @@ export function TourSidebar({ activeNav, showAccent = false }: { activeNav: stri
         {navigation.map(({ id, label, icon: Icon }) => {
           const selected = id === activeNav
           return (
-            <div key={id} className={`flex items-center gap-[8%] rounded-[8px] px-[8%] py-[3.9%] text-[clamp(5px,.78vw,8px)] font-extrabold transition-all ${selected ? 'bg-gradient-to-r from-[#00777a] to-[#008d8c] text-white shadow-[0_6px_16px_rgba(0,127,118,.2)]' : 'text-[#526477]'}`}>
+            <div key={id} className={`flex items-center gap-[8%] rounded-[8px] px-[8%] py-[3.9%] text-[clamp(5px,.78vw,8px)] font-extrabold transition-all ${selected ? 'bg-[var(--brand)] text-white' : 'text-[#526477]'}`}>
               <Icon className="w-[14%]" strokeWidth={2.2} />
               <span>{label}</span>
             </div>
@@ -71,7 +71,7 @@ export function TourHeader({ title, subtitle, action }: { title: string; subtitl
 
 export function TourField({ label, value, placeholder, active, select, children }: { label: string; value?: string; placeholder?: string; active?: boolean; select?: boolean; children?: ReactNode }) {
   return (
-    <div className={`rounded-[7px] border bg-white px-2.5 py-2 transition-all duration-300 ${active ? 'border-[#008d8c] shadow-[0_0_0_3px_rgba(0,141,140,.12)]' : 'border-[#dce7ea]'}`}>
+    <div className={`rounded-[7px] border bg-white px-2.5 py-2 transition-all duration-300 ${active ? 'border-[var(--brand)] ring-2 ring-[var(--brand-ring)]' : 'border-[#dce7ea]'}`}>
       <p className="text-[clamp(4px,.62vw,7px)] font-bold text-[#668087]">{label}</p>
       <div className="mt-1 flex min-h-3 items-center justify-between gap-2">
         {children ?? <span className={`truncate text-[clamp(5px,.82vw,9px)] font-extrabold ${value ? 'text-[#183f48]' : 'text-[#9aabb0]'}`}>{value || placeholder || 'Select'}{active && value ? <span className="ml-px inline-block h-[1em] w-px animate-pulse bg-[#008d8c] align-[-2px]" /> : null}</span>}
@@ -83,7 +83,7 @@ export function TourField({ label, value, placeholder, active, select, children 
 
 export function TourPanel({ title, aside, active, children, className = '' }: { title?: string; aside?: ReactNode; active?: boolean; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-[9px] border bg-white p-[4%] shadow-sm transition-all ${active ? 'border-[#008d8c] ring-2 ring-[#008d8c]/10' : 'border-[#dce7ea]'} ${className}`}>
+    <section className={`rounded-[9px] border bg-white p-[4%] transition-all ${active ? 'border-[var(--brand)] ring-2 ring-[var(--brand-ring)]' : 'border-[#dce7ea]'} ${className}`}>
       {title || aside ? <div className="mb-[3%] flex items-center justify-between"><p className="text-[clamp(5px,.78vw,8px)] font-semibold">{title}</p>{aside}</div> : null}
       {children}
     </section>
@@ -91,6 +91,6 @@ export function TourPanel({ title, aside, active, children, className = '' }: { 
 }
 
 export function TourPrimaryButton({ children, active, tone = 'brand' }: { children: ReactNode; active?: boolean; tone?: 'brand' | 'ai' }) {
-  const background = tone === 'ai' ? 'bg-gradient-to-r from-violet-600 to-[#008d8c]' : 'bg-[#008d8c]'
-  return <button type="button" className={`flex items-center gap-1.5 rounded-[7px] ${background} px-4 py-2 text-[clamp(5px,.75vw,8px)] font-semibold text-white shadow-[0_7px_18px_rgba(0,141,140,.25)] transition-all ${active ? 'scale-105 ring-4 ring-[#008d8c]/15' : ''}`}>{children}</button>
+  const background = 'bg-[var(--brand)]'
+  return <button type="button" className={`flex items-center gap-1.5 rounded-[7px] ${background} px-4 py-2 text-[clamp(5px,.75vw,8px)] font-semibold text-white transition-all ${active ? 'scale-105 ring-4 ring-[var(--brand-ring)]' : ''}`}>{children}</button>
 }

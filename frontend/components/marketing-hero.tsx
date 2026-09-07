@@ -12,9 +12,6 @@ const people = [
 export function MarketingHero() {
   return (
     <section className="relative overflow-hidden px-4 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-14 lg:pt-16">
-      <div className="pointer-events-none absolute -left-32 top-20 size-80 rounded-full bg-[var(--brand)]/10 blur-3xl" />
-      <div className="pointer-events-none absolute -right-28 top-0 size-96 rounded-full bg-[var(--brand-bright)]/10 blur-3xl" />
-
       <div className="marketing-container relative grid items-center gap-12 lg:grid-cols-[.82fr_1.18fr] lg:gap-10">
         <div>
           <span className="marketing-eyebrow gap-2 normal-case tracking-normal">
@@ -25,7 +22,7 @@ export function MarketingHero() {
             Put your mess
             <br /> on autopilot.
             <br />
-            <span className="bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand-bright)] bg-clip-text text-transparent">
+            <span className="text-[var(--brand)]">
               Live together better.
             </span>
           </h1>
@@ -48,14 +45,14 @@ export function MarketingHero() {
               {people.map((person) => (
                 <span
                   key={person.initials}
-                  className={`flex size-9 items-center justify-center rounded-full border-2 border-[var(--marketing-page)] bg-gradient-to-br ${person.color} text-[9px] font-semibold text-white shadow-sm`}
+                  className="flex size-9 items-center justify-center rounded-full border-2 border-[var(--marketing-page)] bg-[var(--brand)] text-[9px] font-semibold text-white"
                 >
                   {person.initials}
                 </span>
               ))}
             </div>
             <div>
-              <div className="flex items-center gap-0.5 text-amber-400">
+              <div className="flex items-center gap-0.5 text-[var(--brand)]">
                 {Array.from({ length: 5 }).map((_, index) => <Star key={index} size={14} fill="currentColor" />)}
               </div>
               <p className="mt-1 text-xs font-semibold text-muted-foreground">Trusted by growing mess communities</p>
@@ -64,7 +61,6 @@ export function MarketingHero() {
         </div>
 
         <div className="relative mx-auto w-full max-w-[820px]">
-          <div className="absolute -inset-5 rounded-[2rem] bg-gradient-to-br from-[var(--brand)]/12 via-transparent to-[var(--brand-bright)]/12 blur-2xl" />
           <div className="relative">
             <ProductTourPreviewSuite />
           </div>

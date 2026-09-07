@@ -70,7 +70,7 @@ export function LegalPage({
               </ol>
             </nav>
 
-            <div className="mt-4 rounded-2xl bg-gradient-to-br from-[var(--brand-dark)] to-[var(--brand)] p-5 text-white shadow-[0_16px_38px_var(--brand-shadow)]">
+            <div className="mt-4 rounded-2xl bg-[var(--brand)] p-5 text-white">
               <p className="text-sm font-semibold">Questions about this document?</p>
               <p className="mt-2 text-xs font-medium leading-5 text-white/75">Contact the Messzen team and we will help clarify how these terms apply.</p>
               <a href="mailto:support@messzen.com" className="mt-4 flex items-center gap-2 text-xs font-semibold text-white"><Mail size={14} /> support@messzen.com</a>

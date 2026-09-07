@@ -77,7 +77,7 @@ export default function RegisterPage() {
       description="Create your member profile, then verify your email before signing in."
       maxWidth="max-w-[500px]"
       footer={
-        <p className="text-sm font-semibold text-[#64748b]">
+        <p className="text-sm font-semibold text-muted-foreground">
           Already have an account?{' '}
           <Link href="/login" className={authLinkClass}>
             Sign in
@@ -89,7 +89,7 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Full Name
           </label>
           <div className="relative">
@@ -106,7 +106,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Email Address
           </label>
           <div className="relative">
@@ -124,7 +124,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Phone Number
           </label>
           <div className="relative">
@@ -143,7 +143,7 @@ export default function RegisterPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Password
             </label>
             <div className="relative">
@@ -169,7 +169,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Confirm
             </label>
             <div className="relative">
@@ -197,8 +197,8 @@ export default function RegisterPage() {
 
         <div className="rounded-md border border-[#d8e8e7] bg-[#f7fcfb] p-4">
           <div className="flex items-start gap-3">
-            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#008b80]" />
-            <p className="text-xs font-semibold leading-relaxed text-[#64748b]">
+            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[var(--brand)]" />
+            <p className="text-xs font-semibold leading-relaxed text-muted-foreground">
               Every new profile is created as a member. Manager permission is approved from the dashboard.
             </p>
           </div>

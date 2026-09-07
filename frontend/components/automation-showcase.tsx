@@ -272,11 +272,11 @@ export function BillingAndAlertsSection() {
 export function AutomationCta() {
   return (
     <div className="marketing-container px-4 sm:px-6 lg:px-8">
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] px-6 py-9 text-center text-white shadow-[0_20px_50px_var(--brand-shadow)] sm:px-10">
+      <div className="overflow-hidden rounded-2xl bg-[var(--brand)] px-6 py-9 text-center text-white sm:px-10">
         <WalletCards className="mx-auto" size={28} />
         <h2 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Set the routine. Let Messzen handle the repetition.</h2>
         <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-7 text-white/80">Automate meal patterns, use AI for changes, keep bills calculated, and notify everyone at the right time.</p>
-        <Link href="/register" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-semibold text-[var(--brand-dark)] shadow-lg transition hover:-translate-y-0.5">Start for Free <ArrowRight size={16} /></Link>
+        <Link href="/register" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-semibold text-[var(--brand-dark)] transition hover:bg-[var(--brand-soft)]">Start for Free <ArrowRight size={16} /></Link>
       </div>
     </div>
   )

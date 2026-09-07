@@ -1,5 +1,6 @@
 'use client'
 
+import { EnterpriseAsyncState } from '@/components/ui/enterprise-async-state'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { ExpenseApprovalControl } from '@/components/expense-approval-control'
 import { Card } from '@/components/ui/card'
@@ -50,6 +51,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 import { clearAiCommandDraft, readAiCommandDraft, type AiCommandDraft } from '@/lib/ai-quick-add'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { formatIsoDate, domainLabel, localizedErrorMessage, useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 const categories: ExpenseCategory[] = [
   'GROCERY',
@@ -138,18 +140,6 @@ type ExpenseListResponse =
       data?: ExpenseItem[]
     }
 
-function money(value: number | string | undefined | null) {
-  return `৳ ${Number(value ?? 0).toLocaleString()}`
-}
-
-function formatDate(date: string | Date) {
-  return new Date(date).toLocaleDateString('en-US', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
 function getMonthRange(monthValue: string) {
   const [year, month] = monthValue.split('-').map(Number)
   const lastDay = new Date(year, month, 0).getDate()
@@ -201,11 +191,14 @@ function getExpenseApprovalStatus(expense: ExpenseItem): ExpenseApprovalStatus {
   return 'APPROVED'
 }
 
-function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback
-}
-
 export default function FinancePage() {
+  const t = useTranslations('operations')
+  const common = useTranslations('common')
+  const [loadError, setLoadError] = useState<unknown>(null)
+  const { locale } = useLocale()
+  const formatters = useLocaleFormatters()
+  const money = (value: number | string | undefined | null) => formatters.money(value)
+  const formatDate = (value: string) => formatters.date(value, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -219,7 +212,7 @@ export default function FinancePage() {
   const [expenseFormMode, setExpenseFormMode] = useState<ExpenseFormMode>('expense')
 
   // ── Multi-item form state ──────────────────────────────
-  const [sharedDate, setSharedDate] = useState(new Date().toISOString().slice(0, 10))
+  const [sharedDate, setSharedDate] = useState(formatIsoDate())
   const [expensePurchasedBy, setExpensePurchasedBy] = useState('')
   const [expenseItems, setExpenseItems] = useState<ExpenseRow[]>([
     { 
@@ -238,7 +231,7 @@ export default function FinancePage() {
   // ──────────────────────────────────────────────────────
 
   const [selectedCategory, setSelectedCategory] = useState<'ALL' | ExpenseCategory>('ALL')
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [selectedMonth, setSelectedMonth] = useState(formatIsoDate().slice(0, 7))
   const [selectedDay, setSelectedDay] = useState<string>('ALL')
   const [searchText, setSearchText] = useState('')
   const [message, setMessage] = useState('')
@@ -287,14 +280,15 @@ export default function FinancePage() {
       }
     })
 
-    return (userId?: string | null, fallback = 'Unknown') => {
+    return (userId?: string | null, fallback = t('finance.unknown')) => {
       if (!userId) return fallback
       return memberMap.get(userId) ?? fallback
     }
-  }, [messMembers])
+  }, [messMembers, t])
   const purchasedByMemberOptions = purchasedByOptions.length > 0 ? purchasedByOptions : user ? [user] : []
 
   async function load() {
+    setLoadError(null)
     if (!user) return
     setLoading(true)
     try {
@@ -317,7 +311,6 @@ export default function FinancePage() {
             sortBy: 'expense_date',
             sortOrder: 'desc',
           })
-          .catch(() => null)
 
         setExpenses(normalizeExpenses(expenseRes?.data as ExpenseListResponse | undefined))
         setExpensePurchasedBy(user?.id ?? '')
@@ -332,6 +325,8 @@ export default function FinancePage() {
         const fallbackMembers = active.memberships?.filter((membership) => membership.is_active && membership.user) ?? []
         setMessMembers(activeMembersFromApi.length > 0 ? activeMembersFromApi : fallbackMembers)
       }
+    } catch (error) {
+      setLoadError(error)
     } finally {
       setLoading(false)
     }
@@ -371,7 +366,7 @@ export default function FinancePage() {
     })
     const paidFrom = String(payload.paidFrom ?? payload.paymentType ?? 'FROM_DEPOSIT')
     setExpenseFormMode(isUtility ? 'utility' : 'expense')
-    setSharedDate(String(payload.expenseDate ?? new Date().toISOString().slice(0, 10)).slice(0, 10))
+    setSharedDate(String(payload.expenseDate ?? formatIsoDate()).slice(0, 10))
     setExpensePurchasedBy(String(payload.purchasedBy ?? user.id))
     setExpenseItems(rows)
     setRowCounter(rows.length)
@@ -455,7 +450,7 @@ export default function FinancePage() {
       receipt: null
     }])
     setRowCounter(1)
-    setSharedDate(new Date().toISOString().slice(0, 10))
+    setSharedDate(formatIsoDate())
     setEditingExpense(null)
     setExpensePaymentType('FROM_DEPOSIT')
   }
@@ -526,21 +521,22 @@ export default function FinancePage() {
       (i) =>
         (expenseFormMode !== 'utility' && !i.itemName.trim()) ||
         !i.amount ||
+        !Number.isFinite(Number(i.amount)) ||
         Number(i.amount) <= 0,
     )
     if (invalid.length) {
       setMessageType('error')
-      setMessage('Please provide a name and valid line amount for every item.')
+      setMessage(t('finance.invalidItems'))
       return
     }
     if (expenseItems.filter((item) => item.receipt).length > 1) {
       setMessageType('error')
-      setMessage('Attach one receipt for the complete purchase transaction.')
+      setMessage(t('finance.singleReceipt'))
       return
     }
     if (aiDraft && expenseItems.some((item) => item.receipt)) {
       setMessageType('error')
-      setMessage('Confirm the AI entry first, then attach a receipt from the expense page if needed.')
+      setMessage(t('finance.aiReceipt'))
       return
     }
 
@@ -548,8 +544,6 @@ export default function FinancePage() {
     setMessage('')
     try {
       const wasEditing = Boolean(editingExpense)
-      const wasUtility = expenseFormMode === 'utility' && !wasEditing
-      const submittedCount = expenseItems.length
       if (editingExpense) {
         await apiClient.updateExpense(
           editingExpense.id,
@@ -584,17 +578,17 @@ export default function FinancePage() {
       setMessageType('success')
       setMessage(
         wasEditing
-          ? 'Expense updated successfully.'
+          ? t('finance.successUpdated')
           : completedWithAi
-            ? 'AI entry confirmed successfully.'
-          : wasUtility
-            ? 'Utility added successfully.'
-          : `${submittedCount} item(s) saved in one expense transaction.`,
+            ? t('feedback.aiConfirmed')
+            : expenseFormMode === 'utility'
+              ? t('feedback.utilityAdded')
+              : t('feedback.itemsSaved', { count: formatters.number(expenseItems.length) }),
       )
       await load()
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to save expense.'))
+      setMessage(localizedErrorMessage(error, locale, t('finance.errorSave')))
     } finally {
       setLoading(false)
     }
@@ -602,9 +596,10 @@ export default function FinancePage() {
 
   function openEditExpenseModal(expense: ExpenseItem) {
     const nextFormMode = isUtilityCategory(expense.category) ? 'utility' : 'expense'
+    setExpensePaymentType(expense.payment_type === 'PERSONAL' || expense.payment_type === 'COLLECTED_FUND' ? expense.payment_type : 'FROM_DEPOSIT')
     setExpenseFormMode(nextFormMode)
     setEditingExpense(expense)
-    setSharedDate(new Date(expense.expense_date).toISOString().slice(0, 10))
+    setSharedDate(formatIsoDate(expense.expense_date))
     setExpensePurchasedBy(expense.purchased_by ?? expense.creator?.id ?? user?.id ?? '')
     const existingItems = expense.items?.length
       ? expense.items
@@ -640,23 +635,23 @@ export default function FinancePage() {
   }
 
   async function handleDeleteExpense(id: string) {
-    if (!confirm('Are you sure you want to delete this expense?')) return
+    if (!confirm(t('feedback.deleteExpense'))) return
     setMessage('')
     try {
       await apiClient.deleteExpense(id)
       setMessageType('success')
-      setMessage('Expense deleted successfully.')
+      setMessage(t('finance.successDeleted'))
       await load()
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to delete expense.'))
+      setMessage(localizedErrorMessage(error, locale, t('finance.errorDelete')))
     }
   }
 
   async function submitPriceReviewRequest() {
     if (!reviewExpense || !reviewMessage.trim()) {
       setMessageType('error')
-      setMessage('Please write a message for the price review request.')
+      setMessage(t('feedback.reviewRequired'))
       return
     }
 
@@ -668,10 +663,10 @@ export default function FinancePage() {
       setReviewExpense(null)
       setReviewMessage('')
       setMessageType('success')
-      setMessage('Price review request sent successfully.')
+      setMessage(t('finance.successReview'))
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to send price review request.'))
+      setMessage(localizedErrorMessage(error, locale, t('finance.errorReview')))
     } finally {
       setLoading(false)
     }
@@ -684,7 +679,7 @@ export default function FinancePage() {
     if (!canManageMess || getExpenseApprovalStatus(expense) !== 'PENDING') return
     if (
       status === 'REJECTED' &&
-      !confirm('Reject this expense? It will not be included in meal or utility costs.')
+      !confirm(t('feedback.rejectExpense'))
     ) {
       return
     }
@@ -709,12 +704,12 @@ export default function FinancePage() {
       setMessageType('success')
       setMessage(
         status === 'APPROVED'
-          ? 'Expense approved and included in the relevant cost calculation.'
-          : 'Expense rejected successfully.',
+          ? t('feedback.expenseApproved')
+          : t('feedback.expenseRejected'),
       )
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to update expense status.'))
+      setMessage(localizedErrorMessage(error, locale, t('finance.errorApproval')))
     } finally {
       setReviewingExpenseId(null)
     }
@@ -738,10 +733,10 @@ export default function FinancePage() {
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((item) => {
-      const expenseMonth = new Date(item.expense_date).toISOString().slice(0, 7)
+      const expenseMonth = formatIsoDate(item.expense_date).slice(0, 7)
       const matchMonth = expenseMonth === selectedMonth
       const matchCategory = selectedCategory === 'ALL' || item.category === selectedCategory
-      const expenseDay = new Date(item.expense_date).getDate().toString().padStart(2, '0')
+      const expenseDay = formatIsoDate(item.expense_date).slice(8, 10)
       const matchDay = selectedDay === 'ALL' || !selectedDay || expenseDay === selectedDay
       const searchableText =
         `${item.item_name ?? ''} 
@@ -793,18 +788,17 @@ export default function FinancePage() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader
-        title={canManageMess ? 'Bazar / Expenses' : 'Expenses'}
+        title={canManageMess ? t('finance.title') : t('finance.memberTitle')}
         description={
-          activeMess
-            ? `${activeMess.name} expense overview`
-            : 'Track bazar, food cost and monthly expenses'
+            activeMess ? t('finance.messDescription', { name: activeMess.name }) : t('finance.memberDescription')
         }
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
+        {loadError != null && <EnterpriseAsyncState status="error" description={localizedErrorMessage(loadError, locale, t('feedback.loadFailed'))} action={<EnterpriseButton onClick={() => void load()}>{common('retry')}</EnterpriseButton>} className="mb-5" />}
         {message && (
           <div
-            className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold  ${
+            className={`mb-5 rounded-xl px-4 py-3 text-sm font-semibold  ${
               messageType === 'error'
                 ? 'border border-destructive/30 bg-destructive/10 text-destructive'
                 : 'border border-primary/30 bg-primary/10 text-primary'
@@ -821,9 +815,9 @@ export default function FinancePage() {
               <ShoppingBag size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">All Bazar & Expenses</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t('finance.allExpenses')}</h2>
               <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
-                Showing {filteredExpenses.length} expenses for selected month
+                {t('finance.showing', { count: formatters.number(filteredExpenses.length) })}
               </p>
             </div>
           </div>
@@ -835,28 +829,28 @@ export default function FinancePage() {
             <div className="rounded-xl border border-border bg-background p-4 ">
               <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <ReceiptText size={13} className="text-primary" />
-                Total Items
+                {t('finance.totalItems')}
               </p>
               <p className="mt-1.5 text-2xl font-semibold text-foreground">{summary.count}</p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4 ">
               <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <Filter size={13} className="text-primary" />
-                Categories
+                {t('finance.categories')}
               </p>
               <p className="mt-1.5 text-2xl font-semibold text-foreground">{summary.categories}</p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4">
               <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <TrendingUp size={13} className="text-primary" />
-                Total Amount
+                {t('finance.totalAmount')}
               </p>
               <p className="mt-1.5 text-2xl font-semibold text-primary">{money(summary.total)}</p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4">
               <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <Clock3 size={13} className="text-primary" />
-                Pending Bazar
+                {t('finance.pendingBazar')}
               </p>
               <p className="mt-1.5 text-2xl font-semibold text-foreground">{summary.pendingBazar}</p>
             </div>
@@ -873,23 +867,23 @@ export default function FinancePage() {
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   className="h-[38px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
-                  placeholder="Search item..."
+                  placeholder={t('finance.searchPlaceholder')}
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                 />
               </div>
 
-              <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[38px] w-[154px] text-xs font-bold" align="start" />
+              <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[38px] w-[154px] text-xs font-semibold" align="start" />
 
               {canAddExpense && (
                 <>
                   <EnterpriseButton size="sm" onClick={openUtilityModal}>
                     <Plus size={15} />
-                    Add Utility
+                    {t('finance.addUtility')}
                   </EnterpriseButton>
                   <EnterpriseButton size="sm" onClick={openExpenseModal}>
                     <Plus size={15} />
-                    Add Expenses
+                    {t('finance.addExpenses')}
                   </EnterpriseButton>
                 </>
               )}
@@ -898,17 +892,17 @@ export default function FinancePage() {
             {/* Row 2: Day + Category filters */}
             <div className="flex flex-row flex-wrap items-center gap-2">
               <EnterpriseSelect
-                className="h-[38px] w-[120px] text-xs font-bold"
+                className="h-[38px] w-[120px] text-xs font-semibold"
                 value={selectedDay}
                 onValueChange={setSelectedDay}
-                options={[{ value: 'ALL', label: 'All Days' }, ...Array.from({ length: 31 }, (_, index) => ({ value: String(index + 1).padStart(2, '0'), label: `Day ${index + 1}` }))]}
+                options={[{ value: 'ALL', label: t('finance.allDays') }, ...Array.from({ length: 31 }, (_, index) => ({ value: String(index + 1).padStart(2, '0'), label: t('finance.day', { day: index + 1 }) }))]}
               />
 
               <EnterpriseSelect
-                className="h-[38px] w-[160px] text-xs font-bold"
+                className="h-[38px] w-[160px] text-xs font-semibold"
                 value={selectedCategory}
                 onValueChange={(value) => setSelectedCategory(value as 'ALL' | ExpenseCategory)}
-                options={[{ value: 'ALL', label: 'All Categories' }, ...categories.map((category) => ({ value: category, label: category }))]}
+                options={[{ value: 'ALL', label: t('finance.allCategories') }, ...categories.map((category) => ({ value: category, label: domainLabel(category, locale) }))]}
               />
             </div>
           </div>
@@ -917,10 +911,10 @@ export default function FinancePage() {
               <table className="w-full table-fixed border-separate border-spacing-0">
                 <thead>
                   <tr className="border-b border-border bg-muted">
-                    {['Category', 'Quantity', 'Added by', 'Date', 'Amount', 'Status', 'Action'].map((heading) =>
-                      heading === 'Action'
-                        ? <EnterpriseTableActionHeader key={heading} size="compact" />
-                        : <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground ${heading === 'Amount' ? 'text-right' : ''}`}>{heading}</th>,
+                    {[t('finance.category'), t('finance.quantity'), t('finance.addedBy'), t('finance.expenseDate'), t('finance.amount'), t('finance.approval'), t('monthlyBills.action')].map((heading, index, headings) =>
+                      index === headings.length - 1
+                        ? <EnterpriseTableActionHeader key={heading} size="compact">{heading}</EnterpriseTableActionHeader>
+                        : <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground ${index === 4 ? 'text-right' : ''}`}>{heading}</th>,
                     )}
                   </tr>
                 </thead>
@@ -928,9 +922,9 @@ export default function FinancePage() {
                   {loading && (
                     <tr>
                       <td colSpan={7} className="px-5 py-12 text-center">
-                        <div className="flex items-center justify-center gap-2 text-sm font-bold text-muted-foreground">
+                        <div className="flex items-center justify-center gap-2 text-sm font-semibold text-muted-foreground">
                           <Loader2 size={18} className="animate-spin text-primary" />
-                          Loading expenses...
+                          {t('finance.loading')}
                         </div>
                       </td>
                     </tr>
@@ -940,7 +934,8 @@ export default function FinancePage() {
                       <td colSpan={7} className="px-5 py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <ShoppingBag size={40} className="text-muted-foreground" />
-                          <p className="text-sm font-bold text-muted-foreground">No expenses found.</p>
+                          <p className="text-sm font-semibold text-muted-foreground">{t('finance.empty')}</p>
+                          <p className="text-xs font-semibold text-muted-foreground">{t('finance.emptyDescription')}</p>
                         </div>
                       </td>
                     </tr>
@@ -950,20 +945,20 @@ export default function FinancePage() {
                       <tr key={item.id} className="transition hover:bg-muted group">
                         <td className="px-4 py-4">
                           <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${getCategoryStyle(item.category)}`}
+                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getCategoryStyle(item.category)}`}
                           >
-                            {item.category}
+                            {domainLabel(item.category, locale)}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-muted-foreground">
+                        <td className="px-4 py-4 text-sm font-semibold text-muted-foreground">
                           {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
                         </td>
                         <td className="px-4 py-4">
-                          <p className="truncate text-sm font-bold text-foreground">{item.creator?.name ?? 'Unknown'}</p>
+                          <p className="truncate text-sm font-semibold text-foreground">{item.creator?.name ?? t('finance.unknown')}</p>
                           <p className="truncate text-xs font-semibold text-muted-foreground">{item.creator?.email ?? ''}</p>
                         </td>
                         <td className="px-4 py-4">
-                          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
+                          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
                             <CalendarDays size={14} className="text-primary" />
                             {formatDate(item.expense_date)}
                           </span>
@@ -980,7 +975,7 @@ export default function FinancePage() {
                           />
                         </td>
                         <EnterpriseTableActionCell size="compact">
-                            <EnterpriseIconButton label="View expense" tone="primary" onClick={() => openViewModal(item)}>
+                            <EnterpriseIconButton label={t('finance.viewExpense')} tone="primary" onClick={() => openViewModal(item)}>
                               <Eye size={16} />
                             </EnterpriseIconButton>
                         </EnterpriseTableActionCell>
@@ -992,13 +987,13 @@ export default function FinancePage() {
               {!loading && filteredExpenses.length > 0 && (
                 <div className="border-t-2 border-border bg-muted px-5 py-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                       <Users size={14} />
-                      <span><span className="text-foreground">{filteredExpenses.length}</span> items</span>
+                      <span><span className="text-foreground">{filteredExpenses.length}</span> {t('finance.itemCounts')}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold">
                       <Banknote size={14} className="text-primary" />
-                      <span className="text-primary">Total: {money(summary.total)}</span>
+                      <span className="text-primary">{t('finance.totalAmount')}: {money(summary.total)}</span>
                     </div>
                   </div>
                 </div>
@@ -1014,28 +1009,28 @@ export default function FinancePage() {
               <div className="rounded-xl border border-border bg-background p-3 ">
                 <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <ReceiptText size={11} className="text-primary" />
-                  Total Items
+                  {t('finance.totalItems')}
                 </p>
                 <p className="mt-1 text-xl font-semibold text-foreground">{summary.count}</p>
               </div>
               <div className="rounded-xl border border-border bg-background p-3 ">
                 <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <Filter size={11} className="text-primary" />
-                  Categories
+                  {t('finance.categories')}
                 </p>
                 <p className="mt-1 text-xl font-semibold text-foreground">{summary.categories}</p>
               </div>
               <div className="rounded-xl border border-border bg-background p-3">
                 <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <TrendingUp size={11} className="text-primary" />
-                  Total Amount
+                  {t('finance.totalAmount')}
                 </p>
                 <p className="mt-1 text-xl font-semibold text-primary">{money(summary.total)}</p>
               </div>
               <div className="rounded-xl border border-border bg-background p-3">
                 <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <Clock3 size={11} className="text-primary" />
-                  Pending Bazar
+                  {t('finance.pendingBazar')}
                 </p>
                 <p className="mt-1 text-xl font-semibold text-foreground">{summary.pendingBazar}</p>
               </div>
@@ -1048,29 +1043,29 @@ export default function FinancePage() {
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 className="h-[42px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20"
-                placeholder="Search item..."
+                placeholder={t('finance.searchPlaceholder')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
               />
             </div>
 
-            <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[42px] w-[142px] shrink-0 text-xs font-bold" align="end" />
+            <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[42px] w-[142px] shrink-0 text-xs font-semibold" align="end" />
           </div>
 
           {/* Mobile Filters Row */}
           <div className="flex flex-row flex-wrap items-center gap-2">
             <EnterpriseSelect
-              className="h-[42px] w-[120px] text-xs font-bold"
+              className="h-[42px] w-[120px] text-xs font-semibold"
               value={selectedDay}
               onValueChange={setSelectedDay}
-              options={[{ value: 'ALL', label: 'All Days' }, ...Array.from({ length: 31 }, (_, index) => ({ value: String(index + 1).padStart(2, '0'), label: `Day ${index + 1}` }))]}
+              options={[{ value: 'ALL', label: t('finance.allDays') }, ...Array.from({ length: 31 }, (_, index) => ({ value: String(index + 1).padStart(2, '0'), label: t('finance.day', { day: index + 1 }) }))]}
             />
 
             <EnterpriseSelect
-              className="h-[42px] min-w-[140px] flex-1 text-xs font-bold"
+              className="h-[42px] min-w-[140px] flex-1 text-xs font-semibold"
               value={selectedCategory}
               onValueChange={(value) => setSelectedCategory(value as 'ALL' | ExpenseCategory)}
-              options={[{ value: 'ALL', label: 'All Categories' }, ...categories.map((category) => ({ value: category, label: category }))]}
+              options={[{ value: 'ALL', label: t('finance.allCategories') }, ...categories.map((category) => ({ value: category, label: domainLabel(category, locale) }))]}
             />
           </div>
 
@@ -1079,11 +1074,11 @@ export default function FinancePage() {
             <div className="flex gap-2">
               <EnterpriseButton size="sm" onClick={openUtilityModal} className="flex-1">
                 <Plus size={15} />
-                Add Utility
+                {t('finance.addUtility')}
               </EnterpriseButton>
               <EnterpriseButton size="sm" onClick={openExpenseModal} className="flex-1">
                 <Plus size={15} />
-                Add Expenses
+                {t('finance.addExpenses')}
               </EnterpriseButton>
             </div>
           )}
@@ -1097,7 +1092,8 @@ export default function FinancePage() {
           {!loading && filteredExpenses.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
               <ShoppingBag size={40} className="mb-2 text-muted-foreground" />
-              <p className="text-sm font-bold text-muted-foreground">No expenses found.</p>
+              <p className="text-sm font-semibold text-muted-foreground">{t('finance.empty')}</p>
+              <p className="text-xs font-semibold text-muted-foreground">{t('finance.emptyDescription')}</p>
             </div>
           )}
           {!loading &&
@@ -1108,8 +1104,8 @@ export default function FinancePage() {
               >
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-base font-bold text-foreground">
-                      {item.item_name || 'Unnamed Expense'}
+                    <p className="truncate text-base font-semibold text-foreground">
+                      {item.item_name || t('finance.unknown')}
                     </p>
                     <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                       <CalendarDays size={13} className="text-primary" />
@@ -1117,24 +1113,24 @@ export default function FinancePage() {
                     </p>
                   </div>
                   <span
-                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getCategoryStyle(item.category)}`}
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${getCategoryStyle(item.category)}`}
                   >
-                    {item.category}
+                    {domainLabel(item.category, locale)}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 rounded-xl bg-muted p-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase text-muted-foreground">
-                      Quantity
+                      {t('finance.quantity')}
                     </p>
-                    <p className="mt-1 text-sm font-bold text-foreground">
+                    <p className="mt-1 text-sm font-semibold text-foreground">
                       {item.quantity ? `${item.quantity} ${item.unit ?? ''}` : '-'}
                     </p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase text-muted-foreground">
-                      Amount
+                      {t('finance.amount')}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-foreground">
                       {money(item.amount)}
@@ -1143,12 +1139,12 @@ export default function FinancePage() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-muted-foreground">
-                  <span>Added by</span>
-                  <span className="truncate font-bold text-foreground">{item.creator?.name ?? 'Unknown'}</span>
+                  <span>{t('finance.addedBy')}</span>
+                  <span className="truncate font-semibold text-foreground">{item.creator?.name ?? t('finance.unknown')}</span>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
-                  <span className="text-xs font-semibold text-muted-foreground">Status</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t('finance.approval')}</span>
                   <ExpenseApprovalControl
                     status={getExpenseApprovalStatus(item)}
                     canReview={canManageMess}
@@ -1158,17 +1154,17 @@ export default function FinancePage() {
                 </div>
 
                 <div className="mt-3 flex justify-end">
-                  <EnterpriseIconButton label="View expense" tone="primary" onClick={() => openViewModal(item)}><Eye size={16} /></EnterpriseIconButton>
+                  <EnterpriseIconButton label={t('finance.viewExpense')} tone="primary" onClick={() => openViewModal(item)}><Eye size={16} /></EnterpriseIconButton>
                 </div>
               </div>
             ))}
           {/* Footer Summary - Mobile */}
           {!loading && filteredExpenses.length > 0 && (
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3">
-              <p className="text-xs font-bold text-muted-foreground"><span className="text-foreground">{filteredExpenses.length}</span> items</p>
-              <div className="flex items-center gap-1.5 text-xs font-bold">
+              <p className="text-xs font-semibold text-muted-foreground"><span className="text-foreground">{filteredExpenses.length}</span> {t('finance.itemCounts')}</p>
+              <div className="flex items-center gap-1.5 text-xs font-semibold">
                 <Banknote size={14} className="text-primary" />
-                <span className="text-primary">Total: {money(summary.total)}</span>
+                <span className="text-primary">{t('finance.totalAmount')}: {money(summary.total)}</span>
               </div>
             </div>
           )}
@@ -1182,23 +1178,25 @@ export default function FinancePage() {
           if (open) setIsAddModalOpen(true)
           else closeExpenseForm()
         }}
-        eyebrow={isEditing ? 'Edit expense' : 'New expense'}
-        title={isEditing ? (expenseFormMode === 'utility' ? 'Edit utility' : 'Edit bazar expense') : (expenseFormMode === 'utility' ? 'Add utility' : 'Add bazar expenses')}
-        description={isEditing ? 'Update the record while keeping its existing information clear.' : 'Add a transparent shared-cost record for your mess.'}
+        eyebrow={isEditing ? t('finance.editExpense') : t('finance.newExpense')}
+        title={isEditing ? (expenseFormMode === 'utility' ? t('finance.updateUtility') : t('finance.updateExpense')) : (expenseFormMode === 'utility' ? t('finance.addUtility') : t('finance.addExpenses'))}
+        description={t('feedback.formDescription')}
         headerIcon={<ReceiptText className="size-5" />}
         footer={<EnterpriseDrawerFooter>
-          {expenseFormMode !== 'utility' && <EnterpriseDrawerAction tone="secondary" onClick={addExpenseItem}><Plus size={16} /> Add item</EnterpriseDrawerAction>}
-          <EnterpriseDrawerAction tone="secondary" onClick={closeExpenseForm} disabled={loading}>Cancel</EnterpriseDrawerAction>
-          <EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitAllExpenses} disabled={loading}>{loading ? <Loader2 size={16} className="animate-spin" /> : <ReceiptText size={16} />}{loading ? 'Saving...' : isEditing ? expenseFormMode === 'utility' ? 'Update utility' : 'Update expense' : aiDraft ? 'Confirm AI entry' : expenseFormMode === 'utility' ? 'Submit utility' : `Submit ${expenseItems.length} item(s)`}</EnterpriseDrawerAction>
+          {expenseFormMode !== 'utility' && <EnterpriseDrawerAction tone="secondary" onClick={addExpenseItem}><Plus size={16} /> {t('finance.addItem')}</EnterpriseDrawerAction>}
+          <EnterpriseDrawerAction tone="secondary" onClick={closeExpenseForm} disabled={loading}>{t('finance.cancel')}</EnterpriseDrawerAction>
+          <EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitAllExpenses} disabled={loading}>{loading ? <Loader2 size={16} className="animate-spin" /> : <ReceiptText size={16} />}{loading ? t('finance.saving') : isEditing ? expenseFormMode === 'utility' ? t('finance.updateUtility') : t('finance.updateExpense') : aiDraft ? t('finance.confirmAiEntry') : expenseFormMode === 'utility' ? t('finance.submitUtility') : t('finance.submitItems', { count: expenseItems.length })}</EnterpriseDrawerAction>
         </EnterpriseDrawerFooter>}
       >
           <div className="space-y-6">
+            {message && messageType === 'error' && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
             {/* Payment Type Toggle */}
             <div className="rounded-2xl border border-border bg-muted p-5">
-              <label className="mb-3 block text-sm font-semibold text-foreground">Payment Type</label>
+              <label className="mb-3 block text-sm font-semibold text-foreground">{t('finance.paymentType')}</label>
               <div className="flex gap-3">
                 <button
                   type="button"
+                  aria-pressed={expensePaymentType === 'FROM_DEPOSIT'}
                   onClick={() => setExpensePaymentType('FROM_DEPOSIT')}
                   className={`flex-1 h-12 rounded-xl border-2 text-sm font-semibold transition ${
                     expensePaymentType === 'FROM_DEPOSIT'
@@ -1206,10 +1204,11 @@ export default function FinancePage() {
                       : 'border-border bg-background text-muted-foreground hover:border-primary/30'
                   }`}
                 >
-                  🏦 From Deposit
+                  {t('finance.fromDeposit')}
                 </button>
                 <button
                   type="button"
+                  aria-pressed={expensePaymentType === 'PERSONAL'}
                   onClick={() => setExpensePaymentType('PERSONAL')}
                   className={`flex-1 h-12 rounded-xl border-2 text-sm font-semibold transition ${
                     expensePaymentType === 'PERSONAL'
@@ -1217,13 +1216,13 @@ export default function FinancePage() {
                       : 'border-border bg-background text-muted-foreground hover:border-primary/30'
                   }`}
                 >
-                  👤 Personal
+                  {t('finance.personal')}
                 </button>
               </div>
               <p className="mt-2 text-[10px] font-semibold text-muted-foreground">
                 {expensePaymentType === 'FROM_DEPOSIT'
-                  ? 'Amount will be split among all members in monthly bill calculation.'
-                  : 'Amount will be added as your personal deposit contribution. Not split with others.'}
+                  ? t('finance.fromDepositHint')
+                  : t('finance.personalHint')}
               </p>
             </div>
 
@@ -1231,19 +1230,19 @@ export default function FinancePage() {
               <div className="rounded-2xl border border-border bg-muted p-5">
               <div className="grid gap-4">
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-foreground">Category</label>
+                    <label className="mb-1.5 block text-sm font-semibold text-foreground">{t('finance.category')}</label>
                     <EnterpriseSelect
                       className="h-11 border-border bg-background text-foreground"
                       value={expenseItems[0].category}
                       onValueChange={(value) => updateExpenseItem(1, 'category', value as ExpenseCategory)}
-                      options={utilityCategories.map((category) => ({ value: category, label: category }))}
+                      options={utilityCategories.map((category) => ({ value: category, label: domainLabel(category, locale) }))}
                     />
                   </div>
 
                   {canManageMess && purchasedByMemberOptions.length > 0 && (
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-foreground">
-                        Purchased By
+                        {t('finance.purchasedBy')}
                       </label>
                       <EnterpriseSelect
                         className="h-11 border-border bg-background text-foreground"
@@ -1255,11 +1254,11 @@ export default function FinancePage() {
                   )}
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-foreground">Price (৳)</label>
+                    <label className="mb-1.5 block text-sm font-semibold text-foreground">{t('feedback.priceLabel')}</label>
                     <input
                       type="number"
                       className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground"
-                      placeholder="Amount"
+                      placeholder={t('finance.pricePlaceholder')}
                       value={expenseItems[0].amount}
                       onChange={(e) => updateExpenseItem(1, 'amount', e.target.value)}
                     />
@@ -1267,11 +1266,11 @@ export default function FinancePage() {
 
                   <div>
                     <label className="mb-1.5 block text-sm font-semibold text-foreground">
-                      Description
+                      {t('finance.description')}
                     </label>
                     <textarea
                       className="min-h-28 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground"
-                      placeholder="Add utility note..."
+                      placeholder={t('finance.utilityNote')}
                       value={expenseItems[0].description}
                       onChange={(e) => updateExpenseItem(1, 'description', e.target.value)}
                     />
@@ -1279,12 +1278,12 @@ export default function FinancePage() {
 
                   <div>
                     <label className="mb-1.5 block text-sm font-semibold text-foreground">
-                      Receipt Image/PDF (Optional)
+                      {t('finance.receiptOptional')}
                     </label>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                       <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-3 text-sm font-semibold hover:border-primary/30">
                         <Upload size={18} />
-                        Upload Receipt
+                        {t('finance.uploadReceipt')}
                         <input
                           type="file"
                           accept="image/*,application/pdf,.pdf"
@@ -1300,6 +1299,7 @@ export default function FinancePage() {
                           <span className="truncate">{expenseItems[0].receipt.name}</span>
                           <button
                             type="button"
+                            aria-label={t('feedback.removeReceipt')}
                             onClick={() => updateReceipt(1, null)}
                             className="text-destructive hover:text-destructive"
                           >
@@ -1318,15 +1318,15 @@ export default function FinancePage() {
             {/* Shared date */}
             <div className="rounded-2xl bg-muted p-4">
               <label className="mb-2 block text-sm font-semibold text-foreground">
-                Expense Date
+                {t('finance.expenseDate')}
               </label>
-              <EnterpriseDatePicker value={sharedDate} onValueChange={setSharedDate} surface="white" className="h-12 w-full" align="start" ariaLabel="Select expense date" />
+              <EnterpriseDatePicker value={sharedDate} onValueChange={setSharedDate} surface="white" className="h-12 w-full" align="start" ariaLabel={t('finance.selectExpenseDate')} />
             </div>
 
             {canManageMess && purchasedByMemberOptions.length > 0 && (
               <div className="rounded-2xl bg-muted p-4">
                 <label className="mb-2 block text-sm font-semibold text-foreground">
-                  Purchased By
+                  {t('finance.purchasedBy')}
                 </label>
                 <EnterpriseSelect
                   className="border-border bg-background text-foreground"
@@ -1345,11 +1345,13 @@ export default function FinancePage() {
                   className="relative rounded-2xl border border-border bg-muted p-5"
                 >
                   <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Item {idx + 1}
+                    {t('finance.item', { number: idx + 1 })}
                   </p>
 
                   {expenseItems.length > 1 && (
                     <button
+                      type="button"
+                      aria-label={t('finance.removeItem')}
                       onClick={() => removeExpenseItem(item.id)}
                       className="absolute right-4 top-4 text-muted-foreground hover:text-destructive"
                     >
@@ -1361,11 +1363,11 @@ export default function FinancePage() {
                     {/* Item Name */}
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-foreground">
-                        Item Name
+                        {t('finance.itemName')}
                       </label>
                       <input
                         className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground"
-                        placeholder="e.g. Rice, Eggs..."
+                        placeholder={t('finance.itemPlaceholder')}
                         value={item.itemName}
                         onChange={(e) => updateExpenseItem(item.id, 'itemName', e.target.value)}
                       />
@@ -1374,30 +1376,30 @@ export default function FinancePage() {
                     {/* Qty / Unit / Price */}
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="mb-1.5 block text-sm font-semibold">Quantity</label>
+                        <label className="mb-1.5 block text-sm font-semibold">{t('finance.quantity')}</label>
                         <input
                           type="number"
                           className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-                          placeholder="Qty"
+                          placeholder={t('finance.qtyPlaceholder')}
                           value={item.quantity}
                           onChange={(e) => updateExpenseItem(item.id, 'quantity', e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="mb-1.5 block text-sm font-semibold">Unit</label>
+                        <label className="mb-1.5 block text-sm font-semibold">{t('finance.unit')}</label>
                         <input
                           className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-                          placeholder="kg, pcs"
+                          placeholder={t('finance.unitPlaceholder')}
                           value={item.unit}
                           onChange={(e) => updateExpenseItem(item.id, 'unit', e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="mb-1.5 block text-sm font-semibold">Price (৳)</label>
+                        <label className="mb-1.5 block text-sm font-semibold">{t('feedback.priceLabel')}</label>
                         <input
                           type="number"
                           className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-                          placeholder="Amount"
+                          placeholder={t('finance.pricePlaceholder')}
                           value={item.amount}
                           onChange={(e) => updateExpenseItem(item.id, 'amount', e.target.value)}
                         />
@@ -1406,22 +1408,22 @@ export default function FinancePage() {
 
                     {/* Category */}
                     <div>
-                      <label className="mb-1.5 block text-sm font-semibold">Category</label>
+                      <label className="mb-1.5 block text-sm font-semibold">{t('finance.category')}</label>
                       <EnterpriseSelect
                         className="h-11 border-border bg-background text-foreground"
                         value={item.category}
                         onValueChange={(value) => updateExpenseItem(item.id, 'category', value as ExpenseCategory)}
-                        options={(isEditing ? categories : expenseCategories).map((category) => ({ value: category, label: category }))}
+                        options={(isEditing ? categories : expenseCategories).map((category) => ({ value: category, label: domainLabel(category, locale) }))}
                       />
                     </div>
 
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-foreground">
-                        Description
+                        {t('finance.description')}
                       </label>
                       <textarea
                         className="min-h-24 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground"
-                        placeholder="Add useful note or market detail..."
+                        placeholder={t('finance.descriptionPlaceholder')}
                         value={item.description}
                         onChange={(e) => updateExpenseItem(item.id, 'description', e.target.value)}
                       />
@@ -1430,12 +1432,12 @@ export default function FinancePage() {
                     {/* Receipt Image Upload */}
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-foreground">
-                        Receipt Image/PDF (Optional)
+                        {t('finance.receiptOptional')}
                       </label>
                       <div className="flex items-center gap-3">
                         <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-3 text-sm font-semibold hover:border-primary/30">
                           <Upload size={18} />
-                          Upload Receipt
+                          {t('finance.uploadReceipt')}
                           <input
                             type="file"
                             accept="image/*,application/pdf,.pdf"
@@ -1450,6 +1452,8 @@ export default function FinancePage() {
                           <div className="flex items-center gap-2 text-sm text-primary">
                             <span>{item.receipt.name}</span>
                             <button
+                              type="button"
+                              aria-label={t('feedback.removeReceipt')}
                               onClick={() => updateReceipt(item.id, null)}
                               className="text-destructive hover:text-destructive"
                             >
@@ -1480,32 +1484,32 @@ export default function FinancePage() {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Request Price Review</DialogTitle>
+            <DialogTitle>{t('finance.requestPriceReview')}</DialogTitle>
             <DialogDescription>
-              Send a push notification to the member who purchased this expense.
+              {t('finance.requestPriceReviewDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="rounded-2xl bg-muted p-4 text-sm font-bold text-foreground">
-              {reviewExpense?.item_name || reviewExpense?.category || 'Expense'} -{' '}
+            <div className="rounded-2xl bg-muted p-4 text-sm font-semibold text-foreground">
+              {reviewExpense?.item_name || domainLabel(reviewExpense?.category, locale) || t('finance.memberTitle')} -{' '}
               {money(reviewExpense?.amount)}
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-foreground">
-                Message
+              {t('finance.message')}
               </label>
               <textarea
                 className="min-h-32 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/20"
-                placeholder="Explain what price or item data should be reviewed..."
+                placeholder={t('finance.reviewMessagePlaceholder')}
                 value={reviewMessage}
                 onChange={(event) => setReviewMessage(event.target.value)}
               />
             </div>
 
             <EnterpriseButton fullWidth size="lg" onClick={submitPriceReviewRequest} disabled={loading || !reviewMessage.trim()}>
-              Send Review Request
+              {t('finance.sendReviewRequest')}
             </EnterpriseButton>
           </div>
         </DialogContent>
@@ -1517,14 +1521,14 @@ export default function FinancePage() {
           setIsViewModalOpen(open)
           if (!open) setViewExpense(null)
         }}
-        eyebrow="Expense"
-        title="Expense details"
-        description="Review purchase, payment, and receipt information."
+        eyebrow={t('finance.details')}
+          title={t('finance.details')}
+          description={t('feedback.formDescription')}
         headerIcon={<ReceiptText className="size-5" />}
         footer={viewExpense ? <EnterpriseDrawerFooter>
-          {canEditExpense(viewExpense) && <EnterpriseDrawerAction priority="primary" tone="primary" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openEditExpenseModal(expense) }}><Edit3 size={16} /> Edit</EnterpriseDrawerAction>}
-          {canRequestExpenseReview(viewExpense) && <EnterpriseDrawerAction tone="secondary" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openReviewModal(expense) }}><MessageSquareWarning size={16} /> Review</EnterpriseDrawerAction>}
-          {canManageMess && <EnterpriseDrawerAction tone="danger" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); void handleDeleteExpense(expense.id) }}><Trash2 size={16} /> Delete</EnterpriseDrawerAction>}
+          {canEditExpense(viewExpense) && <EnterpriseDrawerAction priority="primary" tone="primary" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openEditExpenseModal(expense) }}><Edit3 size={16} /> {t('payments.editAction')}</EnterpriseDrawerAction>}
+          {canRequestExpenseReview(viewExpense) && <EnterpriseDrawerAction tone="secondary" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); openReviewModal(expense) }}><MessageSquareWarning size={16} /> {t('finance.requestPriceReview')}</EnterpriseDrawerAction>}
+          {canManageMess && <EnterpriseDrawerAction tone="danger" onClick={() => { const expense = viewExpense; setIsViewModalOpen(false); setViewExpense(null); void handleDeleteExpense(expense.id) }}><Trash2 size={16} /> {t('finance.delete')}</EnterpriseDrawerAction>}
         </EnterpriseDrawerFooter> : undefined}
       >
           {viewExpense && (
@@ -1533,14 +1537,14 @@ export default function FinancePage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {viewExpense.category}
+                      {domainLabel(viewExpense.category, locale)}
                     </p>
                     <div className="mt-1 flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-semibold text-foreground">
-                        {viewExpense.item_name || viewExpense.category || 'Unnamed Expense'}
+                        {viewExpense.item_name || domainLabel(viewExpense.category, locale) || t('finance.unknown')}
                       </h3>
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getPaymentTypeStyle(viewExpense.payment_type).badge}`}>
-                        {getPaymentTypeStyle(viewExpense.payment_type).icon} {getPaymentTypeStyle(viewExpense.payment_type).label}
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${getPaymentTypeStyle(viewExpense.payment_type).badge}`}>
+                        {getPaymentTypeStyle(viewExpense.payment_type).icon} {domainLabel(viewExpense.payment_type ?? 'FROM_DEPOSIT', locale)}
                       </span>
                       <ExpenseApprovalControl
                         status={getExpenseApprovalStatus(viewExpense)}
@@ -1563,13 +1567,13 @@ export default function FinancePage() {
               {viewExpense.items?.length ? (
                 <div className="overflow-hidden rounded-xl border border-border bg-background">
                   <div className="flex items-center justify-between bg-muted px-4 py-3">
-                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">Purchased Items</p>
-                    <span className="text-xs font-bold text-muted-foreground">{viewExpense.items.length} {viewExpense.items.length === 1 ? 'item' : 'items'}</span>
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t('finance.purchasedItems')}</p>
+                    <span className="text-xs font-semibold text-muted-foreground">{viewExpense.items.length} {viewExpense.items.length === 1 ? t('finance.itemCount') : t('finance.itemCounts')}</span>
                   </div>
                   {viewExpense.items.map((item, index) => (
                     <div key={item.id ?? `${item.itemName}-${index}`} className="flex items-center justify-between gap-4 border-t border-border px-4 py-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-foreground">{item.itemName}</p>
+                        <p className="truncate text-sm font-semibold text-foreground">{item.itemName}</p>
                         {item.quantity != null ? <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{item.quantity} {item.unit ?? ''}</p> : null}
                       </div>
                       <span className="shrink-0 text-sm font-semibold text-primary">{money(item.amount)}</span>
@@ -1580,34 +1584,34 @@ export default function FinancePage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-border bg-background p-4">
-                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">Purchased By</p>
-                  <p className="mt-1 text-sm font-bold text-foreground">
-                    {viewExpense.purchaser?.name ?? resolveMemberNameById(viewExpense.purchased_by, viewExpense.creator?.name ?? 'Unknown')}
+                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t('finance.purchasedBy')}</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {viewExpense.purchaser?.name ?? resolveMemberNameById(viewExpense.purchased_by, viewExpense.creator?.name ?? t('finance.unknown'))}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border bg-background p-4">
-                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">Added By</p>
-                  <p className="mt-1 text-sm font-bold text-foreground">
-                    {viewExpense.creator?.name ?? 'Unknown'}
+                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t('finance.addedBy')}</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {viewExpense.creator?.name ?? t('finance.unknown')}
                   </p>
                 </div>
               </div>
 
               <div className="rounded-xl border border-border bg-background p-4">
-                <p className="text-[10px] font-semibold uppercase text-muted-foreground">Description</p>
+                <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t('finance.description')}</p>
                 <p className="mt-2 whitespace-pre-wrap text-sm font-semibold text-foreground">
-                  {viewExpense.description || 'No description added.'}
+                  {viewExpense.description || t('finance.noDescription')}
                 </p>
               </div>
 
               <div className="rounded-xl border border-border bg-background p-4">
-                <p className="text-[10px] font-semibold uppercase text-muted-foreground">Receipt</p>
+                <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t('finance.receipt')}</p>
                 {viewExpense.receipt_url ? (
                   <div className="mt-3 space-y-3">
                     {/\.(png|jpe?g|webp|gif)(\?|$)/i.test(viewExpense.receipt_url) && (
                       <img
                         src={viewExpense.receipt_url}
-                        alt={`${viewExpense.item_name || viewExpense.category} receipt`}
+                        alt={t('feedback.receiptFor', { name: viewExpense.item_name || domainLabel(viewExpense.category, locale) })}
                         className="max-h-80 w-full rounded-xl border border-border object-contain"
                       />
                     )}
@@ -1615,14 +1619,14 @@ export default function FinancePage() {
                       href={viewExpense.receipt_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-muted px-4 text-sm font-bold text-primary"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-muted px-4 text-sm font-semibold text-primary"
                     >
-                      View Receipt
+                      {t('finance.viewReceipt')}
                     </a>
                   </div>
                 ) : (
                   <p className="mt-2 text-sm font-semibold text-muted-foreground">
-                    No receipt uploaded.
+                    {t('finance.noReceipt')}
                   </p>
                 )}
               </div>

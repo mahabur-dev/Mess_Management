@@ -6,9 +6,6 @@ const nextConfig = {
   turbopack: {
     root: process.cwd(),
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     unoptimized: true,
     formats: ['image/avif', 'image/webp'],

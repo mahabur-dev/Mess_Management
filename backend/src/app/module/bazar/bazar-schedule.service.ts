@@ -340,7 +340,13 @@ export class BazarScheduleService {
       targetUserIds,
       'Bazar schedule is available',
       `${mess.name}: ${dto.month}/${dto.year} bazar duties are ready to select.`,
-      { source: 'BAZAR_SCHEDULE_GENERATED', scheduleId: schedule.id },
+      {
+        source: 'BAZAR_SCHEDULE_GENERATED',
+        scheduleId: schedule.id,
+        messName: mess.name,
+        month: dto.month,
+        year: dto.year,
+      },
       `bazar:schedule:${schedule.id}`,
     );
     return this.buildOverview(schedule, eligibleMembers);
@@ -610,6 +616,7 @@ export class BazarScheduleService {
           source: 'BAZAR_DUTY_ASSIGNED',
           slotId,
           limitBypassed,
+          dutyDate: dateKey(context.bazar_date.duty_date),
         },
       );
       return {
@@ -678,6 +685,7 @@ export class BazarScheduleService {
       {
         source: 'BAZAR_DUTY_UNASSIGNED',
         slotId,
+        dutyDate: dateKey(context.bazar_date.duty_date),
       },
     );
     return updated;
@@ -793,6 +801,7 @@ export class BazarScheduleService {
           : 'BAZAR_RELEASE_REQUESTED',
         requestId: request.id,
         slotId,
+        dutyDate: dateKey(context.bazar_date.duty_date),
       },
     );
     return request;
@@ -879,6 +888,7 @@ export class BazarScheduleService {
           ? 'BAZAR_RELEASE_APPROVED'
           : 'BAZAR_RELEASE_REJECTED',
         requestId,
+        dutyDate: dateKey(existing.slot.bazar_date.duty_date),
       },
     );
     return reviewed;
@@ -985,6 +995,8 @@ export class BazarScheduleService {
       {
         source: 'BAZAR_SWAP_REQUESTED',
         requestId: request.id,
+        requesterDate: dateKey(ownSlot.bazar_date.duty_date),
+        targetDate: dateKey(targetSlot.bazar_date.duty_date),
       },
     );
     return request;
@@ -1119,6 +1131,7 @@ export class BazarScheduleService {
       {
         source: dto.approve ? 'BAZAR_SWAP_APPROVED' : 'BAZAR_SWAP_REJECTED',
         requestId,
+        approved: dto.approve,
       },
     );
     return reviewed;

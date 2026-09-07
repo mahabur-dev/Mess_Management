@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { MousePointer2, Pause, Play, RefreshCw } from 'lucide-react'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 export type ProductTourStep = {
   id: string
@@ -39,6 +40,8 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
   loop = true,
   onComplete,
 }: ProductTourPlayerProps<TStep>) {
+  const t = useTranslations('marketing')
+  const format = useLocaleFormatters()
   const [stepIndex, setStepIndex] = useState(0)
   const [paused, setPaused] = useState(initialPaused)
   const [reduceMotion, setReduceMotion] = useState(false)
@@ -112,22 +115,22 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
           <span className="size-2.5 rounded-full bg-[var(--brand-border)]" />
           <span className="size-2.5 rounded-full bg-[var(--brand-dark)]" />
         </div>
-        <div className="mx-auto flex h-6 w-[48%] items-center justify-center rounded-md border border-[#e2e8eb] bg-white text-[8px] font-bold text-[#7b8d92]">
+        <div className="mx-auto flex h-6 w-[48%] items-center justify-center rounded-md border border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-[8px] font-bold text-muted-foreground">
           {address}
         </div>
         <button
           type="button"
           onClick={() => setPaused((current) => !current)}
-          className="grid size-7 place-items-center rounded-md border border-[#dce7ea] bg-white text-[#007f76] transition hover:bg-[#ecf8f7]"
-          aria-label={paused ? 'Play product tour' : 'Pause product tour'}
+          className="grid size-7 place-items-center rounded-md border border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-[var(--brand)] transition hover:bg-[var(--brand-soft)]"
+          aria-label={paused ? t('tour.play') : t('tour.pause')}
         >
           {paused ? <Play className="w-3" /> : <Pause className="w-3" />}
         </button>
         <button
           type="button"
           onClick={restart}
-          className="grid size-7 place-items-center rounded-md border border-[#dce7ea] bg-white text-[#007f76] transition hover:bg-[#ecf8f7]"
-          aria-label="Restart product tour"
+          className="grid size-7 place-items-center rounded-md border border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-[var(--brand)] transition hover:bg-[var(--brand-soft)]"
+          aria-label={t('tour.restart')}
         >
           <RefreshCw className="w-3" />
         </button>
@@ -142,10 +145,10 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
             style={{ left: `${activeStep.x}%`, top: `${activeStep.y}%` }}
             aria-hidden="true"
           >
-            <span key={stepIndex} className="absolute -left-2 -top-2 size-7 animate-ping rounded-full bg-[#ff7a1a]/35" />
-            <MousePointer2 className="relative w-[clamp(16px,2.4vw,26px)] fill-[#123748] text-white drop-shadow-[0_3px_4px_rgba(0,0,0,.32)]" strokeWidth={1.5} />
+            <span key={stepIndex} className="absolute -left-2 -top-2 size-7 animate-ping rounded-full bg-[var(--brand)]/25" />
+            <MousePointer2 className="relative w-[clamp(16px,2.4vw,26px)] fill-[var(--brand-dark)] text-white" strokeWidth={1.5} />
             <div
-              className="absolute top-5 w-[165px] rounded-lg bg-[#102f39] px-3 py-2 text-white shadow-xl sm:w-[190px]"
+              className="absolute top-5 w-[165px] rounded-lg bg-[var(--brand-dark)] px-3 py-2 text-white sm:w-[190px]"
               style={activeStep.x > 65 ? { right: '1.25rem' } : { left: '1.25rem' }}
             >
               <p className="text-[9px] font-semibold sm:text-[11px]">{activeStep.title}</p>
@@ -154,17 +157,17 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
           </div>
         ) : null}
 
-        <div className="absolute bottom-[1.5%] left-[22%] z-30 flex max-w-[72%] items-center gap-1 rounded-full border border-white/80 bg-white/90 px-2 py-1 shadow-md backdrop-blur-sm">
+        <div className="absolute bottom-[1.5%] left-[22%] z-30 flex max-w-[72%] items-center gap-1 rounded-full border border-[var(--marketing-line)] bg-[var(--marketing-surface)]/90 px-2 py-1">
           {steps.map((item, index) => (
             <button
               key={item.id}
               type="button"
               onClick={() => setStepIndex(index)}
-              aria-label={`Show step ${index + 1}: ${item.title}`}
-              className={`h-1.5 rounded-full transition-all ${stepIndex === index ? 'w-4 bg-[#008d8c]' : 'w-1.5 bg-[#bfd3d7] hover:bg-[#7fa9ad]'}`}
+              aria-label={t('tour.showStep', { step: format.number(index + 1), title: item.title })}
+              className={`h-1.5 rounded-full transition-all ${stepIndex === index ? 'w-4 bg-[var(--brand)]' : 'w-1.5 bg-[var(--brand-border-subtle)] hover:bg-[var(--brand-border)]'}`}
             />
           ))}
-          <span className="ml-1 whitespace-nowrap text-[6px] font-semibold uppercase tracking-wide text-[#5e747a]">{stepIndex + 1}/{steps.length}</span>
+          <span className="ml-1 whitespace-nowrap text-[6px] font-semibold uppercase tracking-wide text-muted-foreground">{format.number(stepIndex + 1)}/{format.number(steps.length)}</span>
         </div>
       </div>
     </div>

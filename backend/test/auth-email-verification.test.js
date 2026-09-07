@@ -67,6 +67,23 @@ test('password login rejects an account whose email is not verified', async () =
   );
 });
 
+test('forgot-password keeps account discovery private and returns cooldown metadata', async () => {
+  const responses = [];
+  for (const user of [null, { is_active: false }]) {
+    const service = createService({
+      user: { findUnique: async () => user },
+    });
+    responses.push(await service.forgotPassword({ email: 'unknown@example.com' }));
+  }
+
+  assert.deepEqual(responses[0], responses[1]);
+  assert.equal(responses[0].message, 'If the account exists, an OTP was sent');
+  assert.equal(
+    responses[0].resendAvailableInSeconds,
+    config.authOtp.resendCooldownSeconds,
+  );
+});
+
 test('email verification consumes only the registration challenge', async () => {
   const userId = 'user-1';
   const otp = '123456';

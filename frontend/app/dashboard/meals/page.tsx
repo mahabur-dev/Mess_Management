@@ -12,14 +12,9 @@ import { clearAiCommandDraft, readAiCommandDraft, type AiCommandDraft } from '@/
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MonthlyMealDrawer } from '@/components/meals/monthly-meal-drawer'
 import { EnterpriseDatePicker } from '@/components/ui/enterprise-date-picker'
+import { localizedErrorMessage, mealNameLabel, useLocale, useTranslations } from '@/lib/i18n'
 
 const mealNames: MealName[] = ['BREAKFAST', 'LUNCH', 'DINNER']
-const mealLabels: Record<MealName, string> = {
-  BREAKFAST: 'Breakfast',
-  LUNCH: 'Lunch',
-  DINNER: 'Dinner',
-}
-
 const MEAL_BASE_VALUE: Record<MealName, number> = {
   BREAKFAST: 0.5,
   LUNCH: 1,
@@ -76,6 +71,8 @@ function aiMealCount(item: Record<string, unknown>, mealName: MealName) {
 
 export default function MealsPage() {
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const t = useTranslations('meals')
   const router = useRouter()
   const searchParams = useSearchParams()
   const aiCommandId = searchParams.get('aiCommand')
@@ -193,7 +190,7 @@ export default function MealsPage() {
         const fb = ((activeMess as Mess & { memberships?: ActiveMember[] }).memberships ?? []).filter(mb => mb.is_active)
         setMembers(apiMembers.length ? apiMembers : fb)
         setTodayMeals(Array.isArray(mealR.data) ? mealR.data as MealEntry[] : [])
-      } catch (e) { if (!m) return; setSheetError(e instanceof Error ? e.message : 'Failed to load') }
+      } catch (e) { if (!m) return; setSheetError(localizedErrorMessage(e, locale, t('page.loading'))) }
       finally { if (m) setSheetLoading(false) }
     }
     loadManagerMealSheet()
@@ -323,7 +320,7 @@ export default function MealsPage() {
       const row = memberMealRows.find(item => item.id === aiTargetMemberId)
       if (!row) {
         setMessageType('error')
-        setMessage('The member in this AI command is not available in the current mess.')
+        setMessage(t('page.memberUnavailable'))
         return
       }
       const next = {
@@ -399,8 +396,8 @@ export default function MealsPage() {
 
   async function saveMyMeals() {
     if (!activeMess) return
-    if (isPastSelectedDate && !isManager) { setMessageType('error'); setMessage('Past date meals can only be updated by managers.'); return }
-    if (!isPastSelectedDate && deadlineInfo && !deadlineInfo.isWindowOpen && !isManager) { setMessageType('error'); setMessage("Today's meal window is closed. Only managers can modify meals now."); return }
+    if (isPastSelectedDate && !isManager) { setMessageType('error'); setMessage(t('page.pastDate')); return }
+    if (!isPastSelectedDate && deadlineInfo && !deadlineInfo.isWindowOpen && !isManager) { setMessageType('error'); setMessage(t('page.windowClosed')); return }
     setSavingMeals(true)
     setMessage('')
     try {
@@ -419,9 +416,9 @@ export default function MealsPage() {
         })
       }))
       if (completedWithAi) finishAiDraft()
-      setMessageType('success'); setMessage(completedWithAi ? 'AI meal entry confirmed successfully.' : 'Breakfast, lunch and dinner updated successfully.')
+      setMessageType('success'); setMessage(completedWithAi ? t('page.aiConfirmed', { name: user?.name ?? t('page.member') }) : t('page.saveSuccess'))
       await refreshMealsForDate()
-    } catch (e) { setMessageType('error'); setMessage(getErrorMessage(e, 'Failed')) }
+    } catch (e) { setMessageType('error'); setMessage(localizedErrorMessage(e, locale, 'Failed')) }
     finally { setSavingMeals(false) }
   }
 
@@ -429,7 +426,7 @@ export default function MealsPage() {
     if (!activeMess || !isManager) return
     if (managerHasInvalidDraft) {
       setMessageType('error')
-      setMessage('Enter a valid meal quantity between 0 and 21. A meal must be 0 or at least its base quantity.')
+      setMessage(t('page.invalidQuantity'))
       return
     }
     if (!managerDirtyUpdates.length && !isManagerAiReview) return
@@ -443,11 +440,11 @@ export default function MealsPage() {
         await apiClient.confirmAiCommand(aiDraft.id, buildAiMealPayload(target.id, values))
         finishAiDraft()
         setMessageType('success')
-        setMessage(`AI meal entry confirmed for ${target.name}.`)
+        setMessage(t('page.aiConfirmed', { name: target.name }))
       } else {
         const result = await apiClient.bulkUpdateMealAttendances(activeMess.id, { date, updates: managerDirtyUpdates })
         setMessageType('success')
-        setMessage(`${result.data.updatedCount} meal ${result.data.updatedCount === 1 ? 'entry' : 'entries'} saved for ${result.data.affectedMemberCount} ${result.data.affectedMemberCount === 1 ? 'member' : 'members'}.`)
+        setMessage(t('page.entriesSaved', { count: result.data.updatedCount, entryLabel: result.data.updatedCount === 1 ? t('page.cell') : t('page.cells'), memberCount: result.data.affectedMemberCount, memberLabel: result.data.affectedMemberCount === 1 ? t('page.member') : t('page.memberPlural') }))
       }
       cancelEditingMealSheet(true)
       await refreshMealsForDate()
@@ -464,25 +461,25 @@ export default function MealsPage() {
     setSettingDeadline(true); setMessage('')
     try {
       await apiClient.setMealDeadline(activeMess.id, deadlineStartTime, deadlineEndTime)
-      setMessageType('success'); setMessage(`Deadline: ${formatTimeReadable(deadlineStartTime)} - ${formatTimeReadable(deadlineEndTime)}`)
+      setMessageType('success'); setMessage(t('page.deadlineSaved', { start: formatTimeReadable(deadlineStartTime), end: formatTimeReadable(deadlineEndTime) }))
       const info = await apiClient.getMealDeadlineInfo(activeMess.id, date)
       setDeadlineInfo(info.data); setShowDeadlineSettings(false)
-    } catch (e) { setMessageType('error'); setMessage(getErrorMessage(e, 'Failed')) }
+    } catch (e) { setMessageType('error'); setMessage(localizedErrorMessage(e, locale, 'Failed')) }
     finally { setSettingDeadline(false) }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader title={isManager ? 'Meal Sheet' : 'My Meals'} description="Set your breakfast, lunch and dinner quantities" />
+      <DashboardHeader title={isManager ? t('page.sheetTitle') : t('page.myTitle')} description={t('page.description')} />
       <div className="p-4 sm:p-6 lg:p-8">
-        {message && <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold  ${messageType === 'error' ? 'border border-destructive/30 bg-destructive/10 text-destructive' : 'border border-primary/30 bg-primary/10 text-primary'}`}>{message}</div>}
+        {message && <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-semibold  ${messageType === 'error' ? 'border border-destructive/30 bg-destructive/10 text-destructive' : 'border border-primary/30 bg-primary/10 text-primary'}`}>{message}</div>}
 
-        {aiDraft && <div className="mb-5 flex flex-col gap-3 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-[var(--dashboard-ink)]">Review the AI meal entry below</p><p className="mt-1 text-xs font-semibold text-[var(--dashboard-muted)]">Adjust the highlighted member's meal quantities, then use the existing Save action to confirm.</p></div><button type="button" onClick={cancelAiMealReview} className="h-9 rounded-lg border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-xs font-bold text-[var(--dashboard-muted)]">Cancel AI review</button></div>}
+        {aiDraft && <div className="mb-5 flex flex-col gap-3 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-[var(--dashboard-ink)]">{t('page.aiReview')}</p><p className="mt-1 text-xs font-semibold text-[var(--dashboard-muted)]">{t('page.aiDescription')}</p></div><button type="button" onClick={cancelAiMealReview} className="h-9 rounded-lg border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-3 text-xs font-semibold text-[var(--dashboard-muted)]">{t('page.cancelAi')}</button></div>}
 
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="dashboard-section-icon size-12 rounded-lg"><UtensilsCrossed size={24} /></div>
-            <div><h2 className="text-lg font-semibold text-foreground">{activeMess?.name ?? 'No mess selected'}</h2><p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"><Clock size={13} className="text-primary" />{deadlineLoading ? 'Loading...' : deadlineInfo ? <>Meal window: {formatTimeReadable(deadlineInfo.startTime)} - {formatTimeReadable(deadlineInfo.endTime)} (next day)</> : 'Meal deadline system active'}</p></div>
+            <div><h2 className="text-lg font-semibold text-foreground">{activeMess?.name ?? t('page.noMess')}</h2><p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"><Clock size={13} className="text-primary" />{deadlineLoading ? t('page.loading') : deadlineInfo ? t('page.mealWindow', { start: formatTimeReadable(deadlineInfo.startTime), end: formatTimeReadable(deadlineInfo.endTime) }) : t('page.deadlineActive')}</p></div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {isManager && <Button onClick={() => setShowDeadlineSettings(!showDeadlineSettings)} className="h-[45px] rounded-xl border border-primary bg-primary px-5 font-semibold text-white hover:bg-[var(--brand-hover)] hover:text-white"><Clock size={16} className="mr-2" />{showDeadlineSettings ? 'Hide Settings' : 'Set Meal Deadline'}</Button>}
@@ -494,8 +491,8 @@ export default function MealsPage() {
 
         {isManager && showDeadlineSettings && (
           <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-5 py-4 ">
-            <h3 className="mb-3 text-sm font-semibold text-foreground">Set Meal Deadline Window</h3>
-            <p className="mb-4 text-xs font-semibold text-muted-foreground">Members can only add/update their meals during this window. Default: 10:00 PM → 11:00 AM (next day)</p>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">{t('page.deadlineTitle')}</h3>
+            <p className="mb-4 text-xs font-semibold text-muted-foreground">{t('page.deadlineDescription')}</p>
             <div className="flex flex-wrap items-end gap-4">
               <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Opens</label><input type="time" value={deadlineStartTime} onChange={e => setDeadlineStartTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground outline-none" /></div>
               <div className="flex-1 min-w-[180px]"><label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Closes (next day)</label><input type="time" value={deadlineEndTime} onChange={e => setDeadlineEndTime(e.target.value)} className="h-[42px] w-full rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground outline-none" /></div>
@@ -523,7 +520,7 @@ export default function MealsPage() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Manual meal entry</p>
-              <h2 className="font-semibold tracking-tight text-foreground">Meals for {formatDate(date)}</h2>
+              <h2 className="font-semibold tracking-tight text-foreground">{t('page.mealsFor', { date: new Date(date).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}</h2>
               <p className="mt-0.5 text-xs font-semibold leading-5 text-muted-foreground">Turn each meal on, then adjust its quantity for this date.</p>
             </div>
             <span className="shrink-0 rounded-lg bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-semibold tabular-nums text-[var(--brand-dark)]  dark:text-[var(--brand-bright)]">
@@ -553,13 +550,13 @@ export default function MealsPage() {
           <div className="overflow-hidden rounded-xl border border-border bg-background ">
             <div className="border-b border-border  bg-muted via-white  p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Today Meal Sheet</p><h3 className="mt-1 text-base font-semibold text-foreground sm:text-lg">All Member Meals</h3><p className="mt-1 text-xs font-semibold text-muted-foreground sm:text-sm">For {formatDate(date)}</p></div>
+                <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">{t('page.todaySheet')}</p><h3 className="mt-1 text-base font-semibold text-foreground sm:text-lg">{t('page.allMemberMeals')}</h3><p className="mt-1 text-xs font-semibold text-muted-foreground sm:text-sm">{t('page.forDate', { date: new Date(date).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}</p></div>
                 <MonthlyMealDrawer messId={activeMess?.id} members={members} selectedDate={date} />
               </div>
             </div>
             <div className="p-4 sm:p-5">
               <div className="mb-4 grid grid-cols-3 gap-2 sm:mb-5 sm:gap-3">
-                {mealNames.map(n => <div key={n} className="rounded-xl border border-border bg-muted px-2 py-3 text-center  sm:px-3"><p className="flex items-center justify-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[10px]"><span className="text-primary">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></p><p className="mt-1.5 text-xl font-semibold tabular-nums text-foreground sm:text-2xl">{displayedMealTotals[n]}</p></div>)}
+                {mealNames.map(n => <div key={n} className="rounded-xl border border-border bg-muted px-2 py-3 text-center  sm:px-3"><p className="flex items-center justify-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[10px]"><span className="text-primary">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealNameLabel(n, locale)}</span><span className="sm:hidden">{mealNameLabel(n, locale).slice(0,1)}</span></p><p className="mt-1.5 text-xl font-semibold tabular-nums text-foreground sm:text-2xl">{displayedMealTotals[n]}</p></div>)}
               </div>
 
               {isManager && (
@@ -567,7 +564,7 @@ export default function MealsPage() {
                   <div className="flex min-w-0 items-center gap-3">
                     <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${isEditingMealSheet ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary'}`}><Pencil size={15} /></span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-foreground">{isEditingMealSheet ? (isManagerAiReview ? 'Reviewing AI meal changes' : 'Meal sheet edit mode') : 'Manage all member meals'}</p>
+                      <p className="text-xs font-semibold text-foreground">{isEditingMealSheet ? (isManagerAiReview ? t('page.reviewAi') : t('page.editMode')) : t('page.manageAll')}</p>
                       <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{isEditingMealSheet ? `${managerDirtyUpdates.length} changed ${managerDirtyUpdates.length === 1 ? 'cell' : 'cells'} across ${managerDirtyMemberCount} ${managerDirtyMemberCount === 1 ? 'member' : 'members'}` : 'Edit every member, then save all changes in one request.'}</p>
                     </div>
                   </div>
@@ -577,7 +574,7 @@ export default function MealsPage() {
 
               {/* Mobile Cards */}
               <div className="sm:hidden space-y-3">
-                {sheetLoading ? <div className="py-8 text-center text-sm font-bold text-muted-foreground">Loading...</div>
+                {sheetLoading ? <div className="py-8 text-center text-sm font-semibold text-muted-foreground">{t('page.loading')}</div>
                 : sheetError ? <div className="py-8 text-center text-sm font-bold text-destructive">{sheetError}</div>
                 : memberMealRows.length ? memberMealRows.map(row => {
                     const isEditingRow = isManager && isEditingMealSheet && (!isManagerAiReview || aiTargetMemberId === row.id)
@@ -593,9 +590,9 @@ export default function MealsPage() {
                         <div className="grid grid-cols-4 gap-2">
                           {mealNames.map(n => (
                             <div key={n} className={`rounded-lg p-2.5 text-center ${isManagerMealCellInvalid(row, n) ? 'bg-destructive/10 ring-1 ring-destructive/20' : isManagerMealCellDirty(row, n) ? 'bg-muted ring-1 ring-primary/20' : 'bg-muted'}`}>
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{mealLabels[n].slice(0, 4)}{isManagerMealCellDirty(row, n) && <span className="ml-1 text-primary">•</span>}</p>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{mealNameLabel(n, locale).slice(0, 4)}{isManagerMealCellDirty(row, n) && <span className="ml-1 text-primary">•</span>}</p>
                               {isEditingRow ? (
-                                <input aria-label={`${row.name} ${mealLabels[n]} quantity`} aria-invalid={isManagerMealCellInvalid(row, n)} type="number" min={0} max={21} step={getMealBaseValue(n)} inputMode="decimal" value={getManagerDraftStr(row.id, n, row.meals[n])}
+                                <input aria-label={t('page.quantity', { member: row.name, meal: mealNameLabel(n, locale) })} aria-invalid={isManagerMealCellInvalid(row, n)} type="number" min={0} max={21} step={getMealBaseValue(n)} inputMode="decimal" value={getManagerDraftStr(row.id, n, row.meals[n])}
                                   onChange={e => updateManagerMealDraft(row, n, e.target.value)}
                                   className={`mt-1 h-9 w-full rounded-lg border bg-background px-1 text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:ring-2 ${isManagerMealCellInvalid(row, n) ? 'border-destructive/30 focus:border-destructive/30 focus:ring-destructive/20' : isManagerMealCellDirty(row, n) ? 'border-border focus:ring-primary/20' : 'border-border focus:border-primary focus:ring-primary/20'}`} />
                               ) : (
@@ -610,7 +607,7 @@ export default function MealsPage() {
                         </div>
                       </div>
                     )
-                  }) : <div className="py-8 text-center text-sm font-bold text-muted-foreground">No member meals found.</div>}
+                      }) : <div className="py-8 text-center text-sm font-semibold text-muted-foreground">{t('page.noMeals')}</div>}
               </div>
 
               {/* Desktop/Tablet Table */}
@@ -619,12 +616,12 @@ export default function MealsPage() {
                   <thead>
                     <tr className="border-b border-border bg-muted">
                       <th className="sticky left-0 z-20 w-[138px] whitespace-nowrap border-b border-border bg-muted px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:static sm:w-auto sm:px-4 sm:py-4 sm:text-[11px]">Member</th>
-                      {mealNames.map(n => <th key={n} className="whitespace-nowrap border-b border-border px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:px-4 sm:py-4 sm:text-[11px]"><span className="inline-flex items-center gap-1 sm:gap-1.5"><span className="text-primary">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealLabels[n]}</span><span className="sm:hidden">{mealLabels[n].slice(0,1)}</span></span></th>)}
+                      {mealNames.map(n => <th key={n} className="whitespace-nowrap border-b border-border px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:px-4 sm:py-4 sm:text-[11px]"><span className="inline-flex items-center gap-1 sm:gap-1.5"><span className="text-primary">{MEAL_ICONS[n]}</span><span className="hidden sm:inline">{mealNameLabel(n, locale)}</span><span className="sm:hidden">{mealNameLabel(n, locale).slice(0,1)}</span></span></th>)}
                       <th className="whitespace-nowrap border-b border-border px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:px-4 sm:py-4 sm:text-[11px]">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {sheetLoading ? <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-muted-foreground">Loading...</td></tr>
+                    {sheetLoading ? <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-semibold text-muted-foreground">{t('page.loading')}</td></tr>
                     : sheetError ? <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-destructive">{sheetError}</td></tr>
                     : memberMealRows.length ? memberMealRows.map(row => {
                         const isEditingRow = isManager && isEditingMealSheet && (!isManagerAiReview || aiTargetMemberId === row.id)
@@ -642,7 +639,7 @@ export default function MealsPage() {
                             {mealNames.map(n => (
                               <td key={n} className="border-b border-border px-3 py-3 text-center sm:border-b-0 sm:px-4 sm:py-3.5">
                                 {isEditingRow ? (
-                                  <input aria-label={`${row.name} ${mealLabels[n]} quantity`} aria-invalid={isManagerMealCellInvalid(row, n)} type="number" min={0} max={21} step={getMealBaseValue(n)} inputMode="decimal" value={getManagerDraftStr(row.id, n, row.meals[n])}
+                                  <input aria-label={t('page.quantity', { member: row.name, meal: mealNameLabel(n, locale) })} aria-invalid={isManagerMealCellInvalid(row, n)} type="number" min={0} max={21} step={getMealBaseValue(n)} inputMode="decimal" value={getManagerDraftStr(row.id, n, row.meals[n])}
                                     onChange={e => updateManagerMealDraft(row, n, e.target.value)}
                                     className={`h-9 w-16 rounded-lg border bg-background px-2 text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:ring-2 lg:w-20 ${isManagerMealCellInvalid(row, n) ? 'border-destructive/30 bg-destructive/10 focus:border-destructive/30 focus:ring-destructive/20' : isManagerMealCellDirty(row, n) ? 'border-border bg-muted ring-2 ring-primary/20' : 'border-border focus:border-primary focus:ring-primary/20'}`} />
                                 ) : (
@@ -655,7 +652,7 @@ export default function MealsPage() {
                             </td>
                           </tr>
                         )
-                      }) : <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-muted-foreground">No member meals found.</td></tr>}
+                      }) : <tr><td colSpan={5} className="px-4 py-8 text-center text-sm font-semibold text-muted-foreground">{t('page.noMeals')}</td></tr>}
                   </tbody>
                   {memberMealRows.length > 0 && (
                     <tfoot>
@@ -689,7 +686,7 @@ export default function MealsPage() {
           <div className="mt-6 rounded-xl border border-border bg-background p-5 ">
             <div className="flex items-center gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10"><Shield size={20} className="text-primary" /></div>
-              <div><h3 className="text-sm font-semibold text-foreground">Manager Controls</h3><p className="text-xs font-semibold text-muted-foreground">Managers can always edit member meals regardless of deadline. Use "Set Meal Deadline" above to configure the meal window.</p></div>
+              <div><h3 className="text-sm font-semibold text-foreground">Manager Controls</h3><p className="text-xs font-semibold text-muted-foreground">Managers can always edit member meals regardless of deadline. Use &quot;Set Meal Deadline&quot; above to configure the meal window.</p></div>
             </div>
           </div>
         )}

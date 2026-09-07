@@ -3,51 +3,46 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
+import { Mail, ShieldCheck } from 'lucide-react'
+
 import { useAuth } from '@/app/context/auth-context'
 import {
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  ShieldCheck,
-} from 'lucide-react'
-import { ApiError } from '@/lib/api-client'
-import {
   AuthMessage,
+  AuthPasswordField,
   AuthShell,
-  authFieldIconClass,
-  authInputWithIconClass,
+  AuthSubmitButton,
+  AuthTextField,
   authLinkClass,
-  authPasswordInputClass,
-  authPasswordToggleClass,
-  authPrimaryButtonClass,
 } from '@/components/auth-ui'
+import { ApiError } from '@/lib/api-client'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
 export default function LoginPage() {
   const router = useRouter()
   const { login, isSubmitting } = useAuth()
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [requestError, setRequestError] = useState<unknown>(null)
+  const [isVerifiedNoticeVisible, setVerifiedNoticeVisible] = useState(false)
   const [needsVerification, setNeedsVerification] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const verifiedEmail = params.get('email')
     if (params.get('verified') === '1') {
-      setNotice('Email verified successfully. Sign in with your password.')
+      setVerifiedNoticeVisible(true)
       if (verifiedEmail) setEmail(verifiedEmail)
     }
   }, [])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    setError('')
-    setNotice('')
+    setRequestError(null)
+    setVerifiedNoticeVisible(false)
     setNeedsVerification(false)
+
     try {
       await login(email, password)
       router.push('/dashboard')
@@ -57,94 +52,93 @@ export default function LoginPage() {
         sessionStorage.setItem('registrationEmail', normalizedEmail)
         setNeedsVerification(true)
       }
-      setError(error instanceof ApiError ? error.message : 'Unable to sign in. Please try again.')
+      setRequestError(error)
     }
   }
 
   return (
     <AuthShell
-      title="Welcome back"
-      description="Sign in to continue managing your Messzen workspace."
+      title={auth('login.title')}
+      description={auth('login.description')}
       footer={
         <p className="text-sm font-semibold text-muted-foreground">
-          Don't have an account?{' '}
+          {auth('login.noAccount')}{' '}
           <Link href="/register" className={authLinkClass}>
-            Create one
+            {auth('links.createAccount')}
           </Link>
         </p>
       }
     >
-      {notice && <AuthMessage success>{notice}</AuthMessage>}
-      {error && (
+      {isVerifiedNoticeVisible ? <AuthMessage success>{auth('login.verified')}</AuthMessage> : null}
+      {requestError ? (
         <AuthMessage>
-          {error}
-          {needsVerification && (
+          {localizedErrorMessage(requestError, locale, auth('login.error'))}
+          {needsVerification ? (
             <Link href="/verify_email" className="ml-1 underline underline-offset-2">
-              Verify now
+              {auth('links.verifyNow')}
             </Link>
-          )}
+          ) : null}
         </AuthMessage>
-      )}
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Email Address
-          </label>
-          <div className="relative">
-            <Mail size={16} className={authFieldIconClass} />
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              required
-              className={authInputWithIconClass}
-            />
-          </div>
-        </div>
+        <AuthTextField
+          id="login-email"
+          label={auth('fields.email')}
+          icon={Mail}
+          type="email"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value)
+            setRequestError(null)
+            setNeedsVerification(false)
+          }}
+          placeholder={auth('placeholders.email')}
+          autoComplete="email"
+          maxLength={255}
+          validationMessages={{
+            required: auth('validation.required', { field: auth('fields.email') }),
+            invalid: auth('validation.invalidEmail'),
+          }}
+          required
+        />
 
-        <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Password
-          </label>
-          <div className="relative">
-            <Lock size={16} className={authFieldIconClass} />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              required
-              className={`${authPasswordInputClass} pl-11`}
-            />
-            <button
-              type="button"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              onClick={() => setShowPassword((current) => !current)}
-              className={authPasswordToggleClass}
-            >
-              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-            </button>
-          </div>
-        </div>
+        <AuthPasswordField
+          id="login-password"
+          label={auth('fields.password')}
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value)
+            setRequestError(null)
+          }}
+          placeholder={auth('placeholders.password')}
+          autoComplete="current-password"
+          minLength={6}
+          maxLength={128}
+          validationMessages={{
+            required: auth('validation.required', { field: auth('fields.password') }),
+            tooShort: auth('validation.passwordMinimum', { count: 6 }),
+          }}
+          showLabel={auth('visibility.showPassword')}
+          hideLabel={auth('visibility.hidePassword')}
+          required
+        />
 
         <div className="flex items-center justify-between gap-4">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-            <ShieldCheck size={14} className="text-[var(--brand)]" />
-            Protected access
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            <ShieldCheck size={14} className="text-[var(--brand)]" aria-hidden="true" />
+            {auth('login.protectedAccess')}
           </span>
           <Link href="/forget_password" className={`text-sm ${authLinkClass}`}>
-            Forgot password?
+            {auth('login.forgotPassword')}
           </Link>
         </div>
 
-        <button type="submit" disabled={isSubmitting} className={authPrimaryButtonClass}>
-          {isSubmitting ? 'Signing in...' : 'Sign In'}
-          {!isSubmitting && <ArrowRight size={18} />}
-        </button>
+        <AuthSubmitButton
+          label={auth('login.submit')}
+          pendingLabel={auth('login.submitting')}
+          pending={isSubmitting}
+        />
       </form>
     </AuthShell>
   )

@@ -2,40 +2,45 @@
 
 import { type FormEvent, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowRight, Mail } from 'lucide-react'
-import { apiClient } from '@/lib/api-client'
+import { Mail } from 'lucide-react'
+
 import {
   AuthMessage,
   AuthShell,
-  authFieldIconClass,
-  authInputWithIconClass,
+  AuthSubmitButton,
+  AuthTextField,
   authLinkClass,
-  authPrimaryButtonClass,
 } from '@/components/auth-ui'
+import { useDelayedNavigation } from '@/hooks/use-delayed-navigation'
+import { useResendCooldown } from '@/hooks/use-resend-cooldown'
+import { apiClient } from '@/lib/api-client'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
 export default function ForgetPassword() {
-  const router = useRouter()
+  const navigateAfter = useDelayedNavigation()
+  const { startCooldown } = useResendCooldown('resetResendAt')
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [message, setMessage] = useState('')
+  const [requestError, setRequestError] = useState<unknown>(null)
   const [isSuccess, setIsSuccess] = useState(false)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setIsSuccess(false)
     setIsSubmitting(true)
-    setMessage('')
+    setRequestError(null)
 
     try {
-      const result = await apiClient.forgotPassword(email.trim().toLowerCase())
-      const successMessage = result.data?.message || result.message || 'OTP sent to your email'
+      const normalizedEmail = email.trim().toLowerCase()
+      const response = await apiClient.forgotPassword(normalizedEmail)
       setIsSuccess(true)
-      setMessage(successMessage)
-      sessionStorage.setItem('resetEmail', email.trim().toLowerCase())
-      window.setTimeout(() => router.push('/verify_otp'), 800)
+      sessionStorage.setItem('resetEmail', normalizedEmail)
+      startCooldown(response.data.resendAvailableInSeconds)
+      navigateAfter('/verify_otp', 800)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to send OTP')
+      setRequestError(error)
     } finally {
       setIsSubmitting(false)
     }
@@ -43,38 +48,46 @@ export default function ForgetPassword() {
 
   return (
     <AuthShell
-      title="Forgot password"
-      description="Enter your email address and we will send an OTP to reset your password."
+      title={auth('forgot.title')}
+      description={auth('forgot.description')}
       footer={
         <Link href="/login" className={`text-sm ${authLinkClass}`}>
-          Back to sign in
+          {auth('links.backToSignIn')}
         </Link>
       }
     >
-      {message && <AuthMessage success={isSuccess}>{message}</AuthMessage>}
+      {isSuccess ? <AuthMessage success>{auth('forgot.success')}</AuthMessage> : null}
+      {requestError ? (
+        <AuthMessage>{localizedErrorMessage(requestError, locale, auth('forgot.error'))}</AuthMessage>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Email Address
-          </label>
-          <div className="relative">
-            <Mail size={16} className={authFieldIconClass} />
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              className={authInputWithIconClass}
-            />
-          </div>
-        </div>
+        <AuthTextField
+          id="forgot-email"
+          label={auth('fields.email')}
+          icon={Mail}
+          type="email"
+          placeholder={auth('placeholders.email')}
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value)
+            setRequestError(null)
+            setIsSuccess(false)
+          }}
+          autoComplete="email"
+          maxLength={255}
+          validationMessages={{
+            required: auth('validation.required', { field: auth('fields.email') }),
+            invalid: auth('validation.invalidEmail'),
+          }}
+          required
+        />
 
-        <button type="submit" disabled={isSubmitting} className={authPrimaryButtonClass}>
-          {isSubmitting ? 'Sending OTP...' : 'Send OTP'}
-          {!isSubmitting && <ArrowRight size={18} />}
-        </button>
+        <AuthSubmitButton
+          label={auth('forgot.submit')}
+          pendingLabel={auth('forgot.submitting')}
+          pending={isSubmitting}
+        />
       </form>
     </AuthShell>
   )

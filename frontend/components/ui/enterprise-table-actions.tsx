@@ -1,6 +1,9 @@
+'use client'
+
 import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
+import { useTranslations } from '@/lib/i18n'
 
 type ActionColumnSize = 'compact' | 'default' | 'wide'
 
@@ -18,20 +21,22 @@ interface EnterpriseTableActionHeaderProps extends ComponentProps<'th'> {
 export function EnterpriseTableActionHeader({
   size = 'default',
   className,
-  children = 'Actions',
+  children,
   ...props
 }: EnterpriseTableActionHeaderProps) {
+  const common = useTranslations('common')
+
   return (
     <th
       scope="col"
       className={cn(
-        'whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground',
+        'enterprise-table-label whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground',
         actionColumnWidths[size],
         className,
       )}
       {...props}
     >
-      {children}
+      {children ?? common('actions')}
     </th>
   )
 }

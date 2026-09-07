@@ -3,58 +3,59 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
+import { Mail, Phone, User } from 'lucide-react'
+
 import { useAuth } from '@/app/context/auth-context'
 import {
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  Phone,
-  ShieldCheck,
-  User,
-} from 'lucide-react'
-import { ApiError } from '@/lib/api-client'
-import {
+  AuthInfoPanel,
   AuthMessage,
+  AuthPasswordField,
   AuthShell,
-  authFieldIconClass,
-  authInputWithIconClass,
+  AuthSubmitButton,
+  AuthTextField,
   authLinkClass,
-  authPasswordInputClass,
-  authPasswordToggleClass,
-  authPrimaryButtonClass,
 } from '@/components/auth-ui'
+import { localizedErrorMessage, useLocale, useTranslations, type MessageKey } from '@/lib/i18n'
+
+type RegistrationValidationKey = Extract<
+  MessageKey<'auth'>,
+  'validation.passwordMinimum' | 'validation.passwordsMismatch'
+>
+
+const initialForm = {
+  name: '',
+  email: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+}
 
 export default function RegisterPage() {
   const router = useRouter()
   const { register, isSubmitting } = useAuth()
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [error, setError] = useState('')
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
+  const [form, setForm] = useState(initialForm)
+  const [validationKey, setValidationKey] = useState<RegistrationValidationKey | null>(null)
+  const [requestError, setRequestError] = useState<unknown>(null)
 
   const update = (key: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [key]: value }))
+    setValidationKey(null)
+    setRequestError(null)
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setError('')
+    setValidationKey(null)
+    setRequestError(null)
 
     if (form.password.length < 6) {
-      setError('Password must be at least 6 characters.')
+      setValidationKey('validation.passwordMinimum')
       return
     }
-
     if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.')
+      setValidationKey('validation.passwordsMismatch')
       return
     }
 
@@ -67,147 +68,127 @@ export default function RegisterPage() {
       )
       router.push('/verify_email')
     } catch (error) {
-      setError(error instanceof ApiError ? error.message : 'Registration failed. Please try again.')
+      setRequestError(error)
     }
   }
 
+  const passwordError = validationKey === 'validation.passwordMinimum'
+    ? auth(validationKey, { count: 6 })
+    : undefined
+  const confirmationError = validationKey === 'validation.passwordsMismatch'
+    ? auth(validationKey)
+    : undefined
+  const requestErrorMessage = requestError
+    ? localizedErrorMessage(requestError, locale, auth('register.error'))
+    : ''
+
   return (
     <AuthShell
-      title="Create account"
-      description="Create your member profile, then verify your email before signing in."
+      title={auth('register.title')}
+      description={auth('register.description')}
       maxWidth="max-w-[500px]"
       footer={
         <p className="text-sm font-semibold text-muted-foreground">
-          Already have an account?{' '}
+          {auth('register.hasAccount')}{' '}
           <Link href="/login" className={authLinkClass}>
-            Sign in
+            {auth('links.signIn')}
           </Link>
         </p>
       }
     >
-      {error && <AuthMessage>{error}</AuthMessage>}
+      {requestErrorMessage ? <AuthMessage>{requestErrorMessage}</AuthMessage> : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Full Name
-          </label>
-          <div className="relative">
-            <User size={16} className={authFieldIconClass} />
-            <input
-              value={form.name}
-              onChange={(event) => update('name', event.target.value)}
-              placeholder="Your name"
-              autoComplete="name"
-              required
-              className={authInputWithIconClass}
-            />
-          </div>
-        </div>
+        <AuthTextField
+          id="register-name"
+          label={auth('fields.fullName')}
+          icon={User}
+          value={form.name}
+          onChange={(event) => update('name', event.target.value)}
+          placeholder={auth('placeholders.name')}
+          autoComplete="name"
+          maxLength={100}
+          validationMessages={{
+            required: auth('validation.required', { field: auth('fields.fullName') }),
+          }}
+          required
+        />
 
-        <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Email Address
-          </label>
-          <div className="relative">
-            <Mail size={16} className={authFieldIconClass} />
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event) => update('email', event.target.value)}
-              placeholder="contact@example.com"
-              autoComplete="email"
-              required
-              className={authInputWithIconClass}
-            />
-          </div>
-        </div>
+        <AuthTextField
+          id="register-email"
+          label={auth('fields.email')}
+          icon={Mail}
+          type="email"
+          value={form.email}
+          onChange={(event) => update('email', event.target.value)}
+          placeholder={auth('placeholders.email')}
+          autoComplete="email"
+          maxLength={255}
+          validationMessages={{
+            required: auth('validation.required', { field: auth('fields.email') }),
+            invalid: auth('validation.invalidEmail'),
+          }}
+          required
+        />
 
-        <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Phone Number
-          </label>
-          <div className="relative">
-            <Phone size={16} className={authFieldIconClass} />
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(event) => update('phone', event.target.value)}
-              placeholder="01700-000000"
-              autoComplete="tel"
-              required
-              className={authInputWithIconClass}
-            />
-          </div>
-        </div>
+        <AuthTextField
+          id="register-phone"
+          label={<>{auth('fields.phone')} <span className="font-normal text-muted-foreground">({auth('fields.optional')})</span></>}
+          icon={Phone}
+          type="tel"
+          value={form.phone}
+          onChange={(event) => update('phone', event.target.value)}
+          placeholder={auth('placeholders.phone')}
+          autoComplete="tel"
+          maxLength={40}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Password
-            </label>
-            <div className="relative">
-              <Lock size={16} className={authFieldIconClass} />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={(event) => update('password', event.target.value)}
-                placeholder="Min 6 chars"
-                autoComplete="new-password"
-                required
-                className={`${authPasswordInputClass} pl-11`}
-              />
-              <button
-                type="button"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                onClick={() => setShowPassword((current) => !current)}
-                className={authPasswordToggleClass}
-              >
-                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Confirm
-            </label>
-            <div className="relative">
-              <Lock size={16} className={authFieldIconClass} />
-              <input
-                type={showConfirm ? 'text' : 'password'}
-                value={form.confirmPassword}
-                onChange={(event) => update('confirmPassword', event.target.value)}
-                placeholder="Confirm"
-                autoComplete="new-password"
-                required
-                className={`${authPasswordInputClass} pl-11`}
-              />
-              <button
-                type="button"
-                aria-label={showConfirm ? 'Hide password confirmation' : 'Show password confirmation'}
-                onClick={() => setShowConfirm((current) => !current)}
-                className={authPasswordToggleClass}
-              >
-                {showConfirm ? <EyeOff size={17} /> : <Eye size={17} />}
-              </button>
-            </div>
-          </div>
+          <AuthPasswordField
+            id="register-password"
+            label={auth('fields.password')}
+            value={form.password}
+            onChange={(event) => update('password', event.target.value)}
+            placeholder={auth('placeholders.passwordMinimum', { count: 6 })}
+            autoComplete="new-password"
+            showLabel={auth('visibility.showPassword')}
+            hideLabel={auth('visibility.hidePassword')}
+            minLength={6}
+            maxLength={128}
+            error={passwordError}
+            validationMessages={{
+              required: auth('validation.required', { field: auth('fields.password') }),
+              tooShort: auth('validation.passwordMinimum', { count: 6 }),
+            }}
+            required
+          />
+          <AuthPasswordField
+            id="register-confirm-password"
+            label={auth('fields.confirmPassword')}
+            value={form.confirmPassword}
+            onChange={(event) => update('confirmPassword', event.target.value)}
+            placeholder={auth('placeholders.confirmPassword')}
+            autoComplete="new-password"
+            showLabel={auth('visibility.showConfirmation')}
+            hideLabel={auth('visibility.hideConfirmation')}
+            minLength={6}
+            maxLength={128}
+            error={confirmationError}
+            validationMessages={{
+              required: auth('validation.required', { field: auth('fields.confirmPassword') }),
+              tooShort: auth('validation.passwordMinimum', { count: 6 }),
+            }}
+            required
+          />
         </div>
 
-        <div className="rounded-md border border-[#d8e8e7] bg-[#f7fcfb] p-4">
-          <div className="flex items-start gap-3">
-            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[var(--brand)]" />
-            <p className="text-xs font-semibold leading-relaxed text-muted-foreground">
-              Every new profile is created as a member. Manager permission is approved from the dashboard.
-            </p>
-          </div>
-        </div>
+        <AuthInfoPanel>{auth('register.memberNotice')}</AuthInfoPanel>
 
-        <button type="submit" disabled={isSubmitting} className={authPrimaryButtonClass}>
-          {isSubmitting ? 'Creating account...' : 'Create Member Account'}
-          {!isSubmitting && <ArrowRight size={18} />}
-        </button>
+        <AuthSubmitButton
+          label={auth('register.submit')}
+          pendingLabel={auth('register.submitting')}
+          pending={isSubmitting}
+        />
       </form>
     </AuthShell>
   )

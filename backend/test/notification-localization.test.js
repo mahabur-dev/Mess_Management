@@ -150,3 +150,41 @@ test('localizes subscription contact requests while preserving the requester nam
   assert.match(localized.body, /Sadia/);
   assert.match(localized.body, /মাসিক সাবস্ক্রিপশন/);
 });
+
+test('localizes bazar schedule metadata without translating the mess name', () => {
+  const localized = localizeSystemNotification(
+    {
+      title: 'Bazar schedule is available',
+      body: 'Lake View Mess: 9/2026 bazar duties are ready to select.',
+      data: {
+        source: 'BAZAR_SCHEDULE_GENERATED',
+        messName: 'Lake View Mess',
+        month: 9,
+        year: 2026,
+      },
+    },
+    'bn',
+  );
+
+  assert.equal(localized.title, 'বাজারের সময়সূচি প্রস্তুত');
+  assert.match(localized.body, /Lake View Mess/);
+  assert.match(localized.body, /সেপ্টেম্বর/);
+});
+
+test('localizes bazar assignment dates for Bangla recipients', () => {
+  const localized = localizeSystemNotification(
+    {
+      title: 'Bazar duty assigned',
+      body: 'You were assigned bazar duty for 2026-09-12.',
+      data: {
+        source: 'BAZAR_DUTY_ASSIGNED',
+        dutyDate: '2026-09-12',
+      },
+    },
+    'bn',
+  );
+
+  assert.equal(localized.title, 'বাজারের দায়িত্ব দেওয়া হয়েছে');
+  assert.match(localized.body, /১২/);
+  assert.match(localized.body, /সেপ/);
+});

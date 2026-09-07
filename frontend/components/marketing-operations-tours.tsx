@@ -108,7 +108,7 @@ function DepositForm({ activeId, currentStep, typedValue }: { activeId: DepositS
             <TourField label="Date" value="23 Aug 2026" active={activeId === 'date'} />
             <TourField label="Note" value={note} placeholder="Monthly contribution" active={activeId === 'note'} />
           </div>
-          <div className="mt-3 flex items-start gap-2 rounded-[8px] bg-[#eff9f8] px-3 py-2"><BadgeCheck className="mt-0.5 w-3 text-[#008d8c]" /><p className="text-[clamp(4px,.62vw,6px)] font-semibold leading-4 text-[#526b72]">Deposits are added directly to the selected member's contribution ledger.</p></div>
+          <div className="mt-3 flex items-start gap-2 rounded-[8px] bg-[#eff9f8] px-3 py-2"><BadgeCheck className="mt-0.5 w-3 text-[#008d8c]" /><p className="text-[clamp(4px,.62vw,6px)] font-semibold leading-4 text-[#526b72]">Deposits are added directly to the selected member&apos;s contribution ledger.</p></div>
         </TourPanel>
         <div className="mt-3 flex justify-end"><TourPrimaryButton active={activeId === 'save'}><WalletCards className="w-3" /> Add Deposit</TourPrimaryButton></div>
       </div>

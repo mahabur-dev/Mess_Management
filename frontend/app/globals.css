@@ -4,6 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --font-bangla-sans: 'Noto Sans Bengali Variable', 'Nirmala UI', 'Noto Sans Bengali', 'Kohinoor Bangla', 'Vrinda';
+  --font-app-sans: var(--font-dashboard-sans), Inter, var(--font-bangla-sans), ui-sans-serif, system-ui, sans-serif;
   --brand: #008b80;
   --brand-hover: #00776d;
   --brand-dark: #006b63;
@@ -68,6 +70,20 @@
   --sidebar-ring: var(--brand-bright);
 }
 
+html[data-locale='bn'] body {
+  line-height: 1.55;
+}
+
+html[data-locale='bn'] :is(.marketing-shell, .dashboard-theme, .auth-page) :is(h1, h2, h3, h4) {
+  letter-spacing: 0 !important;
+  line-height: 1.32;
+}
+
+html[data-locale='bn'] :is(.marketing-eyebrow, .enterprise-kicker, .enterprise-table-label) {
+  letter-spacing: 0.04em !important;
+  text-transform: none !important;
+}
+
 .dark {
   --brand: #25c7b8;
   --brand-hover: #4bd7cb;
@@ -130,7 +146,7 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-dashboard-sans);
+  --font-sans: var(--font-app-sans);
   --font-mono: var(--font-geist-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -239,7 +255,7 @@
 @layer components {
   .marketing-shell {
     --marketing-heading-weight: 600;
-    font-family: var(--font-dashboard-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-app-sans);
     font-optical-sizing: auto;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     font-synthesis: none;
@@ -534,7 +550,7 @@
     min-height: 100vh;
     color: var(--dashboard-ink);
     background: var(--dashboard-bg);
-    font-family: var(--font-dashboard-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-app-sans);
   }
 
   .dark .dashboard-theme {
@@ -722,7 +738,7 @@
   /* Shared detail/form drawers: keep portaled content on the dashboard visual system. */
   .enterprise-details-drawer {
     color: var(--dashboard-ink);
-    font-family: var(--font-dashboard-sans), system-ui, sans-serif;
+    font-family: var(--font-app-sans);
   }
 
   .enterprise-details-drawer input:not([type='checkbox']):not([type='radio']),
@@ -912,7 +928,7 @@
     border-radius: var(--radius) !important;
     background: var(--dashboard-surface) !important;
     color: var(--dashboard-ink) !important;
-    font-family: var(--font-dashboard-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-app-sans);
     box-shadow: none !important;
   }
 
@@ -1055,7 +1071,7 @@
 
   .dashboard-theme .recharts-text {
     fill: var(--dashboard-muted);
-    font-family: var(--font-dashboard-sans), system-ui, sans-serif;
+    font-family: var(--font-app-sans);
   }
 
 }

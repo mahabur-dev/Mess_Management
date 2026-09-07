@@ -20,9 +20,12 @@ import {
   registerPushNotifications,
   shouldShowPushPermissionPrompt,
 } from '@/lib/push-notifications'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
 export function PushNotificationPermissionModal() {
   const { user, isAuthenticated } = useAuth()
+  const { locale } = useLocale()
+  const t = useTranslations('dashboard')
   const [open, setOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isCheckingStatus, setIsCheckingStatus] = useState(false)
@@ -80,7 +83,7 @@ export function PushNotificationPermissionModal() {
               setIsCurrentDeviceSubscribed(true)
             } catch (syncError) {
               if (!cancelled) {
-                setError(syncError instanceof Error ? syncError.message : 'Unable to sync push subscription.')
+                setError(localizedErrorMessage(syncError, locale, t('push.syncError')))
               }
             } finally {
               if (!cancelled) setIsSaving(false)
@@ -111,7 +114,7 @@ export function PushNotificationPermissionModal() {
       cancelled = true
       if (promptTimer) window.clearTimeout(promptTimer)
     }
-  }, [isAuthenticated, user?.id])
+  }, [isAuthenticated, locale, t, user?.id])
 
   const closeForNow = () => {
     setOpen(false)
@@ -128,7 +131,7 @@ export function PushNotificationPermissionModal() {
       setIsCurrentDeviceSubscribed(true)
       setOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to enable notifications.')
+      setError(localizedErrorMessage(err, locale, t('push.enableError')))
     } finally {
       setIsSaving(false)
     }
@@ -149,7 +152,7 @@ export function PushNotificationPermissionModal() {
             onClick={closeForNow}
             disabled={isSaving}
             className="absolute right-4 top-4 z-10 grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-muted-foreground  transition hover:border-[var(--brand-border)] hover:bg-[var(--dashboard-hover)] hover:text-[var(--dashboard-ink)] disabled:opacity-50"
-            aria-label="Close notification setup"
+            aria-label={t('push.close')}
           >
             <X className="size-4" />
           </button>
@@ -160,17 +163,17 @@ export function PushNotificationPermissionModal() {
                 <BellRing className="size-5" />
               </span>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--brand)]">Notification center</p>
-                <p className="mt-1 text-xs font-semibold text-muted-foreground">Secure browser alerts</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">{t('push.eyebrow')}</p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">{t('push.security')}</p>
               </div>
             </div>
             <DialogTitle className="text-[1.35rem] font-semibold leading-tight tracking-[-0.025em] text-[var(--dashboard-ink)] sm:text-2xl">
-              {permissionState === 'denied' ? 'Notifications are blocked' : 'Stay informed, wherever you are'}
+              {permissionState === 'denied' ? t('push.blockedTitle') : t('push.title')}
             </DialogTitle>
             <DialogDescription className="max-w-sm text-sm font-medium leading-6 text-muted-foreground">
               {permissionState === 'denied'
-                ? 'Enable notifications for MessZen in your browser settings, then retry the connection.'
-                : 'Receive important payment reminders, meal changes and mess notices without keeping the dashboard open.'}
+                ? t('push.blockedDescription')
+                : t('push.description')}
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -187,38 +190,38 @@ export function PushNotificationPermissionModal() {
               {isCheckingStatus ? <Loader2 className="size-4 animate-spin" /> : <Smartphone className="size-4" />}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[var(--dashboard-ink)]">This browser</p>
+              <p className="text-sm font-semibold text-[var(--dashboard-ink)]">{t('push.browser')}</p>
               <p className="mt-0.5 text-xs font-medium text-muted-foreground">
                 {isCheckingStatus
-                  ? 'Checking connection status…'
+                  ? t('push.checking')
                   : permissionState === 'denied'
-                    ? 'Permission blocked in browser settings'
+                    ? t('push.permissionBlocked')
                     : subscriptionStatus?.hasActiveSubscription
-                      ? 'Another device is connected; add this browser too'
-                      : 'Ready to receive real-time updates'}
+                      ? t('push.anotherDevice')
+                      : t('push.ready')}
               </p>
             </div>
             {!isCheckingStatus && (
               <span className={`rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] ${permissionState === 'denied' ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary' : 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)]'}`}>
-                {permissionState === 'denied' ? 'Action needed' : 'Not connected'}
+                {permissionState === 'denied' ? t('push.actionNeeded') : t('push.notConnected')}
               </span>
             )}
           </div>
 
           <div className="flex items-start gap-2.5 px-1 text-xs font-medium leading-5 text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
-            <span>You stay in control. Notification permission can be changed anytime from your browser settings.</span>
+            <span>{t('push.controlNotice')}</span>
           </div>
         </div>
 
         <DialogFooter className="grid grid-cols-1 gap-2 border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)]/60 px-5 py-4 sm:grid-cols-2 sm:px-6">
           <EnterpriseButton tone="secondary" fullWidth onClick={closeForNow} disabled={isSaving}>
             <BellOff className="size-4" />
-            Not now
+            {t('push.notNow')}
           </EnterpriseButton>
           <EnterpriseButton fullWidth onClick={enableNotifications} disabled={isSaving || isCheckingStatus}>
             {isSaving ? <Loader2 className="size-4 animate-spin" /> : permissionState === 'denied' ? <CheckCircle2 className="size-4" /> : <BellRing className="size-4" />}
-            {isSaving ? 'Connecting…' : permissionState === 'denied' ? 'Retry connection' : 'Allow notifications'}
+            {isSaving ? t('push.connecting') : permissionState === 'denied' ? t('push.retry') : t('push.allow')}
           </EnterpriseButton>
         </DialogFooter>
       </DialogContent>

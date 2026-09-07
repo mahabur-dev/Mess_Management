@@ -320,7 +320,7 @@ export default function BazarSchedulePage() {
     <div className="min-h-screen bg-transparent">
       <DashboardHeader title="Bazar Schedule" description={canManage ? 'Plan, assign and balance monthly bazar duties' : 'Choose and manage your bazar responsibilities'} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} showQuickAddButton={false} />
 
-      <main className="p-4 sm:p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         {message && (
           <div role="status" className={cn('mb-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-semibold ', messageType === 'error' ? 'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive' : 'border-primary/30 bg-primary/10 text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary')}>
             {messageType === 'error' ? <AlertCircle className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}{message}
@@ -390,7 +390,7 @@ export default function BazarSchedulePage() {
             )}
           </>
         )}
-      </main>
+      </div>
 
       {activeMess && <ScheduleSettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} messId={activeMess.id} settings={settings} onSaved={async () => { await refreshSettings(); notify('Bazar schedule settings saved.') }} />}
 

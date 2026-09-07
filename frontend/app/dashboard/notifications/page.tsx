@@ -1,45 +1,19 @@
 'use client'
 
 import { DashboardHeader } from '@/components/dashboard-header'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { EnterpriseAsyncState, EnterpriseTableStateRow } from '@/components/ui/enterprise-async-state'
 import { EnterpriseTableActionCell, EnterpriseTableActionHeader } from '@/components/ui/enterprise-table-actions'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type AppNotification } from '@/lib/api-client'
-import { Bell, Trash2, Loader2, CalendarDays, Mail } from 'lucide-react'
+import { Bell, Trash2, CalendarDays } from 'lucide-react'
 import { useEffect, useState } from 'react'
-
-const AVATAR_COLORS = ['var(--primary)']
-
-const avatarColor = (name: string) => {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
-
-const getInitials = (name: string) => {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
-const formatDate = (iso: string) => {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+import { localizedNotificationCopy, useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 export default function NotificationsPage() {
   const { user } = useAuth()
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const notificationsCopy = useTranslations('notifications')
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -98,8 +72,8 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader
-        title="Notifications"
-        description="Recent notices, complaints, requests and important updates"
+        title={notificationsCopy('title')}
+        description={notificationsCopy('description')}
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
@@ -109,10 +83,10 @@ export default function NotificationsPage() {
             <Bell size={24} className="text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">All Notifications</h2>
+            <h2 className="text-lg font-semibold text-foreground">{notificationsCopy('all')}</h2>
             <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
-              {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
-              {unreadCount > 0 && <span className="ml-2 text-primary">({unreadCount} unread)</span>}
+              {notificationsCopy('count', { count: format.number(notifications.length) })}
+              {unreadCount > 0 && <span className="ml-2 text-primary">({notificationsCopy('unreadCount', { count: format.number(unreadCount) })})</span>}
             </p>
           </div>
         </div>
@@ -122,36 +96,23 @@ export default function NotificationsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted">
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Title</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Content</th>
-                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Date</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{notificationsCopy('status')}</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{notificationsCopy('titleColumn')}</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{notificationsCopy('content')}</th>
+                <th className="whitespace-nowrap px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{notificationsCopy('date')}</th>
                 <EnterpriseTableActionHeader size="compact" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading && (
-                <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center">
-                    <div className="flex items-center justify-center gap-2 text-sm font-bold text-muted-foreground">
-                      <Loader2 size={18} className="animate-spin text-primary" />
-                      Loading notifications...
-                    </div>
-                  </td>
-                </tr>
-              )}
-              {!loading && notifications.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Bell size={40} className="text-muted-foreground" />
-                      <p className="text-sm font-bold text-muted-foreground">No notifications yet.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
+              {loading ? (
+                <EnterpriseTableStateRow colSpan={5} status="loading" title={notificationsCopy('loading')} />
+              ) : null}
+              {!loading && notifications.length === 0 ? (
+                <EnterpriseTableStateRow colSpan={5} status="empty" title={notificationsCopy('empty')} icon={Bell} />
+              ) : null}
               {!loading && notifications.map((notification) => {
                 const isRead = notification.reads?.some((read) => read.user_id === user?.id)
+                const copy = localizedNotificationCopy(notification, locale)
                 return (
                   <tr
                     key={notification.id}
@@ -166,24 +127,24 @@ export default function NotificationsPage() {
                           <span className="flex h-2 w-2 rounded-full bg-muted" />
                         )}
                         <span className={`text-[11px] font-bold ${isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
-                          {isRead ? 'Read' : 'New'}
+                          {isRead ? notificationsCopy('read') : notificationsCopy('new')}
                         </span>
                       </div>
                     </td>
                     <td className="px-5 py-4">
                       <p className={`text-sm font-bold ${isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
-                        {notification.title}
+                        {copy.title}
                       </p>
                     </td>
                     <td className="px-5 py-4">
                       <p className="max-w-md truncate text-sm font-semibold text-muted-foreground">
-                        {notification.body}
+                        {copy.body}
                       </p>
                     </td>
                     <td className="px-5 py-4">
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                         <CalendarDays size={13} className="text-primary" />
-                        {formatDate(notification.created_at)}
+                        {format.date(notification.created_at, { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </td>
                     <EnterpriseTableActionCell size="compact">
@@ -193,7 +154,8 @@ export default function NotificationsPage() {
                             void deleteNotification(notification)
                           }}
                           className="flex h-8 w-8 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10 text-destructive transition hover:border-destructive/30 hover:bg-destructive/10"
-                          title="Delete"
+                          title={notificationsCopy('delete')}
+                          aria-label={notificationsCopy('delete')}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -207,19 +169,15 @@ export default function NotificationsPage() {
 
         {/* Notifications - Mobile Cards */}
         <div className="space-y-3 sm:hidden">
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 size={24} className="animate-spin text-primary" />
-            </div>
-          )}
-          {!loading && notifications.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Bell size={40} className="mb-2 text-muted-foreground" />
-              <p className="text-sm font-bold text-muted-foreground">No notifications yet.</p>
-            </div>
-          )}
+          {loading ? (
+            <EnterpriseAsyncState status="loading" title={notificationsCopy('loading')} surface="plain" compact />
+          ) : null}
+          {!loading && notifications.length === 0 ? (
+            <EnterpriseAsyncState status="empty" title={notificationsCopy('empty')} icon={Bell} surface="plain" compact />
+          ) : null}
           {!loading && notifications.map((notification) => {
             const isRead = notification.reads?.some((read) => read.user_id === user?.id)
+            const copy = localizedNotificationCopy(notification, locale)
             return (
               <div
                 key={notification.id}
@@ -230,7 +188,7 @@ export default function NotificationsPage() {
                   <div className="flex items-center gap-2">
                     {!isRead && <span className="flex h-2.5 w-2.5 rounded-full bg-primary" />}
                     <h3 className={`text-sm font-bold ${isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
-                      {notification.title}
+                      {copy.title}
                     </h3>
                   </div>
                   <button
@@ -239,14 +197,16 @@ export default function NotificationsPage() {
                       void deleteNotification(notification)
                     }}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10 text-destructive transition hover:border-destructive/30 hover:bg-destructive/10"
+                    title={notificationsCopy('delete')}
+                    aria-label={notificationsCopy('delete')}
                   >
                     <Trash2 size={13} />
                   </button>
                 </div>
-                <p className="text-xs font-semibold text-muted-foreground leading-relaxed">{notification.body}</p>
+                <p className="text-xs font-semibold text-muted-foreground leading-relaxed">{copy.body}</p>
                 <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
                   <CalendarDays size={11} className="text-primary" />
-                  {formatDate(notification.created_at)}
+                  {format.date(notification.created_at, { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             )

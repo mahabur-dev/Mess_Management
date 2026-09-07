@@ -5,6 +5,7 @@ import { CheckCircle2, Clock3, Loader2, XCircle } from 'lucide-react'
 import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import type { ExpenseApprovalStatus } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
+import { domainLabel, useLocale, useTranslations } from '@/lib/i18n'
 
 const approvalOptions = [
   { value: 'PENDING', label: 'Pending' },
@@ -49,6 +50,8 @@ export function ExpenseApprovalControl({
   className,
   onStatusChange,
 }: ExpenseApprovalControlProps) {
+  const { locale } = useLocale()
+  const t = useTranslations('operations')
   const presentation = approvalPresentation[status]
   const Icon = presentation.icon
   const isReviewable = canReview && status === 'PENDING'
@@ -63,7 +66,7 @@ export function ExpenseApprovalControl({
         )}
       >
         <Icon size={13} aria-hidden="true" />
-        {presentation.label}
+        {domainLabel(status, locale)}
       </span>
     )
   }
@@ -77,7 +80,7 @@ export function ExpenseApprovalControl({
           if (!isReviewable || value === 'PENDING') return
           onStatusChange?.(value as Exclude<ExpenseApprovalStatus, 'PENDING'>)
         }}
-        options={approvalOptions}
+        options={approvalOptions.map((option) => ({ ...option, label: domainLabel(option.value, locale) }))}
         className={cn(
           'h-9 min-h-9 rounded-lg px-3 text-xs font-bold shadow-none disabled:cursor-default disabled:opacity-100',
           presentation.className,
@@ -89,7 +92,7 @@ export function ExpenseApprovalControl({
         <Loader2
           size={14}
           className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 animate-spin"
-          aria-label="Updating expense status"
+          aria-label={t('feedback.updatingStatus')}
         />
       )}
     </div>

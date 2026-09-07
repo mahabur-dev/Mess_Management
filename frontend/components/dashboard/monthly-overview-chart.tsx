@@ -8,6 +8,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 export type MonthlyOverviewPoint = {
   day: string
@@ -15,21 +16,6 @@ export type MonthlyOverviewPoint = {
   expense: number
   meals: number
 }
-
-const chartConfig = {
-  expense: {
-    label: 'Bazar',
-    color: 'var(--brand)',
-  },
-  income: {
-    label: 'Deposit',
-    color: 'var(--brand)',
-  },
-  meals: {
-    label: 'Meals',
-    color: 'var(--brand)',
-  },
-} satisfies ChartConfig
 
 function ChartSkeleton() {
   return (
@@ -47,12 +33,20 @@ export function MonthlyOverviewChart({
   data: MonthlyOverviewPoint[]
   isLoading: boolean
 }) {
+  const t = useTranslations('dashboard')
+  const format = useLocaleFormatters()
+  const chartConfig = {
+    expense: { label: t('charts.bazar'), color: 'var(--brand)' },
+    income: { label: t('charts.deposit'), color: 'var(--brand)' },
+    meals: { label: t('charts.meals'), color: 'var(--brand)' },
+  } satisfies ChartConfig
+
   if (isLoading) return <ChartSkeleton />
 
   if (data.length === 0) {
     return (
       <div className="flex h-[240px] min-h-[210px] items-center justify-center text-sm text-muted-foreground xl:h-full xl:min-h-0">
-        No data available for this month.
+        {t('charts.monthlyEmpty')}
       </div>
     )
   }
@@ -67,8 +61,9 @@ export function MonthlyOverviewChart({
           tickLine={false}
           tickMargin={10}
           minTickGap={32}
+          tickFormatter={(value) => Number.isFinite(Number(value)) ? format.number(Number(value)) : String(value)}
         />
-        <YAxis axisLine={false} tickLine={false} tickMargin={8} width={52} />
+        <YAxis axisLine={false} tickLine={false} tickMargin={8} width={52} tickFormatter={(value) => format.number(Number(value))} />
         <ChartTooltip
           cursor={{ fill: 'var(--brand-soft)', opacity: 0.55 }}
           content={
@@ -81,8 +76,8 @@ export function MonthlyOverviewChart({
                   </span>
                   <span className="font-medium tabular-nums text-foreground">
                     {name === 'meals'
-                      ? Number(value).toLocaleString()
-                      : `৳ ${Number(value).toLocaleString()}`}
+                      ? format.number(Number(value))
+                      : format.money(Number(value))}
                   </span>
                 </div>
               )}

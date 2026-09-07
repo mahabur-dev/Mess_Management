@@ -12,7 +12,7 @@ const sections: LegalSection[] = [
     title: 'Scope and who we are',
     content: (
       <>
-        <p>This Privacy Policy explains how Messzen ("Messzen", "we", "our", or "us") handles personal information when you use the Messzen website, web dashboard, dedicated mobile application, AI-assisted tools, push notifications, support channels, and related services (collectively, the "Service").</p>
+        <p>This Privacy Policy explains how Messzen (&quot;Messzen&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) handles personal information when you use the Messzen website, web dashboard, dedicated mobile application, AI-assisted tools, push notifications, support channels, and related services (collectively, the &quot;Service&quot;).</p>
         <p>Messzen is a mess and shared-living management platform. Managers may create and administer a mess, while organizers and members may access information and actions permitted by their role. This Policy applies to information handled through those activities. It does not govern an independent third-party service that links to its own privacy notice.</p>
       </>
     ),
@@ -78,7 +78,7 @@ const sections: LegalSection[] = [
     title: 'AI-assisted features and automated processing',
     content: (
       <>
-        <p>Messzen's AI tools are designed to reduce repetitive entry, not to remove user control. A text or voice command is interpreted into a proposed action. The Service presents a preview so the user can review important fields, edit them where supported, cancel, or confirm before saving.</p>
+        <p>Messzen&apos;s AI tools are designed to reduce repetitive entry, not to remove user control. A text or voice command is interpreted into a proposed action. The Service presents a preview so the user can review important fields, edit them where supported, cancel, or confirm before saving.</p>
         <p>Recurring meal patterns operate differently: once an authorized user activates a daily or weekly pattern, the Service may continue creating the scheduled meal records until that pattern is changed, paused, or removed. Managers and members should review their active patterns and permissions regularly.</p>
         <p>AI output may occasionally be incomplete or incorrect. We may use qualified service providers to process commands or transcribe audio. Only submit information you are authorized to process, and verify every preview before confirmation.</p>
       </>
@@ -107,7 +107,7 @@ const sections: LegalSection[] = [
       <>
         <p>Messzen uses limited browser storage to make the Service work:</p>
         <ul>
-          <li>An authentication token may be stored in your browser's local storage to keep you signed in.</li>
+          <li>An authentication token may be stored in your browser&apos;s local storage to keep you signed in.</li>
           <li>Theme or interface preferences may be stored locally, and a short-lived cookie may remember whether the dashboard sidebar is open.</li>
           <li>Password-reset progress may temporarily use session storage until the verification flow is complete.</li>
           <li>If you enable push notifications, the browser creates a device-specific push subscription. You can change permission in browser or device settings and may unsubscribe through available Service controls.</li>
@@ -151,7 +151,7 @@ const sections: LegalSection[] = [
           <li>Disable push notifications in your browser or device settings.</li>
           <li>Raise a concern about an inaccurate record with the relevant mess manager or Messzen support.</li>
         </ul>
-        <p>Some requests may be limited where we must preserve another person's rights, mess accounting integrity, security evidence, or a record required by law. To make a privacy request, email <a href="mailto:support@messzen.com">support@messzen.com</a>.</p>
+        <p>Some requests may be limited where we must preserve another person&apos;s rights, mess accounting integrity, security evidence, or a record required by law. To make a privacy request, email <a href="mailto:support@messzen.com">support@messzen.com</a>.</p>
       </>
     ),
   },
@@ -161,7 +161,7 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>The Service is intended for people who can lawfully create an account or who use it under the authorization and supervision of a responsible organization, mess manager, parent, or guardian. Do not independently create an account if you lack the legal capacity to accept the Terms.</p>
-        <p>If you enter information about another person, including a member's name, phone number, meal activity, or financial record, you confirm that you are authorized to do so and will use it only for legitimate mess-management purposes.</p>
+        <p>If you enter information about another person, including a member&apos;s name, phone number, meal activity, or financial record, you confirm that you are authorized to do so and will use it only for legitimate mess-management purposes.</p>
       </>
     ),
   },
@@ -177,7 +177,7 @@ const sections: LegalSection[] = [
     title: 'Changes and contact',
     content: (
       <>
-        <p>We may update this Policy as the Service, technology, or legal requirements change. The revised version will show a new "Last updated" date. If a change materially affects how we handle personal information, we may provide additional notice through the Service or an account communication.</p>
+        <p>We may update this Policy as the Service, technology, or legal requirements change. The revised version will show a new &quot;Last updated&quot; date. If a change materially affects how we handle personal information, we may provide additional notice through the Service or an account communication.</p>
         <p>For privacy questions or requests, contact Messzen at <a href="mailto:support@messzen.com">support@messzen.com</a> or <a href="tel:01797515386">01797515386</a>.</p>
       </>
     ),

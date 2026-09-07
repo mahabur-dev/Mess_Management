@@ -2,6 +2,7 @@
 
 import { MobileTourPlayer, type MobileTourStep } from '@/components/mobile-tour/mobile-tour-player'
 import { MobileTourScreen, type MobileScreenId } from '@/components/mobile-tour/mobile-screen-library'
+import { useTranslations, type MessageKey } from '@/lib/i18n'
 
 const mobileTourSteps = [
   { id: 'home-intro', screen: 'home', title: 'Start from the real Home screen', detail: 'See the manager header, Quick Actions, AI entry, overview, and bottom navigation.', x: 50, y: 8, duration: 2600 },
@@ -161,18 +162,19 @@ const tourStepsByVariant: Record<MobileAppTourVariant, readonly MobileTourStep<M
   app: mobileTourSteps.filter((step) => !isAiStep(step) && !isMealPatternStep(step)),
 }
 
-const tourLabels: Record<MobileAppTourVariant, string> = {
-  all: 'Automatic walkthrough of the Messzen mobile application',
-  ai: 'Automatic walkthrough of Quick Add with AI',
-  'meal-pattern': 'Automatic walkthrough of Meal Pattern setup',
-  app: 'Automatic walkthrough of the Messzen mobile application features',
+const tourLabelKeys: Record<MobileAppTourVariant, MessageKey<'marketing'>> = {
+  all: 'tour.mobileAllLabel',
+  ai: 'tour.mobileAiLabel',
+  'meal-pattern': 'tour.mobilePatternLabel',
+  app: 'tour.mobileAppLabel',
 }
 
 export function MarketingMobileAppTour({ variant = 'all', presentation = 'full' }: MarketingMobileAppTourProps) {
+  const t = useTranslations('marketing')
   const steps = tourStepsByVariant[variant]
 
   return (
-    <MobileTourPlayer steps={steps} ariaLabel={tourLabels[variant]} presentation={presentation}>
+    <MobileTourPlayer steps={steps} ariaLabel={t(tourLabelKeys[variant])} presentation={presentation}>
       {(step) => (
         <MobileTourScreen
           screen={step.screen}

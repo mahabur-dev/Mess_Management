@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Building2, Loader2, MapPin, Send, X } from 'lucide-react'
-import { apiClient, ApiError, type Mess } from '@/lib/api-client'
+import { apiClient, type Mess } from '@/lib/api-client'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
 type MemberJoinRequestModalProps = {
   open: boolean
@@ -13,6 +14,9 @@ type MemberJoinRequestModalProps = {
 }
 
 export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingRequest = false }: MemberJoinRequestModalProps) {
+  const { locale } = useLocale()
+  const common = useTranslations('common')
+  const t = useTranslations('dashboard')
   const [messes, setMesses] = useState<Mess[]>([])
   const [selectedMessId, setSelectedMessId] = useState('')
   const [loading, setLoading] = useState(false)
@@ -41,7 +45,7 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingR
       })
       .catch((error) => {
         if (!cancelled) {
-          setError(error instanceof ApiError ? error.message : 'Failed to load messes')
+          setError(localizedErrorMessage(error, locale, t('joinRequest.loadError')))
         }
       })
       .finally(() => {
@@ -51,14 +55,14 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingR
     return () => {
       cancelled = true
     }
-  }, [open])
+  }, [locale, open, t])
 
   if (!open) return null
 
   async function submit() {
     if (hasPendingRequest) return
     if (!selectedMessId) {
-      setError('Please select a mess')
+      setError(t('joinRequest.selectRequired'))
       return
     }
 
@@ -70,7 +74,7 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingR
       onSubmitted?.()
       onClose()
     } catch (error) {
-      setError(error instanceof ApiError ? error.message : 'Failed to send request')
+      setError(localizedErrorMessage(error, locale, t('joinRequest.sendError')))
     } finally {
       setSubmitting(false)
     }
@@ -86,33 +90,33 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingR
 
         <div className="relative flex items-center justify-between border-b border-border px-5 py-5 sm:px-6">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Member Request</p>
-            <h2 className="mt-1 text-xl font-semibold text-foreground">Request Member Access</h2>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">{t('joinRequest.eyebrow')}</p>
+            <h2 className="mt-1 text-xl font-semibold text-foreground">{t('joinRequest.title')}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted text-primary transition hover:border-primary hover:bg-muted"
-            aria-label="Close"
+            aria-label={common('close')}
           >
             <X size={18} />
           </button>
         </div>
 
         <div className="relative p-5 sm:p-6">
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Select Mess
+          <label htmlFor="join-request-mess" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            {t('joinRequest.selectMess')}
           </label>
           <Select value={selectedMessId} onValueChange={setSelectedMessId} disabled={loading || messes.length === 0}>
-            <SelectTrigger className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground shadow-none outline-none focus:border-primary focus:ring-4 focus:ring-primary/20">
-              <SelectValue placeholder={loading ? 'Loading messes...' : 'Select an active mess'} />
+            <SelectTrigger id="join-request-mess" className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground shadow-none outline-none focus:border-primary focus:ring-4 focus:ring-primary/20">
+              <SelectValue placeholder={loading ? t('joinRequest.loadingMesses') : t('joinRequest.selectActive')} />
             </SelectTrigger>
             <SelectContent className="rounded-xl border border-border bg-background ">
               {messes.map((mess) => (
                 <SelectItem
                   key={mess.id}
                   value={mess.id}
-                  className="rounded-lg px-3 py-2 text-sm font-bold text-foreground focus:bg-muted focus:text-primary"
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-foreground focus:bg-muted focus:text-primary"
                 >
                   {mess.name}
                 </SelectItem>
@@ -130,7 +134,7 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingR
                   <p className="text-sm font-semibold text-foreground">{selectedMess.name}</p>
                   <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
                     <MapPin size={12} className="shrink-0 text-primary" />
-                    <span className="truncate">{selectedMess.address || 'No address set'}</span>
+                    <span className="truncate">{selectedMess.address || t('joinRequest.noAddress')}</span>
                   </p>
                 </div>
               </div>
@@ -138,13 +142,13 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingR
           )}
 
           {!loading && messes.length === 0 && (
-            <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-bold text-primary">
-              No active messes are available.
+            <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
+              {t('joinRequest.noneAvailable')}
             </div>
           )}
 
           {error && (
-            <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive">
+            <div role="alert" className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive">
               {error}
             </div>
           )}
@@ -156,7 +160,7 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingR
               disabled={submitting}
               className="h-12 rounded-xl border border-border bg-background px-4 font-semibold text-muted-foreground transition hover:bg-muted disabled:opacity-60"
             >
-              Cancel
+              {common('cancel')}
             </button>
             <button
               type="button"
@@ -165,7 +169,7 @@ export function MemberJoinRequestModal({ open, onClose, onSubmitted, hasPendingR
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl  bg-primary  px-4 font-semibold text-primary-foreground  transition  disabled:opacity-70"
             >
               {submitting || loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-              {hasPendingRequest ? 'Request Pending' : submitting ? 'Sending...' : 'Send Request'}
+              {hasPendingRequest ? t('joinRequest.pending') : submitting ? t('joinRequest.sending') : t('joinRequest.send')}
             </button>
           </div>
         </div>

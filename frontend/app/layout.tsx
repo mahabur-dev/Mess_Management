@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import localFont from 'next/font/local'
+import '@fontsource-variable/noto-sans-bengali/wght.css'
 import Script from 'next/script'
 import { AuthProvider } from './context/auth-context'
 import { SWRProvider } from './swr-provider'
 import { ThemeProvider } from '@/components/theme-provider'
+import { LocaleProvider } from '@/lib/i18n'
 import './globals.css'
 
 const googleAnalyticsId = 'G-M8F0REF7QX'
@@ -20,7 +22,6 @@ const inter = localFont({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: 'cover',
   themeColor: '#0F172A',
 }
@@ -57,17 +58,20 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-locale="en"
       className={`${inter.variable} bg-background`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <SWRProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </SWRProvider>
-        </ThemeProvider>
+        <LocaleProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <SWRProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </SWRProvider>
+          </ThemeProvider>
+        </LocaleProvider>
         {process.env.NODE_ENV === 'development' && <Analytics />}
         {process.env.NODE_ENV === 'production' && (
           <>

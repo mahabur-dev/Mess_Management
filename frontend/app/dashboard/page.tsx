@@ -30,24 +30,20 @@ import {
   useMyMemberJoinRequests,
 } from '@/hooks/use-dashboard-data'
 import type { Mess } from '@/lib/api-client'
+import {
+  expenseCategoryLabel,
+  useLocale,
+  useLocaleFormatters,
+  useTranslations,
+  type MessageKey,
+} from '@/lib/i18n'
+
+type DashboardKey = MessageKey<'dashboard'>
 
 function currentMonthValue() {
   const date = new Date()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   return `${date.getFullYear()}-${month}`
-}
-
-function money(value: number | string | undefined | null) {
-  return `৳ ${Number(value ?? 0).toLocaleString()}`
-}
-
-function formatDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-  }).format(date)
 }
 
 function NoMessOnboarding({
@@ -61,45 +57,45 @@ function NoMessOnboarding({
   requestPending: boolean
   requestLoading: boolean
 }) {
-  const benefits = [
-    'Manage meals, deposits, expenses, and monthly bills in one place.',
-    'Give every member the right access based on their role.',
-    'Keep records organized and ready whenever you need them.',
+  const t = useTranslations('dashboard')
+  const benefits: DashboardKey[] = [
+    'onboarding.benefitOne',
+    'onboarding.benefitTwo',
+    'onboarding.benefitThree',
   ]
 
   return (
     <Card className="mx-auto max-w-4xl shadow-none">
       <CardHeader className="border-b">
-        <p className="text-sm font-medium text-primary">Workspace setup</p>
-        <CardTitle className="text-xl">Connect your account to a mess</CardTitle>
+        <p className="text-sm font-medium text-primary">{t('onboarding.eyebrow')}</p>
+        <CardTitle className="text-xl">{t('onboarding.title')}</CardTitle>
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-          Create a new mess or request access from an active mess manager before
-          using the dashboard.
+          {t('onboarding.description')}
         </p>
       </CardHeader>
       <CardContent className="grid gap-6 pt-6 md:grid-cols-[1fr_auto] md:items-end">
         <div className="space-y-3">
-          {benefits.map((benefit) => (
-            <div key={benefit} className="flex items-start gap-3 text-sm">
+          {benefits.map((benefitKey) => (
+            <div key={benefitKey} className="flex items-start gap-3 text-sm">
               <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Check className="size-3" />
               </span>
-              <span className="text-muted-foreground">{benefit}</span>
+              <span className="text-muted-foreground">{t(benefitKey)}</span>
             </div>
           ))}
         </div>
         <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-1">
-          <Button onClick={onCreate}>Create mess</Button>
+          <Button onClick={onCreate}>{t('onboarding.create')}</Button>
           <Button
             variant="outline"
             onClick={onRequestAccess}
             disabled={requestLoading || requestPending}
           >
             {requestLoading
-              ? 'Checking request'
+              ? t('onboarding.checking')
               : requestPending
-                ? 'Request pending'
-                : 'Request access'}
+                ? t('onboarding.pending')
+                : t('onboarding.request')}
           </Button>
         </div>
       </CardContent>
@@ -119,42 +115,46 @@ function AdminRecentExpenses({
     mess?: { name: string }
   }>
 }) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('dashboard')
+
   return (
     <Card className="gap-0 py-0 shadow-none">
       <CardHeader className="border-b px-5 py-4">
-        <CardTitle className="text-base">Recent expense receipts</CardTitle>
+        <CardTitle className="text-base">{t('recentExpenses.title')}</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="pl-5">Expense</TableHead>
-              <TableHead>Mess</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="pr-5 text-right">Amount</TableHead>
+              <TableHead className="pl-5">{t('recentExpenses.expense')}</TableHead>
+              <TableHead>{t('recentExpenses.mess')}</TableHead>
+              <TableHead>{t('recentExpenses.date')}</TableHead>
+              <TableHead className="pr-5 text-right">{t('recentExpenses.amount')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!expenses.length ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-28 text-center text-muted-foreground">
-                  No recent expense receipts.
+                  {t('recentExpenses.empty')}
                 </TableCell>
               </TableRow>
             ) : null}
             {expenses.slice(0, 5).map((expense) => (
               <TableRow key={expense.id}>
                 <TableCell className="pl-5 font-medium">
-                  {expense.item_name || expense.category}
+                  {expense.item_name || expenseCategoryLabel(expense.category, locale)}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {expense.mess?.name || '—'}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {formatDate(expense.expense_date)}
+                  {format.date(expense.expense_date)}
                 </TableCell>
                 <TableCell className="pr-5 text-right font-medium tabular-nums">
-                  {money(expense.amount)}
+                  {format.money(expense.amount)}
                 </TableCell>
               </TableRow>
             ))}
@@ -168,6 +168,8 @@ function AdminRecentExpenses({
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  const format = useLocaleFormatters()
+  const t = useTranslations('dashboard')
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue)
   const [memberRequestOpen, setMemberRequestOpen] = useState(false)
   const [memberRequestSubmitted, setMemberRequestSubmitted] = useState(false)
@@ -227,48 +229,48 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     if (user?.role === 'ADMIN') {
       return [
-        { label: 'Total users', value: adminDashboard?.users ?? 0, description: 'Registered accounts' },
-        { label: 'All messes', value: adminDashboard?.messes ?? 0, description: 'Managed workspaces' },
-        { label: 'Pending requests', value: adminDashboard?.pendingRequests ?? 0, description: 'Awaiting review' },
-        { label: 'Pending payments', value: adminDashboard?.pendingPayments ?? 0, description: 'Awaiting approval' },
+        { label: t('stats.totalUsers'), value: format.number(adminDashboard?.users ?? 0), description: t('stats.registeredAccounts') },
+        { label: t('stats.allMesses'), value: format.number(adminDashboard?.messes ?? 0), description: t('stats.managedWorkspaces') },
+        { label: t('stats.pendingRequests'), value: format.number(adminDashboard?.pendingRequests ?? 0), description: t('stats.awaitingReview') },
+        { label: t('stats.pendingPayments'), value: format.number(adminDashboard?.pendingPayments ?? 0), description: t('stats.awaitingApproval') },
       ]
     }
 
     return [
       {
-        label: 'Total deposit',
-        value: money(
+        label: t('stats.totalDeposit'),
+        value: format.money(
           Number(dashboard?.totalDepositAmount ?? 0) +
             Number(dashboard?.carryForwardRemainingAmount ?? 0),
         ),
-        description: 'Including carry forward',
+        description: t('stats.includingCarry'),
         featured: true,
       },
-      { label: 'Total meals', value: dashboard?.totalMeals ?? 0, description: 'Selected month' },
-      { label: 'Meal rate', value: money(dashboard?.currentMealRate), description: 'Current rate' },
-      { label: 'Food expenses', value: money(dashboard?.currentMonthTotalBazar), description: 'Selected month' },
-      { label: 'Utility expenses', value: money(dashboard?.extraExpenses), description: 'Selected month' },
+      { label: t('stats.totalMeals'), value: format.number(dashboard?.totalMeals ?? 0), description: t('stats.selectedMonth') },
+      { label: t('stats.mealRate'), value: format.money(dashboard?.currentMealRate), description: t('stats.currentRate') },
+      { label: t('stats.foodExpenses'), value: format.money(dashboard?.currentMonthTotalBazar), description: t('stats.selectedMonth') },
+      { label: t('stats.utilityExpenses'), value: format.money(dashboard?.extraExpenses), description: t('stats.selectedMonth') },
       {
-        label: 'Per member utility',
-        value: money(dashboard?.perExtraExpenses),
-        description: 'Current share',
+        label: t('stats.perMemberUtility'),
+        value: format.money(dashboard?.perExtraExpenses),
+        description: t('stats.currentShare'),
       },
       {
-        label: 'Due amount',
-        value: money(
+        label: t('stats.dueAmount'),
+        value: format.money(
           Number(dashboard?.totalDue ?? 0) +
             Number(dashboard?.carryForwardDueAmount ?? 0),
         ),
-        description: 'Outstanding balance',
+        description: t('stats.outstandingBalance'),
         destructive: Number(dashboard?.totalDue ?? 0) > 0,
       },
       {
-        label: 'Remaining amount',
-        value: money(dashboard?.remainingAmount),
-        description: 'Available balance',
+        label: t('stats.remainingAmount'),
+        value: format.money(dashboard?.remainingAmount),
+        description: t('stats.availableBalance'),
       },
     ]
-  }, [adminDashboard, dashboard, user?.role])
+  }, [adminDashboard, dashboard, format, t, user?.role])
 
   if (authLoading || !user) return <LoadingSkeleton />
   if (user.role !== 'ADMIN' && messesLoading) return <LoadingSkeleton />
@@ -278,14 +280,14 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background xl:flex xl:h-screen xl:min-h-0 xl:flex-col xl:overflow-hidden">
       <DashboardHeader
-        title={user.role === 'ADMIN' ? 'Super Admin Dashboard' : 'Dashboard'}
-        description={activeMess ? `${activeMess.name} overview` : `Welcome back, ${user.name}`}
+        title={user.role === 'ADMIN' ? t('overview.adminTitle') : t('overview.title')}
+        description={activeMess ? t('overview.messDescription', { name: activeMess.name }) : t('overview.welcome', { name: user.name })}
         selectedMonth={selectedMonth}
         onMonthChange={user.role === 'ADMIN' ? undefined : setSelectedMonth}
         showQuickAddButton={Boolean(activeMess)}
       />
 
-      <main className="space-y-4 p-4 sm:p-5 lg:p-6 xl:flex xl:min-h-0 xl:flex-1 xl:flex-col">
+      <div className="space-y-4 p-4 sm:p-5 lg:p-6 xl:flex xl:min-h-0 xl:flex-1 xl:flex-col">
         {showNoMessOnboarding ? (
           <NoMessOnboarding
             onCreate={() => router.push('/dashboard/mess_management')}
@@ -295,7 +297,7 @@ export default function DashboardPage() {
           />
         ) : (
           <>
-            <section aria-label="Dashboard statistics" className="grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <section aria-label={t('overview.statisticsLabel')} className="grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {stats.map((stat) => (
                 <DashboardStatCard key={stat.label} {...stat} />
               ))}
@@ -308,9 +310,9 @@ export default function DashboardPage() {
                 <Card className="gap-0 overflow-hidden py-0 shadow-none xl:flex xl:min-h-0 xl:flex-col">
                   <CardHeader className="shrink-0 border-b px-4 py-3">
                     <div>
-                      <CardTitle className="text-base">Monthly overview</CardTitle>
+                      <CardTitle className="text-base">{t('overview.monthlyTitle')}</CardTitle>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        Bazar, deposits, and meals for the selected month
+                        {t('overview.monthlyDescription')}
                       </p>
                     </div>
                   </CardHeader>
@@ -327,7 +329,7 @@ export default function DashboardPage() {
             )}
           </>
         )}
-      </main>
+      </div>
 
       <MemberJoinRequestModal
         open={memberRequestOpen}

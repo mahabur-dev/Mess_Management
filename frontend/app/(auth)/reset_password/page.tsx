@@ -2,132 +2,148 @@
 
 import { type FormEvent, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowRight, Eye, EyeOff, Lock } from 'lucide-react'
-import { apiClient } from '@/lib/api-client'
+
 import {
   AuthMessage,
+  AuthPasswordField,
   AuthShell,
-  authFieldIconClass,
+  AuthSubmitButton,
   authLinkClass,
-  authPasswordInputClass,
-  authPasswordToggleClass,
-  authPrimaryButtonClass,
 } from '@/components/auth-ui'
+import { useDelayedNavigation } from '@/hooks/use-delayed-navigation'
+import { apiClient } from '@/lib/api-client'
+import { localizedErrorMessage, useLocale, useTranslations, type MessageKey } from '@/lib/i18n'
+
+type ResetValidationKey = Extract<
+  MessageKey<'auth'>,
+  'validation.verifyOtpFirst' | 'validation.passwordMinimum' | 'validation.passwordsMismatch'
+>
 
 export default function ResetPassword() {
-  const router = useRouter()
+  const navigateAfter = useDelayedNavigation()
+  const { locale } = useLocale()
+  const auth = useTranslations('auth')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [message, setMessage] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
+  const [validationKey, setValidationKey] = useState<ResetValidationKey | null>(null)
+  const [requestError, setRequestError] = useState<unknown>(null)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    setMessage('')
+    setValidationKey(null)
+    setRequestError(null)
     setIsSuccess(false)
 
     const email = sessionStorage.getItem('resetEmail')
     const resetToken = sessionStorage.getItem('passwordResetToken')
 
     if (!email || !resetToken) {
-      setMessage('Please verify your OTP before resetting password.')
+      setValidationKey('validation.verifyOtpFirst')
       return
     }
     if (password.length < 6) {
-      setMessage('Password must be at least 6 characters long.')
+      setValidationKey('validation.passwordMinimum')
       return
     }
     if (password !== confirmPassword) {
-      setMessage('Passwords do not match.')
+      setValidationKey('validation.passwordsMismatch')
       return
     }
 
     setIsSubmitting(true)
     try {
-      const result = await apiClient.resetPassword(email, resetToken, password)
+      await apiClient.resetPassword(email, resetToken, password)
       setIsSuccess(true)
-      setMessage(result.data?.message || result.message || 'Password reset successfully')
       sessionStorage.removeItem('resetEmail')
       sessionStorage.removeItem('passwordResetToken')
-      window.setTimeout(() => router.push('/login'), 900)
+      sessionStorage.removeItem('resetResendAt')
+      navigateAfter('/login', 900, 'replace')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Password reset failed')
+      setRequestError(error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const flowError = validationKey === 'validation.verifyOtpFirst' ? auth(validationKey) : ''
+  const passwordError = validationKey === 'validation.passwordMinimum'
+    ? auth(validationKey, { count: 6 })
+    : undefined
+  const confirmationError = validationKey === 'validation.passwordsMismatch'
+    ? auth(validationKey)
+    : undefined
+
   return (
     <AuthShell
-      title="Reset password"
-      description="Create a new password to secure your Messzen account."
+      title={auth('reset.title')}
+      description={auth('reset.description')}
       footer={
         <Link href="/login" className={`text-sm ${authLinkClass}`}>
-          Back to sign in
+          {auth('links.backToSignIn')}
         </Link>
       }
     >
-      {message && <AuthMessage success={isSuccess}>{message}</AuthMessage>}
+      {isSuccess ? <AuthMessage success>{auth('reset.success')}</AuthMessage> : null}
+      {flowError ? <AuthMessage>{flowError}</AuthMessage> : null}
+      {requestError ? (
+        <AuthMessage>{localizedErrorMessage(requestError, locale, auth('reset.error'))}</AuthMessage>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            New Password
-          </label>
-          <div className="relative">
-            <Lock size={16} className={authFieldIconClass} />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Enter new password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              className={`${authPasswordInputClass} pl-11`}
-            />
-            <button
-              type="button"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              onClick={() => setShowPassword((current) => !current)}
-              className={authPasswordToggleClass}
-            >
-              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-            </button>
-          </div>
-        </div>
+        <AuthPasswordField
+          id="reset-password"
+          label={auth('fields.newPassword')}
+          placeholder={auth('placeholders.newPassword')}
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value)
+            setValidationKey(null)
+            setRequestError(null)
+          }}
+          autoComplete="new-password"
+          showLabel={auth('visibility.showPassword')}
+          hideLabel={auth('visibility.hidePassword')}
+          minLength={6}
+          maxLength={128}
+          error={passwordError}
+          validationMessages={{
+            required: auth('validation.required', { field: auth('fields.newPassword') }),
+            tooShort: auth('validation.passwordMinimum', { count: 6 }),
+          }}
+          required
+        />
 
-        <div>
-          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Confirm Password
-          </label>
-          <div className="relative">
-            <Lock size={16} className={authFieldIconClass} />
-            <input
-              type={showConfirm ? 'text' : 'password'}
-              placeholder="Confirm new password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              required
-              className={`${authPasswordInputClass} pl-11`}
-            />
-            <button
-              type="button"
-              aria-label={showConfirm ? 'Hide password confirmation' : 'Show password confirmation'}
-              onClick={() => setShowConfirm((current) => !current)}
-              className={authPasswordToggleClass}
-            >
-              {showConfirm ? <EyeOff size={17} /> : <Eye size={17} />}
-            </button>
-          </div>
-        </div>
+        <AuthPasswordField
+          id="reset-confirm-password"
+          label={auth('fields.confirmPassword')}
+          placeholder={auth('placeholders.confirmNewPassword')}
+          value={confirmPassword}
+          onChange={(event) => {
+            setConfirmPassword(event.target.value)
+            setValidationKey(null)
+            setRequestError(null)
+          }}
+          autoComplete="new-password"
+          showLabel={auth('visibility.showConfirmation')}
+          hideLabel={auth('visibility.hideConfirmation')}
+          minLength={6}
+          maxLength={128}
+          error={confirmationError}
+          validationMessages={{
+            required: auth('validation.required', { field: auth('fields.confirmPassword') }),
+            tooShort: auth('validation.passwordMinimum', { count: 6 }),
+          }}
+          required
+        />
 
-        <button type="submit" disabled={isSubmitting} className={authPrimaryButtonClass}>
-          {isSubmitting ? 'Resetting...' : 'Reset Password'}
-          {!isSubmitting && <ArrowRight size={18} />}
-        </button>
+        <AuthSubmitButton
+          label={auth('reset.submit')}
+          pendingLabel={auth('reset.submitting')}
+          pending={isSubmitting}
+          disabled={isSuccess}
+        />
       </form>
     </AuthShell>
   )

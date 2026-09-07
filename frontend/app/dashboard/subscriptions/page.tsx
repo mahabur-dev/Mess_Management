@@ -1203,7 +1203,7 @@ export default function SubscriptionsPage() {
                     </div>
                   ))}
                   {planEditForm.features.length === 0 && (
-                    <p className="text-xs font-semibold text-muted-foreground">No features added. Click "Add more" to add plan features.</p>
+                    <p className="text-xs font-semibold text-muted-foreground">No features added. Click &quot;Add more&quot; to add plan features.</p>
                   )}
                 </div>
               </div>

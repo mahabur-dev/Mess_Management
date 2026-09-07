@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/app/context/auth-context'
 import { useSidebar } from '@/app/context/sidebar-context'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { LanguageSwitcher } from '@/components/language-switcher'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
@@ -29,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { apiClient, type AppNotification } from '@/lib/api-client'
+import { localizedNotificationCopy, useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 interface DashboardHeaderProps {
   title: string
@@ -66,6 +68,11 @@ export function DashboardHeader({
   const { user, logout } = useAuth()
   const { setMobileOpen } = useSidebar()
   const router = useRouter()
+  const { locale } = useLocale()
+  const notificationsCopy = useTranslations('notifications')
+  const navigation = useTranslations('navigation')
+  const common = useTranslations('common')
+  const format = useLocaleFormatters()
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -118,7 +125,7 @@ export function DashboardHeader({
 
   return (
     <header className="dashboard-header-clean sticky top-0 z-20 h-16 w-full min-w-0 shrink-0">
-      <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-6">
+      <div className="flex h-full min-w-0 items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6 lg:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             type="button"
@@ -126,7 +133,7 @@ export function DashboardHeader({
             size="icon"
             className="shrink-0 lg:hidden"
             onClick={() => setMobileOpen(true)}
-            aria-label="Open menu"
+            aria-label={navigation('openMenu')}
           >
             <Menu />
           </Button>
@@ -138,13 +145,13 @@ export function DashboardHeader({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
           {onMonthChange ? (
             <EnterpriseMonthPicker
               value={selectedMonth ?? getCurrentMonthValue()}
               onValueChange={onMonthChange}
               className="hidden w-44 sm:inline-flex"
-              ariaLabel="Select dashboard month"
+              ariaLabel={navigation('selectDashboardMonth')}
             />
           ) : null}
 
@@ -153,22 +160,22 @@ export function DashboardHeader({
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="hidden sm:inline-flex">
                   <Plus />
-                  Quick add
+                  {navigation('quickAdd')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="dashboard-popover w-56">
                 <DropdownMenuItem onClick={() => router.push('/dashboard/finance')}>
                   <ShoppingBag className="text-primary" />
                   <div>
-                    <p className="font-medium">Add expense</p>
-                    <p className="text-xs text-muted-foreground">Record a new expense</p>
+                    <p className="font-medium">{navigation('addExpense')}</p>
+                    <p className="text-xs text-muted-foreground">{navigation('recordNewExpense')}</p>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/dashboard/payments')}>
                   <CreditCard className="text-primary" />
                   <div>
-                    <p className="font-medium">Add deposit</p>
-                    <p className="text-xs text-muted-foreground">Record a new deposit</p>
+                    <p className="font-medium">{navigation('addDeposit')}</p>
+                    <p className="text-xs text-muted-foreground">{navigation('recordNewDeposit')}</p>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -178,10 +185,11 @@ export function DashboardHeader({
           {showUpgradeButton ? (
             <Button onClick={() => router.push(upgradeHref)} className="hidden sm:inline-flex">
               <Mail />
-              Upgrade
+              {navigation('upgrade')}
             </Button>
           ) : null}
 
+          <LanguageSwitcher compact />
           <ThemeToggle />
 
           <DropdownMenu onOpenChange={(open) => open && void loadNotifications()}>
@@ -190,23 +198,24 @@ export function DashboardHeader({
                 <Bell />
                 {unreadCount > 0 ? (
                   <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] leading-none text-white">
-                    {unreadCount > 99 ? '99+' : unreadCount}
+                    {unreadCount > 99 ? `${format.number(99)}+` : format.number(unreadCount)}
                   </span>
                 ) : null}
-                <span className="sr-only">Notifications</span>
+                <span className="sr-only">{notificationsCopy('title')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="dashboard-popover w-80">
               <div className="flex items-center justify-between px-2 py-1.5">
-                <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+                <DropdownMenuLabel className="p-0">{notificationsCopy('title')}</DropdownMenuLabel>
                 <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/notifications')}>
-                  View all
+                  {notificationsCopy('viewAll')}
                 </Button>
               </div>
               <DropdownMenuSeparator />
               {notifications.length ? (
                 notifications.map((notification) => {
                   const isRead = notification.reads?.some((read) => read.user_id === user?.id)
+                  const copy = localizedNotificationCopy(notification, locale)
                   return (
                     <DropdownMenuItem
                       key={notification.id}
@@ -224,9 +233,9 @@ export function DashboardHeader({
                         }
                       />
                       <span className="min-w-0">
-                        <span className="block truncate font-medium">{notification.title}</span>
+                        <span className="block truncate font-medium">{copy.title}</span>
                         <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">
-                          {notification.body}
+                          {copy.body}
                         </span>
                       </span>
                     </DropdownMenuItem>
@@ -234,7 +243,7 @@ export function DashboardHeader({
                 })
               ) : (
                 <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-                  No notifications yet.
+                  {notificationsCopy('empty')}
                 </div>
               )}
             </DropdownMenuContent>
@@ -244,9 +253,9 @@ export function DashboardHeader({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2 px-2">
                 <Avatar className="size-7">
-                  <AvatarImage src={user?.avatar_url || undefined} alt={user?.name || 'User'} />
+                  <AvatarImage src={user?.avatar_url || undefined} alt={user?.name || common('user')} />
                   <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                    {getInitials(user?.name || 'User')}
+                    {getInitials(user?.name || common('user'))}
                   </AvatarFallback>
                 </Avatar>
                 <span className="hidden max-w-28 truncate sm:inline">{user?.name}</span>
@@ -261,7 +270,7 @@ export function DashboardHeader({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
                 <Settings className="text-primary" />
-                Profile settings
+                {navigation('profileSettings')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -272,7 +281,7 @@ export function DashboardHeader({
                 }}
               >
                 <LogOut />
-                Logout
+                {navigation('logout')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

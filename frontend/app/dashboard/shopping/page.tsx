@@ -170,7 +170,7 @@ export default function ShoppingPage() {
             <div className="flex flex-col items-center justify-center py-16">
               <ShoppingCart size={48} className="mb-3 text-muted-foreground" />
               <p className="text-sm font-bold text-muted-foreground">No items in the list</p>
-              <p className="mt-1 text-xs font-semibold text-muted-foreground">Click "Add Item" to get started</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">Click &quot;Add Item&quot; to get started</p>
             </div>
           )}
         </div>
@@ -181,7 +181,7 @@ export default function ShoppingPage() {
             <div className="flex flex-col items-center justify-center py-12">
               <ShoppingCart size={40} className="mb-2 text-muted-foreground" />
               <p className="text-sm font-bold text-muted-foreground">No items in the list</p>
-              <p className="mt-1 text-xs font-semibold text-muted-foreground">Click "Add Item" to get started</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">Click &quot;Add Item&quot; to get started</p>
             </div>
           )}
           {items.map((item) => (

@@ -42,6 +42,7 @@ const SAFE_USER_SELECT = {
   state: true,
   city: true,
   zipcode: true,
+  preferred_locale: true,
   role: true,
   is_active: true,
   is_verified: true,
@@ -308,12 +309,16 @@ export class AuthService {
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
+    const publicResult = {
+      message: 'If the account exists, an OTP was sent',
+      resendAvailableInSeconds: config.authOtp.resendCooldownSeconds,
+    };
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       select: { id: true, name: true, email: true, is_active: true },
     });
     if (!user?.is_active) {
-      return { message: 'If the account exists, an OTP was sent' };
+      return publicResult;
     }
 
     const challenge = await this.issueOtpChallenge(user.id, 'PASSWORD_RESET');
@@ -331,7 +336,7 @@ export class AuthService {
         'Unable to send the password reset email right now',
       );
     }
-    return { message: 'If the account exists, an OTP was sent' };
+    return publicResult;
   }
 
   async verifyOtp(dto: VerifyOtpDto) {

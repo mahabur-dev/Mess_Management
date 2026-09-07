@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartTooltip } from './chart-tooltip'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 function ChartSkeleton({ height = 260 }: { height?: number }) {
   return (
@@ -28,6 +29,9 @@ export function WeeklyMealsChart({
   data: Array<{ day: string; breakfast: number; lunch: number; dinner: number }>
   isLoading: boolean
 }) {
+  const t = useTranslations('dashboard')
+  const format = useLocaleFormatters()
+
   if (isLoading) return <ChartSkeleton />
 
   if (data.length === 0) {
@@ -35,7 +39,7 @@ export function WeeklyMealsChart({
       <div className="flex h-[260px] items-center justify-center">
         <div className="text-center">
           <UtensilsCrossed size={32} className="mx-auto mb-2 text-muted-foreground/50" />
-          <p className="text-sm font-semibold text-muted-foreground">No meal data this week</p>
+          <p className="text-sm font-semibold text-muted-foreground">{t('charts.weeklyEmpty')}</p>
         </div>
       </div>
     )
@@ -57,11 +61,12 @@ export function WeeklyMealsChart({
           tickLine={false}
           fontSize={11}
           tick={{ fill: 'var(--dashboard-muted)' }}
+          tickFormatter={(value) => format.number(Number(value))}
         />
         <Tooltip content={<ChartTooltip />} />
-        <Bar dataKey="breakfast" fill="var(--brand)" radius={[4, 4, 0, 0]} name="Breakfast" />
-        <Bar dataKey="lunch" fill="var(--chart-2)" radius={[4, 4, 0, 0]} name="Lunch" />
-        <Bar dataKey="dinner" fill="var(--chart-3)" radius={[4, 4, 0, 0]} name="Dinner" />
+        <Bar dataKey="breakfast" fill="var(--brand)" radius={[4, 4, 0, 0]} name={t('charts.breakfast')} />
+        <Bar dataKey="lunch" fill="var(--chart-2)" radius={[4, 4, 0, 0]} name={t('charts.lunch')} />
+        <Bar dataKey="dinner" fill="var(--chart-3)" radius={[4, 4, 0, 0]} name={t('charts.dinner')} />
       </BarChart>
     </ResponsiveContainer>
   )

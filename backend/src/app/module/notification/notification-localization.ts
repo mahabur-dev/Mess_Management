@@ -111,6 +111,17 @@ export function isLocalizableSystemNotification(
     'PAYMENT',
     'PAYMENT_REVIEW',
     'EXPENSE',
+    'BAZAR_SCHEDULE_GENERATED',
+    'BAZAR_DUTY_ASSIGNED',
+    'BAZAR_DUTY_UNASSIGNED',
+    'BAZAR_DUTY_AUTO_RELEASED',
+    'BAZAR_RELEASE_REQUESTED',
+    'BAZAR_RELEASE_APPROVED',
+    'BAZAR_RELEASE_REJECTED',
+    'BAZAR_SWAP_REQUESTED',
+    'BAZAR_SWAP_APPROVED',
+    'BAZAR_SWAP_REJECTED',
+    'BAZAR_SWAP_CANCELLED',
   ]);
   return Boolean(
     sources.has(source) ||
@@ -375,6 +386,131 @@ export function localizeSystemNotification(
         ? `মূল্য পর্যালোচনার অনুরোধ${messName ? ` — ${messName}` : ''}`
         : message.title,
       message.body,
+    );
+  }
+  if (source === 'BAZAR_SCHEDULE_GENERATED') {
+    const messName = text(data.messName);
+    const year = number(data.year);
+    const monthNumber = number(data.month);
+    const monthLabel =
+      year && monthNumber
+        ? month(
+            new Date(Date.UTC(year, monthNumber - 1, 1)).toISOString(),
+            locale,
+          )
+        : '';
+    return localized(
+      locale === 'bn' ? 'বাজারের সময়সূচি প্রস্তুত' : 'Bazar schedule is available',
+      messName && monthLabel
+        ? locale === 'bn'
+          ? `${messName}: ${monthLabel}-এর বাজারের দায়িত্ব নির্বাচন করা যাবে।`
+          : `${messName}: ${monthLabel} bazar duties are ready to select.`
+        : message.body,
+    );
+  }
+  if (source === 'BAZAR_DUTY_ASSIGNED') {
+    const dutyDate = text(data.dutyDate);
+    return localized(
+      locale === 'bn' ? 'বাজারের দায়িত্ব দেওয়া হয়েছে' : 'Bazar duty assigned',
+      dutyDate
+        ? locale === 'bn'
+          ? `আপনাকে ${date(dutyDate, locale)}-এর বাজারের দায়িত্ব দেওয়া হয়েছে।`
+          : `You were assigned bazar duty for ${date(dutyDate, locale)}.`
+        : message.body,
+    );
+  }
+  if (source === 'BAZAR_DUTY_UNASSIGNED') {
+    const dutyDate = text(data.dutyDate);
+    return localized(
+      locale === 'bn' ? 'বাজারের দায়িত্ব পরিবর্তন হয়েছে' : 'Bazar duty changed',
+      dutyDate
+        ? locale === 'bn'
+          ? `ম্যানেজার আপনার ${date(dutyDate, locale)}-এর বাজারের দায়িত্ব ছেড়ে দিয়েছেন।`
+          : `Your bazar duty for ${date(dutyDate, locale)} was released by the manager.`
+        : message.body,
+    );
+  }
+  if (source === 'BAZAR_DUTY_AUTO_RELEASED') {
+    const dutyDate = text(data.dutyDate);
+    return localized(
+      locale === 'bn' ? 'বাজারের দায়িত্ব ছাড়া হয়েছে' : 'Bazar duty released',
+      dutyDate
+        ? locale === 'bn'
+          ? `যথেষ্ট আগে জানানোর কারণে ${date(dutyDate, locale)}-এর দায়িত্ব ছাড়া হয়েছে।`
+          : `The ${date(dutyDate, locale)} duty was released with enough advance notice.`
+        : message.body,
+    );
+  }
+  if (source === 'BAZAR_RELEASE_REQUESTED') {
+    const dutyDate = text(data.dutyDate);
+    return localized(
+      locale === 'bn'
+        ? 'বাজারের দায়িত্ব ছাড়ার অনুমোদন প্রয়োজন'
+        : 'Bazar release approval needed',
+      dutyDate
+        ? locale === 'bn'
+          ? `একজন সদস্য ${date(dutyDate, locale)}-এর দায়িত্ব ছাড়ার অনুরোধ করেছেন।`
+          : `A member requested release from ${date(dutyDate, locale)}.`
+        : message.body,
+    );
+  }
+  if (
+    source === 'BAZAR_RELEASE_APPROVED' ||
+    source === 'BAZAR_RELEASE_REJECTED'
+  ) {
+    const approved = source === 'BAZAR_RELEASE_APPROVED';
+    const dutyDate = text(data.dutyDate);
+    return localized(
+      locale === 'bn'
+        ? approved
+          ? 'দায়িত্ব ছাড়ার অনুরোধ অনুমোদিত'
+          : 'দায়িত্ব ছাড়ার অনুরোধ প্রত্যাখ্যাত'
+        : approved
+          ? 'Bazar release approved'
+          : 'Bazar release rejected',
+      dutyDate
+        ? locale === 'bn'
+          ? `${date(dutyDate, locale)}-এর দায়িত্ব ছাড়ার আপনার অনুরোধ ${approved ? 'অনুমোদিত' : 'প্রত্যাখ্যাত'} হয়েছে।`
+          : `Your release request for ${date(dutyDate, locale)} was ${approved ? 'approved' : 'rejected'}.`
+        : message.body,
+    );
+  }
+  if (source === 'BAZAR_SWAP_REQUESTED') {
+    const requesterDate = text(data.requesterDate);
+    const targetDate = text(data.targetDate);
+    return localized(
+      locale === 'bn' ? 'বাজারের দায়িত্ব বদলের অনুরোধ' : 'Bazar duty swap requested',
+      requesterDate && targetDate
+        ? locale === 'bn'
+          ? `${date(requesterDate, locale)} ও ${date(targetDate, locale)}-এর দায়িত্ব বদলের অনুরোধ করা হয়েছে।`
+          : `${date(requesterDate, locale)} and ${date(targetDate, locale)} duties were requested for swap.`
+        : message.body,
+    );
+  }
+  if (
+    source === 'BAZAR_SWAP_APPROVED' ||
+    source === 'BAZAR_SWAP_REJECTED'
+  ) {
+    const approved = source === 'BAZAR_SWAP_APPROVED';
+    return localized(
+      locale === 'bn'
+        ? approved
+          ? 'বাজারের দায়িত্ব বদল অনুমোদিত'
+          : 'বাজারের দায়িত্ব বদল প্রত্যাখ্যাত'
+        : approved
+          ? 'Bazar duty swap accepted'
+          : 'Bazar duty swap declined',
+      locale === 'bn'
+        ? `বাজারের দায়িত্ব বদলের অনুরোধ ${approved ? 'অনুমোদিত' : 'প্রত্যাখ্যাত'} হয়েছে।`
+        : `The bazar duty swap was ${approved ? 'accepted' : 'declined'}.`,
+    );
+  }
+  if (source === 'BAZAR_SWAP_CANCELLED') {
+    return localized(
+      locale === 'bn' ? 'বাজারের দায়িত্ব বদলের অনুরোধ বাতিল' : 'Bazar duty swap cancelled',
+      locale === 'bn'
+        ? 'অপেক্ষমাণ বাজারের দায়িত্ব বদলের অনুরোধ বাতিল করা হয়েছে।'
+        : 'The pending bazar duty swap request was cancelled.',
     );
   }
 

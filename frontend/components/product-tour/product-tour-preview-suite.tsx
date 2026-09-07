@@ -9,15 +9,18 @@ import {
   MarketingManualMealTour,
   MarketingMealPatternTour,
 } from '@/components/marketing-operations-tours'
+import { useTranslations, type MessageKey } from '@/lib/i18n'
 
 type TourId = 'expense' | 'deposit' | 'manual-meal' | 'meal-pattern' | 'ai'
 
-const tours: Array<{ id: TourId; label: string; description: string; icon: LucideIcon }> = [
-  { id: 'expense', label: 'Add Expense', description: 'Create, split, review, and save a shared expense.', icon: ReceiptText },
-  { id: 'deposit', label: 'Add Deposit', description: 'Record a member contribution and update balances.', icon: WalletCards },
-  { id: 'manual-meal', label: 'Manual Meal', description: 'Add a one-off meal for a selected member.', icon: UtensilsCrossed },
-  { id: 'meal-pattern', label: 'Meal Pattern', description: 'Build and activate a recurring weekly routine.', icon: CalendarCheck2 },
-  { id: 'ai', label: 'AI Quick Add', description: 'Turn a natural command into a reviewed app entry.', icon: Bot },
+type TourCopyKey = MessageKey<'marketing'>
+
+const tours: Array<{ id: TourId; labelKey: TourCopyKey; descriptionKey: TourCopyKey; icon: LucideIcon }> = [
+  { id: 'expense', labelKey: 'tour.expense', descriptionKey: 'tour.expenseText', icon: ReceiptText },
+  { id: 'deposit', labelKey: 'tour.deposit', descriptionKey: 'tour.depositText', icon: WalletCards },
+  { id: 'manual-meal', labelKey: 'tour.manualMeal', descriptionKey: 'tour.manualMealText', icon: UtensilsCrossed },
+  { id: 'meal-pattern', labelKey: 'tour.mealPattern', descriptionKey: 'tour.mealPatternText', icon: CalendarCheck2 },
+  { id: 'ai', labelKey: 'tour.ai', descriptionKey: 'tour.aiText', icon: Bot },
 ]
 
 function SelectedTour({ id, onComplete }: { id: TourId; onComplete: () => void }) {
@@ -29,6 +32,7 @@ function SelectedTour({ id, onComplete }: { id: TourId; onComplete: () => void }
 }
 
 export function ProductTourPreviewSuite() {
+  const t = useTranslations('marketing')
   const [selected, setSelected] = useState<TourId>('expense')
   const selectedTour = tours.find((tour) => tour.id === selected) ?? tours[0]
   const playNextTour = useCallback(() => {
@@ -40,8 +44,8 @@ export function ProductTourPreviewSuite() {
 
   return (
     <div className="marketing-animation">
-      <div className="mb-3 grid gap-2 sm:grid-cols-5" role="tablist" aria-label="Product tour previews">
-        {tours.map(({ id, label, icon: Icon }) => (
+      <div className="mb-3 grid gap-2 sm:grid-cols-5" role="tablist" aria-label={t('tour.tabsLabel')}>
+        {tours.map(({ id, labelKey, icon: Icon }) => (
           <button
             key={id}
             type="button"
@@ -50,13 +54,13 @@ export function ProductTourPreviewSuite() {
             onClick={() => setSelected(id)}
             className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${selected === id ? 'border-[var(--brand)] bg-[var(--brand)] text-white' : 'border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-muted-foreground hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)]'}`}
           >
-            <Icon className="w-4" /> {label}
+            <Icon className="w-4" /> {t(labelKey)}
           </button>
         ))}
       </div>
-      <div className="mb-3 flex items-center justify-between gap-4 rounded-xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-4 py-2">
-        <div><h2 className="text-sm font-semibold text-foreground">{selectedTour.label}</h2><p className="mt-0.5 text-xs font-medium text-muted-foreground">{selectedTour.description}</p></div>
-        <span className="shrink-0 rounded-full bg-[var(--brand-soft)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--brand)]">Autoplaying all features</span>
+      <div className="mb-3 flex h-24 items-start justify-between gap-4 overflow-hidden rounded-xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-4 py-3 sm:h-[4.5rem] sm:items-center">
+        <div className="min-w-0"><h2 className="text-sm font-semibold text-foreground">{t(selectedTour.labelKey)}</h2><p className="mt-0.5 line-clamp-2 text-xs font-medium text-muted-foreground">{t(selectedTour.descriptionKey)}</p></div>
+        <span className="max-w-36 shrink-0 rounded-full bg-[var(--brand-soft)] px-3 py-1 text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--brand)]">{t('tour.autoplay')}</span>
       </div>
       <div role="tabpanel" key={selected} className="animate-in fade-in duration-300">
         <SelectedTour id={selected} onComplete={playNextTour} />

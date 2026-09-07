@@ -3,6 +3,7 @@
 import { TrendingDown } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { ChartTooltip } from './chart-tooltip'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 function ChartSkeleton({ height = 250 }: { height?: number }) {
   return (
@@ -20,6 +21,9 @@ export function ExpenseBreakdownChart({
   data: Array<{ name: string; value: number; amount: number; color: string }>
   isLoading: boolean
 }) {
+  const t = useTranslations('dashboard')
+  const format = useLocaleFormatters()
+
   if (isLoading) return <ChartSkeleton />
 
   if (data.length === 0) {
@@ -27,7 +31,7 @@ export function ExpenseBreakdownChart({
       <div className="flex h-[250px] items-center justify-center">
         <div className="text-center">
           <TrendingDown size={32} className="mx-auto mb-2 text-muted-foreground/50" />
-          <p className="text-sm font-semibold text-muted-foreground">No expenses recorded</p>
+          <p className="text-sm font-semibold text-muted-foreground">{t('charts.expenseEmpty')}</p>
         </div>
       </div>
     )
@@ -48,12 +52,12 @@ export function ExpenseBreakdownChart({
 
       <div className="mt-2 grid gap-2">
         {data.map((item) => (
-          <div key={item.name} className="flex items-center justify-between text-xs font-bold">
+          <div key={item.name} className="flex items-center justify-between text-xs font-semibold">
             <span className="flex items-center gap-2 text-foreground">
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />
               {item.name}
             </span>
-            <span className="font-semibold text-muted-foreground">{item.value}%</span>
+            <span className="font-semibold text-muted-foreground">{format.number(item.value)}%</span>
           </div>
         ))}
       </div>

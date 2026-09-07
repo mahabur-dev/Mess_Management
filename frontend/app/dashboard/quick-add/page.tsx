@@ -5,13 +5,18 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { aiCommandTarget, storeAiCommandDraft } from "@/lib/ai-quick-add";
 import {
-  ApiError,
   apiClient,
   type AiCapabilities,
   type AiCommand,
   type AiLocale,
   type Mess,
 } from "@/lib/api-client";
+import {
+  localizedErrorMessage,
+  useLocale,
+  useLocaleFormatters,
+  useTranslations,
+} from "@/lib/i18n";
 import {
   ArrowRight,
   AudioLines,
@@ -38,11 +43,6 @@ const EXAMPLES = [
   "Add WiFi bill 1200 taka for this month",
 ];
 
-function commandError(error: unknown) {
-  if (error instanceof ApiError || error instanceof Error) return error.message;
-  return "The command could not be processed. Please try again.";
-}
-
 function idempotencyKey() {
   return crypto.randomUUID();
 }
@@ -50,9 +50,13 @@ function idempotencyKey() {
 export default function QuickAddAiPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { locale: uiLocale } = useLocale();
+  const t = useTranslations("quickAdd");
+  const format = useLocaleFormatters();
   const [messes, setMesses] = useState<Mess[]>([]);
   const [capabilities, setCapabilities] = useState<AiCapabilities | null>(null);
-  const [locale, setLocale] = useState<AiLocale>("en");
+  const [commandLocaleOverride, setCommandLocale] = useState<AiLocale | null>(null);
+  const commandLocale = commandLocaleOverride ?? uiLocale;
   const [command, setCommand] = useState("");
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<"text" | "voice" | null>(null);
@@ -64,12 +68,12 @@ export default function QuickAddAiPage() {
   const exhausted = quota?.exhausted ?? false;
 
   const loadCapabilities = useCallback(
-    async (nextLocale: AiLocale = locale) => {
+    async (nextLocale: AiLocale = commandLocale) => {
       const response = await apiClient.getAiCapabilities(nextLocale);
       setCapabilities(response.data);
       return response.data;
     },
-    [locale],
+    [commandLocale],
   );
 
   useEffect(() => {
@@ -79,7 +83,7 @@ export default function QuickAddAiPage() {
       try {
         const [messResponse, capabilityResponse] = await Promise.all([
           apiClient.getMesses().catch(() => null),
-          apiClient.getAiCapabilities(locale),
+          apiClient.getAiCapabilities(commandLocale),
         ]);
         if (!alive) return;
         const messData = messResponse?.data;
@@ -88,7 +92,7 @@ export default function QuickAddAiPage() {
         );
         setCapabilities(capabilityResponse.data);
       } catch (error) {
-        if (alive) setMessage(commandError(error));
+        if (alive) setMessage(localizedErrorMessage(error, uiLocale, t("errorGeneric")));
       } finally {
         if (alive) setLoading(false);
       }
@@ -97,11 +101,11 @@ export default function QuickAddAiPage() {
     return () => {
       alive = false;
     };
-  }, [locale]);
+  }, [commandLocale, t, uiLocale]);
 
   const continueToReview = useCallback(
     async (created: AiCommand) => {
-      await loadCapabilities(locale).catch(() => null);
+      await loadCapabilities(commandLocale).catch(() => null);
       const target = aiCommandTarget(created.intent);
       if (created.status === "PENDING" && created.payload && target) {
         storeAiCommandDraft(created);
@@ -112,14 +116,14 @@ export default function QuickAddAiPage() {
       const clarification = created.clarification?.trim();
       setMessage(
         clarification ||
-          "I could not prepare a complete entry. Add the missing date, amount, member, or meal details and try again.",
+          t("incompleteEntry"),
       );
       if (created.transcript)
         setCommand((current) =>
           current.trim() ? current : (created.transcript ?? ""),
         );
     },
-    [loadCapabilities, locale, router],
+    [commandLocale, loadCapabilities, router, t],
   );
 
   const handleRecorded = useCallback(
@@ -131,19 +135,19 @@ export default function QuickAddAiPage() {
         const response = await apiClient.createAiVoiceCommand({
           messId: activeMess.id,
           audio,
-          locale,
+          locale: commandLocale,
           speechLanguage: "auto",
           idempotencyKey: idempotencyKey(),
         });
         await continueToReview(response.data);
       } catch (error) {
-        setMessage(commandError(error));
-        await loadCapabilities(locale).catch(() => null);
+        setMessage(localizedErrorMessage(error, uiLocale, t("errorGeneric")));
+        await loadCapabilities(commandLocale).catch(() => null);
       } finally {
         setProcessing(null);
       }
     },
-    [activeMess, continueToReview, exhausted, loadCapabilities, locale],
+    [activeMess, commandLocale, continueToReview, exhausted, loadCapabilities, t, uiLocale],
   );
 
   const recorder = useAudioRecorder(
@@ -159,13 +163,13 @@ export default function QuickAddAiPage() {
       const response = await apiClient.createAiTextCommand({
         messId: activeMess.id,
         text: command.trim(),
-        locale,
+        locale: commandLocale,
         idempotencyKey: idempotencyKey(),
       });
       await continueToReview(response.data);
     } catch (error) {
-      setMessage(commandError(error));
-      await loadCapabilities(locale).catch(() => null);
+      setMessage(localizedErrorMessage(error, uiLocale, t("errorGeneric")));
+      await loadCapabilities(commandLocale).catch(() => null);
     } finally {
       setProcessing(null);
     }
@@ -187,8 +191,8 @@ export default function QuickAddAiPage() {
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
       <DashboardHeader
-        title="Quick Add AI"
-        description="Turn a short text or voice command into a review-ready entry."
+        title={t("title")}
+        description={t("description")}
         showQuickAddButton={false}
       />
 
@@ -202,12 +206,10 @@ export default function QuickAddAiPage() {
                     <Sparkles className="size-5" />
                   </div>
                   <h2 className="text-xl font-semibold tracking-tight text-[var(--dashboard-ink)] sm:text-2xl">
-                    What would you like to add?
+                    {t("promptTitle")}
                   </h2>
                   <p className="mt-2 text-sm font-medium leading-6 text-[var(--dashboard-muted)]">
-                    Include the amount, date, member, or meal where relevant.
-                    You will review every detail in the existing form before
-                    anything is saved.
+                    {t("promptDescription")}
                   </p>
                 </div>
 
@@ -216,14 +218,14 @@ export default function QuickAddAiPage() {
                     <button
                       key={item}
                       type="button"
-                      onClick={() => setLocale(item)}
+                      onClick={() => setCommandLocale(item)}
                       className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
-                        locale === item
+                        commandLocale === item
                           ? "bg-[var(--dashboard-surface)] text-[var(--brand)] "
                           : "text-[var(--dashboard-muted)]"
                       }`}
                     >
-                      {item === "en" ? "English" : "বাংলা"}
+                      {item === "en" ? t("english") : t("bangla")}
                     </button>
                   ))}
                 </div>
@@ -244,9 +246,9 @@ export default function QuickAddAiPage() {
                   }}
                   disabled={cannotSubmit}
                   placeholder={
-                    locale === "bn"
-                      ? "যেমন: আজ বাজার খরচ ৮৫০ টাকা যোগ করো"
-                      : "For example: Add grocery expense 850 taka for today"
+                    commandLocale === "bn"
+                      ? t("placeholderBn")
+                      : t("placeholderEn")
                   }
                   className="min-h-36 w-full resize-none bg-transparent px-2 py-2 text-[15px] font-medium leading-7 text-[var(--dashboard-ink)] outline-none placeholder:text-[var(--dashboard-muted)]/70 disabled:cursor-not-allowed disabled:opacity-60"
                 />
@@ -280,13 +282,13 @@ export default function QuickAddAiPage() {
                         <Mic className="size-4" />
                       )}
                       {processing === "voice"
-                        ? "Processing voice"
+                        ? t("processingVoice")
                         : recorder.isRecording
-                          ? `Stop · ${recorder.seconds}s`
-                          : "Voice command"}
+                          ? t("stopRecording", { seconds: format.number(recorder.seconds) })
+                          : t("voiceCommand")}
                     </button>
                     <span className="hidden text-xs font-semibold text-[var(--dashboard-muted)] sm:inline">
-                      English or Bangla
+                      {t("inputLanguages")}
                     </span>
                   </div>
 
@@ -304,8 +306,8 @@ export default function QuickAddAiPage() {
                       <Sparkles className="size-4" />
                     )}
                     {processing === "text"
-                      ? "Preparing review"
-                      : "Create preview"}
+                      ? t("preparingReview")
+                      : t("createPreview")}
                     {!processing && <ArrowRight className="size-4" />}
                   </button>
                 </div>
@@ -319,36 +321,35 @@ export default function QuickAddAiPage() {
 
               {!activeMess && !loading && (
                 <div className="mt-4 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] px-4 py-3 text-sm font-semibold text-[var(--dashboard-muted)]">
-                  Join or create a mess before using AI Quick Add.
+                  {t("messRequired")}
                 </div>
               )}
 
               {capabilities?.enabled === false && (
                 <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
-                  AI Quick Add is temporarily unavailable. You can continue
-                  using the regular meal, expense, and deposit forms.
+                  {t("temporarilyUnavailable")}
                 </div>
               )}
             </div>
 
             <aside className="border-t border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] p-5 sm:p-7 lg:border-l lg:border-t-0">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--dashboard-muted)]">
-                Free command usage
+                {t("usageTitle")}
               </p>
               <div className="mt-4 flex items-end justify-between gap-4">
                 <div>
                   <p className="text-3xl font-semibold tracking-tight text-[var(--dashboard-ink)]">
-                    {quota?.used ?? 0}
+                    {format.number(quota?.used ?? 0)}
                     <span className="text-lg text-[var(--dashboard-muted)]">
-                      /{quota?.limit ?? 10}
+                      /{format.number(quota?.limit ?? 10)}
                     </span>
                   </p>
                   <p className="mt-1 text-xs font-semibold text-[var(--dashboard-muted)]">
-                    commands used
+                    {t("commandsUsed")}
                   </p>
                 </div>
                 <span className="rounded-lg border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-bold text-[var(--dashboard-muted)]">
-                  {quota?.remaining ?? 10} left
+                  {t("remaining", { count: format.number(quota?.remaining ?? 10) })}
                 </span>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--dashboard-line)]">
@@ -360,31 +361,30 @@ export default function QuickAddAiPage() {
 
               {exhausted ? (
                 <div className="mt-5 rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm font-semibold leading-6 text-primary">
-                  Your 10 free AI commands have been used. Manual entry pages
-                  are still available.
+                  {t("quotaExhausted", { count: format.number(quota?.limit ?? 10) })}
                 </div>
               ) : (
                 <div className="mt-5 space-y-3 text-sm font-semibold text-[var(--dashboard-muted)]">
                   <p className="flex items-start gap-2.5">
                     <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
-                    Nothing is saved without your confirmation.
+                    {t("confirmationRequired")}
                   </p>
                   <p className="flex items-start gap-2.5">
                     <Languages className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
-                    Speak or type naturally in English or Bangla.
+                    {t("speakNaturally")}
                   </p>
                 </div>
               )}
 
               <div className="mt-6 border-t border-[var(--dashboard-line)] pt-5">
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--dashboard-muted)]">
-                  Available actions
+                  {t("availableActions")}
                 </p>
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {[
-                    [UtensilsCrossed, "Meal"],
-                    [ReceiptText, "Expense"],
-                    [WalletCards, "Deposit"],
+                    [UtensilsCrossed, t("meal")],
+                    [ReceiptText, t("expense")],
+                    [WalletCards, t("deposit")],
                   ].map(([Icon, label]) => {
                     const ActionIcon = Icon as typeof UtensilsCrossed;
                     return (
@@ -412,11 +412,10 @@ export default function QuickAddAiPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-[var(--dashboard-ink)]">
-                Command examples
+                {t("examplesTitle")}
               </h2>
               <p className="mt-1 text-sm font-medium text-[var(--dashboard-muted)]">
-                Select one to place it in the command box, then edit any detail
-                you need.
+                {t("examplesDescription")}
               </p>
             </div>
           </div>
@@ -427,14 +426,14 @@ export default function QuickAddAiPage() {
                 type="button"
                 onClick={() => {
                   setCommand(example);
-                  setLocale(/[\u0980-\u09ff]/.test(example) ? "bn" : "en");
+                  setCommandLocale(/[\u0980-\u09ff]/.test(example) ? "bn" : "en");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 disabled={cannotSubmit}
                 className="group flex min-h-24 items-start gap-3 rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] p-4 text-left transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] disabled:opacity-50"
               >
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-xs font-bold text-[var(--dashboard-muted)]">
-                  {index + 1}
+                  {format.number(index + 1)}
                 </span>
                 <span className="text-sm font-semibold leading-6 text-[var(--dashboard-ink)]">
                   “{example}”
@@ -444,8 +443,7 @@ export default function QuickAddAiPage() {
           </div>
           <div className="mt-5 flex items-center gap-2 text-xs font-semibold text-[var(--dashboard-muted)]">
             <CheckCircle2 className="size-4 text-[var(--brand)]" />
-            Dates like “today” and “tomorrow” are resolved using your local
-            timezone.
+            {t("timezoneHint")}
           </div>
         </section>
       </div>

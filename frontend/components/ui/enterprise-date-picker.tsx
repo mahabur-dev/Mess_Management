@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CalendarDays, CalendarRange, Check, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { intlLocale, useLocale, useTranslations } from '@/lib/i18n'
 
 type PickerSurface = 'default' | 'white'
 type PickerAlign = 'start' | 'center' | 'end'
@@ -34,18 +35,12 @@ interface EnterpriseMonthPickerProps extends PickerBaseProps {
   shortLabel?: boolean
 }
 
-const MONTHS = Array.from({ length: 12 }, (_, index) => ({
-  index,
-  short: new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(2024, index, 1)),
-  long: new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(2024, index, 1)),
-}))
-
 function parseDateKey(value?: string) {
   if (!value) return undefined
   const [year, month, day] = value.split('-').map(Number)
   if (!year || !month || !day) return undefined
   const date = new Date(year, month - 1, day)
-  return Number.isNaN(date.getTime()) ? undefined : date
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : undefined
 }
 
 function toDateKey(date: Date) {
@@ -84,34 +79,37 @@ export function EnterpriseDatePicker({
   onValueChange,
   min,
   max,
-  placeholder = 'Select date',
+  placeholder,
   disabled = false,
   className,
   surface = 'default',
   align = 'end',
-  ariaLabel = 'Select date',
+  ariaLabel,
 }: EnterpriseDatePickerProps) {
+  const { locale } = useLocale()
+  const t = useTranslations('operations')
   const [open, setOpen] = useState(false)
   const selected = useMemo(() => parseDateKey(value), [value])
   const minimum = useMemo(() => parseDateKey(min), [min])
   const maximum = useMemo(() => parseDateKey(max), [max])
   const [visibleMonth, setVisibleMonth] = useState(selected ?? minimum ?? new Date())
 
-  useEffect(() => {
-    if (open) setVisibleMonth(selected ?? minimum ?? new Date())
-  }, [open, selected, minimum])
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) setVisibleMonth(selected ?? minimum ?? new Date())
+    setOpen(nextOpen)
+  }
 
   const label = selected
-    ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(selected)
-    : placeholder
+    ? new Intl.DateTimeFormat(intlLocale(locale), { day: '2-digit', month: '2-digit', year: 'numeric' }).format(selected)
+    : placeholder ?? t('pickers.selectDate')
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
           disabled={disabled}
-          aria-label={ariaLabel}
+          aria-label={ariaLabel ?? t('pickers.selectDate')}
           className={cn(
             'inline-flex h-11 min-w-0 items-center gap-2.5 rounded-xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-55',
             triggerSurface(surface),
@@ -151,26 +149,33 @@ export function EnterpriseMonthPicker({
   onValueChange,
   min,
   max,
-  placeholder = 'Select month',
+  placeholder,
   disabled = false,
   className,
   surface = 'default',
   align = 'end',
-  ariaLabel = 'Select month',
+  ariaLabel,
   shortLabel = false,
 }: EnterpriseMonthPickerProps) {
+  const { locale } = useLocale()
+  const t = useTranslations('operations')
+  const months = useMemo(() => Array.from({ length: 12 }, (_, index) => ({
+    index,
+    short: new Intl.DateTimeFormat(intlLocale(locale), { month: 'short' }).format(new Date(2024, index, 1)),
+  })), [locale])
   const selected = parseMonthKey(value)
   const [open, setOpen] = useState(false)
   const [visibleYear, setVisibleYear] = useState(selected.year)
 
-  useEffect(() => {
-    if (open) setVisibleYear(selected.year)
-  }, [open, selected.year])
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) setVisibleYear(selected.year)
+    setOpen(nextOpen)
+  }
 
   const selectedDate = value ? new Date(selected.year, selected.month - 1, 1) : null
   const label = selectedDate
-    ? new Intl.DateTimeFormat('en-US', { month: shortLabel ? 'short' : 'long', year: 'numeric' }).format(selectedDate)
-    : placeholder
+    ? new Intl.DateTimeFormat(intlLocale(locale), { month: shortLabel ? 'short' : 'long', year: 'numeric' }).format(selectedDate)
+    : placeholder ?? t('pickers.selectMonth')
   const minimumYear = min ? parseMonthKey(min).year : undefined
   const maximumYear = max ? parseMonthKey(max).year : undefined
   const canGoPrevious = minimumYear === undefined || visibleYear > minimumYear
@@ -179,12 +184,12 @@ export function EnterpriseMonthPicker({
   const canSelectThisMonth = !((min && thisMonth < min) || (max && thisMonth > max))
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
           disabled={disabled}
-          aria-label={ariaLabel}
+          aria-label={ariaLabel ?? t('pickers.selectMonth')}
           className={cn(
             'inline-flex h-11 min-w-0 items-center gap-2.5 rounded-xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--brand-ring)] disabled:cursor-not-allowed disabled:opacity-55',
             triggerSurface(surface),
@@ -199,13 +204,13 @@ export function EnterpriseMonthPicker({
 
       <PopoverContent align={align} sideOffset={10} className="dashboard-portal-surface z-[80] w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3">
         <div className="flex items-center justify-between border-b border-[var(--dashboard-line)] pb-3">
-          <button type="button" disabled={!canGoPrevious} onClick={() => setVisibleYear((year) => year - 1)} className="grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] disabled:opacity-35" aria-label="Previous year"><ChevronLeft className="size-4" /></button>
-          <div className="text-center"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Choose month</p><p className="mt-0.5 text-base font-semibold text-[var(--dashboard-ink)]">{visibleYear}</p></div>
-          <button type="button" disabled={!canGoNext} onClick={() => setVisibleYear((year) => year + 1)} className="grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] disabled:opacity-35" aria-label="Next year"><ChevronRight className="size-4" /></button>
+          <button type="button" disabled={!canGoPrevious} onClick={() => setVisibleYear((year) => year - 1)} className="grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] disabled:opacity-35" aria-label={t('pickers.previousYear')}><ChevronLeft className="size-4" /></button>
+          <div className="text-center"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{t('pickers.chooseMonth')}</p><p className="mt-0.5 text-base font-semibold text-[var(--dashboard-ink)]">{new Intl.NumberFormat(intlLocale(locale), { useGrouping: false }).format(visibleYear)}</p></div>
+          <button type="button" disabled={!canGoNext} onClick={() => setVisibleYear((year) => year + 1)} className="grid size-9 place-items-center rounded-xl border border-[var(--dashboard-line)] text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] disabled:opacity-35" aria-label={t('pickers.nextYear')}><ChevronRight className="size-4" /></button>
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2.5">
-          {MONTHS.map((month) => {
+          {months.map((month) => {
             const monthValue = toMonthKey(visibleYear, month.index + 1)
             const isSelected = monthValue === value
             const isDisabled = Boolean((min && monthValue < min) || (max && monthValue > max))
@@ -241,7 +246,7 @@ export function EnterpriseMonthPicker({
           }}
           className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--dashboard-line)] text-xs font-semibold text-[var(--brand)] transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-35"
         >
-          <CalendarDays className="size-3.5" /> This month
+          <CalendarDays className="size-3.5" /> {t('pickers.thisMonth')}
         </button>
       </PopoverContent>
     </Popover>

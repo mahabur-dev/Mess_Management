@@ -6,6 +6,7 @@ import { ReactNode, useEffect } from 'react'
 import { SidebarProvider, useSidebar } from '@/app/context/sidebar-context'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { PushNotificationPermissionModal } from '@/components/push-notification-permission-modal'
+import { useTranslations } from '@/lib/i18n'
 
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
@@ -13,6 +14,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const { collapsed } = useSidebar()
   const router = useRouter()
   const pathname = usePathname()
+  const common = useTranslations('common')
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -27,7 +29,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
       <div className="dashboard-theme flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
           <div className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin mx-auto mb-4" />
-          <p className="text-sm font-bold text-muted-foreground">Loading...</p>
+          <p className="text-sm font-semibold text-muted-foreground">{common('loading')}</p>
         </div>
       </div>
     )

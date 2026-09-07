@@ -1,7 +1,9 @@
+'use client'
+
 import { CircleCheck, CircleDashed, CirclePause, CircleStop } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { MealPatternStatus } from '@/lib/api-client'
-import { MEAL_PATTERN_STATUS_LABELS } from '@/lib/meal-pattern'
+import { statusLabel, useLocale } from '@/lib/i18n'
 
 const styles: Record<MealPatternStatus, string> = {
   ACTIVE: 'bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary',
@@ -20,11 +22,12 @@ const icons = {
 }
 
 export function PatternStatusBadge({ status, className }: { status: MealPatternStatus; className?: string }) {
+  const { locale } = useLocale()
   const Icon = icons[status]
   return (
     <span className={cn('inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', styles[status], className)}>
       <Icon className="size-3.5" aria-hidden="true" />
-      {MEAL_PATTERN_STATUS_LABELS[status]}
+      {statusLabel(status, locale)}
     </span>
   )
 }

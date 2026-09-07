@@ -1,5 +1,6 @@
 'use client'
 
+import { EnterpriseAsyncState } from '@/components/ui/enterprise-async-state'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { Card } from '@/components/ui/card'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
@@ -16,6 +17,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAutoDismissMessage } from '@/hooks/use-auto-dismiss-message'
 import { clearAiCommandDraft, readAiCommandDraft, type AiCommandDraft } from '@/lib/ai-quick-add'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { formatIsoDate, domainLabel, localizedErrorMessage, paymentMethodLabel, statusLabel, useLocale, useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 const methods: PaymentMethod[] = ['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK']
 
@@ -48,33 +50,18 @@ const STATUS_CONFIG = {
   REJECTED: { label: 'Rejected', color: 'var(--destructive)', bg: 'color-mix(in srgb, var(--destructive) 10%, transparent)', border: 'color-mix(in srgb, var(--destructive) 30%, transparent)' },
 }
 
-const formatDate = (iso: string) => {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-const formatDateShort = (iso: string) => {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
-function money(value: number | string | undefined | null) {
-  return `৳ ${Number(value ?? 0).toLocaleString()}`
-}
-
-function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback
-}
-
 export default function PaymentsPage() {
+  const t = useTranslations('operations')
+  const common = useTranslations('common')
+  const [loadError, setLoadError] = useState<unknown>(null)
+  const { locale } = useLocale()
+  const formatters = useLocaleFormatters()
+  const localizedMoney = (value: number | string | undefined | null) => formatters.money(value)
+  const localizedDate = (value: string) => formatters.date(value, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const localizedShortDate = (value: string) => formatters.date(value, { day: '2-digit', month: 'short', year: 'numeric' })
+  const money = localizedMoney
+  const formatDate = localizedDate
+  const formatDateShort = localizedShortDate
   const router = useRouter()
   const searchParams = useSearchParams()
   const aiCommandId = searchParams.get('aiCommand')
@@ -115,17 +102,18 @@ export default function PaymentsPage() {
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [selectedMonth, setSelectedMonth] = useState(formatIsoDate().slice(0, 7))
   const [searchText, setSearchText] = useState('')
   const [aiDraft, setAiDraft] = useState<AiCommandDraft | null>(null)
 
   useAutoDismissMessage(message, messageType, setMessage, setMessageType)
 
   async function load() {
+    setLoadError(null)
     setLoading(true)
     try {
       if (isAdmin) {
-        const paymentRes = await apiClient.getAllPayments().catch(() => null)
+        const paymentRes = await apiClient.getAllPayments()
         setPayments(Array.isArray(paymentRes?.data) ? paymentRes.data : [])
         return
       }
@@ -139,7 +127,7 @@ export default function PaymentsPage() {
       setMesses(list)
       setPaymentPurchasedBy(user?.id ?? '')
       if (list[0]) {
-        const paymentRes = isManager ? await apiClient.getPaymentsByMess(list[0].id).catch(() => null) : await apiClient.getMyPayments().catch(() => null)
+        const paymentRes = isManager ? await apiClient.getPaymentsByMess(list[0].id) : await apiClient.getMyPayments()
         setPayments(Array.isArray(paymentRes?.data) ? paymentRes.data : [])
         const managerMembersRes = isManager ? await apiClient.getAllMembers({ limit: 1000 }).catch(() => null) : null
         const fetchedMembers = Array.isArray(managerMembersRes?.data) ? managerMembersRes.data : []
@@ -147,6 +135,8 @@ export default function PaymentsPage() {
         const fallbackMembers = list[0].memberships?.filter((membership) => membership.is_active && membership.user) ?? []
         setMessMembers(activeMembersFromApi.length > 0 ? activeMembersFromApi : fallbackMembers)
       }
+    } catch (error) {
+      setLoadError(error)
     } finally {
       setLoading(false)
     }
@@ -164,7 +154,7 @@ export default function PaymentsPage() {
     const nextMethod = String(payload.method ?? 'BKASH') as PaymentMethod
     setAmount(String(payload.amount ?? ''))
     setMethod(methods.includes(nextMethod) ? nextMethod : 'BKASH')
-    setPaymentDate(String(payload.date ?? payload.paymentDate ?? new Date().toISOString().slice(0, 10)).slice(0, 10))
+    setPaymentDate(String(payload.date ?? payload.paymentDate ?? formatIsoDate()).slice(0, 10))
     setPaymentPurchasedBy(String(payload.memberId ?? payload.purchasedBy ?? user.id))
     setSelectedCategories(Array.isArray(payload.categories) ? payload.categories.map(String) : [])
     setEditingPayment(null)
@@ -190,7 +180,12 @@ export default function PaymentsPage() {
   }
 
   async function submitPayment() {
-    if ((!activeMess && !editingPayment) || !amount) return
+    if ((!activeMess && !editingPayment) || submitting) return
+    if (!amount.trim() || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+      setMessageType('error')
+      setMessage(t('feedback.invalidAmount'))
+      return
+    }
     setSubmitting(true)
     setMessage('')
     try {
@@ -199,7 +194,7 @@ export default function PaymentsPage() {
           amount: Number(amount),
           method,
           paymentDate: paymentDate || undefined,
-          categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+          categories: selectedCategories,
         })
       } else if (aiDraft) {
         await apiClient.confirmAiCommand(aiDraft.id, {
@@ -208,8 +203,8 @@ export default function PaymentsPage() {
           purchasedBy: paymentPurchasedBy || user?.id,
           amount: Number(amount),
           method,
-          date: paymentDate || new Date().toISOString().slice(0, 10),
-          paymentDate: paymentDate || new Date().toISOString().slice(0, 10),
+          date: paymentDate || formatIsoDate(),
+          paymentDate: paymentDate || formatIsoDate(),
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
         })
       } else {
@@ -231,11 +226,11 @@ export default function PaymentsPage() {
       const completedWithAi = Boolean(aiDraft)
       if (completedWithAi) finishAiDraft()
       setMessageType('success')
-      setMessage(editingPayment ? 'Deposit updated successfully.' : completedWithAi ? 'AI deposit confirmed successfully.' : 'Deposit submitted successfully.')
+      setMessage(editingPayment ? t('feedback.depositUpdated') : completedWithAi ? t('feedback.depositConfirmed') : t('feedback.depositSubmitted'))
       await load()
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to submit deposit.'))
+      setMessage(localizedErrorMessage(error, locale))
     } finally {
       setSubmitting(false)
     }
@@ -247,28 +242,28 @@ export default function PaymentsPage() {
     try {
       await apiClient.reviewPayment(id, { status })
       setMessageType('success')
-      setMessage(`Deposit ${status.toLowerCase()} successfully.`)
+      setMessage(status === 'APPROVED' ? t('feedback.depositApproved') : t('feedback.depositRejected'))
       await load()
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to review deposit.'))
+      setMessage(localizedErrorMessage(error, locale))
     } finally {
       setReviewingId(null)
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this deposit?')) return
+    if (!confirm(t('feedback.deleteDeposit'))) return
     setDeletingId(id)
     setMessage('')
     try {
       await apiClient.deletePayment(id)
       setMessageType('success')
-      setMessage('Deposit deleted successfully.')
+      setMessage(t('feedback.depositDeleted'))
       await load()
     } catch (error) {
       setMessageType('error')
-      setMessage(getErrorMessage(error, 'Failed to delete deposit.'))
+      setMessage(localizedErrorMessage(error, locale))
     } finally {
       setDeletingId(null)
     }
@@ -293,14 +288,17 @@ export default function PaymentsPage() {
   const filteredPayments = useMemo(() => {
     return payments.filter((payment) => {
       const paymentMonth = payment.payment_date
-        ? new Date(payment.payment_date).toISOString().slice(0, 7)
-        : new Date(payment.created_at).toISOString().slice(0, 7)
+        ? formatIsoDate(payment.payment_date).slice(0, 7)
+        : formatIsoDate(payment.created_at).slice(0, 7)
       const matchMonth = paymentMonth === selectedMonth
-      const searchableText = `${payment.member?.name ?? ''} ${payment.member?.email ?? ''} ${payment.creator?.name ?? ''} ${payment.method} ${payment.status} ${(payment.categories ?? []).join(' ')}`.toLowerCase()
-      const matchSearch = searchableText.includes(searchText.toLowerCase())
+      const searchableText = [payment.member?.name, payment.member?.email, payment.creator?.name,
+        payment.method, paymentMethodLabel(payment.method, locale), payment.status, statusLabel(payment.status, locale),
+        ...(payment.categories ?? []).flatMap(category => [category, domainLabel(category, locale)]),
+      ].filter(Boolean).join(' ').toLocaleLowerCase()
+      const matchSearch = searchableText.includes(searchText.trim().toLocaleLowerCase())
       return matchMonth && matchSearch
     })
-  }, [payments, selectedMonth, searchText])
+  }, [payments, selectedMonth, searchText, locale])
 
   // Summary calculations
   const pendingCount = filteredPayments.filter(p => p.status === 'PENDING').length
@@ -317,11 +315,12 @@ export default function PaymentsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader title="Deposits" description="Review member deposits and track their approval status" />
+      <DashboardHeader title={t('payments.title')} description={t('payments.description')} />
 
       <div className="p-4 sm:p-6 lg:p-8">
+        {loadError != null && <EnterpriseAsyncState status="error" description={localizedErrorMessage(loadError, locale, t('feedback.loadFailed'))} action={<EnterpriseButton onClick={() => void load()}>{common('retry')}</EnterpriseButton>} className="mb-5" />}
         {message && (
-          <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-bold  ${messageType === 'error' ? 'border border-destructive/30 bg-destructive/10 text-destructive' : 'border border-primary/30 bg-primary/10 text-primary'}`}>
+          <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-semibold  ${messageType === 'error' ? 'border border-destructive/30 bg-destructive/10 text-destructive' : 'border border-primary/30 bg-primary/10 text-primary'}`}>
             {message}
           </div>
         )}
@@ -333,12 +332,12 @@ export default function PaymentsPage() {
               <Wallet size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Deposits</h2>
-              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{payments.length} deposit{payments.length !== 1 ? 's' : ''} recorded</p>
+              <h2 className="text-lg font-semibold text-foreground">{t('payments.title')}</h2>
+              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{formatters.number(payments.length)} {t('payments.deposits')} {t('payments.recorded')}</p>
             </div>
           </div>
           <EnterpriseButton onClick={() => { setEditingPayment(null); setAmount(''); setPaymentDate(''); setSelectedCategories([]); setPaymentPurchasedBy(user?.id ?? ''); setShowModal(true) }} className="gap-2">
-            <Plus size={18} /> Add Deposit
+            <Plus size={18} /> {t('payments.addAction')}
           </EnterpriseButton>
         </div>
 
@@ -346,19 +345,19 @@ export default function PaymentsPage() {
         {!loading && payments.length > 0 && (
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="dashboard-subtle-card rounded-xl p-4 ">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><CreditCard size={13} className="text-primary" /> Total</p>
-              <p className="mt-1.5 text-2xl font-semibold text-foreground">{payments.length}</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><CreditCard size={13} className="text-primary" /> {t('payments.total')}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-foreground">{formatters.number(filteredPayments.length)}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 ">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary"><Loader2 size={13} /> Pending</p>
-              <p className="mt-1.5 text-2xl font-semibold text-primary">{pendingCount}</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary"><Loader2 size={13} /> {t('payments.pending')}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-primary">{formatters.number(pendingCount)}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 ">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary"><Check size={13} /> Approved</p>
-              <p className="mt-1.5 text-2xl font-semibold text-primary">{approvedCount}</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary"><Check size={13} /> {t('payments.approved')}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-primary">{formatters.number(approvedCount)}</p>
             </div>
             <div className="dashboard-subtle-card rounded-xl p-4 ">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><Banknote size={13} className="text-primary" /> Total Amount</p>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><Banknote size={13} className="text-primary" /> {t('payments.totalAmount')}</p>
               <p className="mt-1.5 text-2xl font-semibold text-foreground">{money(totalAmount)}</p>
             </div>
           </div>
@@ -368,11 +367,11 @@ export default function PaymentsPage() {
         <div className="hidden sm:flex flex-row flex-wrap items-center gap-2 mb-4">
           <div className="relative w-52">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input className="h-[38px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+            <input className="h-[38px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" placeholder={t('payments.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} />
           </div>
-          <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[38px] w-[154px] text-xs font-bold" align="start" />
-          {(searchText || selectedMonth !== new Date().toISOString().slice(0, 7)) && (
-            <span className="text-[10px] font-semibold text-muted-foreground">Showing {filteredPayments.length} of {payments.length} deposits</span>
+          <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} shortLabel className="h-[38px] w-[154px] text-xs font-semibold" align="start" />
+          {(searchText || selectedMonth !== formatIsoDate().slice(0, 7)) && (
+            <span className="text-[10px] font-semibold text-muted-foreground">{t('payments.showing', { filtered: formatters.number(filteredPayments.length), total: formatters.number(payments.length) })}</span>
           )}
         </div>
 
@@ -381,22 +380,22 @@ export default function PaymentsPage() {
           <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-border bg-muted">
-                {['Paid by', 'Added by', 'Amount', 'Status', 'Action'].map((heading) =>
-                  heading === 'Action'
-                    ? <EnterpriseTableActionHeader key={heading} />
+                {[t('payments.paidBy'), t('payments.addedBy'), t('payments.amount'), t('payments.status'), t('payments.action')].map((heading, index, headings) =>
+                  index === headings.length - 1
+                    ? <EnterpriseTableActionHeader key={heading}>{heading}</EnterpriseTableActionHeader>
                     : <th key={heading} className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{heading}</th>,
                 )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading && (
-                <tr><td colSpan={5} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-bold text-muted-foreground"><Loader2 size={18} className="animate-spin text-primary" /> Loading deposits...</div></td></tr>
+                <tr><td colSpan={5} className="px-5 py-12 text-center"><div className="flex items-center justify-center gap-2 text-sm font-semibold text-muted-foreground"><Loader2 size={18} className="animate-spin text-primary" /> {t('payments.loading')}</div></td></tr>
               )}
               {!loading && filteredPayments.length === 0 && (
                 <tr><td colSpan={5} className="px-5 py-12 text-center">
                   <div className="flex flex-col items-center gap-2"><Wallet size={40} className="text-muted-foreground" />
-                    <p className="text-sm font-bold text-muted-foreground">{payments.length === 0 ? 'No deposit records yet.' : 'No deposits match your filters.'}</p>
-                    <p className="text-xs font-semibold text-muted-foreground">{payments.length === 0 ? 'Click "Add Deposit" to add one.' : 'Try changing the month or search term.'}</p>
+                    <p className="text-sm font-semibold text-muted-foreground">{payments.length === 0 ? t('payments.empty') : t('payments.noMatch')}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">{payments.length === 0 ? t('payments.emptyHint') : t('payments.filterHint')}</p>
                   </div>
                 </td></tr>
               )}
@@ -410,32 +409,32 @@ export default function PaymentsPage() {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
-                        <div><p className="text-sm font-bold text-foreground">{payment.member?.name ?? 'Unknown Member'}</p><p className="text-xs font-semibold text-muted-foreground">{payment.member?.email ?? ''}</p></div>
+                        <div><p className="text-sm font-semibold text-foreground">{payment.member?.name ?? t('payments.unknownMember')}</p><p className="text-xs font-semibold text-muted-foreground">{payment.member?.email ?? ''}</p></div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{(payment.creator?.name?.[0] || 'M').toUpperCase()}</div>
-                        <div><p className="text-sm font-bold text-foreground">{payment.creator?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-muted-foreground">{payment.creator?.email ?? ''}</p></div>
+                        <div><p className="text-sm font-semibold text-foreground">{payment.creator?.name ?? t('payments.unknown')}</p><p className="text-xs font-semibold text-muted-foreground">{payment.creator?.email ?? ''}</p></div>
                       </div>
                     </td>
                     <td className="px-4 py-4 text-sm font-semibold text-foreground">{money(payment.amount)}</td>
                     <td className="px-4 py-4">
                       <div>
-                        <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
+                        <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
                           {payment.status === 'PENDING' && <Loader2 size={11} className="animate-spin" />}
                           {payment.status === 'APPROVED' && <Check size={11} />}
                           {payment.status === 'REJECTED' && <Ban size={11} />}
-                          {statusCfg.label}
+                          {statusLabel(payment.status, locale)}
                         </span>
                       </div>
                     </td>
                     <EnterpriseTableActionCell contentClassName="gap-1.5">
-                        <EnterpriseIconButton label="View deposit" tone="primary" onClick={(event) => { event.stopPropagation(); setViewingPayment(payment); setShowViewModal(true) }}>
+                        <EnterpriseIconButton label={t('payments.viewBill')} tone="primary" onClick={(event) => { event.stopPropagation(); setViewingPayment(payment); setShowViewModal(true) }}>
                           <Eye size={16} />
                         </EnterpriseIconButton>
                         {canDelete && (
-                          <EnterpriseIconButton label="Delete deposit" tone="danger" disabled={isDeleting} onClick={(event) => { event.stopPropagation(); void handleDelete(payment.id) }}>
+                          <EnterpriseIconButton label={`${t('payments.deleteAction')} ${t('payments.deposits')}`} tone="danger" disabled={isDeleting} onClick={(event) => { event.stopPropagation(); void handleDelete(payment.id) }}>
                             {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                           </EnterpriseIconButton>
                         )}
@@ -450,8 +449,8 @@ export default function PaymentsPage() {
           {!loading && payments.length > 0 && (
             <div className="border-t-2 border-border bg-muted px-5 py-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground"><User size={14} /> <span><span className="text-foreground">{payments.length}</span> deposits</span></div>
-                <div className="flex items-center gap-4 text-xs font-bold"><span className="text-primary">{pendingCount} pending</span><span className="text-primary">{approvedCount} approved</span></div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground"><User size={14} /> <span><span className="text-foreground">{formatters.number(filteredPayments.length)}</span> {t('payments.deposits')}</span></div>
+                <div className="flex items-center gap-4 text-xs font-semibold"><span className="text-primary">{formatters.number(pendingCount)} {t('payments.pending')}</span><span className="text-primary">{formatters.number(approvedCount)} {t('payments.approved')}</span></div>
               </div>
             </div>
           )}
@@ -461,16 +460,16 @@ export default function PaymentsPage() {
         <div className="flex flex-col gap-3 sm:hidden mb-4">
           <div className="relative w-full">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input className="h-[46px] w-full rounded-xl border border-border bg-background pl-10 pr-3.5 text-sm font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" placeholder="Search by name, method, status..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+            <input className="h-[46px] w-full rounded-xl border border-border bg-background pl-10 pr-3.5 text-sm font-semibold text-foreground  outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" placeholder={t('payments.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} />
           </div>
-          <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} className="h-[46px] w-full font-bold" align="start" />
+          <EnterpriseMonthPicker value={selectedMonth} onValueChange={setSelectedMonth} className="h-[46px] w-full font-semibold" align="start" />
         </div>
 
         {/* Deposits - Mobile Cards */}
         <div className="space-y-3 sm:hidden">
           {loading && <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-primary" /></div>}
           {!loading && filteredPayments.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12"><Wallet size={40} className="mb-2 text-muted-foreground" /><p className="text-sm font-bold text-muted-foreground">{payments.length === 0 ? 'No deposit records yet.' : 'No deposits match your filters.'}</p><p className="text-xs font-semibold text-muted-foreground">{payments.length === 0 ? 'Click "Add Deposit" to add one.' : 'Try changing the month or search term.'}</p></div>
+            <div className="flex flex-col items-center justify-center py-12"><Wallet size={40} className="mb-2 text-muted-foreground" /><p className="text-sm font-semibold text-muted-foreground">{payments.length === 0 ? t('payments.empty') : t('payments.noMatch')}</p><p className="text-xs font-semibold text-muted-foreground">{payments.length === 0 ? t('payments.emptyHint') : t('payments.filterHint')}</p></div>
           )}
           {!loading && filteredPayments.map((payment) => {
             const methodCfg = PAYMENT_METHOD_CONFIG[payment.method as PaymentMethod] || PAYMENT_METHOD_CONFIG.CASH
@@ -484,38 +483,38 @@ export default function PaymentsPage() {
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{(payment.member?.name?.[0] || 'M').toUpperCase()}</div>
-                    <div className="min-w-0"><p className="truncate text-sm font-bold text-foreground">{payment.member?.name ?? 'Unknown Member'}</p><p className="truncate text-xs font-semibold text-muted-foreground">{payment.member?.email ?? ''}</p></div>
+                    <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{payment.member?.name ?? t('payments.unknownMember')}</p><p className="truncate text-xs font-semibold text-muted-foreground">{payment.member?.email ?? ''}</p></div>
                   </div>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
                     {payment.status === 'PENDING' && <Loader2 size={10} className="animate-spin" />}
                     {payment.status === 'APPROVED' && <Check size={10} />}
                     {payment.status === 'REJECTED' && <Ban size={10} />}
-                    {statusCfg.label}
+                    {statusLabel(payment.status, locale)}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between rounded-xl bg-muted p-3">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-bold" style={{ backgroundColor: methodCfg.bg, color: methodCfg.color, borderColor: 'var(--border)' }}>{methodCfg.icon}{methodCfg.label}</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-semibold" style={{ backgroundColor: methodCfg.bg, color: methodCfg.color, borderColor: 'var(--border)' }}>{methodCfg.icon}{paymentMethodLabel(payment.method, locale)}</span>
                     <div className="text-xs font-semibold text-muted-foreground">
                       <span><CalendarDays size={11} className="inline mr-1 text-primary" />{formatDate(payment.created_at)}</span>
-                      {payment.payment_date && <div className="text-[10px] text-muted-foreground mt-0.5"><CalendarDays size={9} className="inline mr-1 text-muted-foreground" />For: {formatDateShort(payment.payment_date)}</div>}
+                      {payment.payment_date && <div className="text-[10px] text-muted-foreground mt-0.5"><CalendarDays size={9} className="inline mr-1 text-muted-foreground" />{t('payments.depositDate')}: {formatDateShort(payment.payment_date)}</div>}
                     </div>
                   </div>
                   <p className="text-sm font-semibold text-foreground">{money(payment.amount)}</p>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs font-semibold text-muted-foreground">
-                  <span>Paid by</span>
+                  <span>{t('payments.paidBy')}</span>
                   <span className="text-foreground">
-                    {payment.member?.name ?? 'Unknown Member'}
+                    {payment.member?.name ?? t('payments.unknownMember')}
                   </span>
                 </div>
 
                 <div className="mt-1 flex items-center justify-between text-xs font-semibold text-muted-foreground">
-                  <span>Added by</span>
+                  <span>{t('payments.addedBy')}</span>
                   <span className="text-foreground">
-                    {payment.creator?.name ?? 'Unknown'}
+                    {payment.creator?.name ?? t('payments.unknown')}
                   </span>
                 </div>
 
@@ -523,28 +522,28 @@ export default function PaymentsPage() {
                   <div className="flex flex-wrap gap-1 mt-2">
                     {payment.categories.map((cat) => {
                       const cfg = EXPENSE_CATEGORIES.find(c => c.value === cat)
-                      return <span key={cat} className="inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>{cfg?.label ?? cat}</span>
+                      return <span key={cat} className="inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>{domainLabel(cat, locale)}</span>
                     })}
                   </div>
                 )}
 
                 <div className="mt-3 flex justify-end gap-2">
-                  <EnterpriseIconButton label="View deposit" tone="primary" onClick={() => { setViewingPayment(payment); setShowViewModal(true) }}><Eye size={16} /></EnterpriseIconButton>
+                  <EnterpriseIconButton label={t('payments.viewBill')} tone="primary" onClick={() => { setViewingPayment(payment); setShowViewModal(true) }}><Eye size={16} /></EnterpriseIconButton>
                   {payment.status === 'PENDING' && isManager && (
                     <>
-                      <EnterpriseIconButton label="Approve deposit" tone="success" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'APPROVED')}>{reviewingId === payment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton>
-                      <EnterpriseIconButton label="Reject deposit" tone="danger" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'REJECTED')}><X size={16} /></EnterpriseIconButton>
+                      <EnterpriseIconButton label={t('payments.approve')} tone="success" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'APPROVED')}>{reviewingId === payment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}</EnterpriseIconButton>
+                      <EnterpriseIconButton label={t('payments.rejectAction')} tone="danger" disabled={reviewingId === payment.id} onClick={() => void review(payment.id, 'REJECTED')}><X size={16} /></EnterpriseIconButton>
                     </>
                   )}
                   {canDelete && (
-                    <EnterpriseIconButton label="Delete deposit" tone="danger" disabled={isDeleting} onClick={() => void handleDelete(payment.id)}>{isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}</EnterpriseIconButton>
+                    <EnterpriseIconButton label={t('payments.deleteAction')} tone="danger" disabled={isDeleting} onClick={() => void handleDelete(payment.id)}>{isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}</EnterpriseIconButton>
                   )}
                 </div>
               </div>
             )
           })}
           {!loading && payments.length > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3"><p className="text-xs font-bold text-muted-foreground"><span className="text-foreground">{payments.length}</span> deposits</p><div className="flex gap-3 text-xs font-bold"><span className="text-primary">{pendingCount} pending</span><span className="text-primary">{approvedCount} approved</span></div></div>
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3"><p className="text-xs font-semibold text-muted-foreground"><span className="text-foreground">{formatters.number(filteredPayments.length)}</span> {t('payments.deposits')}</p><div className="flex gap-3 text-xs font-semibold"><span className="text-primary">{formatters.number(pendingCount)} {t('payments.pending')}</span><span className="text-primary">{formatters.number(approvedCount)} {t('payments.approved')}</span></div></div>
           )}
         </div>
       </div>
@@ -554,45 +553,45 @@ export default function PaymentsPage() {
         <EnterpriseDetailsDrawer
           open={showViewModal}
           onOpenChange={(open) => { setShowViewModal(open); if (!open) setViewingPayment(null) }}
-          eyebrow="Deposit"
-          title="Deposit details"
-          description={viewingPayment.member?.email ?? 'Deposit record and transaction information.'}
+          eyebrow={t('payments.title')}
+                  title={t('payments.details')}
+          description={viewingPayment.member?.email ?? t('payments.detailsDescription')}
           headerIcon={<CreditCard className="size-5" />}
-          footer={<EnterpriseDrawerFooter>{(isManager || viewingPayment.creator?.id === user?.id) && <EnterpriseDrawerAction priority="primary" tone="primary" onClick={() => openEditPayment(viewingPayment)}><Edit3 size={16} /> Edit deposit</EnterpriseDrawerAction>}{viewingPayment.status === 'PENDING' && isManager && <><EnterpriseDrawerAction tone="success" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }}>{reviewingId === viewingPayment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Approve</EnterpriseDrawerAction><EnterpriseDrawerAction tone="danger" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }}><X size={16} /> Reject</EnterpriseDrawerAction></>}</EnterpriseDrawerFooter>}
+          footer={<EnterpriseDrawerFooter>{(isManager || viewingPayment.creator?.id === user?.id) && <EnterpriseDrawerAction priority="primary" tone="primary" onClick={() => openEditPayment(viewingPayment)}><Edit3 size={16} /> {t('payments.edit')}</EnterpriseDrawerAction>}{viewingPayment.status === 'PENDING' && isManager && <><EnterpriseDrawerAction tone="success" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'APPROVED'); setShowViewModal(false); setViewingPayment(null) }}>{reviewingId === viewingPayment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} {t('payments.approve')}</EnterpriseDrawerAction><EnterpriseDrawerAction tone="danger" disabled={reviewingId === viewingPayment.id} onClick={() => { void review(viewingPayment.id, 'REJECTED'); setShowViewModal(false); setViewingPayment(null) }}><X size={16} /> {t('payments.rejectAction')}</EnterpriseDrawerAction></>}</EnterpriseDrawerFooter>}
         >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{(viewingPayment.member?.name?.[0] || 'M').toUpperCase()}</div>
-                  <div><p className="text-base font-bold text-foreground">{viewingPayment.member?.name ?? 'Unknown'}</p><p className="text-xs font-semibold text-muted-foreground">{viewingPayment.member?.email ?? ''}</p></div>
+                  <div><p className="text-base font-semibold text-foreground">{viewingPayment.member?.name ?? t('payments.unknownMember')}</p><p className="text-xs font-semibold text-muted-foreground">{viewingPayment.member?.email ?? ''}</p></div>
                 </div>
-                <div className="rounded-xl  bg-muted to-white border border-border p-4">
-                  <div className="flex items-center justify-between mb-2"><span className="text-xs font-bold text-muted-foreground">Amount</span><span className="text-2xl font-semibold text-foreground">{money(viewingPayment.amount)}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-xs font-bold text-muted-foreground">Method</span>
-                    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.bg ?? 'var(--primary)', color: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
-                      {PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.icon}{PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.label ?? viewingPayment.method}
+                <div className="rounded-xl border border-border bg-muted p-4">
+                  <div className="flex items-center justify-between mb-2"><span className="text-xs font-semibold text-muted-foreground">{t('payments.amount')}</span><span className="text-2xl font-semibold text-foreground">{money(viewingPayment.amount)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{t('payments.method')}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold" style={{ backgroundColor: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.bg ?? 'var(--primary)', color: PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
+                      {PAYMENT_METHOD_CONFIG[viewingPayment.method as PaymentMethod]?.icon}{paymentMethodLabel(viewingPayment.method, locale)}
                     </span>
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-border bg-background p-4">
-                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">Paid by</p>
-                    <p className="mt-1 text-sm font-bold text-foreground">{viewingPayment.member?.name ?? 'Unknown Member'}</p>
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t('payments.paidBy')}</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{viewingPayment.member?.name ?? t('payments.unknownMember')}</p>
                   </div>
                   <div className="rounded-xl border border-border bg-background p-4">
-                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">Added By</p>
-                    <p className="mt-1 text-sm font-bold text-foreground">{viewingPayment.creator?.name ?? 'Unknown'}</p>
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t('payments.addedBy')}</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{viewingPayment.creator?.name ?? t('payments.unknown')}</p>
                   </div>
                 </div>
                 {viewingPayment.categories && viewingPayment.categories.length > 0 && (
-                  <div><p className="mb-2 text-xs font-bold text-muted-foreground">Categories</p>
+                  <div><p className="mb-2 text-xs font-semibold text-muted-foreground">{t('payments.categories')}</p>
                     <div className="flex flex-wrap gap-1.5">{viewingPayment.categories.map((cat) => {
                       const cfg = EXPENSE_CATEGORIES.find(c => c.value === cat)
-                      return <span key={cat} className="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>{cfg?.label ?? cat}</span>
+                      return <span key={cat} className="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>{domainLabel(cat, locale)}</span>
                     })}</div>
                   </div>
                 )}
-                {viewingPayment.note && <div><p className="mb-1 text-xs font-bold text-muted-foreground">Note</p><p className="rounded-xl bg-muted p-3 text-sm font-semibold text-muted-foreground">{viewingPayment.note}</p></div>}
-                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground"><CalendarDays size={13} className="text-primary" /> Submitted: {formatDate(viewingPayment.created_at)}</p>
+                {viewingPayment.note && <div><p className="mb-1 text-xs font-semibold text-muted-foreground">{t('payments.note')}</p><p className="rounded-xl bg-muted p-3 text-sm font-semibold text-muted-foreground">{viewingPayment.note}</p></div>}
+                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground"><CalendarDays size={13} className="text-primary" /> {t('payments.submitted')}: {formatDate(viewingPayment.created_at)}</p>
               </div>
         </EnterpriseDetailsDrawer>
       )}
@@ -602,40 +601,42 @@ export default function PaymentsPage() {
         <EnterpriseDetailsDrawer
           open={showModal}
           onOpenChange={(open) => { if (open) setShowModal(true); else closeDepositForm() }}
-          eyebrow="Deposit"
-          title={editingPayment ? 'Edit deposit' : 'Add deposit'}
-          description={editingPayment ? 'Update this deposit amount, method, date, or categories.' : 'Record a deposit with its method, date, and categories.'}
+          eyebrow={t('payments.title')}
+                  title={editingPayment ? t('payments.edit') : t('payments.add')}
+                  description={editingPayment ? t('payments.editDescription') : t('payments.addDescription')}
           headerIcon={<CreditCard className="size-5" />}
-          footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={closeDepositForm} disabled={submitting}>Cancel</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)}>{submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}{submitting ? 'Saving...' : editingPayment ? 'Save changes' : aiDraft ? 'Confirm AI deposit' : 'Add deposit'}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
+          footer={<EnterpriseDrawerFooter><EnterpriseDrawerAction tone="secondary" onClick={closeDepositForm} disabled={submitting}>{t('payments.cancel')}</EnterpriseDrawerAction><EnterpriseDrawerAction priority="primary" tone="primary" onClick={submitPayment} disabled={submitting || !amount || (!activeMess && !editingPayment)}>{submitting ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}{submitting ? t('payments.saving') : editingPayment ? t('payments.saveChanges') : aiDraft ? t('payments.confirmAi') : t('payments.addAction')}</EnterpriseDrawerAction></EnterpriseDrawerFooter>}
         >
             <div>
+              {message && messageType === 'error' && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Amount (৳)</label>
-                  <input className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" type="number" placeholder="Enter amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('feedback.amountLabel')}</label>
+                  <input className="h-[48px] w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/20" type="number" aria-label={t('feedback.amountLabel')} placeholder={t('payments.amountPlaceholder')} value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Deposit Date</label>
-                  <EnterpriseDatePicker value={paymentDate} onValueChange={setPaymentDate} surface="white" className="h-[48px] w-full" align="start" ariaLabel="Select deposit date" />
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('payments.depositDate')}</label>
+                  <EnterpriseDatePicker value={paymentDate} onValueChange={setPaymentDate} surface="white" className="h-[48px] w-full" align="start" ariaLabel={t('payments.depositDate')} />
                 </div>
 
                 {isManager && purchasedByMemberOptions.length > 0 && (
                   <div>
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Paid by</label>
+                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('payments.paidBy')}</label>
                     <EnterpriseSelect value={paymentPurchasedBy} onValueChange={setPaymentPurchasedBy} options={purchasedByMemberOptions.map((member) => ({ value: member.id, label: member.name }))} />
                   </div>
                 )}
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Deposit Method</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('payments.depositMethod')}</label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {methods.map((m) => {
                       const cfg = PAYMENT_METHOD_CONFIG[m]
                       const selected = method === m
                       return (
-                        <button key={m} type="button" onClick={() => setMethod(m)} className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-bold transition active:scale-[0.98] ${selected ? 'border-border bg-muted text-primary ' : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'}`}>
-                          <span className="text-base">{cfg.icon}</span>{cfg.label}
+                        <button key={m} type="button" aria-pressed={selected} onClick={() => setMethod(m)} className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-semibold transition active:scale-[0.98] ${selected ? 'border-border bg-muted text-primary ' : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'}`}>
+                          <span className="text-base">{cfg.icon}</span>
+                          {paymentMethodLabel(m, locale)}
                         </button>
                       )
                     })}
@@ -643,13 +644,13 @@ export default function PaymentsPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Deposit Category (optional - select multiple)</label>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('payments.categoryOptional')}</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {EXPENSE_CATEGORIES.map((cat) => {
                       const selected = selectedCategories.includes(cat.value)
                       return (
-                        <button key={cat.value} type="button" onClick={() => toggleCategory(cat.value)} className={`flex items-center gap-1.5 rounded-xl border py-2.5 px-3 text-xs font-bold transition active:scale-[0.98] ${selected ? 'border-border bg-muted text-primary ' : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'}`}>
-                          {selected && <CheckIcon size={12} className="shrink-0" />}{cat.label}
+                        <button key={cat.value} type="button" aria-pressed={selected} onClick={() => toggleCategory(cat.value)} className={`flex items-center gap-1.5 rounded-xl border py-2.5 px-3 text-xs font-semibold transition active:scale-[0.98] ${selected ? 'border-border bg-muted text-primary ' : 'border-border bg-background text-muted-foreground hover:border-primary hover:bg-muted'}`}>
+                          {selected && <CheckIcon size={12} className="shrink-0" />}{domainLabel(cat.value, locale)}
                         </button>
                       )
                     })}
@@ -659,8 +660,8 @@ export default function PaymentsPage() {
                       {selectedCategories.map((cat) => {
                         const cfg = EXPENSE_CATEGORIES.find(c => c.value === cat)
                         return (
-                          <span key={cat} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
-                            {cfg?.label ?? cat}<button onClick={() => toggleCategory(cat)} className="hover:opacity-70"><X size={10} /></button>
+                          <span key={cat} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: cfg?.bg ?? 'var(--primary)', color: cfg?.color ?? 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
+                            {domainLabel(cat, locale)}<button onClick={() => toggleCategory(cat)} className="hover:opacity-70" aria-label={`${t('payments.deleteAction')} ${domainLabel(cat, locale)}`}><X size={10} /></button>
                           </span>
                         )
                       })}

@@ -2,6 +2,7 @@
 
 import { CalendarDays, RotateCcw } from 'lucide-react'
 import type { MealName, MealPatternSchedule } from '@/lib/api-client'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 import { MEAL_PATTERN_MEALS, getScheduleTotal } from '@/lib/meal-pattern'
 import { MealQuantityControl } from './meal-quantity-control'
 
@@ -26,6 +27,8 @@ export function ScheduleCard({
   compactMeals = false,
   iconLabel,
 }: ScheduleCardProps) {
+  const format = useLocaleFormatters()
+  const t = useTranslations('mealPatterns')
   const total = getScheduleTotal(schedule)
   const setMeal = (meal: MealName, value: number) => onChange({ ...schedule, [meal]: value })
 
@@ -41,9 +44,9 @@ export function ScheduleCard({
           {description && <p className="mt-0.5 text-xs font-semibold leading-5 text-muted-foreground">{description}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <span className="rounded-lg bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-semibold tabular-nums text-[var(--brand-dark)]  dark:text-[var(--brand-bright)]">{total} meals</span>
+          <span className="rounded-lg bg-[var(--dashboard-surface)] px-2.5 py-1.5 text-xs font-semibold tabular-nums text-[var(--brand-dark)] dark:text-[var(--brand-bright)]">{t('schedule.scheduleTotal', { count: format.number(total) })}</span>
           {onClear && total > 0 && (
-            <button type="button" onClick={onClear} aria-label={`Clear ${title}`} className="grid size-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-[var(--dashboard-surface)] hover:text-[var(--brand)]">
+            <button type="button" onClick={onClear} aria-label={t('schedule.clearSchedule', { name: title })} className="grid size-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-[var(--dashboard-surface)] hover:text-[var(--brand)]">
               <RotateCcw className="size-3.5" />
             </button>
           )}

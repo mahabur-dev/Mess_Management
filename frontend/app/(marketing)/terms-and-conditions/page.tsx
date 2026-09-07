@@ -12,7 +12,7 @@ const sections: LegalSection[] = [
     title: 'Acceptance and eligibility',
     content: (
       <>
-        <p>These Terms and Conditions ("Terms") are a binding agreement between you and Messzen ("Messzen", "we", "our", or "us") governing your access to the Messzen website, web dashboard, dedicated mobile application, AI-assisted tools, notifications, and related services (collectively, the "Service").</p>
+        <p>These Terms and Conditions (&quot;Terms&quot;) are a binding agreement between you and Messzen (&quot;Messzen&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) governing your access to the Messzen website, web dashboard, dedicated mobile application, AI-assisted tools, notifications, and related services (collectively, the &quot;Service&quot;).</p>
         <p>By creating an account, joining a mess, purchasing or requesting a plan, or otherwise using the Service, you agree to these Terms and the <a href="/privacy-policy">Privacy Policy</a>. If you use the Service for an organization or mess, you confirm that you are authorized to bind that organization to these Terms.</p>
         <p>You must have legal capacity to accept these Terms. If you do not, you may use the Service only with the valid authorization and supervision of a responsible parent, guardian, organization, or mess manager.</p>
       </>
@@ -67,7 +67,7 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>An authorized user may configure a daily or weekly meal pattern. Once activated, that pattern may continue creating scheduled meal records automatically until it is changed, paused, disabled, or removed.</p>
-        <p>You are responsible for confirming that the pattern, members, meal quantities, dates, time zone, and effective period are correct. Changes may apply prospectively and may not automatically correct previously generated records. Review active patterns regularly, especially when a member's routine changes or the mess closes meals for a period.</p>
+        <p>You are responsible for confirming that the pattern, members, meal quantities, dates, time zone, and effective period are correct. Changes may apply prospectively and may not automatically correct previously generated records. Review active patterns regularly, especially when a member&apos;s routine changes or the mess closes meals for a period.</p>
       </>
     ),
   },
@@ -80,7 +80,7 @@ const sections: LegalSection[] = [
         <ul>
           <li>Review the generated preview and all important fields before confirming.</li>
           <li>Edit or cancel an inaccurate preview rather than relying on the confidence indicator alone.</li>
-          <li>Do not submit unlawful content, another person's sensitive information without authority, or instructions outside the supported workflow.</li>
+          <li>Do not submit unlawful content, another person&apos;s sensitive information without authority, or instructions outside the supported workflow.</li>
           <li>Keep source receipts or evidence where a mess rule or legal obligation requires it.</li>
         </ul>
         <p>Once you confirm a preview, the resulting entry is treated as an action authorized through your account. AI availability, language recognition, and output quality may vary by device, connection, wording, and provider availability.</p>
@@ -173,7 +173,7 @@ const sections: LegalSection[] = [
     id: 'disclaimers',
     title: 'Disclaimers',
     content: (
-      <p>To the maximum extent permitted by law, the Service is provided on an "as available" basis. Messzen does not guarantee that AI output, recurring records, notifications, calculations, third-party integrations, or user-entered information will always be accurate, timely, complete, or suitable for a particular decision. Nothing in these Terms excludes a warranty or right that applicable law does not allow us to exclude.</p>
+      <p>To the maximum extent permitted by law, the Service is provided on an &quot;as available&quot; basis. Messzen does not guarantee that AI output, recurring records, notifications, calculations, third-party integrations, or user-entered information will always be accurate, timely, complete, or suitable for a particular decision. Nothing in these Terms excludes a warranty or right that applicable law does not allow us to exclude.</p>
     ),
   },
   {
@@ -182,7 +182,7 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>To the maximum extent permitted by applicable law, Messzen will not be liable for indirect, incidental, special, punitive, or consequential loss, or for lost profits, lost data, missed notifications, disputed member records, or decisions based on unverified entries.</p>
-        <p>Where liability cannot be excluded, Messzen's aggregate liability arising from the Service will be limited to the amount you paid Messzen for the affected Service during the six months before the event giving rise to the claim, unless applicable law requires a different remedy or limit.</p>
+        <p>Where liability cannot be excluded, Messzen&apos;s aggregate liability arising from the Service will be limited to the amount you paid Messzen for the affected Service during the six months before the event giving rise to the claim, unless applicable law requires a different remedy or limit.</p>
       </>
     ),
   },

@@ -2,63 +2,84 @@
 
 import { type FormEvent, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowRight, MailCheck, RotateCcw } from 'lucide-react'
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
+import { MailCheck, RotateCcw } from 'lucide-react'
+
+import {
+  AuthInfoPanel,
+  AuthMessage,
+  AuthOtpField,
+  AuthSecondaryButton,
+  AuthShell,
+  AuthSubmitButton,
+  authLinkClass,
+} from '@/components/auth-ui'
+import { useDelayedNavigation } from '@/hooks/use-delayed-navigation'
+import { useResendCooldown } from '@/hooks/use-resend-cooldown'
 import { ApiError, apiClient } from '@/lib/api-client'
 import {
-  AuthMessage,
-  AuthShell,
-  authLinkClass,
-  authPrimaryButtonClass,
-  authSecondaryButtonClass,
-} from '@/components/auth-ui'
+  localizedErrorMessage,
+  useLocale,
+  useLocaleFormatters,
+  useTranslations,
+  type MessageKey,
+} from '@/lib/i18n'
 
-function getRemainingSeconds() {
-  const resendAt = Number(sessionStorage.getItem('registrationResendAt') || 0)
-  return Math.max(0, Math.ceil((resendAt - Date.now()) / 1000))
-}
+type VerifyEmailValidationKey = Extract<
+  MessageKey<'auth'>,
+  'validation.registrationFirst' | 'validation.completeCode'
+>
+type VerifyEmailSuccessKey = Extract<
+  MessageKey<'auth'>,
+  'verifyEmail.success' | 'verifyEmail.resendSuccess'
+>
+type RequestFailure = { cause: unknown; context: 'verify' | 'resend' }
 
 export default function VerifyEmailPage() {
-  const router = useRouter()
+  const navigateAfter = useDelayedNavigation()
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const auth = useTranslations('auth')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
-  const [remainingSeconds, setRemainingSeconds] = useState(0)
+  const { remainingSeconds, startCooldown, clearCooldown } = useResendCooldown('registrationResendAt')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isResending, setIsResending] = useState(false)
-  const [message, setMessage] = useState('')
-  const [isSuccess, setIsSuccess] = useState(false)
+  const [validationKey, setValidationKey] = useState<VerifyEmailValidationKey | null>(null)
+  const [successKey, setSuccessKey] = useState<VerifyEmailSuccessKey | null>(null)
+  const [requestFailure, setRequestFailure] = useState<RequestFailure | null>(null)
 
   useEffect(() => {
     setEmail(sessionStorage.getItem('registrationEmail') || '')
-    setRemainingSeconds(getRemainingSeconds())
-    const timer = window.setInterval(() => setRemainingSeconds(getRemainingSeconds()), 1000)
-    return () => window.clearInterval(timer)
   }, [])
+
+  const clearFeedback = () => {
+    setValidationKey(null)
+    setSuccessKey(null)
+    setRequestFailure(null)
+  }
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    setMessage('')
-    setIsSuccess(false)
+    clearFeedback()
+
     if (!email) {
-      setMessage('Start registration first so we know which email to verify.')
+      setValidationKey('validation.registrationFirst')
       return
     }
     if (!/^\d{6}$/.test(otp)) {
-      setMessage('Enter the complete 6-digit verification code.')
+      setValidationKey('validation.completeCode')
       return
     }
 
     setIsSubmitting(true)
     try {
-      const result = await apiClient.verifyEmail(email, otp)
+      await apiClient.verifyEmail(email, otp)
       sessionStorage.removeItem('registrationEmail')
-      sessionStorage.removeItem('registrationResendAt')
-      setIsSuccess(true)
-      setMessage(result.message || 'Email verified. You can now sign in.')
-      window.setTimeout(() => router.replace(`/login?verified=1&email=${encodeURIComponent(email)}`), 900)
+      clearCooldown()
+      setSuccessKey('verifyEmail.success')
+      navigateAfter(`/login?verified=1&email=${encodeURIComponent(email)}`, 900, 'replace')
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : 'Email verification failed. Please try again.')
+      setRequestFailure({ cause: error, context: 'verify' })
     } finally {
       setIsSubmitting(false)
     }
@@ -66,96 +87,96 @@ export default function VerifyEmailPage() {
 
   const handleResend = async () => {
     if (!email || remainingSeconds > 0) return
-    setMessage('')
-    setIsSuccess(false)
+    clearFeedback()
     setIsResending(true)
+
     try {
       const result = await apiClient.resendEmailVerification(email)
-      sessionStorage.setItem(
-        'registrationResendAt',
-        String(Date.now() + result.data.resendAvailableInSeconds * 1000),
-      )
-      setRemainingSeconds(result.data.resendAvailableInSeconds)
+      startCooldown(result.data.resendAvailableInSeconds)
       setOtp('')
-      setIsSuccess(true)
-      setMessage(result.message || 'A new verification code was sent.')
+      setSuccessKey('verifyEmail.resendSuccess')
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : 'Could not resend the verification code.')
+      const retryAfter = error instanceof ApiError
+        ? Number(error.params.retryAfterSeconds)
+        : 0
+      if (Number.isFinite(retryAfter) && retryAfter > 0) startCooldown(retryAfter)
+      setRequestFailure({ cause: error, context: 'resend' })
     } finally {
       setIsResending(false)
     }
   }
 
+  const description = email
+    ? auth('verifyEmail.description', { email })
+    : auth('verifyEmail.descriptionMissing')
+  const resendLabel = remainingSeconds > 0
+    ? auth('verifyEmail.resendIn', { seconds: format.number(remainingSeconds) })
+    : auth('verifyEmail.resend')
+
   return (
     <AuthShell
-      title="Verify your email"
-      description={email ? `We sent a 6-digit code to ${email}.` : 'Complete registration to receive a verification code.'}
+      title={auth('verifyEmail.title')}
+      description={description}
       footer={
         <>
           <Link href="/register" className={`text-sm ${authLinkClass}`}>
-            Use a different email
+            {auth('links.differentEmail')}
           </Link>
           <div>
-            <Link href="/login" className="text-sm font-semibold text-muted-foreground transition hover:text-[var(--brand)]">
-              Already verified? <span className={authLinkClass}>Sign in</span>
+            <Link href="/login" className="text-sm font-semibold text-muted-foreground transition-colors hover:text-[var(--brand)]">
+              {auth('links.alreadyVerified')} <span className={authLinkClass}>{auth('links.signIn')}</span>
             </Link>
           </div>
         </>
       }
     >
-      {message && <AuthMessage success={isSuccess}>{message}</AuthMessage>}
+      {successKey ? <AuthMessage success>{auth(successKey)}</AuthMessage> : null}
+      {validationKey === 'validation.registrationFirst' ? <AuthMessage>{auth(validationKey)}</AuthMessage> : null}
+      {requestFailure ? (
+        <AuthMessage>
+          {localizedErrorMessage(
+            requestFailure.cause,
+            locale,
+            auth(requestFailure.context === 'resend' ? 'verifyEmail.resendError' : 'verifyEmail.error'),
+          )}
+        </AuthMessage>
+      ) : null}
 
-      <div className="mb-5 flex items-start gap-3 rounded-md border border-[#d8e8e7] bg-[#f7fcfb] p-4">
-        <MailCheck size={18} className="mt-0.5 shrink-0 text-[var(--brand)]" />
-        <p className="text-xs font-semibold leading-relaxed text-muted-foreground">
-          Your account stays locked until this email is verified. The code expires after 10 minutes.
-        </p>
+      <div className="mb-5">
+        <AuthInfoPanel icon={MailCheck}>{auth('verifyEmail.securityNotice')}</AuthInfoPanel>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="mb-3 block text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Verification Code
-          </label>
-          <InputOTP
-            maxLength={6}
-            value={otp}
-            onChange={setOtp}
-            inputMode="numeric"
-            autoFocus
-            containerClassName="justify-center gap-2"
-          >
-            <InputOTPGroup className="gap-2">
-              {[0, 1, 2, 3, 4, 5].map((index) => (
-                <InputOTPSlot
-                  key={index}
-                  index={index}
-                  className="h-12 w-11 rounded-md border border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-base font-semibold text-foreground data-[active=true]:border-[var(--brand)] data-[active=true]:ring-4 data-[active=true]:ring-[var(--brand-ring)]"
-                />
-              ))}
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
+        <AuthOtpField
+          id="email-verification-code"
+          label={auth('fields.verificationCode')}
+          value={otp}
+          onChange={(value) => {
+            setOtp(value)
+            setValidationKey(null)
+            setRequestFailure(null)
+          }}
+          autoFocus
+          error={validationKey === 'validation.completeCode' ? auth(validationKey) : undefined}
+        />
 
-        <button type="submit" disabled={isSubmitting || !email} className={authPrimaryButtonClass}>
-          {isSubmitting ? 'Verifying...' : 'Verify Email'}
-          {!isSubmitting && <ArrowRight size={18} />}
-        </button>
+        <AuthSubmitButton
+          label={auth('verifyEmail.submit')}
+          pendingLabel={auth('verifyEmail.submitting')}
+          pending={isSubmitting}
+          disabled={!email || Boolean(successKey)}
+        />
       </form>
 
-      <button
-        type="button"
-        disabled={isResending || remainingSeconds > 0 || !email}
+      <AuthSecondaryButton
+        label={resendLabel}
+        pendingLabel={auth('verifyEmail.resending')}
+        pending={isResending}
+        disabled={remainingSeconds > 0 || !email || Boolean(successKey)}
         onClick={() => void handleResend()}
-        className={`mt-4 ${authSecondaryButtonClass}`}
-      >
-        <RotateCcw size={16} />
-        {isResending
-          ? 'Sending...'
-          : remainingSeconds > 0
-            ? `Resend in ${remainingSeconds}s`
-            : 'Resend Code'}
-      </button>
+        icon={RotateCcw}
+        className="mt-4"
+      />
     </AuthShell>
   )
 }

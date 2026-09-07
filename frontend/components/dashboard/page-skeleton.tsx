@@ -1,4 +1,7 @@
+'use client'
+
 import { cn } from '@/lib/utils'
+import { useTranslations } from '@/lib/i18n'
 
 export function DashboardLoadingProgress({ className }: { className?: string }) {
   return (
@@ -109,10 +112,12 @@ function ActivitySkeleton() {
 }
 
 export function LoadingSkeleton() {
+  const shared = useTranslations('shared')
+
   return (
     <div className="min-h-screen bg-transparent" role="status" aria-live="polite" aria-busy="true">
       <DashboardLoadingProgress />
-      <span className="sr-only">Loading dashboard workspace</span>
+      <span className="sr-only">{shared('loadingDashboard')}</span>
       <DashboardHeaderSkeleton />
 
       <div className="p-4 sm:p-6 lg:p-8" aria-hidden="true">
@@ -123,7 +128,7 @@ export function LoadingSkeleton() {
           </div>
           <div className="dashboard-subtle-card hidden items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-[var(--dashboard-muted)] sm:flex">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--brand)]" />
-            Loading workspace
+            {shared('loadingWorkspace')}
           </div>
         </div>
 

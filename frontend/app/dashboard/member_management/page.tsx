@@ -666,7 +666,7 @@ function MembersTable({
     }
   };
 
-  const SortIcon = ({ field }: { field: typeof sortField }) => {
+  const renderSortIcon = (field: typeof sortField) => {
     if (sortField !== field) return null;
     return sortDir === 'asc' ? <ChevronUp size={14} className="ml-0.5" /> : <ChevronDown size={14} className="ml-0.5" />;
   };
@@ -683,7 +683,7 @@ function MembersTable({
                   className="inline-flex items-center gap-0.5 transition hover:text-primary"
                 >
                   Member
-                  <SortIcon field="name" />
+                  {renderSortIcon('name')}
                 </button>
               </th>
               <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground md:table-cell">
@@ -698,7 +698,7 @@ function MembersTable({
                   className="inline-flex items-center gap-0.5 transition hover:text-primary"
                 >
                   Role
-                  <SortIcon field="role" />
+                  {renderSortIcon('role')}
                 </button>
               </th>
               <th className="hidden whitespace-nowrap px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:table-cell">
@@ -707,7 +707,7 @@ function MembersTable({
                   className="inline-flex items-center gap-0.5 transition hover:text-primary"
                 >
                   Joined
-                  <SortIcon field="joined_at" />
+                  {renderSortIcon('joined_at')}
                 </button>
               </th>
               <th className="hidden whitespace-nowrap px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:table-cell">

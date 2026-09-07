@@ -1,3 +1,6 @@
+import { resolveStoredLocale } from '@/lib/i18n/locale-storage'
+import { isLocale } from '@/lib/i18n/types'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
 const REQUEST_TIMEOUT_MS = 60000
 
@@ -5,6 +8,8 @@ export interface BackendResponse<T> {
   statusCode: number
   success: boolean
   message: string
+  code?: string
+  params?: Record<string, string | number | boolean | null>
   meta?: { total: number; page: number; limit: number; totalPages?: number } | null
   totalAmount?: number
   totalMealCount?: number
@@ -20,8 +25,9 @@ export class ApiError extends Error {
   constructor(
     public statusCode: number,
     message: string,
-    public errorSources?: { path: string; message: string }[],
+    public errorSources?: { path: string | number; message: string }[],
     public code?: string,
+    public params: Record<string, string | number | boolean | null> = {},
   ) {
     super(message)
     this.name = 'ApiError'
@@ -301,6 +307,7 @@ export interface User {
   phone?: string | null
   role: GlobalRole
   avatar_url?: string | null
+  preferred_locale?: 'en' | 'bn' | null
   is_active?: boolean
   created_at?: string
   updated_at?: string
@@ -676,7 +683,22 @@ class ApiClient {
 
   private getToken() {
     if (typeof window === 'undefined') return null
-    return localStorage.getItem('authToken')
+    try {
+      return localStorage.getItem('authToken')
+    } catch {
+      return null
+    }
+  }
+
+  private getLocale() {
+    if (typeof window === 'undefined') return 'en'
+    try {
+      return resolveStoredLocale(window.localStorage, window.navigator.language)
+    } catch {
+      const sessionLocale = document.documentElement.dataset.locale
+      if (isLocale(sessionLocale)) return sessionLocale
+      return window.navigator.language.toLowerCase().startsWith('bn') ? 'bn' : 'en'
+    }
   }
 
   private async request<T>(
@@ -704,12 +726,14 @@ class ApiClient {
     Object.assign(headers, options.headers)
     
     const requestHeaders = headers as Record<string, string>
+    requestHeaders['Accept-Language'] = this.getLocale()
     if (token) requestHeaders.Authorization = `Bearer ${token}`
 
     const controller = new AbortController()
     const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     const abortRequest = () => controller.abort()
     options.signal?.addEventListener('abort', abortRequest, { once: true })
+    if (options.signal?.aborted) controller.abort()
 
     const fetchOptions: RequestInit = { ...options, headers, signal: controller.signal }
     delete (fetchOptions as RequestInit & { params?: QueryParams }).params
@@ -723,12 +747,21 @@ class ApiClient {
           json.message ?? response.statusText ?? 'Something went wrong',
           json.errorSources,
           json.code,
+          json.params ?? {},
         )
       }
       return json as BackendResponse<T>
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new ApiError(408, 'Request timed out. Please check that the backend server is running.')
+        throw new ApiError(
+          408,
+          'Request timed out. Please check that the backend server is running.',
+          [],
+          'REQUEST_TIMEOUT',
+        )
+      }
+      if (error instanceof TypeError && /fetch|network|failed/i.test(error.message)) {
+        throw new ApiError(0, 'Unable to connect to Messzen.', [], 'NETWORK_ERROR')
       }
       throw error
     } finally {
@@ -812,7 +845,7 @@ class ApiClient {
   }
 
   forgotPassword(email: string) {
-    return this.request<{ message: string }>('/auth/forgot-password', {
+    return this.request<{ message: string; resendAvailableInSeconds: number }>('/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
     })
@@ -841,6 +874,12 @@ class ApiClient {
       method: 'PATCH',
       body: data,
     })
+  }
+
+  updatePreferredLocale(locale: 'en' | 'bn') {
+    const data = new FormData()
+    data.set('preferredLocale', locale)
+    return this.updateProfile(data)
   }
 
   changePassword(oldPassword: string, newPassword: string) {
@@ -1366,11 +1405,17 @@ class ApiClient {
 
   // ─── Public Endpoints ────────────────────────────────────
   getPublicMesses(signal?: AbortSignal) {
-    return fetch(`${API_BASE_URL}/public/messes`, { signal }).then(res => res.json())
+    return fetch(`${API_BASE_URL}/public/messes`, {
+      signal,
+      headers: { 'Accept-Language': this.getLocale() },
+    }).then(res => res.json())
   }
 
   getPublicPlans(signal?: AbortSignal) {
-    return fetch(`${API_BASE_URL}/public/plans`, { signal }).then(res => res.json())
+    return fetch(`${API_BASE_URL}/public/plans`, {
+      signal,
+      headers: { 'Accept-Language': this.getLocale() },
+    }).then(res => res.json())
   }
 
   // ─── Subscription Endpoints ──────────────────────────────

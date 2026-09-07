@@ -6,20 +6,23 @@ import { ArrowRight, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { BrandLogo } from '@/components/brand-logo'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { LanguageSwitcher } from '@/components/language-switcher'
 import { APP_FEATURES } from '@/lib/feature-flags'
+import { useTranslations, type MessageKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
-const links = [
-  { label: 'Home', href: '/' },
-  { label: 'Automation', href: '/#automation' },
-  { label: 'Meal Pattern', href: '/#meal-pattern' },
-  { label: 'Features', href: '/#features' },
-  ...(APP_FEATURES.marketingPricing ? [{ label: 'Pricing', href: '/#pricing' }] : []),
-  { label: 'About Us', href: '/about' },
+const links: Array<{ labelKey: MessageKey<'navigation'>; href: string }> = [
+  { labelKey: 'home', href: '/' },
+  { labelKey: 'automation', href: '/#automation' },
+  { labelKey: 'mealPattern', href: '/#meal-pattern' },
+  { labelKey: 'features', href: '/#features' },
+  ...(APP_FEATURES.marketingPricing ? [{ labelKey: 'pricing' as const, href: '/#pricing' }] : []),
+  { labelKey: 'aboutUs', href: '/about' },
 ]
 
 export function Navbar() {
   const pathname = usePathname()
+  const navigation = useTranslations('navigation')
   const [isOpen, setIsOpen] = useState(false)
   const [hash, setHash] = useState('')
 
@@ -39,7 +42,7 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-[var(--marketing-line)] bg-[var(--marketing-page)]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" aria-label="Messzen home">
+        <Link href="/" aria-label={navigation('messzenHome')}>
           <BrandLogo />
         </Link>
 
@@ -49,35 +52,37 @@ export function Navbar() {
               key={link.href}
               href={link.href}
               className={cn(
-                'relative py-2 text-[13px] font-bold text-muted-foreground transition after:absolute after:inset-x-1 after:-bottom-1 after:h-0.5 after:origin-center after:scale-x-0 after:rounded-full after:bg-[var(--brand)] after:transition-transform',
+                'relative py-2 text-[13px] font-semibold text-muted-foreground transition after:absolute after:inset-x-1 after:-bottom-1 after:h-0.5 after:origin-center after:scale-x-0 after:rounded-full after:bg-[var(--brand)] after:transition-transform',
                 isActive(link.href)
                   ? 'text-foreground after:scale-x-100'
                   : 'hover:text-[var(--brand)] hover:after:scale-x-100',
               )}
             >
-              {link.label}
+              {navigation(link.labelKey)}
             </a>
           ))}
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
           <a href="/login" className="ghost-button h-10 min-h-0 px-5">
-            Log in
+            {navigation('logIn')}
           </a>
           <a href="/register" className="brand-button h-10 min-h-0 px-5">
-            Get Started <ArrowRight size={15} />
+            {navigation('getStarted')} <ArrowRight size={15} />
           </a>
+          <LanguageSwitcher compact />
           <ThemeToggle />
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
+          <LanguageSwitcher compact />
           <ThemeToggle />
           <button
             type="button"
             className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-foreground"
             onClick={() => setIsOpen((value) => !value)}
             aria-expanded={isOpen}
-            aria-label="Toggle navigation"
+            aria-label={navigation('toggleNavigation')}
           >
             {isOpen ? <X size={19} /> : <Menu size={19} />}
           </button>
@@ -93,19 +98,19 @@ export function Navbar() {
                 href={link.href}
                 onClick={() => setIsOpen(false)}
                 className={cn(
-                  'rounded-xl px-4 py-3 text-sm font-bold transition',
+                  'rounded-xl px-4 py-3 text-sm font-semibold transition',
                   isActive(link.href)
                     ? 'bg-[var(--brand-soft)] text-[var(--brand)]'
                     : 'text-foreground hover:bg-[var(--marketing-subtle)]',
                 )}
               >
-                {link.label}
+                {navigation(link.labelKey)}
               </a>
             ))}
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <a href="/login" className="ghost-button" onClick={() => setIsOpen(false)}>Log in</a>
-            <a href="/register" className="brand-button" onClick={() => setIsOpen(false)}>Get Started</a>
+            <a href="/login" className="ghost-button" onClick={() => setIsOpen(false)}>{navigation('logIn')}</a>
+            <a href="/register" className="brand-button" onClick={() => setIsOpen(false)}>{navigation('getStarted')}</a>
           </div>
         </div>
       )}

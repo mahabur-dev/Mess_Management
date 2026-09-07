@@ -35,8 +35,8 @@ export function EnterpriseDetailsDrawer({
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]">{headerIcon}</span>
               <div className="min-w-0">
                 <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">{eyebrow}</p>
-                <SheetTitle className="truncate text-xl font-semibold tracking-tight">{title}</SheetTitle>
-                {description && <SheetDescription className="truncate font-semibold">{description}</SheetDescription>}
+                <SheetTitle className="break-words text-xl font-semibold tracking-tight">{title}</SheetTitle>
+                {description && <SheetDescription className="break-words leading-6">{description}</SheetDescription>}
               </div>
             </div>
             {status && <div className="mt-1 shrink-0">{status}</div>}

@@ -3,7 +3,8 @@
 import { ArrowRight, CalendarClock, CalendarRange, History, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { MealPattern } from '@/lib/api-client'
-import { formatPatternDate, getPatternWeeklyTotal, isPatternConfigurable } from '@/lib/meal-pattern'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
+import { getPatternWeeklyTotal, isPatternConfigurable } from '@/lib/meal-pattern'
 import { PatternStatusBadge } from './pattern-status-badge'
 import { SchedulePreview } from './schedule-preview'
 
@@ -15,6 +16,9 @@ interface PatternOverviewCardProps {
 }
 
 export function PatternOverviewCard({ pattern, memberName, onSetup, onView }: PatternOverviewCardProps) {
+  const format = useLocaleFormatters()
+  const t = useTranslations('mealPatterns')
+
   if (!pattern) {
     return (
       <section className="dashboard-card relative overflow-hidden p-5 sm:p-7">
@@ -22,13 +26,13 @@ export function PatternOverviewCard({ pattern, memberName, onSetup, onView }: Pa
           <span className="grid size-14 place-items-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)] ">
             <CalendarClock className="size-7" />
           </span>
-          <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">Meal automation</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">Set your routine once</h2>
+          <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">{t('overview.automation')}</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{t('overview.setupTitle')}</h2>
           <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-muted-foreground">
-            Choose the meals you normally take. Messzen will add them automatically, and you can still change an individual meal later.
+            {t('overview.setupDescription')}
           </p>
           <Button onClick={onSetup} className="mt-6 min-h-12 w-full rounded-xl bg-[var(--brand)] px-5 font-semibold text-primary-foreground  hover:bg-[var(--brand-hover)] sm:w-auto">
-            Set my meal pattern <ArrowRight className="size-4" />
+            {t('overview.setupAction')} <ArrowRight className="size-4" />
           </Button>
         </div>
       </section>
@@ -44,9 +48,9 @@ export function PatternOverviewCard({ pattern, memberName, onSetup, onView }: Pa
               <Sparkles className="size-6" />
             </span>
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--brand)]">{memberName ? `${memberName}'s schedule` : 'Your automatic schedule'}</p>
-              <h2 className="mt-1 text-xl font-semibold text-foreground sm:text-2xl">{pattern.pattern_type === 'DAILY' ? 'Same meals every day' : 'Different meals by day'}</h2>
-              <p className="mt-1 text-sm font-semibold text-muted-foreground">Version {pattern.version} · {getPatternWeeklyTotal(pattern)} meals each week</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--brand)]">{memberName ? t('overview.memberSchedule', { name: memberName }) : t('overview.yourSchedule')}</p>
+              <h2 className="mt-1 text-xl font-semibold text-foreground sm:text-2xl">{t(pattern.pattern_type === 'DAILY' ? 'overview.sameEveryDay' : 'overview.differentByDay')}</h2>
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">{t('overview.versionTotal', { version: format.number(pattern.version), count: format.number(getPatternWeeklyTotal(pattern)) })}</p>
             </div>
           </div>
           <PatternStatusBadge status={pattern.status} className="self-start" />
@@ -60,26 +64,26 @@ export function PatternOverviewCard({ pattern, memberName, onSetup, onView }: Pa
           <div className="flex items-center gap-3">
             <CalendarRange className="size-5 shrink-0 text-[var(--brand)]" />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Starts</p>
-              <p className="text-sm font-semibold text-foreground">{formatPatternDate(pattern.start_date)}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t('overview.starts')}</p>
+              <p className="text-sm font-semibold text-foreground">{format.date(pattern.start_date)}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <CalendarClock className="size-5 shrink-0 text-[var(--brand)]" />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Runs until</p>
-              <p className="text-sm font-semibold text-foreground">{pattern.end_date ? formatPatternDate(pattern.end_date) : 'You stop it'}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t('overview.runsUntil')}</p>
+              <p className="text-sm font-semibold text-foreground">{pattern.end_date ? format.date(pattern.end_date) : t('overview.youStopIt')}</p>
             </div>
           </div>
         </div>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <Button onClick={onSetup} className="min-h-11 rounded-xl bg-[var(--brand)] px-5 font-semibold text-primary-foreground hover:bg-[var(--brand-hover)]">
-            {isPatternConfigurable(pattern) ? 'Change pattern' : 'Set a new pattern'} <ArrowRight className="size-4" />
+            {t(isPatternConfigurable(pattern) ? 'overview.change' : 'overview.new')} <ArrowRight className="size-4" />
           </Button>
           {onView && (
             <Button onClick={onView} variant="outline" className="min-h-11 rounded-xl px-5 font-semibold">
-              <History className="size-4" /> Details & history
+              <History className="size-4" /> {t('overview.details')}
             </Button>
           )}
         </div>

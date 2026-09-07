@@ -96,7 +96,7 @@ export default function VerifyEmailPage() {
             Use a different email
           </Link>
           <div>
-            <Link href="/login" className="text-sm font-semibold text-[#64748b] transition hover:text-[#008b80]">
+            <Link href="/login" className="text-sm font-semibold text-muted-foreground transition hover:text-[var(--brand)]">
               Already verified? <span className={authLinkClass}>Sign in</span>
             </Link>
           </div>
@@ -106,15 +106,15 @@ export default function VerifyEmailPage() {
       {message && <AuthMessage success={isSuccess}>{message}</AuthMessage>}
 
       <div className="mb-5 flex items-start gap-3 rounded-md border border-[#d8e8e7] bg-[#f7fcfb] p-4">
-        <MailCheck size={18} className="mt-0.5 shrink-0 text-[#008b80]" />
-        <p className="text-xs font-semibold leading-relaxed text-[#64748b]">
+        <MailCheck size={18} className="mt-0.5 shrink-0 text-[var(--brand)]" />
+        <p className="text-xs font-semibold leading-relaxed text-muted-foreground">
           Your account stays locked until this email is verified. The code expires after 10 minutes.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-3 block text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="mb-3 block text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Verification Code
           </label>
           <InputOTP
@@ -130,7 +130,7 @@ export default function VerifyEmailPage() {
                 <InputOTPSlot
                   key={index}
                   index={index}
-                  className="h-12 w-11 rounded-md border border-[#d8e8e7] bg-white text-base font-semibold text-[#071821] shadow-sm data-[active=true]:border-[#008b80] data-[active=true]:ring-4 data-[active=true]:ring-[#008b80]/10"
+                  className="h-12 w-11 rounded-md border border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-base font-semibold text-foreground data-[active=true]:border-[var(--brand)] data-[active=true]:ring-4 data-[active=true]:ring-[var(--brand-ring)]"
                 />
               ))}
             </InputOTPGroup>

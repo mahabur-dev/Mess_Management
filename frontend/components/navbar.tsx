@@ -85,7 +85,7 @@ export function Navbar() {
       </div>
 
       {isOpen && (
-        <div className="border-t border-[var(--marketing-line)] bg-[var(--marketing-page)] px-4 py-4 shadow-xl md:hidden">
+        <div className="border-t border-[var(--marketing-line)] bg-[var(--marketing-page)] px-4 py-4 md:hidden">
           <div className="grid gap-1">
             {links.map((link) => (
               <a

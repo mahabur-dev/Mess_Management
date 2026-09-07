@@ -140,9 +140,23 @@ type MarketingMobileAppTourProps = {
 const isAiStep = (step: MobileTourStep<MobileScreenId>) => step.id === 'quick-ai' || step.id.startsWith('ai-')
 const isMealPatternStep = (step: MobileTourStep<MobileScreenId>) => step.id === 'footer-pattern' || step.id.startsWith('pattern-')
 
+// The compact marketing embed keeps a stable viewport. Deep-scroll AI steps remain
+// available in the full app tour, where vertical exploration is expected.
+const aiShowcaseStepIds = new Set<string>([
+  'quick-ai',
+  'ai-screen',
+  'ai-command',
+  'ai-voice',
+  'ai-create-preview',
+  'ai-review',
+  'ai-preview',
+  'ai-save',
+  'ai-success',
+])
+
 const tourStepsByVariant: Record<MobileAppTourVariant, readonly MobileTourStep<MobileScreenId>[]> = {
   all: mobileTourSteps,
-  ai: mobileTourSteps.filter(isAiStep),
+  ai: mobileTourSteps.filter((step) => isAiStep(step) && aiShowcaseStepIds.has(step.id)),
   'meal-pattern': mobileTourSteps.filter(isMealPatternStep),
   app: mobileTourSteps.filter((step) => !isAiStep(step) && !isMealPatternStep(step)),
 }

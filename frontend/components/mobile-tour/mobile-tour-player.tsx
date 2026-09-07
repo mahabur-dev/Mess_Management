@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MousePointer2, Pause, Play, RefreshCw } from 'lucide-react'
 
 export type MobileTourStep<TScreen extends string = string> = {
@@ -32,6 +32,8 @@ export function MobileTourPlayer<TStep extends MobileTourStep>({
   const [stepIndex, setStepIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const [reduceMotion, setReduceMotion] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  const rootRef = useRef<HTMLDivElement | null>(null)
   const activeStep = steps[stepIndex]
 
   useEffect(() => {
@@ -40,6 +42,17 @@ export function MobileTourPlayer<TStep extends MobileTourStep>({
     sync()
     query.addEventListener('change', sync)
     return () => query.removeEventListener('change', sync)
+  }, [])
+
+  useEffect(() => {
+    const node = rootRef.current
+    if (!node) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.05 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
@@ -53,17 +66,17 @@ export function MobileTourPlayer<TStep extends MobileTourStep>({
   }, [steps])
 
   useEffect(() => {
-    if (!activeStep || paused || reduceMotion) return
+    if (!activeStep || paused || reduceMotion || !isVisible) return
     const timer = window.setTimeout(() => setStepIndex((current) => (current + 1) % steps.length), activeStep.duration)
     return () => window.clearTimeout(timer)
-  }, [activeStep, paused, reduceMotion, steps.length])
+  }, [activeStep, isVisible, paused, reduceMotion, steps.length])
 
   if (!activeStep) return null
 
   const isDevicePresentation = presentation === 'device'
 
   return (
-    <div className={isDevicePresentation ? 'w-full' : 'grid items-center gap-8 lg:grid-cols-[minmax(300px,390px)_minmax(280px,1fr)] lg:gap-12'}>
+    <div ref={rootRef} className={`marketing-animation ${isDevicePresentation ? 'w-full' : 'grid items-center gap-8 lg:grid-cols-[minmax(300px,390px)_minmax(280px,1fr)] lg:gap-12'}`}>
       <div className={`mx-auto w-full ${isDevicePresentation ? 'max-w-[340px] [@media(max-height:800px)]:max-w-[320px]' : 'max-w-[390px]'}`}>
         {!isDevicePresentation ? (
           <div className="mb-3 flex items-center justify-between rounded-xl border border-[#d8e5e7] bg-white px-3 py-2 shadow-sm">
@@ -94,7 +107,7 @@ export function MobileTourPlayer<TStep extends MobileTourStep>({
           ) : null}
 
         </div>
-        <div className={`mt-3 items-center gap-3 rounded-xl border border-[#d8e5e7] bg-white px-3 py-2.5 shadow-sm ${isDevicePresentation ? 'flex' : 'flex lg:hidden'}`}>
+        <div className={`mt-3 h-[66px] items-center gap-3 overflow-hidden rounded-xl border border-[#d8e5e7] bg-white px-3 py-2.5 shadow-sm ${isDevicePresentation ? 'flex' : 'flex lg:hidden'}`}>
           <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e5f6f4] text-[9px] font-semibold text-[#007f76]">{stepIndex + 1}</span>
           <div className="min-w-0"><p className="truncate text-[10px] font-semibold text-[#123748]">{activeStep.title}</p><p className="mt-0.5 line-clamp-2 text-[8px] font-medium leading-3 text-[#607981]">{activeStep.detail}</p></div>
         </div>

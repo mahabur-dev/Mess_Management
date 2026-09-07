@@ -17,10 +17,10 @@
   --brand-shadow: rgba(0, 107, 99, 0.24);
   --marketing-page: #ffffff;
   --marketing-surface: #ffffff;
-  --marketing-subtle: #f6fbfa;
-  --marketing-strong: #073735;
-  --marketing-line: #dfe9e8;
-  --marketing-glow: rgba(0, 139, 128, 0.1);
+  --marketing-subtle: color-mix(in srgb, var(--brand) 5%, #ffffff);
+  --marketing-strong: #090909;
+  --marketing-line: color-mix(in srgb, var(--brand) 18%, transparent);
+  --marketing-glow: transparent;
   /* Portaled dialogs live outside .dashboard-theme, so they need the same surface tokens here. */
   --dashboard-bg: #eef7f5;
   --dashboard-surface: #ffffff;
@@ -33,8 +33,8 @@
   --dashboard-shadow-lg: 0 22px 52px rgba(7, 55, 53, 0.14);
   --dashboard-ink: #073735;
   --dashboard-muted: #64748b;
-  --background: #f8fbff;
-  --foreground: #071821;
+  --background: #ffffff;
+  --foreground: #090909;
   --card: #ffffff;
   --card-foreground: #071821;
   --popover: #ffffff;
@@ -49,8 +49,8 @@
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e6ebf4;
-  --input: #f6f8fc;
+  --border: color-mix(in srgb, var(--brand) 18%, transparent);
+  --input: #ffffff;
   --ring: var(--brand);
   --chart-1: var(--brand);
   --chart-2: var(--brand-bright);
@@ -80,12 +80,12 @@
   --brand-border-subtle: #234447;
   --brand-ring: rgba(37, 199, 184, 0.2);
   --brand-shadow: rgba(0, 0, 0, 0.36);
-  --marketing-page: #081617;
-  --marketing-surface: #102426;
-  --marketing-subtle: #0c2022;
-  --marketing-strong: #e8fffc;
-  --marketing-line: #234447;
-  --marketing-glow: rgba(37, 199, 184, 0.12);
+  --marketing-page: #000000;
+  --marketing-surface: #090909;
+  --marketing-subtle: color-mix(in srgb, var(--brand) 9%, #000000);
+  --marketing-strong: #ffffff;
+  --marketing-line: color-mix(in srgb, var(--brand) 28%, transparent);
+  --marketing-glow: transparent;
   --dashboard-bg: #071718;
   --dashboard-surface: #0d2324;
   --dashboard-surface-raised: #11292a;
@@ -95,24 +95,24 @@
   --dashboard-hover: #153536;
   --dashboard-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 12px 34px rgba(0, 0, 0, 0.24);
   --dashboard-shadow-lg: 0 22px 52px rgba(0, 0, 0, 0.32);
-  --background: #0F172A;
+  --background: #000000;
   --foreground: #ffffff;
-  --card: #1e293b;
+  --card: #090909;
   --card-foreground: #ffffff;
-  --popover: #1e293b;
+  --popover: #090909;
   --popover-foreground: #ffffff;
   --primary: var(--brand);
   --primary-foreground: #0F172A;
   --secondary: var(--brand-bright);
   --secondary-foreground: #0F172A;
-  --muted: #334155;
-  --muted-foreground: #cbd5e1;
+  --muted: #101010;
+  --muted-foreground: #b8c9c7;
   --accent: var(--brand-bright);
   --accent-foreground: #0F172A;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #334155;
-  --input: #1e293b;
+  --border: color-mix(in srgb, var(--brand) 28%, transparent);
+  --input: #090909;
   --ring: var(--brand);
   --chart-1: var(--brand);
   --chart-2: var(--brand-bright);
@@ -205,10 +205,7 @@
 
   body {
     @apply bg-background text-foreground;
-    background:
-      radial-gradient(circle at 8% 18%, rgba(0, 139, 128, 0.08), transparent 28rem),
-      radial-gradient(circle at 90% 10%, rgba(0, 169, 157, 0.07), transparent 26rem),
-      var(--background);
+    background: var(--background);
   }
 
   ::selection {
@@ -242,7 +239,7 @@
 @layer components {
   .marketing-shell {
     --marketing-heading-weight: 600;
-    font-family: var(--font-marketing-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-dashboard-sans), Inter, ui-sans-serif, system-ui, sans-serif;
     font-optical-sizing: auto;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     font-synthesis: none;
@@ -265,10 +262,8 @@
   .marketing-page {
     min-height: 100vh;
     color: var(--foreground);
-    background:
-      radial-gradient(circle at 8% 8%, var(--marketing-glow), transparent 24rem),
-      radial-gradient(circle at 94% 4%, color-mix(in srgb, var(--brand-bright) 7%, transparent), transparent 26rem),
-      var(--marketing-page);
+    background: var(--marketing-page);
+    overflow-anchor: none;
   }
 
   .marketing-section {
@@ -288,8 +283,7 @@
 
   .marketing-card {
     border: 1px solid var(--marketing-line);
-    background: color-mix(in srgb, var(--marketing-surface) 94%, transparent);
-    box-shadow: 0 16px 44px color-mix(in srgb, var(--brand-dark) 8%, transparent);
+    background: var(--marketing-surface);
   }
 
   .marketing-card-hover {
@@ -297,21 +291,19 @@
   }
 
   .marketing-card-hover:hover {
-    transform: translateY(-4px);
+    transform: none;
     border-color: var(--brand-border);
-    box-shadow: 0 24px 58px color-mix(in srgb, var(--brand-dark) 14%, transparent);
   }
 
   .brand-button {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white transition;
     min-height: 2.75rem;
-    background: linear-gradient(135deg, var(--brand-dark), var(--brand));
-    box-shadow: 0 12px 24px var(--brand-shadow);
+    background: var(--brand);
   }
 
   .brand-button:hover {
     transform: translateY(-1px);
-    background: linear-gradient(135deg, var(--brand-darker), var(--brand-dark));
+    background: var(--brand-hover);
   }
 
   .ghost-button {
@@ -410,8 +402,7 @@
 
   /* ✅ Fixed - move shadow out of @apply */
 .glass-panel {
-    @apply border border-border bg-white/90;
-    box-shadow: 0 18px 50px rgba(22, 34, 73, 0.08);
+    @apply border border-border bg-card;
 }
 
   /* .app-card {
@@ -424,22 +415,80 @@
 
   /* ✅ After */
 .app-card {
-  @apply rounded-lg border border-border bg-white;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+  @apply rounded-lg border border-border bg-card;
 }
 
 .gradient-button {
-  background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+  background: var(--brand);
   @apply text-white hover:opacity-95;
-  box-shadow: 0 10px 22px var(--brand-shadow);
 }
 
   .soft-input {
-    @apply h-11 rounded-lg border border-border bg-white px-3 text-sm outline-none transition;
+    @apply h-11 rounded-lg border border-border bg-card px-3 text-sm outline-none transition;
     &:focus {
       border-color: color-mix(in srgb, var(--brand) 60%, transparent);
       box-shadow: 0 0 0 2px var(--brand-ring);
     }
+  }
+
+  /* Autoplay demos must not participate in document scroll anchoring or page layout. */
+  .marketing-animation,
+  .marketing-animation > * {
+    overflow-anchor: none;
+  }
+
+  .marketing-animation {
+    contain: layout paint;
+    isolation: isolate;
+  }
+
+  /* Highlight the active target without changing the canvas geometry. */
+  .marketing-animation [class*='scale-'] {
+    transform: none !important;
+  }
+
+  .marketing-animation [class*='shadow-'] {
+    box-shadow: none !important;
+  }
+
+  .marketing-animation [class*='drop-shadow-'] {
+    filter: none !important;
+  }
+
+  .marketing-animation [class*='bg-gradient'] {
+    background-image: none !important;
+  }
+
+  .marketing-animation [class*='from-[#00777a]'],
+  .marketing-animation [class*='from-[#007f7c]'],
+  .marketing-animation [class*='from-[#008d8c]'],
+  .marketing-animation [class*='from-[#063a43]'],
+  .marketing-animation [class*='from-[#102f39]'],
+  .marketing-animation [class*='from-violet'] {
+    background-color: var(--brand) !important;
+  }
+
+  .marketing-animation [class*='from-white'],
+  .marketing-animation [class*='from-[#f1efff]'] {
+    background-color: var(--marketing-surface) !important;
+  }
+
+  .marketing-animation [class*='bg-violet-'],
+  .marketing-animation [class*='bg-sky-'],
+  .marketing-animation [class*='bg-orange-'],
+  .marketing-animation [class*='bg-rose-'],
+  .marketing-animation [class*='bg-amber-'],
+  .marketing-animation [class*='bg-emerald-'] {
+    background-color: var(--brand-soft) !important;
+  }
+
+  .marketing-animation [class*='text-violet-'],
+  .marketing-animation [class*='text-sky-'],
+  .marketing-animation [class*='text-orange-'],
+  .marketing-animation [class*='text-rose-'],
+  .marketing-animation [class*='text-amber-'],
+  .marketing-animation [class*='text-emerald-'] {
+    color: var(--brand) !important;
   }
 
   .dashboard-theme {

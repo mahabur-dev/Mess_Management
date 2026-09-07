@@ -74,7 +74,7 @@ export default function AboutPage() {
 
       <section className="marketing-section">
         <div className="marketing-container grid items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
-          <div className="marketing-card relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-dark)] to-[var(--brand)] p-7 text-white">
+          <div className="marketing-card relative overflow-hidden rounded-2xl bg-[var(--brand)] p-7 text-white">
             <div className="grid grid-cols-2 gap-3">
               {capabilities.map(({ label, icon: Icon }) => (
                 <div key={label} className="rounded-xl bg-white/12 p-4 ring-1 ring-white/15 backdrop-blur-sm">

@@ -27,7 +27,7 @@ export const authPasswordToggleClass =
   'absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]'
 
 export const authPrimaryButtonClass =
-  'inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[var(--brand-dark)] to-[var(--brand)] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_var(--brand-shadow)] transition hover:from-[var(--brand-darker)] hover:to-[var(--brand-dark)] hover:shadow-[0_18px_36px_rgba(0,107,99,0.28)] disabled:opacity-70'
+  'inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-6 text-sm font-semibold text-white transition hover:bg-[var(--brand-hover)] disabled:opacity-70'
 
 export const authSecondaryButtonClass =
   'flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-4 text-sm font-bold text-[var(--brand)] transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] disabled:opacity-70'
@@ -41,8 +41,8 @@ export function AuthMessage({ children, success }: { children: ReactNode; succes
       className={cn(
         'mb-5 rounded-md border px-4 py-3 text-sm font-bold',
         success
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
-          : 'border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-200',
+          ? 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-dark)]'
+          : 'border-destructive/30 bg-destructive/10 text-destructive',
       )}
     >
       {children}
@@ -67,8 +67,8 @@ export function AuthShell({ title, description, children, footer, maxWidth = 'ma
             </p>
             <div className="mt-8 grid max-w-xl gap-4 sm:grid-cols-3">
               {['Protected access', 'Member ready', 'Manager tools'].map((item) => (
-                <div key={item} className="border-l border-[#9edbd6] pl-4">
-                  <CheckCircle2 size={18} className="text-[#008b80]" />
+              <div key={item} className="border-l border-[var(--brand-border)] pl-4">
+                  <CheckCircle2 size={18} className="text-[var(--brand)]" />
                   <p className="mt-2 text-sm font-semibold text-foreground">{item}</p>
                 </div>
               ))}

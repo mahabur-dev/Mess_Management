@@ -21,7 +21,7 @@ export function AppScreenshot({
   return (
     <div
       className={cn(
-        'relative aspect-[9/20] overflow-hidden rounded-[2rem] border-[6px] border-[#103436] bg-white shadow-[0_28px_70px_rgba(2,47,52,0.24)] ring-1 ring-white/20 dark:border-[#071c1e]',
+        'relative aspect-[9/20] overflow-hidden rounded-[2rem] border-[6px] border-[var(--brand-dark)] bg-[var(--marketing-surface)] ring-1 ring-[var(--brand-border)]',
         className,
       )}
     >

@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MousePointer2, Pause, Play, RefreshCw } from 'lucide-react'
 
 export type ProductTourStep = {
@@ -42,6 +42,8 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
   const [stepIndex, setStepIndex] = useState(0)
   const [paused, setPaused] = useState(initialPaused)
   const [reduceMotion, setReduceMotion] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  const rootRef = useRef<HTMLDivElement | null>(null)
   const [typedValue, setTypedValue] = useState('')
   const activeStep = steps[stepIndex]
 
@@ -54,7 +56,18 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
   }, [])
 
   useEffect(() => {
-    if (paused || reduceMotion || !activeStep) return
+    const node = rootRef.current
+    if (!node) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.05 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (paused || reduceMotion || !isVisible || !activeStep) return
     const timer = window.setTimeout(() => {
       if (stepIndex < steps.length - 1) {
         setStepIndex((current) => current + 1)
@@ -67,7 +80,7 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
       onComplete?.()
     }, activeStep.duration)
     return () => window.clearTimeout(timer)
-  }, [activeStep, loop, onComplete, paused, reduceMotion, stepIndex, steps.length])
+  }, [activeStep, isVisible, loop, onComplete, paused, reduceMotion, stepIndex, steps.length])
 
   useEffect(() => {
     setTypedValue('')
@@ -92,12 +105,12 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
   }
 
   return (
-    <div className="overflow-hidden rounded-[18px] border border-[#dce7ea] bg-white shadow-[0_24px_70px_rgba(18,55,72,.16)]">
-      <div className="flex items-center gap-2 border-b border-[#dce7ea] bg-[#f7f9fb] px-4 py-2.5">
+    <div ref={rootRef} className="marketing-animation overflow-hidden rounded-[18px] border border-[var(--marketing-line)] bg-[var(--marketing-surface)]">
+      <div className="flex items-center gap-2 border-b border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-4 py-2.5">
         <div className="flex gap-1.5" aria-hidden="true">
-          <span className="size-2.5 rounded-full bg-rose-400" />
-          <span className="size-2.5 rounded-full bg-amber-400" />
-          <span className="size-2.5 rounded-full bg-emerald-400" />
+          <span className="size-2.5 rounded-full bg-[var(--brand)]" />
+          <span className="size-2.5 rounded-full bg-[var(--brand-border)]" />
+          <span className="size-2.5 rounded-full bg-[var(--brand-dark)]" />
         </div>
         <div className="mx-auto flex h-6 w-[48%] items-center justify-center rounded-md border border-[#e2e8eb] bg-white text-[8px] font-bold text-[#7b8d92]">
           {address}
@@ -120,7 +133,7 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
         </button>
       </div>
 
-      <div className="relative aspect-[1.9/1] overflow-hidden bg-[#f4f8fb] text-[#123748]" aria-label={ariaLabel}>
+        <div className="relative aspect-[1.9/1] overflow-hidden bg-[var(--marketing-subtle)] text-foreground" aria-label={ariaLabel}>
         {children({ activeStep, stepIndex, typedValue })}
 
         {!reduceMotion ? (
@@ -131,7 +144,10 @@ export function ProductTourPlayer<TStep extends ProductTourStep>({
           >
             <span key={stepIndex} className="absolute -left-2 -top-2 size-7 animate-ping rounded-full bg-[#ff7a1a]/35" />
             <MousePointer2 className="relative w-[clamp(16px,2.4vw,26px)] fill-[#123748] text-white drop-shadow-[0_3px_4px_rgba(0,0,0,.32)]" strokeWidth={1.5} />
-            <div className={`absolute left-5 top-5 w-[165px] rounded-lg bg-[#102f39] px-3 py-2 text-white shadow-xl sm:w-[190px] ${activeStep.x > 65 ? '-ml-6 -translate-x-full' : ''}`}>
+            <div
+              className="absolute top-5 w-[165px] rounded-lg bg-[#102f39] px-3 py-2 text-white shadow-xl sm:w-[190px]"
+              style={activeStep.x > 65 ? { right: '1.25rem' } : { left: '1.25rem' }}
+            >
               <p className="text-[9px] font-semibold sm:text-[11px]">{activeStep.title}</p>
               <p className="mt-0.5 text-[7px] font-medium leading-3 text-white/70 sm:text-[9px] sm:leading-4">{activeStep.detail}</p>
             </div>

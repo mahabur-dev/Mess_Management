@@ -4,6 +4,7 @@ import { CalendarDays, CircleCheck, LockKeyhole, Settings2, UserPlus, Users } fr
 import type { BazarSchedule, BazarScheduleDate, BazarDutySlot } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { dateStatus, formatBazarDate, getInitials, slotStatus, WEEKDAYS } from './bazar-schedule-utils'
+import { statusLabel, useLocale, useLocaleFormatters, useTranslations, weekdayLabel } from '@/lib/i18n'
 
 interface ScheduleCalendarProps {
   schedule: BazarSchedule
@@ -32,6 +33,8 @@ function CalendarSlot({
   onClaim: (slot: BazarDutySlot) => void
   onDuty: (slot: BazarDutySlot, date: BazarScheduleDate) => void
 }) {
+  const { locale } = useLocale()
+  const t = useTranslations('bazarSchedule')
   const effectiveStatus = slotStatus(slot)
   const mine = slot.assigned_member_id === userId
 
@@ -44,7 +47,7 @@ function CalendarSlot({
         className="group/slot flex min-h-9 w-full items-center gap-2 rounded-lg border border-dashed border-[var(--brand-border)] bg-[var(--brand-softer)] px-2.5 py-1.5 text-left text-[11px] font-semibold text-[var(--brand-dark)] transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:opacity-50"
       >
         <UserPlus className="size-3.5 shrink-0" />
-        <span>{busy ? 'Taking…' : canManage ? 'Assign member' : 'Take duty'}</span>
+        <span>{busy ? t('taking') : canManage ? t('assignMember') : t('takeDuty')}</span>
       </button>
     )
   }
@@ -52,7 +55,7 @@ function CalendarSlot({
   if (effectiveStatus === 'CLOSED') {
     return (
       <div className="flex min-h-9 items-center gap-2 rounded-lg bg-[var(--dashboard-surface-subtle)] px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground">
-        <LockKeyhole className="size-3.5" /> Closed
+        <LockKeyhole className="size-3.5" /> {statusLabel('CLOSED', locale)}
       </div>
     )
   }
@@ -72,7 +75,7 @@ function CalendarSlot({
         {getInitials(slot.assigned_member?.name ?? 'Member')}
       </span>
       <span className="min-w-0 flex-1 truncate text-[11px] font-semibold">
-        {mine ? 'You' : slot.assigned_member?.name ?? 'Assigned'}
+        {mine ? t('you') : slot.assigned_member?.name ?? statusLabel('ASSIGNED', locale)}
       </span>
       {mine && <CircleCheck className="size-3.5 shrink-0" />}
     </button>
@@ -80,6 +83,9 @@ function CalendarSlot({
 }
 
 export function ScheduleCalendar({ schedule, userId, canManage, busyId, onClaim, onDuty, onManageDate }: ScheduleCalendarProps) {
+  const { locale } = useLocale()
+  const format = useLocaleFormatters()
+  const t = useTranslations('bazarSchedule')
   const totalDays = new Date(Date.UTC(schedule.year, schedule.month, 0)).getUTCDate()
   const firstWeekday = new Date(Date.UTC(schedule.year, schedule.month - 1, 1)).getUTCDay()
   const saturdayFirstOffset = (firstWeekday + 1) % 7
@@ -98,7 +104,7 @@ export function ScheduleCalendar({ schedule, userId, canManage, busyId, onClaim,
         <div className="grid grid-cols-7 border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)]/70">
           {WEEKDAYS.map((weekday) => (
             <div key={weekday.value} className="px-3 py-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              {weekday.short}
+              {weekdayLabel(weekday.label, locale).slice(0, 3)}
             </div>
           ))}
         </div>
@@ -120,10 +126,10 @@ export function ScheduleCalendar({ schedule, userId, canManage, busyId, onClaim,
                   <>
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className={cn('grid size-7 place-items-center rounded-lg text-xs font-bold', date ? 'bg-[var(--brand)] text-primary-foreground ' : 'text-muted-foreground')}>
-                        {day}
+                        {format.number(day)}
                       </span>
                       {date && canManage && !date.isPast && (
-                        <button type="button" onClick={() => onManageDate(date)} className="grid size-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)]" aria-label={`Manage ${formatBazarDate(date.duty_date)}`}>
+                        <button type="button" onClick={() => onManageDate(date)} className="grid size-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-[var(--dashboard-hover)] hover:text-[var(--brand)]" aria-label={t('manageDateLabel', { date: formatBazarDate(date.duty_date, locale) })}>
                           <Settings2 className="size-3.5" />
                         </button>
                       )}
@@ -135,7 +141,7 @@ export function ScheduleCalendar({ schedule, userId, canManage, busyId, onClaim,
                         ))}
                       </div>
                     ) : (
-                      <p className="pt-5 text-center text-[10px] font-semibold text-muted-foreground/55">No bazar</p>
+                      <p className="pt-5 text-center text-[10px] font-semibold text-muted-foreground/55">{t('noBazar')}</p>
                     )}
                   </>
                 )}
@@ -155,12 +161,12 @@ export function ScheduleCalendar({ schedule, userId, canManage, busyId, onClaim,
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 gap-3">
                   <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-sm font-bold text-[var(--brand-dark)]">
-                    {new Date(date.duty_date).getUTCDate()}
+                    {format.number(new Date(date.duty_date).getUTCDate())}
                   </span>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-[var(--dashboard-ink)]">{formatBazarDate(date.duty_date, { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
+                    <h3 className="font-semibold text-[var(--dashboard-ink)]">{formatBazarDate(date.duty_date, locale, { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
                     <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                      <Users className="size-3.5" /> {assigned}/{date.required_members} assigned · {available} open
+                      <Users className="size-3.5" /> {t('assignedOpen', { assigned: format.number(assigned), required: format.number(date.required_members), available: format.number(available) })}
                     </p>
                   </div>
                 </div>
@@ -181,7 +187,7 @@ export function ScheduleCalendar({ schedule, userId, canManage, busyId, onClaim,
         {!schedule.dates.length && (
           <div className="dashboard-card p-10 text-center">
             <CalendarDays className="mx-auto size-9 text-muted-foreground" />
-            <p className="mt-3 text-sm font-semibold text-muted-foreground">No bazar dates in this month.</p>
+            <p className="mt-3 text-sm font-semibold text-muted-foreground">{t('noDates')}</p>
           </div>
         )}
       </div>

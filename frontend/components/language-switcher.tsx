@@ -20,6 +20,7 @@ export function LanguageSwitcher({ className, compact = false }: LanguageSwitche
       size={compact ? 'icon' : 'default'}
       onClick={toggleLocale}
       className={cn(!compact && 'gap-2 px-3', className)}
+      data-language-switcher
       aria-label={accessibleLabel}
       title={accessibleLabel}
     >

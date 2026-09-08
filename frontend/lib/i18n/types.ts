@@ -5,6 +5,7 @@ export type Locale = (typeof SUPPORTED_LOCALES)[number]
 
 export const DEFAULT_LOCALE: Locale = 'en'
 export const LOCALE_STORAGE_KEY = 'messzen:locale'
+export const LOCALE_COOKIE_KEY = 'messzen_locale'
 export const LEGACY_LOCALE_STORAGE_KEYS = ['messzen:personal-locale', 'messzen:ai-locale'] as const
 
 export type Messages = typeof enMessages

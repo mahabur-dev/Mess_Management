@@ -4,6 +4,7 @@ import type {
   BazarFrequency,
   BazarRequestStatus,
 } from '@/lib/api-client'
+import { intlLocale, type Locale } from '@/lib/i18n'
 
 export const WEEKDAYS = [
   { value: 6, short: 'Sat', label: 'Saturday' },
@@ -21,8 +22,8 @@ export const FREQUENCY_LABELS: Record<BazarFrequency, string> = {
   CUSTOM_DATES: 'Custom dates',
 }
 
-export function formatBazarDate(value: string, options?: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat('en-US', {
+export function formatBazarDate(value: string, locale: Locale, options?: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
     month: 'short',
     day: '2-digit',
     year: 'numeric',
@@ -31,8 +32,8 @@ export function formatBazarDate(value: string, options?: Intl.DateTimeFormatOpti
   }).format(new Date(value))
 }
 
-export function monthLabel(year: number, month: number) {
-  return new Intl.DateTimeFormat('en-US', {
+export function monthLabel(year: number, month: number, locale: Locale) {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',

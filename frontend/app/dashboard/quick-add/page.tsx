@@ -55,8 +55,7 @@ export default function QuickAddAiPage() {
   const format = useLocaleFormatters();
   const [messes, setMesses] = useState<Mess[]>([]);
   const [capabilities, setCapabilities] = useState<AiCapabilities | null>(null);
-  const [commandLocaleOverride, setCommandLocale] = useState<AiLocale | null>(null);
-  const commandLocale = commandLocaleOverride ?? uiLocale;
+  const commandLocale = uiLocale;
   const [command, setCommand] = useState("");
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<"text" | "voice" | null>(null);
@@ -200,7 +199,7 @@ export default function QuickAddAiPage() {
         <section className="dashboard-card overflow-hidden">
           <div className="grid lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="p-5 sm:p-7 lg:p-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
                 <div className="max-w-2xl">
                   <div className="mb-3 flex size-11 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)]">
                     <Sparkles className="size-5" />
@@ -213,22 +212,6 @@ export default function QuickAddAiPage() {
                   </p>
                 </div>
 
-                <div className="inline-flex w-fit rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] p-1">
-                  {(["en", "bn"] as const).map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setCommandLocale(item)}
-                      className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
-                        commandLocale === item
-                          ? "bg-[var(--dashboard-surface)] text-[var(--brand)] "
-                          : "text-[var(--dashboard-muted)]"
-                      }`}
-                    >
-                      {item === "en" ? t("english") : t("bangla")}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div className="mt-7 rounded-2xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] p-3  sm:p-4">
@@ -426,7 +409,6 @@ export default function QuickAddAiPage() {
                 type="button"
                 onClick={() => {
                   setCommand(example);
-                  setCommandLocale(/[\u0980-\u09ff]/.test(example) ? "bn" : "en");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 disabled={cannotSubmit}

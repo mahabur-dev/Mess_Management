@@ -5,11 +5,14 @@ import { apiClient, type Mess, type MessDashboard } from '@/lib/api-client'
 import { useAuth } from '@/app/context/auth-context'
 import { BarChart3, ClipboardList, CreditCard, UtensilsCrossed, WalletCards, TrendingUp, Users, DollarSign, FileText } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useLocaleFormatters, useTranslations } from '@/lib/i18n'
 
 export default function ReportsPage() {
   const [mess, setMess] = useState<Mess | null>(null)
   const [dashboard, setDashboard] = useState<MessDashboard | null>(null)
   const { user } = useAuth()
+  const t = useTranslations('reportsPage')
+  const format = useLocaleFormatters()
 
   useEffect(() => {
     async function load() {
@@ -31,15 +34,15 @@ export default function ReportsPage() {
   }, [user?.role])
 
   const cards = [
-    ['Daily Meal Report', dashboard?.todayTotalMeals ?? 0, UtensilsCrossed, 'meal'],
-    ['Monthly Expense Report', `৳ ${Number(dashboard?.currentMonthTotalBazar ?? 0).toLocaleString()}`, WalletCards, 'expense'],
-    ['Member Due Report', `৳ ${Number(dashboard?.totalDue ?? 0).toLocaleString()}`, ClipboardList, 'due'],
-    ['Payment Report', dashboard?.pendingPayments ?? 0, CreditCard, 'payment'],
+    [t('dailyMeal'), format.number(dashboard?.todayTotalMeals ?? 0), UtensilsCrossed, 'meal'],
+    [t('monthlyExpense'), format.money(dashboard?.currentMonthTotalBazar ?? 0), WalletCards, 'expense'],
+    [t('memberDue'), format.money(dashboard?.totalDue ?? 0), ClipboardList, 'due'],
+    [t('payment'), format.number(dashboard?.pendingPayments ?? 0), CreditCard, 'payment'],
   ] as const
 
   return (
     <div className="min-h-screen bg-transparent">
-      <DashboardHeader title="Reports" description={mess ? `${mess.name} reporting center` : 'Reports and analytics'} />
+      <DashboardHeader title={t('title')} description={mess ? t('messCenter', { name: mess.name }) : t('description')} />
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Page Header */}
         <div className="mb-7 flex items-center gap-4">
@@ -47,9 +50,9 @@ export default function ReportsPage() {
             <BarChart3 size={24} className="text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Dashboard Reports</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('dashboardReports')}</h2>
             <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
-              {mess ? `${mess.name} - Summary overview` : 'Reports and analytics'}
+              {mess ? t('summaryOverview', { name: mess.name }) : t('description')}
             </p>
           </div>
         </div>
@@ -89,23 +92,22 @@ export default function ReportsPage() {
                 <FileText size={22} />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-foreground">PDF/Excel Export Ready</h3>
+                <h3 className="text-base font-semibold text-foreground">{t('exportReady')}</h3>
                 <p className="mt-1.5 text-sm font-semibold leading-relaxed text-muted-foreground">
-                  The report dashboard is connected to backend summary data and ready for export buttons.
-                  All key metrics—meal counts, expenses, dues, and payments—are pulled from live data.
+                  {t('exportDescription')}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <span className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)]">
                     <FileText size={13} />
-                    PDF Export
+                    {t('pdfExport')}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)]">
                     <FileText size={13} />
-                    Excel Export
+                    {t('excelExport')}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1.5 text-[11px] font-bold text-[var(--brand)]">
                     <TrendingUp size={13} />
-                    Real-time Data
+                    {t('realTimeData')}
                   </span>
                 </div>
               </div>

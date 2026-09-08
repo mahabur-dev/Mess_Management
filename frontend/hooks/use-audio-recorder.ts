@@ -9,6 +9,12 @@ const MIME_TYPES = [
   "audio/ogg;codecs=opus",
 ];
 
+// Keep enough Opus detail for short multilingual commands and similar-sounding
+// Bangla/Banglish words while remaining much smaller than uncompressed PCM.
+const SPEECH_AUDIO_BITS_PER_SECOND = 96_000;
+const SPEECH_SAMPLE_RATE = 16_000;
+const RECORDER_TIMESLICE_MS = 250;
+
 export function useAudioRecorder(
   onRecorded: (audio: Blob) => void,
   maxSeconds = 60,
@@ -58,7 +64,7 @@ export function useAudioRecorder(
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: { ideal: 1 },
-          sampleRate: { ideal: 48_000 },
+          sampleRate: { ideal: SPEECH_SAMPLE_RATE },
           sampleSize: { ideal: 16 },
           echoCancellation: true,
           noiseSuppression: true,
@@ -71,7 +77,7 @@ export function useAudioRecorder(
       );
       const recorder = new MediaRecorder(stream, {
         ...(mimeType ? { mimeType } : {}),
-        audioBitsPerSecond: 128_000,
+        audioBitsPerSecond: SPEECH_AUDIO_BITS_PER_SECOND,
       });
       recorderRef.current = recorder;
       recorder.ondataavailable = (event) => {
@@ -89,7 +95,9 @@ export function useAudioRecorder(
         setError("Recording failed. Please try again.");
         release();
       };
-      recorder.start();
+      // Periodic chunks avoid holding one large encoded buffer in memory and
+      // make stopping/finalizing the recording faster on mobile browsers.
+      recorder.start(RECORDER_TIMESLICE_MS);
       setSeconds(0);
       setIsRecording(true);
       timerRef.current = setInterval(

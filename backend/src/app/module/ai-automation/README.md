@@ -71,9 +71,11 @@ falls back to the configured model. `AI_COMMAND_TIMEOUT_MS` and
 `AI_PREVIEW_SLOW_LOG_MS` emit per-stage timing logs without recording command
 text or credentials.
 
-For mixed Bangla, English, and Banglish speech, send `speechLanguage=auto`.
-Auto mode does not force the UI language; it uses a neutral domain vocabulary
-prompt and preserves spoken names, numbers, quantities, units, and prices.
+Quick Add sends the language selected in the site header as the primary speech
+hint because the transcription API documents that an ISO-639-1 language hint
+improves both accuracy and latency. Each language receives a matching, natural
+mess-command prompt to guide common item names, quantities, and prices. Keep
+`speechLanguage=auto` for clients where the spoken language is unknown.
 Set `AI_SPEECH_PROMPT` only when testing a custom vocabulary prompt.
 
 Compare several speech models against the same recording:
@@ -97,7 +99,8 @@ For backward compatibility, `GROQ_API_KEY`, `GROQ_COMMAND_MODEL`, and
 ## Required integration changes
 
 1. Voice DTO now accepts `speechLanguage?: 'auto' | 'en' | 'bn'`.
-Default to `auto` unless the user explicitly selected their spoken language.
+Send the best available spoken-language hint. Quick Add uses the language
+selected in the site header; use `auto` only when no reliable hint exists.
 
 ```ts
 const transcript = await speechProvider.transcribe(
@@ -106,7 +109,7 @@ const transcript = await speechProvider.transcribe(
 );
 ```
 
-2. Do not use the UI language as the speech language. UI locale and spoken language can differ.
+2. Keep `auto` available when UI locale and spoken language differ.
 
 3. Send both original and normalized text to the LLM. The provider already does this.
 

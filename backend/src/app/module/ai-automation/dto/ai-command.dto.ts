@@ -55,8 +55,8 @@ export class CreateVoiceCommandDto {
   locale?: AppLocale;
 
   /**
-   * Keep this optional. When omitted/auto, the speech provider detects the language.
-   * This is important because UI locale and spoken language are not always the same.
+   * Keep this optional. Send the best known spoken language for better accuracy
+   * and latency; use auto only when the caller has no reliable language hint.
    */
   @IsOptional()
   @Transform(lowerString)

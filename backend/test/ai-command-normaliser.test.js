@@ -46,6 +46,12 @@ test('normalizes natural Bangla, English, and Banglish purchase phrasing', () =>
     normalizeCommandText('আমি ২ কেজি আলু ৬০ টাকা কিনেছি'),
     'আমি 2 kg আলু 60 taka কিনেছি',
   );
+  assert.equal(
+    normalizeCommandText(
+      'আলু দুই কেজি পঞ্চাশ টাকা, পেঁয়াজ দুই কেজি একশ টাকা, এবং তেল এক কেজি দুইশ টাকা add.',
+    ),
+    'আলু 2 kg 50 taka, পেঁয়াজ 2 kg 100 taka, এবং তেল 1 kg 200 taka add.',
+  );
 });
 
 test('normalizes spoken Bangla monetary amounts before command parsing', () => {
@@ -98,6 +104,16 @@ test('keeps explicitly supplied quantities while leaving omitted quantities empt
     [
       { itemName: 'alu', amount: 120, quantity: 2, unit: 'kg' },
       { itemName: 'piyaj', amount: 80, quantity: null, unit: null },
+    ],
+  );
+
+  assert.deepEqual(
+    extractPricedExpenseItems('আলু দুই কেজি পঞ্চাশ টাকা, তেল এক কেজি দুইশ টাকা').map(
+      ({ itemName, amount, quantity, unit }) => ({ itemName, amount, quantity, unit }),
+    ),
+    [
+      { itemName: 'আলু', amount: 50, quantity: 2, unit: 'kg' },
+      { itemName: 'তেল', amount: 200, quantity: 1, unit: 'kg' },
     ],
   );
 });

@@ -49,6 +49,7 @@ import {
   buildResponseFormat,
   buildTranscriptionPrompt,
   extractTranscript,
+  normalizeTranscriptionText,
   resolveCommandResponseFormat,
   resolveSpeechResponseFormat,
 } from './openai-compatible.helpers';
@@ -503,7 +504,7 @@ export class OpenAiCompatibleProvider implements SpeechToTextProvider, AiCommand
       });
     }
 
-    return transcript;
+    return normalizeTranscriptionText(transcript);
   }
 
   async parse(text: string, context: AiParseContext): Promise<ParsedAiCommand> {

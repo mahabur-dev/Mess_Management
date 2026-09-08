@@ -23,6 +23,7 @@ const {
   buildResponseFormat,
   buildTranscriptionPrompt,
   extractTranscript,
+  normalizeTranscriptionText,
   normalizeApiBaseUrl,
   resolveCommandResponseFormat,
   resolveSpeechResponseFormat,
@@ -96,13 +97,47 @@ test('supports JSON and text transcription responses', () => {
   assert.equal(extractTranscript(' hello ', 'none'), 'hello');
 });
 
-test('uses a mixed-language transcription prompt in auto mode', () => {
-  const prompt = buildTranscriptionPrompt('auto');
-  assert.match(prompt, /Banglish/);
-  assert.match(prompt, /monetary numbers/);
+test('uses language-matched contextual transcription prompts', () => {
+  const autoPrompt = buildTranscriptionPrompt('auto');
+  const banglaPrompt = buildTranscriptionPrompt('bn');
+  const englishPrompt = buildTranscriptionPrompt('en');
+  assert.match(autoPrompt, /Banglish/);
+  assert.match(autoPrompt, /আজকের বাজার/);
+  assert.match(banglaPrompt, /বাংলাদেশি মেসের বাজার/);
+  assert.match(banglaPrompt, /পেঁয়াজ ২ কেজি ১০০ টাকা/);
+  assert.match(englishPrompt, /Today bazar/);
+  assert.notEqual(banglaPrompt, englishPrompt);
   assert.equal(
     buildTranscriptionPrompt('auto', ' custom vocabulary '),
     'custom vocabulary',
+  );
+});
+
+test('repairs safe Bangla command boundaries without changing unknown names', () => {
+  assert.equal(
+    normalizeTranscriptionText('আজকেবাজারখরচ৫০০টাকাআলু১০০টাকা'),
+    'আজকে বাজার খরচ ৫০০ টাকা আলু ১০০ টাকা',
+  );
+  assert.equal(
+    normalizeTranscriptionText('Tasnim আজকে 500tk জমা করো'),
+    'Tasnim আজকে 500 tk জমা করো',
+  );
+  assert.equal(
+    normalizeTranscriptionText('শাহরিয়ারকে ৫০০ টাকা দাও'),
+    'শাহরিয়ারকে ৫০০ টাকা দাও',
+  );
+});
+
+test('repairs observed Bangla grocery speech recognition errors conservatively', () => {
+  assert.equal(
+    normalizeTranscriptionText(
+      'আলো দুই কেজি পন্ছাস টাকা, পিযাস দুই কেজি এক সুতাকা, এবং তেল এক কেজি দুই সুতাকা এট করো.',
+    ),
+    'আলু দুই কেজি পঞ্চাশ টাকা, পেঁয়াজ দুই কেজি একশ টাকা, এবং তেল এক কেজি দুইশ টাকা add.',
+  );
+  assert.equal(
+    normalizeTranscriptionText('ঘরের আলো বন্ধ করো'),
+    'ঘরের আলো বন্ধ করো',
   );
 });
 

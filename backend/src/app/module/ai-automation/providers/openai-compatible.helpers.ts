@@ -3,13 +3,96 @@ export type SpeechResponseFormat = 'json' | 'text' | 'verbose_json' | 'none';
 export type SupportedSpeechLanguage = 'auto' | 'en' | 'bn';
 
 const AUTO_TRANSCRIPTION_PROMPT = [
-  'Transcribe verbatim; do not translate, answer, summarize, or rewrite.',
-  'Speech may be Bangla, English, Banglish, or mixed.',
-  'Preserve names, item names, numbers, quantities, units, and monetary amounts.',
-  'Use digits for clear spoken monetary numbers.',
-  'Context: Bangladeshi mess expenses, bazar, utilities, deposits, and meals.',
-  'Vocabulary: taka, tk, kg, bazar, alu, piyaj, current, internet, WiFi, gas, pani, meal, nasta, lunch, dinner, jama, deposit.',
+  'Bangladeshi mess voice command with Bangla, English, or Banglish speech.',
+  'Example transcript: আজকের বাজার: alu 2 kg 50 taka, piyaj 2 kg 100 taka, তেল 1 kg 200 taka. Add koro.',
+  'Preserve the spoken names, item names, numbers, quantities, units, and prices.',
 ].join(' ');
+
+const BANGLA_TRANSCRIPTION_PROMPT = [
+  'বাংলাদেশি মেসের বাজার, খরচ, বিল, জমা ও মিলের ভয়েস ট্রান্সক্রিপশন।',
+  'কথা অনুযায়ী নাম, পণ্যের নাম, সংখ্যা, পরিমাণ, একক ও দাম ঠিকভাবে লিখুন।',
+  'উদাহরণ: আজকের বাজার—আলু ২ কেজি ৫০ টাকা, পেঁয়াজ ২ কেজি ১০০ টাকা, তেল ১ কেজি ২০০ টাকা। অ্যাড করো।',
+  'কথায় থাকা ইংরেজি বা বাংলিশ শব্দ অপরিবর্তিত রাখুন।',
+].join(' ');
+
+const ENGLISH_TRANSCRIPTION_PROMPT = [
+  'Bangladeshi mess expense, utility, deposit, and meal voice transcription.',
+  'Example transcript: Today bazar: alu 2 kg 50 taka, piyaj 2 kg 100 taka, tel 1 kg 200 taka. Add koro.',
+  'Preserve spoken names, item names, numbers, quantities, units, and prices.',
+].join(' ');
+
+/*
+ * Whisper occasionally joins every word in a short Bangla command. Only split
+ * tokens that can be fully reconstructed from this conservative domain
+ * vocabulary; unknown words and names are left untouched.
+ */
+const BANGLA_COMMAND_WORDS = [
+  'আগামীকাল', 'ইন্টারনেট', 'ইলেকট্রিসিটি', 'বিদ্যুৎ', 'কারেন্ট', 'ডিপোজিট',
+  'ব্রেকফাস্ট', 'সকালের', 'দুপুরের', 'রাতের', 'খাবার', 'ডিনার', 'লাঞ্চ',
+  'গতকাল', 'আজকে', 'আমাদের', 'আমাকে', 'আমার', 'আপনার', 'জন্য', 'থেকে',
+  'পর্যন্ত', 'বাজার', 'খরচ', 'বিল', 'জমা', 'মিল', 'নাস্তা', 'দুপুর', 'রাত',
+  'ওয়াইফাই', 'ওয়াইফাই', 'ব্রডব্যান্ড', 'গ্যাস', 'পানি', 'ভাড়া', 'ভাড়া',
+  'ক্লিনার', 'পরিষ্কার', 'আলু', 'পেঁয়াজ', 'পেঁয়াজ', 'পিয়াজ', 'পিয়াজ', 'চাল',
+  'ডাল', 'তেল', 'সবজি', 'মাছ', 'মাংস', 'মুরগি', 'ডিম', 'দুধ', 'লবণ', 'মসলা',
+  'কেজি', 'গ্রাম', 'লিটার', 'টাকা', 'একটা', 'দুইটা', 'তিনটা', 'চারটা', 'পাঁচটা',
+  'এক', 'দুই', 'তিন', 'চার', 'পাঁচ', 'ছয়', 'ছয়', 'সাত', 'আট', 'নয়', 'নয়',
+  'দশ', 'বিশ', 'পঞ্চাশ', 'একশ', 'দুইশ', 'পাঁচশ', 'হাজার', 'লাখ',
+  'আজ', 'আমি', 'যোগ', 'করো', 'করুন', 'করে', 'দাও', 'বাদ', 'বন্ধ', 'চালু',
+  'এবং', 'আর', 'এর', 'টা',
+].sort((left, right) => right.length - left.length);
+
+function splitJoinedBanglaCommandToken(token: string): string {
+  if (!/^[\u0980-\u09ff]+$/u.test(token) || token.length < 7) return token;
+
+  const memo = new Map<number, string[] | null>();
+  const splitFrom = (offset: number): string[] | null => {
+    if (offset === token.length) return [];
+    if (memo.has(offset)) return memo.get(offset) ?? null;
+
+    for (const word of BANGLA_COMMAND_WORDS) {
+      if (!token.startsWith(word, offset)) continue;
+      const remainder = splitFrom(offset + word.length);
+      if (remainder) {
+        const result = [word, ...remainder];
+        memo.set(offset, result);
+        return result;
+      }
+    }
+
+    memo.set(offset, null);
+    return null;
+  };
+
+  const words = splitFrom(0);
+  return words && words.length > 1 ? words.join(' ') : token;
+}
+
+export function normalizeTranscriptionText(text: string): string {
+  let normalized = text
+    .normalize('NFKC')
+    .replace(/[\u200b\ufeff]/gu, '')
+    .replace(/([\p{L}\p{M}])(\p{N})/gu, '$1 $2')
+    .replace(/(\p{N})([\p{L}\p{M}])/gu, '$1 $2')
+    .replace(/\s*([,;।])\s*/gu, '$1 ');
+
+  // Apply phonetic repairs only when the sentence is clearly a purchase or
+  // money command, so ordinary uses of valid words such as "আলো" stay intact.
+  if (/(?:কেজি|গ্রাম|লিটার|টাকা|বাজার|খরচ|৳|\b(?:kg|taka|tk)\b)/iu.test(normalized)) {
+    normalized = normalized
+      .replace(/(^|[\s,;।])আলো(?=\s|[,;।]|$)/gu, '$1আলু')
+      .replace(/(^|[\s,;।])(?:পিযাস|পিয়াস|পিয়াস|পিযাজ)(?=\s|[,;।]|$)/gu, '$1পেঁয়াজ')
+      .replace(/(?:পন্ছাস|পন্চাস|পঞ্চাস)/gu, 'পঞ্চাশ')
+      .replace(/(এক|দুই|তিন|চার|পাঁচ)\s+(?:সু|শু|শো)\s*(?:টাকা|তাকা)/gu, '$1শ টাকা')
+      .replace(/(?:এট|এড|অ্যাড)\s*করো/gu, 'add');
+  }
+
+  return normalized
+    .split(/\s+/u)
+    .map(splitJoinedBanglaCommandToken)
+    .join(' ')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
 
 export function buildTranscriptionPrompt(
   language: SupportedSpeechLanguage,
@@ -18,11 +101,11 @@ export function buildTranscriptionPrompt(
   if (configuredPrompt?.trim()) return configuredPrompt.trim();
 
   if (language === 'bn') {
-    return `${AUTO_TRANSCRIPTION_PROMPT} Prefer Bangla script for Bangla speech, but preserve any English or Banglish words actually spoken.`;
+    return BANGLA_TRANSCRIPTION_PROMPT;
   }
 
   if (language === 'en') {
-    return `${AUTO_TRANSCRIPTION_PROMPT} Prefer English text for English speech, but preserve any Bangla or Banglish words actually spoken.`;
+    return ENGLISH_TRANSCRIPTION_PROMPT;
   }
 
   return AUTO_TRANSCRIPTION_PROMPT;

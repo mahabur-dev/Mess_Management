@@ -63,6 +63,11 @@ import { AiLatencyTracker } from './ai-latency-tracker';
 type AuthRole = string;
 type Locale = 'en' | 'bn';
 type MemberOption = { id: string; name: string };
+type CommandAccessContext = {
+  actor: MemberOption;
+  members: MemberOption[];
+  canManage: boolean;
+};
 
 type PreparedDomainCommand =
   | { intent: 'EXPENSE_CREATE'; dto: CreateExpenseDto; prepared: PreparedExpense }
@@ -713,23 +718,28 @@ export class AiAutomationService {
     sourceType: AiCommandSourceType;
     transcript?: string;
     idempotencyKey?: string;
+    idempotencyChecked?: boolean;
+    preloadedAccessContext?: CommandAccessContext;
     rateLimitChecked?: boolean;
   }) {
     this.assertEnabled();
     const latency = new AiLatencyTracker();
     const idempotencyKey = params.idempotencyKey ?? randomUUID();
-    const existing = await latency.measure('idempotency', () =>
-      this.prisma.aiCommand.findUnique({
-        where: { idempotency_key: idempotencyKey },
-      }),
-    );
+    const existing = params.idempotencyChecked
+      ? null
+      : await latency.measure('idempotency', () =>
+          this.prisma.aiCommand.findUnique({
+            where: { idempotency_key: idempotencyKey },
+          }),
+        );
     if (existing) {
       if (existing.user_id !== params.userId) throw new ConflictException('Idempotency key is already in use');
       return this.mapCommand(existing);
     }
-    const context = await latency.measure('accessContext', () =>
-      this.accessContext(params.messId, params.userId, params.role),
-    );
+    const context = params.preloadedAccessContext ??
+      await latency.measure('accessContext', () =>
+        this.accessContext(params.messId, params.userId, params.role),
+      );
     if (!params.rateLimitChecked) {
       await latency.measure('rateLimit', () =>
         this.assertRateLimit(params.userId),
@@ -863,13 +873,30 @@ export class AiAutomationService {
     if (file.size > config.aiAutomation.maxAudioBytes) {
       throw new BadRequestException({ code: 'AI_UNSUPPORTED_AUDIO', message: 'Audio recording is too large' });
     }
-    await latency.measure('rateLimit', () => this.assertRateLimit(userId));
-    const transcript = await latency.measure('transcription', () =>
-      this.speechProvider.transcribe(
-        file,
-        input.speechLanguage ?? 'auto',
-      ),
+    const idempotencyKey = input.idempotencyKey ?? randomUUID();
+    const existing = await latency.measure('idempotency', () =>
+      this.prisma.aiCommand.findUnique({
+        where: { idempotency_key: idempotencyKey },
+      }),
     );
+    if (existing) {
+      if (existing.user_id !== userId) {
+        throw new ConflictException('Idempotency key is already in use');
+      }
+      return this.mapCommand(existing);
+    }
+    await latency.measure('rateLimit', () => this.assertRateLimit(userId));
+    const [transcript, accessContext] = await Promise.all([
+      latency.measure('transcription', () =>
+        this.speechProvider.transcribe(
+          file,
+          input.speechLanguage ?? 'auto',
+        ),
+      ),
+      latency.measure('accessContext', () =>
+        this.accessContext(input.messId, userId, role),
+      ),
+    ]);
     if (/[\u0900-\u097f\u0a00-\u0d7f]/u.test(transcript)) {
       throw new BadRequestException({
         code: 'AI_UNSUPPORTED_TRANSCRIPT_LANGUAGE',
@@ -886,6 +913,9 @@ export class AiAutomationService {
         transcript,
         locale: input.locale ?? 'en',
         sourceType: AiCommandSourceType.VOICE,
+        idempotencyKey,
+        idempotencyChecked: true,
+        preloadedAccessContext: accessContext,
         rateLimitChecked: true,
       }),
     );

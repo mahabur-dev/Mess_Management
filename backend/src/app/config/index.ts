@@ -114,7 +114,7 @@ export default {
     speechModel:
       process.env.AI_SPEECH_MODEL ||
       process.env.GROQ_SPEECH_MODEL ||
-      'whisper-large-v3-turbo',
+      'whisper-large-v3',
     speechResponseFormat: process.env.AI_SPEECH_RESPONSE_FORMAT || 'json',
     speechTemperature:
       process.env.AI_SPEECH_TEMPERATURE === undefined

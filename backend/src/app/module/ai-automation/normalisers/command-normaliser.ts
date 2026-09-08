@@ -139,6 +139,16 @@ export function normalizeBanglaDigits(text: string): string {
   });
 }
 
+function normalizeBanglaSpokenQuantities(text: string): string {
+  return text.replace(
+    /(এক|দুই|তিন|চার|পাঁচ|ছয়|ছয়|সাত|আট|নয়|নয়|দশ)\s*(কেজি|গ্রাম|লিটার|মিলিলিটার|টা|পিস)(?=\s|$|[,.;।])/gu,
+    (match, numberWord: string, unit: string) => {
+      const value = BANGLA_NUMBER_VALUES[numberWord];
+      return value === undefined ? match : `${value} ${unit}`;
+    },
+  );
+}
+
 function normalizeCurrency(text: string): string {
   let result = text
     .replace(/৳\s*(\d+(?:\.\d+)?)/gu, '$1 taka')
@@ -219,6 +229,7 @@ function normalizeCommonBanglish(text: string): string {
 export function normalizeCommandText(text: string): string {
   let result = text.normalize('NFKC');
   result = normalizeBanglaDigits(result);
+  result = normalizeBanglaSpokenQuantities(result);
   result = normalizeBanglaSpokenCurrencyAmounts(result);
   result = normalizeCurrency(result);
   result = normalizeUnitsInText(result);
@@ -947,15 +958,24 @@ function expenseItemLabel(segment: string): {
   const quantityMatch = label.match(
     /^(\d+(?:\.\d+)?)\s*(kg|g|l|ml|pcs?|কেজি|গ্রাম|লিটার|টা)\s+(.+)$/iu,
   );
-  if (!quantityMatch) {
-    return { itemName: label, quantity: null, unit: null };
+  if (quantityMatch) {
+    return {
+      itemName: quantityMatch[3].trim(),
+      quantity: Number(quantityMatch[1]),
+      unit: normalizeUnit(quantityMatch[2]),
+    };
   }
 
-  return {
-    itemName: quantityMatch[3].trim(),
-    quantity: Number(quantityMatch[1]),
-    unit: normalizeUnit(quantityMatch[2]),
-  };
+  const itemFirstQuantityMatch = label.match(
+    /^(.+?)\s+(\d+(?:\.\d+)?)\s*(kg|g|l|ml|pcs?|কেজি|গ্রাম|লিটার|টা)$/iu,
+  );
+  return itemFirstQuantityMatch
+    ? {
+        itemName: itemFirstQuantityMatch[1].trim(),
+        quantity: Number(itemFirstQuantityMatch[2]),
+        unit: normalizeUnit(itemFirstQuantityMatch[3]),
+      }
+    : { itemName: label, quantity: null, unit: null };
 }
 
 export function reconcileSummaryExpenseItems<

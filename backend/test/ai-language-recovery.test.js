@@ -20,6 +20,9 @@ if (usesTscBuild) {
 const providerPath = usesTscBuild
   ? '../dist/src/app/module/ai-automation/providers/openai-compatible.provider'
   : '../dist/app/module/ai-automation/providers/openai-compatible.provider';
+const helperPath = usesTscBuild
+  ? '../dist/src/app/module/ai-automation/providers/openai-compatible.helpers'
+  : '../dist/app/module/ai-automation/providers/openai-compatible.helpers';
 const servicePath = usesTscBuild
   ? '../dist/src/app/module/ai-automation/ai-automation.service'
   : '../dist/app/module/ai-automation/ai-automation.service';
@@ -32,6 +35,10 @@ const configPath = usesTscBuild
 const {
   OpenAiCompatibleProvider,
 } = require(providerPath);
+const {
+  buildTranscriptionPrompt,
+  normalizeTranscriptionText,
+} = require(helperPath);
 const { AiAutomationService } = require(servicePath);
 const { CreateExpenseDto } = require(expenseDtoPath);
 const config = require(configPath).default;
@@ -77,6 +84,43 @@ function finalize(text, command = emptyCommand()) {
   return provider.finalizeCommand(command, text, text, context);
 }
 
+test('sends the selected speech language and its matching context to STT', async () => {
+  const provider = new OpenAiCompatibleProvider();
+  const originalFetch = global.fetch;
+  const originalApiKey = config.aiAutomation.speechApiKey;
+  const originalModel = config.aiAutomation.speechModel;
+  config.aiAutomation.speechApiKey = 'test-speech-key';
+  config.aiAutomation.speechModel = 'whisper-large-v3';
+
+  global.fetch = async (_url, init) => {
+    const form = init.body;
+    assert.equal(form.get('model'), 'whisper-large-v3');
+    assert.equal(form.get('language'), 'bn');
+    assert.equal(form.get('temperature'), '0');
+    assert.equal(form.get('prompt'), buildTranscriptionPrompt('bn'));
+    return new Response(
+      JSON.stringify({ text: 'আজকের বাজার আলু দুই কেজি পঞ্চাশ টাকা' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  };
+
+  try {
+    const transcript = await provider.transcribe(
+      {
+        buffer: Buffer.from('mock-webm-audio'),
+        mimetype: 'audio/webm',
+        originalname: 'voice.webm',
+      },
+      'bn',
+    );
+    assert.equal(transcript, 'আজকের বাজার আলু দুই কেজি পঞ্চাশ টাকা');
+  } finally {
+    global.fetch = originalFetch;
+    config.aiAutomation.speechApiKey = originalApiKey;
+    config.aiAutomation.speechModel = originalModel;
+  }
+});
+
 test('uses the deterministic fast path for clear commands without an HTTP call', async () => {
   const provider = new OpenAiCompatibleProvider();
   const originalFetch = global.fetch;
@@ -103,6 +147,22 @@ test('uses the deterministic fast path for clear commands without an HTTP call',
       context,
     );
     assert.equal(yesterday.data.date, '2026-08-11');
+
+    const observedTranscript = normalizeTranscriptionText(
+      'আলো দুই কেজি পন্ছাস টাকা, পিযাস দুই কেজি এক সুতাকা, এবং তেল এক কেজি দুই সুতাকা এট করো.',
+    );
+    const grocery = await provider.parse(observedTranscript, context);
+    assert.equal(grocery.intent, 'EXPENSE_CREATE');
+    assert.deepEqual(
+      grocery.data.items.map(({ amount, quantity, unit }) => ({ amount, quantity, unit })),
+      [
+        { amount: 50, quantity: 2, unit: 'kg' },
+        { amount: 100, quantity: 2, unit: 'kg' },
+        { amount: 200, quantity: 1, unit: 'kg' },
+      ],
+    );
+    assert.equal(fetchCalls, 0);
+
     assert.equal(fetchCalls, 0);
   } finally {
     global.fetch = originalFetch;

@@ -103,14 +103,16 @@ export default function QuickAddAiPage() {
   }, [commandLocale, t, uiLocale]);
 
   const continueToReview = useCallback(
-    async (created: AiCommand) => {
-      await loadCapabilities(commandLocale).catch(() => null);
+    (created: AiCommand) => {
       const target = aiCommandTarget(created.intent);
       if (created.status === "PENDING" && created.payload && target) {
         storeAiCommandDraft(created);
         router.push(`${target}?aiCommand=${encodeURIComponent(created.id)}`);
         return;
       }
+
+      // Quota refresh must not delay showing the transcript/clarification.
+      void loadCapabilities(commandLocale).catch(() => null);
 
       const clarification = created.clarification?.trim();
       setMessage(
@@ -135,13 +137,15 @@ export default function QuickAddAiPage() {
           messId: activeMess.id,
           audio,
           locale: commandLocale,
-          speechLanguage: "auto",
+          // Groq can skip language detection and transcribe more accurately
+          // when the user's selected language is supplied as an ISO-639-1 hint.
+          speechLanguage: commandLocale,
           idempotencyKey: idempotencyKey(),
         });
-        await continueToReview(response.data);
+        continueToReview(response.data);
       } catch (error) {
         setMessage(localizedErrorMessage(error, uiLocale, t("errorGeneric")));
-        await loadCapabilities(commandLocale).catch(() => null);
+        void loadCapabilities(commandLocale).catch(() => null);
       } finally {
         setProcessing(null);
       }
@@ -165,10 +169,10 @@ export default function QuickAddAiPage() {
         locale: commandLocale,
         idempotencyKey: idempotencyKey(),
       });
-      await continueToReview(response.data);
+      continueToReview(response.data);
     } catch (error) {
       setMessage(localizedErrorMessage(error, uiLocale, t("errorGeneric")));
-      await loadCapabilities(commandLocale).catch(() => null);
+      void loadCapabilities(commandLocale).catch(() => null);
     } finally {
       setProcessing(null);
     }

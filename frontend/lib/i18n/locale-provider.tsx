@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { formatDate, formatMoney, formatMonth, formatNumber, formatRelativeTime, formatTime, formatWeekday } from './formatters'
 import { synchronizeLocaleDocument } from './locale-document'
-import { persistStoredLocale, resolveStoredLocale } from './locale-storage'
+import { persistLocaleCookie, persistStoredLocale, resolveStoredLocale } from './locale-storage'
 import { translate } from './translate'
 import { DEFAULT_LOCALE, isLocale, type Locale, type MessageKey, type MessageNamespace, type TranslationValues } from './types'
 
@@ -20,9 +20,9 @@ type LocaleContextValue = {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null)
 
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
-  const [isLocaleReady, setLocaleReady] = useState(false)
+export function LocaleProvider({ children, initialLocale = DEFAULT_LOCALE }: { children: ReactNode; initialLocale?: Locale }) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale)
+  const [isLocaleReady] = useState(true)
   const [changeSource, setChangeSource] = useState<LocaleChangeSource>('bootstrap')
   const sourceRef = useRef<LocaleChangeSource>('bootstrap')
 
@@ -35,26 +35,49 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     } catch {
       // Locale still works for this session when browser storage is unavailable.
     }
+    persistLocaleCookie(document, next)
     synchronizeLocaleDocument(document, next)
   }, [])
 
+  const applyUserLocale = useCallback((next: Locale) => {
+    const scrollContainer = document.querySelector<HTMLElement>('.dashboard-scroll-viewport')
+    const probeY = document.querySelector('.dashboard-header-clean') ? 84 : 88
+    const anchor = document.elementFromPoint(Math.min(window.innerWidth / 2, window.innerWidth - 24), probeY) as HTMLElement | null
+    const anchorTop = anchor?.getBoundingClientRect().top
+
+    applyLocale(next, 'user')
+    if (anchor && anchorTop != null) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!anchor.isConnected) return
+        const offset = anchor.getBoundingClientRect().top - anchorTop
+        if (Math.abs(offset) < 0.5) return
+        if (scrollContainer) scrollContainer.scrollTop += offset
+        else window.scrollBy({ top: offset, left: 0, behavior: 'instant' })
+      }))
+    }
+  }, [applyLocale])
+
   useEffect(() => {
-    let initialLocale: Locale = window.navigator.language.toLowerCase().startsWith('bn') ? 'bn' : DEFAULT_LOCALE
+    let resolvedLocale: Locale = initialLocale
     try {
-      initialLocale = resolveStoredLocale(window.localStorage, window.navigator.language)
+      resolvedLocale = resolveStoredLocale(window.localStorage, initialLocale)
     } catch {
       // Use browser language when storage access is restricted.
     }
-    applyLocale(initialLocale, 'bootstrap')
-    setLocaleReady(true)
-  }, [applyLocale])
+    if (resolvedLocale !== initialLocale) applyLocale(resolvedLocale, 'bootstrap')
+    else {
+      persistStoredLocale(window.localStorage, resolvedLocale)
+      persistLocaleCookie(document, resolvedLocale)
+      synchronizeLocaleDocument(document, resolvedLocale)
+    }
+  }, [applyLocale, initialLocale])
 
   useEffect(() => synchronizeLocaleDocument(document, locale), [locale])
 
-  const setLocale = useCallback((next: Locale) => applyLocale(next, 'user'), [applyLocale])
+  const setLocale = useCallback((next: Locale) => applyUserLocale(next), [applyUserLocale])
   const toggleLocale = useCallback(
-    () => applyLocale(locale === 'en' ? 'bn' : 'en', 'user'),
-    [applyLocale, locale],
+    () => applyUserLocale(locale === 'en' ? 'bn' : 'en'),
+    [applyUserLocale, locale],
   )
   const adoptLocale = useCallback(
     (next: Locale | null | undefined) => {

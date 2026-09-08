@@ -70,13 +70,8 @@
   --sidebar-ring: var(--brand-bright);
 }
 
-html[data-locale='bn'] body {
-  line-height: 1.55;
-}
-
 html[data-locale='bn'] :is(.marketing-shell, .dashboard-theme, .auth-page) :is(h1, h2, h3, h4) {
   letter-spacing: 0 !important;
-  line-height: 1.32;
 }
 
 html[data-locale='bn'] :is(.marketing-eyebrow, .enterprise-kicker, .enterprise-table-label) {
@@ -280,6 +275,25 @@ html[data-locale='bn'] :is(.marketing-eyebrow, .enterprise-kicker, .enterprise-t
     color: var(--foreground);
     background: var(--marketing-page);
     overflow-anchor: none;
+  }
+
+  /* Legal documents intentionally use a stable paper-white canvas in both themes. */
+  .legal-page {
+    color-scheme: light;
+    --brand: #008b80;
+    --brand-hover: #00776d;
+    --brand-soft: #e7f7f5;
+    --brand-softer: #f3fbfa;
+    --brand-border: #9edbd6;
+    --brand-border-subtle: #d8e8e7;
+    --background: #ffffff;
+    --foreground: #090909;
+    --muted-foreground: #667085;
+    --marketing-page: #ffffff;
+    --marketing-surface: #ffffff;
+    --marketing-subtle: #f7faf9;
+    --marketing-line: #d8e8e7;
+    background: #ffffff;
   }
 
   .marketing-section {

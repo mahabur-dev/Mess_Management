@@ -143,6 +143,138 @@ test('public language switching remains usable when storage is denied', async ({
   expect(errors).toEqual([])
 })
 
+test('marketing header remains stable when switching from English to Bangla', async ({ page }) => {
+  await preparePage(page, 'en')
+  await page.goto('/')
+  await page.evaluate(() => document.fonts.ready)
+
+  const header = page.locator('nav').first()
+  const automationLink = header.locator('a[href="/#automation"]').first()
+  const switcher = header.locator('[data-language-switcher]:visible')
+  const before = {
+    header: await header.boundingBox(),
+    link: await automationLink.boundingBox(),
+    switcher: await switcher.boundingBox(),
+  }
+
+  await switcher.click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+  await page.evaluate(async () => {
+    await document.fonts.ready
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  })
+
+  const after = {
+    header: await header.boundingBox(),
+    link: await automationLink.boundingBox(),
+    switcher: await switcher.boundingBox(),
+  }
+
+  for (const key of ['header', 'link', 'switcher'] as const) {
+    if (key === 'link' && before[key] === null && after[key] === null) continue
+    expect(before[key]).not.toBeNull()
+    expect(after[key]).not.toBeNull()
+    expect(Math.abs(after[key]!.x - before[key]!.x), key).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(after[key]!.y - before[key]!.y), key).toBeLessThanOrEqual(0.5)
+  }
+})
+
+test('marketing actions stay on one line when switching from Bangla to English', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Desktop action buttons are replaced by the mobile menu.')
+  await preparePage(page, 'bn')
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+
+  for (const width of [768, 800, 1024, 1279, 1280]) {
+    await page.setViewportSize({ width, height: 900 })
+    const header = page.locator('nav').first()
+    const switcher = header.locator('[data-language-switcher]:visible')
+    await switcher.click()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+
+    for (const link of [header.locator('a[href="/login"]:visible'), header.locator('a[href="/register"]:visible')]) {
+      const dimensions = await link.evaluate(element => ({
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+        whiteSpace: getComputedStyle(element).whiteSpace,
+      }))
+      expect(dimensions.whiteSpace, `${width}px`).toBe('nowrap')
+      expect(dimensions.scrollHeight, `${width}px`).toBeLessThanOrEqual(dimensions.clientHeight)
+    }
+
+    await switcher.click()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+  }
+})
+
+test('dashboard header remains stable when switching from English to Bangla', async ({ page }) => {
+  await preparePage(page, 'en', true)
+  await page.goto('/dashboard')
+  await page.evaluate(() => document.fonts.ready)
+
+  const header = page.locator('.dashboard-header-clean')
+  const switcher = header.locator('[data-language-switcher]')
+  const before = {
+    header: await header.boundingBox(),
+    switcher: await switcher.boundingBox(),
+  }
+
+  await switcher.click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+  await page.evaluate(async () => {
+    await document.fonts.ready
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  })
+
+  const after = {
+    header: await header.boundingBox(),
+    switcher: await switcher.boundingBox(),
+  }
+
+  for (const key of ['header', 'switcher'] as const) {
+    expect(before[key]).not.toBeNull()
+    expect(after[key]).not.toBeNull()
+    expect(Math.abs(after[key]!.x - before[key]!.x), key).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(after[key]!.y - before[key]!.y), key).toBeLessThanOrEqual(0.5)
+  }
+})
+
+test('dashboard language switch keeps the page mounted and dismissed push setup closed', async ({ page }) => {
+  await preparePage(page, 'en', true, 'MANAGER', { pushNotifications: true })
+  await page.goto('/dashboard')
+
+  const pushDialog = page.getByRole('dialog')
+  await expect(pushDialog).toBeVisible()
+  await pushDialog.getByRole('button', { name: 'Not now' }).click()
+  await expect(pushDialog).toHaveCount(0)
+
+  await page.evaluate(() => {
+    ;(window as Window & { __dashboardLocaleMarker?: string }).__dashboardLocaleMarker = 'still-mounted'
+  })
+  await page.locator('.dashboard-header-clean [data-language-switcher]').click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+  await page.waitForTimeout(700)
+
+  await expect(pushDialog).toHaveCount(0)
+  expect(await page.evaluate(() => (
+    window as Window & { __dashboardLocaleMarker?: string }
+  ).__dashboardLocaleMarker)).toBe('still-mounted')
+})
+
+test('legal documents retain a white page background in dark theme', async ({ page }) => {
+  await preparePage(page, 'en')
+  await page.goto('/privacy-policy')
+  await page.evaluate(() => localStorage.setItem('theme', 'dark'))
+  await page.reload()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+
+  for (const route of ['/privacy-policy', '/terms-and-conditions']) {
+    await page.goto(route)
+    await expect(page.locator('main.legal-page')).toHaveCSS('background-color', 'rgb(255, 255, 255)')
+    await expect(page.locator('main.legal-page')).toHaveCSS('color', 'rgb(9, 9, 9)')
+  }
+})
+
 for (const locale of ['en', 'bn'] as const) {
   test(`Quick Add and monthly meal details use the selected UI language (${locale})`, async ({ page }) => {
     test.setTimeout(90_000)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BellOff, BellRing, CheckCircle2, Loader2, ShieldCheck, Smartphone, X } from 'lucide-react'
 import { useAuth } from '@/app/context/auth-context'
 import { apiClient, type PushSubscriptionStatus } from '@/lib/api-client'
@@ -33,6 +33,13 @@ export function PushNotificationPermissionModal() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<PushSubscriptionStatus | null>(null)
   const [isCurrentDeviceSubscribed, setIsCurrentDeviceSubscribed] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const localeRef = useRef(locale)
+  const translationsRef = useRef(t)
+
+  useEffect(() => {
+    localeRef.current = locale
+    translationsRef.current = t
+  }, [locale, t])
 
   useEffect(() => {
     let cancelled = false
@@ -83,7 +90,11 @@ export function PushNotificationPermissionModal() {
               setIsCurrentDeviceSubscribed(true)
             } catch (syncError) {
               if (!cancelled) {
-                setError(localizedErrorMessage(syncError, locale, t('push.syncError')))
+                setError(localizedErrorMessage(
+                  syncError,
+                  localeRef.current,
+                  translationsRef.current('push.syncError'),
+                ))
               }
             } finally {
               if (!cancelled) setIsSaving(false)
@@ -114,7 +125,7 @@ export function PushNotificationPermissionModal() {
       cancelled = true
       if (promptTimer) window.clearTimeout(promptTimer)
     }
-  }, [isAuthenticated, locale, t, user?.id])
+  }, [isAuthenticated, user?.id])
 
   const closeForNow = () => {
     setOpen(false)

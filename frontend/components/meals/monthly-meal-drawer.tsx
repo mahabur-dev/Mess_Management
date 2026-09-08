@@ -293,9 +293,9 @@ export function MonthlyMealDrawer({ messId, members, selectedDate }: MonthlyMeal
                     </tbody>
                     <tfoot>
                       <tr>
-                        <th className="sticky bottom-0 left-0 z-30 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-primary-foreground">{t('monthTotal')}</th>
+                        <th className="sticky bottom-0 left-0 z-30 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--dashboard-bg)]">{t('monthTotal')}</th>
                         {drawerMembers.map((member) => (
-                          <td key={member.id} className="sticky bottom-0 z-20 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-center text-xs font-semibold tabular-nums text-primary-foreground">{format.number(memberTotals.get(member.id) ?? 0)}</td>
+                          <td key={member.id} className="sticky bottom-0 z-20 border-r border-t border-[var(--brand-border)] bg-[var(--dashboard-ink)] px-3 py-3 text-center text-xs font-semibold tabular-nums text-[var(--dashboard-bg)]">{format.number(memberTotals.get(member.id) ?? 0)}</td>
                         ))}
                         <td className="sticky bottom-0 right-0 z-30 border-t border-[var(--brand-border)] bg-[var(--brand)] px-3 py-3 text-center text-sm font-semibold tabular-nums text-primary-foreground">{format.number(monthlyTotal)}</td>
                       </tr>

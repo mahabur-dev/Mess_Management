@@ -3,10 +3,11 @@ import { Analytics } from '@vercel/analytics/next'
 import localFont from 'next/font/local'
 import '@fontsource-variable/noto-sans-bengali/wght.css'
 import Script from 'next/script'
+import { cookies, headers } from 'next/headers'
 import { AuthProvider } from './context/auth-context'
 import { SWRProvider } from './swr-provider'
 import { ThemeProvider } from '@/components/theme-provider'
-import { LocaleProvider } from '@/lib/i18n'
+import { isLocale, LOCALE_COOKIE_KEY, type Locale, LocaleProvider } from '@/lib/i18n'
 import './globals.css'
 
 const googleAnalyticsId = 'G-M8F0REF7QX'
@@ -50,20 +51,26 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const cookieLocale = (await cookies()).get(LOCALE_COOKIE_KEY)?.value
+  const acceptedLanguage = (await headers()).get('accept-language') ?? ''
+  const initialLocale: Locale = isLocale(cookieLocale)
+    ? cookieLocale
+    : acceptedLanguage.toLowerCase().startsWith('bn') ? 'bn' : 'en'
+
   return (
     <html
-      lang="en"
-      data-locale="en"
+      lang={initialLocale}
+      data-locale={initialLocale}
       className={`${inter.variable} bg-background`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
-        <LocaleProvider>
+        <LocaleProvider initialLocale={initialLocale}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <SWRProvider>
               <AuthProvider>

@@ -7,6 +7,7 @@ import { useRef, useState } from 'react'
 import { Bell, Eye, EyeOff, Upload, User, Lock, ShieldAlert, Camera, Save, KeyRound, Trash2, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { useAuth } from '@/app/context/auth-context'
 import { toast } from '@/hooks/use-toast'
+import { roleLabel, useLocale, useTranslations } from '@/lib/i18n'
 
 // ── API base URL ──────────────────────────────────────────────────────────────
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
@@ -78,6 +79,8 @@ const getInitials = (name: string) => {
 
 export default function SettingsPage() {
   const { user, updateUserLocally } = useAuth()
+  const { locale } = useLocale()
+  const t = useTranslations('settingsPage')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ── Profile state ──────────────────────────────────────────────────────────
@@ -118,7 +121,7 @@ export default function SettingsPage() {
     if (!file) return
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'Error', description: 'Image must be under 5MB', variant: 'destructive' })
+      toast({ title: t('error'), description: t('imageTooLarge'), variant: 'destructive' })
       return
     }
 
@@ -131,7 +134,7 @@ export default function SettingsPage() {
   // ── Save profile ───────────────────────────────────────────────────────────
   const handleSaveProfile = async () => {
     if (!profileData.name.trim()) {
-      toast({ title: 'Error', description: 'Name is required', variant: 'destructive' })
+      toast({ title: t('error'), description: t('nameRequired'), variant: 'destructive' })
       return
     }
 
@@ -158,11 +161,11 @@ export default function SettingsPage() {
       setProfilePreview(updated.avatar_url || null)
       setAvatarFile(null)
 
-      toast({ title: 'Success', description: 'Profile updated successfully' })
+      toast({ title: t('success'), description: t('profileUpdated') })
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error?.message || 'Failed to update profile',
+        title: t('error'),
+        description: t('profileUpdateFailed'),
         variant: 'destructive',
       })
     } finally {
@@ -173,19 +176,19 @@ export default function SettingsPage() {
   // ── Change password ────────────────────────────────────────────────────────
   const handleChangePassword = async () => {
     if (!passwordData.oldPassword) {
-      toast({ title: 'Error', description: 'Current password is required', variant: 'destructive' })
+      toast({ title: t('error'), description: t('currentPasswordRequired'), variant: 'destructive' })
       return
     }
     if (passwordData.newPassword.length < 6) {
-      toast({ title: 'Error', description: 'New password must be at least 6 characters', variant: 'destructive' })
+      toast({ title: t('error'), description: t('passwordLength'), variant: 'destructive' })
       return
     }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast({ title: 'Error', description: 'Passwords do not match', variant: 'destructive' })
+      toast({ title: t('error'), description: t('passwordMismatch'), variant: 'destructive' })
       return
     }
     if (passwordData.oldPassword === passwordData.newPassword) {
-      toast({ title: 'Error', description: 'New password must differ from current password', variant: 'destructive' })
+      toast({ title: t('error'), description: t('passwordMustDiffer'), variant: 'destructive' })
       return
     }
 
@@ -193,11 +196,11 @@ export default function SettingsPage() {
       setIsLoadingPassword(true)
       await apiChangePassword(passwordData.oldPassword, passwordData.newPassword)
       setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' })
-      toast({ title: 'Success', description: 'Password changed successfully' })
+      toast({ title: t('success'), description: t('passwordChanged') })
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error?.message || 'Failed to change password',
+        title: t('error'),
+        description: t('passwordChangeFailed'),
         variant: 'destructive',
       })
     } finally {
@@ -211,13 +214,13 @@ export default function SettingsPage() {
     try {
       setIsDeletingAccount(true)
       await apiDeleteAccount(user.id)
-      toast({ title: 'Account deleted', description: 'Your account has been permanently deleted.' })
+      toast({ title: t('accountDeleted'), description: t('accountDeletedDescription') })
       // redirect to login or call logout from auth context
       window.location.href = '/login'
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error?.message || 'Failed to delete account',
+        title: t('error'),
+        description: t('accountDeleteFailed'),
         variant: 'destructive',
       })
     } finally {
@@ -231,8 +234,8 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader
-        title="Settings"
-        description="Manage your account and preferences"
+        title={t('title')}
+        description={t('description')}
       />
 
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-7">
@@ -245,8 +248,8 @@ export default function SettingsPage() {
                 <User size={22} />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Account</p>
-                <h2 className="mt-1 text-lg font-semibold text-foreground">Profile Information</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">{t('account')}</p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">{t('profileInformation')}</h2>
               </div>
             </div>
           </div>
@@ -256,7 +259,7 @@ export default function SettingsPage() {
               {/* Avatar */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Profile Picture
+                  {t('profilePicture')}
                 </label>
                 <div className="flex items-center gap-5">
                   <div
@@ -270,7 +273,7 @@ export default function SettingsPage() {
                     {profilePreview ? (
                       <img
                         src={profilePreview}
-                        alt="Profile preview"
+                        alt={t('profilePreview')}
                         className="h-full w-full rounded-2xl object-cover"
                       />
                     ) : (
@@ -290,9 +293,9 @@ export default function SettingsPage() {
                       className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-4 text-xs font-bold text-muted-foreground transition hover:border-primary hover:bg-muted"
                     >
                       <Camera size={15} className="text-primary" />
-                      Choose Image
+                      {t('chooseImage')}
                     </button>
-                    <p className="text-[10px] font-semibold text-muted-foreground">JPG, PNG or GIF (max 5MB)</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground">{t('imageHint')}</p>
                     {avatarFile && (
                       <p className="flex items-center gap-1 text-[11px] font-bold text-primary">
                         <CheckCircle2 size={13} />
@@ -306,7 +309,7 @@ export default function SettingsPage() {
               {/* Name */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Full Name
+                  {t('fullName')}
                 </label>
                 <input
                   type="text"
@@ -319,7 +322,7 @@ export default function SettingsPage() {
               {/* Phone */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Phone Number
+                  {t('phoneNumber')}
                 </label>
                 <input
                   type="tel"
@@ -332,7 +335,7 @@ export default function SettingsPage() {
               {/* Email — read only */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Email Address
+                  {t('emailAddress')}
                 </label>
                 <input
                   type="email"
@@ -340,21 +343,21 @@ export default function SettingsPage() {
                   disabled
                   className="h-[48px] w-full rounded-xl border border-border bg-muted px-4 text-sm font-semibold text-muted-foreground outline-none cursor-not-allowed"
                 />
-                <p className="mt-1.5 text-[11px] font-semibold text-muted-foreground">Email cannot be changed</p>
+                <p className="mt-1.5 text-[11px] font-semibold text-muted-foreground">{t('emailReadonly')}</p>
               </div>
 
               {/* Role — read only */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Role
+                  {t('role')}
                 </label>
                 <input
                   type="text"
-                  value={user?.role || ''}
+                  value={roleLabel(user?.role ?? 'MEMBER', locale)}
                   disabled
                   className="h-[48px] w-full rounded-xl border border-border bg-muted px-4 text-sm font-semibold text-muted-foreground outline-none cursor-not-allowed"
                 />
-                <p className="mt-1.5 text-[11px] font-semibold text-muted-foreground">Role cannot be changed</p>
+                <p className="mt-1.5 text-[11px] font-semibold text-muted-foreground">{t('roleReadonly')}</p>
               </div>
 
               <div className="pt-2">
@@ -364,7 +367,7 @@ export default function SettingsPage() {
                   className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl  bg-primary  px-6 font-semibold text-primary-foreground  transition  disabled:opacity-70"
                 >
                   {isLoadingProfile ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                  {isLoadingProfile ? 'Saving...' : 'Save Changes'}
+                  {isLoadingProfile ? t('saving') : t('saveChanges')}
                 </button>
               </div>
             </div>
@@ -379,8 +382,8 @@ export default function SettingsPage() {
                 <Lock size={22} />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Security</p>
-                <h2 className="mt-1 text-lg font-semibold text-foreground">Change Password</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">{t('security')}</p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">{t('changePassword')}</h2>
               </div>
             </div>
           </div>
@@ -390,7 +393,7 @@ export default function SettingsPage() {
               {/* Current password */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Current Password
+                  {t('currentPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -415,7 +418,7 @@ export default function SettingsPage() {
               {/* New password */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  New Password
+                  {t('newPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -438,7 +441,7 @@ export default function SettingsPage() {
                 {passwordData.newPassword && passwordData.newPassword.length < 6 && (
                   <p className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-destructive">
                     <XCircle size={13} />
-                    At least 6 characters required
+                    {t('passwordLengthShort')}
                   </p>
                 )}
               </div>
@@ -446,7 +449,7 @@ export default function SettingsPage() {
               {/* Confirm password */}
               <div>
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Confirm Password
+                  {t('confirmPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -472,7 +475,7 @@ export default function SettingsPage() {
                   passwordData.newPassword !== passwordData.confirmPassword && (
                     <p className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-destructive">
                       <XCircle size={13} />
-                      Passwords do not match
+                      {t('passwordMismatch')}
                     </p>
                   )}
               </div>
@@ -484,7 +487,7 @@ export default function SettingsPage() {
                   className="inline-flex h-[48px] items-center justify-center gap-2 rounded-xl  bg-primary  px-6 font-semibold text-primary-foreground  transition  disabled:opacity-70"
                 >
                   {isLoadingPassword ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
-                  {isLoadingPassword ? 'Changing...' : 'Change Password'}
+                  {isLoadingPassword ? t('changing') : t('changePassword')}
                 </button>
               </div>
             </div>
@@ -499,8 +502,8 @@ export default function SettingsPage() {
                 <Bell size={22} />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Preferences</p>
-                <h2 className="mt-1 text-lg font-semibold text-foreground">Notifications</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">{t('preferences')}</p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">{t('notifications')}</h2>
               </div>
             </div>
           </div>
@@ -509,8 +512,8 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between rounded-xl border border-border bg-muted p-4 transition hover:border-primary">
                 <div>
-                  <p className="text-sm font-bold text-foreground">Email Notifications</p>
-                  <p className="text-xs font-semibold text-muted-foreground mt-0.5">Receive updates via email</p>
+                  <p className="text-sm font-bold text-foreground">{t('emailNotifications')}</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-0.5">{t('emailNotificationsHint')}</p>
                 </div>
                 <button
                   onClick={() => setEmailNotifications(!emailNotifications)}
@@ -528,8 +531,8 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between rounded-xl border border-border bg-muted p-4 transition hover:border-primary">
                 <div>
-                  <p className="text-sm font-bold text-foreground">Push Notifications</p>
-                  <p className="text-xs font-semibold text-muted-foreground mt-0.5">Receive instant alerts</p>
+                  <p className="text-sm font-bold text-foreground">{t('pushNotifications')}</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-0.5">{t('pushNotificationsHint')}</p>
                 </div>
                 <button
                   onClick={() => setPushNotifications(!pushNotifications)}
@@ -548,9 +551,9 @@ export default function SettingsPage() {
               <div className="flex items-start gap-3 rounded-xl border border-border  bg-muted  p-4">
                 <Bell size={18} className="shrink-0 text-primary mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-foreground">Smart Notifications</p>
+                  <p className="text-sm font-bold text-foreground">{t('smartNotifications')}</p>
                   <p className="text-xs font-semibold text-muted-foreground mt-0.5">
-                    Get notified about important updates and reminders
+                    {t('smartNotificationsHint')}
                   </p>
                 </div>
               </div>
@@ -566,8 +569,8 @@ export default function SettingsPage() {
                 <ShieldAlert size={22} className="text-destructive" />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-destructive">Danger Zone</p>
-                <h2 className="mt-1 text-lg font-semibold text-foreground">Delete Account</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-destructive">{t('dangerZone')}</p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">{t('deleteAccount')}</h2>
               </div>
             </div>
           </div>
@@ -575,9 +578,9 @@ export default function SettingsPage() {
           <div className="p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex-1">
-                <p className="text-sm font-bold text-foreground">Delete Your Account</p>
+                <p className="text-sm font-bold text-foreground">{t('deleteYourAccount')}</p>
                 <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                  Permanently delete your account and all associated data. This cannot be undone.
+                  {t('deleteDescription')}
                 </p>
               </div>
               {!showDeleteConfirm ? (
@@ -586,7 +589,7 @@ export default function SettingsPage() {
                   className="inline-flex h-[45px] shrink-0 items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-5 text-sm font-semibold text-destructive transition hover:border-destructive/30 hover:bg-destructive/10"
                 >
                   <Trash2 size={16} />
-                  Delete Account
+                  {t('deleteAccount')}
                 </button>
               ) : (
                 <div className="flex shrink-0 items-center gap-2">
@@ -595,7 +598,7 @@ export default function SettingsPage() {
                     disabled={isDeletingAccount}
                     className="h-[45px] rounded-xl border border-border bg-background px-4 text-sm font-semibold text-muted-foreground transition hover:bg-muted disabled:opacity-60"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button
                     onClick={handleDeleteAccount}
@@ -603,7 +606,7 @@ export default function SettingsPage() {
                     className="inline-flex h-[45px] items-center justify-center gap-2 rounded-xl bg-destructive px-5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-70"
                   >
                     {isDeletingAccount ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                    {isDeletingAccount ? 'Deleting...' : 'Confirm Delete'}
+                    {isDeletingAccount ? t('deleting') : t('confirmDelete')}
                   </button>
                 </div>
               )}
@@ -613,7 +616,7 @@ export default function SettingsPage() {
               <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
                 <p className="flex items-center gap-2 text-sm font-bold text-destructive">
                   <XCircle size={16} />
-                  ⚠ Are you sure? This will permanently delete your account and cannot be undone.
+                  {t('deleteWarning')}
                 </p>
               </div>
             )}

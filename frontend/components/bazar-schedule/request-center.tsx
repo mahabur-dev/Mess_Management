@@ -5,6 +5,7 @@ import type { BazarReleaseRequest, BazarSwapRequest } from '@/lib/api-client'
 import { EnterpriseButton } from '@/components/ui/enterprise-button'
 import { cn } from '@/lib/utils'
 import { formatBazarDate, requestTone } from './bazar-schedule-utils'
+import { statusLabel, useLocale, useTranslations } from '@/lib/i18n'
 
 interface RequestCenterProps {
   swaps: BazarSwapRequest[]
@@ -18,6 +19,7 @@ interface RequestCenterProps {
 }
 
 export function RequestCenter({ swaps, releases, userId, canManage, busyId, onSwapReview, onSwapCancel, onReleaseReview }: RequestCenterProps) {
+  const t = useTranslations('bazarSchedule')
   const sorted = [
     ...swaps.map((request) => ({ kind: 'swap' as const, request, createdAt: request.created_at })),
     ...releases.map((request) => ({ kind: 'release' as const, request, createdAt: request.created_at })),
@@ -27,8 +29,8 @@ export function RequestCenter({ swaps, releases, userId, canManage, busyId, onSw
     return (
       <div className="dashboard-card flex min-h-72 flex-col items-center justify-center p-8 text-center">
         <span className="grid size-14 place-items-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand)]"><Inbox className="size-6" /></span>
-        <h3 className="mt-4 text-lg font-semibold text-[var(--dashboard-ink)]">No requests yet</h3>
-        <p className="mt-1 max-w-sm text-sm font-medium leading-6 text-muted-foreground">Swap and release activity will appear here with a complete decision history.</p>
+        <h3 className="mt-4 text-lg font-semibold text-[var(--dashboard-ink)]">{t('noRequests')}</h3>
+        <p className="mt-1 max-w-sm text-sm font-medium leading-6 text-muted-foreground">{t('noRequestsDescription')}</p>
       </div>
     )
   }
@@ -45,6 +47,7 @@ export function RequestCenter({ swaps, releases, userId, canManage, busyId, onSw
 }
 
 function SwapCard({ request, userId, busy, onReview, onCancel }: { request: BazarSwapRequest; userId?: string; busy: boolean; onReview: (request: BazarSwapRequest, approve: boolean) => void; onCancel: (request: BazarSwapRequest) => void }) {
+  const t = useTranslations('bazarSchedule')
   const isTarget = request.target_member_id === userId
   const isRequester = request.requester_id === userId
   return (
@@ -53,8 +56,8 @@ function SwapCard({ request, userId, busy, onReview, onCancel }: { request: Baza
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]"><ArrowLeftRight className="size-5" /></span>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-[var(--dashboard-ink)]">Duty swap</h3><StatusBadge status={request.status} /></div>
-            <p className="mt-1 text-sm font-medium text-muted-foreground"><span className="font-semibold text-[var(--dashboard-ink)]">{request.requester.name}</span> requested a swap with <span className="font-semibold text-[var(--dashboard-ink)]">{request.target_member.name}</span></p>
+            <div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-[var(--dashboard-ink)]">{t('dutySwap')}</h3><StatusBadge status={request.status} /></div>
+            <p className="mt-1 text-sm font-medium text-muted-foreground">{t('swapRequested', { requester: request.requester.name, target: request.target_member.name })}</p>
             {request.reason && <p className="mt-2 text-xs font-medium italic text-muted-foreground">“{request.reason}”</p>}
           </div>
         </div>
@@ -65,12 +68,12 @@ function SwapCard({ request, userId, busy, onReview, onCancel }: { request: Baza
         </div>
         {request.status === 'PENDING' && isTarget && (
           <div className="flex shrink-0 gap-2">
-            <EnterpriseButton size="sm" tone="secondary" onClick={() => onReview(request, false)} disabled={busy}><X className="size-3.5" /> Decline</EnterpriseButton>
-            <EnterpriseButton size="sm" tone="success" onClick={() => onReview(request, true)} disabled={busy}><Check className="size-3.5" /> Accept</EnterpriseButton>
+            <EnterpriseButton size="sm" tone="secondary" onClick={() => onReview(request, false)} disabled={busy}><X className="size-3.5" /> {t('decline')}</EnterpriseButton>
+            <EnterpriseButton size="sm" tone="success" onClick={() => onReview(request, true)} disabled={busy}><Check className="size-3.5" /> {t('accept')}</EnterpriseButton>
           </div>
         )}
         {request.status === 'PENDING' && isRequester && (
-          <EnterpriseButton size="sm" tone="secondary" className="shrink-0" onClick={() => onCancel(request)} disabled={busy}><RotateCcw className="size-3.5" /> Cancel</EnterpriseButton>
+          <EnterpriseButton size="sm" tone="secondary" className="shrink-0" onClick={() => onCancel(request)} disabled={busy}><RotateCcw className="size-3.5" /> {t('cancel')}</EnterpriseButton>
         )}
       </div>
     </article>
@@ -78,17 +81,19 @@ function SwapCard({ request, userId, busy, onReview, onCancel }: { request: Baza
 }
 
 function ReleaseCard({ request, canManage, busy, onReview }: { request: BazarReleaseRequest; canManage: boolean; busy: boolean; onReview: (request: BazarReleaseRequest, approve: boolean) => void }) {
+  const { locale } = useLocale()
+  const t = useTranslations('bazarSchedule')
   return (
     <article className="dashboard-card overflow-hidden p-4 sm:p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary"><Clock3 className="size-5" /></span>
-          <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-[var(--dashboard-ink)]">Duty release</h3><StatusBadge status={request.status} />{request.auto_approved && <span className="rounded-full bg-[var(--brand-soft)] px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[var(--brand-dark)]">Automatic</span>}</div><p className="mt-1 text-sm font-medium text-muted-foreground"><span className="font-semibold text-[var(--dashboard-ink)]">{request.requester.name}</span> · {formatBazarDate(request.slot.bazar_date.duty_date)}</p><p className="mt-2 text-xs font-medium italic text-muted-foreground">“{request.reason}”</p></div>
+          <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-[var(--dashboard-ink)]">{t('dutyRelease')}</h3><StatusBadge status={request.status} />{request.auto_approved && <span className="rounded-full bg-[var(--brand-soft)] px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[var(--brand-dark)]">{t('automatic')}</span>}</div><p className="mt-1 text-sm font-medium text-muted-foreground"><span className="font-semibold text-[var(--dashboard-ink)]">{request.requester.name}</span> · {formatBazarDate(request.slot.bazar_date.duty_date, locale)}</p><p className="mt-2 text-xs font-medium italic text-muted-foreground">“{request.reason}”</p></div>
         </div>
         {request.status === 'PENDING' && canManage && (
           <div className="flex shrink-0 gap-2">
-            <EnterpriseButton size="sm" tone="danger" onClick={() => onReview(request, false)} disabled={busy}><X className="size-3.5" /> Reject</EnterpriseButton>
-            <EnterpriseButton size="sm" tone="success" onClick={() => onReview(request, true)} disabled={busy}><Check className="size-3.5" /> Approve</EnterpriseButton>
+            <EnterpriseButton size="sm" tone="danger" onClick={() => onReview(request, false)} disabled={busy}><X className="size-3.5" /> {t('reject')}</EnterpriseButton>
+            <EnterpriseButton size="sm" tone="success" onClick={() => onReview(request, true)} disabled={busy}><Check className="size-3.5" /> {t('approve')}</EnterpriseButton>
           </div>
         )}
       </div>
@@ -97,14 +102,16 @@ function ReleaseCard({ request, canManage, busy, onReview }: { request: BazarRel
 }
 
 function StatusBadge({ status }: { status: BazarSwapRequest['status'] }) {
-  return <span className={cn('rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em]', requestTone(status))}>{status}</span>
+  const { locale } = useLocale()
+  return <span className={cn('rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em]', requestTone(status))}>{statusLabel(status, locale)}</span>
 }
 
 function DateChip({ label, date, align = 'left' }: { label: string; date: string; align?: 'left' | 'right' }) {
+  const { locale } = useLocale()
   return (
     <div className={cn('min-w-0', align === 'right' && 'text-right')}>
       <p className="truncate text-[10px] font-semibold text-muted-foreground">{label}</p>
-      <p className={cn('mt-1 flex items-center gap-1.5 text-xs font-bold text-[var(--dashboard-ink)]', align === 'right' && 'justify-end')}><CalendarDays className="size-3.5 text-[var(--brand)]" />{formatBazarDate(date, { month: 'short', day: 'numeric' })}</p>
+      <p className={cn('mt-1 flex items-center gap-1.5 text-xs font-bold text-[var(--dashboard-ink)]', align === 'right' && 'justify-end')}><CalendarDays className="size-3.5 text-[var(--brand)]" />{formatBazarDate(date, locale, { month: 'short', day: 'numeric' })}</p>
     </div>
   )
 }

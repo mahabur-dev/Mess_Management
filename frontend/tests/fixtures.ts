@@ -1,6 +1,12 @@
 import { expect, type Page } from '@playwright/test'
 
-export async function preparePage(page: Page, locale: 'en' | 'bn', authenticated = false, role: 'MANAGER' | 'ADMIN' | 'MEMBER' = 'MANAGER') {
+export async function preparePage(
+  page: Page,
+  locale: 'en' | 'bn',
+  authenticated = false,
+  role: 'MANAGER' | 'ADMIN' | 'MEMBER' = 'MANAGER',
+  options: { pushNotifications?: boolean } = {},
+) {
   const writes: Array<{ path: string; method: string; body: string; language: string }> = []
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date())
   const person = { id: 'qa-user', name: 'QA Rahim অপরিবর্তিত', email: 'qa@example.test', role, preferred_locale: locale }
@@ -10,16 +16,16 @@ export async function preparePage(page: Page, locale: 'en' | 'bn', authenticated
   const expense = { id: 'qa-expense', category: 'FOOD', item_name: 'Database rice চাল', amount: 850, quantity: 2, unit: 'kg', expense_date: today, payment_type: 'PERSONAL', status: 'DRAFT', approvalStatus: 'PENDING', creator: person, purchaser: person, purchased_by: person.id, items: [{ itemName: 'Database rice চাল', amount: 850, quantity: 2, unit: 'kg' }] }
   const payment = { id: 'qa-payment', member: person, creator: person, amount: 2000, status: 'PENDING', method: 'BKASH', categories: ['FOOD'], payment_date: today, created_at: today + 'T10:00:00Z', note: 'Database note অপরিবর্তিত' }
   const bill = { id: 'qa-bill', member: person, month: today.slice(0, 7) + '-01', food_bill: 850, seat_rent: 2000, utility_share: 500, prev_balance: 200, deposit_total: 2000, paid_amount: 0, final_due: 1550, balance: 1550, total_meals: 12, status: 'PENDING' }
-  await page.addInitScript(({ locale, authenticated }) => {
+  await page.addInitScript(({ locale, authenticated, pushNotifications }) => {
     try { if (!localStorage.getItem('qa-initialized')) {
       localStorage.setItem('messzen:locale', locale)
       localStorage.setItem('theme', 'light')
       if (authenticated) localStorage.setItem('authToken', 'qa-token')
       localStorage.setItem('qa-initialized', 'true')
     } } catch { /* Storage-denied scenarios intentionally exercise this path. */ }
-    // QA must never register a real push subscription.
-    delete (window as unknown as Record<string, unknown>).PushManager
-  }, { locale, authenticated })
+    // QA only exposes the browser push API in tests that exercise its prompt lifecycle.
+    if (!pushNotifications) delete (window as unknown as Record<string, unknown>).PushManager
+  }, { locale, authenticated, pushNotifications: options.pushNotifications ?? false })
   await page.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())

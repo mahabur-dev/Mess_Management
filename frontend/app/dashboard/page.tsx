@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check } from 'lucide-react'
+import {
+  CalendarClock,
+  CalendarDays,
+  Check,
+  CreditCard,
+  ReceiptText,
+  ShoppingBag,
+  UtensilsCrossed,
+} from 'lucide-react'
 
 import { useAuth } from '@/app/context/auth-context'
 import { DashboardHeader } from '@/components/dashboard-header'
@@ -11,8 +19,13 @@ import { MonthlyOverviewChart } from '@/components/dashboard/monthly-overview-ch
 import { LoadingSkeleton } from '@/components/dashboard/page-skeleton'
 import { RecentActivityTable } from '@/components/dashboard/recent-activity-table'
 import { DashboardStatCard } from '@/components/dashboard/stat-card'
+import {
+  MobileQuickActions,
+  type MobileQuickAction,
+} from '@/components/dashboard/mobile-quick-actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { EnterpriseMonthPicker } from '@/components/ui/enterprise-date-picker'
 import {
   Table,
   TableBody,
@@ -229,15 +242,16 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     if (user?.role === 'ADMIN') {
       return [
-        { label: t('stats.totalUsers'), value: format.number(adminDashboard?.users ?? 0), description: t('stats.registeredAccounts') },
-        { label: t('stats.allMesses'), value: format.number(adminDashboard?.messes ?? 0), description: t('stats.managedWorkspaces') },
-        { label: t('stats.pendingRequests'), value: format.number(adminDashboard?.pendingRequests ?? 0), description: t('stats.awaitingReview') },
-        { label: t('stats.pendingPayments'), value: format.number(adminDashboard?.pendingPayments ?? 0), description: t('stats.awaitingApproval') },
+        { id: 'total-users', label: t('stats.totalUsers'), value: format.number(adminDashboard?.users ?? 0), description: t('stats.registeredAccounts') },
+        { id: 'all-messes', label: t('stats.allMesses'), value: format.number(adminDashboard?.messes ?? 0), description: t('stats.managedWorkspaces') },
+        { id: 'pending-requests', label: t('stats.pendingRequests'), value: format.number(adminDashboard?.pendingRequests ?? 0), description: t('stats.awaitingReview') },
+        { id: 'pending-payments', label: t('stats.pendingPayments'), value: format.number(adminDashboard?.pendingPayments ?? 0), description: t('stats.awaitingApproval') },
       ]
     }
 
     return [
       {
+        id: 'total-deposit',
         label: t('stats.totalDeposit'),
         value: format.money(
           Number(dashboard?.totalDepositAmount ?? 0) +
@@ -246,16 +260,18 @@ export default function DashboardPage() {
         description: t('stats.includingCarry'),
         featured: true,
       },
-      { label: t('stats.totalMeals'), value: format.number(dashboard?.totalMeals ?? 0), description: t('stats.selectedMonth') },
-      { label: t('stats.mealRate'), value: format.money(dashboard?.currentMealRate), description: t('stats.currentRate') },
-      { label: t('stats.foodExpenses'), value: format.money(dashboard?.currentMonthTotalBazar), description: t('stats.selectedMonth') },
-      { label: t('stats.utilityExpenses'), value: format.money(dashboard?.extraExpenses), description: t('stats.selectedMonth') },
+      { id: 'total-meals', label: t('stats.totalMeals'), value: format.number(dashboard?.totalMeals ?? 0), description: t('stats.selectedMonth') },
+      { id: 'meal-rate', label: t('stats.mealRate'), value: format.money(dashboard?.currentMealRate), description: t('stats.currentRate') },
+      { id: 'food-expenses', label: t('stats.foodExpenses'), value: format.money(dashboard?.currentMonthTotalBazar), description: t('stats.selectedMonth') },
+      { id: 'utility-expenses', label: t('stats.utilityExpenses'), value: format.money(dashboard?.extraExpenses), description: t('stats.selectedMonth') },
       {
+        id: 'per-member-utility',
         label: t('stats.perMemberUtility'),
         value: format.money(dashboard?.perExtraExpenses),
         description: t('stats.currentShare'),
       },
       {
+        id: 'due-amount',
         label: t('stats.dueAmount'),
         value: format.money(
           Number(dashboard?.totalDue ?? 0) +
@@ -265,6 +281,7 @@ export default function DashboardPage() {
         destructive: Number(dashboard?.totalDue ?? 0) > 0,
       },
       {
+        id: 'remaining-amount',
         label: t('stats.remainingAmount'),
         value: format.money(dashboard?.remainingAmount),
         description: t('stats.availableBalance'),
@@ -276,6 +293,14 @@ export default function DashboardPage() {
   if (user.role !== 'ADMIN' && messesLoading) return <LoadingSkeleton />
 
   const showNoMessOnboarding = user.role !== 'ADMIN' && !activeMess
+  const mobileQuickActions: MobileQuickAction[] = [
+    { href: '/dashboard/meals', icon: UtensilsCrossed, label: t('quickActions.addMeal') },
+    { href: '/dashboard/finance', icon: ShoppingBag, label: t('quickActions.addExpense') },
+    { href: '/dashboard/payments', icon: CreditCard, label: t('quickActions.addDeposit') },
+    { href: '/dashboard/meal-patterns', icon: CalendarClock, label: t('quickActions.mealPattern') },
+    { href: '/dashboard/bazar-schedule', icon: CalendarDays, label: t('quickActions.bazarSchedule') },
+    { href: '/dashboard/monthly-bills', icon: ReceiptText, label: t('quickActions.monthlyBill') },
+  ]
 
   return (
     <div className="min-h-screen bg-background xl:flex xl:h-screen xl:min-h-0 xl:flex-col xl:overflow-hidden">
@@ -297,9 +322,31 @@ export default function DashboardPage() {
           />
         ) : (
           <>
-            <section aria-label={t('overview.statisticsLabel')} className="grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {stats.map((stat) => (
-                <DashboardStatCard key={stat.label} {...stat} />
+            {user.role !== 'ADMIN' && activeMess ? (
+              <MobileQuickActions
+                actions={mobileQuickActions}
+                title={t('quickActions.title')}
+              />
+            ) : null}
+
+            <div className="flex items-center justify-between gap-3 sm:hidden">
+              <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--dashboard-muted)]">
+                {t('overview.mobileTitle')}
+              </h2>
+              {user.role !== 'ADMIN' ? (
+                <EnterpriseMonthPicker
+                  value={selectedMonth}
+                  onValueChange={setSelectedMonth}
+                  shortLabel
+                  className="h-9 w-[8.75rem] shrink-0 rounded-lg px-2.5 text-xs"
+                  ariaLabel={t('overview.selectMonth')}
+                />
+              ) : null}
+            </div>
+
+            <section aria-label={t('overview.statisticsLabel')} className="grid shrink-0 grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+              {stats.map(({ id, ...stat }) => (
+                <DashboardStatCard key={id} {...stat} />
               ))}
             </section>
 

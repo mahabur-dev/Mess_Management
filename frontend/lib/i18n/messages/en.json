@@ -545,8 +545,13 @@
     "overview": {
       "title": "Dashboard", "adminTitle": "Super Admin Dashboard",
       "messDescription": "{name} overview", "welcome": "Welcome back, {name}",
-      "statisticsLabel": "Dashboard statistics", "monthlyTitle": "Monthly overview",
+      "statisticsLabel": "Dashboard statistics", "mobileTitle": "Overview", "selectMonth": "Select overview month", "monthlyTitle": "Monthly overview",
       "monthlyDescription": "Bazar, deposits, and meals for the selected month"
+    },
+    "quickActions": {
+      "title": "Quick actions", "addMeal": "Add meal", "addExpense": "Add expense",
+      "addDeposit": "Add deposit", "mealPattern": "Meal pattern",
+      "bazarSchedule": "Bazar schedule", "monthlyBill": "Monthly bill"
     },
     "onboarding": {
       "eyebrow": "Workspace setup", "title": "Connect your account to a mess",

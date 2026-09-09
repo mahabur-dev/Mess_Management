@@ -125,6 +125,18 @@ enum BillingCalculationStatus {
   FAILED
 }
 
+enum MonthlyReportStatus {
+  DRAFT
+  FINALIZED
+}
+
+enum MonthlyReportDeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
 // ─── ShoppingList ──────────────────────────────────────────
 enum ShoppingListStatus {
   OPEN

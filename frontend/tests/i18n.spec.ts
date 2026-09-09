@@ -6,6 +6,7 @@ import { localizedErrorMessage } from '../lib/i18n/errors'
 import { domainLabel } from '../lib/i18n/domain-labels'
 import { LOCALE_STORAGE_KEY, LEGACY_LOCALE_STORAGE_KEYS } from '../lib/i18n/types'
 import { synchronizeLocaleDocument } from '../lib/i18n/locale-document'
+import { localizedNotificationCopy } from '../lib/i18n/notification-copy'
 
 test('Bangla digits normalize without changing member names or decimal values', () => {
   expect(normalizeLocalizedDigits('রহিম ১২৩৪.৫০')).toBe('রহিম 1234.50')
@@ -63,4 +64,22 @@ test('language document updates include metadata and language attribute', () => 
   expect(document.documentElement.lang).toBe('bn')
   expect(document.title).toMatch(/[অ-৿]/)
   expect(attributes.get('content')).toMatch(/[অ-৿]/)
+})
+
+test('monthly report notifications localize their month and action state', () => {
+  const item = {
+    title: 'Monthly report ready for review',
+    body: 'QA Test Mess monthly report is ready for review.',
+    metadata: { source: 'MONTHLY_REPORT_READY', month: '2026-08-01T00:00:00.000Z' },
+  }
+  expect(localizedNotificationCopy(item, 'en')).toEqual({
+    title: 'Monthly report ready for review',
+    body: 'The August 2026 report is ready for manager review.',
+  })
+  const bangla = localizedNotificationCopy({
+    ...item,
+    metadata: { ...item.metadata, source: 'MONTHLY_REPORT_FINALIZED' },
+  }, 'bn')
+  expect(bangla.title).toBe('মাসিক রিপোর্ট চূড়ান্ত হয়েছে')
+  expect(bangla.body).toContain('আগস্ট ২০২৬')
 })

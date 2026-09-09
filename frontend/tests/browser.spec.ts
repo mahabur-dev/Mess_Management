@@ -46,6 +46,61 @@ test('mobile dashboard prioritizes quick actions and a two-column overview', asy
   }
 })
 
+test('monthly report uses a responsive, flat enterprise layout in both languages', async ({ page }, testInfo) => {
+  for (const locale of ['en', 'bn'] as const) {
+    await preparePage(page, locale, true, 'MANAGER')
+    await page.goto('/dashboard/reports')
+
+    const summary = page.getByRole('region', {
+      name: locale === 'en' ? 'Mess summary' : 'মেস সারসংক্ষেপ',
+    })
+    await expect(summary).toBeVisible()
+    await expect(page.getByRole('heading', {
+      name: locale === 'en' ? 'Member-wise summary' : 'সদস্যভিত্তিক সারসংক্ষেপ',
+    })).toBeVisible()
+    await expect(page.getByText('QA Rahim অপরিবর্তিত').filter({ visible: true }).first()).toBeVisible()
+
+    const metrics = summary.locator('article')
+    await expect(metrics).toHaveCount(6)
+    const rows = await metrics.evaluateAll((items) => items.map((item) => {
+      const box = item.getBoundingClientRect()
+      const style = getComputedStyle(item)
+      return { x: box.x, y: box.y, backgroundImage: style.backgroundImage, boxShadow: style.boxShadow }
+    }))
+    const expectedColumns = testInfo.project.name === 'mobile' ? 2 : 3
+    expect(new Set(rows.slice(0, expectedColumns).map((row) => Math.round(row.y))).size).toBe(1)
+    expect(new Set(rows.map((row) => Math.round(row.x))).size).toBe(expectedColumns)
+    for (const row of rows) {
+      expect(row.backgroundImage).toBe('none')
+      expect(row.boxShadow).toBe('none')
+    }
+    await expectNoPageOverflow(page)
+  }
+})
+
+test('monthly report changes language without reloading its financial snapshot', async ({ page }) => {
+  await preparePage(page, 'en', true, 'MANAGER')
+  let reportReads = 0
+  await page.route('**/monthly-reports/mess/**', async (route) => {
+    reportReads += 1
+    await route.fallback()
+  })
+  await page.goto('/dashboard/reports')
+
+  const englishSummary = page.getByRole('region', { name: 'Mess summary' })
+  await expect(englishSummary).toBeVisible()
+  await englishSummary.evaluate((element) => element.setAttribute('data-snapshot-marker', 'preserved'))
+  expect(reportReads).toBe(1)
+
+  await page.locator('.dashboard-header-clean [data-language-switcher]').click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+  const banglaSummary = page.getByRole('region', { name: 'মেস সারসংক্ষেপ' })
+  await expect(banglaSummary).toHaveAttribute('data-snapshot-marker', 'preserved')
+  await page.waitForTimeout(500)
+  expect(reportReads).toBe(1)
+  await expectNoPageOverflow(page)
+})
+
 for (const locale of ['en', 'bn'] as const) {
   test(`every dashboard route renders without runtime errors (${locale})`, async ({ page }) => {
     test.setTimeout(150_000)

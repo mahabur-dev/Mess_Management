@@ -835,7 +835,11 @@
     "bazarSwapApprovedBody": "The bazar duty swap was accepted.",
     "bazarSwapRejectedBody": "The bazar duty swap was declined.",
     "bazarSwapCancelledTitle": "Bazar duty swap cancelled",
-    "bazarSwapCancelledBody": "The pending bazar duty swap request was cancelled."
+    "bazarSwapCancelledBody": "The pending bazar duty swap request was cancelled.",
+    "monthlyReportReadyTitle": "Monthly report ready for review",
+    "monthlyReportReadyBody": "The {month} report is ready for manager review.",
+    "monthlyReportFinalizedTitle": "Monthly report finalized",
+    "monthlyReportFinalizedBody": "Your {month} monthly report is ready to view and download."
   },
   "monthlyMeals": {
     "viewFullMonth": "View full month",
@@ -1237,6 +1241,94 @@
     "peopleRangeError": "People per bazar must be between 1 and 50.",
     "dutyRangeError": "Monthly duty limit must be between 1 and 100.",
     "settingsSaveError": "Could not save bazar settings."
+  },
+  "monthlyReports": {
+    "title": "Monthly Reports",
+    "description": "Review, finalize and download a permanent monthly account summary.",
+    "selectMonth": "Select report month",
+    "draft": "Draft",
+    "finalized": "Finalized",
+    "version": "Version {version}",
+    "generate": "Generate report",
+    "regenerate": "Refresh draft",
+    "finalize": "Finalize report",
+    "downloadPdf": "Download PDF",
+    "retryEmails": "Retry failed emails",
+    "loading": "Loading monthly report...",
+    "noReportTitle": "No report has been generated for this month",
+    "noReportManager": "Generate a draft from the completed monthly calculation, review every amount, then finalize it.",
+    "noReportMember": "The manager has not finalized this month's report yet.",
+    "draftNotice": "This is a reviewable draft. Refresh it after correcting any meal, expense or deposit.",
+    "finalNotice": "This report is an immutable snapshot and will not change when source entries are edited later.",
+    "generatedAt": "Generated {date}",
+    "finalizedAt": "Finalized {date}",
+    "settings": {
+      "title": "Monthly report settings",
+      "description": "Automation is applied separately to this mess.",
+      "autoGenerate": "Automatically generate monthly report",
+      "autoGenerateHint": "Creates a draft for the previous month after month-end.",
+      "emailMembers": "Email report to members",
+      "emailMembersHint": "Emails personal summaries only after a manager finalizes the report.",
+      "saving": "Saving settings..."
+    },
+    "delivery": {
+      "title": "Email delivery",
+      "sent": "{sent} of {total} sent",
+      "failed": "{count} failed",
+      "pending": "{count} pending"
+    },
+    "summary": {
+      "title": "Mess summary",
+      "totalMembers": "Total members",
+      "totalMeals": "Total meals",
+      "totalExpense": "Total expense",
+      "totalDeposit": "Total deposit",
+      "mealRate": "Meal rate",
+      "totalMessCost": "Total mess cost"
+    },
+    "expense": {
+      "title": "Expense summary",
+      "foodBazar": "Food / Bazar",
+      "utility": "Utility",
+      "rentHouse": "Rent / House",
+      "other": "Other expenses",
+      "totalMessCost": "Total mess cost"
+    },
+    "member": {
+      "title": "Member-wise summary",
+      "managerDescription": "Final account breakdown for every included member.",
+      "personalDescription": "Your private summary from the finalized mess report.",
+      "name": "Member",
+      "meals": "Meals",
+      "mealCost": "Meal cost",
+      "otherCost": "Other cost",
+      "deposit": "Deposit",
+      "balance": "Balance",
+      "dueValue": "{amount} due",
+      "creditValue": "{amount} credit",
+      "settled": "Settled"
+    },
+    "confirm": {
+      "title": "Finalize this monthly report?",
+      "description": "The snapshot will be locked permanently. If member email is enabled, personal summaries will be queued immediately.",
+      "cancel": "Continue review",
+      "action": "Finalize report"
+    },
+    "success": {
+      "generated": "Monthly report draft generated.",
+      "finalized": "Monthly report finalized.",
+      "settings": "Monthly report settings saved.",
+      "downloaded": "Monthly report PDF downloaded.",
+      "retried": "Failed report emails were queued again."
+    },
+    "error": {
+      "load": "Could not load the monthly report.",
+      "generate": "Could not generate the monthly report.",
+      "finalize": "Could not finalize the monthly report.",
+      "settings": "Could not save monthly report settings.",
+      "download": "Could not download the monthly report PDF.",
+      "retry": "Could not retry report emails."
+    }
   },
   "api": {
     "errors": {

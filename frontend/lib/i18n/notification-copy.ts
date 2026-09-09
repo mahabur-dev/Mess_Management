@@ -131,6 +131,17 @@ export function localizedNotificationCopy(item: NotificationPresentation, locale
     return { title: t(approved ? 'bazarSwapApprovedTitle' : 'bazarSwapRejectedTitle'), body: t(approved ? 'bazarSwapApprovedBody' : 'bazarSwapRejectedBody') }
   }
   if (source === 'BAZAR_SWAP_CANCELLED') return { title: t('bazarSwapCancelledTitle'), body: t('bazarSwapCancelledBody') }
+  if (source === 'MONTHLY_REPORT_READY' || source === 'MONTHLY_REPORT_FINALIZED') {
+    const finalized = source === 'MONTHLY_REPORT_FINALIZED'
+    const month = text(metadata.month)
+    const monthLabel = month ? formatMonth(month, locale) : ''
+    return {
+      title: t(finalized ? 'monthlyReportFinalizedTitle' : 'monthlyReportReadyTitle'),
+      body: monthLabel
+        ? t(finalized ? 'monthlyReportFinalizedBody' : 'monthlyReportReadyBody', { month: monthLabel })
+        : item.body,
+    }
+  }
 
   return { title: item.title, body: item.body }
 }

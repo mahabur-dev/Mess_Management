@@ -72,6 +72,7 @@
     "messRequests": "Mess Requests",
     "contactRequests": "Contact Requests",
     "allMesses": "All Messes",
+    "runningMesses": "Running Messes",
     "subscriptions": "Subscriptions",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
@@ -563,6 +564,7 @@
     },
     "stats": {
       "totalUsers": "Total users", "registeredAccounts": "Registered accounts",
+      "activeUsers": "Active users", "activeUsersDescription": "Operational activity in the last 30 days",
       "allMesses": "All messes", "managedWorkspaces": "Managed workspaces",
       "pendingRequests": "Pending requests", "awaitingReview": "Awaiting review",
       "pendingPayments": "Pending payments", "awaitingApproval": "Awaiting approval",
@@ -606,6 +608,47 @@
       "notNow": "Not now", "connecting": "Connecting...", "retry": "Retry connection",
       "allow": "Allow notifications", "syncError": "Unable to sync push subscription.",
       "enableError": "Unable to enable notifications."
+    }
+  },
+  "adminRunningMesses": {
+    "title": "Running messes",
+    "description": "Top active messes with meals, expenses, and deposits in the last 30 days.",
+    "viewAll": "View details",
+    "view": "View",
+    "empty": "No running messes found in the last 30 days.",
+    "noAddress": "No address set",
+    "running": "Running",
+    "members": "Active members",
+    "activity": "Operations",
+    "meals": "Meals",
+    "expenses": "Expenses",
+    "deposits": "Deposits",
+    "table": {
+      "mess": "Mess",
+      "members": "Members",
+      "operations": "Meals / expenses / deposits",
+      "lastActivity": "Last activity",
+      "action": "Action"
+    },
+    "chart": {
+      "title": "Monthly active users",
+      "description": "Unique users with recorded operational activity each month.",
+      "series": "Active users"
+    },
+    "drawer": {
+      "eyebrow": "Running mess details",
+      "loadingTitle": "Loading mess",
+      "noAddress": "Operational details and recent records",
+      "close": "Close details",
+      "setup": "Setup status",
+      "complete": "Complete",
+      "incomplete": "Incomplete",
+      "members": "Active members",
+      "recentMeals": "Recent meals",
+      "recentExpenses": "Recent expenses",
+      "recentDeposits": "Recent deposits",
+      "attendees": "attendees",
+      "loadError": "The mess details could not be loaded."
     }
   },
   "mealPatterns": {

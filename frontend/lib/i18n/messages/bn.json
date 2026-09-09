@@ -72,6 +72,7 @@
     "messRequests": "মেসের অনুরোধ",
     "contactRequests": "যোগাযোগের অনুরোধ",
     "allMesses": "সব মেস",
+    "runningMesses": "চলমান মেস",
     "subscriptions": "সাবস্ক্রিপশন",
     "expandSidebar": "সাইডবার খুলুন",
     "collapseSidebar": "সাইডবার সংকুচিত করুন",
@@ -563,6 +564,7 @@
     },
     "stats": {
       "totalUsers": "মোট ব্যবহারকারী", "registeredAccounts": "নিবন্ধিত অ্যাকাউন্ট",
+      "activeUsers": "সক্রিয় ব্যবহারকারী", "activeUsersDescription": "গত ৩০ দিনের কার্যক্রম",
       "allMesses": "সব মেস", "managedWorkspaces": "পরিচালিত ওয়ার্কস্পেস",
       "pendingRequests": "অপেক্ষমাণ অনুরোধ", "awaitingReview": "যাচাইয়ের অপেক্ষায়",
       "pendingPayments": "অপেক্ষমাণ পেমেন্ট", "awaitingApproval": "অনুমোদনের অপেক্ষায়",
@@ -606,6 +608,47 @@
       "notNow": "এখন নয়", "connecting": "সংযোগ হচ্ছে...", "retry": "আবার সংযোগ করুন",
       "allow": "নোটিফিকেশন চালু করুন", "syncError": "পুশ সাবস্ক্রিপশন সমন্বয় করা যায়নি।",
       "enableError": "নোটিফিকেশন চালু করা যায়নি।"
+    }
+  },
+  "adminRunningMesses": {
+    "title": "চলমান মেস",
+    "description": "গত ৩০ দিনে মিল, খরচ ও ডিপোজিট যোগ হওয়া সবচেয়ে সক্রিয় মেসগুলো।",
+    "viewAll": "বিস্তারিত দেখুন",
+    "view": "দেখুন",
+    "empty": "গত ৩০ দিনে কোনো চলমান মেস পাওয়া যায়নি।",
+    "noAddress": "ঠিকানা দেওয়া হয়নি",
+    "running": "চলমান",
+    "members": "সক্রিয় সদস্য",
+    "activity": "অপারেশন",
+    "meals": "মিল",
+    "expenses": "খরচ",
+    "deposits": "ডিপোজিট",
+    "table": {
+      "mess": "মেস",
+      "members": "সদস্য",
+      "operations": "মিল / খরচ / ডিপোজিট",
+      "lastActivity": "সর্বশেষ কার্যক্রম",
+      "action": "কাজ"
+    },
+    "chart": {
+      "title": "মাসভিত্তিক সক্রিয় ব্যবহারকারী",
+      "description": "প্রতি মাসে কার্যক্রম যোগ করা আলাদা ব্যবহারকারীর সংখ্যা।",
+      "series": "সক্রিয় ব্যবহারকারী"
+    },
+    "drawer": {
+      "eyebrow": "চলমান মেসের বিস্তারিত",
+      "loadingTitle": "মেস লোড হচ্ছে",
+      "noAddress": "কার্যক্রম ও সাম্প্রতিক রেকর্ড",
+      "close": "বিস্তারিত বন্ধ করুন",
+      "setup": "সেটআপ স্ট্যাটাস",
+      "complete": "সম্পন্ন",
+      "incomplete": "অসম্পূর্ণ",
+      "members": "সক্রিয় সদস্য",
+      "recentMeals": "সাম্প্রতিক মিল",
+      "recentExpenses": "সাম্প্রতিক খরচ",
+      "recentDeposits": "সাম্প্রতিক ডিপোজিট",
+      "attendees": "জন অংশগ্রহণকারী",
+      "loadError": "মেসের বিস্তারিত লোড করা যায়নি।"
     }
   },
   "mealPatterns": {

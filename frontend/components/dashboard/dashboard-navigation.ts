@@ -2,11 +2,11 @@ import type { LucideIcon } from 'lucide-react'
 import {
   BarChart3,
   Bell,
+  Building2,
   CalendarClock,
   CalendarRange,
   ClipboardList,
   CreditCard,
-  Home,
   LayoutDashboard,
   Mail,
   MessageSquareWarning,
@@ -69,14 +69,12 @@ const managerItems: DashboardNavigationItem[] = [
 const adminItems: DashboardNavigationItem[] = [
   overview,
   { labelKey: 'users', href: '/dashboard/users', icon: Users },
-  { labelKey: 'messRequests', href: '/dashboard/mess_requests', icon: ClipboardList },
   { labelKey: 'contactRequests', href: '/dashboard/contact-requests', icon: Mail },
-  { labelKey: 'allMesses', href: '/dashboard/mess_management', icon: Home },
+  { labelKey: 'runningMesses', href: '/dashboard/running-messes', icon: Building2 },
   ...(APP_FEATURES.subscriptions
     ? [{ labelKey: 'subscriptions' as const, href: '/dashboard/subscriptions', icon: BarChart3 }]
     : []),
   { labelKey: 'complaints', href: '/dashboard/complaints', icon: MessageSquareWarning },
-  { labelKey: 'reports', href: '/dashboard/reports', icon: BarChart3 },
   { labelKey: 'settings', href: '/dashboard/settings', icon: Settings },
 ]
 

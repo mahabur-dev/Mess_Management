@@ -25,6 +25,7 @@ import { ContactRequestModule } from './app/module/contact-request/contact-reque
 import { MealPatternModule } from './app/module/meal-pattern/meal-pattern.module';
 import { AiAutomationModule } from './app/module/ai-automation/ai-automation.module';
 import { PersonalModule } from './app/module/personal/personal.module';
+import { MonthlyReportModule } from './app/module/monthly-report/monthly-report.module';
 
 // ✅ Import Prisma Module
 
@@ -53,6 +54,7 @@ import { PersonalModule } from './app/module/personal/personal.module';
     MealPatternModule,
     AiAutomationModule,
     PersonalModule,
+    MonthlyReportModule,
   ],
 
   controllers: [AppController],

@@ -544,6 +544,85 @@ export interface MonthlyBill {
   mess?: Mess
 }
 
+export type MonthlyReportStatus = 'DRAFT' | 'FINALIZED'
+export type MonthlyReportDeliveryStatus = 'PENDING' | 'PROCESSING' | 'SENT' | 'FAILED'
+
+export interface MonthlyReportMemberSnapshot {
+  memberId: string
+  name: string
+  email: string
+  totalMeals: number
+  mealCost: number
+  otherCost: number
+  rentCost: number
+  utilityCost: number
+  totalAmount: number
+  deposit: number
+  paidAmount: number
+  previousBalance: number
+  balance: number
+  due: number
+  credit: number
+  status: string
+}
+
+export interface MonthlyReportSnapshot {
+  schemaVersion: 1
+  mess: { id: string; name: string; currency: string }
+  month: string
+  summary: {
+    totalMembers: number
+    totalMeals: number
+    totalExpense: number
+    totalDeposit: number
+    mealRate: number
+    totalMessCost: number
+    totalDue: number
+    totalCredit: number
+  }
+  expenseSummary: {
+    foodBazar: number
+    utility: number
+    rentHouse: number
+    otherExpenses: number
+    totalExpense: number
+    totalMessCost: number
+  }
+  members: MonthlyReportMemberSnapshot[]
+}
+
+export interface MonthlyReportDelivery {
+  id: string
+  member_id: string
+  recipient_email: string
+  status: MonthlyReportDeliveryStatus
+  attempts: number
+  sent_at: string | null
+  last_error: string | null
+}
+
+export interface MonthlyReport {
+  id: string
+  mess_id: string
+  month: string
+  status: MonthlyReportStatus
+  version: number
+  source_revision: number
+  snapshot: MonthlyReportSnapshot
+  generated_at: string
+  finalized_at: string | null
+  generated_by: { id: string; name: string } | null
+  finalized_by: { id: string; name: string } | null
+  deliveries: MonthlyReportDelivery[]
+  can_manage: boolean
+}
+
+export interface MonthlyReportSetting {
+  auto_generate: boolean
+  email_members: boolean
+  updated_at: string | null
+}
+
 export interface Payment {
   id: string
   amount: string
@@ -1284,6 +1363,57 @@ class ApiClient {
 
   getMyBills(params?: QueryParams) {
     return this.requestAllPages<MonthlyBill>('/monthly-bill/my', params)
+  }
+
+  getMonthlyReport(messId: string, month: string) {
+    return this.request<MonthlyReport | null>(`/monthly-reports/mess/${messId}`, { params: { month } })
+  }
+
+  getMonthlyReportById(reportId: string) {
+    return this.request<MonthlyReport>(`/monthly-reports/${reportId}`)
+  }
+
+  generateMonthlyReport(data: { messId: string; month: string }) {
+    return this.request<MonthlyReport>('/monthly-reports/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  finalizeMonthlyReport(reportId: string) {
+    return this.request<MonthlyReport>(`/monthly-reports/${reportId}/finalize`, { method: 'POST' })
+  }
+
+  retryMonthlyReportDeliveries(reportId: string) {
+    return this.request<MonthlyReport>(`/monthly-reports/${reportId}/retry-deliveries`, { method: 'POST' })
+  }
+
+  getMonthlyReportSettings(messId: string) {
+    return this.request<MonthlyReportSetting>(`/monthly-reports/settings/${messId}`)
+  }
+
+  updateMonthlyReportSettings(messId: string, data: { autoGenerate: boolean; emailMembers: boolean }) {
+    return this.request<MonthlyReportSetting>(`/monthly-reports/settings/${messId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async downloadMonthlyReportPdf(reportId: string, locale: 'en' | 'bn') {
+    const token = this.getToken()
+    const response = await fetch(`${this.baseUrl}/monthly-reports/${reportId}/pdf?locale=${locale}`, {
+      headers: {
+        'Accept-Language': locale,
+        Authorization: `Bearer ${token ?? ''}`,
+      },
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new ApiError(response.status, error.message ?? 'Could not download the monthly report PDF')
+    }
+    const disposition = response.headers.get('content-disposition') ?? ''
+    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? 'messzen-monthly-report.pdf'
+    return { blob: await response.blob(), filename }
   }
 
   submitPayment(data: { messId: string; monthlyBillId?: string; amount: number; method: PaymentMethod; transactionId?: string; screenshotUrl?: string; note?: string; paymentDate?: string; categories?: string[]; purchasedBy?: string }) {

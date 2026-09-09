@@ -16,6 +16,31 @@ export async function preparePage(
   const expense = { id: 'qa-expense', category: 'FOOD', item_name: 'Database rice চাল', amount: 850, quantity: 2, unit: 'kg', expense_date: today, payment_type: 'PERSONAL', status: 'DRAFT', approvalStatus: 'PENDING', creator: person, purchaser: person, purchased_by: person.id, items: [{ itemName: 'Database rice চাল', amount: 850, quantity: 2, unit: 'kg' }] }
   const payment = { id: 'qa-payment', member: person, creator: person, amount: 2000, status: 'PENDING', method: 'BKASH', categories: ['FOOD'], payment_date: today, created_at: today + 'T10:00:00Z', note: 'Database note অপরিবর্তিত' }
   const bill = { id: 'qa-bill', member: person, month: today.slice(0, 7) + '-01', food_bill: 850, seat_rent: 2000, utility_share: 500, prev_balance: 200, deposit_total: 2000, paid_amount: 0, final_due: 1550, balance: 1550, total_meals: 12, status: 'PENDING' }
+  const reportMonthDate = new Date()
+  reportMonthDate.setMonth(reportMonthDate.getMonth() - 1, 1)
+  const reportMonth = `${reportMonthDate.getFullYear()}-${String(reportMonthDate.getMonth() + 1).padStart(2, '0')}-01T00:00:00.000Z`
+  const monthlyReport = {
+    id: 'qa-monthly-report',
+    mess_id: mess.id,
+    month: reportMonth,
+    status: 'FINALIZED',
+    version: 2,
+    source_revision: 4,
+    generated_at: reportMonth,
+    finalized_at: reportMonth,
+    generated_by: person,
+    finalized_by: person,
+    can_manage: role !== 'MEMBER',
+    deliveries: role === 'MEMBER' ? [] : [{ id: 'qa-delivery', member_id: person.id, recipient_email: person.email, status: 'SENT', attempts: 1, sent_at: reportMonth, last_error: null }],
+    snapshot: {
+      schemaVersion: 1,
+      mess: { id: mess.id, name: mess.name, currency: 'BDT' },
+      month: reportMonth,
+      summary: { totalMembers: 1, totalMeals: 52, totalExpense: 2580, totalDeposit: 3000, mealRate: 40, totalMessCost: 4580, totalDue: 0, totalCredit: 420 },
+      expenseSummary: { foodBazar: 2080, utility: 400, rentHouse: 2000, otherExpenses: 100, totalExpense: 2580, totalMessCost: 4580 },
+      members: [{ memberId: person.id, name: person.name, email: person.email, totalMeals: 52, mealCost: 2080, otherCost: 500, rentCost: 0, utilityCost: 500, totalAmount: 2580, deposit: 3000, paidAmount: 0, previousBalance: 0, balance: -420, due: 0, credit: 420, status: 'PAID' }],
+    },
+  }
   await page.addInitScript(({ locale, authenticated, pushNotifications }) => {
     try { if (!localStorage.getItem('qa-initialized')) {
       localStorage.setItem('messzen:locale', locale)
@@ -40,6 +65,8 @@ export async function preparePage(
         if (request.method() === 'PATCH' && (language === 'en' || language === 'bn')) user.preferred_locale = language
         data = user
       } else if (path.endsWith('/messes/my-mess') || path.endsWith('/messes')) data = [mess]
+      else if (path.includes('/monthly-reports/settings/')) data = { auto_generate: true, email_members: true, updated_at: reportMonth }
+      else if (path.includes('/monthly-reports/mess/') || path.endsWith('/monthly-reports/qa-monthly-report')) data = monthlyReport
       else if (path.includes('/bazar/schedules/mess/') && !path.endsWith('/history')) data = null
       else if (path.includes('/bazar/schedule-settings/')) data = null
       else if (path.includes('/subscriptions/mess/')) data = { plan: 'FREE', status: 'ACTIVE', end_date: null }

@@ -1,0 +1,61 @@
+model MonthlyReportSetting {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id        String   @unique @db.Uuid
+  auto_generate  Boolean  @default(true)
+  email_members  Boolean  @default(false)
+  created_at     DateTime @default(now()) @db.Timestamptz
+  updated_at     DateTime @updatedAt @db.Timestamptz
+
+  mess Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+
+  @@map("monthly_report_settings")
+}
+
+model MonthlyReport {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id         String              @db.Uuid
+  month           DateTime            @db.Date
+  status          MonthlyReportStatus @default(DRAFT)
+  version         Int                 @default(1)
+  source_revision Int                 @default(0)
+  snapshot        Json                @db.JsonB
+  generated_by    String?             @db.Uuid
+  finalized_by    String?             @db.Uuid
+  generated_at    DateTime            @default(now()) @db.Timestamptz
+  finalized_at    DateTime?           @db.Timestamptz
+  created_at      DateTime            @default(now()) @db.Timestamptz
+  updated_at      DateTime            @updatedAt @db.Timestamptz
+
+  mess       Mess                    @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  generator  User?                   @relation("MonthlyReportGenerator", fields: [generated_by], references: [id], onDelete: SetNull)
+  finalizer  User?                   @relation("MonthlyReportFinalizer", fields: [finalized_by], references: [id], onDelete: SetNull)
+  deliveries MonthlyReportDelivery[]
+
+  @@unique([mess_id, month])
+  @@index([mess_id, status, month(sort: Desc)])
+  @@map("monthly_reports")
+}
+
+model MonthlyReportDelivery {
+  id              String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  report_id       String                      @db.Uuid
+  member_id       String                      @db.Uuid
+  recipient_email String                      @db.VarChar(255)
+  locale          String                      @default("en") @db.VarChar(5)
+  status          MonthlyReportDeliveryStatus @default(PENDING)
+  attempts        Int                         @default(0)
+  next_attempt_at DateTime                    @default(now()) @db.Timestamptz
+  provider_id     String?                     @db.VarChar(255)
+  last_error      String?                     @db.VarChar(1000)
+  sent_at         DateTime?                   @db.Timestamptz
+  created_at      DateTime                    @default(now()) @db.Timestamptz
+  updated_at      DateTime                    @updatedAt @db.Timestamptz
+
+  report MonthlyReport @relation(fields: [report_id], references: [id], onDelete: Cascade)
+  member User          @relation(fields: [member_id], references: [id], onDelete: Cascade)
+
+  @@unique([report_id, member_id])
+  @@index([status, next_attempt_at])
+  @@index([member_id, created_at(sort: Desc)])
+  @@map("monthly_report_deliveries")
+}

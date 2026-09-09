@@ -545,8 +545,13 @@
     "overview": {
       "title": "ড্যাশবোর্ড", "adminTitle": "সুপার অ্যাডমিন ড্যাশবোর্ড",
       "messDescription": "{name}-এর সারসংক্ষেপ", "welcome": "আবারও স্বাগতম, {name}",
-      "statisticsLabel": "ড্যাশবোর্ড পরিসংখ্যান", "monthlyTitle": "মাসিক সারসংক্ষেপ",
+      "statisticsLabel": "ড্যাশবোর্ড পরিসংখ্যান", "mobileTitle": "সারসংক্ষেপ", "selectMonth": "সারসংক্ষেপের মাস নির্বাচন করুন", "monthlyTitle": "মাসিক সারসংক্ষেপ",
       "monthlyDescription": "নির্বাচিত মাসের বাজার, ডিপোজিট ও মিল"
+    },
+    "quickActions": {
+      "title": "দ্রুত কাজ", "addMeal": "মিল যোগ করুন", "addExpense": "খরচ যোগ করুন",
+      "addDeposit": "ডিপোজিট যোগ করুন", "mealPattern": "মিল প্যাটার্ন",
+      "bazarSchedule": "বাজারের সময়সূচি", "monthlyBill": "মাসিক বিল"
     },
     "onboarding": {
       "eyebrow": "ওয়ার্কস্পেস সেটআপ", "title": "আপনার অ্যাকাউন্ট একটি মেসের সঙ্গে যুক্ত করুন",

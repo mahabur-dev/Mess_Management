@@ -1,6 +1,51 @@
 import { test, expect } from '@playwright/test'
 import { preparePage, expectNoPageOverflow } from './fixtures'
 
+test('mobile dashboard prioritizes quick actions and a two-column overview', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'This layout is intentionally mobile-only.')
+
+  for (const locale of ['en', 'bn'] as const) {
+    await preparePage(page, locale, true, 'MANAGER')
+    await page.goto('/dashboard')
+
+    const quickActionsLabel = locale === 'en' ? 'Quick actions' : 'দ্রুত কাজ'
+    const statisticsLabel = locale === 'en' ? 'Dashboard statistics' : 'ড্যাশবোর্ড পরিসংখ্যান'
+    const quickActions = page.getByRole('navigation', { name: quickActionsLabel })
+    const actionLinks = quickActions.getByRole('link')
+    await expect(actionLinks).toHaveCount(6)
+
+    const boxes = await actionLinks.evaluateAll((links) =>
+      links.map((link) => {
+        const box = link.getBoundingClientRect()
+        const style = getComputedStyle(link)
+        return {
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          backgroundImage: style.backgroundImage,
+          boxShadow: style.boxShadow,
+        }
+      }),
+    )
+    expect(new Set(boxes.map((box) => Math.round(box.y))).size).toBe(2)
+    expect(new Set(boxes.slice(0, 3).map((box) => Math.round(box.y))).size).toBe(1)
+    expect(boxes[3].y).toBeGreaterThan(boxes[0].y)
+    expect(Math.max(...boxes.map((box) => box.width)) - Math.min(...boxes.map((box) => box.width))).toBeLessThanOrEqual(1)
+    for (const box of boxes) {
+      expect(box.backgroundImage).toBe('none')
+      expect(box.boxShadow).toBe('none')
+    }
+
+    const overview = page.getByRole('region', { name: statisticsLabel })
+    await expect(overview).toBeVisible()
+    const columns = await overview.evaluate((element) =>
+      getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean),
+    )
+    expect(columns).toHaveLength(2)
+    await expectNoPageOverflow(page)
+  }
+})
+
 for (const locale of ['en', 'bn'] as const) {
   test(`every dashboard route renders without runtime errors (${locale})`, async ({ page }) => {
     test.setTimeout(150_000)

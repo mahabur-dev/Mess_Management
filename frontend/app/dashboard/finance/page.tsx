@@ -911,10 +911,18 @@ export default function FinancePage() {
               <table className="w-full table-fixed border-separate border-spacing-0">
                 <thead>
                   <tr className="border-b border-border bg-muted">
-                    {[t('finance.category'), t('finance.quantity'), t('finance.addedBy'), t('finance.expenseDate'), t('finance.amount'), t('finance.approval'), t('monthlyBills.action')].map((heading, index, headings) =>
+                    {[
+                      { id: 'category', label: t('finance.category') },
+                      { id: 'quantity', label: t('finance.quantity') },
+                      { id: 'added-by', label: t('finance.addedBy') },
+                      { id: 'expense-date', label: t('finance.expenseDate') },
+                      { id: 'amount', label: t('finance.amount') },
+                      { id: 'approval', label: t('finance.approval') },
+                      { id: 'action', label: t('monthlyBills.action') },
+                    ].map(({ id, label }, index, headings) =>
                       index === headings.length - 1
-                        ? <EnterpriseTableActionHeader key={heading} size="compact">{heading}</EnterpriseTableActionHeader>
-                        : <th key={heading} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground ${index === 4 ? 'text-right' : ''}`}>{heading}</th>,
+                        ? <EnterpriseTableActionHeader key={id} size="compact">{label}</EnterpriseTableActionHeader>
+                        : <th key={id} className={`px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground ${index === 4 ? 'text-right' : ''}`}>{label}</th>,
                     )}
                   </tr>
                 </thead>

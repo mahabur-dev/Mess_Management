@@ -437,11 +437,15 @@ export interface MessDashboard {
 
 export interface AdminDashboard {
   users: number
+  activeUsers: number
+  monthlyActiveUsers: Array<{ month: string; activeUsers: number }>
   pendingRequests: number
   approvedRequests: number
   messes: number
   pendingComplaints: number
   pendingPayments: number
+  runningMessesTotal: number
+  runningMesses: RunningMess[]
   recentExpenses?: Array<{
     id: string
     item_name?: string | null
@@ -458,6 +462,63 @@ export interface AdminDashboard {
       amount: number
       sortOrder: number
     }>
+  }>
+}
+
+export interface RunningMess {
+  id: string
+  name: string
+  address: string | null
+  category: string | null
+  activeMembers: number
+  mealsAdded: number
+  expensesAdded: number
+  depositsAdded: number
+  activityScore: number
+  lastActivityAt: string
+  createdAt: string
+}
+
+export interface RunningMessDetails {
+  mess: {
+    id: string
+    name: string
+    address: string | null
+    mess_category: string | null
+    total_seats: number | null
+    monthly_rent: number | null
+    settings_completed: boolean
+    created_at: string
+    creator: { id: string; name: string; email: string }
+    memberships: Array<{
+      id: string
+      role: MembershipRole
+      joined_at: string
+      user: { id: string; name: string; email: string; avatar_url: string | null }
+    }>
+  }
+  activity: Pick<RunningMess, 'mealsAdded' | 'expensesAdded' | 'depositsAdded' | 'activityScore'>
+  meals: Array<{
+    id: string
+    name: MealName
+    scheduled_date: string
+    created_at: string
+    activeAttendances: number
+  }>
+  expenses: Array<{
+    id: string
+    category: ExpenseCategory
+    amount: number
+    expense_date: string
+    created_at: string
+  }>
+  deposits: Array<{
+    id: string
+    amount: number
+    method: PaymentMethod
+    deposit_date: string
+    created_at: string
+    member: { id: string; name: string }
   }>
 }
 
@@ -1074,6 +1135,14 @@ class ApiClient {
 
   getAdminDashboard() {
     return this.request<AdminDashboard>('/dashboard/admin')
+  }
+
+  getRunningMesses(params?: { page?: number; limit?: number }) {
+    return this.request<RunningMess[]>('/dashboard/admin/running-messes', { params })
+  }
+
+  getRunningMessDetails(messId: string) {
+    return this.request<RunningMessDetails>(`/dashboard/admin/running-messes/${messId}`)
   }
 
   getAiCapabilities(locale: AiLocale = 'en') {

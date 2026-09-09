@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   AttendanceStatus,
   DepositLedgerType,
@@ -54,6 +54,154 @@ export class DashboardService {
     private readonly prisma: PrismaService,
     private readonly billReconciliation: MonthlyBillReconciliationService,
   ) {}
+
+  private getRunningMessActivityStart() {
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    return start;
+  }
+
+  private async getRunningMessRows() {
+    const activityStart = this.getRunningMessActivityStart();
+    const messes = await this.prisma.mess.findMany({
+      where: { is_active: true },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        mess_category: true,
+        created_at: true,
+        _count: {
+          select: {
+            memberships: { where: { is_active: true } },
+            meals: { where: { created_at: { gte: activityStart } } },
+            expenses: { where: { created_at: { gte: activityStart } } },
+            deposits: { where: { created_at: { gte: activityStart } } },
+          },
+        },
+        meals: {
+          where: { created_at: { gte: activityStart } },
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: { created_at: true },
+        },
+        expenses: {
+          where: { created_at: { gte: activityStart } },
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: { created_at: true },
+        },
+        deposits: {
+          where: { created_at: { gte: activityStart } },
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: { created_at: true },
+        },
+      },
+    });
+
+    return messes
+      .filter(
+        (mess) =>
+          mess._count.meals > 0 &&
+          mess._count.expenses > 0 &&
+          mess._count.deposits > 0,
+      )
+      .map((mess) => {
+        const activityDates = [
+          mess.meals[0]?.created_at,
+          mess.expenses[0]?.created_at,
+          mess.deposits[0]?.created_at,
+        ].filter((date): date is Date => Boolean(date));
+        const lastActivityAt = new Date(
+          Math.max(...activityDates.map((date) => date.getTime())),
+        );
+        const activityScore =
+          mess._count.meals + mess._count.expenses + mess._count.deposits;
+
+        return {
+          id: mess.id,
+          name: mess.name,
+          address: mess.address,
+          category: mess.mess_category,
+          activeMembers: mess._count.memberships,
+          mealsAdded: mess._count.meals,
+          expensesAdded: mess._count.expenses,
+          depositsAdded: mess._count.deposits,
+          activityScore,
+          lastActivityAt: lastActivityAt.toISOString(),
+          createdAt: mess.created_at.toISOString(),
+        };
+      })
+      .sort(
+        (left, right) =>
+          right.activityScore - left.activityScore ||
+          new Date(right.lastActivityAt).getTime() -
+            new Date(left.lastActivityAt).getTime(),
+      );
+  }
+
+  private async getMonthlyActiveUsers() {
+    const now = new Date();
+    const rangeStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1),
+    );
+    const nextMonth = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    );
+    const activeSince = this.getRunningMessActivityStart();
+
+    const [attendances, expenses, deposits, payments] = await Promise.all([
+      this.prisma.mealAttendance.findMany({
+        where: { created_at: { gte: rangeStart, lt: nextMonth } },
+        select: { member_id: true, created_at: true },
+      }),
+      this.prisma.expense.findMany({
+        where: { created_at: { gte: rangeStart, lt: nextMonth } },
+        select: { created_by: true, created_at: true },
+      }),
+      this.prisma.deposit.findMany({
+        where: { created_at: { gte: rangeStart, lt: nextMonth } },
+        select: { member_id: true, created_at: true },
+      }),
+      this.prisma.payment.findMany({
+        where: { created_at: { gte: rangeStart, lt: nextMonth } },
+        select: { created_by: true, created_at: true },
+      }),
+    ]);
+
+    const monthUsers = new Map<string, Set<string>>();
+    const currentUsers = new Set<string>();
+    const addActivity = (userId: string, createdAt: Date) => {
+      const key = `${createdAt.getUTCFullYear()}-${String(
+        createdAt.getUTCMonth() + 1,
+      ).padStart(2, '0')}`;
+      const users = monthUsers.get(key) ?? new Set<string>();
+      users.add(userId);
+      monthUsers.set(key, users);
+      if (createdAt >= activeSince) currentUsers.add(userId);
+    };
+
+    attendances.forEach((entry) => addActivity(entry.member_id, entry.created_at));
+    expenses.forEach((entry) => addActivity(entry.created_by, entry.created_at));
+    deposits.forEach((entry) => addActivity(entry.member_id, entry.created_at));
+    payments.forEach((entry) => addActivity(entry.created_by, entry.created_at));
+
+    const monthlyActiveUsers = Array.from({ length: 6 }, (_, index) => {
+      const month = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5 + index, 1),
+      );
+      const monthKey = `${month.getUTCFullYear()}-${String(
+        month.getUTCMonth() + 1,
+      ).padStart(2, '0')}`;
+      return {
+        month: monthKey,
+        activeUsers: monthUsers.get(monthKey)?.size ?? 0,
+      };
+    });
+
+    return { activeUsers: currentUsers.size, monthlyActiveUsers };
+  }
 
   private getMonthRange(month?: string) {
     try {
@@ -733,6 +881,8 @@ export class DashboardService {
       pendingComplaints,
       pendingPayments,
       recentExpenses,
+      runningMesses,
+      userActivity,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.messRequest.count({ where: { status: 'PENDING' } }),
@@ -766,15 +916,21 @@ export class DashboardService {
           creator: { select: { id: true, name: true, email: true } },
         },
       }),
+      this.getRunningMessRows(),
+      this.getMonthlyActiveUsers(),
     ]);
 
     return {
       users,
+      activeUsers: userActivity.activeUsers,
+      monthlyActiveUsers: userActivity.monthlyActiveUsers,
       pendingRequests,
       approvedRequests,
       messes,
       pendingComplaints,
       pendingPayments,
+      runningMessesTotal: runningMesses.length,
+      runningMesses: runningMesses.slice(0, 5),
       recentExpenses: recentExpenses.map((expense) => ({
         ...expense,
         item_name:
@@ -788,6 +944,145 @@ export class DashboardService {
           amount: Number(item.amount),
           sortOrder: item.sort_order,
         })),
+      })),
+    };
+  }
+
+  async getRunningMesses(page: number, limit: number) {
+    const safePage = Math.max(1, Math.floor(page));
+    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+    const rows = await this.getRunningMessRows();
+    const total = rows.length;
+    const start = (safePage - 1) * safeLimit;
+
+    return {
+      data: rows.slice(start, start + safeLimit),
+      meta: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+      },
+    };
+  }
+
+  async getRunningMessDetails(messId: string) {
+    const activityStart = this.getRunningMessActivityStart();
+    const [mess, meals, expenses, deposits, counts] = await Promise.all([
+      this.prisma.mess.findFirst({
+        where: { id: messId, is_active: true },
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          mess_category: true,
+          total_seats: true,
+          monthly_rent: true,
+          settings_completed: true,
+          created_at: true,
+          creator: { select: { id: true, name: true, email: true } },
+          memberships: {
+            where: { is_active: true },
+            orderBy: { joined_at: 'asc' },
+            select: {
+              id: true,
+              role: true,
+              joined_at: true,
+              user: { select: { id: true, name: true, email: true, avatar_url: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.meal.findMany({
+        where: { mess_id: messId },
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          scheduled_date: true,
+          created_at: true,
+          attendances: {
+            where: { status: AttendanceStatus.ON },
+            select: { guests: true },
+          },
+        },
+      }),
+      this.prisma.expense.findMany({
+        where: { mess_id: messId },
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          category: true,
+          amount: true,
+          expense_date: true,
+          created_at: true,
+        },
+      }),
+      this.prisma.deposit.findMany({
+        where: { mess_id: messId },
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          amount: true,
+          method: true,
+          deposit_date: true,
+          created_at: true,
+          member: { select: { id: true, name: true } },
+        },
+      }),
+      Promise.all([
+        this.prisma.meal.count({
+          where: { mess_id: messId, created_at: { gte: activityStart } },
+        }),
+        this.prisma.expense.count({
+          where: { mess_id: messId, created_at: { gte: activityStart } },
+        }),
+        this.prisma.deposit.count({
+          where: { mess_id: messId, created_at: { gte: activityStart } },
+        }),
+      ]),
+    ]);
+
+    if (!mess) throw new NotFoundException('Active mess not found');
+    const [mealsAdded, expensesAdded, depositsAdded] = counts;
+
+    return {
+      mess: {
+        ...mess,
+        created_at: mess.created_at.toISOString(),
+        monthly_rent: mess.monthly_rent == null ? null : Number(mess.monthly_rent),
+        memberships: mess.memberships.map((membership) => ({
+          ...membership,
+          joined_at: membership.joined_at.toISOString(),
+        })),
+      },
+      activity: {
+        mealsAdded,
+        expensesAdded,
+        depositsAdded,
+        activityScore: mealsAdded + expensesAdded + depositsAdded,
+      },
+      meals: meals.map((meal) => ({
+        id: meal.id,
+        name: meal.name,
+        scheduled_date: meal.scheduled_date.toISOString(),
+        created_at: meal.created_at.toISOString(),
+        activeAttendances: meal.attendances.length,
+      })),
+      expenses: expenses.map((expense) => ({
+        ...expense,
+        amount: Number(expense.amount),
+        expense_date: expense.expense_date.toISOString(),
+        created_at: expense.created_at.toISOString(),
+      })),
+      deposits: deposits.map((deposit) => ({
+        ...deposit,
+        amount: Number(deposit.amount),
+        deposit_date: deposit.deposit_date.toISOString(),
+        created_at: deposit.created_at.toISOString(),
       })),
     };
   }

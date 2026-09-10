@@ -29,7 +29,7 @@ export function DemoDashboardAccess() {
   return (
     <section className="px-4 py-6 sm:px-6 lg:px-8" aria-labelledby="demo-dashboard-title">
       <div className="marketing-container">
-        <div className="grid items-center gap-4 rounded-2xl border border-l-0 border-[var(--brand-border)] bg-[var(--brand-softer)] p-4 sm:p-5 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-5">
+        <div className="grid items-center gap-4 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-softer)] p-4 sm:p-5 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-5">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)]">
             <MonitorPlay size={20} />
           </span>

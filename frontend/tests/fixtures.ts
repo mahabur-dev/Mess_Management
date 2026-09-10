@@ -60,7 +60,9 @@ export async function preparePage(
       if (request.method() !== 'GET' && request.method() !== 'OPTIONS') {
         writes.push({ path, method: request.method(), body: request.postData() ?? '', language: request.headers()['accept-language'] })
       }
-      if (path.endsWith('/users/profile')) {
+      if (path.endsWith('/auth/login')) {
+        data = { accessToken: 'qa-token', user }
+      } else if (path.endsWith('/users/profile')) {
         const language = request.headers()['accept-language']
         if (request.method() === 'PATCH' && (language === 'en' || language === 'bn')) user.preferred_locale = language
         data = user

@@ -1116,3 +1116,25 @@ html[data-locale='bn'] :is(.marketing-eyebrow, .enterprise-kicker, .enterprise-t
     background: var(--brand);
   }
 }
+
+@keyframes marketing-dashboard-preview-enter {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.marketing-dashboard-preview-enter {
+  animation: marketing-dashboard-preview-enter 420ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-dashboard-preview-enter {
+    animation: none;
+  }
+}

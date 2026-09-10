@@ -243,6 +243,22 @@ test('public language switching remains usable when storage is denied', async ({
   expect(errors).toEqual([])
 })
 
+test('landing page opens the supplied demo workspace without registration', async ({ page }) => {
+  await preparePage(page, 'en')
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Open demo dashboard' }).click()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+})
+
+test('about dashboard image keeps its complete frame', async ({ page }) => {
+  await preparePage(page, 'en')
+  await page.goto('/about')
+  const image = page.getByRole('img', { name: 'Messzen management dashboard' })
+  await expect(image).toBeVisible()
+  await expect(image).toHaveCSS('object-fit', 'contain')
+})
+
 test('marketing header remains stable when switching from English to Bangla', async ({ page }) => {
   await preparePage(page, 'en')
   await page.goto('/')

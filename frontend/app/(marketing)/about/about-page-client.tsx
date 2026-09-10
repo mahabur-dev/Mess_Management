@@ -43,7 +43,15 @@ export function AboutPageClient() {
             <Link href="/register" className="brand-button mt-7 h-12 px-6">{t('about.action')} <ArrowRight size={16} /></Link>
           </div>
           <div className="marketing-card overflow-hidden rounded-2xl p-2 sm:p-3">
-            <Image src="/labtop-dashboard.webp" alt={t('about.dashboardAlt')} width={1366} height={1292} priority className="aspect-[1.55/1] w-full rounded-xl object-cover object-top" />
+            <Image
+              src="/labtop-dashboard.webp"
+              alt={t('about.dashboardAlt')}
+              width={1366}
+              height={1292}
+              priority
+              sizes="(min-width: 1024px) 58vw, 100vw"
+              className="h-auto w-full rounded-xl object-contain"
+            />
           </div>
         </div>
       </section>

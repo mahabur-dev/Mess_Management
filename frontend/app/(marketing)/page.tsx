@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/app/context/auth-context'
 import { MarketingHero } from '@/components/marketing-hero'
+import { DemoDashboardAccess } from '@/components/demo-dashboard-access'
 import { MarketingStatsBar } from '@/components/marketing-stats'
 import { SectionHeading } from '@/components/marketing-section'
 import {
@@ -438,21 +439,7 @@ export default function HomePage() {
         </div>
       )}
       <MarketingHero />
-      <div className="marketing-container flex justify-center px-4 py-6 sm:px-6 lg:px-8">
-        <a
-          href="https://peerpush.com/p/messzen"
-          target="_blank"
-          rel="noopener"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://peerpush.com/p/messzen/badge.png"
-            alt={t('hero.peerPushAlt')}
-            className="h-auto max-w-full"
-            style={{ width: '230px' }}
-          />
-        </a>
-      </div>
+      <DemoDashboardAccess />
       <FeatureStrip />
       <AutomationOverviewSection />
       <AiWorkflowSection />

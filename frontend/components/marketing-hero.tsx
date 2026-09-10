@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowRight, Play, Sparkles, Star } from 'lucide-react'
-import { ProductTourPreviewSuite } from '@/components/product-tour/product-tour-preview-suite'
+import { MarketingDashboardPreview } from '@/components/marketing-dashboard-preview'
 import { useTranslations } from '@/lib/i18n'
 
 const people = [
@@ -17,7 +17,7 @@ export function MarketingHero() {
 
   return (
     <section className="relative overflow-hidden px-4 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-14 lg:pt-16">
-      <div className="marketing-container relative grid items-center gap-12 lg:grid-cols-[.82fr_1.18fr] lg:gap-10">
+      <div className="marketing-container relative grid items-center gap-12 lg:grid-cols-[.64fr_1.36fr] lg:items-start lg:gap-6">
         <div>
           <span className="marketing-eyebrow gap-2 normal-case tracking-normal">
             <Sparkles size={13} /> {t('hero.eyebrow')}
@@ -65,10 +65,24 @@ export function MarketingHero() {
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-[820px]">
-          <div className="relative">
-            <ProductTourPreviewSuite />
-          </div>
+        <div className="relative mx-auto w-full max-w-[1024px] lg:ml-auto lg:pt-[4.25rem]">
+          <MarketingDashboardPreview />
+
+          {/*
+            The dashboard walkthrough video is retained as a future fallback.
+            <div className="overflow-hidden rounded-xl border border-[var(--dashboard-line)] bg-black">
+              <video
+                className="block aspect-video w-full bg-black object-contain"
+                controls
+                playsInline
+                preload="metadata"
+                aria-label={t('hero.dashboardVideoLabel')}
+              >
+                <source src="/messzen-dashboard-tour.mp4" type="video/mp4" />
+                {t('hero.dashboardVideoFallback')}
+              </video>
+            </div>
+          */}
         </div>
       </div>
     </section>

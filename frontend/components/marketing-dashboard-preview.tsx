@@ -77,14 +77,16 @@ export function MarketingDashboardPreview() {
   }, [paused])
 
   return (
-    <section
-      className="overflow-hidden rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)]"
-      aria-label={t('hero.previewAriaLabel')}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={() => setPaused(false)}
-    >
+    <>
+      <MobileMarketingDashboardPreview active={active} labels={labels} />
+      <section
+        className="hidden overflow-hidden rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] md:block"
+        aria-label={t('hero.previewAriaLabel')}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onFocusCapture={() => setPaused(true)}
+        onBlurCapture={() => setPaused(false)}
+      >
       <div className="grid aspect-[2.1/1] min-h-[260px] grid-cols-[19%_81%]">
         <aside className="flex min-w-0 flex-col overflow-hidden border-r border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]">
           <div className="flex h-[10%] shrink-0 items-center border-b border-[var(--dashboard-line)] px-[9%]">
@@ -127,6 +129,88 @@ export function MarketingDashboardPreview() {
           </main>
         </div>
       </div>
+      </section>
+    </>
+  )
+}
+
+function MobileMarketingDashboardPreview({
+  active,
+  labels,
+}: {
+  active: PreviewItem
+  labels: Record<PreviewId, { title: string; description: string }>
+}) {
+  const t = useTranslations('marketing')
+  const summaryItems = [
+    [t('hero.previewDeposit'), currency + ' 6,200'],
+    [t('hero.previewMeals'), '67.5'],
+    [t('hero.previewExpenses'), currency + ' 5,050'],
+    [t('hero.previewBillDue'), currency + ' 2,580'],
+  ] as const
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] text-[var(--dashboard-ink)] md:hidden" aria-label={t('hero.previewAriaLabel')}>
+      <header className="flex h-12 items-center justify-between border-b border-[var(--dashboard-line)] px-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="grid size-7 shrink-0 place-items-center rounded-md border border-[var(--brand)] text-[10px] font-bold text-[var(--brand)]">M</span>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold">{labels[active.id].title}</p>
+            <p className="truncate text-[10px] text-muted-foreground">Together We Dine</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-[var(--brand)]">
+          <CalendarDays className="size-4" />
+          <Bell className="size-4 text-muted-foreground" />
+          <span className="grid size-6 place-items-center rounded-full bg-[var(--brand-soft)] text-[8px] font-semibold">MR</span>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-4 border-b border-[var(--dashboard-line)] bg-[var(--dashboard-surface-subtle)] p-1.5">
+        {previewItems.slice(0, 4).map((item) => {
+          const Icon = item.icon
+          const isActive = item.id === active.id
+          return (
+            <div key={item.id} className={'flex min-w-0 flex-col items-center gap-1 rounded-md px-1 py-1.5 text-[9px] font-medium ' + (isActive ? 'bg-[var(--brand-soft)] text-[var(--brand)]' : 'text-muted-foreground')}>
+              <Icon className="size-3.5" />
+              <span className="w-full truncate text-center">{labels[item.id].title}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      <main className="p-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--brand)]">{t('hero.previewOverview')}</p>
+            <h2 className="mt-1 truncate text-sm font-semibold">{labels[active.id].title}</h2>
+          </div>
+          <span className="shrink-0 rounded-md border border-[var(--brand-border)] bg-[var(--brand-softer)] px-2 py-1 text-[10px] font-semibold text-[var(--brand)]">{t('hero.previewMonth')}</span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {summaryItems.map(([label, value]) => (
+            <article key={label} className="rounded-md border border-[var(--dashboard-line)] bg-[var(--dashboard-surface)] px-2.5 py-2">
+              <p className="truncate text-[10px] font-medium text-muted-foreground">{label}</p>
+              <p className="mt-1 text-xs font-semibold tabular-nums">{value}</p>
+            </article>
+          ))}
+        </div>
+
+        <section className="mt-3 overflow-hidden rounded-md border border-[var(--dashboard-line)]">
+          <div className="flex items-center justify-between border-b border-[var(--dashboard-line)] px-2.5 py-2">
+            <p className="text-[11px] font-semibold">{t('hero.previewActivity')}</p>
+            <ListFilter className="size-3.5 text-muted-foreground" />
+          </div>
+          {activityRows[active.id].slice(0, 2).map(([name, date, value]) => (
+            <div key={name} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 border-b border-[var(--dashboard-line)] px-2.5 py-2 last:border-b-0">
+              <span className="truncate text-[10px] font-medium">{name}</span>
+              <span className="text-[9px] text-muted-foreground">{date}</span>
+              <span className="text-[10px] font-semibold tabular-nums">{value}</span>
+            </div>
+          ))}
+        </section>
+      </main>
     </section>
   )
 }

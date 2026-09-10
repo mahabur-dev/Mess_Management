@@ -29,7 +29,7 @@ export function DemoDashboardAccess() {
   return (
     <section className="px-4 py-6 sm:px-6 lg:px-8" aria-labelledby="demo-dashboard-title">
       <div className="marketing-container">
-        <div className="grid items-center gap-4 rounded-2xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] p-4 sm:p-5 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-5">
+        <div className="grid items-center gap-4 rounded-2xl border border-l-0 border-[var(--brand-border)] bg-[var(--brand-softer)] p-4 sm:p-5 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-5">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand)]">
             <MonitorPlay size={20} />
           </span>
@@ -38,9 +38,9 @@ export function DemoDashboardAccess() {
             <h2 id="demo-dashboard-title" className="mt-1 text-base font-semibold text-foreground">{t('hero.demoTitle')}</h2>
             <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">{t('hero.demoDescription')}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold">
-              <span className="text-muted-foreground">{t('hero.demoCredentials')}</span>
-              <span className="rounded-md border border-[var(--marketing-line)] bg-[var(--marketing-subtle)] px-2.5 py-1 text-foreground">{t('hero.demoEmail')}: {DEMO_EMAIL}</span>
-              <span className="rounded-md border border-[var(--marketing-line)] bg-[var(--marketing-subtle)] px-2.5 py-1 text-foreground">{t('hero.demoPassword')}: {DEMO_PASSWORD}</span>
+              <span className="text-[var(--brand)]">{t('hero.demoCredentials')}</span>
+              <span className="rounded-md border border-[var(--brand-border-subtle)] bg-[var(--marketing-surface)] px-2.5 py-1 text-foreground">{t('hero.demoEmail')}: {DEMO_EMAIL}</span>
+              <span className="rounded-md border border-[var(--brand-border-subtle)] bg-[var(--marketing-surface)] px-2.5 py-1 text-foreground">{t('hero.demoPassword')}: {DEMO_PASSWORD}</span>
             </div>
             {error ? (
               <p className="mt-2 text-xs font-semibold text-destructive" role="alert">
@@ -49,7 +49,7 @@ export function DemoDashboardAccess() {
             ) : null}
           </div>
           <div className="flex flex-col gap-2 sm:flex-row lg:flex-col lg:items-stretch">
-            <button type="button" onClick={() => void openDemo()} disabled={isSubmitting} className="brand-button h-11 px-5 disabled:cursor-not-allowed disabled:opacity-70">
+            <button type="button" onClick={() => void openDemo()} disabled={isSubmitting} className="brand-button h-11 w-full px-5 sm:w-auto lg:w-full disabled:cursor-not-allowed disabled:opacity-70">
               {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : <MonitorPlay className="size-4" />}
               {isSubmitting ? t('hero.demoLoading') : t('hero.demoAction')}
               {!isSubmitting ? <ArrowRight className="size-4" /> : null}

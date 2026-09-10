@@ -16,14 +16,14 @@ export function MarketingHero() {
   const t = useTranslations('marketing')
 
   return (
-    <section className="relative overflow-hidden px-4 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-14 lg:pt-16">
-      <div className="marketing-container relative grid items-center gap-12 lg:grid-cols-[.64fr_1.36fr] lg:items-start lg:gap-6">
+    <section className="relative overflow-hidden px-4 pb-9 pt-8 sm:px-6 sm:pb-10 sm:pt-12 lg:px-8 lg:pb-14 lg:pt-16">
+      <div className="marketing-container relative grid items-center gap-8 sm:gap-10 lg:grid-cols-[.64fr_1.36fr] lg:items-start lg:gap-6">
         <div>
           <span className="marketing-eyebrow gap-2 normal-case tracking-normal">
             <Sparkles size={13} /> {t('hero.eyebrow')}
           </span>
 
-          <h1 className="mt-6 max-w-xl text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-foreground sm:text-5xl lg:text-[3.65rem]">
+          <h1 className="mt-5 max-w-xl text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.04em] text-foreground min-[390px]:text-4xl sm:mt-6 sm:text-5xl lg:text-[3.65rem]">
             {t('hero.titleLineOne')}
             <br /> {t('hero.titleLineTwo')}
             <br />
@@ -32,20 +32,20 @@ export function MarketingHero() {
             </span>
           </h1>
 
-          <p className="mt-6 max-w-lg text-base font-normal leading-8 text-muted-foreground">
+          <p className="mt-5 max-w-lg text-[15px] font-normal leading-7 text-muted-foreground sm:mt-6 sm:text-base sm:leading-8">
             {t('hero.description')}
           </p>
 
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <Link href="/register" className="brand-button h-12 px-6">
+          <div className="mt-6 grid gap-3 min-[390px]:flex sm:mt-7 sm:flex-row">
+            <Link href="/register" className="brand-button h-12 w-full px-6 min-[390px]:w-auto">
               {t('hero.startFree')} <ArrowRight size={16} />
             </Link>
-            <Link href="#how-it-works" className="ghost-button h-12 px-6">
+            <Link href="#how-it-works" className="ghost-button h-12 w-full px-6 min-[390px]:w-auto">
               {t('hero.seeHow')} <Play size={15} />
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div className="mt-7 flex flex-wrap items-center gap-4 sm:mt-8">
             <div className="flex -space-x-2.5">
               {people.map((person) => (
                 <span

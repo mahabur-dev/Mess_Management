@@ -119,7 +119,7 @@ export function MemberCard({
                 <Pencil size={14} />
                 {t('edit')}
               </Link>
-              <button type="button" onClick={onDelete} disabled={deleting} className="text-[#c2410c]">
+              <button type="button" onClick={onDelete} disabled={deleting} data-tone="danger">
                 <Trash2 size={14} />
                 {deleting ? t('deleting') : t('delete')}
               </button>

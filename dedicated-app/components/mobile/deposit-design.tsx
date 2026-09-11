@@ -30,9 +30,10 @@ import {
   WalletCards,
   type LucideProps,
 } from 'lucide-react'
-import { PAYMENT_METHODS, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
+import { type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
+import { MonthPicker } from '@/components/mobile/date-picker'
 import {
   formatDate,
   getDictionary,
@@ -543,19 +544,18 @@ export function DepositMonthNavigator({
       <button type="button" onClick={onPrevious} aria-label={t('previousMonth')}>
         <ChevronLeft size={18} strokeWidth={2.4} />
       </button>
-      <label>
-        <CalendarDays size={18} strokeWidth={2.2} aria-hidden="true" />
-        <span>{label}</span>
-        <ChevronDown size={16} strokeWidth={2.3} aria-hidden="true" />
-        <input
-          type="month"
-          value={month}
-          onChange={(event) => {
-            if (/^\d{4}-\d{2}$/.test(event.target.value)) onChange(event.target.value)
-          }}
-          aria-label={t('chooseDepositMonth')}
-        />
-      </label>
+      <MonthPicker
+        label={t('chooseDepositMonth')}
+        value={month}
+        onChange={onChange}
+        renderTrigger={({ open, selectedLabel, buttonProps }) => (
+          <button {...buttonProps}>
+            <CalendarDays size={18} strokeWidth={2.2} aria-hidden="true" />
+            <span>{selectedLabel || label}</span>
+            <ChevronDown size={16} strokeWidth={2.3} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </button>
+        )}
+      />
       <button type="button" onClick={onNext} aria-label={t('nextMonth')}>
         <ChevronRight size={18} strokeWidth={2.4} />
       </button>
@@ -762,58 +762,22 @@ export function DepositCompactFilters({
         />
       </div>
 
-      <label className="relative block">
+      <div className="relative block">
         {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('month')}</span> : null}
-        <div className="flex h-12 items-center rounded-[15px] border border-[#cfeeed] bg-white px-3 pr-9 text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)]">
-          {month}
-        </div>
-        <input
-          aria-label={t('selectMonth')}
-          type="month"
+        <MonthPicker
+          label={t('selectMonth')}
           value={month}
-          onChange={(event) => onMonthChange(event.target.value)}
-          className="absolute inset-x-0 bottom-0 h-12 cursor-pointer opacity-0"
-        />
-        <CalendarDays className="pointer-events-none absolute bottom-3.5 right-3 text-[#008d8c]" size={16} />
-      </label>
-    </div>
-  )
-}
-
-export function PaymentMethodGrid({
-  value,
-  onChange,
-}: {
-  value: PaymentMethod
-  onChange: (value: PaymentMethod) => void
-}) {
-  const { locale } = useLocale()
-  const t = useTranslations('payments')
-  return (
-    <section>
-      <h2 className="mb-3 text-title-sm font-semibold text-[#1d3a42]">{t('depositMethod')}</h2>
-      <div className="grid grid-cols-2 gap-3">
-        {PAYMENT_METHODS.map((method) => {
-          const active = value === method
-          const Icon = methodIcon(method)
-          return (
-            <button
-              key={method}
-              type="button"
-              onClick={() => onChange(method)}
-              className={`grid min-h-[86px] place-items-center rounded-[17px] border px-3 py-4 text-center transition active:scale-[0.98] ${
-                active
-                  ? 'border-[#008d8c] bg-[#f2ffff] text-[#008d8c] shadow-[0_10px_24px_rgba(0,119,122,0.08)]'
-                  : 'border-[#dce9ec] bg-white text-[#647287]'
-              }`}
-            >
-              <Icon size={24} strokeWidth={2.25} />
-              <span className="mt-2 text-label font-bold">{paymentMethodLabel(method, locale)}</span>
+          onChange={onMonthChange}
+          renderTrigger={({ open, selectedLabel, buttonProps }) => (
+            <button {...buttonProps} className="flex h-12 w-full items-center gap-2 rounded-[15px] border border-[#cfeeed] bg-white px-3 text-left text-body font-semibold text-[#123748] shadow-[0_8px_18px_rgba(18,55,72,0.045)] outline-none transition focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10">
+              <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+              <CalendarDays className="shrink-0 text-[#008d8c]" size={16} />
+              <ChevronDown className={`shrink-0 text-[#65838b] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} size={16} />
             </button>
-          )
-        })}
+          )}
+        />
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -850,7 +814,7 @@ export function DepositDetailsSummary({
   const date = item?.payment_date ?? item?.date ?? item?.created_at ?? null
 
   return (
-    <section className="deposit-details-summary rounded-[20px] border border-[#dce9ec] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(18,55,72,0.08)]">
+    <section className="deposit-details-summary py-2">
       <div className="grid grid-cols-[minmax(0,0.85fr)_1px_minmax(0,1.15fr)] gap-4">
         <div className="flex flex-col items-center justify-center text-center">
           <div className="grid h-16 w-16 place-items-center rounded-full" style={{ backgroundColor: status.bg, color: status.fg }}>

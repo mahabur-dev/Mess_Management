@@ -31,6 +31,7 @@ import {
   type ExpenseApprovalStatus,
 } from '@/components/mobile/expense-approval'
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
+import { MonthPicker } from '@/components/mobile/date-picker'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { FloatingActionMenu } from '@/components/mobile/floating-action-menu'
@@ -158,6 +159,7 @@ function ExpenseRecordsSection({
   const { locale } = useLocale()
   const format = useLocaleFormatters()
   const t = useTranslations('expenses')
+  const meals = useTranslations('meals')
   const approvalOptions: Array<MobileSelectOption<ApprovalFilter>> = [
     { value: 'ALL', label: t('allStatuses') },
     { value: 'PENDING', label: paymentStatusLabel('PENDING', locale) },
@@ -182,15 +184,18 @@ function ExpenseRecordsSection({
           onChange={onStatusFilterChange}
           icon={<SlidersHorizontal size={16} strokeWidth={2.35} />}
         />
-        <label className="flex h-12 items-center gap-2 rounded-[15px] border border-[#dce5ec] bg-white px-3 text-label font-semibold text-[#123748]">
-          <CalendarDays size={16} strokeWidth={2.35} className="text-[#008d8c]" />
-          <input
-            type="month"
-            value={monthFilter}
-            onChange={(event) => onMonthFilterChange(event.target.value)}
-            className="min-w-0 flex-1 bg-transparent outline-none"
-          />
-        </label>
+        <MonthPicker
+          label={meals('selectMonth')}
+          value={monthFilter}
+          onChange={onMonthFilterChange}
+          renderTrigger={({ open, selectedLabel, buttonProps }) => (
+            <button {...buttonProps} className="flex h-12 w-full items-center gap-2 rounded-[15px] border border-[#dce5ec] bg-white px-3 text-left text-label font-semibold text-[#123748] outline-none focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10">
+              <CalendarDays size={16} strokeWidth={2.35} className="shrink-0 text-[#008d8c]" />
+              <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+              <ChevronDown size={16} className={`shrink-0 text-[#65838b] transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+          )}
+        />
       </div>
 
       <div className="flush-list flush-list--home-panel">
@@ -200,6 +205,7 @@ function ExpenseRecordsSection({
             item={item}
             href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(messId)}`}
             variant="horizontal"
+            showChevron={false}
           />
         ))}
         {loading ? <LoadingIndicator variant="card" label={t('loadingExpenses')} /> : null}

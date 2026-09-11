@@ -226,7 +226,7 @@ export default function MembersPage() {
         {memberNotice.notice ? <div className={`ui-notice ui-notice--${memberNotice.notice.tone}`} role="status">{memberNotice.notice.message}</div> : null}
 
         {activeView === 'members' ? (
-          <section className="flush-list">
+          <section className="flush-list member-list">
             {loading ? (
               <LoadingIndicator variant="card" label={t('loadingMembers')} />
             ) : (

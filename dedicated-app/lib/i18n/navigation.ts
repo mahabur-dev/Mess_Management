@@ -3,6 +3,7 @@ import type { MessageKey } from './types'
 const ROUTE_LABEL_KEYS: Record<string, MessageKey<'navigation'>> = {
   '/': 'home', '/create-mess': 'createMess', '/request-mess': 'requestMess',
   '/members': 'members', '/meals': 'meals', '/meal-pattern': 'mealPattern',
+  '/bazar-schedule': 'bazarSchedule',
   '/expenses': 'expenses', '/payments': 'deposits', '/monthly-bill': 'monthlyBill',
   '/notices': 'notices', '/notifications': 'notifications', '/complaints': 'complaints', '/personal': 'personal',
   '/profile': 'profile', '/settings': 'settings', '/more': 'more',
@@ -14,6 +15,7 @@ const ROUTE_LABEL_KEYS: Record<string, MessageKey<'navigation'>> = {
 const ROUTE_DESCRIPTION_KEYS: Record<string, MessageKey<'navigation'>> = {
   '/profile': 'profileDescription', '/settings': 'settingsDescription',
   '/meal-pattern': 'mealPatternDescription', '/personal': 'personalDescription',
+  '/bazar-schedule': 'bazarScheduleDescription',
   '/complaints': 'complaintsDescription', '/mess-management': 'messManagementDescription',
   '/subscription': 'subscriptionDescription', '/how-it-works': 'howItWorksDescription',
   '/contact-us': 'contactUsDescription', '/privacy-policy': 'privacyPolicyDescription',

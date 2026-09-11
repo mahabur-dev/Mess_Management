@@ -14,6 +14,7 @@ import {
 } from '@/components/mobile/meals-design'
 import type { AiLocale } from '@/lib/ai-automation'
 import { MobileSelectSheet, type MobileSelectOption } from '@/components/mobile/select-sheet'
+import { DatePicker } from '@/components/mobile/date-picker'
 import { formatNumber, useTranslations } from '@/lib/i18n'
 
 export type AiMealPreviewItem = Record<string, unknown>
@@ -201,16 +202,16 @@ export function AiMealPreview({
       {groups.map((group) => (
         <MealCard key={group.key} className="overflow-hidden !p-0">
           <div className="flex items-center gap-3 border-b border-[#d8eeee] bg-[#f5fbfb] px-3.5 py-3">
-            <label className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[#dff4f3] text-[#008d8c] active:scale-[0.98]">
-              <CalendarDays size={18} />
-              <input
-                aria-label={meals('selectDate')}
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                type="date"
-                value={group.date}
-                onChange={(event) => patchGroup(group, { date: event.target.value })}
-              />
-            </label>
+            <DatePicker
+              label={meals('selectDate')}
+              value={group.date}
+              onChange={(date) => patchGroup(group, { date })}
+              renderTrigger={({ buttonProps }) => (
+                <button {...buttonProps} className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[#dff4f3] text-[#008d8c] active:scale-[0.98]" aria-label={meals('selectDate')}>
+                  <CalendarDays size={18} />
+                </button>
+              )}
+            />
             <div className="min-w-0 flex-1">
               <p className="text-label font-bold text-[#123748]">{formatDisplayDate(group.date, locale)}</p>
               <p className="mt-0.5 text-caption font-medium text-[#65838b]">{formatWeekday(group.date, locale)}</p>

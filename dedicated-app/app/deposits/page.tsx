@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, PlusCircle, Search, WalletCards } from 'lucide-react'
+import { PlusCircle, Search, WalletCards } from 'lucide-react'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
-import { SubmitButton, TextField } from '@/components/mobile/form-controls'
+import { FieldCard, SubmitButton, TextField } from '@/components/mobile/form-controls'
+import { DatePicker } from '@/components/mobile/date-picker'
 import { currentMonthValue, formatMonthLabel, shiftMonthValue } from '@/components/mobile/meals-design'
 import {
   DepositLedgerItem,
@@ -13,6 +14,7 @@ import {
   DepositManualNotice,
   DepositMonthNavigator,
   DepositOverviewCard,
+  formatDepositDate,
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
@@ -174,7 +176,7 @@ export default function DepositsPage() {
               </option>
             ))}
           </DesignedSelect>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
             <TextField
               label={t('amount')}
               value={form.amount}
@@ -182,11 +184,17 @@ export default function DepositsPage() {
               placeholder="1500"
               type="number"
             />
-            <TextField
+            <DatePicker
               label={t('date')}
               value={form.date}
-              onChange={(date) => setForm((prev) => ({ ...prev, date }))}
-              type="date"
+                onChange={(date) => setForm((prev) => ({ ...prev, date }))}
+                renderTrigger={({ buttonProps }) => (
+                  <FieldCard label={t('date')}>
+                    <button {...buttonProps} className="flex min-h-14 w-full min-w-0 items-center justify-center rounded-2xl border border-[#bfe7e6] bg-white px-3 text-center text-body font-semibold text-[#123748] outline-none transition focus-visible:border-[#008d8c] focus-visible:ring-4 focus-visible:ring-[#008d8c]/10">
+                      <span className="truncate">{formatDepositDate(form.date, locale)}</span>
+                    </button>
+                  </FieldCard>
+              )}
             />
           </div>
           <TextField
@@ -253,7 +261,7 @@ export default function DepositsPage() {
 
         {!showForm ? (
           <button type="button" onClick={() => setShowForm(true)} className="deposit-floating-action">
-            <Plus size={21} strokeWidth={2.6} />
+            <span className="deposit-floating-action__plus" aria-hidden="true">+</span>
             <span>{t('newDeposit')}</span>
           </button>
         ) : null}

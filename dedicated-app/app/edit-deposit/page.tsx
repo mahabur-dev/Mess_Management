@@ -6,6 +6,7 @@ import { ArrowLeft, Save } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { DatePicker } from '@/components/mobile/date-picker'
 import {
   DepositDetailsSummary,
   DepositInfoRow,
@@ -125,7 +126,7 @@ export default function EditDepositPage() {
           <DepositSectionTitle title={t('editDeposit')} />
           <div className="grid grid-cols-2 gap-3">
             <TextField label={t('amount')} value={form.amount} onChange={(amount) => setForm((prev) => ({ ...prev, amount }))} placeholder="1500" type="number" />
-            <TextField label={t('date')} value={form.date} onChange={(date) => setForm((prev) => ({ ...prev, date }))} type="date" />
+            <DatePicker label={t('date')} value={form.date} onChange={(date) => setForm((prev) => ({ ...prev, date }))} />
           </div>
           <TextAreaField
             label={t('note')}

@@ -669,10 +669,12 @@ export function ExpenseListItem({
   item,
   href,
   variant = 'card',
+  showChevron = true,
 }: {
   item: ExpenseListRecord
   href?: string
   variant?: 'card' | 'horizontal'
+  showChevron?: boolean
 }) {
   const { locale } = useLocale()
   const Icon = categoryIcon(item.category)
@@ -757,7 +759,7 @@ export function ExpenseListItem({
         {formatTaka(item.amount, locale)}
       </span>
 
-      {href ? (
+      {href && showChevron ? (
         <span
           className="
             grid h-8 w-8 shrink-0

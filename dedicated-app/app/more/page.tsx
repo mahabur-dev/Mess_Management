@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/app/providers'
 import { AuthLanguageToggle } from '@/components/language-control'
-import { NotificationLink } from '@/components/app-header'
 import { MobileShell } from '@/components/mobile-shell'
 import { MoreNavigation } from '@/components/mobile/more-navigation'
 import { TopScreen } from '@/components/top-screen'
@@ -16,8 +15,8 @@ export default function MorePage() {
     <MobileShell showBottomNavigation>
       <TopScreen
         title={navigation('menuTitle')}
-        subtitle={navigation('menuSubtitle')}
-        trailing={<div className="flex items-center gap-2"><NotificationLink /><AuthLanguageToggle /></div>}
+        leading={<span className="h-11 w-11" aria-hidden="true" />}
+        trailing={<AuthLanguageToggle />}
       />
 
       {user ? <MoreNavigation user={user} onLogout={logout} /> : null}

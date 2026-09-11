@@ -1,7 +1,7 @@
 'use client'
 
 import type { InputHTMLAttributes, ReactNode } from 'react'
-import { ChevronDown, Grip } from 'lucide-react'
+import { ChevronDown, Grip, type LucideIcon } from 'lucide-react'
 import { MobileSelectSheet } from '@/components/mobile/select-sheet'
 import { Button } from '@/components/ui/button'
 
@@ -123,6 +123,7 @@ export function SelectField<T extends string>({
   onChange,
   options,
   getLabel,
+  icon: Icon = Grip,
 }: {
   label: string
   hint?: string
@@ -130,6 +131,7 @@ export function SelectField<T extends string>({
   onChange: (value: T) => void
   options: readonly T[]
   getLabel?: (value: T) => string
+  icon?: LucideIcon
 }) {
   const selectOptions = options.map((option) => ({
     value: option,
@@ -175,7 +177,7 @@ export function SelectField<T extends string>({
               text-[#008d8c]
             "
             >
-              <Grip size={18} strokeWidth={2.2} />
+              <Icon size={18} strokeWidth={2.2} />
             </span>
 
             <span className="min-w-0 flex-1 truncate text-body font-semibold text-[#123748]">

@@ -1,8 +1,9 @@
 'use client'
 
 import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-design'
-import { DepositManualNotice } from '@/components/mobile/deposit-design'
-import { TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { DepositManualNotice, formatDepositDate } from '@/components/mobile/deposit-design'
+import { FieldCard, TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { DatePicker } from '@/components/mobile/date-picker'
 import type { MemberOption } from '@/hooks/use-mess-member-options'
 import { PAYMENT_METHODS, type PaymentMethod } from '@/lib/form-options'
 import { paymentMethodLabel, useLocale, useTranslations } from '@/lib/i18n'
@@ -55,9 +56,20 @@ export function DepositEntryForm({
           <option key={option} value={option}>{paymentMethodLabel(option, locale)}</option>
         ))}
       </DesignedSelect>
-      <div className="grid grid-cols-1 gap-4 min-[390px]:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 min-[390px]:grid-cols-2 min-[390px]:[&>*]:min-w-0">
         <TextField label={t('amount')} value={amount} onChange={onAmountChange} placeholder="2500" type="number" />
-        <TextField label={t('depositDate')} value={date} onChange={onDateChange} type="date" />
+        <DatePicker
+          label={t('depositDate')}
+          value={date}
+          onChange={onDateChange}
+          renderTrigger={({ buttonProps }) => (
+            <FieldCard label={t('depositDate')}>
+              <button {...buttonProps} className="flex min-h-14 w-full min-w-0 items-center justify-center rounded-2xl border border-[#bfe7e6] bg-white px-3 text-center text-body font-semibold text-[#123748] outline-none transition focus-visible:border-[#008d8c] focus-visible:ring-4 focus-visible:ring-[#008d8c]/10">
+                <span className="truncate">{formatDepositDate(date, locale)}</span>
+              </button>
+            </FieldCard>
+          )}
+        />
       </div>
       {showPaidBy ? (
         <DesignedSelect

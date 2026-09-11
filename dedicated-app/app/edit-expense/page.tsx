@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { ReceiptText, Save, Zap } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import {
-  DesignedInput,
   DesignedSelect,
   DesignedTextarea,
   FormPageShell,
@@ -16,6 +15,7 @@ import {
   expenseFormIcons,
 } from '@/components/mobile/expense-design'
 import { LoadingIndicator } from '@/components/loading-indicator'
+import { DatePicker } from '@/components/mobile/date-picker'
 import { MemberMultiSelect } from '@/components/mobile/member-multi-select'
 import {
   ExpenseLineItemsEditor,
@@ -332,7 +332,7 @@ export default function EditExpensePage() {
                 ))}
               </DesignedSelect>
             ) : null}
-            <DesignedInput label={isUtilityExpense ? t('billDate') : t('expenseDate')} icon={expenseFormIcons.date} value={form.expenseDate} onChange={(event) => update('expenseDate', event.target.value)} type="date" required />
+            <DatePicker label={isUtilityExpense ? t('billDate') : t('expenseDate')} value={form.expenseDate} onChange={(expenseDate) => update('expenseDate', expenseDate)} />
           </FormSection>
 
           <FormSection title={isUtilityExpense ? t('utilityItems') : t('items')}>

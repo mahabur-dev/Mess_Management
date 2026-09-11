@@ -230,7 +230,9 @@ export default function MessManagementPage() {
         totalSeats: setup.totalSeats ? Number(setup.totalSeats) : undefined,
         monthlyRent: setup.monthlyRent ? Number(setup.monthlyRent) : undefined,
         messCategory: setup.messCategory || undefined,
-        rooms: rooms.length ? rooms : undefined,
+        // Send an empty array as well, so removing the final room clears the
+        // saved configuration instead of leaving the previous rooms behind.
+        rooms,
         paymentDeadlineDay: setup.paymentDeadlineDay ? Number(setup.paymentDeadlineDay) : undefined,
         mealOffDeadline: setup.mealOffDeadline,
         bazarRules: setup.bazarRules,
@@ -261,6 +263,13 @@ export default function MessManagementPage() {
     setSetup((current) => ({
       ...current,
       rooms: [...current.rooms, createRoomDraft()],
+    }))
+  }
+
+  function removeRoom(roomId: string) {
+    setSetup((current) => ({
+      ...current,
+      rooms: current.rooms.filter((room) => room.id !== roomId),
     }))
   }
 
@@ -486,6 +495,16 @@ export default function MessManagementPage() {
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground">
                                {t('roomNumber', { number: format.number(index + 1) })}
                             </p>
+                            <button
+                              type="button"
+                              onClick={() => removeRoom(room.id)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-destructive/30 bg-background px-2.5 text-xs font-semibold text-destructive transition hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
+                              aria-label={t('delete')}
+                              title={t('delete')}
+                            >
+                              <Trash2 size={14} />
+                              {t('delete')}
+                            </button>
                           </div>
                           <div className="grid gap-4 md:grid-cols-3">
                             <div>

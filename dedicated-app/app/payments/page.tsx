@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CircleDollarSign, Hourglass, PlusCircle, UserRound, WalletCards } from 'lucide-react'
+import { Hourglass, PlusCircle, UserRound, WalletCards } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
@@ -231,7 +231,7 @@ export default function PaymentsPage() {
       </div>
       {!showForm ? (
         <button type="button" onClick={openDepositForm} aria-label={t('addDeposit')} title={t('addDeposit')} className="floating-action-link">
-          <CircleDollarSign size={25} strokeWidth={2.4} />
+          <span className="floating-action-link__plus" aria-hidden="true">+</span>
         </button>
       ) : null}
     </MobileShell>

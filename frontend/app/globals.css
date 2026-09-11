@@ -1097,6 +1097,19 @@ html[data-locale='bn'] :is(.marketing-eyebrow, .enterprise-kicker, .enterprise-t
     scrollbar-gutter: stable;
   }
 
+  /* The member table should span its frame completely. It only needs a
+     horizontal scrollbar, so reserving a permanent right-hand gutter makes
+     the Actions header appear detached from its row controls. */
+  .member-management-table-scroll {
+    scrollbar-gutter: auto;
+  }
+
+  /* Match the member table: a horizontal meal-sheet scroll must not reserve
+     a blank strip at the right edge of its header. */
+  .meal-sheet-table-scroll {
+    scrollbar-gutter: auto;
+  }
+
   .monthly-bills-table-scroll::-webkit-scrollbar {
     height: 10px;
   }
@@ -1126,6 +1139,48 @@ html[data-locale='bn'] :is(.marketing-eyebrow, .enterprise-kicker, .enterprise-t
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* Root loading state: type the brand name once per cycle while the app shell
+   is being prepared, then replay until the requested page is ready. */
+.messzen-site-loader {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.messzen-site-loader__word {
+  width: 0;
+  overflow: hidden;
+  border-right: 2px solid var(--brand);
+  color: var(--brand);
+  font-family: var(--font-dashboard-sans), sans-serif;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  white-space: nowrap;
+  animation: messzen-loader-type 2s steps(7, end) infinite, messzen-loader-caret 700ms step-end infinite;
+}
+
+@keyframes messzen-loader-type {
+  0%, 8% { width: 0; }
+  60%, 76% { width: 7.45ch; }
+  100% { width: 0; }
+}
+
+@keyframes messzen-loader-caret {
+  50% { border-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .messzen-site-loader__word {
+    width: auto;
+    border-right: 0;
+    animation: none;
   }
 }
 

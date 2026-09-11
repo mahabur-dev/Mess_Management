@@ -611,7 +611,7 @@ export default function MealsPage() {
               </div>
 
               {/* Desktop/Tablet Table */}
-              <div className="hidden sm:block overflow-x-auto monthly-bills-table-scroll border-t border-border">
+              <div className="meal-sheet-table-scroll hidden overflow-x-auto border-t border-border sm:block monthly-bills-table-scroll">
                 <table className="w-full min-w-[560px] border-separate border-spacing-0">
                   <thead>
                     <tr className="border-b border-border bg-muted">
@@ -629,8 +629,8 @@ export default function MealsPage() {
                         const draftTotal = mealNames.reduce((s, n) => s + parseNum(getManagerDraftStr(row.id, n, row.meals[n])), 0)
                         const bgColor = avatarColor(row.name)
                         return (
-                          <tr key={row.id} className="transition hover:bg-muted">
-                            <td className="sticky left-0 z-10 border-b border-border bg-background px-3 py-3 sm:static sm:border-b-0 sm:px-4 sm:py-3.5">
+                          <tr key={row.id} className="group transition-colors hover:bg-muted">
+                            <td className="sticky left-0 z-10 border-b border-border bg-background px-3 py-3 transition-colors sm:static sm:border-b-0 sm:bg-transparent sm:px-4 sm:py-3.5 sm:group-hover:bg-muted">
                               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold sm:text-xs" style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: bgColor }}>{getInitials(row.name)}</div>
                                 <span className="min-w-0 max-w-[96px] truncate text-xs font-bold text-foreground sm:max-w-none sm:text-sm">{row.name}</span>

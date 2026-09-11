@@ -3,7 +3,6 @@
 import type { ExpenseCustomShare } from '@/components/mobile/expense-custom-shares'
 import { ExpenseCustomShareFields } from '@/components/mobile/expense-custom-shares'
 import {
-  DesignedInput,
   DesignedSelect,
   DesignedTextarea,
   FormSection,
@@ -14,6 +13,7 @@ import {
 import {
   ExpenseAdvancedOptions,
 } from '@/components/mobile/expense-ui'
+import { DatePicker } from '@/components/mobile/date-picker'
 import {
   ExpenseLineItemsEditor,
   type ExpenseLineItem,
@@ -140,14 +140,7 @@ export function ExpenseEntryForm({
           </DesignedSelect>
         ) : null}
 
-        <DesignedInput
-          label={isUtility ? t('billDate') : t('expenseDate')}
-          icon={expenseFormIcons.date}
-          value={date}
-          onChange={(event) => onDateChange(event.target.value)}
-          type="date"
-          required
-        />
+        <DatePicker label={isUtility ? t('billDate') : t('expenseDate')} value={date} onChange={onDateChange} />
       </FormSection>
 
       <FormSection title={isUtility ? t('utilityItems') : t('items')}>

@@ -103,7 +103,11 @@ export function MobileShell({
           <div className="nav-dock">
             {tabs.map(({ href, label, icon: Icon }) => {
               const translatedLabel = routeLabel(href, label, navigation)
-              const active = href === '/' ? normalizedPathname === href : normalizedPathname === href || normalizedPathname.startsWith(`${href}/`)
+              // /dashboard is the legacy home route. Treat it as Home so the
+              // active navigation state stays accurate during redirects.
+              const active = href === '/'
+                ? normalizedPathname === '/' || normalizedPathname === '/dashboard'
+                : normalizedPathname === href || normalizedPathname.startsWith(`${href}/`)
               return (
                 <Link
                   key={href}

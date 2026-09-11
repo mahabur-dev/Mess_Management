@@ -21,6 +21,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
+import { DatePicker, MonthPicker } from '@/components/mobile/date-picker'
 import { appHref } from '@/lib/routes'
 import {
   formatDate as formatLocalizedDate,
@@ -332,16 +333,16 @@ export function MealDateCard({
       </div>
 
       {onChange ? (
-        <label className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-[14px] bg-[#edfafa] text-[#008d8c] active:scale-[0.97]">
-          <CalendarDays size={18} />
-          <input
-            aria-label={meals('selectDate')}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            type="date"
-            value={date}
-            onChange={(event) => onChange(event.target.value)}
-          />
-        </label>
+        <DatePicker
+          label={meals('selectDate')}
+          value={date}
+          onChange={onChange}
+          renderTrigger={({ buttonProps }) => (
+            <button {...buttonProps} className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c] active:scale-[0.97]" aria-label={meals('selectDate')}>
+              <CalendarDays size={18} />
+            </button>
+          )}
+        />
       ) : (
         <div className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#edfafa] text-[#008d8c]">
           <CalendarDays size={18} />
@@ -364,7 +365,6 @@ export function MealMonthSelector({
   month: string
   onChange: (month: string) => void
 }) {
-  const { locale } = useLocale()
   const meals = useTranslations('meals')
   const selectMonth = (nextMonth: string) => {
     if (/^\d{4}-\d{2}$/.test(nextMonth)) onChange(nextMonth)
@@ -380,18 +380,18 @@ export function MealMonthSelector({
       >
         <ChevronLeft size={18} />
       </button>
-      <label className="relative flex h-full min-w-[156px] items-center justify-center gap-2 overflow-hidden px-2">
-        <CalendarDays size={19} className="shrink-0 text-[#008d8c]" />
-        <span className="text-body font-semibold">{formatMonthLabel(month, locale)}</span>
-        <ChevronDown size={18} className="shrink-0 text-[#123748]" />
-        <input
-          aria-label={meals('selectMonth')}
-          type="month"
-          value={month}
-          onChange={(event) => selectMonth(event.target.value)}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-        />
-      </label>
+      <MonthPicker
+        label={meals('selectMonth')}
+        value={month}
+        onChange={selectMonth}
+        renderTrigger={({ open, selectedLabel, buttonProps }) => (
+          <button {...buttonProps} className="flex h-full min-w-[156px] items-center justify-center gap-2 overflow-hidden px-2">
+            <CalendarDays size={19} className="shrink-0 text-[#008d8c]" />
+            <span className="text-body font-semibold">{selectedLabel}</span>
+            <ChevronDown size={18} className={`shrink-0 text-[#123748] transition-transform ${open ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+      />
       <button
         type="button"
         aria-label={meals('nextMonth')}
@@ -913,7 +913,6 @@ export function ManagerActionCard({
         <div className="text-label font-semibold text-[#1d3a42]">{title}</div>
         <div className="mt-1 text-caption font-medium leading-4 text-[#65838b]">{description}</div>
       </div>
-      <ChevronRight size={17} className="shrink-0 text-[#789096]" />
     </Link>
   )
 }

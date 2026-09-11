@@ -673,7 +673,7 @@ function MembersTable({
 
   return (
     <div className="dashboard-table-frame">
-      <div className="overflow-x-auto monthly-bills-table-scroll pb-2">
+      <div className="member-management-table-scroll overflow-x-auto monthly-bills-table-scroll pb-2">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border bg-muted">

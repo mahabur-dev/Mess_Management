@@ -2,27 +2,29 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CreditCard, Save } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
-import { SelectField, TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { FieldCard, SelectField, TextAreaField, TextField } from '@/components/mobile/form-controls'
+import { DatePicker } from '@/components/mobile/date-picker'
+import { Button } from '@/components/ui/button'
 import {
   DepositDetailsSummary,
   DepositInfoRow,
   DepositSectionTitle,
-  PaymentMethodGrid,
   depositInfoIcons,
+  formatDepositDate,
   depositMemberName,
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
-import { PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
+import { PAYMENT_METHODS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
-import { paymentStatusLabel, useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
+import { paymentMethodLabel, paymentStatusLabel, useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type PaymentRecord = {
   id: string
@@ -50,6 +52,33 @@ type EditFormState = {
 type ReviewFormState = {
   status: PaymentStatus
   note: string
+}
+
+function DepositActionRow({
+  backLabel,
+  submitLabel,
+  busyLabel,
+  busy,
+  onBack,
+  onSubmit,
+}: {
+  backLabel: string
+  submitLabel: string
+  busyLabel: string
+  busy: boolean
+  onBack: () => void
+  onSubmit: () => void
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <Button type="button" variant="secondary" className="w-full" onClick={onBack}>
+        <ArrowLeft size={17} aria-hidden="true" /> {backLabel}
+      </Button>
+      <Button type="button" className="w-full" busy={busy} busyLabel={busyLabel} onClick={onSubmit}>
+        <Save size={17} aria-hidden="true" /> {submitLabel}
+      </Button>
+    </div>
+  )
 }
 
 export default function EditPaymentPage() {
@@ -187,30 +216,42 @@ export default function EditPaymentPage() {
         </div> : null}
 
         {canEdit ? (
-          <section className="app-section app-form-section space-y-4">
+          <section className="deposit-detail-editor space-y-4">
             <DepositSectionTitle title={t('editDeposit')} />
-            <PaymentMethodGrid value={editForm.method} onChange={(method) => setEditForm((prev) => ({ ...prev, method }))} />
+            <SelectField
+              label={t('depositMethod')}
+              value={editForm.method}
+              onChange={(method) => setEditForm((prev) => ({ ...prev, method }))}
+              options={PAYMENT_METHODS}
+              getLabel={(method) => paymentMethodLabel(method, locale)}
+              icon={CreditCard}
+            />
             <div className="grid grid-cols-2 gap-3">
               <TextField label={t('amount')} value={editForm.amount} onChange={(amount) => setEditForm((prev) => ({ ...prev, amount }))} placeholder="2500" type="number" />
-              <TextField label={t('depositDate')} value={editForm.paymentDate} onChange={(paymentDate) => setEditForm((prev) => ({ ...prev, paymentDate }))} type="date" />
+              <DatePicker
+                label={t('depositDate')}
+                value={editForm.paymentDate}
+                onChange={(paymentDate) => setEditForm((prev) => ({ ...prev, paymentDate }))}
+                renderTrigger={({ buttonProps }) => (
+                  <FieldCard label={t('depositDate')}>
+                    <button {...buttonProps} className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-[#bfe7e6] bg-white px-4 text-left text-body font-semibold text-[#123748] outline-none transition focus-visible:border-[#008d8c] focus-visible:ring-4 focus-visible:ring-[#008d8c]/10">
+                      <CalendarDays size={18} className="shrink-0 text-[#008d8c]" aria-hidden="true" />
+                      <span className="min-w-0 flex-1 truncate">{formatDepositDate(editForm.paymentDate, locale)}</span>
+                    </button>
+                  </FieldCard>
+                )}
+              />
             </div>
             <TextField label={t('transactionId')} hint={t('optional')} value={editForm.transactionId} onChange={(transactionId) => setEditForm((prev) => ({ ...prev, transactionId }))} placeholder={t('transactionPlaceholder')} />
             <TextAreaField label={t('note')} value={editForm.note} onChange={(note) => setEditForm((prev) => ({ ...prev, note }))} placeholder={t('notePlaceholder')} rows={3} />
 
             {!isManager ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#65838b]">{t('editedRequiresApproval')}</div> : null}
-            <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => router.push('/payments')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#00777a]">
-                <ArrowLeft size={17} /> {t('back')}
-              </button>
-              <button type="button" onClick={() => void handleUpdate()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-label disabled:opacity-70">
-                <Save size={17} /> {busy ? t('saving') : t('save')}
-              </button>
-            </div>
+            <DepositActionRow backLabel={t('back')} submitLabel={t('save')} busyLabel={t('saving')} busy={busy} onBack={() => router.push('/payments')} onSubmit={() => void handleUpdate()} />
           </section>
         ) : null}
 
         {isManager && payment?.status === 'PENDING' ? (
-        <section className="app-section app-form-section space-y-4">
+        <section className="deposit-detail-editor space-y-4">
           <DepositSectionTitle title={t('reviewDeposit')} />
           <SelectField
             label={t('status')}
@@ -227,14 +268,7 @@ export default function EditPaymentPage() {
             rows={4}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => router.push('/payments')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#00777a]">
-              <ArrowLeft size={17} /> {t('back')}
-            </button>
-            <button type="button" onClick={() => void handleReview()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-label disabled:opacity-70">
-              <Save size={17} /> {busy ? t('saving') : t('save')}
-            </button>
-          </div>
+          <DepositActionRow backLabel={t('back')} submitLabel={t('save')} busyLabel={t('saving')} busy={busy} onBack={() => router.push('/payments')} onSubmit={() => void handleReview()} />
         </section>
         ) : null}
       </div>

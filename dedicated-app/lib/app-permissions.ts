@@ -22,7 +22,7 @@ import {
   UtensilsCrossed,
   CalendarClock,
   Wallet2,
-  CircleDollarSign,
+  WalletCards,
   Zap,
   type LucideProps,
 } from 'lucide-react'
@@ -108,9 +108,11 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/meals/my', label: 'My Meal', icon: UtensilsCrossed, access: 'mess' },
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
   { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
+  { href: '/bazar-schedule/settings', label: 'Bazar Schedule Settings', icon: Settings, access: 'mess', exact: true },
+  { href: '/bazar-schedule', label: 'Bazar Schedule', icon: CalendarClock, access: 'mess', exact: true },
   { href: '/add-meal', label: 'Add Meal', icon: UtensilsCrossed, access: 'mess', exact: true },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
-  { href: '/personal', label: 'Personal', icon: CircleDollarSign, access: 'public' },
+  { href: '/personal', label: 'Personal', icon: WalletCards, access: 'public' },
   { href: '/edit-monthly-bill', label: 'Edit Bill', icon: ClipboardList, access: 'manager' },
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
   { href: '/edit-payment', label: 'Edit Deposit', icon: Landmark, access: 'mess' },
@@ -133,7 +135,7 @@ export const managerQuickActions: AppRouteItem[] = [
   { href: '/expenses', label: 'Expenses', icon: Wallet2, access: 'manager' },
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
-  { href: '/notices', label: 'Notices', icon: Bell, access: 'manager' },
+  { href: '/bazar-schedule', label: 'Bazar Schedule', icon: CalendarClock, access: 'mess' },
   { href: '/members', label: 'Members', icon: Users, access: 'manager' },
 ]
 
@@ -141,7 +143,6 @@ export const memberQuickActions: AppRouteItem[] = [
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
   { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
-  { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
   { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
 ]
@@ -162,17 +163,10 @@ export function getBottomTabs(user: AuthUser | null | undefined): AppRouteItem[]
     return onboardingTabs
   }
 
-  const primary: AppRouteItem = {
-    href: '/personal',
-    label: 'Personal',
-    icon: CircleDollarSign,
-    access: 'public',
-  }
-
   const tabs: AppRouteItem[] = [
     { href: '/', label: 'Home', icon: House, access: 'public', exact: true },
-    primary,
-    { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
+    { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
+    { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
     { href: '/more', label: 'More', icon: LayoutGrid, access: 'public', exact: true },
   ]
 
@@ -215,7 +209,9 @@ export function getMoreMenuGroups(user: AuthUser | null | undefined): MoreMenuGr
       label: 'Workspace',
       items: [
         { href: '/meal-pattern', label: 'Meal Pattern', description: 'Review your meal calendar', icon: CalendarClock, access: 'mess' },
-        { href: '/personal', label: 'Personal', description: 'Income, expenses, savings and family budgets', icon: CircleDollarSign, access: 'public' },
+        { href: '/bazar-schedule', label: 'Bazar Schedule', description: 'Plan and manage monthly bazar duties', icon: CalendarClock, access: 'mess' },
+        { href: '/notices', label: 'Notices', description: 'Read and manage mess announcements', icon: Bell, access: 'mess' },
+        { href: '/personal', label: 'Personal', description: 'Income, expenses, savings and family budgets', icon: WalletCards, access: 'public' },
         { href: '/complaints', label: 'Complaints', description: 'Raise and follow up issues', icon: MessageSquareWarning, access: 'mess' },
         { href: '/mess-management', label: 'Mess Management', description: 'Rooms, rules and billing setup', icon: Settings, access: 'manager' },
         ...(APP_FEATURES.subscriptions
@@ -270,6 +266,8 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/edit-deposit', fallback: '/deposits', exact: true },
   { href: '/meals/my', fallback: '/meals', exact: true },
   { href: '/meal-pattern', fallback: '/', exact: true },
+  { href: '/bazar-schedule/settings', fallback: '/bazar-schedule', exact: true },
+  { href: '/bazar-schedule', fallback: '/', exact: true },
   { href: '/meals/time', fallback: '/meals/manager', exact: true },
   { href: '/meals/members', fallback: '/meals/manager', exact: true },
   { href: '/meals/member-meal', fallback: '/meals/members', exact: true },

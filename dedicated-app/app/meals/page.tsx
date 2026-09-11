@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronRight, Clock3, Settings2, UtensilsCrossed } from 'lucide-react'
+import { Clock3, Settings2, UtensilsCrossed } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
@@ -176,7 +176,7 @@ export default function MealsPage() {
         </MealCard>
 
         {isManager ? (
-          <Link href={appHref('/meals/manager')} className="app-action-row flex min-h-[78px] items-center gap-3">
+          <Link href={appHref('/meals/manager')} className="meal-manager-link flex min-h-[78px] items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-[16px] bg-[#fff8e9] text-[#e29a16]">
               <Settings2 size={21} />
             </div>
@@ -184,7 +184,6 @@ export default function MealsPage() {
               <div className="text-body font-bold text-[#123748]">{mealCopy('managerControls')}</div>
               <div className="mt-1 text-label text-[#65838b]">{mealCopy('manageTimeLocksMembers')}</div>
             </div>
-            <ChevronRight size={17} className="text-[#789096]" />
           </Link>
         ) : null}
       </div>

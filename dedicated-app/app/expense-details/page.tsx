@@ -334,11 +334,11 @@ export default function ExpenseDetailsPage() {
             ) : null}
 
             {canEdit || isManager ? (
-              <div className={`grid gap-3 pb-3 ${canEdit && isManager ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className={`expense-action-bar pb-3 ${canEdit && isManager ? '' : 'expense-action-bar--single'}`}>
                 {canEdit ? (
                 <Link href={`/edit-expense?expenseId=${encodeURIComponent(expense.id)}&messId=${encodeURIComponent(messId)}`} className="expense-secondary-action"><Pencil size={17} /> {t('editExpense')}</Link>
                 ) : null}
-                {isManager ? <button type="button" onClick={() => void deleteExpense()} disabled={deleting} className="flex min-h-[50px] items-center justify-center gap-2 rounded-[15px] border border-[#f04438] bg-white text-label font-bold text-[#f04438] disabled:opacity-60"><Trash2 size={17} /> {deleting ? t('deleting') : t('deleteExpense')}</button> : null}
+                {isManager ? <button type="button" onClick={() => void deleteExpense()} disabled={deleting} className="expense-secondary-action expense-danger-action"><Trash2 size={17} /> {deleting ? t('deleting') : t('deleteExpense')}</button> : null}
               </div>
             ) : null}
           </>

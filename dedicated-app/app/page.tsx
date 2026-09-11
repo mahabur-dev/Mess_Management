@@ -6,7 +6,6 @@ import {
   ClipboardList,
   CalendarDays,
   ChevronDown,
-  ChevronRight,
   CreditCard,
   Landmark,
   MessageSquareWarning,
@@ -16,14 +15,13 @@ import {
   UtensilsCrossed,
   Wallet2,
   Coins,
-  Sparkles,
-  Languages,
-  Mic,
+  Bot,
 } from 'lucide-react'
 import { AppHeader } from '@/components/app-header'
 import { HomeCard, HomeEmptyState, HomeMetricCard, HomeQuickAction } from '@/components/home-card'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { BillingCalculationNotice } from '@/components/mobile/billing-status-notice'
+import { MonthPicker } from '@/components/mobile/date-picker'
 import { MessOnboardingActions } from '@/components/mess-onboarding-actions'
 import { ExpenseListItem, type ExpenseListRecord } from '@/components/mobile/expense-design'
 import { currentMonthValue } from '@/components/mobile/meals-design'
@@ -70,19 +68,18 @@ function HomeMonthPill({
   monthLabel: string
 }) {
   return (
-    <label className="home-month-pill">
-      <CalendarDays size={15} strokeWidth={2.35} aria-hidden="true" />
-      <span>{monthLabel}</span>
-      <ChevronDown size={15} strokeWidth={2.35} aria-hidden="true" />
-      <input
-        aria-label={label}
-        type="month"
-        value={month}
-        onChange={(event) => {
-          if (/^\d{4}-\d{2}$/.test(event.target.value)) onChange(event.target.value)
-        }}
-      />
-    </label>
+    <MonthPicker
+      label={label}
+      value={month}
+      onChange={onChange}
+      renderTrigger={({ open, selectedLabel, buttonProps }) => (
+        <button {...buttonProps} className="home-month-pill">
+          <CalendarDays size={15} strokeWidth={2.35} aria-hidden="true" />
+          <span>{selectedLabel || monthLabel}</span>
+          <ChevronDown size={15} strokeWidth={2.35} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
+      )}
+    />
   )
 }
 
@@ -269,32 +266,16 @@ export default function HomePage() {
           <>
             <button
               type="button"
-              onClick={() => router.push(appHref('/quick-add'))}
-              className="home-ai-entry"
-              aria-label={common('openQuickAddAi')}
-            >
-              <span className="home-ai-entry__glow" aria-hidden="true" />
-              <span className="home-ai-entry__badge">
-                <Sparkles size={12} strokeWidth={2.5} />
-                {common('aiAssisted')}
+            onClick={() => router.push(appHref('/quick-add'))}
+            className="home-ai-entry"
+            aria-label={common('openQuickAddAi')}
+          >
+              <span className="home-ai-entry__icon" aria-hidden="true">
+                <Bot size={21} strokeWidth={2.15} />
               </span>
-
-              <span className="home-ai-entry__main">
-                <span className="home-ai-entry__icon" aria-hidden="true">
-                  <Sparkles size={22} strokeWidth={2.3} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="home-ai-entry__title">{common('quickAddAi')}</span>
-                  <span className="home-ai-entry__description">{common('quickAddDescription')}</span>
-                </span>
-                <span className="home-ai-entry__arrow" aria-hidden="true">
-                  <ChevronRight size={17} strokeWidth={2.6} />
-                </span>
-              </span>
-
-              <span className="home-ai-entry__capabilities" aria-hidden="true">
-                <span><Languages size={13} /> {common('bilingualCapability')}</span>
-                <span><Mic size={13} /> {common('voiceEnabled')}</span>
+              <span className="home-ai-entry__copy">
+                <span className="home-ai-entry__assistant">{common('aiAssistant')}</span>
+                <span className="home-ai-entry__title">{common('quickAddAi')}</span>
               </span>
             </button>
 
@@ -332,7 +313,6 @@ export default function HomePage() {
                   className="home-card-action"
                 >
                   {common('viewAll')}
-                  <ChevronRight size={14} strokeWidth={2.7} />
                 </button>
               }
             >
@@ -356,6 +336,7 @@ export default function HomePage() {
                       item={item}
                       href={`/expense-details?expenseId=${encodeURIComponent(item.id)}&messId=${encodeURIComponent(activeMess?.id ?? '')}`}
                       variant="horizontal"
+                      showChevron={false}
                     />
                   ))}
                 {!expensesLoading && !expensesError && !recentExpenses.length ? (

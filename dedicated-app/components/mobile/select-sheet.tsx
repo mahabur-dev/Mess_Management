@@ -181,7 +181,7 @@ export function MobileSelectSheet<T extends string>({
       aria-label={title ? undefined : label}
       aria-labelledby={title ? titleId : undefined}
       data-side={menuPosition.side}
-      className="z-[100] flex overflow-hidden rounded-[15px] border border-[#dce5ec] bg-white shadow-[0_16px_38px_rgba(18,55,72,0.18)]"
+      className="z-[130] flex overflow-hidden rounded-[15px] border border-[#dce5ec] bg-white shadow-[0_16px_38px_rgba(18,55,72,0.18)]"
       style={{ ...menuPosition.style, maxHeight: menuPosition.maxHeight }}
     >
       <div className="flex min-h-0 w-full flex-col">

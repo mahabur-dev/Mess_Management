@@ -17,6 +17,96 @@ type QueryValue = string | number | boolean | undefined | null
 
 export type BulkMealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
 
+export type BazarFrequency = 'EVERY_DAY' | 'SPECIFIC_WEEKDAYS' | 'CUSTOM_DATES'
+export type BazarDateStatus = 'OPEN' | 'CLOSED' | 'COMPLETED'
+export type BazarDutySlotStatus = 'AVAILABLE' | 'ASSIGNED' | 'CLOSED'
+
+export type BazarDutyMember = {
+  id: string
+  name: string
+  email: string
+  avatar_url?: string | null
+}
+
+export type BazarScheduleSettings = {
+  id: string
+  mess_id: string
+  frequency: BazarFrequency
+  weekdays: number[]
+  custom_days: number[]
+  default_members_per_date: number
+  duty_limit: number
+  include_manager: boolean
+  release_notice_days: number
+  strict_fairness: boolean
+}
+
+export type SaveBazarScheduleSettingsInput = {
+  frequency: BazarFrequency
+  weekdays: number[]
+  customDays: number[]
+  defaultMembersPerDate: number
+  dutyLimit: number
+  includeManager: boolean
+  releaseNoticeDays: number
+  strictFairness?: boolean
+}
+
+export type BazarDutySlot = {
+  id: string
+  bazar_date_id: string
+  slot_number: number
+  status: BazarDutySlotStatus
+  effectiveStatus?: BazarDutySlotStatus
+  assigned_member_id: string | null
+  assigned_member?: BazarDutyMember | null
+}
+
+export type BazarScheduleDate = {
+  id: string
+  duty_date: string
+  required_members: number
+  status: BazarDateStatus
+  effectiveStatus?: BazarDateStatus
+  isPast?: boolean
+  slots: BazarDutySlot[]
+}
+
+export type BazarSchedule = {
+  id: string
+  year: number
+  month: number
+  version: number
+  status: 'ACTIVE' | 'FINISHED'
+  default_members_per_date: number
+  duty_limit: number
+  eligible_member_count: number
+  recommended_duty_count: number
+  dates: BazarScheduleDate[]
+  overview: {
+    totalBazarDates: number
+    totalDutySlots: number
+    assigned: number
+    available: number
+    closed: number
+    recommendedDutyCount: number
+    currentUserDutyCount?: number
+    distribution: Array<{ member: BazarDutyMember; dutyCount: number }>
+  }
+  mess?: { id: string; name: string; created_by: string }
+}
+
+export type BazarScheduleRequest = {
+  id: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+  reason?: string | null
+  created_at: string
+  requester?: BazarDutyMember
+  target_member?: BazarDutyMember
+  slot?: { bazar_date?: { duty_date: string } }
+  requester_slot?: { bazar_date?: { duty_date: string } }
+}
+
 export type BulkMealAttendanceUpdate = {
   memberId: string
   mealName: BulkMealName
@@ -504,6 +594,63 @@ class Api {
 
   cancelMealPattern(id: string) {
     return this.request(`/meal-patterns/${id}/cancel`, { method: 'POST' })
+  }
+
+  getBazarScheduleSettings(messId: string) {
+    return this.request<BazarScheduleSettings>(`/bazar/schedule-settings/${messId}`, { cache: 'no-store' })
+  }
+
+  saveBazarScheduleSettings(messId: string, data: SaveBazarScheduleSettingsInput) {
+    return this.request<BazarScheduleSettings>(`/bazar/schedule-settings/${messId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  generateBazarSchedule(data: { messId: string; year: number; month: number }) {
+    return this.request<BazarSchedule>('/bazar/schedules/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  getBazarSchedule(messId: string, year: number, month: number) {
+    return this.request<BazarSchedule>(`/bazar/schedules/mess/${messId}`, {
+      params: { year, month },
+      cache: 'no-store',
+    })
+  }
+
+  addBazarScheduleDate(scheduleId: string, data: { date: string; requiredMembers?: number; reason: string }) {
+    return this.request<BazarScheduleDate>(`/bazar/schedules/${scheduleId}/dates`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  claimBazarDuty(slotId: string) {
+    return this.request<BazarDutySlot>(`/bazar/duty-slots/${slotId}/claim`, { method: 'POST' })
+  }
+
+  assignBazarDuty(slotId: string, data: { memberId: string; reason?: string }) {
+    return this.request<BazarDutySlot>(`/bazar/duty-slots/${slotId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  getBazarReleaseRequests(messId: string, status?: BazarScheduleRequest['status']) {
+    return this.request<BazarScheduleRequest[]>(`/bazar/release-requests/mess/${messId}`, {
+      params: { status },
+      cache: 'no-store',
+    })
+  }
+
+  getBazarSwapRequests(messId: string, status?: BazarScheduleRequest['status']) {
+    return this.request<BazarScheduleRequest[]>(`/bazar/swap-requests/mess/${messId}`, {
+      params: { status },
+      cache: 'no-store',
+    })
   }
 
   generateMonthlyBills(data: { messId: string; month: string }) {

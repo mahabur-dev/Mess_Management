@@ -38,7 +38,6 @@ export function LogoutConfirmDialog({
         flex items-end justify-center
         bg-[#062b35]/35
         p-3 sm:p-4
-        backdrop-blur-[3px]
         sm:items-center
       "
       role="alertdialog"
@@ -55,21 +54,19 @@ export function LogoutConfirmDialog({
       <section
         className="
           relative w-full max-w-[380px]
-          overflow-hidden rounded-[28px]
+          overflow-hidden rounded-[20px]
           border border-[#cfe7e6]
           bg-white
           px-5 pb-5 pt-7
-          shadow-[0_24px_80px_rgba(6,43,53,0.28)]
         "
       >
         <div
           className="
             mx-auto grid h-16 w-16
-            place-items-center rounded-[22px]
+            place-items-center rounded-[18px]
             border border-[#bfe4e2]
-            bg-gradient-to-br from-[#e8fbfa] to-[#d5f3f1]
+            bg-[#e8f8f7]
             text-[#007c7c]
-            shadow-[0_10px_24px_rgba(0,141,140,0.12)]
           "
         >
           <LogOut size={26} strokeWidth={2.3} />
@@ -86,7 +83,13 @@ export function LogoutConfirmDialog({
           {auth('logoutDescription')}
         </p>
 
-        {busy ? <p className="mt-4 text-center text-caption font-semibold text-[#008d8c]">{auth('signingOut')}</p> : null}
+        <p
+          className="mt-4 h-5 overflow-hidden text-center text-caption font-semibold leading-5 text-[#008d8c]"
+          role="status"
+          aria-live="polite"
+        >
+          {busy ? auth('signingOut') : '\u00A0'}
+        </p>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button
@@ -117,10 +120,10 @@ export function LogoutConfirmDialog({
             disabled={busy}
             className="
               flex h-12 items-center justify-center gap-2 rounded-[15px]
-              bg-gradient-to-r from-[#008d8c] to-[#007477]
+              border border-[#007c7c]
+              bg-[#008d8c]
               px-3 text-label font-extrabold
               text-white
-              shadow-[0_10px_24px_rgba(0,119,122,0.24)]
               transition-all duration-200
               hover:bg-[#007c7c]
               active:scale-[0.98]

@@ -82,6 +82,9 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Configure stable Android signing
         id: signing
         shell: bash

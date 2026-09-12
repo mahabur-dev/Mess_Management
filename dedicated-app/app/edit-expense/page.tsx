@@ -378,10 +378,10 @@ export default function EditExpensePage() {
           <FormSection title={t('attachment')}>
             {existingReceiptUrl && !removeReceipt ? (
               <div className="flex items-center justify-between gap-3 rounded-[14px] border border-[#cfeeed] bg-[#edfafa] px-3.5 py-3">
-                <a href={existingReceiptUrl} target="_blank" rel="noreferrer" className="truncate text-label font-bold text-[#008d8c]">
+                <a href={existingReceiptUrl} target="_blank" rel="noreferrer" className="truncate text-label font-semibold text-[#008d8c]">
                   {t('viewCurrentReceipt')}
                 </a>
-                <button type="button" onClick={() => setRemoveReceipt(true)} className="text-caption font-bold text-[#e02d37]">
+                <button type="button" onClick={() => setRemoveReceipt(true)} className="text-caption font-semibold text-[#e02d37]">
                   {t('remove')}
                 </button>
               </div>

@@ -150,7 +150,7 @@ function AssignedFoodExpensesBreakdown({
                   {format.date(expense.expenseDate, { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </span>
-              <span className="shrink-0 text-label font-bold text-[#00777a]">{format.money(expense.memberShare)}</span>
+              <span className="shrink-0 text-label font-semibold text-[#00777a]">{format.money(expense.memberShare)}</span>
               <ChevronRight size={16} className="shrink-0 text-[#65838b]" />
             </Link>
           ))}
@@ -333,7 +333,7 @@ function MyMonthlyDetailsContent() {
             <ExpenseSurface
               title={t('mealDetails')}
               aside={
-                <Link href={appHref(`/meals/details?month=${month}`)} className="inline-flex items-center gap-1 text-label font-bold text-[#008d8c]">
+                <Link href={appHref(`/meals/details?month=${month}`)} className="inline-flex items-center gap-1 text-label font-semibold text-[#008d8c]">
                   {t('view')} <ChevronRight size={14} />
                 </Link>
               }

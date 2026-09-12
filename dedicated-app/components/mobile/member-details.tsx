@@ -42,7 +42,7 @@ function MemberDetailSection({ title, items }: { title: string; items: DetailIte
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-caption font-semibold text-[#65838b]">{label}</span>
-              <span className="mt-0.5 block text-label font-bold leading-snug text-[#123748] [overflow-wrap:anywhere]">
+              <span className="mt-0.5 block text-label font-semibold leading-snug text-[#123748] [overflow-wrap:anywhere]">
                 {value}
               </span>
             </span>
@@ -112,7 +112,7 @@ export function MemberDetailsView({
       <section className="ui-card" aria-labelledby="member-name">
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 shrink-0">
-            <div className="grid h-full w-full place-items-center overflow-hidden rounded-[16px] bg-[#dff4f3] text-title-sm font-bold text-[#00777a]">
+            <div className="grid h-full w-full place-items-center overflow-hidden rounded-[16px] bg-[#dff4f3] text-title-sm font-semibold text-[#00777a]">
               {avatarUrl && !imageFailed ? (
                 <img src={avatarUrl} alt="" className="h-full w-full object-cover" onError={() => setImageFailed(true)} />
               ) : (

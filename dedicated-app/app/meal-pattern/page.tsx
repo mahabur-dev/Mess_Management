@@ -112,17 +112,17 @@ function MealScheduleEditor({ schedule, onChange }: { schedule: Schedule; onChan
 
   return (
     <div className="w-full">
-      <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-label font-bold text-[#245d66]">{copy('mealsInPattern')}</p><p className="mt-0.5 text-caption text-[#65838b]">{copy('addMealsRoutine')}</p></div><span className="rounded-full bg-[#dff4f3] px-2.5 py-1 text-caption font-bold text-[#00777a]">{copy('countAdded', { count: mealCountLabel(total, locale) })}</span></div>
+      <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-label font-semibold text-[#245d66]">{copy('mealsInPattern')}</p><p className="mt-0.5 text-caption text-[#65838b]">{copy('addMealsRoutine')}</p></div><span className="rounded-full bg-[#dff4f3] px-2.5 py-1 text-caption font-semibold text-[#00777a]">{copy('countAdded', { count: mealCountLabel(total, locale) })}</span></div>
       <div className="w-full">
         {meals.map((meal) => {
           const count = Number(schedule[meal] || 0)
           const label = mealLabel(meal, locale)
           return <div key={meal} className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-0 py-3 first:border-t">
             <MealIconBadge mealName={meal} size="sm" />
-            <span className="min-w-0 flex-1"><span className="block text-label font-bold text-[#245d66]">{label}</span><span className="block text-caption text-[#65838b]">{mealHint(meal, locale)}</span></span>
+            <span className="min-w-0 flex-1"><span className="block text-label font-semibold text-[#245d66]">{label}</span><span className="block text-caption text-[#65838b]">{mealHint(meal, locale)}</span></span>
             <div className="flex h-9 shrink-0 items-center overflow-hidden border border-[#9edddc] bg-[#f8fbfb]">
               <button type="button" aria-label={copy('reduceMeal', { meal: label })} onClick={() => changeCount(meal, -1)} className="grid h-full w-8 place-items-center text-[#00777a] hover:bg-[#dff4f3]">−</button>
-              <input aria-label={copy('mealCount', { meal: label })} type="number" min="0" step={mealStep(meal)} value={count} onChange={(event) => setCount(meal, event.target.value)} className="h-full w-12 border-x border-[#bfe7e6] bg-transparent text-center text-label font-bold text-[#245d66] outline-none" />
+              <input aria-label={copy('mealCount', { meal: label })} type="number" min="0" step={mealStep(meal)} value={count} onChange={(event) => setCount(meal, event.target.value)} className="h-full w-12 border-x border-[#bfe7e6] bg-transparent text-center text-label font-semibold text-[#245d66] outline-none" />
               <button type="button" aria-label={copy('addMoreMeal', { meal: label })} onClick={() => changeCount(meal, 1)} className="grid h-full w-8 place-items-center bg-[#008d8c] text-white hover:bg-[#00777a]">+</button>
             </div>
           </div>
@@ -223,7 +223,7 @@ export default function MealPatternPage() {
         {step === 'type' ? (
           <>
             <button type="button" className="flex items-center gap-1 text-label text-[#00777a]" onClick={() => setStep('overview')}><ChevronLeft size={18} /> {copy('back')}</button>
-            <div className="rounded-[18px] border border-[#dce8e9] bg-white p-4 shadow-[0_6px_16px_rgba(18,55,72,.04)]"><p className="text-caption font-bold uppercase tracking-[.12em] text-[#008d8c]">{copy('stepOne')}</p><h1 className="mt-2 text-headline font-semibold text-[#245d66]">{copy('scheduleQuestion')}</h1><p className="mt-2 text-body text-[#52727b]">{copy('scheduleQuestionHint')}</p></div>
+            <div className="rounded-[18px] border border-[#dce8e9] bg-white p-4 shadow-[0_6px_16px_rgba(18,55,72,.04)]"><p className="text-caption font-semibold uppercase tracking-[.12em] text-[#008d8c]">{copy('stepOne')}</p><h1 className="mt-2 text-headline font-semibold text-[#245d66]">{copy('scheduleQuestion')}</h1><p className="mt-2 text-body text-[#52727b]">{copy('scheduleQuestionHint')}</p></div>
             <div className="relative overflow-hidden rounded-[14px] border border-[#bfe7e6] bg-gradient-to-br from-[#edfafa] via-white to-[#fff9ed] px-4 py-3 shadow-[0_8px_18px_rgba(0,141,140,.08)]">
               <div className="absolute -right-5 -top-7 h-20 w-20 rounded-full bg-[#dff4f3]/70" />
               <div className="relative flex items-center gap-3">
@@ -235,7 +235,7 @@ export default function MealPatternPage() {
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-[#fff2d8] text-[#d98b10] shadow-sm"><Sparkles size={16} /></span>
                 </div>
                 <div className="min-w-0 border-l border-[#bfe7e6] pl-3">
-                  <p className="text-label font-bold text-[#245d66]">{copy('setOnce')}</p>
+                  <p className="text-label font-semibold text-[#245d66]">{copy('setOnce')}</p>
                   <p className="mt-0.5 text-caption leading-4 text-[#52727b]">{copy('automaticRoutine')}</p>
                 </div>
               </div>

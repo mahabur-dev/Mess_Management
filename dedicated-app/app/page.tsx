@@ -236,7 +236,7 @@ export default function HomePage() {
           <HomeCard as="div" role="status" className="home-status-card">{common('checkingWorkspace')}</HomeCard>
         ) : activeMessStatus === 'error' ? (
           <HomeCard as="div" role="alert" className="home-status-card">
-            <p className="text-label font-bold text-[#65838b]">{common('workspaceCheckFailed')}</p>
+            <p className="text-label font-semibold text-[#65838b]">{common('workspaceCheckFailed')}</p>
             <button
               type="button"
               onClick={retryActiveMess}

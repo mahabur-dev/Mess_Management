@@ -169,7 +169,7 @@ export default function AddMealPage() {
                 >
                   <button type="button" onClick={() => setForm((prev) => ({ ...prev, mealName }))} aria-pressed={selected} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                     <MealIconBadge mealName={mealName} size="sm" />
-                    <span className="min-w-0"><span className="block text-label font-bold text-[#245d66]">{mealLabel(mealName, locale)}</span><span className="block text-caption text-[#65838b]">{mealHint(mealName, locale)}</span></span>
+                    <span className="min-w-0"><span className="block text-label font-semibold text-[#245d66]">{mealLabel(mealName, locale)}</span><span className="block text-caption text-[#65838b]">{mealHint(mealName, locale)}</span></span>
                   </button>
                   <div className="flex h-9 shrink-0 items-center overflow-hidden border border-[#9edddc] bg-[#f8fbfb]">
                     <button type="button" aria-label={mealsCopy('reduceMeal', { meal: mealLabel(mealName, locale) })} onClick={() => changeMealCount(mealName, -1)} className="grid h-full w-8 place-items-center text-[#00777a] hover:bg-[#dff4f3]">−</button>
@@ -224,7 +224,7 @@ export default function AddMealPage() {
           />
 
           <FieldCard label={mealsCopy('calculatedMealCount')} hint={mealsCopy('calculatedMealHint')}>
-            <div className="field bg-[#edfafa] py-3 font-bold text-[#123748]">{format.number(mealCount, { maximumFractionDigits: 1 })}</div>
+            <div className="field bg-[#edfafa] py-3 font-semibold text-[#123748]">{format.number(mealCount, { maximumFractionDigits: 1 })}</div>
           </FieldCard>
 
           {notice ? <div className={`ui-notice ui-notice--${notice.tone}`}>{notice.message}</div> : null}

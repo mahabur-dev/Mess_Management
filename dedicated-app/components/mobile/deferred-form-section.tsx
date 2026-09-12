@@ -36,13 +36,13 @@ export function DeferredFormSection({
       <section className="app-section app-form-section space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-body font-bold text-[#123748]">{title}</div>
+            <div className="text-body font-semibold text-[#123748]">{title}</div>
             <div className="mt-1 text-caption font-medium text-[#65838b]">{description}</div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full bg-[#edfafa] px-3 py-1.5 text-caption font-bold text-[#008d8c]"
+            className="rounded-full bg-[#edfafa] px-3 py-1.5 text-caption font-semibold text-[#008d8c]"
           >
             {t('close')}
           </button>
@@ -62,7 +62,7 @@ export function DeferredFormSection({
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-label font-bold text-[#123748]">{actionLabel}</span>
+        <span className="block text-label font-semibold text-[#123748]">{actionLabel}</span>
         <span className="mt-1 block text-caption font-medium leading-relaxed text-[#65838b]">{description}</span>
       </span>
     </button>

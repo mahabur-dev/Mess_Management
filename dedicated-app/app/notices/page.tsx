@@ -130,10 +130,10 @@ export default function NoticesPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="truncate text-label font-bold text-[#123748]">{item.title}</h2>
-                    {item.is_pinned ? <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-bold text-[#008d8c]">{t('pinned')}</span> : null}
+                    <h2 className="truncate text-label font-semibold text-[#123748]">{item.title}</h2>
+                    {item.is_pinned ? <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-semibold text-[#008d8c]">{t('pinned')}</span> : null}
                   </div>
-                  <div className="mt-1 text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{noticeTypeLabel(item.type, locale)}</div>
+                  <div className="mt-1 text-caption font-semibold uppercase tracking-[0.12em] text-[#65838b]">{noticeTypeLabel(item.type, locale)}</div>
                   <p className="mt-2 text-label text-[#65838b]">{item.body}</p>
                   {item.creator?.name || item.created_at ? (
                     <div className="mt-2 text-caption font-medium text-[#789096]">

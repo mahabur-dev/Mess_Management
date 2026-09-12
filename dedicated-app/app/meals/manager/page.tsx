@@ -24,7 +24,7 @@ export default function MealManagerPage() {
             <UtensilsCrossed size={22} />
           </div>
           <div>
-            <div className="text-body font-bold text-[#123748]">{meals('sharedWorkflowTitle')}</div>
+            <div className="text-body font-semibold text-[#123748]">{meals('sharedWorkflowTitle')}</div>
             <div className="mt-1 text-label text-[#65838b]">{meals('sharedWorkflowDescription')}</div>
           </div>
         </MealCard>

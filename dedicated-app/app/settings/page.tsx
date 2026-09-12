@@ -20,7 +20,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 border-b border-[#e4eaec] px-4 py-3.5">
             <div className="ui-icon-tile ui-icon-tile--lg bg-[#dff4f3] text-[#008d8c]" aria-hidden="true"><ShieldCheck size={24} /></div>
             <div>
-              <div className="ui-body font-bold">{profile('accountSecurity')}</div>
+              <div className="ui-body font-semibold">{profile('accountSecurity')}</div>
               <div className="ui-caption mt-0.5">{profile('manageProfilePassword')}</div>
             </div>
           </div>

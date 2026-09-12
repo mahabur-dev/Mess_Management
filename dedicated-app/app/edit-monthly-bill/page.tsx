@@ -89,8 +89,8 @@ export default function EditMonthlyBillPage() {
       <div className="screen space-y-4">
         <section className="app-section app-form-section space-y-4">
           <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
-            <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('bill')}</div>
-            <div className="mt-1 text-label font-bold text-[#123748]">{bill?.member?.name ?? billId}</div>
+            <div className="text-caption font-semibold uppercase tracking-[0.12em] text-[#65838b]">{t('bill')}</div>
+            <div className="mt-1 text-label font-semibold text-[#123748]">{bill?.member?.name ?? billId}</div>
             <div className="mt-1 text-caption text-[#65838b]">
               {bill?.month ? format.month(bill.month) : t('noMonth')} - {format.money(bill?.final_due)}
             </div>

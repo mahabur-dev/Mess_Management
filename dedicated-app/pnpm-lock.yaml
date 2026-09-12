@@ -32,6 +32,12 @@ importers:
       '@capacitor/status-bar':
         specifier: 7.0.0
         version: 7.0.0(@capacitor/core@7.6.8)
+      '@fontsource-variable/noto-sans-bengali':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/roboto':
+        specifier: ^5.3.0
+        version: 5.3.0
       firebase:
         specifier: 11.10.0
         version: 11.10.0
@@ -333,6 +339,12 @@ packages:
 
   '@firebase/webchannel-wrapper@1.0.3':
     resolution: {integrity: sha512-2xCRM9q9FlzGZCdgDMJwc0gyUkWFtkosy7Xxr6sFgQwn+wMNIWd7xIvYNauU1r64B5L5rsGKy/n9TKJ0aAFeqQ==}
+
+  '@fontsource-variable/noto-sans-bengali@5.3.0':
+    resolution: {integrity: sha512-035m0mzOcsVC1GHFH1ioeXjIFqVhuflGvnn8Xvr6esaZlGErNe1d+Jx2sEN/2WGPhjrT+5wwKPPSO8rbBeQo3w==}
+
+  '@fontsource-variable/roboto@5.3.0':
+    resolution: {integrity: sha512-BoaaZiQf8fgtxv07KXkTwx1bKz/EoqIlTXq2OOKKXINxp6qXWdnlChqV+hSaDANS49yyUASFl3OVBMMDTCIHFA==}
 
   '@grpc/grpc-js@1.9.16':
     resolution: {integrity: sha512-wE4Ut/olIzfKqp631XrG+wbF0v1vWFN4YL9FyXC2LJiG33DsV7PLzURjrCvY/6je2ntdRkeLpPDluzSRGaVltQ==}
@@ -1703,6 +1715,10 @@ snapshots:
       tslib: 2.8.1
 
   '@firebase/webchannel-wrapper@1.0.3': {}
+
+  '@fontsource-variable/noto-sans-bengali@5.3.0': {}
+
+  '@fontsource-variable/roboto@5.3.0': {}
 
   '@grpc/grpc-js@1.9.16':
     dependencies:

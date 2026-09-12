@@ -131,7 +131,7 @@ export function DepositStatusBadge({ status }: { status?: string | null }) {
   const tone = statusTone(status, locale)
   return (
     <span
-      className="inline-flex h-8 items-center rounded-[11px] px-3 text-caption font-bold"
+      className="inline-flex h-8 items-center rounded-[11px] px-3 text-caption font-semibold"
       style={{ backgroundColor: tone.bg, color: tone.fg }}
     >
       {tone.label}
@@ -207,7 +207,7 @@ export function DepositStatCard({
           <Icon size={21} strokeWidth={2.35} />
         </div>
       ) : null}
-      <div className="text-caption font-bold leading-tight" style={{ color: selected.fg }}>
+      <div className="text-caption font-semibold leading-tight" style={{ color: selected.fg }}>
         {title}
       </div>
       <div className="mt-2 truncate text-headline font-semibold leading-none text-[#1d3a42]">{value}</div>
@@ -273,10 +273,10 @@ export function DepositWorkCard() {
     <section className="relative overflow-hidden rounded-[20px] border border-[#cfeeed] bg-white px-3.5 py-3.5 shadow-[0_10px_24px_rgba(18,55,72,0.07)]">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-title-sm font-bold text-[#00777a]">{t('howDepositsWork')}</h2>
+          <h2 className="text-title-sm font-semibold text-[#00777a]">{t('howDepositsWork')}</h2>
           <p className="mt-0.5 text-caption font-semibold text-[#65838b]">{t('simpleWorkflow')}</p>
         </div>
-        <div className="rounded-full border border-[#cfeeed] bg-[#f6ffff] px-2.5 py-1 text-caption font-bold text-[#008d8c]">
+        <div className="rounded-full border border-[#cfeeed] bg-[#f6ffff] px-2.5 py-1 text-caption font-semibold text-[#008d8c]">
           {t('twoWays')}
         </div>
       </div>
@@ -291,10 +291,10 @@ export function DepositWorkCard() {
                 <div key={step.title} className="contents">
                   <div className="text-center">
                     <div className="relative mx-auto grid h-9 w-9 place-items-center rounded-[13px] ring-1 ring-[#cfeeed]" style={{ backgroundColor: bg, color }}>
-                      {index === 0 ? <span className="absolute -left-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-[#21b86f] text-caption font-bold text-white">{flowIndex + 1}</span> : null}
+                      {index === 0 ? <span className="absolute -left-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-[#21b86f] text-caption font-semibold text-white">{flowIndex + 1}</span> : null}
                       <Icon size={17} strokeWidth={2.35} />
                     </div>
-                    <div className="mt-1.5 text-caption font-bold leading-3 text-[#123748]">{step.title}</div>
+                    <div className="mt-1.5 text-caption font-semibold leading-3 text-[#123748]">{step.title}</div>
                     <div className="mt-0.5 text-caption font-semibold leading-3 text-[#65838b]">{step.text}</div>
                   </div>
                   {index < flow.steps.length - 1 ? <div className="mt-4 border-t-2 border-dotted" style={{ borderColor: color }} /> : null}
@@ -451,7 +451,7 @@ export function DepositListItem({
     <>
       <DepositAvatar name={name} avatarUrl={avatarUrl} toneClass={avatarTones[index % avatarTones.length]} />
       <span className="min-w-0 flex-1">
-        <strong className="block truncate text-label font-bold leading-tight text-[#1d3a42]">{name}</strong>
+        <strong className="block truncate text-label font-semibold leading-tight text-[#1d3a42]">{name}</strong>
         <span className="mt-1.5 flex items-center gap-1.5 text-caption font-semibold" style={{ color: status.fg }}>
           <i className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
           {status.label}
@@ -466,7 +466,7 @@ export function DepositListItem({
       <DepositAvatar name={name} avatarUrl={avatarUrl} toneClass={avatarTones[index % avatarTones.length]} large />
       <div className="min-w-0 flex-1">
         <div className="truncate text-label font-semibold text-[#1d3a42]">{name}</div>
-        <div className="mt-1 flex min-w-0 items-center gap-1.5 text-caption font-bold">
+        <div className="mt-1 flex min-w-0 items-center gap-1.5 text-caption font-semibold">
           <span style={{ color: amountTone }}>{formatDepositMoney(item.amount, locale)}</span>
           <span className="text-[#789096]">.</span>
           <span className="truncate text-[#65838b]">{category}</span>
@@ -506,7 +506,7 @@ function DepositAvatar({
   return (
     <span
       className={joinClasses(
-        'relative grid shrink-0 place-items-center overflow-hidden rounded-full font-bold ring-1 ring-black/[0.04]',
+        'relative grid shrink-0 place-items-center overflow-hidden rounded-full font-semibold ring-1 ring-black/[0.04]',
         large ? 'h-14 w-14 text-title-sm' : 'h-10 w-10 text-caption',
         toneClass
       )}
@@ -708,7 +708,7 @@ export function DepositFilterTabs({
             key={filter.value}
             type="button"
             onClick={() => onChange(filter.value)}
-            className={`h-11 rounded-[14px] px-2 text-caption font-bold transition active:scale-[0.98] ${active ? 'bg-[#008d8c] text-white shadow-[0_10px_20px_rgba(0,119,122,0.16)]' : 'border border-[#dce9ec] bg-white'}`}
+            className={`h-11 rounded-[14px] px-2 text-caption font-semibold transition active:scale-[0.98] ${active ? 'bg-[#008d8c] text-white shadow-[0_10px_20px_rgba(0,119,122,0.16)]' : 'border border-[#dce9ec] bg-white'}`}
             style={!active && filter.value !== 'ALL' ? { color: tone.fg, backgroundColor: tone.bg } : undefined}
           >
             {filter.label}
@@ -744,7 +744,7 @@ export function DepositCompactFilters({
   return (
     <div className="deposit-compact-filters grid grid-cols-2 gap-3">
       <div className="relative block">
-        {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('status')}</span> : null}
+        {showLabels ? <span className="mb-1.5 block text-caption font-semibold uppercase tracking-[0.12em] text-[#65838b]">{t('status')}</span> : null}
         <MobileSelectSheet
           label={t('status')}
           value={status}
@@ -763,7 +763,7 @@ export function DepositCompactFilters({
       </div>
 
       <div className="relative block">
-        {showLabels ? <span className="mb-1.5 block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('month')}</span> : null}
+        {showLabels ? <span className="mb-1.5 block text-caption font-semibold uppercase tracking-[0.12em] text-[#65838b]">{t('month')}</span> : null}
         <MonthPicker
           label={t('selectMonth')}
           value={month}
@@ -795,7 +795,7 @@ export function DepositInfoRow({
       <div className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#edfafa] text-[#00777a]">
         <Icon size={19} strokeWidth={2.3} />
       </div>
-      <div className="min-w-0 text-label font-bold text-[#65838b]">{label}</div>
+      <div className="min-w-0 text-label font-semibold text-[#65838b]">{label}</div>
       <div className="min-w-0 text-right text-label font-semibold leading-5 text-[#1d3a42]">{value}</div>
     </div>
   )
@@ -847,7 +847,7 @@ function MiniFact({
   return (
     <div className="grid grid-cols-[22px_minmax(0,1fr)_minmax(76px,auto)] items-center gap-2">
       <Icon size={17} className="text-[#00777a]" />
-      <div className="text-caption font-bold text-[#65838b]">{label}</div>
+      <div className="text-caption font-semibold text-[#65838b]">{label}</div>
       <div className="truncate text-right text-caption font-semibold text-[#1d3a42]">{value}</div>
     </div>
   )

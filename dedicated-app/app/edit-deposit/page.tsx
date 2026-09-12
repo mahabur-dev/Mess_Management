@@ -139,7 +139,7 @@ export default function EditDepositPage() {
           {notice ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{notice.message}</div> : null}
 
           <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => router.push('/deposits')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-bold text-[#00777a]">
+            <button type="button" onClick={() => router.push('/deposits')} className="flex h-12 items-center justify-center gap-2 rounded-[15px] border border-[#008d8c] bg-white text-label font-semibold text-[#00777a]">
               <ArrowLeft size={17} /> {t('back')}
             </button>
             <button type="button" onClick={() => void handleSubmit()} disabled={busy} className="primary-btn flex h-12 items-center justify-center gap-2 rounded-[15px] p-0 text-label disabled:opacity-70">

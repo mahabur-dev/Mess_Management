@@ -5,7 +5,26 @@ import process from 'node:process'
 const projectRoot = process.cwd()
 const sourceRoots = ['app', 'components']
 const sourceExtensions = new Set(['.css', '.js', '.jsx', '.ts', '.tsx'])
-const semanticTokens = ['caption', 'label', 'body', 'title-sm', 'title', 'headline', 'display']
+const semanticTokens = [
+  'caption',
+  'body-small',
+  'label',
+  'body',
+  'section',
+  'title-sm',
+  'title',
+  'headline',
+  'display',
+  'kpi',
+]
+const requiredFontTokens = [
+  'font-family-latin',
+  'font-family-bengali',
+  'font-app-sans',
+  'font-weight-regular',
+  'font-weight-medium',
+  'font-weight-semibold',
+]
 
 const violations = []
 
@@ -77,6 +96,19 @@ for (const file of files) {
         })
       }
     }
+
+    for (const match of source.matchAll(/font-family\s*:\s*([^;]+);/g)) {
+      const value = match[1].trim()
+      if (value !== 'var(--font-sans)' && value !== 'inherit') {
+        const line = source.slice(0, match.index).split('\n').length
+        violations.push({
+          file: path.relative(projectRoot, file),
+          line,
+          message: 'CSS font families must use the shared --font-sans token.',
+          value: match[0],
+        })
+      }
+    }
   }
 }
 
@@ -92,6 +124,17 @@ for (const token of semanticTokens) {
   }
 }
 
+for (const token of requiredFontTokens) {
+  if (!globals.includes(`--${token}:`)) {
+    violations.push({
+      file: path.join('app', 'globals.css'),
+      line: 1,
+      message: `Typography token --${token} must be defined.`,
+      value: token,
+    })
+  }
+}
+
 if (violations.length > 0) {
   console.error('Typography policy violations found:\n')
   for (const violation of violations) {
@@ -100,4 +143,4 @@ if (violations.length > 0) {
   process.exit(1)
 }
 
-console.log(`Typography policy passed: ${files.length} source files use the seven semantic text tokens.`)
+console.log(`Typography policy passed: ${files.length} source files use shared font and semantic type tokens.`)

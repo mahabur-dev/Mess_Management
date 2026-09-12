@@ -124,7 +124,7 @@ function ExpenseFilterSelect<T extends string>({
             {icon}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-label font-bold leading-tight text-[#123748]">{selectedLabel}</span>
+            <span className="block truncate text-label font-semibold leading-tight text-[#123748]">{selectedLabel}</span>
           </span>
           <ChevronDown
             size={16}
@@ -175,7 +175,7 @@ function ExpenseRecordsSection({
   })
 
   return (
-    <ExpenseSurface title={title} aside={<span className="text-caption font-bold text-[#65838b]">{t('shownCount', { count: format.number(filtered.length) })}</span>}>
+    <ExpenseSurface title={title} aside={<span className="text-caption font-semibold text-[#65838b]">{t('shownCount', { count: format.number(filtered.length) })}</span>}>
       <div className="mb-3 grid grid-cols-2 gap-2.5">
         <ExpenseFilterSelect
           label={t('approvalStatus')}

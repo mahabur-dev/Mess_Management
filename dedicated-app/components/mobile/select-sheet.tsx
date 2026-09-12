@@ -186,7 +186,7 @@ export function MobileSelectSheet<T extends string>({
     >
       <div className="flex min-h-0 w-full flex-col">
         {title ? (
-          <div id={titleId} className="shrink-0 border-b border-[#edf1f4] px-4 py-3 text-label font-bold text-[#123748]">
+          <div id={titleId} className="shrink-0 border-b border-[#edf1f4] px-4 py-3 text-label font-semibold text-[#123748]">
             {title}
           </div>
         ) : null}

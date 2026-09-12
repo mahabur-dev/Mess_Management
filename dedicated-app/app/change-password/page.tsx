@@ -64,7 +64,7 @@ export default function ChangePasswordPage() {
               <ShieldCheck size={24} />
             </div>
             <div>
-              <div className="ui-body font-bold">{profile('security')}</div>
+              <div className="ui-body font-semibold">{profile('security')}</div>
               <div className="ui-caption mt-0.5">{profile('strongPassword')}</div>
             </div>
           </div>

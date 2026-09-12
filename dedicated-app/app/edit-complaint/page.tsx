@@ -123,8 +123,8 @@ export default function EditComplaintPage() {
         {!loading && complaint ? (
         <section className="app-section app-form-section space-y-4">
           <div className="rounded-2xl bg-[#edfafa] px-4 py-3">
-            <div className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('complaint')}</div>
-            <div className="mt-1 text-label font-bold text-[#123748]">{complaint?.title ?? complaintId}</div>
+            <div className="text-caption font-semibold uppercase tracking-[0.12em] text-[#65838b]">{t('complaint')}</div>
+            <div className="mt-1 text-label font-semibold text-[#123748]">{complaint?.title ?? complaintId}</div>
             <div className="mt-1 text-caption text-[#65838b]">{complaint?.description ?? t('noDescription')}</div>
             {complaint?.category ? <div className="mt-2 text-caption font-semibold text-[#008d8c]">{complaintCategoryLabel(complaint.category, locale)}</div> : null}
             {complaint?.created_at ? <div className="mt-1 text-caption text-[#789096]">{t('submittedOn', { date: format.date(complaint.created_at, { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }) })}</div> : null}

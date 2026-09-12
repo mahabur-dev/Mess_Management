@@ -95,7 +95,7 @@ export default function LockMealsPage() {
 
         <MealCard className="text-center">
           <MealStateIllustration state={locked ? 'locked' : 'open'} mealName={mealName} />
-          <div className={`mt-3 text-title font-bold ${locked ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
+          <div className={`mt-3 text-title font-semibold ${locked ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
             {mealCopy('mealState', { meal: mealLabel(mealName, locale), state: locked ? mealCopy('locked') : mealCopy('unlocked') })}
           </div>
           <div className="mt-2 text-label text-[#65838b]">
@@ -120,7 +120,7 @@ export default function LockMealsPage() {
               >
                 <MealIconBadge mealName={item} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-label font-bold text-[#123748]">{mealLabel(item, locale)}</div>
+                  <div className="text-label font-semibold text-[#123748]">{mealLabel(item, locale)}</div>
                   <div className="mt-0.5 text-caption font-semibold text-[#65838b]">{meal ? mealCopy('recordAvailable') : mealCopy('noRecordYet')}</div>
                 </div>
                 <MealStatusPill tone={itemLocked ? 'closed' : 'neutral'}>{itemLocked ? mealCopy('locked') : mealCopy('unlocked')}</MealStatusPill>
@@ -138,7 +138,7 @@ export default function LockMealsPage() {
 
         <button
           type="button"
-          className={`flex h-14 w-full items-center justify-center gap-2 rounded-[16px] text-label font-bold text-white shadow-[0_14px_28px_rgba(0,119,122,0.16)] disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`flex h-14 w-full items-center justify-center gap-2 rounded-[16px] text-label font-semibold text-white shadow-[0_14px_28px_rgba(0,119,122,0.16)] disabled:cursor-not-allowed disabled:opacity-60 ${
             locked ? 'bg-[#008d8c]' : 'bg-[#ee1f2f]'
           }`}
           onClick={toggleLock}
@@ -153,7 +153,7 @@ export default function LockMealsPage() {
             <LockStateIcon locked={locked} />
           </div>
           <div>
-            <div className="text-body font-bold text-[#123748]">{mealCopy('currentSelection')}</div>
+            <div className="text-body font-semibold text-[#123748]">{mealCopy('currentSelection')}</div>
             <div className="mt-1 text-label text-[#65838b]">{mealCopy('mealState', { meal: mealLabel(mealName, locale), state: locked ? mealCopy('locked') : mealCopy('unlocked') })}</div>
           </div>
         </MealCard>

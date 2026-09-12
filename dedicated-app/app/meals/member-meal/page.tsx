@@ -170,16 +170,16 @@ function EditMemberMealContent() {
       <TopScreen title={mealCopy('editMemberMeals')} subtitle={formatDisplayDate(date, locale)} backHref="/meals/members" />
       <div className="screen space-y-4">
         <MealCard className="flex items-center gap-3">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#edfafa] text-label font-bold text-[#008d8c]">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#edfafa] text-label font-semibold text-[#008d8c]">
             {initials(memberDisplayName)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-label font-bold text-[#123748]">{memberDisplayName}</div>
-            <div className="mt-1 flex items-center gap-1 text-caption font-bold text-[#65838b]">
+            <div className="truncate text-label font-semibold text-[#123748]">{memberDisplayName}</div>
+            <div className="mt-1 flex items-center gap-1 text-caption font-semibold text-[#65838b]">
               <UserRound size={12} /> {formatDisplayDate(date, locale)}
             </div>
           </div>
-          <div className="shrink-0 rounded-full bg-[#edfafa] px-3 py-1.5 text-caption font-bold text-[#00777a]">
+          <div className="shrink-0 rounded-full bg-[#edfafa] px-3 py-1.5 text-caption font-semibold text-[#00777a]">
             {mealCopy('activeCount', { active: format.number(activeMeals), total: format.number(3) })}
           </div>
         </MealCard>
@@ -189,7 +189,7 @@ function EditMemberMealContent() {
 
         <MealCard className="overflow-hidden p-0">
           <div className="border-b border-[#dce8e9] px-4 py-3">
-            <div className="text-body font-bold text-[#123748]">{mealCopy('dailyMealPlan')}</div>
+            <div className="text-body font-semibold text-[#123748]">{mealCopy('dailyMealPlan')}</div>
             <div className="mt-1 text-caption font-semibold text-[#65838b]">{mealCopy('dailyMealPlanHint')}</div>
           </div>
           <div>

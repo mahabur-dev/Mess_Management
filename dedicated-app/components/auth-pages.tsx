@@ -403,7 +403,7 @@ export function VerifyOtpPage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="block">
-          <div className="mb-3 text-center text-label font-bold text-[#123748]">
+          <div className="mb-3 text-center text-label font-semibold text-[#123748]">
             {auth('verificationCode')}
           </div>
 
@@ -444,7 +444,7 @@ export function VerifyOtpPage() {
                   border border-[#c3e4e4]
                   bg-white
                   text-center text-headline
-                  font-bold text-[#062b35]
+                  font-semibold text-[#062b35]
                   caret-[#008d8c]
                   outline-none
                   shadow-[0_5px_15px_rgba(0,141,140,0.05)]

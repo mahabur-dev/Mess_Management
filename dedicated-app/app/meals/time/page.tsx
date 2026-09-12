@@ -42,7 +42,7 @@ function MealTimePreview({
         <div className="flex items-center gap-3">
           <MealIconBadge mealName={mealName} />
           <div>
-            <div className="text-label font-bold text-[#123748]">{mealLabel(mealName, locale)}</div>
+            <div className="text-label font-semibold text-[#123748]">{mealLabel(mealName, locale)}</div>
             <div className="mt-1 text-caption font-semibold text-[#65838b]">{meals('memberUpdateWindow')}</div>
           </div>
         </div>

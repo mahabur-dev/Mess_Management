@@ -177,7 +177,7 @@ export default function MealSettingsPage() {
             <BellRing size={18} />
           </div>
           <div>
-            <div className="text-label font-bold text-[#123748]">{meals('notificationReady')}</div>
+            <div className="text-label font-semibold text-[#123748]">{meals('notificationReady')}</div>
             <div className="mt-1 text-label text-[#65838b]">{meals('notificationReadyDescription')}</div>
           </div>
         </MealCard>

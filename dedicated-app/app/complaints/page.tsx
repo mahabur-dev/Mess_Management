@@ -161,7 +161,7 @@ export default function ComplaintsPage() {
                 <p className="mt-2 text-label text-[#65838b]">{item.description}</p>
                 {item.response ? (
                   <div className="mt-2 rounded-xl bg-[#edfafa] px-3 py-2 text-label text-[#123748]">
-                    <span className="mb-1 block text-caption font-bold text-[#008d8c]">{t('managerResponse')}</span>
+                    <span className="mb-1 block text-caption font-semibold text-[#008d8c]">{t('managerResponse')}</span>
                     {item.response}
                   </div>
                 ) : null}

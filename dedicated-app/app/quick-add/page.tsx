@@ -400,7 +400,7 @@ export default function QuickAddPage() {
         ) : completed ? (
           <HomeCard className="py-7 text-center">
             <CheckCircle2 size={52} className="mx-auto text-[#008d8c]" />
-            <h2 className="mt-4 text-title-sm font-bold text-[#123748]">
+            <h2 className="mt-4 text-title-sm font-semibold text-[#123748]">
               {command.intent === 'DEPOSIT_CREATE' && !canManage ? copy.depositSubmitted : copy.success}
             </h2>
             <p className="mt-2 text-label text-[#65838b]">
@@ -416,7 +416,7 @@ export default function QuickAddPage() {
             {!isCanonicalEntryReview ? (
             <HomeCard title={copy.preview} caption={copy.previewHelp}>
               <div className="mb-4 flex items-center justify-between rounded-xl bg-[#edfafa] px-3 py-2">
-                <span className="text-label font-bold text-[#00777a]">{intentLabel}</span>
+                <span className="text-label font-semibold text-[#00777a]">{intentLabel}</span>
                 {command.confidence != null ? <span className="text-caption font-semibold text-[#65838b]">{Math.round(command.confidence * 100)}%</span> : null}
               </div>
               {command.transcript ? <Notice tone="info" className="mb-4"><strong>{copy.transcript}:</strong> {command.transcript}</Notice> : null}

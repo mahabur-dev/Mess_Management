@@ -136,7 +136,7 @@ export default function PersonalTransactionsPage() {
                     <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#008d8c] ring-2 ring-white" />
                   ) : null}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-caption font-bold text-[#123748]">
+                <span className="min-w-0 flex-1 truncate text-caption font-semibold text-[#123748]">
                   {selectedLabel}
                 </span>
                 <ChevronDown

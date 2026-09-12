@@ -53,13 +53,18 @@ All tokens are defined as CSS custom properties in `app/globals.css`.
 
 | Class | Size | Weight | Line Height | Usage |
 |-------|------|--------|-------------|-------|
-| `text-display` | 28px | 800 | 36px | Auth screens, hero |
-| `text-headline` | 24px | 800 | 32px | Page headings |
-| `text-title` | 20px | 800 | 28px | Card titles |
-| `text-title-sm` | 18px | 800 | 24px | Header title |
-| `text-body` | 16px | 500 | 24px | Body copy |
-| `text-label` | 14px | 700 | 20px | Form labels, rows |
-| `text-caption` | 12px | 600 | 16px | Captions, badges |
+| `text-kpi` / `text-display` | 26px | 600–700 | 32px | KPIs, hero values |
+| `text-title` / `text-headline` | 24px | 600 | 32px | Page headings |
+| `text-section` / `text-title-sm` | 18px | 600 | 24px | Section headings |
+| `text-body` | 16px | 400 | 24px | Body copy |
+| `text-body-small` | 14px | 400 | 20px | Supporting copy |
+| `text-label` | 14px | 500 | 20px | Form labels, rows |
+| `text-caption` | 12px | 400–500 | 16px | Captions, badges |
+
+All interface text uses the shared `--font-sans` token. It pairs locally
+bundled **Roboto** for Latin glyphs with **Noto Sans Bengali** for Bengali
+glyphs, including mixed-language strings. Do not set `font-family` inside
+components; use the semantic size and weight tokens instead.
 
 ### Radii
 

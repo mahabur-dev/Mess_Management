@@ -150,8 +150,8 @@ export default function MealsPage() {
         <MealCard>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <div className="text-body font-bold text-[#123748]">{mealCopy('myMealStatus')}</div>
-              <div className="mt-1 flex items-center gap-1 text-caption font-bold text-[#008d8c]">
+              <div className="text-body font-semibold text-[#123748]">{mealCopy('myMealStatus')}</div>
+              <div className="mt-1 flex items-center gap-1 text-caption font-semibold text-[#008d8c]">
                 <Clock3 size={12} /> {deadlineLabel(deadline, locale)}
               </div>
             </div>
@@ -161,7 +161,7 @@ export default function MealsPage() {
           <div className="rounded-[16px] border border-[#cfeeed] bg-[#fbffff] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-label font-bold text-[#123748]">{selectedMealLabel}</div>
+                <div className="text-label font-semibold text-[#123748]">{selectedMealLabel}</div>
                 <div className="mt-1 text-label text-[#65838b]">{selectedMeals.length ? mealCopy('mealAdded') : mealCopy('updatePreference')}</div>
               </div>
               <MealStatusPill tone={selectedMeals.length ? 'open' : 'neutral'}>
@@ -181,7 +181,7 @@ export default function MealsPage() {
               <Settings2 size={21} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-body font-bold text-[#123748]">{mealCopy('managerControls')}</div>
+              <div className="text-body font-semibold text-[#123748]">{mealCopy('managerControls')}</div>
               <div className="mt-1 text-label text-[#65838b]">{mealCopy('manageTimeLocksMembers')}</div>
             </div>
           </Link>

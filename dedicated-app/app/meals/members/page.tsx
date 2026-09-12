@@ -319,16 +319,16 @@ export default function MemberMealsPage() {
           <div className="grid grid-cols-4 divide-x divide-[#e7eff0]">
             {MEAL_ORDER.map((mealName) => (
               <div key={mealName} className="min-w-0 px-1.5 py-3 text-center">
-                <div className="flex items-center justify-center gap-1 text-caption font-bold uppercase tracking-[0.04em] text-[#65838b]">
+                <div className="flex items-center justify-center gap-1 text-caption font-semibold uppercase tracking-[0.04em] text-[#65838b]">
                   <span className="truncate">{mealLabel(mealName, locale)}</span>
                   {mealIsLocked(findMeal(meals, mealName)) ? <LockKeyhole size={10} className="shrink-0 text-[#ee1f2f]" /> : null}
                 </div>
-                <div className="mt-1 text-title-sm font-bold tabular-nums text-[#123748]">{format.number(totals[mealName])}</div>
+                <div className="mt-1 text-title-sm font-semibold tabular-nums text-[#123748]">{format.number(totals[mealName])}</div>
               </div>
             ))}
             <div className="min-w-0 bg-[#edfafa] px-1.5 py-3 text-center">
-              <div className="truncate text-caption font-bold uppercase tracking-[0.04em] text-[#00777a]">{mealCopy('total')}</div>
-              <div className="mt-1 text-title-sm font-bold tabular-nums text-[#00777a]">{format.number(grandTotal)}</div>
+              <div className="truncate text-caption font-semibold uppercase tracking-[0.04em] text-[#00777a]">{mealCopy('total')}</div>
+              <div className="mt-1 text-title-sm font-semibold tabular-nums text-[#00777a]">{format.number(grandTotal)}</div>
             </div>
           </div>
         </section>
@@ -340,12 +340,12 @@ export default function MemberMealsPage() {
               type="button"
               onClick={startEditing}
               disabled={loading || loadFailed || !rows.length}
-              className="flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-[14px] bg-[#008d8c] px-3.5 text-label font-bold text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-[14px] bg-[#008d8c] px-3.5 text-label font-semibold text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Pencil size={15} /> {mealCopy('editAll')}
             </button>
           ) : (
-            <div className="flex min-h-12 shrink-0 items-center gap-1.5 rounded-[14px] border border-[#9edddc] bg-[#edfafa] px-3 text-caption font-bold text-[#00777a]">
+            <div className="flex min-h-12 shrink-0 items-center gap-1.5 rounded-[14px] border border-[#9edddc] bg-[#edfafa] px-3 text-caption font-semibold text-[#00777a]">
               <Check size={14} /> {mealCopy('editing')}
             </div>
           )}
@@ -363,8 +363,8 @@ export default function MemberMealsPage() {
             <div className="flex items-start gap-3 text-[#a51d2a]">
               <AlertTriangle size={19} className="mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
-                <div className="text-label font-bold">{mealCopy('loadMemberMealsFailed')}</div>
-                <button type="button" onClick={() => setReloadKey((value) => value + 1)} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-[12px] border border-[#efb7bd] bg-white px-3 text-label font-bold text-[#a51d2a]">
+                <div className="text-label font-semibold">{mealCopy('loadMemberMealsFailed')}</div>
+                <button type="button" onClick={() => setReloadKey((value) => value + 1)} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-[12px] border border-[#efb7bd] bg-white px-3 text-label font-semibold text-[#a51d2a]">
                   <RotateCw size={15} /> {common('retry')}
                 </button>
               </div>
@@ -384,17 +384,17 @@ export default function MemberMealsPage() {
               return (
                 <article key={row.id} className={`overflow-hidden rounded-[16px] border bg-white shadow-[0_4px_14px_rgba(18,55,72,0.055)] transition-colors ${rowDirty ? 'border-[#4bbfc0]' : 'border-[#e2ebec]'}`}>
                   <header className={`flex items-center gap-3 px-3.5 py-3 ${rowDirty ? 'bg-[#f2fbfb]' : ''}`}>
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] bg-[#edfafa] text-caption font-bold text-[#008d8c]">{initials(row.name)}</div>
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] bg-[#edfafa] text-caption font-semibold text-[#008d8c]">{initials(row.name)}</div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <div className="truncate text-label font-bold text-[#123748]">{row.name}</div>
+                        <div className="truncate text-label font-semibold text-[#123748]">{row.name}</div>
                         {rowDirty ? <span className="h-2 w-2 shrink-0 rounded-full bg-[#008d8c]" aria-label={mealCopy('changed')} /> : null}
                       </div>
                       <div className="mt-0.5 truncate text-caption font-medium text-[#65838b]">{row.email ?? row.room ?? mealCopy('messMember')}</div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <div className="text-caption font-bold uppercase tracking-wide text-[#65838b]">{mealCopy('total')}</div>
-                      <div className="mt-0.5 text-body font-bold tabular-nums text-[#00777a]">{format.number(rowTotal)}</div>
+                      <div className="text-caption font-semibold uppercase tracking-wide text-[#65838b]">{mealCopy('total')}</div>
+                      <div className="mt-0.5 text-body font-semibold tabular-nums text-[#00777a]">{format.number(rowTotal)}</div>
                     </div>
                   </header>
 
@@ -407,7 +407,7 @@ export default function MemberMealsPage() {
                         return (
                           <div key={mealName} className={`flex min-h-[58px] items-center gap-3 border-b border-[#e7eff0] px-3.5 py-2.5 last:border-b-0 ${invalid ? 'bg-[#fff7f7]' : dirty ? 'bg-[#f4fbfb]' : ''}`}>
                             <label htmlFor={`meal-${row.id}-${mealName}`} className="min-w-0 flex-1">
-                              <span className="block text-label font-bold text-[#123748]">{label}</span>
+                              <span className="block text-label font-semibold text-[#123748]">{label}</span>
                               <span className={`mt-0.5 block text-caption font-semibold ${invalid ? 'text-[#c12634]' : dirty ? 'text-[#008d8c]' : 'text-[#65838b]'}`}>{invalid ? mealCopy('invalidValue') : dirty ? mealCopy('changed') : mealCopy('unchanged')}</span>
                             </label>
                             <div className={`flex h-11 shrink-0 items-center overflow-hidden rounded-[12px] border bg-white ${invalid ? 'border-[#ee7d88]' : dirty ? 'border-[#4bbfc0]' : 'border-[#bfe7e6]'}`}>
@@ -416,7 +416,7 @@ export default function MemberMealsPage() {
                                 id={`meal-${row.id}-${mealName}`}
                                 aria-label={mealCopy('mealCount', { meal: label })}
                                 aria-invalid={invalid}
-                                className="h-full w-14 border-x border-[#dce8e9] bg-transparent px-1 text-center text-body font-bold tabular-nums text-[#123748] outline-none"
+                                className="h-full w-14 border-x border-[#dce8e9] bg-transparent px-1 text-center text-body font-semibold tabular-nums text-[#123748] outline-none"
                                 type="number"
                                 inputMode="decimal"
                                 min="0"
@@ -437,8 +437,8 @@ export default function MemberMealsPage() {
                     <div className="grid grid-cols-3 border-t border-[#e7eff0] divide-x divide-[#e7eff0]">
                       {MEAL_ORDER.map((mealName) => (
                         <div key={mealName} className="min-w-0 px-2 py-2.5 text-center">
-                          <div className="truncate text-caption font-bold uppercase tracking-wide text-[#65838b]">{mealLabel(mealName, locale)}</div>
-                          <div className={`mt-1 text-body font-bold tabular-nums ${row.meals[mealName] > 0 ? 'text-[#00777a]' : 'text-[#a3b5b9]'}`}>{format.number(row.meals[mealName])}</div>
+                          <div className="truncate text-caption font-semibold uppercase tracking-wide text-[#65838b]">{mealLabel(mealName, locale)}</div>
+                          <div className={`mt-1 text-body font-semibold tabular-nums ${row.meals[mealName] > 0 ? 'text-[#00777a]' : 'text-[#a3b5b9]'}`}>{format.number(row.meals[mealName])}</div>
                         </div>
                       ))}
                     </div>
@@ -462,12 +462,12 @@ export default function MemberMealsPage() {
       {isEditing ? (
         <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 border-t border-[#dce8e9] bg-white/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_28px_rgba(18,55,72,0.12)] backdrop-blur-xl" role="region" aria-label={mealCopy('mealSheetActions')}>
           <div className="mb-2 flex items-center justify-between gap-3">
-            <div className={`truncate text-caption font-bold ${hasInvalidDraft ? 'text-[#c12634]' : 'text-[#65838b]'}`}>{hasInvalidDraft ? mealCopy('invalidMealCount') : dirtyUpdates.length ? mealCopy('unsavedMealChanges', { count: format.number(dirtyUpdates.length) }) : mealCopy('noMealChanges')}</div>
+            <div className={`truncate text-caption font-semibold ${hasInvalidDraft ? 'text-[#c12634]' : 'text-[#65838b]'}`}>{hasInvalidDraft ? mealCopy('invalidMealCount') : dirtyUpdates.length ? mealCopy('unsavedMealChanges', { count: format.number(dirtyUpdates.length) }) : mealCopy('noMealChanges')}</div>
             <div className="shrink-0 text-caption font-semibold text-[#65838b]">{mealCopy(dirtyMemberIds.size === 1 ? 'memberCount' : 'membersCount', { count: format.number(dirtyMemberIds.size) })}</div>
           </div>
           <div className="grid grid-cols-[0.85fr_1.4fr] gap-2.5">
-            <button type="button" onClick={() => cancelEditing()} disabled={saving} className="flex min-h-12 items-center justify-center gap-2 rounded-[14px] border border-[#cddcde] bg-white px-3 text-label font-bold text-[#536f76] active:bg-[#f2f7f7] disabled:opacity-50"><X size={17} /> {common('cancel')}</button>
-            <button type="button" onClick={saveAllChanges} disabled={saving || hasInvalidDraft || !dirtyUpdates.length} className="flex min-h-12 items-center justify-center gap-2 rounded-[14px] bg-[#008d8c] px-3 text-label font-bold text-white shadow-[0_5px_14px_rgba(0,119,122,0.2)] active:bg-[#00777a] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}{saving ? mealCopy('savingMeals') : mealCopy('saveAllChanges')}</button>
+            <button type="button" onClick={() => cancelEditing()} disabled={saving} className="flex min-h-12 items-center justify-center gap-2 rounded-[14px] border border-[#cddcde] bg-white px-3 text-label font-semibold text-[#536f76] active:bg-[#f2f7f7] disabled:opacity-50"><X size={17} /> {common('cancel')}</button>
+            <button type="button" onClick={saveAllChanges} disabled={saving || hasInvalidDraft || !dirtyUpdates.length} className="flex min-h-12 items-center justify-center gap-2 rounded-[14px] bg-[#008d8c] px-3 text-label font-semibold text-white shadow-[0_5px_14px_rgba(0,119,122,0.2)] active:bg-[#00777a] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}{saving ? mealCopy('savingMeals') : mealCopy('saveAllChanges')}</button>
           </div>
         </div>
       ) : null}

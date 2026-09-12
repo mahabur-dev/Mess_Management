@@ -81,7 +81,7 @@ export function MemberCard({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-label font-bold leading-tight text-[#123748]">{name}</div>
+        <div className="truncate text-label font-semibold leading-tight text-[#123748]">{name}</div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <span className="member-role-badge">
             <BadgeCheck size={10} />

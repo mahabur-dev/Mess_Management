@@ -52,12 +52,12 @@ export function MemberJoinRequestCard({
             <span className="truncate">{request.requester.email}</span>
           </span>
         </span>
-        <span className="shrink-0 rounded-full bg-[#fff7e6] px-2.5 py-1 text-caption font-bold text-[#a15c00]">{t('pending')}</span>
+        <span className="shrink-0 rounded-full bg-[#fff7e6] px-2.5 py-1 text-caption font-semibold text-[#a15c00]">{t('pending')}</span>
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#edf1f4] pt-3">
         <span className="min-w-0">
-          <span className="block truncate text-label font-bold text-[#123748]">{request.mess.name}</span>
+          <span className="block truncate text-label font-semibold text-[#123748]">{request.mess.name}</span>
           <span className="mt-0.5 flex items-center gap-1.5 text-caption font-medium text-[#65838b]">
             <Clock3 size={13} /> {request.created_at ? format.date(request.created_at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : t('recentlyRequested')}
           </span>
@@ -70,7 +70,7 @@ export function MemberJoinRequestCard({
           type="button"
           disabled={reviewLocked}
           onClick={() => onReview(request, 'REJECTED')}
-          className="flex min-h-10 items-center justify-center gap-1.5 rounded-[10px] border border-[#efcaca] bg-white px-3 text-label font-bold text-[#b42318] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex min-h-10 items-center justify-center gap-1.5 rounded-[10px] border border-[#efcaca] bg-white px-3 text-label font-semibold text-[#b42318] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={t('rejectNamedRequest', { name: request.requester.name })}
         >
           {isBusy && reviewInProgress?.status === 'REJECTED' ? <LoadingIndicator size="sm" label={t('rejectingRequest')} /> : <><X size={16} /> {t('reject')}</>}
@@ -79,7 +79,7 @@ export function MemberJoinRequestCard({
           type="button"
           disabled={reviewLocked}
           onClick={() => onReview(request, 'APPROVED')}
-          className="flex min-h-10 items-center justify-center gap-1.5 rounded-[10px] border border-[#008d8c] bg-[#008d8c] px-3 text-label font-bold text-white shadow-[0_8px_18px_rgba(0,119,122,0.16)] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex min-h-10 items-center justify-center gap-1.5 rounded-[10px] border border-[#008d8c] bg-[#008d8c] px-3 text-label font-semibold text-white shadow-[0_8px_18px_rgba(0,119,122,0.16)] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={t('approveNamedRequest', { name: request.requester.name })}
         >
           {isBusy && reviewInProgress?.status === 'APPROVED' ? <LoadingIndicator size="sm" label={t('approvingRequest')} className="!text-white" /> : <><Check size={16} /> {t('approve')}</>}

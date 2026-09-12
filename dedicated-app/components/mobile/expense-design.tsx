@@ -159,7 +159,7 @@ export function CircleIcon({
 //       <div className="grid grid-cols-[40px_1fr_40px] items-center gap-2">
 //         <div>{left}</div>
 //         <div className="min-w-0 text-center text-white">
-//           <h1 className="truncate text-body font-bold leading-tight">{title}</h1>
+//           <h1 className="truncate text-body font-semibold leading-tight">{title}</h1>
 //           {subtitle ? <p className="mt-1 truncate text-caption font-medium text-white/88">{subtitle}</p> : null}
 //         </div>
 //         <div>{right}</div>
@@ -265,7 +265,7 @@ export function HeaderIconButton({
 //         </span>
 //       </span>
 //       <span className="min-w-0 flex-1">
-//         <span className="block truncate text-label font-bold text-[#061638]">{title}</span>
+//         <span className="block truncate text-label font-semibold text-[#061638]">{title}</span>
 //         <span className="mt-1 block truncate text-caption font-medium text-[#65838b]">{subtitle}</span>
 //       </span>
 //       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3f6f8] text-[#061638]">
@@ -368,8 +368,8 @@ export function ExpenseActionCard({
 //     <div className="expense-stat-card">
 //       <CircleIcon icon={icon} tone={tone} />
 //       <div className="min-w-0">
-//         <div className="text-caption font-bold text-[#65838b]">{label}</div>
-//         <div className="mt-1.5 truncate text-body font-bold leading-none text-[#061638]">{value}</div>
+//         <div className="text-caption font-semibold text-[#65838b]">{label}</div>
+//         <div className="mt-1.5 truncate text-body font-semibold leading-none text-[#061638]">{value}</div>
 //         <div className="mt-1.5 text-caption font-medium text-[#65838b]">{caption}</div>
 //       </div>
 //     </div>
@@ -566,7 +566,7 @@ export function SearchPanel({
 //     <button
 //       type="button"
 //       onClick={onClick}
-//       className={`flex h-9 items-center justify-center gap-1 rounded-full border px-2 text-caption font-bold shadow-[0_8px_18px_rgba(18,55,72,0.05)] ${
+//       className={`flex h-9 items-center justify-center gap-1 rounded-full border px-2 text-caption font-semibold shadow-[0_8px_18px_rgba(18,55,72,0.05)] ${
 //         active ? 'border-[#9edddc] bg-[#edfafa] text-[#008d8c]' : 'border-white/80 bg-white text-[#123748]'
 //       }`}
 //     >
@@ -596,7 +596,7 @@ export function FilterPill({
         items-center justify-center
         gap-1.5 rounded-full
         border px-2.5
-        text-caption font-bold
+        text-caption font-semibold
         shadow-[0_7px_18px_rgba(18,55,72,0.05)]
         transition-all duration-200
         active:scale-[0.98]
@@ -652,13 +652,13 @@ export type ExpenseListRecord = {
 //     <Link href={href} className="expense-list-item">
 //       <CircleIcon icon={Icon} tone={tone} />
 //       <span className="min-w-0 flex-1">
-//         <span className="block truncate text-label font-bold uppercase text-[#061638]">{label}</span>
+//         <span className="block truncate text-label font-semibold uppercase text-[#061638]">{label}</span>
 //         <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
 //           <span className="truncate text-caption font-medium text-[#4f6375]">{formatDate(item.expenseDate ?? item.expense_date)}</span>
-//           <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-bold text-[#008d8c]">{payment}</span>
+//           <span className="rounded-full bg-[#dff4f3] px-2 py-0.5 text-caption font-semibold text-[#008d8c]">{payment}</span>
 //         </span>
 //       </span>
-//       <span className="shrink-0 text-right text-body font-bold text-[#008d8c]">{formatTaka(item.amount).replace(' ', ' ')}</span>
+//       <span className="shrink-0 text-right text-body font-semibold text-[#008d8c]">{formatTaka(item.amount).replace(' ', ' ')}</span>
 //       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3f6f8] text-[#061638]">
 //         <ChevronRight size={16} strokeWidth={2.7} />
 //       </span>
@@ -738,7 +738,7 @@ export function ExpenseListItem({
               truncate rounded-full
               bg-[#e8f8f7]
               px-2 py-0.5
-              text-caption font-bold
+              text-caption font-semibold
               text-[#008d8c]
             "
           >
@@ -878,8 +878,8 @@ export function FormSummaryCard({
         <Icon size={18} strokeWidth={2.35} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{eyebrow}</span>
-        <span className="mt-1 block truncate text-label font-bold text-[#123748]">{title}</span>
+        <span className="block text-caption font-semibold uppercase tracking-[0.12em] text-[#65838b]">{eyebrow}</span>
+        <span className="mt-1 block truncate text-label font-semibold text-[#123748]">{title}</span>
         {description ? <span className="mt-0.5 block truncate text-caption font-semibold text-[#65838b]">{description}</span> : null}
       </span>
     </div>
@@ -1080,7 +1080,7 @@ export function DesignedTextarea({ label, icon: Icon, count, className = '', ...
           )}
           {...props}
         />
-        {count ? <span className="absolute bottom-3.5 right-4 text-caption font-bold text-[#7d8a9d]">{count}</span> : null}
+        {count ? <span className="absolute bottom-3.5 right-4 text-caption font-semibold text-[#7d8a9d]">{count}</span> : null}
       </span>
     </label>
   )

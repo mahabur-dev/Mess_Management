@@ -74,7 +74,7 @@ export function LogoutConfirmDialog({
 
         <h2
           id="logout-confirm-title"
-          className="mt-5 text-center text-title font-bold text-[#123748]"
+          className="mt-5 text-center text-title font-semibold text-[#123748]"
         >
           {auth('logoutQuestion')}
         </h2>

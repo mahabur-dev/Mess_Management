@@ -108,7 +108,7 @@ function SimpleMealInputCard({
     <div className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-3 py-3 last:border-b-0">
       <MealIconBadge mealName={mealName} size="sm" />
       <label htmlFor={`meal-count-${mealName}`} className="min-w-0 flex-1 text-left">
-        <span className="block text-label font-bold text-[#123748]">{label}</span>
+        <span className="block text-label font-semibold text-[#123748]">{label}</span>
         <span className="block text-caption text-[#65838b]">{mealHint(mealName, locale)}</span>
       </label>
 
@@ -292,11 +292,11 @@ function MyMealContent() {
         <MealCard className="text-center">
           <MealStateIllustration state={statusClosed ? 'locked' : 'open'} mealName={statusMealName} />
 
-          <h2 className={`mt-5 text-title font-bold ${statusClosed ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
+          <h2 className={`mt-5 text-title font-semibold ${statusClosed ? 'text-[#ee1f2f]' : 'text-[#123748]'}`}>
             {mealCopy('yourMealState', { state: statusText })}
           </h2>
           <p className="mt-2 text-label font-semibold text-[#65838b]">{statusDescription}</p>
-          <div className="mt-3 inline-flex items-center rounded-full bg-[#edfafa] px-4 py-2 text-caption font-bold text-[#123748]">
+          <div className="mt-3 inline-flex items-center rounded-full bg-[#edfafa] px-4 py-2 text-caption font-semibold text-[#123748]">
             {deadlineLabel(deadline, locale)}
           </div>
         </MealCard>

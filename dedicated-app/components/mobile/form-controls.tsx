@@ -212,7 +212,7 @@ export function ToggleField({
   return (
     <div className="flex w-full items-center justify-between rounded-2xl border border-[#cfeeed] bg-white px-4 py-3">
       <div>
-        <div className="text-label font-bold text-[#123748]">{label}</div>
+        <div className="text-label font-semibold text-[#123748]">{label}</div>
         {hint ? <div className="mt-1 text-caption font-medium text-[#65838b]">{hint}</div> : null}
       </div>
       <button
@@ -247,7 +247,7 @@ export function SectionHeader({
     <div className="flex items-start justify-between gap-3">
       <div>
         {eyebrow ? <div className="section-title mb-0">{eyebrow}</div> : null}
-        <div className="text-body font-bold text-[#123748]">{title}</div>
+        <div className="text-body font-semibold text-[#123748]">{title}</div>
         {description ? <div className="mt-1 text-label text-[#65838b]">{description}</div> : null}
       </div>
       {action}

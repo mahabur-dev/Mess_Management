@@ -28,7 +28,7 @@ type ReportAccess = { canManage: boolean; isMember: boolean };
 
 const REPORT_TIME_ZONE = 'Asia/Dhaka';
 const AUTO_GENERATE_CRON = '0 9 * * *';
-const DELIVERY_CRON = '*/10 * * * *';
+const DELIVERY_CRON = '0 * * * *';
 const MAX_DELIVERY_ATTEMPTS = 5;
 
 const MONTHLY_REPORT_INCLUDE = {
@@ -377,7 +377,11 @@ export class MonthlyReportService {
     }
   }
 
-  @Cron(DELIVERY_CRON, { timeZone: REPORT_TIME_ZONE })
+  @Cron(DELIVERY_CRON, {
+    name: 'monthly-report-delivery',
+    timeZone: REPORT_TIME_ZONE,
+    waitForCompletion: true,
+  })
   async processPendingDeliveries(reportId?: string) {
     const staleBefore = new Date(Date.now() - 30 * 60 * 1000);
     await this.prisma.monthlyReportDelivery.updateMany({

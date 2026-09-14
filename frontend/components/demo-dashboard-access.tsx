@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, LoaderCircle, MonitorPlay, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Download, LoaderCircle, MonitorPlay, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/app/context/auth-context'
 import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
@@ -48,12 +48,18 @@ export function DemoDashboardAccess() {
               </p>
             ) : null}
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col lg:items-stretch">
-            <button type="button" onClick={() => void openDemo()} disabled={isSubmitting} className="brand-button h-11 w-full px-5 sm:w-auto lg:w-full disabled:cursor-not-allowed disabled:opacity-70">
-              {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : <MonitorPlay className="size-4" />}
-              {isSubmitting ? t('hero.demoLoading') : t('hero.demoAction')}
-              {!isSubmitting ? <ArrowRight className="size-4" /> : null}
-            </button>
+          <div className="flex flex-col gap-2 lg:items-stretch">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <a href="/Messzen-test-63.apk" download="Messzen-test-63.apk" className="ghost-button h-11 w-full whitespace-nowrap px-5 sm:w-auto">
+                <Download className="size-4" />
+                {t('hero.downloadApk')}
+              </a>
+              <button type="button" onClick={() => void openDemo()} disabled={isSubmitting} className="brand-button h-11 w-full whitespace-nowrap px-5 sm:w-auto disabled:cursor-not-allowed disabled:opacity-70">
+                {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : <MonitorPlay className="size-4" />}
+                {isSubmitting ? t('hero.demoLoading') : t('hero.demoAction')}
+                {!isSubmitting ? <ArrowRight className="size-4" /> : null}
+              </button>
+            </div>
             <span className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <ShieldCheck className="size-3.5 text-[var(--brand)]" />
               {t('hero.demoNote')}

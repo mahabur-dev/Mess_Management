@@ -126,6 +126,7 @@
       "demoCredentials": "Demo credentials",
       "demoEmail": "Email",
       "demoPassword": "Password",
+      "downloadApk": "Download APK",
       "demoAction": "Open demo dashboard",
       "demoLoading": "Opening demo...",
       "demoNote": "No registration required",
@@ -287,6 +288,7 @@
     "automationCta": {
       "title": "Set the routine. Let Messzen handle the repetition.",
       "description": "Automate meal patterns, use AI for changes, keep bills calculated, and notify everyone at the right time.",
+      "downloadApk": "Download APK",
       "action": "Start for Free"
     },
     "howItWorks": {

@@ -167,12 +167,12 @@ export function RunningMessesTable({ messes, onViewAll, isLoading = false }: Run
 
   return (
     <Card className="gap-0 overflow-hidden py-0 shadow-none">
-      <CardHeader className="flex-row items-center justify-between gap-4 border-b px-5 py-4">
-        <div>
+      <CardHeader className="gap-0 border-b px-5 py-4">
+        <div className="flex items-center justify-between gap-4">
           <CardTitle className="text-base">{t('title')}</CardTitle>
-          <p className="mt-0.5 text-xs text-muted-foreground">{t('description')}</p>
+          {onViewAll && <Button variant="outline" size="sm" onClick={onViewAll}>{t('viewAll')}</Button>}
         </div>
-        {onViewAll && <Button variant="outline" size="sm" onClick={onViewAll}>{t('viewAll')}</Button>}
+        <p className="mt-0.5 text-xs text-muted-foreground">{t('description')}</p>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         <Table>

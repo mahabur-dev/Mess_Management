@@ -356,19 +356,15 @@ export default function DashboardPage() {
             </section>
 
             {user.role === 'ADMIN' ? (
-              <section className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1.25fr)_minmax(24rem,.75fr)]">
-                <RunningMessesTable
-                  messes={adminDashboard?.runningMesses ?? []}
-                  isLoading={!adminDashboard}
-                  onViewAll={
-                    (adminDashboard?.runningMessesTotal ?? 0) > 5
-                      ? () => router.push('/dashboard/running-messes')
-                      : undefined
-                  }
-                />
+              <section className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(24rem,.75fr)_minmax(0,1.25fr)]">
                 <ActiveUsersChart
                   data={adminDashboard?.monthlyActiveUsers ?? []}
                   isLoading={!adminDashboard}
+                />
+                <RunningMessesTable
+                  messes={adminDashboard?.runningMesses ?? []}
+                  isLoading={!adminDashboard}
+                  onViewAll={() => router.push('/dashboard/all-messes')}
                 />
               </section>
             ) : (

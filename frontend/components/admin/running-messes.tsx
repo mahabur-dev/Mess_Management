@@ -3,12 +3,24 @@
 import useSWR from 'swr'
 import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
-import { Building2, CircleDollarSign, Eye, ReceiptText, Users, UtensilsCrossed, type LucideIcon } from 'lucide-react'
+import { Building2, CircleDollarSign, Eye, Loader2, ReceiptText, SlidersHorizontal, Trash2, Users, UtensilsCrossed, type LucideIcon } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { EnterpriseDetailsDrawer } from '@/components/ui/enterprise-details-drawer'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import { EnterpriseSelect } from '@/components/ui/enterprise-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { apiClient, type RunningMess, type RunningMessDetails } from '@/lib/api-client'
@@ -20,6 +32,14 @@ type RunningMessesTableProps = {
   onViewAll?: () => void
   isLoading?: boolean
 }
+
+type AllMessesTableProps = {
+  messes: RunningMess[]
+  isLoading?: boolean
+  onDeleted: (messId: string) => Promise<unknown> | unknown
+}
+
+type MessStatusFilter = 'all' | 'active' | 'inactive'
 
 function DetailMetric({ label, value, icon: Icon }: { label: string; value: number; icon: LucideIcon }) {
   const format = useLocaleFormatters()
@@ -52,7 +72,11 @@ function RunningMessDetailsDrawer({ messId, onClose }: { messId: string | null; 
       title={details?.name ?? t('drawer.loadingTitle')}
       description={details?.address || t('drawer.noAddress')}
       headerIcon={<Building2 className="size-5" />}
-      status={<span className="rounded-md border border-primary/25 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">{t('running')}</span>}
+      status={details ? (
+        <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${details.is_active ? 'border-primary/25 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground'}`}>
+          {details.is_active ? t('active') : t('inactive')}
+        </span>
+      ) : undefined}
       footer={<Button className="w-full" variant="outline" onClick={onClose}>{t('drawer.close')}</Button>}
     >
       {isLoading ? (
@@ -138,52 +162,161 @@ function RunningMessDetailsDrawer({ messId, onClose }: { messId: string | null; 
 }
 
 export function RunningMessesTable({ messes, onViewAll, isLoading = false }: RunningMessesTableProps) {
-  const [selectedMessId, setSelectedMessId] = useState<string | null>(null)
   const t = useTranslations('adminRunningMesses')
   const format = useLocaleFormatters()
 
   return (
+    <Card className="gap-0 overflow-hidden py-0 shadow-none">
+      <CardHeader className="flex-row items-center justify-between gap-4 border-b px-5 py-4">
+        <div>
+          <CardTitle className="text-base">{t('title')}</CardTitle>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('description')}</p>
+        </div>
+        {onViewAll && <Button variant="outline" size="sm" onClick={onViewAll}>{t('viewAll')}</Button>}
+      </CardHeader>
+      <CardContent className="overflow-x-auto p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-5">{t('table.mess')}</TableHead>
+              <TableHead>{t('table.members')}</TableHead>
+              <TableHead className="pr-5">{t('table.lastActivity')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={index}><TableCell colSpan={3} className="px-5 py-3"><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+            )) : null}
+            {!isLoading && messes.length === 0 ? (
+              <TableRow><TableCell colSpan={3} className="h-32 text-center text-sm text-muted-foreground">{t('empty')}</TableCell></TableRow>
+            ) : null}
+            {!isLoading && messes.map((mess) => (
+              <TableRow key={mess.id}>
+                <TableCell className="pl-5 font-medium">{mess.name}</TableCell>
+                <TableCell className="tabular-nums">{format.number(mess.activeMembers)}</TableCell>
+                <TableCell className="whitespace-nowrap pr-5 text-xs text-muted-foreground">{format.date(mess.lastActivityAt)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function AllMessesTable({ messes, isLoading = false, onDeleted }: AllMessesTableProps) {
+  const [statusFilter, setStatusFilter] = useState<MessStatusFilter>('all')
+  const [selectedMessId, setSelectedMessId] = useState<string | null>(null)
+  const [messToDelete, setMessToDelete] = useState<RunningMess | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const t = useTranslations('adminRunningMesses')
+  const format = useLocaleFormatters()
+  const filteredMesses = messes.filter((mess) => (
+    statusFilter === 'all' || (statusFilter === 'active' ? mess.isActive : !mess.isActive)
+  ))
+
+  async function handleDelete() {
+    if (!messToDelete) return
+    setDeleting(true)
+    try {
+      await apiClient.deleteMess(messToDelete.id)
+      await onDeleted(messToDelete.id)
+      toast.success(t('delete.success', { name: messToDelete.name }))
+      setMessToDelete(null)
+    } catch {
+      toast.error(t('delete.error'))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
     <>
       <Card className="gap-0 overflow-hidden py-0 shadow-none">
-        <CardHeader className="flex-row items-center justify-between gap-4 border-b px-5 py-4">
+        <CardHeader className="flex flex-col gap-4 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="text-base">{t('title')}</CardTitle>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t('description')}</p>
+            <CardTitle className="text-base">{t('all.title')}</CardTitle>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('all.description', { count: format.number(messes.length) })}</p>
           </div>
-          {onViewAll && <Button variant="outline" size="sm" onClick={onViewAll}>{t('viewAll')}</Button>}
+          <EnterpriseSelect
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as MessStatusFilter)}
+            options={[
+              { value: 'all', label: t('filter.all') },
+              { value: 'active', label: t('filter.active') },
+              { value: 'inactive', label: t('filter.inactive') },
+            ]}
+            ariaLabel={t('filter.label')}
+            icon={<SlidersHorizontal className="size-4" />}
+            align="end"
+            className="w-full sm:w-48"
+          />
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="pl-5">{t('table.mess')}</TableHead>
-                <TableHead>{t('table.members')}</TableHead>
-                <TableHead>{t('table.operations')}</TableHead>
+                <TableHead className="pl-5">{t('table.messName')}</TableHead>
+                <TableHead>{t('table.totalMembers')}</TableHead>
+                <TableHead>{t('table.location')}</TableHead>
                 <TableHead>{t('table.lastActivity')}</TableHead>
                 <TableHead className="pr-5 text-right">{t('table.action')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index}><TableCell colSpan={5} className="px-5 py-3"><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+              {isLoading ? Array.from({ length: 6 }).map((_, index) => (
+                <TableRow key={index}><TableCell colSpan={5} className="px-5 py-3"><Skeleton className="h-7 w-full" /></TableCell></TableRow>
               )) : null}
-              {!isLoading && messes.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="h-32 text-center text-sm text-muted-foreground">{t('empty')}</TableCell></TableRow>
+              {!isLoading && filteredMesses.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="h-40 text-center text-sm text-muted-foreground">{statusFilter === 'all' ? t('all.empty') : t('filter.empty')}</TableCell></TableRow>
               ) : null}
-              {!isLoading && messes.map((mess) => (
+              {!isLoading && filteredMesses.map((mess) => (
                 <TableRow key={mess.id}>
-                  <TableCell className="pl-5"><p className="font-medium">{mess.name}</p><p className="max-w-48 truncate text-xs text-muted-foreground">{mess.address || t('noAddress')}</p></TableCell>
-                  <TableCell className="tabular-nums">{format.number(mess.activeMembers)}</TableCell>
-                  <TableCell><span className="text-xs tabular-nums text-muted-foreground">{format.number(mess.mealsAdded)} / {format.number(mess.expensesAdded)} / {format.number(mess.depositsAdded)}</span></TableCell>
+                  <TableCell className="pl-5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{mess.name}</span>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${mess.isActive ? 'border-primary/25 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground'}`}>
+                        {mess.isActive ? t('active') : t('inactive')}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="tabular-nums">{format.number(mess.totalMembers)}</TableCell>
+                  <TableCell><span className="block max-w-64 truncate text-sm text-muted-foreground">{mess.address || t('noAddress')}</span></TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{format.date(mess.lastActivityAt)}</TableCell>
-                  <TableCell className="pr-5 text-right"><Button variant="outline" size="sm" onClick={() => setSelectedMessId(mess.id)}><Eye />{t('view')}</Button></TableCell>
+                  <TableCell className="pr-5">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setSelectedMessId(mess.id)}><Eye />{t('view')}</Button>
+                      <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setMessToDelete(mess)}><Trash2 />{t('delete.action')}</Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
       <RunningMessDetailsDrawer messId={selectedMessId} onClose={() => setSelectedMessId(null)} />
+
+      <AlertDialog open={Boolean(messToDelete)} onOpenChange={(open) => !open && !deleting && setMessToDelete(null)}>
+        <AlertDialogContent className="dashboard-portal-surface rounded-2xl border-[var(--dashboard-line)] bg-[var(--dashboard-surface)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('delete.title')}</AlertDialogTitle>
+            <AlertDialogDescription className="leading-6">{t('delete.description', { name: messToDelete?.name ?? '' })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t('delete.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={(event) => { event.preventDefault(); void handleDelete() }}
+            >
+              {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+              {deleting ? t('delete.deleting') : t('delete.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

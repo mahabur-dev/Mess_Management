@@ -470,6 +470,8 @@ export interface RunningMess {
   name: string
   address: string | null
   category: string | null
+  isActive: boolean
+  totalMembers: number
   activeMembers: number
   mealsAdded: number
   expensesAdded: number
@@ -485,6 +487,7 @@ export interface RunningMessDetails {
     name: string
     address: string | null
     mess_category: string | null
+    is_active: boolean
     total_seats: number | null
     monthly_rent: number | null
     settings_completed: boolean
@@ -1141,8 +1144,12 @@ class ApiClient {
     return this.request<RunningMess[]>('/dashboard/admin/running-messes', { params })
   }
 
+  getAllAdminMesses(params?: { page?: number; limit?: number; status?: 'active' | 'inactive' }) {
+    return this.requestAllPages<RunningMess>('/dashboard/admin/messes', params)
+  }
+
   getRunningMessDetails(messId: string) {
-    return this.request<RunningMessDetails>(`/dashboard/admin/running-messes/${messId}`)
+    return this.request<RunningMessDetails>(`/dashboard/admin/messes/${messId}`)
   }
 
   getAiCapabilities(locale: AiLocale = 'en') {

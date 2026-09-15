@@ -103,8 +103,8 @@ export class DashboardService {
     return messes
       .filter(
         (mess) =>
-          mess._count.meals > 0 &&
-          mess._count.expenses > 0 &&
+          mess._count.meals > 0 ||
+          mess._count.expenses > 0 ||
           mess._count.deposits > 0,
       )
       .map((mess) => {
@@ -124,6 +124,8 @@ export class DashboardService {
           name: mess.name,
           address: mess.address,
           category: mess.mess_category,
+          isActive: true,
+          totalMembers: mess._count.memberships,
           activeMembers: mess._count.memberships,
           mealsAdded: mess._count.meals,
           expensesAdded: mess._count.expenses,
@@ -138,6 +140,80 @@ export class DashboardService {
           right.activityScore - left.activityScore ||
           new Date(right.lastActivityAt).getTime() -
             new Date(left.lastActivityAt).getTime(),
+      );
+  }
+
+  private async getAllMessRows() {
+    const messes = await this.prisma.mess.findMany({
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        mess_category: true,
+        is_active: true,
+        created_at: true,
+        _count: {
+          select: {
+            memberships: true,
+            meals: true,
+            expenses: true,
+            deposits: true,
+          },
+        },
+        memberships: {
+          where: { is_active: true },
+          select: { id: true },
+        },
+        meals: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: { created_at: true },
+        },
+        expenses: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: { created_at: true },
+        },
+        deposits: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+          select: { created_at: true },
+        },
+      },
+    });
+
+    return messes
+      .map((mess) => {
+        const activityDates = [
+          mess.meals[0]?.created_at,
+          mess.expenses[0]?.created_at,
+          mess.deposits[0]?.created_at,
+        ].filter((date): date is Date => Boolean(date));
+        const lastActivityAt = activityDates.length
+          ? new Date(Math.max(...activityDates.map((date) => date.getTime())))
+          : mess.created_at;
+
+        return {
+          id: mess.id,
+          name: mess.name,
+          address: mess.address,
+          category: mess.mess_category,
+          isActive: mess.is_active,
+          totalMembers: mess._count.memberships,
+          activeMembers: mess.memberships.length,
+          mealsAdded: mess._count.meals,
+          expensesAdded: mess._count.expenses,
+          depositsAdded: mess._count.deposits,
+          activityScore:
+            mess._count.meals + mess._count.expenses + mess._count.deposits,
+          lastActivityAt: lastActivityAt.toISOString(),
+          createdAt: mess.created_at.toISOString(),
+        };
+      })
+      .sort(
+        (left, right) =>
+          new Date(right.lastActivityAt).getTime() -
+          new Date(left.lastActivityAt).getTime(),
       );
   }
 
@@ -966,16 +1042,41 @@ export class DashboardService {
     };
   }
 
+  async getAllMesses(page: number, limit: number, status?: string) {
+    const safePage = Math.max(1, Math.floor(page));
+    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+    const rows = await this.getAllMessRows();
+    const filteredRows =
+      status === 'active'
+        ? rows.filter((mess) => mess.isActive)
+        : status === 'inactive'
+          ? rows.filter((mess) => !mess.isActive)
+          : rows;
+    const total = filteredRows.length;
+    const start = (safePage - 1) * safeLimit;
+
+    return {
+      data: filteredRows.slice(start, start + safeLimit),
+      meta: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+      },
+    };
+  }
+
   async getRunningMessDetails(messId: string) {
     const activityStart = this.getRunningMessActivityStart();
     const [mess, meals, expenses, deposits, counts] = await Promise.all([
       this.prisma.mess.findFirst({
-        where: { id: messId, is_active: true },
+        where: { id: messId },
         select: {
           id: true,
           name: true,
           address: true,
           mess_category: true,
+          is_active: true,
           total_seats: true,
           monthly_rent: true,
           settings_completed: true,
@@ -1046,7 +1147,7 @@ export class DashboardService {
       ]),
     ]);
 
-    if (!mess) throw new NotFoundException('Active mess not found');
+    if (!mess) throw new NotFoundException('Mess not found');
     const [mealsAdded, expensesAdded, depositsAdded] = counts;
 
     return {

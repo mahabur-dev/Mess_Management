@@ -70,7 +70,7 @@ const adminItems: DashboardNavigationItem[] = [
   overview,
   { labelKey: 'users', href: '/dashboard/users', icon: Users },
   { labelKey: 'contactRequests', href: '/dashboard/contact-requests', icon: Mail },
-  { labelKey: 'runningMesses', href: '/dashboard/running-messes', icon: Building2 },
+  { labelKey: 'allMesses', href: '/dashboard/all-messes', icon: Building2 },
   ...(APP_FEATURES.subscriptions
     ? [{ labelKey: 'subscriptions' as const, href: '/dashboard/subscriptions', icon: BarChart3 }]
     : []),

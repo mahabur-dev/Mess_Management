@@ -88,6 +88,14 @@ export function useRunningMesses(enabled = true, page = 1, limit = 25) {
   )
 }
 
+export function useAllAdminMesses(enabled = true) {
+  return useSWR(
+    enabled ? 'admin-all-messes' : null,
+    () => swrFetcher(() => apiClient.getAllAdminMesses()),
+    STATIC_SWR,
+  )
+}
+
 // ─── Monthly Overview Chart (dynamic) ─────────────────────────
 export function useMonthlyOverview(messId: string | undefined, month: string) {
   return useSWR(

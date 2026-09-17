@@ -4,6 +4,7 @@ const ROUTE_LABEL_KEYS: Record<string, MessageKey<'navigation'>> = {
   '/': 'home', '/create-mess': 'createMess', '/request-mess': 'requestMess',
   '/members': 'members', '/meals': 'meals', '/meal-pattern': 'mealPattern',
   '/bazar-schedule': 'bazarSchedule',
+  '/quick-add': 'aiAssistant',
   '/expenses': 'expenses', '/payments': 'deposits', '/monthly-bill': 'monthlyBill',
   '/notices': 'notices', '/notifications': 'notifications', '/complaints': 'complaints', '/personal': 'personal',
   '/profile': 'profile', '/settings': 'settings', '/more': 'more',

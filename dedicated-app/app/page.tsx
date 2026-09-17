@@ -15,7 +15,6 @@ import {
   UtensilsCrossed,
   Wallet2,
   Coins,
-  Bot,
 } from 'lucide-react'
 import { AppHeader } from '@/components/app-header'
 import { HomeCard, HomeEmptyState, HomeMetricCard, HomeQuickAction } from '@/components/home-card'
@@ -264,24 +263,8 @@ export default function HomePage() {
 
         {hasWorkspace ? (
           <>
-            <button
-              type="button"
-            onClick={() => router.push(appHref('/quick-add'))}
-            className="home-ai-entry"
-            aria-label={common('openQuickAddAi')}
-          >
-              <span className="home-ai-entry__icon" aria-hidden="true">
-                <Bot size={21} strokeWidth={2.15} />
-              </span>
-              <span className="home-ai-entry__copy">
-                <span className="home-ai-entry__assistant">{common('aiAssistant')}</span>
-                <span className="home-ai-entry__title">{common('quickAddAi')}</span>
-              </span>
-            </button>
-
             <HomeCard
               title={common('overview')}
-              className="mt-3.5"
               action={<HomeMonthPill month={month} onChange={setMonth} label={common('selectOverviewMonth')} monthLabel={monthLabel} />}
             >
               {summaryError ? (
@@ -292,7 +275,7 @@ export default function HomePage() {
                   </button>
                 </HomeEmptyState>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1.5">
                   {cards.map((card) => (
                     <HomeMetricCard key={card.label} label={card.label} value={card.value} icon={card.icon} accent={card.color} />
                   ))}
@@ -305,7 +288,6 @@ export default function HomePage() {
             <HomeCard
               title={common('recentExpenses')}
               caption={common('latestEntries', { month: monthLabel })}
-              className="mt-3.5"
               action={
                 <button
                   type="button"

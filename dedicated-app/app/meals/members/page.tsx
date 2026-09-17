@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Check, Loader2, LockKeyhole, Minus, Pencil, Plus, RotateCw, Save, Users, X } from 'lucide-react'
+import Link from 'next/link'
+import { AlertTriangle, CalendarDays, CalendarRange, Check, ChevronDown, Loader2, LockKeyhole, Minus, Pencil, Plus, RotateCw, Save, Users, X } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { useNativeBackAction } from '@/components/native-back-actions'
 import { TopScreen } from '@/components/top-screen'
+import { MonthPicker } from '@/components/mobile/date-picker'
 import {
   EmptyMealsState,
   InlineNotice,
@@ -29,6 +31,7 @@ import {
 } from '@/components/mobile/meals-design'
 import { api, ApiError, type BulkMealAttendanceUpdate } from '@/lib/api'
 import { getActiveMessId } from '@/lib/app-permissions'
+import { appHref } from '@/lib/routes'
 import { useAuth } from '@/app/providers'
 import { useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
@@ -37,7 +40,6 @@ type MealDraftMap = Record<string, Record<MealName, string>>
 type MemberMealSheetRow = {
   id: string
   name: string
-  email?: string | null
   room?: string | null
   meals: MealCountMap
 }
@@ -66,6 +68,14 @@ function shiftDate(date: string, days: number) {
   const month = String(next.getMonth() + 1).padStart(2, '0')
   const day = String(next.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function moveDateToMonth(date: string, month: string) {
+  if (!/^\d{4}-\d{2}$/.test(month)) return date
+  const [year, monthNumber] = month.split('-').map(Number)
+  const currentDay = Number(date.slice(8, 10)) || 1
+  const day = Math.min(currentDay, new Date(year, monthNumber, 0).getDate())
+  return `${month}-${String(day).padStart(2, '0')}`
 }
 
 function memberId(member: MealMember) {
@@ -162,7 +172,6 @@ export default function MemberMealsPage() {
     return [{
       id,
       name: memberName(member, locale),
-      email: member.user?.email,
       room: member.room_no,
       meals: counts,
     }]
@@ -170,7 +179,7 @@ export default function MemberMealsPage() {
 
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase()
-    return rows.filter((row) => !term || `${row.name} ${row.email ?? ''} ${row.room ?? ''}`.toLowerCase().includes(term))
+    return rows.filter((row) => !term || `${row.name} ${row.room ?? ''}`.toLowerCase().includes(term))
   }, [rows, search])
 
   const dirtyUpdates = useMemo<BulkMealAttendanceUpdate[]>(() => {
@@ -203,7 +212,6 @@ export default function MemberMealsPage() {
       : row.meals[mealName]), 0)
     return result
   }, { BREAKFAST: 0, LUNCH: 0, DINNER: 0 } as MealCountMap), [drafts, isEditing, rows])
-  const grandTotal = MEAL_ORDER.reduce((sum, mealName) => sum + totals[mealName], 0)
   const loading = membersLoading || mealsLoading
   const loadFailed = membersLoadFailed || mealsLoadFailed
   const hasUnsavedDraft = dirtyUpdates.length > 0 || hasInvalidDraft
@@ -306,6 +314,27 @@ export default function MemberMealsPage() {
     <MobileShell hasFloatingAction={isEditing}>
       <TopScreen title={mealCopy('allMemberMeals')} subtitle={formatDisplayDate(date, locale)} backHref={isEditing ? undefined : '/meals/manager'} />
       <div className="screen space-y-4">
+        {!isEditing ? (
+          <div className="meal-month-action-bar">
+            <MonthPicker
+              label={mealCopy('selectMonth')}
+              value={date.slice(0, 7)}
+              onChange={(month) => setDate((current) => moveDateToMonth(current, month))}
+              renderTrigger={({ open, selectedLabel, buttonProps }) => (
+                <button {...buttonProps} className="home-month-pill meal-month-trigger">
+                  <CalendarDays size={15} strokeWidth={2.35} aria-hidden="true" />
+                  <span>{selectedLabel}</span>
+                  <ChevronDown size={15} strokeWidth={2.35} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+                </button>
+              )}
+            />
+            <Link href={appHref(`/meals/members/monthly?month=${encodeURIComponent(date.slice(0, 7))}`)} className="full-month-meal-link">
+              <CalendarRange size={16} strokeWidth={2.25} aria-hidden="true" />
+              <span>{mealCopy('fullMonthMeal')}</span>
+            </Link>
+          </div>
+        ) : null}
+
         <MealDateCard
           date={date}
           onChange={isEditing ? undefined : setDate}
@@ -315,37 +344,40 @@ export default function MemberMealsPage() {
 
         {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
-        <section className="overflow-hidden rounded-[16px] border border-[#dce8e9] bg-white shadow-[0_4px_14px_rgba(18,55,72,0.06)]" aria-label={mealCopy('dailyMealSummary')}>
-          <div className="grid grid-cols-4 divide-x divide-[#e7eff0]">
-            {MEAL_ORDER.map((mealName) => (
-              <div key={mealName} className="min-w-0 px-1.5 py-3 text-center">
-                <div className="flex items-center justify-center gap-1 text-caption font-semibold uppercase tracking-[0.04em] text-[#65838b]">
-                  <span className="truncate">{mealLabel(mealName, locale)}</span>
-                  {mealIsLocked(findMeal(meals, mealName)) ? <LockKeyhole size={10} className="shrink-0 text-[#ee1f2f]" /> : null}
-                </div>
-                <div className="mt-1 text-title-sm font-semibold tabular-nums text-[#123748]">{format.number(totals[mealName])}</div>
-              </div>
-            ))}
-            <div className="min-w-0 bg-[#edfafa] px-1.5 py-3 text-center">
-              <div className="truncate text-caption font-semibold uppercase tracking-[0.04em] text-[#00777a]">{mealCopy('total')}</div>
-              <div className="mt-1 text-title-sm font-semibold tabular-nums text-[#00777a]">{format.number(grandTotal)}</div>
-            </div>
-          </div>
+        <section className="member-meal-summary-grid" aria-label={mealCopy('dailyMealSummary')}>
+          {MEAL_ORDER.map((mealName) => {
+            const meta = MEAL_META[mealName]
+            const MealIcon = meta.icon
+            return (
+              <article key={mealName} className="member-meal-summary-card">
+                <span className="member-meal-summary-card__icon" style={{ backgroundColor: `${meta.color}12`, color: meta.color }} aria-hidden="true">
+                  <MealIcon size={16} strokeWidth={2.2} />
+                </span>
+                <span className="member-meal-summary-card__content">
+                  <span className="member-meal-summary-card__label">
+                    <span>{mealLabel(mealName, locale)}</span>
+                    {mealIsLocked(findMeal(meals, mealName)) ? <LockKeyhole size={10} className="shrink-0 text-[#ee1f2f]" /> : null}
+                  </span>
+                  <strong>{format.number(totals[mealName])}</strong>
+                </span>
+              </article>
+            )
+          })}
         </section>
 
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1"><SearchBox value={search} onChange={setSearch} /></div>
+        <div className="member-meal-toolbar">
+          <div className="member-meal-search"><SearchBox value={search} onChange={setSearch} /></div>
           {!isEditing ? (
             <button
               type="button"
               onClick={startEditing}
               disabled={loading || loadFailed || !rows.length}
-              className="flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-[14px] bg-[#008d8c] px-3.5 text-label font-semibold text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="member-meal-edit-action member-meal-edit-action--primary"
             >
               <Pencil size={15} /> {mealCopy('editAll')}
             </button>
           ) : (
-            <div className="flex min-h-12 shrink-0 items-center gap-1.5 rounded-[14px] border border-[#9edddc] bg-[#edfafa] px-3 text-caption font-semibold text-[#00777a]">
+            <div className="member-meal-edit-action member-meal-edit-action--status">
               <Check size={14} /> {mealCopy('editing')}
             </div>
           )}
@@ -374,23 +406,23 @@ export default function MemberMealsPage() {
 
         {loading ? <LoadingIndicator variant="card" label={mealCopy('loadingMemberMeals')} /> : null}
 
-        {!loading && !loadFailed ? (
-          <section className="space-y-3" aria-label={mealCopy('memberMealSheet')}>
+        {!loading && !loadFailed && filteredRows.length ? (
+          <section className="member-meal-list" aria-label={mealCopy('memberMealSheet')}>
             {filteredRows.map((row) => {
               const rowTotal = MEAL_ORDER.reduce((sum, mealName) => sum + (isEditing
                 ? parseMealCount(drafts[row.id]?.[mealName] ?? formatMealCount(row.meals[mealName]))
                 : row.meals[mealName]), 0)
               const rowDirty = dirtyMemberIds.has(row.id)
               return (
-                <article key={row.id} className={`overflow-hidden rounded-[16px] border bg-white shadow-[0_4px_14px_rgba(18,55,72,0.055)] transition-colors ${rowDirty ? 'border-[#4bbfc0]' : 'border-[#e2ebec]'}`}>
-                  <header className={`flex items-center gap-3 px-3.5 py-3 ${rowDirty ? 'bg-[#f2fbfb]' : ''}`}>
+                <article key={row.id} className={`member-meal-row ${rowDirty ? 'member-meal-row--dirty' : ''}`}>
+                  <header className="member-meal-row__header">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] bg-[#edfafa] text-caption font-semibold text-[#008d8c]">{initials(row.name)}</div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <div className="truncate text-label font-semibold text-[#123748]">{row.name}</div>
                         {rowDirty ? <span className="h-2 w-2 shrink-0 rounded-full bg-[#008d8c]" aria-label={mealCopy('changed')} /> : null}
                       </div>
-                      <div className="mt-0.5 truncate text-caption font-medium text-[#65838b]">{row.email ?? row.room ?? mealCopy('messMember')}</div>
+                      <div className="mt-0.5 truncate text-caption font-medium text-[#65838b]">{row.room ?? mealCopy('messMember')}</div>
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="text-caption font-semibold uppercase tracking-wide text-[#65838b]">{mealCopy('total')}</div>
@@ -399,7 +431,7 @@ export default function MemberMealsPage() {
                   </header>
 
                   {isEditing ? (
-                    <div className="border-t border-[#e7eff0]">
+                    <div className="member-meal-row__editor">
                       {MEAL_ORDER.map((mealName) => {
                         const label = mealLabel(mealName, locale)
                         const invalid = isCellInvalid(row, mealName)
@@ -434,7 +466,7 @@ export default function MemberMealsPage() {
                       })}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 border-t border-[#e7eff0] divide-x divide-[#e7eff0]">
+                    <div className="member-meal-row__breakdown">
                       {MEAL_ORDER.map((mealName) => (
                         <div key={mealName} className="min-w-0 px-2 py-2.5 text-center">
                           <div className="truncate text-caption font-semibold uppercase tracking-wide text-[#65838b]">{mealLabel(mealName, locale)}</div>
@@ -446,10 +478,10 @@ export default function MemberMealsPage() {
                 </article>
               )
             })}
-
-            {!filteredRows.length ? <EmptyMealsState title={mealCopy('noMembersForMeal')} /> : null}
           </section>
         ) : null}
+
+        {!loading && !loadFailed && !filteredRows.length ? <EmptyMealsState title={mealCopy('noMembersForMeal')} /> : null}
 
         {!loading && !loadFailed && rows.length ? (
           <div className="flex items-center gap-3 rounded-[14px] bg-[#f7fafb] px-3.5 py-3 text-[#65838b]">
@@ -460,14 +492,14 @@ export default function MemberMealsPage() {
       </div>
 
       {isEditing ? (
-        <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 border-t border-[#dce8e9] bg-white/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_28px_rgba(18,55,72,0.12)] backdrop-blur-xl" role="region" aria-label={mealCopy('mealSheetActions')}>
+        <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 border-t border-[#dce8e9] bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3" role="region" aria-label={mealCopy('mealSheetActions')}>
           <div className="mb-2 flex items-center justify-between gap-3">
             <div className={`truncate text-caption font-semibold ${hasInvalidDraft ? 'text-[#c12634]' : 'text-[#65838b]'}`}>{hasInvalidDraft ? mealCopy('invalidMealCount') : dirtyUpdates.length ? mealCopy('unsavedMealChanges', { count: format.number(dirtyUpdates.length) }) : mealCopy('noMealChanges')}</div>
             <div className="shrink-0 text-caption font-semibold text-[#65838b]">{mealCopy(dirtyMemberIds.size === 1 ? 'memberCount' : 'membersCount', { count: format.number(dirtyMemberIds.size) })}</div>
           </div>
           <div className="grid grid-cols-[0.85fr_1.4fr] gap-2.5">
             <button type="button" onClick={() => cancelEditing()} disabled={saving} className="flex min-h-12 items-center justify-center gap-2 rounded-[14px] border border-[#cddcde] bg-white px-3 text-label font-semibold text-[#536f76] active:bg-[#f2f7f7] disabled:opacity-50"><X size={17} /> {common('cancel')}</button>
-            <button type="button" onClick={saveAllChanges} disabled={saving || hasInvalidDraft || !dirtyUpdates.length} className="flex min-h-12 items-center justify-center gap-2 rounded-[14px] bg-[#008d8c] px-3 text-label font-semibold text-white shadow-[0_5px_14px_rgba(0,119,122,0.2)] active:bg-[#00777a] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}{saving ? mealCopy('savingMeals') : mealCopy('saveAllChanges')}</button>
+            <button type="button" onClick={saveAllChanges} disabled={saving || hasInvalidDraft || !dirtyUpdates.length} className="flex min-h-12 items-center justify-center gap-2 rounded-[14px] bg-[#008d8c] px-3 text-label font-semibold text-white active:bg-[#00777a] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}{saving ? mealCopy('savingMeals') : mealCopy('saveAllChanges')}</button>
           </div>
         </div>
       ) : null}

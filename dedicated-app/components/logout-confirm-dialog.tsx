@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef } from 'react'
-import { LogOut } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n'
 import { useDialogFocus } from '@/hooks/use-dialog-focus'
 
@@ -43,7 +42,7 @@ export function LogoutConfirmDialog({
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="logout-confirm-title"
-      aria-describedby="logout-confirm-description"
+      aria-describedby={busy ? 'logout-confirm-status' : undefined}
       tabIndex={-1}
       onClick={(event) => {
         if (event.target === event.currentTarget && !busy) {
@@ -53,58 +52,46 @@ export function LogoutConfirmDialog({
     >
       <section
         className="
-          relative w-full max-w-[380px]
-          overflow-hidden rounded-[20px]
-          border border-[#cfe7e6]
+          relative w-full max-w-[360px]
+          overflow-hidden rounded-[16px]
+          border border-[#dce5e7]
           bg-white
-          px-5 pb-5 pt-7
+          p-4
+          shadow-[0_18px_48px_rgba(18,55,72,0.16)]
         "
       >
-        <div
-          className="
-            mx-auto grid h-16 w-16
-            place-items-center rounded-[18px]
-            border border-[#bfe4e2]
-            bg-[#e8f8f7]
-            text-[#007c7c]
-          "
-        >
-          <LogOut size={26} strokeWidth={2.3} />
-        </div>
-
         <h2
           id="logout-confirm-title"
-          className="mt-5 text-center text-title font-semibold text-[#123748]"
+          className="px-1 py-1 text-center text-title-sm font-semibold text-[#123748]"
         >
           {auth('logoutQuestion')}
         </h2>
 
-        <p id="logout-confirm-description" className="mx-auto mt-2 max-w-[300px] text-center text-body leading-6 text-[#65838b]">
-          {auth('logoutDescription')}
-        </p>
+        {busy ? (
+          <p
+            id="logout-confirm-status"
+            className="mt-2 text-center text-caption font-semibold leading-5 text-[#008d8c]"
+            role="status"
+            aria-live="polite"
+          >
+            {auth('signingOut')}
+          </p>
+        ) : null}
 
-        <p
-          className="mt-4 h-5 overflow-hidden text-center text-caption font-semibold leading-5 text-[#008d8c]"
-          role="status"
-          aria-live="polite"
-        >
-          {busy ? auth('signingOut') : '\u00A0'}
-        </p>
-
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
           <button
             ref={cancelRef}
             type="button"
             onClick={onCancel}
             disabled={busy}
             className="
-              flex h-12 min-h-12 w-full items-center justify-center rounded-[15px]
-              border border-[#bfe1e0]
-              bg-[#f5fbfb]
-              text-label font-extrabold text-[#007c7c]
-              transition-all duration-200
-              hover:border-[#008d8c]
-              hover:bg-[#e9f8f7]
+              flex h-11 min-h-11 w-full items-center justify-center rounded-[10px]
+              border border-[#cfdadd]
+              bg-white
+              text-label font-semibold text-[#415f68]
+              transition-colors duration-150
+              hover:border-[#9ab7bc]
+              hover:bg-[#f7f9f9]
               active:scale-[0.98]
               leading-none
               disabled:cursor-not-allowed
@@ -119,20 +106,18 @@ export function LogoutConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
             className="
-              flex h-12 items-center justify-center gap-2 rounded-[15px]
-              border border-[#007c7c]
+              flex h-11 items-center justify-center rounded-[10px]
+              border border-[#008d8c]
               bg-[#008d8c]
-              px-3 text-label font-extrabold
+              px-3 text-label font-semibold
               text-white
-              transition-all duration-200
+              transition-colors duration-150
               hover:bg-[#007c7c]
               active:scale-[0.98]
               disabled:cursor-not-allowed
               disabled:opacity-70
             "
           >
-            <LogOut size={17} className="shrink-0" strokeWidth={2.3} />
-
             {common('yes')}
           </button>
         </div>

@@ -152,7 +152,7 @@ export default function PaymentsPage() {
   }
 
   return (
-    <MobileShell>
+    <MobileShell showBottomNavigation>
       <TopScreen title={showForm ? t('submitDeposit') : t('deposit')} subtitle={showForm ? t('manualEntry') : t('submissions')} backHref="/" />
       <div className="screen space-y-4">
         {!showForm ? (

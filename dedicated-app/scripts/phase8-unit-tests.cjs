@@ -42,7 +42,10 @@ const { localizedErrorMessage } = require('../lib/i18n/errors.ts')
 const { persistStoredLocale, resolveStoredLocale } = require('../lib/i18n/locale-storage.ts')
 const { synchronizeLocaleDocument } = require('../lib/i18n/locale-document.ts')
 const { LOCALE_STORAGE_KEY } = require('../lib/i18n/types.ts')
-const { canAccessAppPath, canManageMess, getBottomTabs, hasActiveMess } = require('../lib/app-permissions.ts')
+const {
+  canAccessAppPath, canManageMess, getAppBackFallback, getBottomTabs, getHomeQuickActions,
+  getMoreMenuGroups, hasActiveMess,
+} = require('../lib/app-permissions.ts')
 const { api, ApiError } = require('../lib/api.ts')
 const { formatPersonalMoney } = require('../features/personal/constants.ts')
 
@@ -146,8 +149,16 @@ test('manager, member and no-mess role matrix', () => {
   assert.equal(canAccessAppPath(manager, '/members'), true)
   assert.equal(canAccessAppPath(member, '/members'), false)
   assert.equal(canAccessAppPath(member, '/meals'), true)
+  assert.equal(canAccessAppPath(manager, '/meals/members/monthly'), true)
+  assert.equal(canAccessAppPath(member, '/meals/members/monthly'), false)
+  assert.equal(getAppBackFallback(manager, '/meals/members/monthly'), '/meals/members')
   assert.equal(canAccessAppPath(noMess, '/meals'), false)
   assert.deepEqual(getBottomTabs(noMess).map((item) => item.href), ['/', '/profile', '/settings', '/more'])
+  const expectedQuickActions = ['/meals', '/expenses', '/payments', '/bazar-schedule', '/quick-add', '/monthly-bill']
+  assert.deepEqual(getHomeQuickActions(manager).map((item) => item.href), expectedQuickActions)
+  assert.deepEqual(getHomeQuickActions(member).map((item) => item.href), expectedQuickActions)
+  assert.equal(getMoreMenuGroups(manager).some((group) => group.items.some((item) => item.href === '/members')), true)
+  assert.equal(getMoreMenuGroups(member).some((group) => group.items.some((item) => item.href === '/members')), false)
 })
 
 ;(async () => {

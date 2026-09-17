@@ -61,7 +61,7 @@ export function HomeMetricCard({
   accent?: string
 }) {
   return (
-    <Surface as="article" elevation="low" className="home-metric-card">
+    <Surface as="article" elevation="none" className="home-metric-card">
       <span className="home-metric-card__icon" style={{ backgroundColor: `${accent}12`, color: accent }}>
         <Icon size={16} />
       </span>

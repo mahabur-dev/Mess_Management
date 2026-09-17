@@ -3,6 +3,7 @@
 import type { ComponentType } from 'react'
 import {
   Bell,
+  Bot,
   BookOpenCheck,
   ClipboardList,
   ContactRound,
@@ -99,6 +100,7 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
   { href: '/notifications', label: 'Notifications', icon: Bell, access: 'mess' },
   { href: '/meals/time', label: 'Set Meal Time', icon: UtensilsCrossed, access: 'manager' },
+  { href: '/meals/members/monthly', label: 'Full Month Meals', icon: UtensilsCrossed, access: 'manager', exact: true },
   { href: '/meals/members', label: 'Member Meals', icon: UtensilsCrossed, access: 'manager' },
   { href: '/meals/member-meal', label: 'Edit Member Meal', icon: UtensilsCrossed, access: 'manager' },
   { href: '/meals/manager', label: 'Manager Controls', icon: UtensilsCrossed, access: 'manager' },
@@ -134,16 +136,17 @@ export const managerQuickActions: AppRouteItem[] = [
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
   { href: '/expenses', label: 'Expenses', icon: Wallet2, access: 'manager' },
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
-  { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
   { href: '/bazar-schedule', label: 'Bazar Schedule', icon: CalendarClock, access: 'mess' },
-  { href: '/members', label: 'Members', icon: Users, access: 'manager' },
+  { href: '/quick-add', label: 'AI Assistant', icon: Bot, access: 'mess' },
+  { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
 ]
 
 export const memberQuickActions: AppRouteItem[] = [
   { href: '/meals', label: 'Meals', icon: UtensilsCrossed, access: 'mess' },
   { href: '/expenses', label: 'Expenses', icon: ReceiptText, access: 'mess' },
   { href: '/payments', label: 'Deposits', icon: Landmark, access: 'mess' },
-  { href: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: 'mess' },
+  { href: '/bazar-schedule', label: 'Bazar Schedule', icon: CalendarClock, access: 'mess' },
+  { href: '/quick-add', label: 'AI Assistant', icon: Bot, access: 'mess' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
 ]
 
@@ -208,6 +211,7 @@ export function getMoreMenuGroups(user: AuthUser | null | undefined): MoreMenuGr
       id: 'workspace',
       label: 'Workspace',
       items: [
+        { href: '/members', label: 'Members', description: 'Manage mess members', icon: Users, access: 'manager' },
         { href: '/meal-pattern', label: 'Meal Pattern', description: 'Review your meal calendar', icon: CalendarClock, access: 'mess' },
         { href: '/bazar-schedule', label: 'Bazar Schedule', description: 'Plan and manage monthly bazar duties', icon: CalendarClock, access: 'mess' },
         { href: '/notices', label: 'Notices', description: 'Read and manage mess announcements', icon: Bell, access: 'mess' },
@@ -269,6 +273,7 @@ const appBackFallbacks: Array<{ href: string; fallback: string; exact?: boolean 
   { href: '/bazar-schedule/settings', fallback: '/bazar-schedule', exact: true },
   { href: '/bazar-schedule', fallback: '/', exact: true },
   { href: '/meals/time', fallback: '/meals/manager', exact: true },
+  { href: '/meals/members/monthly', fallback: '/meals/members', exact: true },
   { href: '/meals/members', fallback: '/meals/manager', exact: true },
   { href: '/meals/member-meal', fallback: '/meals/members', exact: true },
   { href: '/meals/manager', fallback: '/meals', exact: true },

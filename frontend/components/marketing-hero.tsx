@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { ArrowRight, Play, Sparkles, Star } from 'lucide-react'
-import { MarketingDashboardPreview } from '@/components/marketing-dashboard-preview'
 import { useTranslations } from '@/lib/i18n'
 
 const people = [
@@ -66,23 +65,19 @@ export function MarketingHero() {
         </div>
 
         <div className="relative mx-auto w-full max-w-[1024px] lg:ml-auto lg:pt-[4.25rem]">
-          <MarketingDashboardPreview />
-
-          {/*
-            The dashboard walkthrough video is retained as a future fallback.
-            <div className="overflow-hidden rounded-xl border border-[var(--dashboard-line)] bg-black">
-              <video
-                className="block aspect-video w-full bg-black object-contain"
-                controls
-                playsInline
-                preload="metadata"
-                aria-label={t('hero.dashboardVideoLabel')}
-              >
-                <source src="/messzen-dashboard-tour.mp4" type="video/mp4" />
-                {t('hero.dashboardVideoFallback')}
-              </video>
-            </div>
-          */}
+          <div className="overflow-hidden rounded-xl border border-[var(--dashboard-line)] bg-black shadow-sm">
+            <video
+              className="block aspect-video w-full bg-black object-contain"
+              controls
+              playsInline
+              preload="none"
+              poster="/labtop-dashboard.webp"
+              aria-label={t('hero.dashboardVideoLabel')}
+            >
+              <source src="/video1089388317.mp4" type="video/mp4" />
+              {t('hero.dashboardVideoFallback')}
+            </video>
+          </div>
         </div>
       </div>
     </section>

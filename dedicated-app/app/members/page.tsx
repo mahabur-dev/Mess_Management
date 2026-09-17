@@ -190,7 +190,7 @@ export default function MembersPage() {
               role="tab"
               aria-selected={activeView === 'members'}
               onClick={() => setActiveView('members')}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-[14px] px-3 text-label font-bold transition active:scale-[0.98] ${
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-[14px] px-3 text-label font-semibold transition active:scale-[0.98] ${
                 activeView === 'members'
                   ? 'bg-white text-[#00777a] shadow-[0_8px_18px_rgba(0,119,122,0.12)]'
                   : 'text-[#65838b]'
@@ -198,7 +198,7 @@ export default function MembersPage() {
             >
               <Users size={16} />
               {t('member')}
-              <span className={`rounded-full px-2 py-0.5 text-caption font-bold ${activeView === 'members' ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white/70 text-[#65838b]'}`}>
+              <span className={`rounded-full px-2 py-0.5 text-caption font-semibold ${activeView === 'members' ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white/70 text-[#65838b]'}`}>
                 {format.number(filteredMembers.length)}
               </span>
             </button>
@@ -208,7 +208,7 @@ export default function MembersPage() {
               role="tab"
               aria-selected={activeView === 'requests'}
               onClick={() => setActiveView('requests')}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-[14px] px-3 text-label font-bold transition active:scale-[0.98] ${
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-[14px] px-3 text-label font-semibold transition active:scale-[0.98] ${
                 activeView === 'requests'
                   ? 'bg-white text-[#00777a] shadow-[0_8px_18px_rgba(0,119,122,0.12)]'
                   : 'text-[#65838b]'
@@ -216,7 +216,7 @@ export default function MembersPage() {
             >
               <UserRoundPlus size={16} />
               {t('joinRequest')}
-              <span className={`rounded-full px-2 py-0.5 text-caption font-bold ${activeView === 'requests' ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white/70 text-[#65838b]'}`}>
+              <span className={`rounded-full px-2 py-0.5 text-caption font-semibold ${activeView === 'requests' ? 'bg-[#edfafa] text-[#008d8c]' : 'bg-white/70 text-[#65838b]'}`}>
                 {format.number(filteredJoinRequests.length)}
               </span>
             </button>

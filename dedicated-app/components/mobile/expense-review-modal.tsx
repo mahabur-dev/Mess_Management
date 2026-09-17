@@ -90,8 +90,8 @@ export function ExpenseReviewModal({
             {isApprove ? <CheckCircle2 size={23} strokeWidth={2.2} /> : <XCircle size={23} strokeWidth={2.2} />}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-caption font-bold uppercase tracking-[0.12em] text-[#65838b]">{t('managerReview')}</p>
-            <h2 id="expense-review-title" className="mt-1 text-title-sm font-bold leading-tight text-[#123748]">
+            <p className="text-caption font-semibold uppercase tracking-[0.12em] text-[#65838b]">{t('managerReview')}</p>
+            <h2 id="expense-review-title" className="mt-1 text-title-sm font-semibold leading-tight text-[#123748]">
               {actionTitle}?
             </h2>
             <p className="mt-1 text-label text-[#65838b]">
@@ -114,9 +114,9 @@ export function ExpenseReviewModal({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-caption font-semibold text-[#65838b]">{t('record')}</p>
-                  <p className="mt-1 truncate text-label font-bold text-[#123748]">{displayName}</p>
+                  <p className="mt-1 truncate text-label font-semibold text-[#123748]">{displayName}</p>
                 </div>
-                <p className="shrink-0 text-body font-bold text-[#008d8c]">{format.money(amount ?? 0)}</p>
+                <p className="shrink-0 text-body font-semibold text-[#008d8c]">{format.money(amount ?? 0)}</p>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#e2eeee] pt-3">
                 <div className="flex min-w-0 items-center gap-2">
@@ -138,7 +138,7 @@ export function ExpenseReviewModal({
             </div>
 
             <label className="block">
-              <span className="mb-2 flex items-center justify-between gap-3 text-label font-bold text-[#1d3a42]">
+              <span className="mb-2 flex items-center justify-between gap-3 text-label font-semibold text-[#1d3a42]">
                 <span className="flex items-center gap-2"><FileText size={16} className="text-[#008d8c]" aria-hidden="true" /> {t('reviewNote')}</span>
                 <span className="text-caption font-medium text-[#8a98ad]">{common('optional')}</span>
               </span>

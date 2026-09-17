@@ -246,7 +246,6 @@ export default function DashboardPage() {
         { id: 'total-users', label: t('stats.totalUsers'), value: format.number(adminDashboard?.users ?? 0), description: t('stats.registeredAccounts') },
         { id: 'active-users', label: t('stats.activeUsers'), value: format.number(adminDashboard?.activeUsers ?? 0), description: t('stats.activeUsersDescription') },
         { id: 'all-messes', label: t('stats.allMesses'), value: format.number(adminDashboard?.messes ?? 0), description: t('stats.managedWorkspaces') },
-        { id: 'pending-requests', label: t('stats.pendingRequests'), value: format.number(adminDashboard?.pendingRequests ?? 0), description: t('stats.awaitingReview') },
         { id: 'pending-payments', label: t('stats.pendingPayments'), value: format.number(adminDashboard?.pendingPayments ?? 0), description: t('stats.awaitingApproval') },
       ]
     }
@@ -348,7 +347,7 @@ export default function DashboardPage() {
 
             <section
               aria-label={t('overview.statisticsLabel')}
-              className={`grid shrink-0 grid-cols-2 gap-2.5 sm:gap-3 ${user.role === 'ADMIN' ? 'xl:grid-cols-5' : 'xl:grid-cols-4'}`}
+              className="grid shrink-0 grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4"
             >
               {stats.map(({ id, ...stat }) => (
                 <DashboardStatCard key={id} {...stat} />
@@ -356,19 +355,15 @@ export default function DashboardPage() {
             </section>
 
             {user.role === 'ADMIN' ? (
-              <section className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1.25fr)_minmax(24rem,.75fr)]">
-                <RunningMessesTable
-                  messes={adminDashboard?.runningMesses ?? []}
-                  isLoading={!adminDashboard}
-                  onViewAll={
-                    (adminDashboard?.runningMessesTotal ?? 0) > 5
-                      ? () => router.push('/dashboard/running-messes')
-                      : undefined
-                  }
-                />
+              <section className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(24rem,.75fr)_minmax(0,1.25fr)]">
                 <ActiveUsersChart
                   data={adminDashboard?.monthlyActiveUsers ?? []}
                   isLoading={!adminDashboard}
+                />
+                <RunningMessesTable
+                  messes={adminDashboard?.runningMesses ?? []}
+                  isLoading={!adminDashboard}
+                  onViewAll={() => router.push('/dashboard/all-messes')}
                 />
               </section>
             ) : (

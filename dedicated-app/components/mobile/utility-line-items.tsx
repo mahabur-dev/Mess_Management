@@ -59,7 +59,7 @@ export function UtilityLineItemsEditor({
         return (
           <div key={item.id} className="rounded-[16px] border border-[#dce8ea] bg-[#fbfefe] p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-label font-bold text-[#123748]">{t('utilityNumber', { number: format.number(index + 1) })}</span>
+              <span className="text-label font-semibold text-[#123748]">{t('utilityNumber', { number: format.number(index + 1) })}</span>
               {items.length > 1 ? (
                 <button
                   type="button"
@@ -109,7 +109,7 @@ export function UtilityLineItemsEditor({
           createExpenseLineItem({ itemName: 'Electricity' }),
         ])}
         disabled={disabled || items.length >= 100}
-        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[14px] border border-dashed border-[#58bfc0] bg-[#f6ffff] text-label font-bold text-[#00777a] transition active:scale-[0.99] disabled:opacity-50"
+        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[14px] border border-dashed border-[#58bfc0] bg-[#f6ffff] text-label font-semibold text-[#00777a] transition active:scale-[0.99] disabled:opacity-50"
       >
         <Plus size={17} /> {t('addMore')}
       </button>
@@ -117,11 +117,11 @@ export function UtilityLineItemsEditor({
       <div className="flex items-center justify-between rounded-[14px] bg-[#e8f8f7] px-4 py-3">
         <div>
           <span className="block text-caption font-semibold text-[#65838b]">{t('utilityTotal')}</span>
-          <span className="mt-0.5 block text-label font-bold text-[#123748]">
+          <span className="mt-0.5 block text-label font-semibold text-[#123748]">
             {t(items.length === 1 ? 'utilityCount' : 'utilitiesCount', { count: format.number(items.length) })}
           </span>
         </div>
-        <span className="text-title-sm font-bold text-[#00777a]">{format.money(total)}</span>
+        <span className="text-title-sm font-semibold text-[#00777a]">{format.money(total)}</span>
       </div>
     </div>
   )

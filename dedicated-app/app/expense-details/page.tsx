@@ -233,12 +233,12 @@ export default function ExpenseDetailsPage() {
                   {expense.items.map((item, index) => (
                     <div key={item.id ?? `${item.itemName}-${index}`} className="flex items-center justify-between gap-3 border-b border-[#edf1f4] px-3 py-3 last:border-b-0">
                       <div className="min-w-0">
-                        <div className="truncate text-label font-bold text-[#123748]">{item.itemName}</div>
+                        <div className="truncate text-label font-semibold text-[#123748]">{item.itemName}</div>
                         {item.quantity != null ? (
                           <div className="mt-0.5 text-caption font-semibold text-[#65838b]">{item.quantity} {item.unit ?? ''}</div>
                         ) : null}
                       </div>
-                      <span className="shrink-0 text-label font-bold text-[#00777a]">{format.money(item.amount)}</span>
+                      <span className="shrink-0 text-label font-semibold text-[#00777a]">{format.money(item.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -263,13 +263,13 @@ export default function ExpenseDetailsPage() {
               <ExpenseSurface className="!p-3">
                 <div className="flex items-center gap-2.5">
                   <CircleIcon icon={UserRound} />
-                  <div className="min-w-0"><div className="text-caption font-semibold text-[#65838b]">{t('paidBy')}</div><div className="mt-1 truncate text-label font-bold text-[#123748]">{details.purchasedBy}</div></div>
+                  <div className="min-w-0"><div className="text-caption font-semibold text-[#65838b]">{t('paidBy')}</div><div className="mt-1 truncate text-label font-semibold text-[#123748]">{details.purchasedBy}</div></div>
                 </div>
               </ExpenseSurface>
               <ExpenseSurface className="!p-3">
                 <div className="flex items-center gap-2.5">
                   <CircleIcon icon={UserPlus} />
-                  <div className="min-w-0"><div className="text-caption font-semibold text-[#65838b]">{t('addedBy')}</div><div className="mt-1 truncate text-label font-bold text-[#123748]">{details.addedBy}</div></div>
+                  <div className="min-w-0"><div className="text-caption font-semibold text-[#65838b]">{t('addedBy')}</div><div className="mt-1 truncate text-label font-semibold text-[#123748]">{details.addedBy}</div></div>
                 </div>
               </ExpenseSurface>
             </div>

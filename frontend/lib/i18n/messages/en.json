@@ -126,6 +126,7 @@
       "demoCredentials": "Demo credentials",
       "demoEmail": "Email",
       "demoPassword": "Password",
+      "downloadApk": "Download APK",
       "demoAction": "Open demo dashboard",
       "demoLoading": "Opening demo...",
       "demoNote": "No registration required",
@@ -287,6 +288,7 @@
     "automationCta": {
       "title": "Set the routine. Let Messzen handle the repetition.",
       "description": "Automate meal patterns, use AI for changes, keep bills calculated, and notify everyone at the right time.",
+      "downloadApk": "Download APK",
       "action": "Start for Free"
     },
     "howItWorks": {
@@ -674,20 +676,48 @@
   },
   "adminRunningMesses": {
     "title": "Running messes",
-    "description": "Top active messes with meals, expenses, and deposits in the last 30 days.",
-    "viewAll": "View details",
+    "description": "Top active messes with recorded activity in the last 30 days.",
+    "viewAll": "View all",
     "view": "View",
     "empty": "No running messes found in the last 30 days.",
     "noAddress": "No address set",
     "running": "Running",
+    "active": "Active",
+    "inactive": "Inactive",
     "members": "Active members",
     "activity": "Operations",
     "meals": "Meals",
     "expenses": "Expenses",
     "deposits": "Deposits",
+    "all": {
+      "title": "All messes",
+      "pageDescription": "Review every mess, filter by status, and manage its records.",
+      "description": "{count} messes in total",
+      "empty": "No messes found."
+    },
+    "filter": {
+      "label": "Filter messes by status",
+      "all": "All messes",
+      "active": "Active messes",
+      "inactive": "Inactive messes",
+      "empty": "No messes match this status filter."
+    },
+    "delete": {
+      "action": "Delete",
+      "title": "Delete this mess?",
+      "description": "This will permanently delete {name} and all of its related records. This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete mess",
+      "deleting": "Deleting...",
+      "success": "{name} was deleted successfully.",
+      "error": "The mess could not be deleted. Please try again."
+    },
     "table": {
       "mess": "Mess",
+      "messName": "Mess name",
       "members": "Members",
+      "totalMembers": "Total members",
+      "location": "Location",
       "operations": "Meals / expenses / deposits",
       "lastActivity": "Last activity",
       "action": "Action"

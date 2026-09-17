@@ -663,7 +663,7 @@ export function MealHistoryTable({
 
   return (
     <section className="overflow-hidden rounded-[20px] bg-white shadow-[0_16px_34px_rgba(18,55,72,0.1)]">
-      <div className="grid grid-cols-[1.1fr_1.7fr_44px] items-center bg-gradient-to-r from-[#00777a] to-[#008d8c] px-4 py-4 text-caption font-bold text-white">
+      <div className="grid grid-cols-[1.1fr_1.7fr_44px] items-center bg-gradient-to-r from-[#00777a] to-[#008d8c] px-4 py-4 text-caption font-semibold text-white">
         <div>{meals('date')}</div>
         <div>{meals('mealsTaken')}</div>
         <div className="text-right">{meals('total')}</div>
@@ -746,7 +746,7 @@ export function MealCountEditorRow({
     <div className="flex w-full items-center gap-3 border-b border-[#dce8e9] bg-white px-3 py-3 last:border-b-0">
       <MealIconBadge mealName={mealName} size="sm" />
       <label htmlFor={`meal-count-${mealName}`} className="min-w-0 flex-1 text-left">
-        <span className="block text-label font-bold text-[#123748]">{label}</span>
+        <span className="block text-label font-semibold text-[#123748]">{label}</span>
         <span className="block text-caption text-[#65838b]">{mealHint(mealName, locale)}</span>
       </label>
 

@@ -49,8 +49,8 @@ import {
   shiftDateKey,
 } from './meal-policy';
 
-const REMINDER_POLL_MINUTES = 5;
-const REMINDER_POLL_MS = REMINDER_POLL_MINUTES * 60 * 1000;
+const REMINDER_CRON = '0 * * * *';
+const REMINDER_LOOKBACK_MS = 60 * 60 * 1000;
 const MEAL_LIST_SORT_FIELDS = new Set([
   'created_at',
   'updated_at',
@@ -115,12 +115,14 @@ export class MealService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  @Cron(`*/${REMINDER_POLL_MINUTES} * * * *`, {
+  @Cron(REMINDER_CRON, {
+    name: 'meal-decision-reminders',
     timeZone: MEAL_TIME_ZONE,
+    waitForCompletion: true,
   })
   async sendMealDecisionReminders(): Promise<void> {
     let now: Date;
-    let targetDate: string;
+    let targetDates: [string, string];
     let messes: Array<{
       id: string;
       name: string;
@@ -134,9 +136,16 @@ export class MealService {
 
     try {
       now = new Date();
-      targetDate = shiftDateKey(getDhakaDateKey(now), 1);
+      const today = getDhakaDateKey(now);
+      targetDates = [today, shiftDateKey(today, 1)];
       messes = await this.prisma.mess.findMany({
-        where: { is_active: true },
+        where: {
+          is_active: true,
+          OR: [
+            { meal_window_notification_enabled: true },
+            { meal_deadline_notification_enabled: true },
+          ],
+        },
         select: {
           id: true,
           name: true,
@@ -157,43 +166,54 @@ export class MealService {
 
     for (const mess of messes) {
       try {
-        const window = getMealDecisionWindow(
-          targetDate,
-          mess.meal_deadline_start ?? DEFAULT_MEAL_WINDOW_START,
-          mess.meal_deadline_end ?? DEFAULT_MEAL_WINDOW_END,
-          now,
-        );
-
-        if (
-          mess.meal_window_notification_enabled &&
-          this.isWithinPollInterval(now, window.windowStart)
-        ) {
-          await this.sendWindowOpenedNotification(
-            mess.id,
-            mess.name,
-            mess.created_by,
-            window.targetDate,
-            window.startTime,
-            window.endTime,
+        for (const targetDate of targetDates) {
+          const window = getMealDecisionWindow(
+            targetDate,
+            mess.meal_deadline_start ?? DEFAULT_MEAL_WINDOW_START,
+            mess.meal_deadline_end ?? DEFAULT_MEAL_WINDOW_END,
+            now,
           );
-        }
 
-        const warningAt = new Date(
-          window.windowEnd.getTime() -
-            mess.meal_deadline_reminder_minutes * 60 * 1000,
-        );
-        if (
-          mess.meal_deadline_notification_enabled &&
-          this.isWithinPollInterval(now, warningAt)
-        ) {
-          await this.sendDeadlineWarningNotification(
-            mess.id,
-            mess.name,
-            mess.created_by,
-            window.targetDate,
-            window.endTime,
-            mess.meal_deadline_reminder_minutes,
+          if (
+            mess.meal_window_notification_enabled &&
+            now.getTime() < window.windowEnd.getTime() &&
+            this.isWithinPollInterval(now, window.windowStart)
+          ) {
+            await this.sendWindowOpenedNotification(
+              mess.id,
+              mess.name,
+              mess.created_by,
+              window.targetDate,
+              window.startTime,
+              window.endTime,
+            );
+          }
+
+          const warningAt = new Date(
+            window.windowEnd.getTime() -
+              mess.meal_deadline_reminder_minutes * 60 * 1000,
           );
+          if (
+            mess.meal_deadline_notification_enabled &&
+            now.getTime() < window.windowEnd.getTime() &&
+            this.isWithinPollInterval(now, warningAt)
+          ) {
+            const remainingMinutes = Math.max(
+              1,
+              Math.ceil(
+                (window.windowEnd.getTime() - now.getTime()) / (60 * 1000),
+              ),
+            );
+            await this.sendDeadlineWarningNotification(
+              mess.id,
+              mess.name,
+              mess.created_by,
+              window.targetDate,
+              window.endTime,
+              mess.meal_deadline_reminder_minutes,
+              remainingMinutes,
+            );
+          }
         }
       } catch (error) {
         this.logger.error(
@@ -1447,10 +1467,8 @@ export class MealService {
   }
 
   private isWithinPollInterval(now: Date, eventTime: Date): boolean {
-    return (
-      now.getTime() >= eventTime.getTime() &&
-      now.getTime() < eventTime.getTime() + REMINDER_POLL_MS
-    );
+    const elapsedMs = now.getTime() - eventTime.getTime();
+    return elapsedMs >= 0 && elapsedMs < REMINDER_LOOKBACK_MS;
   }
 
   private async resolveNotificationUserIds(
@@ -1511,6 +1529,7 @@ export class MealService {
     targetDate: string,
     endTime: string,
     leadMinutes: number,
+    remainingMinutes: number,
   ): Promise<void> {
     const targetUserIds = await this.resolveNotificationUserIds(
       messId,
@@ -1521,12 +1540,13 @@ export class MealService {
       messId,
       'MEAL_UPDATE',
       `Meal decision deadline approaching — ${messName}`,
-      `You have ${leadMinutes} minutes to choose meals for ${targetDate}. The window closes at ${endTime}.`,
+      `You have ${remainingMinutes} minute${remainingMinutes === 1 ? '' : 's'} to choose meals for ${targetDate}. The window closes at ${endTime}.`,
       {
         type: 'MEAL_DEADLINE_WARNING',
         targetDate,
         endTime,
         leadMinutes,
+        remainingMinutes,
         timeZone: MEAL_TIME_ZONE,
       },
       targetUserIds,

@@ -80,7 +80,7 @@ export function AuthShell({
                   <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#008d8c] text-white shadow-[0_12px_24px_rgba(0,141,140,0.22)]">
                     <HeroIcon size={30} strokeWidth={1.8} />
                   </div>
-                  <h1 className="mt-5 text-headline font-bold text-[#062b35]">{title}</h1>
+                  <h1 className="mt-5 text-headline font-semibold text-[#062b35]">{title}</h1>
                   {description ? (
                     <p className="mx-auto mt-10 max-w-[310px] text-label text-[#65838b]">
                       {description}

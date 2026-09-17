@@ -89,7 +89,7 @@ function MealDetailsContent() {
         {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
         {!loading ? <MealHistoryTable history={history} /> : null}
 
-        <p className="px-2 text-caption font-bold leading-4 text-[#55727b]">* {mealCopy('allowedMealsNote')}</p>
+        <p className="px-2 text-caption font-semibold leading-4 text-[#55727b]">* {mealCopy('allowedMealsNote')}</p>
       </div>
     </MobileShell>
   )

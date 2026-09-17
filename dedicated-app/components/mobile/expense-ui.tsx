@@ -463,7 +463,7 @@ export function MemberAllocationList({
           >
             <MemberInitials name={memberName} accent={index % 2 ? 'blue' : 'teal'} />
             <span className="min-w-0 flex-1">
-              <span className="block text-label font-bold leading-snug text-[#123748] [overflow-wrap:anywhere]">
+              <span className="block text-label font-semibold leading-snug text-[#123748] [overflow-wrap:anywhere]">
                 {memberName}
               </span>
               {share.isPayer ? (
@@ -476,7 +476,7 @@ export function MemberAllocationList({
             </span>
             <span className="min-w-[96px] shrink-0 text-right">
               <span className="block text-caption font-medium text-[#65838b]">{amountLabel ?? t('allocatedAmount')}</span>
-              <span className="ui-mono-number mt-1 block text-body font-bold text-[#00777a]">
+              <span className="ui-mono-number mt-1 block text-body font-semibold text-[#00777a]">
                 {formatMoney(share.shareAmount)}
               </span>
             </span>
@@ -562,10 +562,10 @@ export function SplitPreviewContent({
             {items.map((item, index) => (
               <div key={`${item.itemName}-${index}`} className="flex items-center justify-between gap-3 border-b border-[#edf1f4] px-3 py-3 last:border-b-0">
                 <div className="min-w-0">
-                  <div className="truncate text-label font-bold text-[#123748]">{item.itemName}</div>
+                  <div className="truncate text-label font-semibold text-[#123748]">{item.itemName}</div>
                   {item.quantity != null ? <div className="mt-0.5 text-caption font-semibold text-[#65838b]">{item.quantity} {item.unit ?? ''}</div> : null}
                 </div>
-                <span className="shrink-0 text-label font-bold text-[#00777a]">{formatMoney(item.amount)}</span>
+                <span className="shrink-0 text-label font-semibold text-[#00777a]">{formatMoney(item.amount)}</span>
               </div>
             ))}
           </div>

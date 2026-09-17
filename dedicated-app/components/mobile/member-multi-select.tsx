@@ -72,8 +72,8 @@ export function MemberMultiSelect({
           <Users size={18} strokeWidth={2.3} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-caption font-bold text-[#65838b]">{t('members')}</span>
-          <span className="mt-0.5 block truncate text-label font-bold text-[#123748]">{selectedLabel}</span>
+          <span className="block text-caption font-semibold text-[#65838b]">{t('members')}</span>
+          <span className="mt-0.5 block truncate text-label font-semibold text-[#123748]">{selectedLabel}</span>
         </span>
         <ChevronRight size={19} className="shrink-0 text-[#78a4a9]" aria-hidden="true" />
       </button>
@@ -102,7 +102,7 @@ export function MemberMultiSelect({
                 <Users size={18} strokeWidth={2.3} />
               </span>
               <span className="mt-2 min-w-0 flex-1">
-                <span id={`${listId}-title`} className="block text-body font-bold text-[#123748]">{t('selectMembers')}</span>
+                <span id={`${listId}-title`} className="block text-body font-semibold text-[#123748]">{t('selectMembers')}</span>
                 <span className="mt-0.5 block text-caption font-semibold text-[#65838b]">{selectedLabel}</span>
               </span>
               <button
@@ -133,7 +133,7 @@ export function MemberMultiSelect({
                       }`}
                     >
                       <span className="min-w-0 flex-1">
-                        <span className={`block truncate text-label font-bold ${active ? 'text-[#00777a]' : 'text-[#123748]'}`}>
+                        <span className={`block truncate text-label font-semibold ${active ? 'text-[#00777a]' : 'text-[#123748]'}`}>
                           {member.name}
                         </span>
                         {member.email ? <span className="mt-0.5 block truncate text-caption font-medium text-[#65838b]">{member.email}</span> : null}

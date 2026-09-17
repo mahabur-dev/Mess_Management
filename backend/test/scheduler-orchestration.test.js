@@ -18,6 +18,7 @@ const {
 const {
   MealPatternService,
 } = require('../src/app/module/meal-pattern/meal-pattern.service');
+const { MealService } = require('../src/app/module/meal/meal.service');
 
 const services = [];
 
@@ -112,6 +113,89 @@ describe('scheduler orchestration', () => {
       ),
       undefined,
     );
+  });
+
+  it('runs meal reminders once per hour in Dhaka time', () => {
+    const mealReminderSchedule = Reflect.getMetadata(
+      SCHEDULE_CRON_OPTIONS,
+      MealService.prototype.sendMealDecisionReminders,
+    );
+
+    assert.deepEqual(mealReminderSchedule, {
+      cronTime: '0 * * * *',
+      name: 'meal-decision-reminders',
+      timeZone: 'Asia/Dhaka',
+      waitForCompletion: true,
+    });
+  });
+
+  it('includes arbitrary-minute meal reminders from the preceding hour only', () => {
+    const service = new MealService({}, {}, {});
+    const now = new Date('2026-08-24T10:00:00.000Z');
+
+    assert.equal(
+      service.isWithinPollInterval(now, new Date('2026-08-24T09:15:00.000Z')),
+      true,
+    );
+    assert.equal(
+      service.isWithinPollInterval(now, new Date('2026-08-24T09:00:00.000Z')),
+      false,
+    );
+    assert.equal(
+      service.isWithinPollInterval(now, new Date('2026-08-24T10:15:00.000Z')),
+      false,
+    );
+  });
+
+  it('evaluates the current and next Dhaka dates across the midnight boundary', async () => {
+    const queriedWindows = [];
+    const service = new MealService(
+      {
+        mess: {
+          findMany: async () => [
+            {
+              id: '11111111-1111-1111-1111-111111111111',
+              name: 'Night Mess',
+              created_by: '22222222-2222-2222-2222-222222222222',
+              meal_deadline_start: '23:15',
+              meal_deadline_end: '01:00',
+              meal_window_notification_enabled: true,
+              meal_deadline_notification_enabled: false,
+              meal_deadline_reminder_minutes: 60,
+            },
+          ],
+        },
+      },
+      {},
+      {},
+    );
+    service.sendWindowOpenedNotification = async (
+      _messId,
+      _name,
+      _creatorId,
+      targetDate,
+    ) => {
+      queriedWindows.push(targetDate);
+    };
+
+    const RealDate = Date;
+    const fixedNow = new RealDate('2026-08-24T18:00:00.000Z');
+    global.Date = class extends RealDate {
+      constructor(...args) {
+        super(...(args.length ? args : [fixedNow.getTime()]));
+      }
+
+      static now() {
+        return fixedNow.getTime();
+      }
+    };
+    try {
+      await service.sendMealDecisionReminders();
+    } finally {
+      global.Date = RealDate;
+    }
+
+    assert.deepEqual(queriedWindows, ['2026-08-25']);
   });
 
   it('wakes the billing worker immediately after a month is queued', async () => {

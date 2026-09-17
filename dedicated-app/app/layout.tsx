@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next'
+import '@fontsource-variable/roboto/wght.css'
+import '@fontsource-variable/noto-sans-bengali/wght.css'
 import './globals.css'
 import { Providers } from './providers'
 import { LocaleProvider } from '@/lib/i18n'

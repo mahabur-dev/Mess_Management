@@ -129,7 +129,7 @@ function MealCountControl({
       </button>
       <input
         aria-label={meals('mealCount', { meal: label })}
-        className="h-full w-14 border-x border-[#bfe7e6] bg-transparent px-1 text-center text-label font-bold tabular-nums text-[#245d66] outline-none"
+        className="h-full w-14 border-x border-[#bfe7e6] bg-transparent px-1 text-center text-label font-semibold tabular-nums text-[#245d66] outline-none"
         type="number"
         inputMode="decimal"
         min="0"
@@ -185,11 +185,11 @@ export function AiMealPreview({
           <UtensilsCrossed size={21} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-body font-bold text-[#123748]">{copy.title}</p>
+          <p className="text-body font-semibold text-[#123748]">{copy.title}</p>
           <p className="mt-0.5 text-caption font-medium text-[#65838b]">{copy.helper}</p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-title-sm font-bold tabular-nums text-[#00777a]">{formatNumber(total, locale, { maximumFractionDigits: 2 })}</p>
+          <p className="text-title-sm font-semibold tabular-nums text-[#00777a]">{formatNumber(total, locale, { maximumFractionDigits: 2 })}</p>
           <p className="text-caption font-semibold text-[#65838b]">{copy.total}</p>
         </div>
       </div>
@@ -213,7 +213,7 @@ export function AiMealPreview({
               )}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-label font-bold text-[#123748]">{formatDisplayDate(group.date, locale)}</p>
+              <p className="text-label font-semibold text-[#123748]">{formatDisplayDate(group.date, locale)}</p>
               <p className="mt-0.5 text-caption font-medium text-[#65838b]">{formatWeekday(group.date, locale)}</p>
             </div>
             <div className="max-w-[46%]">
@@ -258,7 +258,7 @@ export function AiMealPreview({
                         }}
                         renderTrigger={({ open, selectedLabel, buttonProps }) => (
                           <button {...buttonProps} className="w-full cursor-pointer text-left">
-                            <span className="flex items-center gap-1 text-label font-bold text-[#123748]">
+                            <span className="flex items-center gap-1 text-label font-semibold text-[#123748]">
                               {selectedLabel}
                               <ChevronDown size={13} className={`text-[#789096] transition-transform ${open ? 'rotate-180' : ''}`} />
                             </span>
@@ -288,7 +288,7 @@ export function AiMealPreview({
                       type="button"
                       aria-pressed={statusOn}
                       onClick={() => onPatchItem(index, { status: 'ON', mealCount: Math.max(itemCount(item), MEAL_META[mealName].baseValue) })}
-                      className={`rounded-full px-3 py-1.5 text-caption font-bold transition ${statusOn ? 'bg-[#dff4f3] text-[#008d8c]' : 'bg-[#f2f6f6] text-[#789096]'}`}
+                      className={`rounded-full px-3 py-1.5 text-caption font-semibold transition ${statusOn ? 'bg-[#dff4f3] text-[#008d8c]' : 'bg-[#f2f6f6] text-[#789096]'}`}
                     >
                       {copy.taking}
                     </button>
@@ -296,7 +296,7 @@ export function AiMealPreview({
                       type="button"
                       aria-pressed={!statusOn}
                       onClick={() => onPatchItem(index, { status: 'OFF', mealCount: 0 })}
-                      className={`rounded-full px-3 py-1.5 text-caption font-bold transition ${!statusOn ? 'bg-[#fff0f0] text-[#ee1f2f]' : 'bg-[#f2f6f6] text-[#789096]'}`}
+                      className={`rounded-full px-3 py-1.5 text-caption font-semibold transition ${!statusOn ? 'bg-[#fff0f0] text-[#ee1f2f]' : 'bg-[#f2f6f6] text-[#789096]'}`}
                     >
                       {copy.noMeal}
                     </button>

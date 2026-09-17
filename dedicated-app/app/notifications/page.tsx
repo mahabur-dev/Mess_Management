@@ -99,12 +99,12 @@ export default function NotificationsPage() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-start justify-between gap-3">
-                      <span className="text-label font-bold text-[#123748]">{copy.title}</span>
+                      <span className="text-label font-semibold text-[#123748]">{copy.title}</span>
                       <ChevronRight size={17} className="mt-0.5 shrink-0 text-[#65838b]" aria-hidden="true" />
                     </span>
                     <span className="mt-1 block text-caption text-[#65838b]">{format.date(item.created_at, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                     <span className="mt-2 block text-label text-[#65838b]">{copy.body}</span>
-                    {!isRead ? <span className="mt-2 inline-flex items-center gap-1 text-caption font-bold uppercase tracking-[0.1em] text-[#008d8c]"><Check size={13} aria-hidden="true" /> {t('new')}</span> : null}
+                    {!isRead ? <span className="mt-2 inline-flex items-center gap-1 text-caption font-semibold uppercase tracking-[0.1em] text-[#008d8c]"><Check size={13} aria-hidden="true" /> {t('new')}</span> : null}
                   </span>
                 </button>
               )

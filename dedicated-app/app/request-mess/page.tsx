@@ -181,7 +181,7 @@ export default function RequestMessPage() {
                         <MapPin size={14} strokeWidth={2.4} />
                         <span className="min-w-0 truncate">{mess.address ?? auth('locationNotSet')}</span>
                       </div>
-                      <div className="mt-2 flex items-center gap-1.5 text-caption font-bold text-[#008d8c]">
+                      <div className="mt-2 flex items-center gap-1.5 text-caption font-semibold text-[#008d8c]">
                         <Users size={14} strokeWidth={2.4} />
                         <span className="min-w-0 truncate">{meta}</span>
                       </div>

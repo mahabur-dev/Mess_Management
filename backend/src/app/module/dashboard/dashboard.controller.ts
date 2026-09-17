@@ -36,6 +36,35 @@ export class DashboardController {
     };
   }
 
+  @Get('admin/messes')
+  @UseGuards(AuthGuard('ADMIN'))
+  @ApiOperation({ summary: '[ADMIN] All messes with activity summary' })
+  @ApiQuery({ name: 'status', required: false, enum: ['active', 'inactive'] })
+  async allMesses(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    const result = await this.dashboardService.getAllMesses(
+      Number(page) || 1,
+      Number(limit) || 25,
+      status,
+    );
+    return {
+      message: 'Messes fetched successfully',
+      meta: result.meta,
+      data: result.data,
+    };
+  }
+
+  @Get('admin/messes/:messId')
+  @UseGuards(AuthGuard('ADMIN'))
+  @ApiOperation({ summary: '[ADMIN] Mess operational details' })
+  async messDetails(@Param('messId') messId: string) {
+    const data = await this.dashboardService.getRunningMessDetails(messId);
+    return { message: 'Mess details fetched successfully', data };
+  }
+
   @Get('admin/running-messes/:messId')
   @UseGuards(AuthGuard('ADMIN'))
   @ApiOperation({ summary: '[ADMIN] Running mess operational details' })

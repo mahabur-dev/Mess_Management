@@ -67,7 +67,7 @@ function text(locale: 'en' | 'bn') {
     subtitle: bn ? 'মাসিক বাজারের দায়িত্ব পরিকল্পনা ও ভারসাম্য করুন' : 'Plan, assign and balance monthly bazar duties',
     workspace: bn ? 'সক্রিয় ওয়ার্কস্পেস' : 'Active workspace',
     addDate: bn ? 'তারিখ যোগ করুন' : 'Add date', settings: bn ? 'সেটিংস' : 'Settings',
-    dates: bn ? 'বাজারের তারিখ' : 'Bazar dates', slots: bn ? 'দায়িত্ব' : 'Duty slots',
+    dates: bn ? 'বাজার' : 'Bazar', slots: bn ? 'দায়িত্ব' : 'Duty slots',
     assigned: bn ? 'বরাদ্দ' : 'Assigned', available: bn ? 'খালি' : 'Available',
     calendarMine: bn ? 'আমার' : 'Mine', calendarOpen: bn ? 'খালি' : 'Open', calendarTaken: bn ? 'নেওয়া' : 'Taken', calendarOff: bn ? 'বন্ধ' : 'Off',
     recommended: bn ? 'সুপারিশকৃত' : 'Recommended', pending: bn ? 'অপেক্ষমাণ' : 'Pending requests',
@@ -223,23 +223,21 @@ export default function BazarSchedulePage() {
 
 function SummaryCards({ schedule, requestCount, copy }: { schedule: BazarSchedule; requestCount: number; copy: ReturnType<typeof text> }) {
   const items = [
-    [copy.dates, schedule.overview.totalBazarDates, copy.schedule, CalendarDays],
-    [copy.assigned, schedule.overview.assigned, `${schedule.overview.available} ${copy.available.toLowerCase()}`, UserPlus],
-    [copy.recommended, schedule.overview.recommendedDutyCount, `${copy.dutyLimit}: ${schedule.duty_limit}`, ShieldCheck],
-    [copy.pending, requestCount, copy.requests, ClipboardList],
+    [copy.dates, schedule.overview.totalBazarDates, CalendarDays],
+    [copy.assigned, schedule.overview.assigned, UserPlus],
+    [copy.recommended, schedule.overview.recommendedDutyCount, ShieldCheck],
+    [copy.pending, requestCount, ClipboardList],
   ] as const
-  return <section className="bazar-summary-grid">{items.map(([label, value, detail, Icon]) => <article key={label} className="bazar-summary-card"><span><Icon size={15} /></span><small>{label}</small><strong>{value}</strong><em>{detail}</em></article>)}</section>
+  return <section className="bazar-summary-grid">{items.map(([label, value, Icon]) => <article key={label} className="bazar-summary-card"><span className="bazar-summary-card__heading"><span className="bazar-summary-card__icon"><Icon size={16} /></span><small>{label}</small></span><strong>{value}</strong></article>)}</section>
 }
 
 function ScheduleCalendar({ schedule, currentUserId, canManage, copy, onSlot, onClaim, busy }: { schedule: BazarSchedule; currentUserId?: string; canManage: boolean; copy: ReturnType<typeof text>; onSlot: (slot: BazarDutySlot) => void; onClaim: (slot: BazarDutySlot) => void; busy: string | null }) {
-  const { locale } = useLocale()
   const dates = new Map(schedule.dates.map((date) => [isoDay(date.duty_date), date]))
-  const start = new Date(schedule.year, schedule.month - 1, 1).getDay()
   const count = new Date(schedule.year, schedule.month, 0).getDate()
-  const cells = Array.from({ length: start + count }, (_, index) => index < start ? null : index - start + 1)
+  const days = Array.from({ length: count }, (_, index) => index + 1)
   const format = useLocaleFormatters()
   const monthTitle = format.date(new Date(schedule.year, schedule.month - 1, 1), { month: 'long', year: 'numeric' })
-  return <section className="bazar-calendar-card"><div className="bazar-calendar-card__heading"><div><h2>{monthTitle}</h2><p>{copy.tapToAssign}</p></div><span>{copy.version} {schedule.version}</span></div><div className="bazar-weekdays">{weekdayOptions.map((day) => <span key={day.value}>{locale === 'bn' ? day.bn : day.en}</span>)}</div><div className="bazar-calendar">{cells.map((day, index) => { if (!day) return <span key={`blank-${index}`} />; const date = dates.get(day); const slots = date?.slots ?? []; const available = slots.find((slot) => (slot.effectiveStatus ?? slot.status) === 'AVAILABLE'); const yours = slots.find((slot) => slot.assigned_member_id === currentUserId); const closed = !date || (date.effectiveStatus ?? date.status) !== 'OPEN'; const status = yours ? { compact: copy.calendarMine, full: copy.you } : available ? { compact: copy.calendarOpen, full: copy.available } : closed ? { compact: copy.calendarOff, full: copy.unavailable } : { compact: copy.calendarTaken, full: copy.assigned }; return <button key={day} type="button" aria-label={`${day}: ${status.full}`} disabled={!available || busy !== null} onClick={() => available && (canManage ? onSlot(available) : onClaim(available))} className="bazar-day" data-state={yours ? 'yours' : available ? 'available' : closed ? 'closed' : 'assigned'}><strong>{day}</strong><small>{status.compact}</small></button> })}</div><div className="bazar-legend"><span data-tone="yours"><i />{copy.you}</span><span data-tone="available"><i />{copy.available}</span><span data-tone="closed"><i />{copy.unavailable}</span></div></section>
+  return <section className="bazar-calendar-card"><div className="bazar-calendar-card__heading"><div><h2>{monthTitle}</h2><p>{copy.tapToAssign}</p></div><span>{copy.version} {schedule.version}</span></div><div className="bazar-calendar">{days.map((day) => { const date = dates.get(day); const slots = date?.slots ?? []; const available = slots.find((slot) => (slot.effectiveStatus ?? slot.status) === 'AVAILABLE'); const yours = slots.find((slot) => slot.assigned_member_id === currentUserId); const closed = !date || (date.effectiveStatus ?? date.status) !== 'OPEN'; const status = yours ? { compact: copy.calendarMine, full: copy.you } : available ? { compact: copy.calendarOpen, full: copy.available } : closed ? { compact: copy.calendarOff, full: copy.unavailable } : { compact: copy.calendarTaken, full: copy.assigned }; return <button key={day} type="button" aria-label={`${day}: ${status.full}`} disabled={!available || busy !== null} onClick={() => available && (canManage ? onSlot(available) : onClaim(available))} className="bazar-day" data-state={yours ? 'yours' : available ? 'available' : closed ? 'closed' : 'assigned'}><strong>{day}</strong><small>{status.compact}</small></button> })}</div><div className="bazar-legend"><span data-tone="yours"><i />{copy.you}</span><span data-tone="available"><i />{copy.available}</span><span data-tone="closed"><i />{copy.unavailable}</span></div></section>
 }
 
 function MyDuties({ schedule, userId, copy }: { schedule: BazarSchedule; userId?: string; copy: ReturnType<typeof text> }) {

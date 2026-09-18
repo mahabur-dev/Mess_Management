@@ -154,7 +154,7 @@ test('manager, member and no-mess role matrix', () => {
   assert.equal(getAppBackFallback(manager, '/meals/members/monthly'), '/meals/members')
   assert.equal(canAccessAppPath(noMess, '/meals'), false)
   assert.deepEqual(getBottomTabs(noMess).map((item) => item.href), ['/', '/profile', '/settings', '/more'])
-  const expectedQuickActions = ['/meals', '/expenses', '/payments', '/bazar-schedule', '/quick-add', '/monthly-bill']
+  const expectedQuickActions = ['/meals', '/expenses', '/payments', '/bazar-schedule', '/quick-add', '/monthly-bill', '/meal-pattern', '/notices']
   assert.deepEqual(getHomeQuickActions(manager).map((item) => item.href), expectedQuickActions)
   assert.deepEqual(getHomeQuickActions(member).map((item) => item.href), expectedQuickActions)
   assert.equal(getMoreMenuGroups(manager).some((group) => group.items.some((item) => item.href === '/members')), true)

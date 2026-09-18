@@ -12,7 +12,8 @@
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:background">@null</item>
+        <item name="android:background">@color/messzen_brand</item>
+        <item name="android:windowBackground">@color/messzen_brand</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <!-- Default app screens place the system bar over the teal header. -->
         <item name="android:windowLightStatusBar">false</item>
@@ -22,10 +23,14 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:navigationBarColor">@android:color/white</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:background">@color/messzen_brand</item>
+        <item name="android:windowBackground">@color/messzen_brand</item>
+        <item name="windowSplashScreenBackground">@color/messzen_brand</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:statusBarColor">@color/messzen_brand</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/messzen_brand</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>

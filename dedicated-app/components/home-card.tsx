@@ -62,13 +62,13 @@ export function HomeMetricCard({
 }) {
   return (
     <Surface as="article" elevation="none" className="home-metric-card">
-      <span className="home-metric-card__icon" style={{ backgroundColor: `${accent}12`, color: accent }}>
-        <Icon size={16} />
-      </span>
-      <span className="min-w-0">
+      <span className="home-metric-card__heading">
+        <span className="home-metric-card__icon" style={{ backgroundColor: `${accent}12`, color: accent }}>
+          <Icon size={16} aria-hidden="true" />
+        </span>
         <span className="home-metric-card__label">{label}</span>
-        <span className="home-metric-card__value">{value}</span>
       </span>
+      <span className="home-metric-card__value">{value}</span>
     </Surface>
   )
 }

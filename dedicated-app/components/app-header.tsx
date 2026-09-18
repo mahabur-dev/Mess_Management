@@ -16,7 +16,7 @@ type AppHeaderProps = {
   leading?: ReactNode
   trailing?: ReactNode
   hasUnreadNotifications?: boolean
-  variant?: 'default' | 'onboarding'
+  variant?: 'default' | 'home' | 'onboarding'
 }
 
 function getInitials(name?: string | null) {
@@ -123,6 +123,14 @@ export function AppHeader({
       <ProfileAvatarLink />
     ))
   const titleAlignment = !backHref && !leading ? 'text-left' : 'text-center'
+  const hasProminentIdentity = variant === 'home' || variant === 'onboarding'
+  const headerGrid = variant === 'home' && trailing
+    ? 'grid-cols-[52px_minmax(0,1fr)_auto]'
+    : hasProminentIdentity
+      ? 'grid-cols-[52px_minmax(0,1fr)_52px]'
+      : trailing
+        ? 'grid-cols-[44px_minmax(0,1fr)_auto]'
+        : 'grid-cols-[44px_minmax(0,1fr)_44px]'
 
   useEffect(() => {
     const header = headerRef.current
@@ -142,11 +150,17 @@ export function AppHeader({
 
   return (
     <header ref={headerRef} className="app-header top-hero px-4 pb-3" data-variant={variant}>
-      <div className={`grid items-center gap-2 ${variant === 'onboarding' ? 'grid-cols-[52px_minmax(0,1fr)_52px]' : trailing ? 'grid-cols-[44px_minmax(0,1fr)_auto]' : 'grid-cols-[44px_minmax(0,1fr)_44px]'}`}>
+      {variant === 'home' ? (
+        <span className="home-header-cloud-layer" aria-hidden="true">
+          <span className="home-header-cloud home-header-cloud--one" />
+          <span className="home-header-cloud home-header-cloud--two" />
+        </span>
+      ) : null}
+      <div className={`app-header__content grid items-center gap-3 ${headerGrid}`}>
         <div className="flex justify-start">{leadingContent}</div>
         <div className={`min-w-0 ${titleAlignment}`}>
-          <h1 className={`ui-header-title truncate ${variant === 'onboarding' ? 'text-title' : 'text-title-sm'}`}>{title}</h1>
-          {subtitle ? <p className={`${variant === 'onboarding' ? 'mt-1 text-label' : 'mt-0.5 text-caption'} truncate text-white/82`}>{subtitle}</p> : null}
+          <h1 className={`ui-header-title truncate ${hasProminentIdentity ? 'text-title' : 'text-title-sm'}`}>{title}</h1>
+          {subtitle ? <p className={`${hasProminentIdentity ? 'mt-1 text-label' : 'mt-0.5 text-caption'} truncate text-white/82`}>{subtitle}</p> : null}
         </div>
         <div className="flex justify-end">{trailing ?? <NotificationLink hasUnreadNotifications={hasUnreadNotifications} />}</div>
       </div>

@@ -11,12 +11,12 @@ import {
   MessageSquareWarning,
   ReceiptText,
   Shield,
-  Users,
   UtensilsCrossed,
   Wallet2,
   Coins,
 } from 'lucide-react'
-import { AppHeader } from '@/components/app-header'
+import { AppHeader, NotificationLink } from '@/components/app-header'
+import { AuthLanguageToggle } from '@/components/language-control'
 import { HomeCard, HomeEmptyState, HomeMetricCard, HomeQuickAction } from '@/components/home-card'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { BillingCalculationNotice } from '@/components/mobile/billing-status-notice'
@@ -193,7 +193,6 @@ export default function HomePage() {
   }, [activeMess?.id, expensesRetryToken, month])
 
   const cards = [
-    { label: common('totalMember'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalMember') })} /> : number(summary?.activeMembers), icon: Users, color: '#008d8c' },
     { label: common('todayMeal'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('todayMeal') })} /> : number(summary?.todayTotalMeals), icon: UtensilsCrossed, color: '#4bbfc0' },
     { label: common('totalMeals'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalMeals') })} /> : number(summary?.totalMeals), icon: ReceiptText, color: '#0aa0a0' },
     {
@@ -226,8 +225,14 @@ export default function HomePage() {
     >
       <AppHeader
         title={profileName}
-        subtitle={common('homeGreeting')}
-        variant={showOnboarding ? 'onboarding' : 'default'}
+        subtitle={hasWorkspace && activeMess?.name ? activeMess.name : common('homeGreeting')}
+        variant={showOnboarding ? 'onboarding' : 'home'}
+        trailing={hasWorkspace ? (
+          <div className="home-header-actions">
+            <AuthLanguageToggle />
+            <NotificationLink />
+          </div>
+        ) : undefined}
       />
 
       <div className={`screen ${showOnboarding ? 'no-mess-home' : 'home-screen'}`}>
@@ -246,7 +251,7 @@ export default function HomePage() {
           </HomeCard>
         ) : hasWorkspace ? (
           <HomeCard ariaLabel={common('quickActions')} className="home-quick-actions-card">
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-4 gap-x-1 gap-y-2">
               {quickActions.map(({ label, href, icon: Icon }) => (
                 <HomeQuickAction
                   key={label}
@@ -264,8 +269,9 @@ export default function HomePage() {
         {hasWorkspace ? (
           <>
             <HomeCard
-              title={common('overview')}
+              title={common('quickFeatures')}
               action={<HomeMonthPill month={month} onChange={setMonth} label={common('selectOverviewMonth')} monthLabel={monthLabel} />}
+              className="home-quick-features-card"
             >
               {summaryError ? (
                 <HomeEmptyState>
@@ -275,7 +281,7 @@ export default function HomePage() {
                   </button>
                 </HomeEmptyState>
               ) : (
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="home-feature-grid">
                   {cards.map((card) => (
                     <HomeMetricCard key={card.label} label={card.label} value={card.value} icon={card.icon} accent={card.color} />
                   ))}

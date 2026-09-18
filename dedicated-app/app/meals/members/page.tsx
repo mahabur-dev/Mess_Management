@@ -7,11 +7,10 @@ import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { useNativeBackAction } from '@/components/native-back-actions'
 import { TopScreen } from '@/components/top-screen'
-import { MonthPicker } from '@/components/mobile/date-picker'
+import { DatePicker } from '@/components/mobile/date-picker'
 import {
   EmptyMealsState,
   InlineNotice,
-  MealDateCard,
   SearchBox,
   attendanceMealCount,
   findAttendanceForMember,
@@ -59,23 +58,6 @@ function normalizeMealCount(mealName: MealName, value: string) {
   if (!Number.isFinite(rawCount) || rawCount <= 0) return 0
   const rounded = Number((Math.round(rawCount / baseValue) * baseValue).toFixed(2))
   return Math.min(21, Math.max(baseValue, rounded))
-}
-
-function shiftDate(date: string, days: number) {
-  const next = new Date(`${date}T00:00:00`)
-  next.setDate(next.getDate() + days)
-  const year = next.getFullYear()
-  const month = String(next.getMonth() + 1).padStart(2, '0')
-  const day = String(next.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function moveDateToMonth(date: string, month: string) {
-  if (!/^\d{4}-\d{2}$/.test(month)) return date
-  const [year, monthNumber] = month.split('-').map(Number)
-  const currentDay = Number(date.slice(8, 10)) || 1
-  const day = Math.min(currentDay, new Date(year, monthNumber, 0).getDate())
-  return `${month}-${String(day).padStart(2, '0')}`
 }
 
 function memberId(member: MealMember) {
@@ -316,14 +298,14 @@ export default function MemberMealsPage() {
       <div className="screen space-y-4">
         {!isEditing ? (
           <div className="meal-month-action-bar">
-            <MonthPicker
-              label={mealCopy('selectMonth')}
-              value={date.slice(0, 7)}
-              onChange={(month) => setDate((current) => moveDateToMonth(current, month))}
-              renderTrigger={({ open, selectedLabel, buttonProps }) => (
+            <DatePicker
+              label={mealCopy('selectDate')}
+              value={date}
+              onChange={setDate}
+              renderTrigger={({ open, buttonProps }) => (
                 <button {...buttonProps} className="home-month-pill meal-month-trigger">
                   <CalendarDays size={15} strokeWidth={2.35} aria-hidden="true" />
-                  <span>{selectedLabel}</span>
+                  <span>{formatDisplayDate(date, locale)}</span>
                   <ChevronDown size={15} strokeWidth={2.35} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>
               )}
@@ -335,19 +317,17 @@ export default function MemberMealsPage() {
           </div>
         ) : null}
 
-        <MealDateCard
-          date={date}
-          onChange={isEditing ? undefined : setDate}
-          onPrevious={isEditing ? undefined : () => setDate((current) => shiftDate(current, -1))}
-          onNext={isEditing ? undefined : () => setDate((current) => shiftDate(current, 1))}
-        />
-
         {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
 
         <section className="member-meal-summary-grid" aria-label={mealCopy('dailyMealSummary')}>
           {MEAL_ORDER.map((mealName) => {
             const meta = MEAL_META[mealName]
             const MealIcon = meta.icon
+            const summaryLabel = mealName === 'BREAKFAST'
+              ? mealCopy('breakfastShort')
+              : mealName === 'LUNCH'
+                ? mealCopy('lunchShort')
+                : mealCopy('dinnerShort')
             return (
               <article key={mealName} className="member-meal-summary-card">
                 <span className="member-meal-summary-card__icon" style={{ backgroundColor: `${meta.color}12`, color: meta.color }} aria-hidden="true">
@@ -355,7 +335,7 @@ export default function MemberMealsPage() {
                 </span>
                 <span className="member-meal-summary-card__content">
                   <span className="member-meal-summary-card__label">
-                    <span>{mealLabel(mealName, locale)}</span>
+                    <span>{summaryLabel}</span>
                     {mealIsLocked(findMeal(meals, mealName)) ? <LockKeyhole size={10} className="shrink-0 text-[#ee1f2f]" /> : null}
                   </span>
                   <strong>{format.number(totals[mealName])}</strong>

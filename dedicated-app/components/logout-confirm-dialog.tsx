@@ -34,10 +34,9 @@ export function LogoutConfirmDialog({
       ref={dialogRef}
       className="
         fixed inset-0 z-[100]
-        flex items-end justify-center
+        flex items-center justify-center
         bg-[#062b35]/35
-        p-3 sm:p-4
-        sm:items-center
+        p-4
       "
       role="alertdialog"
       aria-modal="true"

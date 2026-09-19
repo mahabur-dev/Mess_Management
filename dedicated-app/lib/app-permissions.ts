@@ -139,6 +139,8 @@ export const managerQuickActions: AppRouteItem[] = [
   { href: '/bazar-schedule', label: 'Bazar Schedule', icon: CalendarClock, access: 'mess' },
   { href: '/quick-add', label: 'AI Assistant', icon: Bot, access: 'mess' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
+  { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
+  { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
 ]
 
 export const memberQuickActions: AppRouteItem[] = [
@@ -148,6 +150,8 @@ export const memberQuickActions: AppRouteItem[] = [
   { href: '/bazar-schedule', label: 'Bazar Schedule', icon: CalendarClock, access: 'mess' },
   { href: '/quick-add', label: 'AI Assistant', icon: Bot, access: 'mess' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
+  { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
+  { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
 ]
 
 export function getHomeQuickActions(user: AuthUser | null | undefined) {

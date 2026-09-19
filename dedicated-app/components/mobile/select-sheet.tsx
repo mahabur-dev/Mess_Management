@@ -50,7 +50,7 @@ type SelectMenuPosition = {
 }
 
 const VIEWPORT_MARGIN = 12
-const TRIGGER_GAP = 8
+const TRIGGER_GAP = 4
 const MIN_MENU_HEIGHT = 120
 const PREFERRED_MENU_HEIGHT = 320
 const MIN_MENU_WIDTH = 180

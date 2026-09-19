@@ -7,7 +7,7 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { FieldCard, SubmitButton, TextField } from '@/components/mobile/form-controls'
 import { DatePicker } from '@/components/mobile/date-picker'
-import { currentMonthValue, formatMonthLabel, shiftMonthValue } from '@/components/mobile/meals-design'
+import { currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
 import {
   DepositLedgerItem,
   DepositLedgerSkeleton,
@@ -136,13 +136,18 @@ export default function DepositsPage() {
     <MobileShell hasFloatingAction>
       <TopScreen title={t('title')} subtitle={t('memberLedger')} backHref="/" />
       <div className="screen deposit-page">
-        <DepositMonthNavigator
-          month={month}
-          label={formatMonthLabel(month, locale)}
-          onPrevious={() => setMonth((current) => shiftMonthValue(current, -1))}
-          onNext={() => setMonth((current) => shiftMonthValue(current, 1))}
-          onChange={setMonth}
-        />
+        {!showForm ? (
+          <div className="deposit-month-action-bar">
+            <DepositMonthNavigator
+              month={month}
+              label={formatMonthLabel(month, locale)}
+              onChange={setMonth}
+            />
+            <button type="button" onClick={() => setShowForm(true)} className="deposit-add-button">
+              <span>{t('addDeposit')}</span>
+            </button>
+          </div>
+        ) : null}
 
         <DepositOverviewCard
           total={totalAmount}
@@ -153,15 +158,16 @@ export default function DepositsPage() {
 
         {notice && !showForm ? <div className="deposit-page-message" data-tone={notice.tone}>{notice.message}</div> : null}
 
-        <DeferredFormSection
-          open={showForm}
-          title={t('addDeposit')}
-          description={t('recordContributionHint')}
-          actionLabel={t('addDeposit')}
-          icon={<PlusCircle size={20} />}
-          onOpen={() => setShowForm(true)}
-          onClose={() => setShowForm(false)}
-        >
+        {showForm ? (
+          <DeferredFormSection
+            open
+            title={t('addDeposit')}
+            description={t('recordContributionHint')}
+            actionLabel={t('addDeposit')}
+            icon={<PlusCircle size={20} />}
+            onOpen={() => setShowForm(true)}
+            onClose={() => setShowForm(false)}
+          >
           <DesignedSelect
             label={t('depositFor')}
             icon={expenseFormIcons.member}
@@ -208,7 +214,8 @@ export default function DepositsPage() {
           <SubmitButton busy={busy} onClick={handleSubmit}>
             {t('addDeposit')}
           </SubmitButton>
-        </DeferredFormSection>
+          </DeferredFormSection>
+        ) : null}
 
         {!showForm ? (
           <section className="deposit-ledger" aria-labelledby="deposit-ledger-title">
@@ -257,13 +264,6 @@ export default function DepositsPage() {
               ) : null}
             </div>
           </section>
-        ) : null}
-
-        {!showForm ? (
-          <button type="button" onClick={() => setShowForm(true)} className="deposit-floating-action">
-            <span className="deposit-floating-action__plus" aria-hidden="true">+</span>
-            <span>{t('newDeposit')}</span>
-          </button>
         ) : null}
       </div>
     </MobileShell>

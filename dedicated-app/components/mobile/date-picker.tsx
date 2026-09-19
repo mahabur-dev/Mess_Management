@@ -67,12 +67,16 @@ export function MonthPicker({
   value,
   onChange,
   disabled = false,
+  menuGap,
+  menuPlacement,
   renderTrigger,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   disabled?: boolean
+  menuGap?: number
+  menuPlacement?: 'auto' | 'bottom'
   renderTrigger?: (props: MonthPickerTrigger) => ReactNode
 }) {
   const format = useLocaleFormatters()
@@ -93,6 +97,8 @@ export function MonthPicker({
       options={options}
       onChange={onChange}
       disabled={disabled}
+      menuGap={menuGap}
+      menuPlacement={menuPlacement}
       renderTrigger={({ open, selectedLabel, buttonProps }) => renderTrigger ? renderTrigger({ open, selectedLabel, buttonProps }) : (
         <FieldCard label={label}>
           <button {...buttonProps} className="date-picker-trigger">

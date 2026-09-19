@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   CalendarDays,
+  ChevronDown,
   CircleDollarSign,
   ReceiptText,
   ShieldCheck,
@@ -17,8 +18,8 @@ import {
   billingCalculationIsPending,
   type BillingCalculationStatus,
 } from '@/components/mobile/billing-status-notice'
-import { AssistantSummaryCard } from '@/components/mobile/assistant-summary-card'
-import { InlineNotice, MealMonthSelector, currentMonthValue } from '@/components/mobile/meals-design'
+import { MonthPicker } from '@/components/mobile/date-picker'
+import { InlineNotice, currentMonthValue } from '@/components/mobile/meals-design'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
@@ -295,7 +296,24 @@ export default function MonthlyBillPage() {
       <TopScreen title={t('monthlyBillManagement')} subtitle={format.month(`${month}-01`)} backHref="/" />
 
       <div className="screen space-y-4">
-        <MealMonthSelector month={month} onChange={setMonth} />
+        <div className="meal-month-action-bar">
+          <MonthPicker
+            label={t('selectMonth')}
+            value={month}
+            onChange={setMonth}
+            renderTrigger={({ open, selectedLabel, buttonProps }) => (
+              <button {...buttonProps} className="home-month-pill meal-month-trigger">
+                <CalendarDays size={15} strokeWidth={2.35} aria-hidden="true" />
+                <span>{selectedLabel}</span>
+                <ChevronDown size={15} strokeWidth={2.35} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+              </button>
+            )}
+          />
+          <Link href={appHref(`/monthly-bill/my-details?month=${encodeURIComponent(month)}`)} className="full-month-meal-link">
+            <ReceiptText size={16} strokeWidth={2.25} aria-hidden="true" />
+            <span>{t('myDetails')}</span>
+          </Link>
+        </div>
 
         {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
         <BillingCalculationNotice status={billingStatus} />
@@ -309,15 +327,6 @@ export default function MonthlyBillPage() {
             <OverviewCard label={t('totalRemaining')} icon={ShieldCheck} value={loading ? <LoadingIndicator size="sm" label={t('loadingRemaining')} /> : format.money(totalRemaining)} />
           </div>
         </section>
-
-        <AssistantSummaryCard
-          icon={CalendarDays}
-          title={t('myBillSummary')}
-          href={appHref(`/monthly-bill/my-details?month=${encodeURIComponent(month)}`)}
-          actionLabel={t('details')}
-        >
-          {t('billSummaryDescription')}
-        </AssistantSummaryCard>
 
         <section className="monthly-member-overview" aria-labelledby="member-bill-overview-title">
           <div className="monthly-member-overview__header">

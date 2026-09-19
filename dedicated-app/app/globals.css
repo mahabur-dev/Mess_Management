@@ -6811,62 +6811,79 @@ a {
   padding-top: var(--space-4);
 }
 
-.deposit-month-navigator {
+.deposit-month-action-bar {
   display: grid;
-  width: min(100%, 310px);
-  min-height: 52px;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  align-self: center;
-  overflow: hidden;
-  border: 1px solid rgba(0, 119, 122, 0.1);
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.91);
-  box-shadow: 0 10px 25px rgba(18, 55, 72, 0.075);
-  backdrop-filter: blur(14px);
+  gap: 8px;
 }
 
-.deposit-month-navigator > button {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border: 0;
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--brand-600);
-  transition: background-color 160ms ease, transform 160ms ease;
-}
-
-.deposit-month-navigator > button:active {
-  background: var(--brand-50);
-  transform: scale(0.94);
-}
-
+.deposit-month-navigator,
 .deposit-month-navigator > div {
   min-width: 0;
 }
 
-.deposit-month-navigator > div > button {
+.deposit-month-trigger {
   display: flex;
   width: 100%;
   min-width: 0;
-  height: 52px;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: var(--semantic-ink);
-}
-
-.deposit-month-navigator > div > button > svg:first-child {
-  color: var(--brand-600);
-}
-
-.deposit-month-navigator > div > button span {
   overflow: hidden;
-  font-size: var(--text-label);
-  font-weight: 750;
+  border: 1px solid #d6e5e7;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 7px 12px;
+  color: #1d3a42;
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-caption--line-height);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.deposit-month-trigger svg {
+  flex-shrink: 0;
+  color: #008d8c;
+}
+
+.deposit-month-trigger span {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deposit-month-trigger:active,
+.deposit-add-button:active {
+  transform: scale(.985);
+}
+
+.deposit-month-trigger:focus-visible,
+.deposit-add-button:focus-visible {
+  outline: 3px solid rgba(0, 141, 140, 0.28);
+  outline-offset: 3px;
+}
+
+.deposit-add-button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #008d8c;
+  border-radius: 10px;
+  background: #008d8c;
+  padding: 7px 10px;
+  color: #ffffff;
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-caption--line-height);
+  text-align: center;
+}
+
+.deposit-add-button span {
   white-space: nowrap;
 }
 
@@ -7289,39 +7306,6 @@ a {
 .deposit-ledger-skeleton i:nth-child(3) { width: 52%; }
 .deposit-ledger-skeleton strong { width: 70px; }
 
-.deposit-floating-action {
-  position: fixed;
-  right: max(18px, calc((100vw - 430px) / 2 + 18px));
-  bottom: calc(20px + env(safe-area-inset-bottom));
-  z-index: 55;
-  display: inline-flex;
-  min-height: 54px;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 0 18px;
-  border: 3px solid rgba(255, 255, 255, 0.88);
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--brand-600), var(--brand-700));
-  color: #ffffff;
-  box-shadow: 0 15px 30px rgba(0, 108, 105, 0.3);
-  font-size: var(--text-label);
-  font-weight: 750;
-  transition: transform 160ms ease, box-shadow 160ms ease;
-}
-
-.deposit-floating-action:active {
-  transform: scale(0.97);
-}
-
-.deposit-floating-action__plus {
-  font-size: var(--text-display);
-  font-weight: var(--font-weight-medium);
-  line-height: 1;
-}
-
-.deposit-month-navigator button:focus-visible,
-.deposit-floating-action:focus-visible,
 .deposit-ledger-row:focus-visible {
   outline: 3px solid rgba(0, 141, 140, 0.28);
   outline-offset: 3px;

@@ -38,6 +38,8 @@ type MobileSelectSheetProps<T extends string> = {
   disabled?: boolean
   title?: string
   emptyMessage?: string
+  menuGap?: number
+  menuPlacement?: 'auto' | 'bottom'
   renderTrigger: (props: MobileSelectSheetTrigger<T>) => ReactNode
 }
 
@@ -61,6 +63,8 @@ export function MobileSelectSheet<T extends string>({
   disabled,
   title,
   emptyMessage = 'No options available.',
+  menuGap = TRIGGER_GAP,
+  menuPlacement = 'auto',
   renderTrigger,
 }: MobileSelectSheetProps<T>) {
   const [open, setOpen] = useState(false)
@@ -102,9 +106,9 @@ export function MobileSelectSheet<T extends string>({
       const rect = trigger.getBoundingClientRect()
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
-      const spaceBelow = viewportHeight - rect.bottom - VIEWPORT_MARGIN - TRIGGER_GAP
-      const spaceAbove = rect.top - VIEWPORT_MARGIN - TRIGGER_GAP
-      const side = spaceBelow < 200 && spaceAbove > spaceBelow ? 'top' : 'bottom'
+      const spaceBelow = viewportHeight - rect.bottom - VIEWPORT_MARGIN - menuGap
+      const spaceAbove = rect.top - VIEWPORT_MARGIN - menuGap
+      const side = menuPlacement === 'bottom' || !(spaceBelow < 200 && spaceAbove > spaceBelow) ? 'bottom' : 'top'
       const availableHeight = Math.max(
         MIN_MENU_HEIGHT,
         Math.min(PREFERRED_MENU_HEIGHT, side === 'bottom' ? spaceBelow : spaceAbove),
@@ -126,8 +130,8 @@ export function MobileSelectSheet<T extends string>({
           left,
           width,
           ...(side === 'bottom'
-            ? { top: rect.bottom + TRIGGER_GAP }
-            : { bottom: viewportHeight - rect.top + TRIGGER_GAP }),
+            ? { top: rect.bottom + menuGap }
+            : { bottom: viewportHeight - rect.top + menuGap }),
         },
       })
     }
@@ -146,7 +150,7 @@ export function MobileSelectSheet<T extends string>({
       window.removeEventListener('scroll', updatePosition, true)
       resizeObserver?.disconnect()
     }
-  }, [open])
+  }, [menuGap, menuPlacement, open])
 
   useNativeBackAction(open, () => {
     setOpen(false)

@@ -12,16 +12,12 @@ import {
   MEAL_ORDER,
   MealStatusPill,
   MealTotalsGrid,
-  MonthlyMealSummaryCard,
-  buildMemberMealHistory,
   currentMonthValue,
   deadlineLabel,
   findAttendanceForMember,
   findMeal,
   mealLabel,
-  monthBounds,
   normalizeMeals,
-  summarizeMealHistory,
   todayIsoDate,
   type MealDeadlineInfo,
   type MealRecord,
@@ -30,21 +26,18 @@ import { canManageMess } from '@/lib/app-permissions'
 import { api } from '@/lib/api'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
-import { useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
+import { useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 export default function MealsPage() {
   const { user } = useAuth()
   const { locale } = useLocale()
-  const format = useLocaleFormatters()
   const mealCopy = useTranslations('meals')
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
   const date = useMemo(() => todayIsoDate(), [])
   const [meals, setMeals] = useState<MealRecord[]>([])
-  const [monthlyMeals, setMonthlyMeals] = useState<MealRecord[]>([])
   const [deadline, setDeadline] = useState<MealDeadlineInfo | null>(null)
   const [loading, setLoading] = useState(false)
-  const [monthlyLoading, setMonthlyLoading] = useState(false)
   const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
   const month = currentMonthValue()
 
@@ -84,36 +77,6 @@ export default function MealsPage() {
     }
   }, [clearNotice, date, messId, showError, showMessage])
 
-  useEffect(() => {
-    if (!messId) {
-      setMonthlyMeals([])
-      setMonthlyLoading(false)
-      return
-    }
-    let alive = true
-    const range = monthBounds(month)
-
-    setMonthlyLoading(true)
-    api
-      .getMealsByMess(messId, { startDate: range.startDate, endDate: range.endDate, limit: 200 })
-      .then((mealRes) => {
-        if (!alive) return
-        setMonthlyMeals(normalizeMeals(mealRes.data))
-      })
-      .catch((error) => {
-        if (!alive) return
-        setMonthlyMeals([])
-        showError(error, 'loadDashboardFailed')
-      })
-      .finally(() => {
-        if (alive) setMonthlyLoading(false)
-      })
-
-    return () => {
-      alive = false
-    }
-  }, [messId, month, showError])
-
   const selectedMeals = MEAL_ORDER.map((mealName) => {
     const meal = findMeal(meals, mealName)
     const attendance = findAttendanceForMember(meal, user?.id)
@@ -122,8 +85,6 @@ export default function MealsPage() {
   const selectedMealLabel = selectedMeals.length
     ? selectedMeals.map((item) => mealLabel(item.mealName, locale)).join(', ')
     : mealCopy('noMealSelected')
-  const monthlySummary = summarizeMealHistory(buildMemberMealHistory(monthlyMeals, user?.id))
-
   return (
     <MobileShell>
       <TopScreen title={mealCopy('management')} subtitle={user?.memberships?.[0]?.mess?.name ?? mealCopy('messMeals')} backHref="/" />
@@ -131,18 +92,16 @@ export default function MealsPage() {
         <MealCard className="space-y-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="section-title mb-0">{mealCopy('todayOverview')}</div>
-            <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'neutral'}>{deadline?.isWindowOpen ? mealCopy('open') : mealCopy('closed')}</MealStatusPill>
+            <Link href={appHref(`/meals/details?month=${month}`)} className="full-month-meal-link">
+              <UtensilsCrossed size={16} strokeWidth={2.25} aria-hidden="true" />
+              <span>{mealCopy('totalMeals')}</span>
+            </Link>
           </div>
           {loading ? (
             <LoadingIndicator variant="card" label={mealCopy('loadingMeals')} />
           ) : (
             <MealTotalsGrid meals={meals} />
           )}
-
-          <MonthlyMealSummaryCard
-            total={monthlyLoading ? <LoadingIndicator size="sm" label={mealCopy('loadingMonthlyMeals')} /> : format.number(monthlySummary.totalMeals)}
-            href={`/meals/details?month=${month}`}
-          />
         </MealCard>
 
         {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}

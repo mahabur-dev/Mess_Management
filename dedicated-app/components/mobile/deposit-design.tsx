@@ -7,7 +7,6 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
-  ChevronLeft,
   ChevronDown,
   ChevronRight,
   CircleDollarSign,
@@ -528,37 +527,29 @@ function DepositAvatar({
 export function DepositMonthNavigator({
   month,
   label,
-  onPrevious,
-  onNext,
   onChange,
 }: {
   month: string
   label: string
-  onPrevious: () => void
-  onNext: () => void
   onChange: (month: string) => void
 }) {
   const t = useTranslations('payments')
   return (
-    <div className="deposit-month-navigator" aria-label={t('depositMonth')}>
-      <button type="button" onClick={onPrevious} aria-label={t('previousMonth')}>
-        <ChevronLeft size={18} strokeWidth={2.4} />
-      </button>
+    <div className="deposit-month-navigator">
       <MonthPicker
         label={t('chooseDepositMonth')}
         value={month}
         onChange={onChange}
+        menuGap={6}
+        menuPlacement="bottom"
         renderTrigger={({ open, selectedLabel, buttonProps }) => (
-          <button {...buttonProps}>
-            <CalendarDays size={18} strokeWidth={2.2} aria-hidden="true" />
+          <button {...buttonProps} className="deposit-month-trigger" aria-label={t('depositMonth')}>
+            <CalendarDays size={15} strokeWidth={2.35} aria-hidden="true" />
             <span>{selectedLabel || label}</span>
-            <ChevronDown size={16} strokeWidth={2.3} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+            <ChevronDown size={15} strokeWidth={2.35} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
           </button>
         )}
       />
-      <button type="button" onClick={onNext} aria-label={t('nextMonth')}>
-        <ChevronRight size={18} strokeWidth={2.4} />
-      </button>
     </div>
   )
 }

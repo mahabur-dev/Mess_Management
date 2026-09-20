@@ -300,7 +300,7 @@ export function AutomationCta() {
         <h2 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{t('automationCta.title')}</h2>
         <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-7 text-white/80">{t('automationCta.description')}</p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a href="/Messzen-test-63.apk" download="Messzen-test-63.apk" className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/60 px-6 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto">
+          <a href="/Messzen-test-66.apk" download="Messzen-test-66.apk" className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/60 px-6 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto">
             <Download size={16} /> {t('automationCta.downloadApk')}
           </a>
           <Link href="/register" className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-semibold text-[var(--brand-dark)] transition hover:bg-[var(--brand-soft)] sm:w-auto">{t('automationCta.action')} <ArrowRight size={16} /></Link>

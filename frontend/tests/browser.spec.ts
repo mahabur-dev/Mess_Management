@@ -249,8 +249,8 @@ test('landing page opens the supplied demo workspace without registration', asyn
   const apkDownloadLinks = page.getByRole('link', { name: 'Download APK' })
   await expect(apkDownloadLinks).toHaveCount(2)
   for (const apkDownloadLink of await apkDownloadLinks.all()) {
-    await expect(apkDownloadLink).toHaveAttribute('href', '/Messzen-test-63.apk')
-    await expect(apkDownloadLink).toHaveAttribute('download', 'Messzen-test-63.apk')
+    await expect(apkDownloadLink).toHaveAttribute('href', '/Messzen-test-66.apk')
+    await expect(apkDownloadLink).toHaveAttribute('download', 'Messzen-test-66.apk')
   }
   await page.getByRole('button', { name: 'Open demo dashboard' }).click()
   await expect(page).toHaveURL(/\/dashboard$/)

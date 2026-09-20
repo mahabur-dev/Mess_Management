@@ -50,7 +50,7 @@ export function DemoDashboardAccess() {
           </div>
           <div className="flex flex-col gap-2 lg:items-stretch">
             <div className="flex flex-col gap-2 sm:flex-row">
-              <a href="/Messzen-test-63.apk" download="Messzen-test-63.apk" className="ghost-button h-11 w-full whitespace-nowrap px-5 sm:w-auto">
+              <a href="/Messzen-test-66.apk" download="Messzen-test-66.apk" className="ghost-button h-11 w-full whitespace-nowrap px-5 sm:w-auto">
                 <Download className="size-4" />
                 {t('hero.downloadApk')}
               </a>

@@ -9,65 +9,20 @@ import {
   InlineNotice,
   MealCard,
   MealDateCard,
-  MEAL_ORDER,
-  MealIconBadge,
-  MealStatusPill,
-  SaveConfirmNote,
-  formatTime,
-  mealLabel,
   todayIsoDate,
   type MealDeadlineInfo,
-  type MealName,
 } from '@/components/mobile/meals-design'
 import { api } from '@/lib/api'
 import { useAuth } from '@/app/providers'
-import { useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
-
-function MealTimePreview({
-  mealName,
-  active,
-  startTime,
-  endTime,
-}: {
-  mealName: MealName
-  active: boolean
-  startTime: string
-  endTime: string
-}) {
-  const { locale } = useLocale()
-  const meals = useTranslations('meals')
-  return (
-    <div className="rounded-[18px] border border-[#d8eeee] bg-white p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <MealIconBadge mealName={mealName} />
-          <div>
-            <div className="text-label font-semibold text-[#123748]">{mealLabel(mealName, locale)}</div>
-            <div className="mt-1 text-caption font-semibold text-[#65838b]">{meals('memberUpdateWindow')}</div>
-          </div>
-        </div>
-        <MealStatusPill tone={active ? 'open' : 'neutral'}>{active ? meals('on') : meals('off')}</MealStatusPill>
-      </div>
-
-      <div className="mt-4 grid grid-cols-[1fr_auto] gap-y-2 text-label font-semibold">
-        <span className="text-[#65838b]">{meals('from')}</span>
-        <span className="text-[#123748]">{formatTime(startTime, locale)}</span>
-        <span className="text-[#65838b]">{meals('to')}</span>
-        <span className="text-[#123748]">{formatTime(endTime, locale)}</span>
-      </div>
-    </div>
-  )
-}
+import { useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 export default function SetMealTimePage() {
   const { user } = useAuth()
-  const { locale } = useLocale()
   const mealsCopy = useTranslations('meals')
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const [date, setDate] = useState(todayIsoDate())
   const [startTime, setStartTime] = useState('22:00')
   const [endTime, setEndTime] = useState('11:00')
-  const [activeMeal, setActiveMeal] = useState<MealName>('LUNCH')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
@@ -141,16 +96,6 @@ export default function SetMealTimePage() {
           {loading ? <LoadingIndicator variant="card" label={mealsCopy('loadingDeadline')} /> : null}
           {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
         </MealCard>
-
-        <div className="space-y-3">
-          {MEAL_ORDER.map((mealName) => (
-            <button key={mealName} type="button" className="w-full text-left" onClick={() => setActiveMeal(mealName)}>
-              <MealTimePreview mealName={mealName} active={activeMeal === mealName} startTime={startTime} endTime={endTime} />
-            </button>
-          ))}
-        </div>
-
-        <SaveConfirmNote>{mealsCopy('timeWindowNote')}</SaveConfirmNote>
 
         <button type="button" className="primary-btn flex w-full items-center justify-center gap-2 disabled:opacity-60" onClick={saveSettings} disabled={saving}>
           {saving ? <Clock3 size={18} /> : <Save size={18} />}

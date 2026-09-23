@@ -14,6 +14,10 @@
         <item name="windowNoTitle">true</item>
         <item name="android:background">@color/messzen_brand</item>
         <item name="android:windowBackground">@color/messzen_brand</item>
+        <item name="colorAccent">@color/native_control_neutral</item>
+        <item name="android:colorAccent">@color/native_control_neutral</item>
+        <item name="colorControlActivated">@color/native_control_neutral</item>
+        <item name="android:colorControlActivated">@color/native_control_neutral</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <!-- Default app screens place the system bar over the teal header. -->
         <item name="android:windowLightStatusBar">false</item>

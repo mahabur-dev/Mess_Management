@@ -295,7 +295,7 @@ export default function MonthlyBillPage() {
     <MobileShell showBottomNavigation>
       <TopScreen title={t('monthlyBillManagement')} subtitle={format.month(`${month}-01`)} backHref="/" />
 
-      <div className="screen space-y-4">
+      <div className="screen monthly-bill-page space-y-4">
         <div className="meal-month-action-bar">
           <MonthPicker
             label={t('selectMonth')}

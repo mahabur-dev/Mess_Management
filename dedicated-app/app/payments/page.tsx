@@ -9,9 +9,10 @@ import { TopScreen } from '@/components/top-screen'
 import { DeferredFormSection } from '@/components/mobile/deferred-form-section'
 import { SubmitButton } from '@/components/mobile/form-controls'
 import { DepositEntryForm } from '@/components/mobile/deposit-entry-form'
-import { MealMonthSelector, currentMonthValue } from '@/components/mobile/meals-design'
+import { currentMonthValue, formatMonthLabel } from '@/components/mobile/meals-design'
 import {
   DepositListItem,
+  DepositMonthNavigator,
   DepositSectionTitle,
   DepositStatCard,
   DepositStatPanel,
@@ -24,7 +25,7 @@ import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
-import { formatIsoDate, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
+import { formatIsoDate, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
 type PaymentItem = {
   id: string
@@ -68,6 +69,7 @@ function createInitialForm(paymentDate = ''): FormState {
 }
 
 export default function PaymentsPage() {
+  const { locale } = useLocale()
   const format = useLocaleFormatters()
   const t = useTranslations('payments')
   const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('payments')
@@ -154,10 +156,19 @@ export default function PaymentsPage() {
   return (
     <MobileShell showBottomNavigation>
       <TopScreen title={showForm ? t('submitDeposit') : t('deposit')} subtitle={showForm ? t('manualEntry') : t('submissions')} backHref="/" />
-      <div className="screen space-y-4">
+      <div className="screen payment-deposit-page space-y-4">
         {!showForm ? (
           <>
-            <MealMonthSelector month={month} onChange={setMonth} />
+            <div className="deposit-month-action-bar">
+              <DepositMonthNavigator
+                month={month}
+                label={formatMonthLabel(month, locale)}
+                onChange={setMonth}
+              />
+              <button type="button" onClick={openDepositForm} className="deposit-add-button">
+                <span>{t('addDeposit')}</span>
+              </button>
+            </div>
 
             <DepositStatPanel>
               <DepositStatCard title={t('myDeposit')} value={loading ? <LoadingIndicator size="sm" label={t('loadingMyDeposit')} /> : format.money(summary.myApproved)} icon={UserRound} compact />
@@ -229,11 +240,6 @@ export default function PaymentsPage() {
         ) : null}
 
       </div>
-      {!showForm ? (
-        <button type="button" onClick={openDepositForm} aria-label={t('addDeposit')} title={t('addDeposit')} className="floating-action-link">
-          <span className="floating-action-link__plus" aria-hidden="true">+</span>
-        </button>
-      ) : null}
     </MobileShell>
   )
 }

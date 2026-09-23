@@ -3,11 +3,11 @@
 import Link from 'next/link'
 import { useState, type ComponentProps, type FormEvent, type ReactNode } from 'react'
 import {
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Eye,
   EyeOff,
-  Home,
   LoaderCircle,
   Lock,
   ShieldCheck,
@@ -342,6 +342,7 @@ export function AuthSecondaryButton({
 
 export function AuthShell({ title, description, children, footer, maxWidth = 'max-w-[440px]' }: AuthShellProps) {
   const auth = useTranslations('authShared')
+  const authControlClass = 'border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-foreground hover:border-[var(--brand-border)] hover:bg-[var(--brand-softer)] hover:text-[var(--brand)]'
   const featureKeys: MessageKey<'authShared'>[] = [
     'protectedAccess',
     'memberReady',
@@ -350,9 +351,16 @@ export function AuthShell({ title, description, children, footer, maxWidth = 'ma
 
   return (
     <main className="auth-page marketing-page fixed inset-0 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-8 sm:px-6 lg:px-8">
+      <Link
+        href="/"
+        className="absolute left-4 top-4 inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--marketing-line)] bg-[var(--marketing-surface)] px-3 text-sm font-semibold text-muted-foreground transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-softer)] hover:text-[var(--brand)] sm:left-6 sm:top-6"
+      >
+        <ArrowLeft size={16} aria-hidden="true" />
+        {auth('backHome')}
+      </Link>
       <div className="absolute right-4 top-4 flex items-center gap-2 sm:right-6 sm:top-6">
-        <LanguageSwitcher />
-        <ThemeToggle />
+        <LanguageSwitcher className={authControlClass} />
+        <ThemeToggle className={authControlClass} />
       </div>
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
         <div className="grid w-full items-center gap-8 lg:grid-cols-[1fr_440px]">
@@ -392,14 +400,6 @@ export function AuthShell({ title, description, children, footer, maxWidth = 'ma
 
               <div className="mt-6 space-y-3 text-center">{footer}</div>
             </div>
-
-            <Link
-              href="/"
-              className="mx-auto mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition hover:text-[var(--brand)]"
-            >
-              <Home size={13} aria-hidden="true" />
-              {auth('backHome')}
-            </Link>
           </section>
         </div>
       </div>

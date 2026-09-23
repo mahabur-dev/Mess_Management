@@ -218,8 +218,17 @@ export function DedicatedAppSection() {
         />
 
         <div className="mt-12 grid items-center gap-12 lg:grid-cols-[.8fr_1.2fr]">
-          <div className="mx-auto w-full max-w-[340px]">
-            <MarketingMobileAppTour variant="app" presentation="device" />
+          <div className="mx-auto w-full max-w-[340px] overflow-hidden rounded-[2rem] border border-[var(--marketing-line)] bg-black shadow-sm">
+            <video
+              className="block aspect-[9/16] w-full bg-black object-contain"
+              controls
+              playsInline
+              preload="none"
+              poster="/mobile-version.webp"
+              aria-label={t('mobileApp.title')}
+            >
+              <source src="/Adobe%20Express%20-%20NV7D-JFw.mp4" type="video/mp4" />
+            </video>
           </div>
 
           <div className="space-y-4">

@@ -1,8 +1,7 @@
 'use client'
 
 import { useMemo, useState, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, Send } from 'lucide-react'
+import { CheckCircle2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -14,7 +13,6 @@ const inputClass = 'h-12 rounded-xl border-[var(--marketing-line)] bg-[var(--mar
 const labelClass = 'mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground'
 
 export function ContactPageClient({ source, requestedPlan }: { source: ContactRequestSource; requestedPlan: SubscriptionPlan | null }) {
-  const router = useRouter()
   const { locale } = useLocale()
   const t = useTranslations('marketing')
   const [name, setName] = useState('')
@@ -86,7 +84,6 @@ export function ContactPageClient({ source, requestedPlan }: { source: ContactRe
                 <div className="rounded-2xl border border-[var(--brand-border-subtle)] bg-[var(--brand-softer)] p-5 text-foreground">
                   <p className="flex items-center gap-2 text-lg font-semibold text-[var(--brand)]"><CheckCircle2 size={19} /> {t('contact.successTitle')}</p>
                   <p className="mt-2 text-sm font-medium leading-7">{success}</p>
-                  <Button type="button" onClick={() => router.push('/')} className="brand-button mt-5 h-11 px-5">{t('contact.backHome')}</Button>
                 </div>
               ) : (
                 <form className="space-y-4" onSubmit={handleSubmit}>
@@ -117,10 +114,6 @@ export function ContactPageClient({ source, requestedPlan }: { source: ContactRe
               )}
             </div>
           </Card>
-
-          <button type="button" onClick={() => router.push('/')} className="mx-auto mt-6 flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-[var(--brand)]">
-            <ArrowLeft size={15} /> {t('contact.backHome')}
-          </button>
         </div>
       </section>
     </main>

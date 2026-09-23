@@ -1,8 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, CalendarDays, FileCheck2, Mail, Phone, Scale, ShieldCheck } from 'lucide-react'
+import { CalendarDays, FileCheck2, Mail, Phone, Scale, ShieldCheck } from 'lucide-react'
 import { useLocale, useLocaleFormatters } from '@/lib/i18n'
 import { banglaPrivacySections, banglaTermsSections } from './legal-copy'
 
@@ -53,10 +52,7 @@ export function LegalPage({
     <main className="legal-page marketing-page">
       <section className="relative overflow-hidden border-b border-[var(--marketing-line)] px-4 py-14 sm:px-6 lg:px-8 lg:py-18">
         <div className="marketing-container relative">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground transition hover:text-[var(--brand)]">
-            <ArrowLeft size={15} /> {isBangla ? 'হোমে ফিরে যান' : 'Back to home'}
-          </Link>
-          <div className="mt-8 max-w-3xl">
+          <div className="max-w-3xl">
             <span className="marketing-eyebrow gap-2"><HeroIcon size={13} /> {localized.eyebrow}</span>
             <h1 className="mt-5 text-4xl font-semibold tracking-[-0.05em] text-foreground sm:text-5xl">{localized.title}</h1>
             <p className="mt-5 max-w-2xl text-sm font-medium leading-7 text-muted-foreground sm:text-base">{localized.description}</p>

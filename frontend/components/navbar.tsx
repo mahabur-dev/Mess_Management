@@ -25,6 +25,7 @@ export function Navbar() {
   const navigation = useTranslations('navigation')
   const [isOpen, setIsOpen] = useState(false)
   const [hash, setHash] = useState('')
+  const headerControlClass = 'border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-foreground hover:border-[var(--brand-border)] hover:bg-[var(--brand-softer)] hover:text-[var(--brand)]'
 
   useEffect(() => {
     const syncHash = () => setHash(window.location.hash)
@@ -46,16 +47,16 @@ export function Navbar() {
           <BrandLogo />
         </Link>
 
-        <div className="hidden h-full w-full grid-flow-col auto-cols-fr items-center xl:grid">
+        <div className="hidden h-full w-full items-center justify-center gap-5 xl:flex">
           {links.map((link) => (
             <a
               key={link.href}
               href={link.href}
               className={cn(
-                'relative flex h-10 items-center justify-center whitespace-nowrap text-[13px] font-semibold leading-none text-muted-foreground transition after:absolute after:inset-x-1 after:bottom-0 after:h-0.5 after:origin-center after:scale-x-0 after:rounded-full after:bg-[var(--brand)] after:transition-transform',
+                'flex h-10 items-center justify-center whitespace-nowrap text-[13px] font-semibold leading-none text-muted-foreground transition',
                 isActive(link.href)
-                  ? 'text-foreground after:scale-x-100'
-                  : 'hover:text-[var(--brand)] hover:after:scale-x-100',
+                  ? 'text-[var(--brand)]'
+                  : 'hover:text-[var(--brand)]',
               )}
             >
               {navigation(link.labelKey)}
@@ -63,20 +64,24 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden w-max shrink-0 items-center gap-2 justify-self-end whitespace-nowrap md:flex">
-          <a href="/login" className="ghost-button h-10 min-h-0 shrink-0 whitespace-nowrap px-5">
-            {navigation('logIn')}
-          </a>
-          <a href="/register" className="brand-button h-10 min-h-0 shrink-0 whitespace-nowrap px-5">
-            {navigation('getStarted')} <ArrowRight size={15} />
-          </a>
-          <LanguageSwitcher compact />
-          <ThemeToggle />
+        <div className="hidden w-max shrink-0 items-center justify-self-end whitespace-nowrap md:flex">
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher compact className={headerControlClass} />
+            <ThemeToggle className={headerControlClass} />
+          </div>
+          <div className="ml-4 flex items-center gap-2">
+            <a href="/login" className="ghost-button h-10 min-h-0 shrink-0 whitespace-nowrap px-5">
+              {navigation('logIn')}
+            </a>
+            <a href="/register" className="brand-button h-10 min-h-0 shrink-0 whitespace-nowrap px-5">
+              {navigation('getStarted')} <ArrowRight size={15} />
+            </a>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 justify-self-end md:hidden">
-          <LanguageSwitcher compact />
-          <ThemeToggle />
+          <LanguageSwitcher compact className={headerControlClass} />
+          <ThemeToggle className={headerControlClass} />
           <button
             type="button"
             className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--marketing-line)] bg-[var(--marketing-surface)] text-foreground"

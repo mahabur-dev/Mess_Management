@@ -49,7 +49,7 @@ export function Navbar() {
 
         <div className="hidden h-full w-full items-center justify-center gap-5 xl:flex">
           {links.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className={cn(
@@ -60,7 +60,7 @@ export function Navbar() {
               )}
             >
               {navigation(link.labelKey)}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -70,12 +70,12 @@ export function Navbar() {
             <ThemeToggle className={headerControlClass} />
           </div>
           <div className="ml-4 flex items-center gap-2">
-            <a href="/login" className="ghost-button h-10 min-h-0 shrink-0 whitespace-nowrap px-5">
+            <Link href="/login" className="ghost-button h-10 min-h-0 shrink-0 whitespace-nowrap px-5">
               {navigation('logIn')}
-            </a>
-            <a href="/register" className="brand-button h-10 min-h-0 shrink-0 whitespace-nowrap px-5">
+            </Link>
+            <Link href="/register" className="brand-button h-10 min-h-0 shrink-0 whitespace-nowrap px-5">
               {navigation('getStarted')} <ArrowRight size={15} />
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -98,7 +98,7 @@ export function Navbar() {
         <div className="border-t border-[var(--marketing-line)] bg-[var(--marketing-page)] px-4 py-4 md:hidden">
           <div className="grid gap-1">
             {links.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
@@ -110,12 +110,12 @@ export function Navbar() {
                 )}
               >
                 {navigation(link.labelKey)}
-              </a>
+              </Link>
             ))}
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <a href="/login" className="ghost-button" onClick={() => setIsOpen(false)}>{navigation('logIn')}</a>
-            <a href="/register" className="brand-button" onClick={() => setIsOpen(false)}>{navigation('getStarted')}</a>
+            <Link href="/login" className="ghost-button" onClick={() => setIsOpen(false)}>{navigation('logIn')}</Link>
+            <Link href="/register" className="brand-button" onClick={() => setIsOpen(false)}>{navigation('getStarted')}</Link>
           </div>
         </div>
       )}

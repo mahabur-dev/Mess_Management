@@ -277,7 +277,7 @@ html[data-locale='bn'] :is(.marketing-eyebrow, .enterprise-kicker, .enterprise-t
     overflow-anchor: none;
   }
 
-  /* Legal documents intentionally use a stable paper-white canvas in both themes. */
+  /* Legal documents keep a paper-white canvas in light mode and follow the dark theme. */
   .legal-page {
     color-scheme: light;
     --brand: #008b80;
@@ -294,6 +294,24 @@ html[data-locale='bn'] :is(.marketing-eyebrow, .enterprise-kicker, .enterprise-t
     --marketing-subtle: #f7faf9;
     --marketing-line: #d8e8e7;
     background: #ffffff;
+  }
+
+  .dark .legal-page {
+    color-scheme: dark;
+    --brand: #25c7b8;
+    --brand-hover: #4bd7cb;
+    --brand-soft: #123b3b;
+    --brand-softer: #0c292b;
+    --brand-border: #286e6a;
+    --brand-border-subtle: #234447;
+    --background: #000000;
+    --foreground: #ffffff;
+    --muted-foreground: #b8c9c7;
+    --marketing-page: #000000;
+    --marketing-surface: #090909;
+    --marketing-subtle: color-mix(in srgb, var(--brand) 9%, #000000);
+    --marketing-line: color-mix(in srgb, var(--brand) 28%, transparent);
+    background: #000000;
   }
 
   .marketing-section {

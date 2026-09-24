@@ -23,7 +23,6 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { AppScreenshot } from '@/components/app-screenshot'
-import { MarketingMobileAppTour } from '@/components/marketing-mobile-app-tour'
 import { SectionHeading } from '@/components/marketing-section'
 import { useTranslations, type MessageKey } from '@/lib/i18n'
 
@@ -130,8 +129,18 @@ export function AiWorkflowSection() {
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-[340px]">
-          <MarketingMobileAppTour variant="ai" presentation="device" />
+        <div className="mx-auto w-full max-w-[340px] overflow-hidden rounded-[2rem] border border-[var(--marketing-line)] bg-black shadow-sm">
+          <video
+            className="block aspect-[9/20] w-full bg-black object-contain"
+            controls
+            playsInline
+            preload="none"
+            poster="/ai-command.webp.jpeg"
+            aria-label={t('ai.videoLabel')}
+          >
+            <source src="/ai%20feature.mp4" type="video/mp4" />
+            {t('ai.videoFallback')}
+          </video>
         </div>
       </div>
     </section>
@@ -151,7 +160,19 @@ export function MealPatternSection() {
     <section id="meal-pattern" className="marketing-section scroll-mt-24 bg-[var(--marketing-subtle)]/70 overflow-hidden">
       <div className="marketing-container grid items-center gap-12 xl:grid-cols-[1.35fr_.65fr]">
         <div className="mx-auto grid w-full max-w-3xl items-center gap-5 md:grid-cols-[minmax(260px,340px)_minmax(300px,1fr)]">
-          <MarketingMobileAppTour variant="meal-pattern" presentation="device" />
+          <div className="mx-auto w-full max-w-[340px] overflow-hidden rounded-[2rem] border border-[var(--marketing-line)] bg-black shadow-sm">
+            <video
+              className="block aspect-[9/20] w-full bg-black object-contain"
+              controls
+              playsInline
+              preload="none"
+              poster="/meal-management.webp.jpeg"
+              aria-label={t('mealPattern.videoLabel')}
+            >
+              <source src="/meal-pattern.mp4" type="video/mp4" />
+              {t('mealPattern.videoFallback')}
+            </video>
+          </div>
           <div className="marketing-card rounded-2xl p-4 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -220,7 +241,7 @@ export function DedicatedAppSection() {
         <div className="mt-12 grid items-center gap-12 lg:grid-cols-[.8fr_1.2fr]">
           <div className="mx-auto w-full max-w-[340px] overflow-hidden rounded-[2rem] border border-[var(--marketing-line)] bg-black shadow-sm">
             <video
-              className="block aspect-[9/16] w-full bg-black object-contain"
+              className="block aspect-[9/20] w-full bg-black object-contain"
               controls
               playsInline
               preload="none"

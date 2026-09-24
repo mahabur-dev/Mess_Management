@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { LegalPage, type LegalSection } from '@/components/legal-page'
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>These Terms and Conditions (&quot;Terms&quot;) are a binding agreement between you and Messzen (&quot;Messzen&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) governing your access to the Messzen website, web dashboard, dedicated mobile application, AI-assisted tools, notifications, and related services (collectively, the &quot;Service&quot;).</p>
-        <p>By creating an account, joining a mess, purchasing or requesting a plan, or otherwise using the Service, you agree to these Terms and the <a href="/privacy-policy">Privacy Policy</a>. If you use the Service for an organization or mess, you confirm that you are authorized to bind that organization to these Terms.</p>
+        <p>By creating an account, joining a mess, purchasing or requesting a plan, or otherwise using the Service, you agree to these Terms and the <Link href="/privacy-policy">Privacy Policy</Link>. If you use the Service for an organization or mess, you confirm that you are authorized to bind that organization to these Terms.</p>
         <p>You must have legal capacity to accept these Terms. If you do not, you may use the Service only with the valid authorization and supervision of a responsible parent, guardian, organization, or mess manager.</p>
       </>
     ),
@@ -148,7 +149,7 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>You retain ownership of information and content you lawfully submit. You grant Messzen a limited, non-exclusive right to host, process, reproduce, transmit, and display that content only as needed to provide, secure, support, and improve the Service.</p>
-        <p>You confirm that you have the necessary authority and permissions for the information you submit, including information about other members. Your use of personal information is also subject to the <a href="/privacy-policy">Privacy Policy</a> and applicable law.</p>
+        <p>You confirm that you have the necessary authority and permissions for the information you submit, including information about other members. Your use of personal information is also subject to the <Link href="/privacy-policy">Privacy Policy</Link> and applicable law.</p>
       </>
     ),
   },

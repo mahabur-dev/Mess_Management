@@ -219,6 +219,8 @@
       "benefitTwo": "Nothing is saved before review",
       "benefitThree": "The correct record and monthly balance update together",
       "exampleLabel": "Example command",
+      "videoLabel": "Messzen AI Quick Add walkthrough",
+      "videoFallback": "Your browser does not support AI feature video playback.",
       "example": "“Add Rahim deposit 2000”"
     },
     "mealPattern": {
@@ -246,6 +248,8 @@
       "memberTitle": "Member-specific",
       "memberText": "Every member can follow a unique pattern.",
       "syncTitle": "Always in sync",
+      "videoLabel": "Messzen Meal Pattern walkthrough",
+      "videoFallback": "Your browser does not support meal pattern video playback.",
       "syncText": "Meal totals and bills keep updating."
     },
     "mobileApp": {

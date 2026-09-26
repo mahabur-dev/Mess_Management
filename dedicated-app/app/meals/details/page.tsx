@@ -74,7 +74,7 @@ function MealDetailsContent() {
     <MobileShell>
       <TopScreen title={mealCopy('myMealHistory')} backHref="/meals" />
       <div className="screen space-y-5">
-        <MealMonthSelector month={month} onChange={setMonth} />
+        <MealMonthSelector month={month} onChange={setMonth} menuGap={18} />
 
         {loading ? (
           <LoadingIndicator variant="card" label={mealCopy('loadingHistory')} />

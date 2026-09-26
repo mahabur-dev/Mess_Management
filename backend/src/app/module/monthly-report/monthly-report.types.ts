@@ -15,6 +15,24 @@ export type MonthlyReportMemberSnapshot = {
   due: number;
   credit: number;
   status: string;
+  role?: string;
+};
+
+export type MonthlyReportExpenseEntry = {
+  id: string;
+  date: string;
+  purchasedBy: string;
+  category: string;
+  description?: string;
+  amount: number;
+};
+
+export type MonthlyReportDepositEntry = {
+  id: string;
+  date: string;
+  member: string;
+  method: string;
+  amount: number;
 };
 
 export type MonthlyReportSnapshot = {
@@ -44,6 +62,8 @@ export type MonthlyReportSnapshot = {
     totalMessCost: number;
   };
   members: MonthlyReportMemberSnapshot[];
+  expenseRegister?: MonthlyReportExpenseEntry[];
+  depositRegister?: MonthlyReportDepositEntry[];
 };
 
 export function isMonthlyReportSnapshot(value: unknown): value is MonthlyReportSnapshot {

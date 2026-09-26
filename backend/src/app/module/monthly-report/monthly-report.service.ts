@@ -19,6 +19,8 @@ import { GenerateMonthlyReportDto } from './dto/monthly-report.dto';
 import { MonthlyReportPdfService } from './monthly-report-pdf.service';
 import {
   isMonthlyReportSnapshot,
+  MonthlyReportDepositEntry,
+  MonthlyReportExpenseEntry,
   MonthlyReportMemberSnapshot,
   MonthlyReportSnapshot,
 } from './monthly-report.types';
@@ -136,7 +138,12 @@ export class MonthlyReportService {
     ) {
       return null;
     }
-    return report ? this.presentReport(report, userId, access) : null;
+    if (!report) return null;
+    const presented = this.presentReport(report, userId, access);
+    return {
+      ...presented,
+      snapshot: await this.onlyActiveMembers(presented.snapshot, messId),
+    };
   }
 
   async findOne(reportId: string, userId: string, role: string) {
@@ -149,7 +156,11 @@ export class MonthlyReportService {
     if (!access.canManage && report.status !== MonthlyReportStatus.FINALIZED) {
       throw new HttpException('Monthly report not found', 404);
     }
-    return this.presentReport(report, userId, access);
+    const presented = this.presentReport(report, userId, access);
+    return {
+      ...presented,
+      snapshot: await this.onlyActiveMembers(presented.snapshot, report.mess_id),
+    };
   }
 
   async generate(
@@ -260,7 +271,11 @@ export class MonthlyReportService {
       throw new HttpException('Finalize the report before downloading PDF', 409);
     }
     const access = await this.verifyAccess(report.mess_id, userId, role);
-    const snapshot = this.readSnapshot(report.snapshot);
+    let snapshot = await this.onlyActiveMembers(
+      this.readSnapshot(report.snapshot),
+      report.mess_id,
+    );
+    snapshot = await this.withTransactionRegisters(snapshot, report.mess_id, report.month);
     const personalMember = access.canManage
       ? undefined
       : snapshot.members.find((member) => member.memberId === userId);
@@ -657,7 +672,26 @@ export class MonthlyReportService {
     });
     if (!mess) throw new HttpException('Mess not found', 404);
 
-    const members: MonthlyReportMemberSnapshot[] = bills.map((bill) => {
+    const [activeMemberships, registers] = await Promise.all([
+      this.prisma.messMembership.findMany({
+        where: {
+          mess_id: messId,
+          is_active: true,
+          user: { is_active: true },
+        },
+        select: { user_id: true, role: true },
+      }),
+      this.loadTransactionRegisters(messId, month),
+    ]);
+    const activeMemberIds = new Set(
+      activeMemberships.map((membership) => membership.user_id),
+    );
+    const roleByMember = new Map(
+      activeMemberships.map((membership) => [membership.user_id, membership.role]),
+    );
+    const activeBills = bills.filter((bill) => activeMemberIds.has(bill.member.id));
+
+    const members: MonthlyReportMemberSnapshot[] = activeBills.map((bill) => {
       const mealCost = fixed(bill.food_bill);
       const rentCost = fixed(bill.seat_rent);
       const utilityCost = fixed(bill.utility_share);
@@ -678,11 +712,12 @@ export class MonthlyReportService {
         due: fixed(bill.final_due),
         credit: fixed(bill.credit_balance),
         status: bill.status,
+        role: roleByMember.get(bill.member.id) ?? 'MEMBER',
       };
     });
 
-    const sum = (selector: (bill: (typeof bills)[number]) => unknown) =>
-      fixed(bills.reduce((total, bill) => total + Number(selector(bill) ?? 0), 0));
+    const sum = (selector: (bill: (typeof activeBills)[number]) => unknown) =>
+      fixed(activeBills.reduce((total, bill) => total + Number(selector(bill) ?? 0), 0));
     const totalMeals = sum((bill) => bill.total_meals);
     const foodBazar = sum((bill) => bill.food_bill);
     const rentHouse = sum((bill) => bill.seat_rent);
@@ -720,6 +755,88 @@ export class MonthlyReportService {
         totalMessCost,
       },
       members,
+      ...registers,
+    };
+  }
+
+  private async withTransactionRegisters(
+    snapshot: MonthlyReportSnapshot,
+    messId: string,
+    month: Date,
+  ): Promise<MonthlyReportSnapshot> {
+    if (snapshot.expenseRegister && snapshot.depositRegister) return snapshot;
+    return {
+      ...snapshot,
+      ...(await this.loadTransactionRegisters(messId, month)),
+    };
+  }
+
+  private async loadTransactionRegisters(
+    messId: string,
+    month: Date,
+  ): Promise<{
+    expenseRegister: MonthlyReportExpenseEntry[];
+    depositRegister: MonthlyReportDepositEntry[];
+  }> {
+    const nextMonth = new Date(
+      Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1),
+    );
+    const [expenses, deposits] = await Promise.all([
+      this.prisma.expense.findMany({
+        where: {
+          mess_id: messId,
+          status: 'CONFIRMED',
+          OR: [
+            { billing_month: month },
+            {
+              billing_month: null,
+              expense_date: { gte: month, lt: nextMonth },
+            },
+          ],
+        },
+        orderBy: [{ expense_date: 'asc' }, { created_at: 'asc' }],
+        select: {
+          id: true,
+          expense_date: true,
+          amount: true,
+          category: true,
+          description: true,
+          purchaser: { select: { name: true } },
+          creator: { select: { name: true } },
+        },
+      }),
+      this.prisma.deposit.findMany({
+        where: {
+          mess_id: messId,
+          deposit_date: { gte: month, lt: nextMonth },
+        },
+        orderBy: [{ deposit_date: 'asc' }, { created_at: 'asc' }],
+        select: {
+          id: true,
+          deposit_date: true,
+          amount: true,
+          method: true,
+          member: { select: { name: true } },
+        },
+      }),
+    ]);
+
+    return {
+      expenseRegister: expenses.map((expense) => ({
+        id: expense.id,
+        date: expense.expense_date.toISOString(),
+        purchasedBy: expense.purchaser?.name ?? expense.creator.name,
+        category: expense.category,
+        description: expense.description ?? undefined,
+        amount: fixed(expense.amount),
+      })),
+      depositRegister: deposits.map((deposit) => ({
+        id: deposit.id,
+        date: deposit.deposit_date.toISOString(),
+        member: deposit.member.name,
+        method: deposit.method,
+        amount: fixed(deposit.amount),
+      })),
     };
   }
 
@@ -814,6 +931,38 @@ export class MonthlyReportService {
       throw new HttpException('Monthly report snapshot is invalid', 500);
     }
     return value;
+  }
+
+  private async onlyActiveMembers(
+    snapshot: MonthlyReportSnapshot,
+    messId: string,
+  ): Promise<MonthlyReportSnapshot> {
+    const memberships = await this.prisma.messMembership.findMany({
+      where: {
+        mess_id: messId,
+        is_active: true,
+        user: { is_active: true },
+      },
+      select: { user_id: true },
+    });
+    const activeIds = new Set(memberships.map((membership) => membership.user_id));
+    const members = snapshot.members.filter((member) => activeIds.has(member.memberId));
+    const totalMeals = fixed(members.reduce((sum, member) => sum + member.totalMeals, 0));
+    const totalMealCost = fixed(members.reduce((sum, member) => sum + member.mealCost, 0));
+
+    return {
+      ...snapshot,
+      summary: {
+        ...snapshot.summary,
+        totalMembers: members.length,
+        totalMeals,
+        totalDeposit: fixed(members.reduce((sum, member) => sum + member.deposit, 0)),
+        mealRate: totalMeals > 0 ? fixed(totalMealCost / totalMeals) : 0,
+        totalDue: fixed(members.reduce((sum, member) => sum + member.due, 0)),
+        totalCredit: fixed(members.reduce((sum, member) => sum + member.credit, 0)),
+      },
+      members,
+    };
   }
 
   private completedMonth(monthInput: string) {

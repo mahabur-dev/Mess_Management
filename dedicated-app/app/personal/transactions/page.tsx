@@ -89,7 +89,7 @@ export default function PersonalTransactionsPage() {
         backHref="/personal"
       />
       <div className="screen space-y-4">
-        <MealMonthSelector month={month} onChange={setMonth} />
+        <MealMonthSelector month={month} onChange={setMonth} menuGap={18} />
         <PersonalNavigation locale={locale} active="transactions" />
         <section
           aria-label={`${copy.search} / ${copy.filterType}`}

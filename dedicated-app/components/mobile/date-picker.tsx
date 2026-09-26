@@ -67,6 +67,8 @@ export function MonthPicker({
   value,
   onChange,
   disabled = false,
+  min,
+  max,
   menuGap,
   menuPlacement,
   renderTrigger,
@@ -75,6 +77,8 @@ export function MonthPicker({
   value: string
   onChange: (value: string) => void
   disabled?: boolean
+  min?: string
+  max?: string
   menuGap?: number
   menuPlacement?: 'auto' | 'bottom'
   renderTrigger?: (props: MonthPickerTrigger) => ReactNode
@@ -86,8 +90,8 @@ export function MonthPicker({
       const month = new Date(center.getFullYear(), center.getMonth() + index - 24, 1, 12)
       const monthKey = monthValue(month)
       return { value: monthKey, label: format.month(month) }
-    }),
-    [center.getFullYear(), center.getMonth(), format],
+    }).filter((option) => (!min || option.value >= min) && (!max || option.value <= max)),
+    [center.getFullYear(), center.getMonth(), format, max, min],
   )
 
   return (

@@ -70,6 +70,25 @@ const snapshot = {
     totalMessCost: 11000,
   },
   members: [memberOne, memberTwo],
+  expenseRegister: [
+    {
+      id: 'expense-1',
+      date: '2026-08-05T00:00:00.000Z',
+      purchasedBy: 'Rahim Ahmed',
+      category: 'GROCERY',
+      description: 'Rice and vegetables',
+      amount: 2500,
+    },
+  ],
+  depositRegister: [
+    {
+      id: 'deposit-1',
+      date: '2026-08-03T00:00:00.000Z',
+      member: 'Rahim Ahmed',
+      method: 'BKASH',
+      amount: 4000,
+    },
+  ],
 };
 
 describe('monthly report', () => {
@@ -107,6 +126,30 @@ describe('monthly report', () => {
       ['member-1'],
     );
     assert.deepEqual(result.deliveries, []);
+  });
+
+  it('removes inactive memberships from an existing report presentation', async () => {
+    const service = new MonthlyReportService(
+      {
+        messMembership: {
+          findMany: async () => [{ user_id: 'member-1' }],
+        },
+      },
+      {},
+      {},
+      {},
+    );
+    const result = await service.onlyActiveMembers(snapshot, 'mess-1');
+
+    assert.deepEqual(
+      result.members.map((member) => member.memberId),
+      ['member-1'],
+    );
+    assert.equal(result.summary.totalMembers, 1);
+    assert.equal(result.summary.totalMeals, 52);
+    assert.equal(result.summary.totalDeposit, 4000);
+    assert.equal(result.summary.totalCredit, 400);
+    assert.equal(result.summary.totalDue, 0);
   });
 
   it('presents credit as a positive localized balance in member email', () => {

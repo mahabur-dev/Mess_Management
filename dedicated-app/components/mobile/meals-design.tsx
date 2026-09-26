@@ -361,9 +361,11 @@ export function MealDateCard({
 export function MealMonthSelector({
   month,
   onChange,
+  menuGap,
 }: {
   month: string
   onChange: (month: string) => void
+  menuGap?: number
 }) {
   const meals = useTranslations('meals')
   const selectMonth = (nextMonth: string) => {
@@ -384,6 +386,7 @@ export function MealMonthSelector({
         label={meals('selectMonth')}
         value={month}
         onChange={selectMonth}
+        menuGap={menuGap}
         renderTrigger={({ open, selectedLabel, buttonProps }) => (
           <button {...buttonProps} className="flex h-full min-w-[156px] items-center justify-center gap-2 overflow-hidden px-2">
             <CalendarDays size={19} className="shrink-0 text-[#008d8c]" />

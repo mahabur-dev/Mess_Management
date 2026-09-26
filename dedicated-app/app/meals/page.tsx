@@ -28,14 +28,22 @@ import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
 import { useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 
+function nextIsoDate(date: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10)
+}
+
 export default function MealsPage() {
   const { user } = useAuth()
   const { locale } = useLocale()
   const mealCopy = useTranslations('meals')
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const isManager = canManageMess(user)
-  const date = useMemo(() => todayIsoDate(), [])
+  const today = useMemo(() => todayIsoDate(), [])
+  const tomorrow = useMemo(() => nextIsoDate(today), [today])
   const [meals, setMeals] = useState<MealRecord[]>([])
+  const [decisionMeals, setDecisionMeals] = useState<MealRecord[]>([])
+  const [decisionDate, setDecisionDate] = useState(tomorrow)
   const [deadline, setDeadline] = useState<MealDeadlineInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const { notice, clearNotice, showError, showMessage } = useLocalizedNotice('meals')
@@ -44,6 +52,8 @@ export default function MealsPage() {
   useEffect(() => {
     if (!messId) {
       setMeals([])
+      setDecisionMeals([])
+      setDecisionDate(tomorrow)
       setDeadline(null)
       setLoading(false)
       showMessage('noMessSelected', 'warning')
@@ -54,17 +64,27 @@ export default function MealsPage() {
     setLoading(true)
     clearNotice()
     Promise.all([
-      api.getMealsByMess(messId, { startDate: date, endDate: date, limit: 20 }),
-      api.getMealDeadline(messId, date),
+      api.getMealsByMess(messId, { startDate: today, endDate: today, limit: 20 }),
+      api.getMealsByMess(messId, { startDate: tomorrow, endDate: tomorrow, limit: 20 }),
+      api.getMealDeadline(messId, today),
+      api.getMealDeadline(messId, tomorrow),
     ])
-      .then(([mealRes, deadlineRes]) => {
+      .then(([todayMealRes, tomorrowMealRes, todayDeadlineRes, tomorrowDeadlineRes]) => {
         if (!alive) return
-        setMeals(normalizeMeals(mealRes.data))
-        setDeadline((deadlineRes.data ?? null) as MealDeadlineInfo | null)
+        const todayDeadline = (todayDeadlineRes.data ?? null) as MealDeadlineInfo | null
+        const tomorrowDeadline = (tomorrowDeadlineRes.data ?? null) as MealDeadlineInfo | null
+        const isTodayWindowOpen = Boolean(todayDeadline?.isWindowOpen)
+
+        setMeals(normalizeMeals(todayMealRes.data))
+        setDecisionMeals(normalizeMeals(isTodayWindowOpen ? todayMealRes.data : tomorrowMealRes.data))
+        setDecisionDate(isTodayWindowOpen ? today : tomorrow)
+        setDeadline(isTodayWindowOpen ? todayDeadline : tomorrowDeadline)
       })
       .catch((error) => {
         if (!alive) return
         setMeals([])
+        setDecisionMeals([])
+        setDecisionDate(tomorrow)
         setDeadline(null)
         showError(error, 'loadDashboardFailed')
       })
@@ -75,10 +95,10 @@ export default function MealsPage() {
     return () => {
       alive = false
     }
-  }, [clearNotice, date, messId, showError, showMessage])
+  }, [clearNotice, messId, showError, showMessage, today, tomorrow])
 
   const selectedMeals = MEAL_ORDER.map((mealName) => {
-    const meal = findMeal(meals, mealName)
+    const meal = findMeal(decisionMeals, mealName)
     const attendance = findAttendanceForMember(meal, user?.id)
     return { mealName, meal, attendance }
   }).filter((item) => item.attendance?.status === 'ON')
@@ -110,11 +130,19 @@ export default function MealsPage() {
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <div className="text-body font-semibold text-[#123748]">{mealCopy('myMealStatus')}</div>
-              <div className="mt-1 flex items-center gap-1 text-caption font-semibold text-[#008d8c]">
-                <Clock3 size={12} /> {deadlineLabel(deadline, locale)}
-              </div>
+              {deadline ? (
+                <div className="mt-1 flex items-center gap-1 text-caption font-semibold text-[#008d8c]">
+                  <Clock3 size={12} /> {deadlineLabel(deadline, locale)}
+                </div>
+              ) : (
+                <span className="mt-1 block h-4" aria-hidden="true" />
+              )}
             </div>
-            <MealStatusPill tone={deadline?.isWindowOpen ? 'open' : 'closed'}>{deadline?.isWindowOpen ? mealCopy('open') : mealCopy('closed')}</MealStatusPill>
+            {deadline ? (
+              <MealStatusPill tone={deadline.isWindowOpen ? 'open' : 'closed'}>{deadline.isWindowOpen ? mealCopy('open') : mealCopy('closed')}</MealStatusPill>
+            ) : (
+              <span className="block h-7 min-w-[72px]" aria-hidden="true" />
+            )}
           </div>
 
           <div className="rounded-[16px] border border-[#cfeeed] bg-[#fbffff] p-4">
@@ -129,7 +157,7 @@ export default function MealsPage() {
             </div>
           </div>
 
-          <Link href={appHref(`/meals/my?date=${date}`)} className="primary-btn mt-4 flex items-center justify-center gap-2">
+          <Link href={appHref(`/meals/my?date=${decisionDate}`)} className="primary-btn mt-4 flex items-center justify-center gap-2">
             <UtensilsCrossed size={18} /> {mealCopy('addMyMeal')}
           </Link>
         </MealCard>

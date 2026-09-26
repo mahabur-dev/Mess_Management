@@ -18,6 +18,22 @@ import {
   localizeSystemNotification,
 } from './notification-localization';
 
+const NOTIFICATION_SELECT = {
+  id: true,
+  type: true,
+  title: true,
+  body: true,
+  metadata: true,
+  created_at: true,
+  mess: { select: { id: true, name: true } },
+  sender: { select: { id: true, name: true, email: true } },
+  reads: { select: { user_id: true, read_at: true } },
+} as const;
+
+type SelectedNotification = Prisma.NotificationGetPayload<{
+  select: typeof NOTIFICATION_SELECT;
+}>;
+
 @Injectable()
 export class NotificationService {
   constructor(
@@ -27,17 +43,7 @@ export class NotificationService {
     this.configureWebPush();
   }
 
-  private readonly notificationSelect = {
-    id: true,
-    type: true,
-    title: true,
-    body: true,
-    metadata: true,
-    created_at: true,
-    mess: { select: { id: true, name: true } },
-    sender: { select: { id: true, name: true, email: true } },
-    reads: { select: { user_id: true, read_at: true } },
-  } as const;
+  private readonly notificationSelect = NOTIFICATION_SELECT;
 
   private configureWebPush() {
     const publicKey = config.webPush.vapidPublicKey;
@@ -230,37 +236,49 @@ export class NotificationService {
     url = '/dashboard/notifications',
     dedupeKey?: string,
   ) {
+    const resolvedTargets =
+      targetUserIds ?? (await this.resolveMessUserIds(messId));
+    const data = {
+      mess_id: messId,
+      sender_id: senderId,
+      dedupe_key: dedupeKey,
+      type,
+      title,
+      body,
+      metadata: {
+        ...(metadata ?? {}),
+        targetUserIds: resolvedTargets,
+      } as Prisma.InputJsonValue,
+    };
+
+    let notification: SelectedNotification;
+    let created = true;
+
     if (dedupeKey) {
-      const existing = await this.prisma.notification.findUnique({
+      const insert = await this.prisma.notification.createMany({
+        data: [data],
+        skipDuplicates: true,
+      });
+      created = insert.count === 1;
+      const resolvedNotification = await this.prisma.notification.findUnique({
         where: { dedupe_key: dedupeKey },
         select: this.notificationSelect,
       });
-
-      if (existing) {
-        return existing;
+      if (!resolvedNotification) {
+        throw new Error('Notification deduplication failed to resolve the record');
       }
-    }
-
-    try {
-      const resolvedTargets =
-        targetUserIds ?? (await this.resolveMessUserIds(messId));
-
-      const notification = await this.prisma.notification.create({
+      notification = resolvedNotification;
+    } else {
+      notification = await this.prisma.notification.create({
         data: {
-          mess_id: messId,
-          sender_id: senderId,
-          dedupe_key: dedupeKey,
-          type,
-          title,
-          body,
-          metadata: {
-            ...(metadata ?? {}),
-            targetUserIds: resolvedTargets,
-          } as Prisma.InputJsonValue,
+          ...data,
+          dedupe_key: null,
         },
         select: this.notificationSelect,
       });
+    }
 
+    if (created) {
       await this.dispatchPushToUsers(resolvedTargets, {
         title,
         body,
@@ -272,20 +290,9 @@ export class NotificationService {
           ...(metadata ?? {}),
         },
       });
-
-      return notification;
-    } catch (error) {
-      const isDuplicate = (error as { code?: string }).code === 'P2002';
-      if (dedupeKey && isDuplicate) {
-        const existing = await this.prisma.notification.findUnique({
-          where: { dedupe_key: dedupeKey },
-          select: this.notificationSelect,
-        });
-        if (existing) return existing;
-      }
-
-      throw error;
     }
+
+    return notification;
   }
 
   async sendPushToUsers(userIds: string[], dto: SendPushNotificationDto) {

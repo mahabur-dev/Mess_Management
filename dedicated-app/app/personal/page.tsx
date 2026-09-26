@@ -26,7 +26,7 @@ export default function PersonalPage() {
         backHref="/"
       />
       <div className="screen space-y-4">
-        <MealMonthSelector month={month} onChange={setMonth} />
+        <MealMonthSelector month={month} onChange={setMonth} menuGap={18} />
         <PersonalNavigation locale={locale} active="dashboard" />
         <PersonalDashboard locale={locale} month={month} />
       </div>

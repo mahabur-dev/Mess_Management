@@ -29,6 +29,10 @@ function notificationRoute(item: NotificationItem) {
   if (source === 'PAYMENT' || source === 'PAYMENT_REVIEW') return '/payments'
   if (source === 'NOTICE') return '/notices'
   if (source === 'COMPLAINT') return '/complaints'
+  if (source === 'MONTHLY_REPORT_READY' || source === 'MONTHLY_REPORT_FINALIZED') {
+    const reportId = typeof item.metadata?.reportId === 'string' ? item.metadata.reportId : ''
+    return reportId ? `/reports?report=${encodeURIComponent(reportId)}` : '/reports'
+  }
   if (item.metadata?.type === 'MEAL_WINDOW_OPENED' || item.metadata?.type === 'MEAL_DEADLINE_WARNING') return '/meals'
   if (item.metadata?.closeRequestId) return '/monthly-bill'
   return '/notifications'

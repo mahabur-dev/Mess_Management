@@ -15,6 +15,81 @@ function safeApiErrorMessage(status: number) {
 
 type QueryValue = string | number | boolean | undefined | null
 
+export type MonthlyReportStatus = 'DRAFT' | 'FINALIZED'
+export type MonthlyReportDeliveryStatus = 'PENDING' | 'PROCESSING' | 'SENT' | 'FAILED'
+
+export type MonthlyReportMemberSnapshot = {
+  memberId: string
+  name: string
+  email: string
+  totalMeals: number
+  mealCost: number
+  otherCost: number
+  rentCost: number
+  utilityCost: number
+  totalAmount: number
+  deposit: number
+  paidAmount: number
+  previousBalance: number
+  balance: number
+  due: number
+  credit: number
+  status: string
+}
+
+export type MonthlyReportSnapshot = {
+  schemaVersion: 1
+  mess: { id: string; name: string; currency: string }
+  month: string
+  summary: {
+    totalMembers: number
+    totalMeals: number
+    totalExpense: number
+    totalDeposit: number
+    mealRate: number
+    totalMessCost: number
+    totalDue: number
+    totalCredit: number
+  }
+  expenseSummary: {
+    foodBazar: number
+    utility: number
+    rentHouse: number
+    otherExpenses: number
+    totalExpense: number
+    totalMessCost: number
+  }
+  members: MonthlyReportMemberSnapshot[]
+}
+
+export type MonthlyReport = {
+  id: string
+  mess_id: string
+  month: string
+  status: MonthlyReportStatus
+  version: number
+  source_revision: number
+  snapshot: MonthlyReportSnapshot
+  generated_at: string
+  finalized_at: string | null
+  deliveries: Array<{
+    id: string
+    member_id: string
+    recipient_email: string
+    status: MonthlyReportDeliveryStatus
+    attempts: number
+    sent_at: string | null
+    last_error: string | null
+  }>
+  can_manage: boolean
+}
+
+export type MonthlyReportSetting = {
+  auto_generate: boolean
+  email_members: boolean
+  updated_at: string | null
+}
+
 export type BulkMealName = 'BREAKFAST' | 'LUNCH' | 'DINNER'
 
 export type BazarFrequency = 'EVERY_DAY' | 'SPECIFIC_WEEKDAYS' | 'CUSTOM_DATES'
@@ -666,6 +741,54 @@ class Api {
 
   getMonthlyBillById(id: string) {
     return this.request(`/monthly-bill/${id}`)
+  }
+
+  getMonthlyReport(messId: string, month: string) {
+    return this.request<MonthlyReport | null>(`/monthly-reports/mess/${messId}`, { params: { month } })
+  }
+
+  getMonthlyReportById(id: string) {
+    return this.request<MonthlyReport>(`/monthly-reports/${id}`)
+  }
+
+  generateMonthlyReport(data: { messId: string; month: string }) {
+    return this.request<MonthlyReport>('/monthly-reports/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  finalizeMonthlyReport(id: string) {
+    return this.request<MonthlyReport>(`/monthly-reports/${id}/finalize`, { method: 'POST' })
+  }
+
+  retryMonthlyReportDeliveries(id: string) {
+    return this.request<MonthlyReport>(`/monthly-reports/${id}/retry-deliveries`, { method: 'POST' })
+  }
+
+  getMonthlyReportSettings(messId: string) {
+    return this.request<MonthlyReportSetting>(`/monthly-reports/settings/${messId}`, { cache: 'no-store' })
+  }
+
+  updateMonthlyReportSettings(messId: string, data: { autoGenerate: boolean; emailMembers: boolean }) {
+    return this.request<MonthlyReportSetting>(`/monthly-reports/settings/${messId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async downloadMonthlyReportPdf(id: string, locale: 'en' | 'bn') {
+    const response = await fetch(`${BASE_URL}/monthly-reports/${id}/pdf?locale=${locale}`, {
+      headers: { Authorization: `Bearer ${this.token() ?? ''}` },
+      credentials: 'include',
+    })
+    if (!response.ok) {
+      if (response.status === 401) this.clearAuth()
+      throw new ApiError(safeApiErrorMessage(response.status), `HTTP_${response.status}`, response.status)
+    }
+    const disposition = response.headers.get('content-disposition') ?? ''
+    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? 'messzen-monthly-report.pdf'
+    return { blob: await response.blob(), filename }
   }
 
   requestMonthlyBillClose(id: string) {

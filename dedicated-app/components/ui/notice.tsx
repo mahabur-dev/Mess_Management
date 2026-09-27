@@ -20,7 +20,15 @@ export function Notice({
     danger: 'ui-notice--danger',
   }[tone]
 
-  return <div className={`ui-notice ${toneClass} ${className}`.trim()}>{children}</div>
+  return (
+    <div
+      className={`ui-notice ${toneClass} ${className}`.trim()}
+      role={tone === 'danger' ? 'alert' : 'status'}
+      aria-live={tone === 'danger' ? 'assertive' : 'polite'}
+    >
+      {children}
+    </div>
+  )
 }
 
 export function EmptyState({

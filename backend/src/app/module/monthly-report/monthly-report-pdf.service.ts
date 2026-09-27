@@ -36,6 +36,7 @@ const COPY = {
     confidential: 'Confidential financial statement', personalStatement: 'Personal Account Statement',
     personalNote: 'This statement contains only your personal monthly account details.', previousBalance: 'Previous balance',
     paid: 'Deposit + payment',
+    mealManagement: 'Meal Management', dailyTotal: 'Daily total', groupTotal: 'Group total', monthlyTotal: 'Monthly total', part: 'Part',
   },
   bn: {
     report: 'মাসিক আর্থিক রিপোর্ট', finalized: 'চূড়ান্ত', period: 'সময়সীমা', summary: 'আর্থিক সারসংক্ষেপ',
@@ -51,6 +52,7 @@ const COPY = {
     confidential: 'গোপনীয় আর্থিক স্টেটমেন্ট', personalStatement: 'ব্যক্তিগত হিসাবের স্টেটমেন্ট',
     personalNote: 'এই স্টেটমেন্টে শুধু আপনার ব্যক্তিগত মাসিক হিসাব রয়েছে।', previousBalance: 'পূর্বের ব্যালেন্স',
     paid: 'ডিপোজিট + পেমেন্ট',
+    mealManagement: 'মিল ম্যানেজমেন্ট', dailyTotal: 'দৈনিক মোট', groupTotal: 'গ্রুপ মোট', monthlyTotal: 'মাসিক মোট', part: 'অংশ',
   },
 } as const;
 
@@ -95,6 +97,8 @@ export class MonthlyReportPdfService {
     } else {
       this.drawSectionTitle(doc, copy.memberStatement);
       this.drawMemberTable(doc, snapshot.members, copy, money, number, snapshot.mess.name, monthLabel);
+      doc.y += 16;
+      this.drawMealManagement(doc, snapshot, copy, number, locale, monthLabel);
       this.drawTransactionRegisters(doc, snapshot, copy, money, locale, monthLabel);
     }
     this.drawFooters(doc, copy.generatedBy, copy.confidential);
@@ -147,10 +151,10 @@ export class MonthlyReportPdfService {
   ) {
     const columns: TableColumn[] = [
       { label: copy.memberId, width: 42 }, { label: copy.member, width: 88 }, { label: copy.role, width: 36 },
-      { label: copy.meals, width: 30, align: 'right' }, { label: copy.mealCost, width: 50, align: 'right' },
-      { label: copy.utilityCost, width: 48, align: 'right' }, { label: copy.rent, width: 39, align: 'right' },
-      { label: copy.totalCost, width: 55, align: 'right' }, { label: copy.deposit, width: 58, align: 'right' },
-      { label: copy.balance, width: 93, align: 'right' },
+      { label: copy.meals, width: 30 }, { label: copy.mealCost, width: 50 },
+      { label: copy.utilityCost, width: 48 }, { label: copy.rent, width: 39 },
+      { label: copy.totalCost, width: 55 }, { label: copy.deposit, width: 58 },
+      { label: copy.balance, width: 93 },
     ];
     const drawHeader = () => this.drawTableHeader(doc, columns, 23, 5.1);
     drawHeader();
@@ -167,11 +171,102 @@ export class MonthlyReportPdfService {
     });
   }
 
+  private drawMealManagement(
+    doc: PDFKit.PDFDocument,
+    snapshot: MonthlyReportSnapshot,
+    copy: (typeof COPY)[ReportLocale],
+    number: (value: number) => string,
+    locale: ReportLocale,
+    month: string,
+  ) {
+    const rows = snapshot.mealRegister ?? [];
+    const groups = this.chunk(snapshot.members, 8);
+    if (!groups.length) return;
+
+    groups.forEach((members, groupIndex) => {
+      this.ensureSpace(doc, 105, snapshot.mess.name, month);
+      const partLabel = groups.length > 1
+        ? ` — ${copy.part} ${groupIndex + 1}/${groups.length}`
+        : '';
+      this.drawSectionTitle(doc, `${copy.mealManagement}${partLabel}`);
+      const memberWidth = (doc.page.width - PAGE_MARGIN * 2 - 50 - 57) / members.length;
+      const columns: TableColumn[] = [
+        { label: copy.date, width: 50 },
+        ...members.map((member) => ({ label: member.name, width: memberWidth })),
+        { label: groups.length > 1 ? copy.groupTotal : copy.dailyTotal, width: 57 },
+      ];
+      const drawHeader = () => this.drawTableHeader(doc, columns, 22, 5.2);
+      drawHeader();
+
+      rows.forEach((row, rowIndex) => {
+        if (doc.y + 35 > this.contentBottom(doc)) {
+          doc.addPage();
+          this.drawRunningHeader(doc, snapshot.mess.name, month);
+          this.drawSectionTitle(doc, `${copy.mealManagement}${partLabel}`);
+          drawHeader();
+        }
+        this.drawTableRow(
+          doc,
+          columns,
+          [
+            this.shortDate(row.date, locale),
+            ...members.map((member) => number(row.memberMeals[member.memberId] ?? 0)),
+            number(
+              members.reduce(
+                (sum, member) => sum + (row.memberMeals[member.memberId] ?? 0),
+                0,
+              ),
+            ),
+          ],
+          17,
+          rowIndex % 2 === 0 ? '#FFFFFF' : '#FAFCFC',
+          undefined,
+          5.7,
+        );
+      });
+
+      if (doc.y + 19 > this.contentBottom(doc)) {
+        doc.addPage();
+        this.drawRunningHeader(doc, snapshot.mess.name, month);
+        this.drawSectionTitle(doc, `${copy.mealManagement}${partLabel}`);
+        drawHeader();
+      }
+      this.drawTableRow(
+        doc,
+        columns,
+        [
+          copy.monthlyTotal,
+          ...members.map((member) =>
+            number(rows.reduce((sum, row) => sum + (row.memberMeals[member.memberId] ?? 0), 0)),
+          ),
+          number(
+            rows.reduce(
+              (sum, row) =>
+                sum +
+                members.reduce(
+                  (rowSum, member) =>
+                    rowSum + (row.memberMeals[member.memberId] ?? 0),
+                  0,
+                ),
+              0,
+            ),
+          ),
+        ],
+        19,
+        SURFACE,
+        BRAND_DARK,
+        5.8,
+      );
+      doc.y += 16;
+    });
+  }
+
   private drawTransactionRegisters(
     doc: PDFKit.PDFDocument, snapshot: MonthlyReportSnapshot, copy: (typeof COPY)[ReportLocale],
     money: (value: number) => string, locale: ReportLocale, month: string,
   ) {
-    doc.addPage(); this.drawRunningHeader(doc, snapshot.mess.name, month); this.drawSectionTitle(doc, copy.transactionRegister);
+    this.ensureSpace(doc, 112, snapshot.mess.name, month);
+    this.drawSectionTitle(doc, copy.transactionRegister);
     this.drawRegisterTitle(doc, copy.expenseRegister);
     this.drawExpenseRegister(doc, snapshot.expenseRegister ?? [], copy, money, locale, snapshot.mess.name, month);
     this.ensureSpace(doc, 72 + (snapshot.depositRegister?.length ?? 0) * 29, snapshot.mess.name, month);
@@ -190,7 +285,7 @@ export class MonthlyReportPdfService {
   ) {
     const columns: TableColumn[] = [
       { label: copy.date, width: 78 }, { label: copy.purchasedBy, width: 178 },
-      { label: copy.amount, width: 100, align: 'right' }, { label: copy.category, width: 183 },
+      { label: copy.amount, width: 100 }, { label: copy.category, width: 183 },
     ];
     this.drawRegisterRows(doc, entries, columns, copy.noTransactions, messName, month, (entry) => [
       this.shortDate(entry.date, locale), entry.purchasedBy, money(entry.amount), this.humanize(entry.description || entry.category),
@@ -204,7 +299,7 @@ export class MonthlyReportPdfService {
   ) {
     const columns: TableColumn[] = [
       { label: copy.date, width: 78 }, { label: copy.member, width: 200 },
-      { label: copy.method, width: 120 }, { label: copy.amount, width: 141, align: 'right' },
+      { label: copy.method, width: 120 }, { label: copy.amount, width: 141 },
     ];
     this.drawRegisterRows(doc, entries, columns, copy.noTransactions, messName, month, (entry) => [
       this.shortDate(entry.date, locale), entry.member, this.humanize(entry.method), money(entry.amount),
@@ -259,7 +354,7 @@ export class MonthlyReportPdfService {
 
   private drawRegisterTotal(doc: PDFKit.PDFDocument, label: string, value: string) {
     const y = doc.y + 6;
-    doc.font('ReportBold').fontSize(8.5).fillColor(INK).text(`${label}: ${value}`, PAGE_MARGIN, y, { width: doc.page.width - PAGE_MARGIN * 2, align: 'right', lineBreak: false });
+    doc.font('ReportBold').fontSize(8.5).fillColor(INK).text(`${label}: ${value}`, PAGE_MARGIN, y, { width: doc.page.width - PAGE_MARGIN * 2, align: 'left', lineBreak: false });
     doc.y = y + 24;
   }
 
@@ -284,7 +379,7 @@ export class MonthlyReportPdfService {
       const y = doc.y;
       doc.rect(PAGE_MARGIN, y, doc.page.width - PAGE_MARGIN * 2, 30).fillAndStroke(index % 2 ? '#FFFFFF' : SURFACE, LINE);
       doc.font('Report').fontSize(8).fillColor(MUTED).text(label, PAGE_MARGIN + 12, y + 10, { width: 220 });
-      doc.font('ReportBold').fontSize(8.5).fillColor(INK).text(value, PAGE_MARGIN + 260, y + 9, { width: 251, align: 'right' });
+      doc.font('ReportBold').fontSize(8.5).fillColor(INK).text(value, PAGE_MARGIN + 260, y + 9, { width: 251, align: 'left' });
       doc.y = y + 30;
     });
   }
@@ -325,5 +420,13 @@ export class MonthlyReportPdfService {
 
   private humanize(value: string) {
     return value.toLowerCase().split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  }
+
+  private chunk<T>(items: T[], size: number): T[][] {
+    const groups: T[][] = [];
+    for (let index = 0; index < items.length; index += size) {
+      groups.push(items.slice(index, index + size));
+    }
+    return groups;
   }
 }

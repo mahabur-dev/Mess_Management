@@ -1,8 +1,24 @@
 'use client'
 
-import { Capacitor } from '@capacitor/core'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 import { Directory, Filesystem } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
+
+type FileDownloadPlugin = {
+  saveBase64(options: {
+    filename: string
+    data: string
+    mimeType: string
+  }): Promise<{ uri: string; path: string }>
+  shareSavedFile(options: {
+    uri: string
+    mimeType: string
+    title: string
+    dialogTitle: string
+  }): Promise<void>
+}
+
+const FileDownload = registerPlugin<FileDownloadPlugin>('FileDownload')
 
 function blobAsBase64(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
@@ -30,13 +46,32 @@ export async function downloadFile(
 ) {
   if (Capacitor.isNativePlatform()) {
     const data = await blobAsBase64(blob)
+    const safeName = safeFilename(filename)
+    if (Capacitor.getPlatform() === 'android') {
+      const savedFile = await FileDownload.saveBase64({
+        filename: safeName,
+        data,
+        mimeType: blob.type || 'application/pdf',
+      })
+      try {
+        await FileDownload.shareSavedFile({
+          uri: savedFile.uri,
+          mimeType: blob.type || 'application/pdf',
+          title: nativeCopy.title,
+          dialogTitle: nativeCopy.dialogTitle,
+        })
+      } catch {
+        // The permanent download already succeeded; sharing is optional.
+      }
+      return 'native-saved' as const
+    }
     try {
       const permission = await Filesystem.checkPermissions()
       if (permission.publicStorage === 'prompt' || permission.publicStorage === 'prompt-with-rationale') {
         await Filesystem.requestPermissions()
       }
       await Filesystem.writeFile({
-        path: `MessZen Reports/${safeFilename(filename)}`,
+        path: `MessZen Reports/${safeName}`,
         data,
         directory: Directory.Documents,
         recursive: true,
@@ -44,16 +79,20 @@ export async function downloadFile(
       return 'native-saved' as const
     } catch {
       const result = await Filesystem.writeFile({
-        path: `reports/${safeFilename(filename)}`,
+        path: `reports/${safeName}`,
         data,
         directory: Directory.Cache,
         recursive: true,
       })
-      await Share.share({
-        title: nativeCopy.title,
-        dialogTitle: nativeCopy.dialogTitle,
-        files: [result.uri],
-      })
+      try {
+        await Share.share({
+          title: nativeCopy.title,
+          dialogTitle: nativeCopy.dialogTitle,
+          files: [result.uri],
+        })
+      } catch {
+        return 'native-share' as const
+      }
       return 'native-share' as const
     }
   }

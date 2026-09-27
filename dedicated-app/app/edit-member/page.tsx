@@ -21,7 +21,6 @@ import {
 import { api } from '@/lib/api'
 import { getActiveMessId } from '@/lib/app-permissions'
 import { MEMBER_ROLES, type MemberRole } from '@/lib/form-options'
-import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { memberRoleLabel, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
@@ -71,8 +70,6 @@ export default function EditMemberPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
-
-  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   useEffect(() => {
     if (authLoading) return

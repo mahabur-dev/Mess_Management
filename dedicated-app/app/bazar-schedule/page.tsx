@@ -21,6 +21,8 @@ import { DatePicker } from '@/components/mobile/date-picker'
 import { SelectField } from '@/components/mobile/form-controls'
 import { TopScreen } from '@/components/top-screen'
 import { Button } from '@/components/ui/button'
+import { Notice } from '@/components/ui/notice'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useDialogFocus } from '@/hooks/use-dialog-focus'
 import { api, type BazarDutySlot, type BazarFrequency, type BazarSchedule, type BazarScheduleRequest, type BazarScheduleSettings } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
@@ -138,7 +140,7 @@ export default function BazarSchedulePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
   const [activeTab, setActiveTab] = useState<TabId>('schedule')
   const [sheet, setSheet] = useState<SheetId>(null)
   const [selectedSlot, setSelectedSlot] = useState<BazarDutySlot | null>(null)
@@ -147,6 +149,8 @@ export default function BazarSchedulePage() {
   const [newDateReason, setNewDateReason] = useState('')
   const [assigneeId, setAssigneeId] = useState('')
   const [assignReason, setAssignReason] = useState('')
+
+  useAutoDismiss(notice?.tone === 'success' ? notice : null, () => setNotice(null))
 
   const load = useCallback(async () => {
     if (!messId) { setLoading(false); return }
@@ -179,7 +183,7 @@ export default function BazarSchedulePage() {
 
   const withAction = async (key: string, action: () => Promise<unknown>, success: string) => {
     setBusy(key); setNotice(null)
-    try { await action(); setNotice(success); await load(); return true } catch { setNotice(copy.actionFailed); return false } finally { setBusy(null) }
+    try { await action(); setNotice({ tone: 'success', text: success }); await load(); return true } catch { setNotice({ tone: 'danger', text: copy.actionFailed }); return false } finally { setBusy(null) }
   }
 
   const openSettings = () => router.push(appHref('/bazar-schedule/settings'))
@@ -192,7 +196,7 @@ export default function BazarSchedulePage() {
       <div className="screen bazar-schedule-page">
         {!messId ? <EmptyState title={copy.noSchedule} description={copy.noScheduleDescription} /> : loading ? <div className="bazar-loading"><LoaderCircle className="animate-spin" size={21} /> {copy.loading}</div> : error ? <EmptyState title={copy.actionFailed} description={copy.actionFailed} action={<Button onClick={() => void load()}>{copy.retry}</Button>} /> : (
           <>
-            {notice ? <p className="bazar-notice" role="status">{notice}</p> : null}
+            {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
 
             {schedule ? (
               <>

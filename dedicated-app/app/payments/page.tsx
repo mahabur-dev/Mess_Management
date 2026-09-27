@@ -21,7 +21,6 @@ import {
 import { api } from '@/lib/api'
 import { type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
 import { appHref } from '@/lib/routes'
-import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
@@ -84,8 +83,6 @@ export default function PaymentsPage() {
   const [showForm, setShowForm] = useState(false)
   const [summary, setSummary] = useState<DepositSummary>({ approved: 0, myApproved: 0, pending: 0 })
   const [month, setMonth] = useState(currentMonthValue())
-
-  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   useEffect(() => {
     if (!messId) return

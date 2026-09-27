@@ -21,6 +21,7 @@ import {
   isMonthlyReportSnapshot,
   MonthlyReportDepositEntry,
   MonthlyReportExpenseEntry,
+  MonthlyReportMealEntry,
   MonthlyReportMemberSnapshot,
   MonthlyReportSnapshot,
 } from './monthly-report.types';
@@ -275,7 +276,7 @@ export class MonthlyReportService {
       this.readSnapshot(report.snapshot),
       report.mess_id,
     );
-    snapshot = await this.withTransactionRegisters(snapshot, report.mess_id, report.month);
+    snapshot = await this.withReportRegisters(snapshot, report.mess_id, report.month);
     const personalMember = access.canManage
       ? undefined
       : snapshot.members.find((member) => member.memberId === userId);
@@ -681,7 +682,7 @@ export class MonthlyReportService {
         },
         select: { user_id: true, role: true },
       }),
-      this.loadTransactionRegisters(messId, month),
+      this.loadReportRegisters(messId, month),
     ]);
     const activeMemberIds = new Set(
       activeMemberships.map((membership) => membership.user_id),
@@ -759,29 +760,36 @@ export class MonthlyReportService {
     };
   }
 
-  private async withTransactionRegisters(
+  private async withReportRegisters(
     snapshot: MonthlyReportSnapshot,
     messId: string,
     month: Date,
   ): Promise<MonthlyReportSnapshot> {
-    if (snapshot.expenseRegister && snapshot.depositRegister) return snapshot;
+    if (
+      snapshot.expenseRegister &&
+      snapshot.depositRegister &&
+      snapshot.mealRegister
+    ) {
+      return snapshot;
+    }
     return {
       ...snapshot,
-      ...(await this.loadTransactionRegisters(messId, month)),
+      ...(await this.loadReportRegisters(messId, month)),
     };
   }
 
-  private async loadTransactionRegisters(
+  private async loadReportRegisters(
     messId: string,
     month: Date,
   ): Promise<{
     expenseRegister: MonthlyReportExpenseEntry[];
     depositRegister: MonthlyReportDepositEntry[];
+    mealRegister: MonthlyReportMealEntry[];
   }> {
     const nextMonth = new Date(
       Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1),
     );
-    const [expenses, deposits] = await Promise.all([
+    const [expenses, deposits, attendances] = await Promise.all([
       this.prisma.expense.findMany({
         where: {
           mess_id: messId,
@@ -819,7 +827,53 @@ export class MonthlyReportService {
           member: { select: { name: true } },
         },
       }),
+      this.prisma.mealAttendance.findMany({
+        where: {
+          status: 'ON',
+          meal: {
+            mess_id: messId,
+            status: { not: 'CANCELLED' },
+            scheduled_date: { gte: month, lt: nextMonth },
+          },
+        },
+        select: {
+          member_id: true,
+          guests: true,
+          meal: { select: { name: true, scheduled_date: true } },
+        },
+      }),
     ]);
+
+    const mealValues = new Map<string, Record<string, number>>();
+    for (const attendance of attendances) {
+      const date = attendance.meal.scheduled_date.toISOString().slice(0, 10);
+      const memberMeals = mealValues.get(date) ?? {};
+      const base = attendance.meal.name === 'BREAKFAST' ? 0.5 : 1;
+      memberMeals[attendance.member_id] = fixed(
+        (memberMeals[attendance.member_id] ?? 0) +
+          base +
+          Number(attendance.guests ?? 0),
+      );
+      mealValues.set(date, memberMeals);
+    }
+    const daysInMonth = new Date(
+      Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    const mealRegister = Array.from({ length: daysInMonth }, (_, index) => {
+      const date = new Date(
+        Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), index + 1),
+      )
+        .toISOString()
+        .slice(0, 10);
+      const memberMeals = mealValues.get(date) ?? {};
+      return {
+        date,
+        memberMeals,
+        totalMeals: fixed(
+          Object.values(memberMeals).reduce((sum, value) => sum + value, 0),
+        ),
+      };
+    });
 
     return {
       expenseRegister: expenses.map((expense) => ({
@@ -837,6 +891,7 @@ export class MonthlyReportService {
         method: deposit.method,
         amount: fixed(deposit.amount),
       })),
+      mealRegister,
     };
   }
 
@@ -947,6 +1002,18 @@ export class MonthlyReportService {
     });
     const activeIds = new Set(memberships.map((membership) => membership.user_id));
     const members = snapshot.members.filter((member) => activeIds.has(member.memberId));
+    const mealRegister = snapshot.mealRegister?.map((entry) => {
+      const memberMeals = Object.fromEntries(
+        Object.entries(entry.memberMeals).filter(([memberId]) => activeIds.has(memberId)),
+      );
+      return {
+        ...entry,
+        memberMeals,
+        totalMeals: fixed(
+          Object.values(memberMeals).reduce((sum, value) => sum + value, 0),
+        ),
+      };
+    });
     const totalMeals = fixed(members.reduce((sum, member) => sum + member.totalMeals, 0));
     const totalMealCost = fixed(members.reduce((sum, member) => sum + member.mealCost, 0));
 
@@ -962,6 +1029,7 @@ export class MonthlyReportService {
         totalCredit: fixed(members.reduce((sum, member) => sum + member.credit, 0)),
       },
       members,
+      mealRegister,
     };
   }
 

@@ -20,7 +20,6 @@ import {
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
 import { PAYMENT_METHODS, PAYMENT_STATUSES, type PaymentMethod, type PaymentStatus } from '@/lib/form-options'
-import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 import { canManageMess } from '@/lib/app-permissions'
@@ -106,8 +105,6 @@ export default function EditPaymentPage() {
   })
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
-
-  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   const depositLabel = useMemo(() => (payment ? paymentStatusLabel(payment.status, locale) : t('deposit')), [locale, payment, t])
   useEffect(() => {

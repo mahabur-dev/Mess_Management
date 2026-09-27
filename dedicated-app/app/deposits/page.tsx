@@ -19,7 +19,6 @@ import {
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
 import { DesignedSelect, expenseFormIcons } from '@/components/mobile/expense-design'
-import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useMessMemberOptions } from '@/hooks/use-mess-member-options'
 import { useAuth } from '../providers'
 import { formatIsoDate, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
@@ -66,8 +65,6 @@ export default function DepositsPage() {
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
   const [month, setMonth] = useState(currentMonthValue())
-
-  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   useEffect(() => {
     if (!messId) return

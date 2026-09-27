@@ -5,6 +5,7 @@ import { KeyRound, ShieldCheck } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { SubmitButton, TextField } from '@/components/mobile/form-controls'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { api } from '@/lib/api'
 import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 
@@ -17,6 +18,8 @@ export default function ChangePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
+
+  useAutoDismiss(message?.tone === 'success' ? message : null, () => setMessage(null))
 
   async function handleChangePassword() {
     setMessage(null)

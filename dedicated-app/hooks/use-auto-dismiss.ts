@@ -2,9 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 
-const DEFAULT_DISMISS_DELAY = 3000
+export const SUCCESS_NOTICE_DISMISS_DELAY = 2000
 
-export function useAutoDismiss(value: unknown, onDismiss: () => void, delay = DEFAULT_DISMISS_DELAY) {
+export function useAutoDismiss(
+  value: unknown,
+  onDismiss: () => void,
+  delay = SUCCESS_NOTICE_DISMISS_DELAY,
+) {
   const dismissRef = useRef(onDismiss)
 
   useEffect(() => {

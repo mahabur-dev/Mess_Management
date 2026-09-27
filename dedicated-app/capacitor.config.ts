@@ -8,6 +8,11 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     cleartext: true,
   },
+  // server: {
+  //   url: 'http://localhost:3000',
+  //   cleartext: true,
+  //   androidScheme: 'http',
+  // },
   plugins: {
     StatusBar: {
       overlaysWebView: true,

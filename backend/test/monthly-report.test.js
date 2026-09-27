@@ -89,6 +89,13 @@ const snapshot = {
       amount: 4000,
     },
   ],
+  mealRegister: [
+    {
+      date: '2026-08-01',
+      memberMeals: { 'member-1': 2.5, 'member-2': 3 },
+      totalMeals: 5.5,
+    },
+  ],
 };
 
 describe('monthly report', () => {
@@ -150,6 +157,8 @@ describe('monthly report', () => {
     assert.equal(result.summary.totalDeposit, 4000);
     assert.equal(result.summary.totalCredit, 400);
     assert.equal(result.summary.totalDue, 0);
+    assert.deepEqual(result.mealRegister[0].memberMeals, { 'member-1': 2.5 });
+    assert.equal(result.mealRegister[0].totalMeals, 2.5);
   });
 
   it('presents credit as a positive localized balance in member email', () => {

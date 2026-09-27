@@ -43,7 +43,7 @@ export default function ProfilePage() {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [avatarNotice, setAvatarNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
-  useAutoDismiss(avatarNotice, () => setAvatarNotice(null))
+  useAutoDismiss(avatarNotice?.tone === 'success' ? avatarNotice : null, () => setAvatarNotice(null))
 
   const membership = useMemo(() => getActiveMemberships(user)[0], [user])
   const rawRole = (membership?.role ?? user?.role ?? 'MEMBER').toUpperCase()

@@ -38,7 +38,7 @@ export default function EditProfilePage() {
   const [nidImage, setNidImage] = useState<File | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
-  useAutoDismiss(message, () => setMessage(null))
+  useAutoDismiss(message?.tone === 'success' ? message : null, () => setMessage(null))
 
   const membership = useMemo(() => getActiveMemberships(user)[0], [user])
   const rawRole = (membership?.role ?? user?.role ?? 'MEMBER').toUpperCase()

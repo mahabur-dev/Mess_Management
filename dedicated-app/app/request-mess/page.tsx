@@ -6,6 +6,8 @@ import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { FieldCard } from '@/components/mobile/form-controls'
 import { TopScreen } from '@/components/top-screen'
+import { Notice } from '@/components/ui/notice'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { api } from '@/lib/api'
 import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
 import { useAuth } from '../providers'
@@ -45,7 +47,9 @@ export default function RequestMessPage() {
   const [requests, setRequests] = useState<JoinRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [requestingId, setRequestingId] = useState<string | null>(null)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
+
+  useAutoDismiss(message?.tone === 'success' ? message : null, () => setMessage(null))
 
   useEffect(() => {
     let cancelled = false
@@ -59,7 +63,7 @@ export default function RequestMessPage() {
         .catch((error) => {
           if (!cancelled) {
             setMesses([])
-            setMessage(localizedErrorMessage(error, locale))
+            setMessage({ tone: 'danger', text: localizedErrorMessage(error, locale) })
           }
         })
         .finally(() => {
@@ -99,16 +103,16 @@ export default function RequestMessPage() {
   }, [requests])
 
   async function handleRequest(mess: ActiveMess) {
-    setMessage('')
+    setMessage(null)
     setRequestingId(mess.id)
     try {
       const res = await api.requestMemberJoin(mess.id)
       const created = (res.data ?? null) as JoinRequest | null
       if (created) setRequests((prev) => [created, ...prev])
       await refresh()
-      setMessage(auth('requestSent', { name: mess.name }))
+      setMessage({ tone: 'success', text: auth('requestSent', { name: mess.name }) })
     } catch (error) {
-      setMessage(localizedErrorMessage(error, locale))
+      setMessage({ tone: 'danger', text: localizedErrorMessage(error, locale) })
     } finally {
       setRequestingId(null)
     }
@@ -143,7 +147,7 @@ export default function RequestMessPage() {
           </FieldCard>
         </section>
 
-        {message ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#008d8c]">{message}</div> : null}
+        {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
         <section className="app-list">
           {loading ? (

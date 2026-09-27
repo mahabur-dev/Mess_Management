@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { localizedErrorMessage } from './errors'
 import { useLocale, useTranslations } from './locale-provider'
 import type { MessageKey, MessageNamespace, TranslationValues } from './types'
@@ -41,6 +42,8 @@ export function useLocalizedNotice<Namespace extends MessageNamespace>(namespace
       setNotice({ kind: 'error', error, fallbackKey, tone: 'danger' }),
     [],
   )
+
+  useAutoDismiss(notice?.tone === 'success' ? notice : null, clearNotice)
 
   const localizedNotice = useMemo(() => {
     if (!notice) return null

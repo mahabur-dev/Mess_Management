@@ -16,7 +16,6 @@ import {
   type DepositListRecord,
 } from '@/components/mobile/deposit-design'
 import { api } from '@/lib/api'
-import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useQueryParams } from '@/lib/use-query-params'
 import { useAuth } from '../providers'
 import { formatIsoDate, useLocale, useLocalizedNotice, useTranslations } from '@/lib/i18n'
@@ -53,8 +52,6 @@ export default function EditDepositPage() {
     note: '',
   })
   const [busy, setBusy] = useState(false)
-
-  useAutoDismiss(notice?.message ?? '', clearNotice)
 
   useEffect(() => {
     if (!depositId || !messId) return

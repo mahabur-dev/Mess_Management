@@ -35,6 +35,12 @@ export type MonthlyReportDepositEntry = {
   amount: number;
 };
 
+export type MonthlyReportMealEntry = {
+  date: string;
+  memberMeals: Record<string, number>;
+  totalMeals: number;
+};
+
 export type MonthlyReportSnapshot = {
   schemaVersion: 1;
   mess: {
@@ -64,6 +70,7 @@ export type MonthlyReportSnapshot = {
   members: MonthlyReportMemberSnapshot[];
   expenseRegister?: MonthlyReportExpenseEntry[];
   depositRegister?: MonthlyReportDepositEntry[];
+  mealRegister?: MonthlyReportMealEntry[];
 };
 
 export function isMonthlyReportSnapshot(value: unknown): value is MonthlyReportSnapshot {

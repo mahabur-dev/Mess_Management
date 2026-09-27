@@ -12,7 +12,6 @@ import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { canManageMess, getActiveMessId } from '@/lib/app-permissions'
-import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import type { MemberJoinRequest, MemberJoinReviewStatus } from '@/lib/member-join-requests'
 import { useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { useAuth } from '../providers'
@@ -36,9 +35,6 @@ export default function MembersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false)
   const [reviewInProgress, setReviewInProgress] = useState<{ requestId: string; status: MemberJoinReviewStatus } | null>(null)
-
-  useAutoDismiss(memberNotice.notice?.message ?? '', memberNotice.clearNotice)
-  useAutoDismiss(joinNotice.notice?.message ?? '', joinNotice.clearNotice)
 
   const joinRequestFeedback = joinNotice.notice
     ? { tone: joinNotice.notice.tone === 'danger' ? 'error' as const : 'success' as const, text: joinNotice.notice.message }

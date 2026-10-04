@@ -369,7 +369,7 @@ export default function MyMealPage() {
                     <button key={mealName} type="button" onClick={() => openEditor(date)} disabled={!dayEditable} aria-label={`${formatDisplayDate(date, locale)} ${mealLabel(mealName, locale)}: ${isOn ? total : mealsCopy('off')}`} className="relative flex min-w-0 flex-col items-center justify-center border-l border-[#e5edef] px-1 py-1.5 text-center disabled:cursor-not-allowed">
                       {locked ? <LockKeyhole size={12} className="absolute right-1 top-1 text-[#a2b2b7]" aria-hidden="true" /> : null}
                       <span className={`text-label font-bold tabular-nums ${isOn ? 'text-[#00777a]' : 'text-[#9aaab2]'}`}>{isOn ? total : mealsCopy('off')}</span>
-                      {guests > 0 ? <span className="mt-0.5 text-[10px] font-bold text-[#d26338]">+{guests}</span> : null}
+                      {guests > 0 ? <span className="mt-0.5 text-caption font-bold text-[#d26338]">+{guests}</span> : null}
                     </button>
                   )
                 })}
@@ -505,7 +505,7 @@ export default function MyMealPage() {
                       className={`min-h-12 rounded-[8px] border px-1 py-1.5 text-center ${skipped ? 'border-[#e9a5aa] bg-[#fff1f2] text-[#b4232e]' : 'border-[#dce8e9] bg-white text-[#123748]'}`}
                     >
                       <span className="block text-label font-bold tabular-nums">{format.number(Number(date.slice(8, 10)), { useGrouping: false })}</span>
-                      <span className="block text-[10px] font-semibold">{formatShortWeekday(date, locale)}</span>
+                      <span className="block text-caption font-semibold">{formatShortWeekday(date, locale)}</span>
                     </button>
                   )
                 })}

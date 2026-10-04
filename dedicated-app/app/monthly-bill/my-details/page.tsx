@@ -274,14 +274,15 @@ function MyMonthlyDetailsContent() {
   const history = useMemo(() => buildMemberMealHistory(meals, memberId), [meals, memberId])
   const mealSummary = useMemo(() => summarizeMealHistory(history), [history])
   const expenseHistory = details?.history ?? []
-  const billMeals = toNumber(bill?.total_meals) || mealSummary.totalMeals
+  const billMeals = bill ? toNumber(bill.total_meals) : mealSummary.totalMeals
   const billMealRate = mealRate(bill)
-  const assignedFoodExpenseTotal = toNumber(bill?.food_bill)
+  const assignedFoodExpenseTotal = bill
     ? Math.max(0, toNumber(bill?.food_bill) - toNumber(bill?.meal_charge))
     : toNumber(details?.assignedFoodExpenseTotal)
-  const regularMealCharge = toNumber(bill?.meal_charge)
-    || Math.max(0, toNumber(details?.foodBill) - assignedFoodExpenseTotal)
-  const totalFoodBill = toNumber(bill?.food_bill) || toNumber(details?.foodBill)
+  const regularMealCharge = bill
+    ? toNumber(bill.meal_charge)
+    : Math.max(0, toNumber(details?.foodBill) - assignedFoodExpenseTotal)
+  const totalFoodBill = bill ? toNumber(bill.food_bill) : toNumber(details?.foodBill)
   const latestCloseRequest = bill?.close_requests?.[0] ?? null
   const isCompletedMonth = month < currentMonthValue()
   const canRequestClose = Boolean(

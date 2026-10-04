@@ -1786,18 +1786,57 @@ export class ExpenseService {
     role: AuthRole,
     month: string,
   ) {
-    const summary = await this.getSummary(messId, userId, role, month);
+    return this.getMemberDetails(messId, userId, userId, role, month);
+  }
+
+  async getMemberDetails(
+    messId: string,
+    memberId: string,
+    userId: string,
+    role: AuthRole,
+    month: string,
+  ) {
+    await this.verifyMessMemberAccess(messId, userId, role);
+    const targetMembership = await this.prisma.messMembership.findUnique({
+      where: { mess_id_user_id: { mess_id: messId, user_id: memberId } },
+      select: { is_active: true },
+    });
+    if (!targetMembership?.is_active) {
+      throw new HttpException('Member not found in this mess', 404);
+    }
+
     const { start } = this.monthRange(month);
-    const [history, assignedFoodRecords] = await Promise.all([
+    const [memberShares, history, assignedFoodRecords] = await Promise.all([
+      this.prisma.expenseShare.findMany({
+        where: {
+          member_id: memberId,
+          expense: {
+            mess_id: messId,
+            status: 'CONFIRMED',
+            billing_month: start,
+            payment_type: { not: ExpensePaymentType.COLLECTED_FUND },
+            NOT: {
+              payment_type: ExpensePaymentType.PERSONAL,
+              used_by: ExpenseUsedBy.SELF_ONLY,
+            },
+          },
+        },
+        include: { expense: true },
+      }),
       this.prisma.expense.findMany({
         where: {
           mess_id: messId,
           billing_month: start,
           status: 'CONFIRMED',
-          OR: [
-            { purchased_by: userId },
-            { shares: { some: { member_id: userId } } },
-          ],
+          ...(memberId === userId
+            ? {}
+            : {
+                NOT: {
+                  payment_type: ExpensePaymentType.PERSONAL,
+                  used_by: ExpenseUsedBy.SELF_ONLY,
+                },
+              }),
+          purchased_by: memberId,
         },
         take: 20,
         orderBy: this.expenseOrderBy(),
@@ -1812,7 +1851,7 @@ export class ExpenseService {
           category: {
             in: [ExpenseCategory.FOOD, ExpenseCategory.GROCERY],
           },
-          shares: { some: { member_id: userId } },
+          shares: { some: { member_id: memberId } },
           AND: [
             {
               NOT: {
@@ -1868,7 +1907,7 @@ export class ExpenseService {
     const assignedFoodExpenses = assignedFoodRecords
       .map((expense) => {
         const storedShare = expense.shares.find(
-          (share) => share.member_id === userId,
+          (share) => share.member_id === memberId,
         );
         const memberShare =
           expense.split_method === ExpenseSplitMethod.MEAL_COUNT
@@ -1878,7 +1917,7 @@ export class ExpenseService {
                   memberId: share.member_id,
                   weight: finalMealCounts.get(share.member_id) ?? 0,
                 })),
-              ).get(userId) ?? 0)
+              ).get(memberId) ?? 0)
             : Number(storedShare?.share_amount ?? 0);
 
         return {
@@ -1896,9 +1935,32 @@ export class ExpenseService {
       })
       .filter((expense) => expense.memberShare > 0);
 
+    const foodCategories = new Set<ExpenseCategory>([
+      ExpenseCategory.FOOD,
+      ExpenseCategory.GROCERY,
+    ]);
+    const utilityExclusions = new Set<ExpenseCategory>([
+      ExpenseCategory.FOOD,
+      ExpenseCategory.GROCERY,
+      ExpenseCategory.RENT,
+    ]);
+    const foodBill = memberShares
+      .filter((share) => foodCategories.has(share.expense.category))
+      .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
+    const utilityBill = memberShares
+      .filter((share) => !utilityExclusions.has(share.expense.category))
+      .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
+    const roomRent = memberShares
+      .filter((share) => share.expense.category === ExpenseCategory.RENT)
+      .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
+
     return {
-      ...summary.myView,
-      month: summary.month,
+      foodBill: roundMoney(foodBill),
+      utilityBill: roundMoney(utilityBill),
+      roomRent: roundMoney(roomRent),
+      total: roundMoney(foodBill + utilityBill + roomRent),
+      transactionCount: memberShares.length,
+      month: start,
       assignedFoodExpenseTotal: roundMoney(
         assignedFoodExpenses.reduce(
           (sum, expense) => sum + expense.memberShare,
@@ -1906,7 +1968,20 @@ export class ExpenseService {
         ),
       ),
       assignedFoodExpenses,
-      history: history.map((expense) => this.mapExpense(expense)),
+      history: history.map((expense) => {
+        const mapped = this.mapExpense(expense);
+        return {
+          id: mapped.id,
+          category: mapped.category,
+          itemName: mapped.itemName,
+          amount: mapped.amount,
+          expenseDate: mapped.expenseDate,
+          billingMonth: mapped.billingMonth,
+          paymentType: mapped.paymentType,
+          status: mapped.status,
+          approvalStatus: mapped.approvalStatus,
+        };
+      }),
     };
   }
 

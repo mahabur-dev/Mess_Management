@@ -4,15 +4,15 @@ const config: CapacitorConfig = {
   appId: 'com.mess.management',
   appName: 'Mess Management',
   webDir: 'out',
-  server: {
-    androidScheme: 'https',
-    cleartext: true,
-  },
   // server: {
-  //   url: 'http://localhost:3000',
+  //   androidScheme: 'https',
   //   cleartext: true,
-  //   androidScheme: 'http',
   // },
+  server: {
+    url: 'http://localhost:3000',
+    cleartext: true,
+    androidScheme: 'http',
+  },
   plugins: {
     StatusBar: {
       overlaysWebView: true,

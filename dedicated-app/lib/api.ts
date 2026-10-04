@@ -481,6 +481,10 @@ class Api {
     return this.request('/expense/my-details', { params: { messId, month } })
   }
 
+  getMemberExpenseDetails(messId: string, memberId: string, month?: string) {
+    return this.request('/expense/member-details', { params: { messId, memberId, month } })
+  }
+
   getManagerMemberExpenses(messId: string, month?: string) {
     return this.request('/expense/manager/members', { params: { messId, month } })
   }
@@ -586,6 +590,13 @@ class Api {
     return this.request('/meal', {
       method: 'POST',
       body: JSON.stringify(data),
+    })
+  }
+
+  bulkUpdateOwnMeals(messId: string, updates: Array<Record<string, unknown>>, idempotencyKey = crypto.randomUUID()) {
+    return this.request(`/meal/mess/${messId}/my-attendance/bulk`, {
+      method: 'PATCH',
+      body: JSON.stringify({ idempotencyKey, updates }),
     })
   }
 

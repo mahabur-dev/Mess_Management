@@ -13,10 +13,10 @@ export default function MealManagerPage() {
       <TopScreen title={meals('managerControls')} subtitle={meals('managerTools')} backHref="/meals" />
       <div className="screen space-y-4">
         <MealCard className="space-y-3">
-          <ManagerActionCard href="/meals/time" icon={<CalendarClock size={21} />} title={meals('setMealTime')} description={meals('setMealTimeDescription')} />
-          <ManagerActionCard href="/meals/locks" icon={<LockKeyhole size={21} />} title={meals('lockUnlockMeals')} description={meals('lockUnlockDescription')} tone="blue" />
           <ManagerActionCard href="/meals/members" icon={<Users size={21} />} title={meals('viewAllMeals')} description={meals('viewAllMealsDescription')} tone="amber" />
+          <ManagerActionCard href="/meals/time" icon={<CalendarClock size={21} />} title={meals('setMealTime')} description={meals('setMealTimeDescription')} />
           <ManagerActionCard href="/meals/settings" icon={<Settings2 size={21} />} title={meals('settings')} description={meals('settingsDescription')} tone="aqua" />
+          <ManagerActionCard href="/meals/locks" icon={<LockKeyhole size={21} />} title={meals('lockUnlockMeals')} description={meals('lockUnlockDescription')} tone="blue" />
         </MealCard>
       </div>
     </MobileShell>

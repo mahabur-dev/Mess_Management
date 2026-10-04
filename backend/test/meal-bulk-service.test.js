@@ -28,6 +28,7 @@ function createHarness({ membershipRole = 'MANAGER', existingMeals = [], existin
   const upserts = [];
   const auditBatches = [];
   const tx = {
+    $queryRaw: async () => [],
     meal: {
       findMany: async () => {
         mealFindCalls += 1;

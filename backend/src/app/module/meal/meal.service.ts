@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   AttendanceStatus,
   MealAttendanceSource,
@@ -24,6 +25,7 @@ import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-r
 import { NotificationService } from '../notification/notification.service';
 import {
   BulkUpdateMealsDto,
+  BulkUpdateOwnMealsDto,
   CreateMealDto,
   MealFilterDto,
   SetMealDeadlineDto,
@@ -43,11 +45,16 @@ import {
   getDhakaDateKey,
   getMealBaseValue,
   getMealDecisionWindow,
+  isMemberMealDateEditable,
   MEAL_TIME_ZONE,
   normalizeMealAttendance,
   parseMealDate,
   shiftDateKey,
 } from './meal-policy';
+import {
+  acquireMealCommandLock,
+  acquireMealMonthLocks,
+} from './meal-concurrency';
 
 const REMINDER_CRON = '0 * * * *';
 const REMINDER_LOOKBACK_MS = 60 * 60 * 1000;
@@ -91,6 +98,25 @@ interface MessAccessContext {
     meal_deadline_reminder_minutes: number;
   };
   canManage: boolean;
+}
+
+interface StoredMealBulkCommand {
+  request_hash: string;
+  response: MealBulkResponse;
+}
+
+export interface MealBulkResponse {
+  updatedCount: number;
+  billingSync: Array<'RECALCULATION_QUEUED'>;
+  updates: Array<{
+    id: string;
+    date: string;
+    mealName: MealName;
+    status: AttendanceStatus;
+    guests: number;
+    mealCount: number;
+  }>;
+  idempotentReplay?: boolean;
 }
 
 export interface PreparedMeal {
@@ -302,6 +328,7 @@ export class MealService {
   ) {
     const { context, targetMemberId, scheduledDate, dateKey, normalized } =
       prepared;
+    await acquireMealMonthLocks(tx, dto.messId, [dateKey]);
     const uniqueMeal = {
       mess_id_name_scheduled_date: {
         mess_id: dto.messId,
@@ -435,6 +462,382 @@ export class MealService {
     return this.completeCreate(prepared, attendance);
   }
 
+  async bulkUpdateOwnAttendances(
+    messId: string,
+    userId: string,
+    role: string,
+    dto: BulkUpdateOwnMealsDto,
+  ) {
+    const idempotencyKey = dto.idempotencyKey ?? randomUUID();
+    const requestHash = createHash('sha256')
+      .update(
+        JSON.stringify(
+          dto.updates
+            .map((update) => ({
+              date: update.date.slice(0, 10),
+              mealName: update.mealName,
+              status: update.status,
+              guests: Number(update.guests),
+              mealCount: Number(update.mealCount),
+            }))
+            .sort((left, right) =>
+              `${left.date}:${left.mealName}`.localeCompare(
+                `${right.date}:${right.mealName}`,
+              ),
+            ),
+        ),
+      )
+      .digest('hex');
+    const context = await this.getMessAccessContext(messId, userId, role);
+    const completedCommand = await this.prisma.mealBulkCommand.findUnique({
+      where: {
+        mess_id_user_id_idempotency_key: {
+          mess_id: messId,
+          user_id: userId,
+          idempotency_key: idempotencyKey,
+        },
+      },
+      select: { request_hash: true, response: true },
+    });
+    if (completedCommand) {
+      if (completedCommand.request_hash !== requestHash) {
+        throw new ConflictException(
+          'This idempotency key was already used for a different meal update',
+        );
+      }
+      return {
+        ...(completedCommand.response as unknown as MealBulkResponse),
+        idempotentReplay: true,
+      };
+    }
+    await this.ensureActiveSubscription(messId, role);
+    await this.assertActiveMealMember(messId, userId, context);
+
+    const seen = new Set<string>();
+    const preparedUpdates: Array<{
+      dto: CreateMealDto;
+      prepared: PreparedMeal;
+    }> = [];
+
+    for (const update of dto.updates) {
+      const scheduledDate = this.parseDate(update.date);
+      const dateKey = scheduledDate.toISOString().slice(0, 10);
+      const key = `${dateKey}:${update.mealName}`;
+      if (seen.has(key)) {
+        throw new BadRequestException(
+          `Duplicate meal update for ${dateKey} ${update.mealName}`,
+        );
+      }
+      seen.add(key);
+
+      if (!context.canManage) this.assertMemberWindow(context, dateKey);
+
+      const createDto: CreateMealDto = {
+        messId,
+        date: dateKey,
+        mealName: update.mealName,
+        status: update.status,
+        guests: update.guests,
+        mealCount: update.mealCount,
+      };
+      const normalized = this.normalizeAttendance(createDto, context);
+      if (
+        !context.canManage &&
+        !context.mess.meal_allow_no_meal &&
+        normalized.status === AttendanceStatus.OFF
+      ) {
+        throw new ForbiddenException(
+          'No-meal selection is disabled by the mess manager',
+        );
+      }
+
+      preparedUpdates.push({
+        dto: createDto,
+        prepared: {
+          context,
+          targetMemberId: userId,
+          scheduledDate,
+          dateKey,
+          normalized,
+        },
+      });
+    }
+
+    const transactionResult = await this.runTransactionWithRetry(
+      async (tx) => {
+        const dateKeys = preparedUpdates.map(
+          (update) => update.prepared.dateKey,
+        );
+        await acquireMealCommandLock(
+          tx,
+          messId,
+          userId,
+          idempotencyKey,
+        );
+        await acquireMealMonthLocks(tx, messId, dateKeys);
+
+        const existingCommands = await tx.$queryRaw<StoredMealBulkCommand[]>(
+          Prisma.sql`
+            SELECT "request_hash", "response"
+            FROM "meal_bulk_commands"
+            WHERE "mess_id" = ${messId}::uuid
+              AND "user_id" = ${userId}::uuid
+              AND "idempotency_key" = ${idempotencyKey}
+            LIMIT 1
+            FOR UPDATE
+          `,
+        );
+        const existingCommand = existingCommands[0];
+        if (existingCommand) {
+          if (existingCommand.request_hash !== requestHash) {
+            throw new ConflictException(
+              'This idempotency key was already used for a different meal update',
+            );
+          }
+          return {
+            response: {
+              ...existingCommand.response,
+              idempotentReplay: true,
+            },
+            queuedBilling: false,
+          };
+        }
+
+        const scheduledDates = preparedUpdates.map(
+          (update) => update.prepared.scheduledDate,
+        );
+        const mealNames = [
+          ...new Set(preparedUpdates.map((update) => update.dto.mealName)),
+        ];
+        const existingMeals = await tx.meal.findMany({
+          where: {
+            mess_id: messId,
+            scheduled_date: { in: scheduledDates },
+            name: { in: mealNames },
+          },
+          select: {
+            id: true,
+            name: true,
+            scheduled_date: true,
+            status: true,
+            is_locked: true,
+          },
+        });
+        const requestedExistingMeals = existingMeals.filter((meal) =>
+          seen.has(
+            `${meal.scheduled_date.toISOString().slice(0, 10)}:${meal.name}`,
+          ),
+        );
+
+        if (!context.canManage) {
+          const blockedMeal = requestedExistingMeals.find(
+            (meal) =>
+              meal.is_locked ||
+              meal.status === MealStatus.LOCKED ||
+              meal.status === MealStatus.CANCELLED,
+          );
+          if (blockedMeal) {
+            throw new ForbiddenException(
+              `The ${blockedMeal.name} meal for ${blockedMeal.scheduled_date.toISOString().slice(0, 10)} is locked or cancelled`,
+            );
+          }
+        }
+
+        await tx.meal.createMany({
+          data: preparedUpdates.map((update) => ({
+            mess_id: messId,
+            created_by: userId,
+            name: update.dto.mealName,
+            scheduled_date: update.prepared.scheduledDate,
+            status: MealStatus.CONFIRMED,
+          })),
+          skipDuplicates: true,
+        });
+
+        const unlockedExistingIds = requestedExistingMeals
+          .filter((meal) => !meal.is_locked)
+          .map((meal) => meal.id);
+        if (unlockedExistingIds.length) {
+          await tx.meal.updateMany({
+            where: { id: { in: unlockedExistingIds } },
+            data: { status: MealStatus.CONFIRMED },
+          });
+        }
+
+        const meals = await tx.meal.findMany({
+          where: {
+            mess_id: messId,
+            scheduled_date: { in: scheduledDates },
+            name: { in: mealNames },
+          },
+          select: { id: true, name: true, scheduled_date: true },
+        });
+        const mealsByKey = new Map(
+          meals
+            .filter((meal) =>
+              seen.has(
+                `${meal.scheduled_date.toISOString().slice(0, 10)}:${meal.name}`,
+              ),
+            )
+            .map((meal) => [
+              `${meal.scheduled_date.toISOString().slice(0, 10)}:${meal.name}`,
+              meal,
+            ]),
+        );
+        if (mealsByKey.size !== preparedUpdates.length) {
+          throw new ConflictException(
+            'Could not resolve every meal in the requested routine',
+          );
+        }
+
+        const mealIds = meals.map((meal) => meal.id);
+        const previousAttendances = await tx.mealAttendance.findMany({
+          where: { meal_id: { in: mealIds }, member_id: userId },
+          select: { id: true, meal_id: true, status: true, guests: true },
+        });
+        const previousByMealId = new Map(
+          previousAttendances.map((attendance) => [
+            attendance.meal_id,
+            attendance,
+          ]),
+        );
+
+        const attendanceValues = preparedUpdates.map((update) => {
+          const meal = mealsByKey.get(
+            `${update.prepared.dateKey}:${update.dto.mealName}`,
+          )!;
+          return Prisma.sql`(
+            gen_random_uuid(),
+            ${meal.id}::uuid,
+            ${userId}::uuid,
+            ${update.prepared.normalized.guests},
+            ${update.prepared.normalized.status}::"AttendanceStatus",
+            'MANUAL'::"MealAttendanceSource",
+            NULL,
+            NOW(),
+            NOW()
+          )`;
+        });
+        const savedAttendances = await tx.$queryRaw<
+          Array<{
+            id: string;
+            meal_id: string;
+            status: AttendanceStatus;
+            guests: Prisma.Decimal;
+          }>
+        >(Prisma.sql`
+          INSERT INTO "meal_attendances" (
+            "id", "meal_id", "member_id", "guests", "status",
+            "source", "pattern_id", "created_at", "updated_at"
+          )
+          VALUES ${Prisma.join(attendanceValues)}
+          ON CONFLICT ("meal_id", "member_id") DO UPDATE SET
+            "guests" = EXCLUDED."guests",
+            "status" = EXCLUDED."status",
+            "source" = 'MANUAL'::"MealAttendanceSource",
+            "pattern_id" = NULL,
+            "updated_at" = NOW()
+          RETURNING "id", "meal_id", "status", "guests"
+        `);
+        const savedByMealId = new Map(
+          savedAttendances.map((attendance) => [
+            attendance.meal_id,
+            attendance,
+          ]),
+        );
+
+        await tx.auditLog.createMany({
+          data: preparedUpdates.map((update) => {
+            const meal = mealsByKey.get(
+              `${update.prepared.dateKey}:${update.dto.mealName}`,
+            )!;
+            const previous = previousByMealId.get(meal.id);
+            const saved = savedByMealId.get(meal.id)!;
+            return {
+              mess_id: messId,
+              actor_id: userId,
+              action: previous
+                ? 'MEAL_ATTENDANCE_UPDATED'
+                : 'MEAL_ATTENDANCE_CREATED',
+              entity_type: 'MealAttendance',
+              entity_id: saved.id,
+              diff: {
+                batchId: idempotencyKey,
+                targetMemberId: userId,
+                mealId: meal.id,
+                date: update.prepared.dateKey,
+                mealName: update.dto.mealName,
+                before: previous
+                  ? {
+                      status: previous.status,
+                      guests: Number(previous.guests),
+                    }
+                  : null,
+                after: {
+                  status: update.prepared.normalized.status,
+                  guests: update.prepared.normalized.guests,
+                  mealCount: update.prepared.normalized.mealCount,
+                },
+              },
+            };
+          }),
+        });
+
+        await this.billReconciliation.queueInTransaction(
+          tx,
+          messId,
+          ...preparedUpdates.map((update) => update.prepared.scheduledDate),
+        );
+
+        const response: MealBulkResponse = {
+          updatedCount: savedAttendances.length,
+          billingSync: [
+            ...new Set(
+              preparedUpdates.map((update) =>
+                update.prepared.dateKey.slice(0, 7),
+              ),
+            ),
+          ].map(() => 'RECALCULATION_QUEUED'),
+          updates: preparedUpdates.map((update) => {
+            const meal = mealsByKey.get(
+              `${update.prepared.dateKey}:${update.dto.mealName}`,
+            )!;
+            const saved = savedByMealId.get(meal.id)!;
+            return {
+              id: saved.id,
+              date: update.prepared.dateKey,
+              mealName: update.dto.mealName,
+              status: update.prepared.normalized.status,
+              guests: update.prepared.normalized.guests,
+              mealCount: update.prepared.normalized.mealCount,
+            };
+          }),
+        };
+
+        await tx.mealBulkCommand.create({
+          data: {
+            mess_id: messId,
+            user_id: userId,
+            idempotency_key: idempotencyKey,
+            request_hash: requestHash,
+            response: response as unknown as Prisma.InputJsonValue,
+          },
+        });
+
+        return { response, queuedBilling: true };
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+        maxWait: 5_000,
+        timeout: 15_000,
+      },
+    );
+    if (transactionResult.queuedBilling) {
+      this.billReconciliation.wakeWorker();
+    }
+    return transactionResult.response;
+  }
+
   async bulkUpdateAttendances(
     messId: string,
     userId: string,
@@ -483,6 +886,7 @@ export class MealService {
 
     const committed = await this.runTransactionWithRetry(
       async (tx) => {
+        await acquireMealMonthLocks(tx, messId, [dateKey]);
         const requestedMealNames = [
           ...new Set(updates.map((update) => update.mealName)),
         ];
@@ -816,6 +1220,10 @@ export class MealService {
     const newDate = dto.date ? this.parseDate(dto.date) : meal.scheduled_date;
     try {
       const updatedMeal = await this.prisma.$transaction(async (tx) => {
+        await acquireMealMonthLocks(tx, meal.mess_id, [
+          meal.scheduled_date.toISOString().slice(0, 10),
+          newDate.toISOString().slice(0, 10),
+        ]);
         const updated = await tx.meal.update({
           where: { id },
           data: {
@@ -890,6 +1298,7 @@ export class MealService {
     const mealName = this.parseMealName(rawMealName);
     const scheduledDate = this.parseDate(date);
     const meal = await this.prisma.$transaction(async (tx) => {
+      await acquireMealMonthLocks(tx, messId, [date]);
       const saved = await tx.meal.upsert({
         where: {
           mess_id_name_scheduled_date: {
@@ -960,6 +1369,9 @@ export class MealService {
     await this.ensureActiveSubscription(meal.mess_id, role);
 
     await this.prisma.$transaction(async (tx) => {
+      await acquireMealMonthLocks(tx, meal.mess_id, [
+        meal.scheduled_date.toISOString().slice(0, 10),
+      ]);
       await tx.auditLog.create({
         data: {
           mess_id: meal.mess_id,
@@ -1048,16 +1460,24 @@ export class MealService {
       );
     }
 
+    const isMemberDateEditable = isMemberMealDateEditable(
+      targetDate,
+      context.mess.meal_deadline_start ?? DEFAULT_MEAL_WINDOW_START,
+      context.mess.meal_deadline_end ?? DEFAULT_MEAL_WINDOW_END,
+    );
+
     return {
       ...window,
+      isTargetDateEditable: isMemberDateEditable,
+      isWindowOpen: isMemberDateEditable,
       windowStart: window.windowStart.toISOString(),
       windowEnd: window.windowEnd.toISOString(),
       windowStartTime: window.windowStart.toISOString(),
       windowEndTime: window.windowEnd.toISOString(),
       canManage: context.canManage,
-      canEdit: context.canManage || window.isWindowOpen,
+      canEdit: context.canManage || isMemberDateEditable,
       timeZone: MEAL_TIME_ZONE,
-      rule: 'Submit the meal decision during the configured previous-day window',
+      rule: 'Members may update future meals; today remains editable only until its configured close time',
     };
   }
 
@@ -1292,9 +1712,15 @@ export class MealService {
       );
     }
 
-    if (!window.isWindowOpen) {
+    const isEditable = isMemberMealDateEditable(
+      targetDate,
+      context.mess.meal_deadline_start,
+      context.mess.meal_deadline_end,
+    );
+
+    if (!isEditable) {
       throw new ForbiddenException(
-        `Member meal editing is available from ${this.formatMealWindowMoment(window.windowStart)} to ${this.formatMealWindowMoment(window.windowEnd)}.`,
+        `Member meal editing is closed for ${targetDate}. Future meals are editable, while today's meal closes at ${this.formatMealWindowMoment(window.windowEnd)}.`,
       );
     }
   }

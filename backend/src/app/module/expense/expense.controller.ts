@@ -89,6 +89,27 @@ export class ExpenseController {
     return { message: 'My expense details fetched successfully', data };
   }
 
+  @Get('member-details')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({
+    summary: 'Monthly allocated expense details for a member of the same mess',
+  })
+  async memberDetails(
+    @Req() req: Request,
+    @Query('messId') messId: string,
+    @Query('memberId') memberId: string,
+    @Query('month') month?: string,
+  ) {
+    const data = await this.expenseService.getMemberDetails(
+      messId,
+      memberId,
+      req.user!.id,
+      req.user!.role,
+      month ?? new Date().toISOString().slice(0, 10),
+    );
+    return { message: 'Member expense details fetched successfully', data };
+  }
+
   @Get('manager/members')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({ summary: 'Manager member-wise monthly expense overview' })

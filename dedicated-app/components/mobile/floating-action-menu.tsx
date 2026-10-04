@@ -6,11 +6,15 @@ import { Plus } from 'lucide-react'
 import { appHref } from '@/lib/routes'
 import { useTranslations } from '@/lib/i18n'
 
-export type FloatingActionMenuItem = {
-  href: string
+type FloatingActionMenuItemBase = {
   label: string
   icon: ReactNode
 }
+
+export type FloatingActionMenuItem = FloatingActionMenuItemBase & (
+  | { href: string; onSelect?: never }
+  | { href?: never; onSelect: () => void }
+)
 
 export function FloatingActionMenu({
   label,
@@ -47,21 +51,44 @@ export function FloatingActionMenu({
       ) : null}
 
       <div id={menuId} className="floating-action-menu__items" aria-hidden={!open}>
-        {items.map((item, index) => (
-          <Link
-            key={item.href}
-            href={appHref(item.href)}
-            className="floating-action-menu__item"
-            tabIndex={open ? 0 : -1}
-            style={{ '--action-index': index } as CSSProperties}
-            onClick={() => setOpen(false)}
-          >
-            <span>{item.label}</span>
-            <span className="floating-action-menu__item-icon" aria-hidden="true">
-              {item.icon}
-            </span>
-          </Link>
-        ))}
+        {items.map((item, index) => {
+          const content = (
+            <>
+              <span>{item.label}</span>
+              <span className="floating-action-menu__item-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+            </>
+          )
+          const sharedProps = {
+            className: 'floating-action-menu__item',
+            tabIndex: open ? 0 : -1,
+            style: { '--action-index': index } as CSSProperties,
+          }
+
+          return item.href ? (
+            <Link
+              key={item.href}
+              href={appHref(item.href)}
+              {...sharedProps}
+              onClick={() => setOpen(false)}
+            >
+              {content}
+            </Link>
+          ) : (
+            <button
+              key={`action-${item.label}`}
+              type="button"
+              {...sharedProps}
+              onClick={() => {
+                setOpen(false)
+                item.onSelect?.()
+              }}
+            >
+              {content}
+            </button>
+          )
+        })}
       </div>
 
       <button

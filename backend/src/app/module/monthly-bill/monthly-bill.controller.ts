@@ -31,6 +31,27 @@ export class MonthlyBillController {
     private readonly billReconciliation: MonthlyBillReconciliationService,
   ) {}
 
+  private withoutMemberContact<
+    T extends {
+      member?: {
+        id: string;
+        name: string;
+        avatar_url?: string | null;
+      } | null;
+    },
+  >(bill: T) {
+    return {
+      ...bill,
+      member: bill.member
+        ? {
+            id: bill.member.id,
+            name: bill.member.name,
+            avatar_url: bill.member.avatar_url ?? null,
+          }
+        : bill.member,
+    };
+  }
+
   @Post('generate')
   @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
   @ApiOperation({
@@ -53,7 +74,7 @@ export class MonthlyBillController {
     return {
       message: 'Monthly bills fetched successfully',
       meta: result.meta,
-      data: result.data,
+      data: result.data.map((bill) => this.withoutMemberContact(bill)),
     };
   }
 
@@ -68,7 +89,7 @@ export class MonthlyBillController {
     return {
       message: 'Your bills fetched successfully',
       meta: result.meta,
-      data: result.data,
+      data: result.data.map((bill) => this.withoutMemberContact(bill)),
     };
   }
 
@@ -92,7 +113,7 @@ export class MonthlyBillController {
     return {
       message: 'Monthly bills fetched successfully',
       meta: result.meta,
-      data: result.data,
+      data: result.data.map((bill) => this.withoutMemberContact(bill)),
       billing: billing
         ? {
             status: billing.status,
@@ -155,7 +176,10 @@ export class MonthlyBillController {
       req.user!.id,
       req.user!.role,
     );
-    return { message: 'Monthly bill fetched successfully', data };
+    return {
+      message: 'Monthly bill fetched successfully',
+      data: this.withoutMemberContact(data),
+    };
   }
 
   @Patch(':id/status')

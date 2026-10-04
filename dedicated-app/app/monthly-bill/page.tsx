@@ -2,15 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
 import {
   CalendarDays,
   ChevronDown,
-  CircleDollarSign,
-  ReceiptText,
-  ShieldCheck,
-  WalletCards,
-  type LucideIcon,
 } from 'lucide-react'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import {
@@ -27,14 +21,6 @@ import type { BillStatus } from '@/lib/form-options'
 import { useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
-
-type MyExpenseDetails = {
-  foodBill?: number
-  utilityBill?: number
-  roomRent?: number
-  total?: number
-  transactionCount?: number
-}
 
 type MemberSummary = {
   id: string
@@ -65,38 +51,9 @@ type BillItem = {
   }>
 }
 
-type MemberRecord = {
-  id: string
-  user_id: string
-  mess_id: string
-  is_active?: boolean
-  user?: {
-    id?: string
-    name?: string | null
-    email?: string | null
-    avatar_url?: string | null
-  }
-  mess?: { id: string }
-}
-
 function toNumber(value?: string | number | null) {
   const amount = Number(value ?? 0)
   return Number.isFinite(amount) ? amount : 0
-}
-
-function billCurrentCost(bill?: BillItem | null) {
-  if (!bill) return 0
-  return toNumber(bill.food_bill) + toNumber(bill.seat_rent) + toNumber(bill.utility_share)
-}
-
-function billTotalDeposit(bill?: BillItem | null) {
-  if (!bill) return 0
-  return toNumber(bill.deposit_total) + toNumber(bill.paid_amount)
-}
-
-function billRemaining(bill?: BillItem | null) {
-  const balance = toNumber(bill?.balance)
-  return balance < 0 ? Math.abs(balance) : 0
 }
 
 function memberInitials(name?: string | null) {
@@ -106,34 +63,6 @@ function memberInitials(name?: string | null) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'M'
-}
-
-function OverviewCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string
-  value: ReactNode
-  icon: LucideIcon
-}) {
-  return (
-    <article className="overview-card">
-      <div className="flex items-start gap-2.5">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px] bg-[#edfafa] text-[#008d8c]">
-          <Icon size={16} strokeWidth={2.35} />
-        </div>
-        <div className="min-w-0">
-          <div className="overview-card-label">{label}</div>
-          <div className="overview-card-value text-[#008d8c]">{value}</div>
-        </div>
-      </div>
-    </article>
-  )
-}
-
-function memberAvatarUrl(bill: BillItem, member?: MemberRecord) {
-  return bill.member?.avatar_url ?? member?.user?.avatar_url ?? null
 }
 
 function MemberPhoto({
@@ -163,29 +92,25 @@ function MemberPhoto({
 
 function MemberBillRow({
   bill,
-  member,
-  messId,
 }: {
   bill: BillItem
-  member?: MemberRecord
-  messId: string
 }) {
   const t = useTranslations('billing')
-  const name = bill.member?.name || member?.user?.name || t('memberFallback')
-  const email = bill.member?.email || member?.user?.email || t('emailNotAvailable')
+  const format = useLocaleFormatters()
+  const name = bill.member?.name || t('memberFallback')
   const isPaid = bill.status === 'PAID' || toNumber(bill.final_due) <= 0
   const closeStatus = bill.close_requests?.[0]?.status
 
   return (
     <Link
-      href={appHref(`/member-details?memberId=${encodeURIComponent(bill.member?.id ?? '')}&messId=${encodeURIComponent(member?.mess_id ?? messId)}&month=${encodeURIComponent(String(bill.month).slice(0, 7))}`)}
+      href={appHref(`/monthly-bill/my-details?memberId=${encodeURIComponent(bill.member?.id ?? '')}&month=${encodeURIComponent(String(bill.month).slice(0, 7))}`)}
       className="monthly-member-row"
       aria-label={t('viewMemberBillDetails', { name })}
     >
-      <MemberPhoto avatarUrl={memberAvatarUrl(bill, member)} name={name} />
+      <MemberPhoto avatarUrl={bill.member?.avatar_url} name={name} />
       <span className="monthly-member-row__identity">
         <strong>{name}</strong>
-        <small>{email}</small>
+        <small>{t('totalMeals')}: {format.number(toNumber(bill.total_meals))}</small>
       </span>
       <span className="monthly-member-row__status" data-status={closeStatus === 'PENDING' ? 'due' : closeStatus === 'APPROVED' || isPaid ? 'paid' : 'due'}>
         {closeStatus === 'PENDING' ? t('closePending') : closeStatus === 'APPROVED' ? t('closed') : isPaid ? t('paid') : t('due')}
@@ -201,9 +126,7 @@ export default function MonthlyBillPage() {
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const [month, setMonth] = useState(currentMonthValue())
-  const [details, setDetails] = useState<MyExpenseDetails | null>(null)
   const [bills, setBills] = useState<BillItem[]>([])
-  const [members, setMembers] = useState<MemberRecord[]>([])
   const [billingStatus, setBillingStatus] = useState<BillingCalculationStatus | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -238,33 +161,16 @@ export default function MonthlyBillPage() {
     }
 
     Promise.all([
-      api.getMyExpenseDetails(messId, `${month}-01`).catch((error) => {
-        recordLoadError(error)
-        return { data: null }
-      }),
       api.getBillsByMess(messId, { month: `${month}-01`, limit: 500, sortBy: 'generated_at', sortOrder: 'desc' }).catch((error) => {
         recordLoadError(error)
         return { data: [], billing: null }
       }),
-      api.getMessMemberOptions(messId).catch((error) => {
-        recordLoadError(error)
-        return { data: [] }
-      }),
     ])
-      .then(([detailRes, billRes, memberRes]) => {
+      .then(([billRes]) => {
         if (!alive) return
         const billList = Array.isArray(billRes.data) ? (billRes.data as BillItem[]) : []
-        const memberList = Array.isArray(memberRes.data) ? memberRes.data : []
-        setDetails((detailRes.data ?? null) as MyExpenseDetails | null)
         setBills(billList)
         setBillingStatus(billRes.billing?.status ?? null)
-        setMembers(memberList.map((member) => ({
-          id: `${messId}:${member.id}`,
-          user_id: member.id,
-          mess_id: messId,
-          is_active: true,
-          user: member,
-        })))
         if (billRes.billing && billRes.billing.status !== 'READY' && billRes.billing.status !== 'FAILED') {
           billingTimer = setTimeout(refreshBills, 1500)
         }
@@ -280,17 +186,7 @@ export default function MonthlyBillPage() {
     }
   }, [clearNotice, messId, month, showError])
 
-  const myBill = useMemo(() => bills.find((bill) => bill.member?.id === user?.id) ?? null, [bills, user?.id])
-  const memberByUserId = useMemo(() => new Map(members.map((member) => [member.user_id, member])), [members])
-  const visibleBills = useMemo(
-    () => bills.filter((bill) => memberByUserId.has(bill.member?.id ?? '')),
-    [bills, memberByUserId],
-  )
-  const totalCost = myBill ? billCurrentCost(myBill) : toNumber(details?.total)
-  const totalDeposit = myBill ? billTotalDeposit(myBill) : 0
-  const totalDue = myBill ? toNumber(myBill.final_due) : 0
-  const totalRemaining = myBill ? billRemaining(myBill) : Math.max(totalDeposit - totalCost, 0)
-
+  const visibleBills = bills
   return (
     <MobileShell showBottomNavigation>
       <TopScreen title={t('monthlyBillManagement')} subtitle={format.month(`${month}-01`)} backHref="/" />
@@ -309,29 +205,14 @@ export default function MonthlyBillPage() {
               </button>
             )}
           />
-          <Link href={appHref(`/monthly-bill/my-details?month=${encodeURIComponent(month)}`)} className="full-month-meal-link">
-            <ReceiptText size={16} strokeWidth={2.25} aria-hidden="true" />
-            <span>{t('myDetails')}</span>
-          </Link>
         </div>
 
         {notice ? <InlineNotice tone={notice.tone}>{notice.message}</InlineNotice> : null}
         <BillingCalculationNotice status={billingStatus} />
 
-        <section>
-          <div className="section-title">{t('myOverview')}</div>
-          <div className="grid grid-cols-2 gap-3">
-            <OverviewCard label={t('totalDeposit')} icon={CircleDollarSign} value={loading ? <LoadingIndicator size="sm" label={t('loadingDeposit')} /> : format.money(totalDeposit)} />
-            <OverviewCard label={t('totalCost')} icon={ReceiptText} value={loading ? <LoadingIndicator size="sm" label={t('loadingCost')} /> : format.money(totalCost)} />
-            <OverviewCard label={t('totalDue')} icon={WalletCards} value={loading ? <LoadingIndicator size="sm" label={t('loadingDue')} /> : format.money(totalDue)} />
-            <OverviewCard label={t('totalRemaining')} icon={ShieldCheck} value={loading ? <LoadingIndicator size="sm" label={t('loadingRemaining')} /> : format.money(totalRemaining)} />
-          </div>
-        </section>
-
         <section className="monthly-member-overview" aria-labelledby="member-bill-overview-title">
           <div className="monthly-member-overview__header">
             <div>
-              <p>{t('memberBills')}</p>
               <h2 id="member-bill-overview-title">{t('memberOverview')}</h2>
             </div>
             <span>{loading ? '—' : format.number(visibleBills.length)}</span>
@@ -346,7 +227,7 @@ export default function MonthlyBillPage() {
           {!loading && visibleBills.length ? (
             <div className="monthly-member-overview__list">
               {visibleBills.map((bill) => (
-                <MemberBillRow key={bill.id} bill={bill} member={memberByUserId.get(bill.member?.id ?? '')} messId={messId} />
+                <MemberBillRow key={bill.id} bill={bill} />
               ))}
             </div>
           ) : null}

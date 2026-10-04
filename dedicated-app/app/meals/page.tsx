@@ -114,7 +114,7 @@ export default function MealsPage() {
             <div className="section-title mb-0">{mealCopy('todayOverview')}</div>
             <Link href={appHref(`/meals/details?month=${month}`)} className="full-month-meal-link">
               <UtensilsCrossed size={16} strokeWidth={2.25} aria-hidden="true" />
-              <span>{mealCopy('totalMeals')}</span>
+              <span>{mealCopy('myTotalMeals')}</span>
             </Link>
           </div>
           {loading ? (

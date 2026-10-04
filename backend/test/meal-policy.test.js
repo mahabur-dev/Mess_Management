@@ -5,6 +5,7 @@ const {
   assertValidMealWindow,
   getDhakaDateKey,
   getMealDecisionWindow,
+  isMemberMealDateEditable,
   normalizeMealAttendance,
   shiftDateKey,
 } = require('../dist/app/module/meal/meal-policy');
@@ -39,7 +40,7 @@ test('member window for August 1 is July 31 from 09:00 to 17:00 Dhaka', () => {
   assert.equal(afterWindow.isWindowOpen, false);
 });
 
-test('member cannot edit today or a date beyond tomorrow', () => {
+test('configured decision window only opens around the target date', () => {
   const now = new Date('2026-07-31T06:00:00.000Z');
   assert.equal(
     getMealDecisionWindow('2026-07-31', '09:00', '17:00', now)
@@ -49,6 +50,36 @@ test('member cannot edit today or a date beyond tomorrow', () => {
   assert.equal(
     getMealDecisionWindow('2026-08-02', '09:00', '17:00', now)
       .isTargetDateEditable,
+    false,
+  );
+});
+
+test('member can edit any future date while past dates remain locked', () => {
+  const now = new Date('2026-10-03T12:00:00.000Z');
+
+  assert.equal(isMemberMealDateEditable('2026-10-02', '09:00', '17:00', now), false);
+  assert.equal(isMemberMealDateEditable('2026-10-04', '09:00', '17:00', now), true);
+  assert.equal(isMemberMealDateEditable('2026-10-05', '09:00', '17:00', now), true);
+  assert.equal(isMemberMealDateEditable('2026-10-06', '09:00', '17:00', now), true);
+});
+
+test('today remains editable only while its overnight close window is open', () => {
+  assert.equal(
+    isMemberMealDateEditable(
+      '2026-10-03',
+      '22:00',
+      '11:00',
+      new Date('2026-10-03T04:59:59.000Z'),
+    ),
+    true,
+  );
+  assert.equal(
+    isMemberMealDateEditable(
+      '2026-10-03',
+      '22:00',
+      '11:00',
+      new Date('2026-10-03T05:00:00.001Z'),
+    ),
     false,
   );
 });

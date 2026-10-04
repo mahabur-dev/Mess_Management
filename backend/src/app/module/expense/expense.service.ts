@@ -1935,18 +1935,17 @@ export class ExpenseService {
       })
       .filter((expense) => expense.memberShare > 0);
 
-    const foodCategories = new Set<ExpenseCategory>([
-      ExpenseCategory.FOOD,
-      ExpenseCategory.GROCERY,
-    ]);
     const utilityExclusions = new Set<ExpenseCategory>([
       ExpenseCategory.FOOD,
       ExpenseCategory.GROCERY,
       ExpenseCategory.RENT,
     ]);
-    const foodBill = memberShares
-      .filter((share) => foodCategories.has(share.expense.category))
-      .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
+    const assignedFoodExpenseTotal = roundMoney(
+      assignedFoodExpenses.reduce(
+        (sum, expense) => sum + expense.memberShare,
+        0,
+      ),
+    );
     const utilityBill = memberShares
       .filter((share) => !utilityExclusions.has(share.expense.category))
       .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
@@ -1955,18 +1954,13 @@ export class ExpenseService {
       .reduce((sum, share) => sum + Number(share.share_amount ?? 0), 0);
 
     return {
-      foodBill: roundMoney(foodBill),
+      foodBill: assignedFoodExpenseTotal,
       utilityBill: roundMoney(utilityBill),
       roomRent: roundMoney(roomRent),
-      total: roundMoney(foodBill + utilityBill + roomRent),
+      total: roundMoney(assignedFoodExpenseTotal + utilityBill + roomRent),
       transactionCount: memberShares.length,
       month: start,
-      assignedFoodExpenseTotal: roundMoney(
-        assignedFoodExpenses.reduce(
-          (sum, expense) => sum + expense.memberShare,
-          0,
-        ),
-      ),
+      assignedFoodExpenseTotal,
       assignedFoodExpenses,
       history: history.map((expense) => {
         const mapped = this.mapExpense(expense);

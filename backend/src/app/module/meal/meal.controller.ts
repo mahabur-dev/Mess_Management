@@ -20,6 +20,7 @@ import { Request } from 'express';
 import AuthGuard from '../../middlewares/auth.guard';
 import {
   BulkUpdateMealsDto,
+  BulkUpdateOwnMealsDto,
   CreateMealDto,
   LockMealDto,
   MealFilterDto,
@@ -48,6 +49,25 @@ export class MealController {
       dto,
     );
     return { message: 'Meal attendance saved successfully', data };
+  }
+
+  @Patch('mess/:messId/my-attendance/bulk')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({
+    summary: 'Atomically update the authenticated member meals across multiple dates',
+  })
+  async bulkUpdateOwnAttendances(
+    @Param('messId') messId: string,
+    @Req() req: Request,
+    @Body() dto: BulkUpdateOwnMealsDto,
+  ) {
+    const data = await this.mealService.bulkUpdateOwnAttendances(
+      messId,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return { message: 'My meals updated successfully', data };
   }
 
   @Get()

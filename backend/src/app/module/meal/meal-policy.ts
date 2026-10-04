@@ -145,6 +145,21 @@ export function getMealDecisionWindow(
   };
 }
 
+export function isMemberMealDateEditable(
+  targetDate: string,
+  startTime: string,
+  endTime: string,
+  now: Date = new Date(),
+): boolean {
+  const today = getDhakaDateKey(now);
+  parseDateKey(targetDate);
+
+  if (targetDate > today) return true;
+  if (targetDate < today) return false;
+
+  return getMealDecisionWindow(targetDate, startTime, endTime, now).isWindowOpen;
+}
+
 export function getMealBaseValue(mealName: MealKind): number {
   return MEAL_BASE_VALUE[mealName];
 }

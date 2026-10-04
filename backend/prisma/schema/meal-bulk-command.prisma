@@ -1,0 +1,16 @@
+model MealBulkCommand {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id         String   @db.Uuid
+  user_id         String   @db.Uuid
+  idempotency_key String   @db.VarChar(100)
+  request_hash    String   @db.VarChar(64)
+  response        Json     @db.JsonB
+  created_at      DateTime @default(now()) @db.Timestamptz
+
+  mess Mess @relation(fields: [mess_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([mess_id, user_id, idempotency_key])
+  @@index([mess_id, created_at(sort: Desc)])
+  @@map("meal_bulk_commands")
+}

@@ -35,6 +35,7 @@ import { MonthPicker } from '@/components/mobile/date-picker'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { FloatingActionMenu } from '@/components/mobile/floating-action-menu'
+import { PersonalFormModal } from '@/features/personal/components/personal-form-modal'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
@@ -218,6 +219,7 @@ function ExpenseRecordsSection({
 export default function ExpensesPage() {
   const format = useLocaleFormatters()
   const t = useTranslations('expenses')
+  const common = useTranslations('common')
   const { notice, clearNotice, showMessage, showError } = useLocalizedNotice('expenses')
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
@@ -231,6 +233,8 @@ export default function ExpensesPage() {
   const [collectedAmount, setCollectedAmount] = useState('')
   const [collectedNote, setCollectedNote] = useState('')
   const [fundBusy, setFundBusy] = useState(false)
+  const [fundModalOpen, setFundModalOpen] = useState(false)
+  const [fundError, setFundError] = useState('')
   const [expenses, setExpenses] = useState<ExpenseListRecord[]>([])
   const [recordsLoading, setRecordsLoading] = useState(false)
   const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>('ALL')
@@ -284,7 +288,9 @@ export default function ExpensesPage() {
   }, [messId, month])
 
   useEffect(() => {
-    if (!messId || !isManager || view !== 'MANAGER') return
+    // The manager page now opens directly on operational fund controls.
+    // if (!messId || !isManager || view !== 'MANAGER') return
+    if (!messId || !isManager) return
     let active = true
     let billingTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -325,13 +331,14 @@ export default function ExpensesPage() {
       active = false
       if (billingTimer) clearTimeout(billingTimer)
     }
-  }, [isManager, messId, month, view])
+  }, [isManager, messId, month])
 
   async function addCollectedFund() {
     clearNotice()
+    setFundError('')
     const amount = Number(collectedAmount)
     if (!Number.isFinite(amount) || amount <= 0) {
-      showMessage('validMessFundAmount', 'danger')
+      setFundError(t('validMessFundAmount'))
       return
     }
 
@@ -346,12 +353,21 @@ export default function ExpensesPage() {
       setFundBalances(response.data.balances)
       setCollectedAmount('')
       setCollectedNote('')
+      setFundModalOpen(false)
       showMessage('messFundRecorded', 'success')
-    } catch (error) {
-      showError(error, 'recordMessFundFailed')
+    } catch {
+      setFundError(t('recordMessFundFailed'))
     } finally {
       setFundBusy(false)
     }
+  }
+
+  function closeFundModal() {
+    if (fundBusy) return
+    setFundModalOpen(false)
+    setFundError('')
+    setCollectedAmount('')
+    setCollectedNote('')
   }
 
   const my = summary?.myView
@@ -359,12 +375,13 @@ export default function ExpensesPage() {
   return (
     <MobileShell showBottomNavigation hasFloatingAction>
       <TopScreen
-        title={view === 'MANAGER' ? t('manageExpenses') : t('expenseManagement')}
-        subtitle={view === 'MANAGER' ? t('managerSubtitle') : user?.memberships?.[0]?.mess?.name ?? t('messExpenses')}
+        title={isManager ? t('manageExpenses') : t('expenseManagement')}
+        subtitle={isManager ? t('managerSubtitle') : user?.memberships?.[0]?.mess?.name ?? t('messExpenses')}
         backHref="/"
       />
 
       <div className="screen expense-screen">
+        {/* Manager navigation is intentionally hidden while the previous UI is retained for future reuse.
         {isManager ? (
           <ExpenseSegmentedControl
             value={view}
@@ -374,7 +391,7 @@ export default function ExpensesPage() {
               { value: 'MANAGER', label: t('managerViewLabel'), icon: UsersRound },
             ]}
           />
-        ) : null}
+        ) : null} */}
 
         {notice ? (
           <div
@@ -388,8 +405,9 @@ export default function ExpensesPage() {
           </div>
         ) : null}
 
-        {view === 'MY' ? (
+        {!isManager ? (
           <>
+            {/* The member overview is intentionally hidden so the page starts at All Expenses.
             <ExpenseSurface title={t('thisMonthOverview')}>
               <div className="expense-summary-grid">
                 <ExpenseSummaryCard icon={CookingPot} label={t('food')} value={loading ? <LoadingIndicator size="sm" label={t('loadingFoodExpenses')} /> : format.money(my?.foodBill)} />
@@ -400,10 +418,11 @@ export default function ExpensesPage() {
 
               <ExpenseDetailsCta href="/monthly-bill" title={t('totalExpensesThisMonth')} subtitle={t('foodUtilityRent')} buttonLabel={t('details')} />
             </ExpenseSurface>
-
+            */}
           </>
         ) : (
           <>
+            {/* The manager summary cards are intentionally hidden so Available Funds is first.
             <ExpenseSurface>
               <div className="grid grid-cols-2 gap-2.5">
                 <ExpenseSummaryCard icon={CircleDollarSign} label={t('total')} value={format.money(manager?.totalExpenses)} />
@@ -412,6 +431,7 @@ export default function ExpensesPage() {
                 <ExpenseSummaryCard icon={UsersRound} label={t('members')} value={format.number(manager?.members ?? 0)} accent="violet" />
               </div>
             </ExpenseSurface>
+            */}
 
             <ExpenseSurface title={t('availableFunds')}>
               <div className="grid grid-cols-2 gap-2.5">
@@ -428,6 +448,7 @@ export default function ExpensesPage() {
                   accent="violet"
                 />
               </div>
+              {/* The inline fund form is retained here for possible future reuse.
               <div className="mt-4 grid gap-2.5">
                 <input
                   type="number"
@@ -453,6 +474,7 @@ export default function ExpensesPage() {
                   <Plus size={18} /> {fundBusy ? t('recording') : t('recordMessFund')}
                 </button>
               </div>
+              */}
             </ExpenseSurface>
 
           </>
@@ -469,7 +491,7 @@ export default function ExpensesPage() {
             setRecordsMonthFilter(value)
             setMonth(value)
           }}
-          title={isManager && view === 'MANAGER' ? t('expenseSubmissions') : t('allExpenses')}
+          title={isManager ? t('expenseSubmissions') : t('allExpenses')}
         />
       </div>
 
@@ -486,8 +508,80 @@ export default function ExpensesPage() {
             label: t('addUtility'),
             icon: <Zap size={20} strokeWidth={2.3} />,
           },
+          ...(isManager
+            ? [{
+                label: t('addMessFund'),
+                icon: <Landmark size={20} strokeWidth={2.3} />,
+                onSelect: () => {
+                  setFundError('')
+                  setFundModalOpen(true)
+                },
+              }]
+            : []),
         ]}
       />
+
+      <PersonalFormModal
+        id="add-mess-fund"
+        open={isManager && fundModalOpen}
+        busy={fundBusy}
+        icon={Landmark}
+        eyebrow={t('availableFunds')}
+        title={t('addMessFund')}
+        description={t('addMessFundDescription')}
+        closeLabel={common('close')}
+        onClose={closeFundModal}
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            void addCollectedFund()
+          }}
+        >
+          <div className="space-y-4 px-5 py-5">
+            <label className="block">
+              <span className="mb-2 block text-label font-semibold text-[#1d3a42]">{t('messFundAmount')}</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0.01"
+                step="0.01"
+                value={collectedAmount}
+                onChange={(event) => {
+                  setCollectedAmount(event.target.value)
+                  if (fundError) setFundError('')
+                }}
+                disabled={fundBusy}
+                aria-invalid={Boolean(fundError)}
+                className="h-12 w-full rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 text-label font-medium text-[#1d3a42] outline-none transition placeholder:text-[#9aaab2] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10 disabled:bg-[#f5f7f8]"
+                placeholder={t('messFundAmount')}
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-label font-semibold text-[#1d3a42]">{t('collectionNoteOptional')}</span>
+              <textarea
+                value={collectedNote}
+                onChange={(event) => setCollectedNote(event.target.value.slice(0, 250))}
+                rows={3}
+                maxLength={250}
+                disabled={fundBusy}
+                className="min-h-[88px] w-full resize-y rounded-[14px] border border-[#d6e5e8] bg-white px-3.5 py-3 text-label font-medium text-[#1d3a42] outline-none transition placeholder:text-[#9aaab2] focus:border-[#008d8c] focus:ring-4 focus:ring-[#008d8c]/10 disabled:bg-[#f5f7f8]"
+                placeholder={t('collectionNoteOptional')}
+              />
+            </label>
+
+            {fundError ? <div className="ui-notice ui-notice--danger" role="alert">{fundError}</div> : null}
+          </div>
+
+          <footer className="border-t border-[#e9eff1] bg-[#fbfcfc] px-5 py-4">
+            <button type="submit" className="app-modal-primary inline-flex w-full items-center justify-center gap-2 px-3 text-label" disabled={fundBusy}>
+              <Plus size={17} strokeWidth={2.5} aria-hidden="true" />
+              {fundBusy ? t('recording') : t('addMessFund')}
+            </button>
+          </footer>
+        </form>
+      </PersonalFormModal>
     </MobileShell>
   )
 }

@@ -20,6 +20,7 @@ import {
   type BillingCalculationStatus,
 } from '@/components/mobile/billing-status-notice'
 import { DepositListItem, type DepositListRecord } from '@/components/mobile/deposit-design'
+import { ExpenseReviewActions } from '@/components/mobile/expense-approval'
 import { ExpenseListItem, type ExpenseListRecord } from '@/components/mobile/expense-design'
 import { ExpenseBreakdownList, ExpenseSurface } from '@/components/mobile/expense-ui'
 import {
@@ -37,6 +38,7 @@ import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { Button } from '@/components/ui'
 import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
 import { useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '@/app/providers'
@@ -169,26 +171,29 @@ function MyMonthlyDetailsContent() {
   const params = useSearchParams()
   const { user } = useAuth()
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
+  const memberId = params.get('memberId') || user?.id || ''
+  const isOwnBill = memberId === user?.id
   const [month, setMonth] = useState(initialMonth(params.get('month')))
   const [bill, setBill] = useState<BillItem | null>(null)
   const [meals, setMeals] = useState<MealRecord[]>([])
   const [details, setDetails] = useState<MyExpenseDetails | null>(null)
-  const [deposits, setDeposits] = useState<DepositListRecord[]>([])
+  const [, setDeposits] = useState<DepositListRecord[]>([])
   const [payments, setPayments] = useState<PaymentItem[]>([])
   const [billingStatus, setBillingStatus] = useState<BillingCalculationStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [closeBusy, setCloseBusy] = useState(false)
+  const [reviewBusy, setReviewBusy] = useState(false)
 
   const range = useMemo(() => monthBounds(month), [month])
 
   useEffect(() => {
-    if (!messId || !user?.id) return
+    if (!messId || !memberId) return
     let alive = true
     let billingTimer: ReturnType<typeof setTimeout> | null = null
 
     const refreshBill = () => {
       api
-        .getBillsByMess(messId, { month: `${month}-01`, memberId: user.id, limit: 1 })
+        .getBillsByMess(messId, { month: `${month}-01`, memberId, limit: 1 })
         .then((response) => {
           if (!alive) return
           const bills = Array.isArray(response.data) ? (response.data as BillItem[]) : []
@@ -213,7 +218,7 @@ function MyMonthlyDetailsContent() {
     }
 
     Promise.all([
-      api.getBillsByMess(messId, { month: `${month}-01`, memberId: user.id, limit: 1 }).catch((error) => {
+      api.getBillsByMess(messId, { month: `${month}-01`, memberId, limit: 1 }).catch((error) => {
         recordLoadError(error)
         return { data: [], billing: null }
       }),
@@ -221,18 +226,18 @@ function MyMonthlyDetailsContent() {
         recordLoadError(error)
         return { data: [] }
       }),
-      api.getMyExpenseDetails(messId, `${month}-01`).catch((error) => {
+      api.getMemberExpenseDetails(messId, memberId, `${month}-01`).catch((error) => {
         recordLoadError(error)
         return { data: null }
       }),
       api
-        .getDepositsByMess(messId, { userId: user.id, billMonth: `${month}-01`, limit: 50, sortBy: 'date', sortOrder: 'desc' })
+        .getDepositsByMess(messId, { userId: memberId, billMonth: `${month}-01`, limit: 50, sortBy: 'date', sortOrder: 'desc' })
         .catch((error) => {
           recordLoadError(error)
           return { data: [] }
         }),
       api
-        .getPaymentsByMess(messId, { memberId: user.id, billMonth: `${month}-01`, limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
+        .getPaymentsByMess(messId, { memberId, billMonth: `${month}-01`, limit: 50, sortBy: 'created_at', sortOrder: 'desc' })
         .catch((error) => {
           recordLoadError(error)
           return { data: [] }
@@ -264,9 +269,9 @@ function MyMonthlyDetailsContent() {
       alive = false
       if (billingTimer) clearTimeout(billingTimer)
     }
-  }, [loadNotice.clearNotice, loadNotice.showError, messId, month, range.endDate, range.startDate, user?.id])
+  }, [loadNotice.clearNotice, loadNotice.showError, memberId, messId, month, range.endDate, range.startDate])
 
-  const history = useMemo(() => buildMemberMealHistory(meals, user?.id), [meals, user?.id])
+  const history = useMemo(() => buildMemberMealHistory(meals, memberId), [meals, memberId])
   const mealSummary = useMemo(() => summarizeMealHistory(history), [history])
   const expenseHistory = details?.history ?? []
   const billMeals = toNumber(bill?.total_meals) || mealSummary.totalMeals
@@ -300,7 +305,7 @@ function MyMonthlyDetailsContent() {
           : null
 
   const requestClose = async () => {
-    if (!bill || !canRequestClose || closeBusy) return
+    if (!isOwnBill || !bill || !canRequestClose || closeBusy) return
     setCloseBusy(true)
     closeNotice.clearNotice()
     try {
@@ -315,9 +320,36 @@ function MyMonthlyDetailsContent() {
     }
   }
 
+  const reviewCloseRequest = async (status: 'APPROVED' | 'REJECTED') => {
+    if (!bill || !latestCloseRequest || reviewBusy || latestCloseRequest.status !== 'PENDING') return
+    setReviewBusy(true)
+    closeNotice.clearNotice()
+    try {
+      const response = await api.reviewMonthlyBillCloseRequest(latestCloseRequest.id, status)
+      const reviewed = response.data as BillCloseRequest
+      setBill((current) => current ? {
+        ...current,
+        ...(status === 'APPROVED' ? { balance: 0, final_due: 0 } : {}),
+        close_requests: [reviewed],
+      } : current)
+      closeNotice.showMessage(
+        status === 'APPROVED' ? 'closeApprovedByManager' : 'closeRejectedByManager',
+        status === 'APPROVED' ? 'success' : 'danger',
+      )
+    } catch (error) {
+      closeNotice.showError(error, 'reviewCloseFailed')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
+
   return (
     <MobileShell>
-      <TopScreen title={t('myMonthlyDetails')} subtitle={format.month(`${month}-01`)} backHref="/monthly-bill" />
+      <TopScreen
+        title={isOwnBill ? t('myMonthlyDetails') : (bill?.member?.name || t('memberMonthlyBillDetails'))}
+        subtitle={format.month(`${month}-01`)}
+        backHref="/monthly-bill"
+      />
 
       <div className="screen space-y-4">
         <MealMonthSelector month={month} onChange={setMonth} />
@@ -333,7 +365,7 @@ function MyMonthlyDetailsContent() {
             <ExpenseSurface
               title={t('mealDetails')}
               aside={
-                <Link href={appHref(`/meals/details?month=${month}`)} className="inline-flex items-center gap-1 text-label font-semibold text-[#008d8c]">
+                <Link href={appHref(`/meals/details?month=${month}&memberId=${encodeURIComponent(memberId)}&from=billing`)} className="inline-flex items-center gap-1 text-label font-semibold text-[#008d8c]">
                   {t('view')} <ChevronRight size={14} />
                 </Link>
               }
@@ -370,7 +402,7 @@ function MyMonthlyDetailsContent() {
               />
             </ExpenseSurface>
 
-            <ExpenseSurface title={t('closePreviousCalculation')}>
+            {isOwnBill ? <ExpenseSurface title={t('closePreviousCalculation')}>
               <div className="space-y-3 px-3 py-3">
                 {latestCloseRequest?.status === 'PENDING' ? (
                   <InlineNotice tone="warning">{t('closePendingMessage')}</InlineNotice>
@@ -405,23 +437,35 @@ function MyMonthlyDetailsContent() {
                   {t('closePreviousCalculation')}
                 </Button>
               </div>
-            </ExpenseSurface>
+            </ExpenseSurface> : null}
+
+            {!isOwnBill && latestCloseRequest ? (
+              <ExpenseSurface title={t('closePreviousCalculation')}>
+                <div className="space-y-3 px-3 py-3">
+                  {latestCloseRequest.status === 'PENDING' ? (
+                    <InlineNotice tone="warning">
+                      {t('memberCloseRequest', { balance: format.money(latestCloseRequest.original_balance) })}
+                    </InlineNotice>
+                  ) : null}
+                  {latestCloseRequest.status === 'APPROVED' ? (
+                    <InlineNotice tone="success">
+                      {t('closedAtZero', { balance: format.money(latestCloseRequest.original_balance) })}
+                    </InlineNotice>
+                  ) : null}
+                  {latestCloseRequest.status === 'REJECTED' ? <InlineNotice tone="danger">{t('closeRequestRejected')}</InlineNotice> : null}
+                  {closeNotice.notice ? <InlineNotice tone={closeNotice.notice.tone}>{closeNotice.notice.message}</InlineNotice> : null}
+                  {latestCloseRequest.status === 'PENDING' && canManageMess(user) ? (
+                    <ExpenseReviewActions
+                      busy={reviewBusy}
+                      onApprove={() => reviewCloseRequest('APPROVED')}
+                      onReject={() => reviewCloseRequest('REJECTED')}
+                    />
+                  ) : null}
+                </div>
+              </ExpenseSurface>
+            ) : null}
 
             <ExpenseSurface title={t('depositSection')}>
-              <div className="flush-list flush-list--home-card">
-                {deposits.map((item, index) => (
-                  <DepositListItem
-                    key={item.id}
-                    item={{ ...item, status: 'APPROVED', method: item.method ?? 'CASH', payment_date: item.payment_date ?? item.date ?? item.created_at }}
-                    index={index}
-                    variant="horizontal"
-                  />
-                ))}
-                {!deposits.length ? <div className="expense-empty-state mx-3">{t('noDirectDeposits')}</div> : null}
-              </div>
-            </ExpenseSurface>
-
-            <ExpenseSurface title={t('paymentSection')}>
               <div className="flush-list flush-list--home-card">
                 {payments.map((item, index) => (
                   <DepositListItem key={item.id} item={item} index={index} variant="horizontal" />

@@ -22,6 +22,7 @@ import {
 } from '../meal/meal-policy';
 import { MonthlyBillReconciliationService } from '../monthly-bill/monthly-bill-reconciliation.service';
 import config from 'src/app/config';
+import { acquireMealMonthLocks } from '../meal/meal-concurrency';
 
 const DAY_MS = 86_400_000;
 const patternInclude = {
@@ -186,6 +187,9 @@ export class MealPatternService {
     let changed = false;
     for (const mealName of Object.values(MealName)) {
       const attendanceChanged = await this.prisma.$transaction(async (tx) => {
+        await acquireMealMonthLocks(tx, pattern.membership.mess_id, [
+          dateKey(scheduledDate),
+        ]);
         const scheduledQuantity = schedule[mealName];
         const existingMeal = await tx.meal.findUnique({ where: { mess_id_name_scheduled_date: { mess_id: pattern.membership.mess_id, name: mealName, scheduled_date: scheduledDate } } });
         if (scheduledQuantity <= 0) {

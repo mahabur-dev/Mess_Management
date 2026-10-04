@@ -80,6 +80,61 @@ export class MonthlyBillReconciliationService
     }
   }
 
+  async queueInTransaction(
+    tx: Prisma.TransactionClient,
+    messId: string,
+    ...effectiveDates: Array<Date | null | undefined>
+  ) {
+    const months = new Map<number, Date>();
+    for (const date of effectiveDates) {
+      if (!date || Number.isNaN(date.getTime())) continue;
+      const month = billingMonthStart(date);
+      months.set(month.getTime(), month);
+    }
+    if (!months.size) return 0;
+
+    const now = new Date();
+    for (const month of months.values()) {
+      await tx.$executeRaw(Prisma.sql`
+        INSERT INTO "monthly_billing_states" (
+          "mess_id", "month", "status", "requested_at", "next_attempt_at"
+        ) VALUES (
+          ${messId}::uuid,
+          ${month},
+          'DIRTY'::"BillingCalculationStatus",
+          ${now},
+          ${now}
+        )
+        ON CONFLICT ("mess_id", "month") DO UPDATE SET
+          "status" = CASE
+            WHEN "monthly_billing_states"."status" = 'PROCESSING'
+              THEN 'PROCESSING'::"BillingCalculationStatus"
+            ELSE 'DIRTY'::"BillingCalculationStatus"
+          END,
+          "revision" = "monthly_billing_states"."revision" + 1,
+          "attempts" = CASE
+            WHEN "monthly_billing_states"."status" = 'PROCESSING'
+              THEN "monthly_billing_states"."attempts"
+            ELSE 0
+          END,
+          "requested_at" = ${now},
+          "started_at" = CASE
+            WHEN "monthly_billing_states"."status" = 'PROCESSING'
+              THEN "monthly_billing_states"."started_at"
+            ELSE NULL
+          END,
+          "calculated_at" = NULL,
+          "next_attempt_at" = ${now},
+          "last_error" = NULL
+      `);
+    }
+    return months.size;
+  }
+
+  wakeWorker() {
+    this.scheduleWorker();
+  }
+
   async ensureScheduled(messId: string, monthInput: string | Date) {
     const month = billingMonthStart(monthInput);
     const existing = await this.prisma.monthlyBillingState.findUnique({

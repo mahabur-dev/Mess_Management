@@ -11,6 +11,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -138,6 +139,55 @@ export class BulkUpdateMealsDto {
   @ValidateNested({ each: true })
   @Type(() => BulkMealUpdateItemDto)
   updates: BulkMealUpdateItemDto[];
+}
+
+export class BulkOwnMealUpdateItemDto {
+  @ApiProperty({ example: '2026-10-04' })
+  @IsDateString()
+  date: string;
+
+  @ApiProperty({ enum: MealName, example: MealName.DINNER })
+  @IsEnum(MealName)
+  mealName: MealName;
+
+  @ApiProperty({ enum: AttendanceStatus, example: AttendanceStatus.ON })
+  @IsEnum(AttendanceStatus)
+  status: AttendanceStatus;
+
+  @ApiProperty({ example: 1, minimum: 0, maximum: 20 })
+  @Transform(toOptionalNumber)
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  guests: number;
+
+  @ApiProperty({ example: 2, minimum: 0, maximum: 21 })
+  @Transform(toOptionalNumber)
+  @IsNumber()
+  @Min(0)
+  @Max(21)
+  mealCount: number;
+}
+
+export class BulkUpdateOwnMealsDto {
+  @ApiPropertyOptional({
+    example: 'ad0a0c46-6da9-4ecf-9d99-844f03fd7167',
+    description: 'Stable key used to make network retries safe',
+  })
+  @IsOptional()
+  @IsUUID()
+  idempotencyKey?: string;
+
+  @ApiProperty({
+    type: [BulkOwnMealUpdateItemDto],
+    description: 'Changed meals for the authenticated member, across one or more dates.',
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(93)
+  @ValidateNested({ each: true })
+  @Type(() => BulkOwnMealUpdateItemDto)
+  updates: BulkOwnMealUpdateItemDto[];
 }
 
 export class UpdateMealDto {

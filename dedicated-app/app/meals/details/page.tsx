@@ -20,6 +20,7 @@ import {
 import { api } from '@/lib/api'
 import { useAuth } from '@/app/providers'
 import { useLocalizedNotice, useTranslations } from '@/lib/i18n'
+import { appHref } from '@/lib/routes'
 
 function initialMonth(value: string | null) {
   return /^\d{4}-\d{2}$/.test(value ?? '') ? (value as string) : currentMonthValue()
@@ -29,6 +30,8 @@ function MealDetailsContent() {
   const params = useSearchParams()
   const { user } = useAuth()
   const mealCopy = useTranslations('meals')
+  const memberId = params.get('memberId') || user?.id || ''
+  const fromBilling = params.get('from') === 'billing'
   const messId = useMemo(() => user?.memberships?.[0]?.mess_id ?? user?.memberships?.[0]?.mess?.id ?? '', [user])
   const [month, setMonth] = useState(initialMonth(params.get('month')))
   const [meals, setMeals] = useState<MealRecord[]>([])
@@ -67,12 +70,17 @@ function MealDetailsContent() {
     }
   }, [clearNotice, messId, month, showError, showMessage])
 
-  const history = useMemo(() => buildMemberMealHistory(meals, user?.id), [meals, user?.id])
+  const history = useMemo(() => buildMemberMealHistory(meals, memberId), [meals, memberId])
   const summary = useMemo(() => summarizeMealHistory(history), [history])
 
   return (
     <MobileShell>
-      <TopScreen title={mealCopy('myMealHistory')} backHref="/meals" />
+      <TopScreen
+        title={memberId === user?.id ? mealCopy('myMealHistory') : mealCopy('memberMealHistory')}
+        backHref={fromBilling
+          ? appHref(`/monthly-bill/my-details?memberId=${encodeURIComponent(memberId)}&month=${encodeURIComponent(month)}`)
+          : '/meals'}
+      />
       <div className="screen space-y-5">
         <MealMonthSelector month={month} onChange={setMonth} menuGap={18} />
 

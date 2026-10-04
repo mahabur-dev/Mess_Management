@@ -41,6 +41,7 @@ model Mess {
   creator              User                  @relation("MessCreator", fields: [created_by], references: [id])
   memberships          MessMembership[]
   meals                Meal[]
+  meal_bulk_commands   MealBulkCommand[]
   expenses             Expense[]
   deposit_ledgers      DepositLedger[]
   deposits             Deposit[]

@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK or Play Bundle
 
 on:
   workflow_dispatch:
@@ -95,6 +95,10 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            if [ "${{ inputs.package_type }}" = "play-apk-and-aab" ]; then
+              echo "::error::A Play bundle requires ANDROID_KEYSTORE_BASE64, ANDROID_KEY_ALIAS, ANDROID_KEYSTORE_PASSWORD, and ANDROID_KEY_PASSWORD."
+              exit 1
+            fi
             echo "Stable signing secrets were not provided; packaging an ephemeral debug APK."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -102,19 +106,25 @@ jobs:
 
           keystore_path="$RUNNER_TEMP/messzen-upload.jks"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
-          keytool -list -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" >/dev/null
-          if ! keytool -list -v -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" -keypass "$ANDROID_KEY_PASSWORD" >/dev/null; then
-            echo "::error::ANDROID_KEY_PASSWORD does not unlock the selected key alias. Update that GitHub secret and run the workflow again."
+          if ! signing_details="$(keytool -list -v -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD")"; then
+            echo "::error::The Android keystore, alias, or keystore password is invalid. Update the GitHub signing secrets and run the workflow again."
             exit 1
           fi
-          signing_sha1="$(keytool -list -v -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" | sed -n 's/.*SHA1: //p' | head -n 1)"
+
+          signing_owner="$(printf '%s\n' "$signing_details" | sed -n 's/^Owner: //p' | head -n 1)"
+          if [ "${ANDROID_KEY_ALIAS,,}" = "androiddebugkey" ] || printf '%s' "$signing_owner" | grep -qi 'CN=Android Debug'; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 contains an Android debug certificate. Replace it with a private Play upload keystore; Google Play rejects debug-signed bundles."
+            exit 1
+          fi
+
+          signing_sha1="$(printf '%s\n' "$signing_details" | sed -n 's/.*SHA1: //p' | head -n 1)"
           echo "enabled=true" >> "$GITHUB_OUTPUT"
           echo "keystore_path=$keystore_path" >> "$GITHUB_OUTPUT"
           echo "sha1=$signing_sha1" >> "$GITHUB_OUTPUT"
 
           {
             echo "## Android signing certificate"
-            keytool -list -v -keystore "$keystore_path" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" | grep -E 'SHA1:|SHA256:'
+            printf '%s\n' "$signing_details" | grep -E 'SHA1:|SHA256:'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Validate Google authentication configuration
@@ -156,6 +166,8 @@ jobs:
           MESSZEN_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           MESSZEN_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           MESSZEN_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          MESSZEN_VERSION_CODE: ${{ github.run_number }}
+          MESSZEN_VERSION_NAME: 1.0.${{ github.run_number }}
         run: |
           release_dir="dedicated-app/release"
           mkdir -p "$release_dir"
@@ -176,7 +188,7 @@ jobs:
 
           echo "apk_name=$apk_name" >> "$GITHUB_OUTPUT"
 
-      - name: Upload APK artifact
+      - name: Upload Android artifacts
         id: apk-artifact
         uses: actions/upload-artifact@v4
         with:
@@ -190,11 +202,11 @@ jobs:
         shell: bash
         run: |
           {
-            echo "## Android test build"
+            echo "## Android build"
             echo
             echo "[Download the APK from this workflow run](${{ steps.apk-artifact.outputs.artifact-url }})"
             echo
-            echo "The GitHub artifact contains ${{ steps.package.outputs.apk_name }}. Extract it, then install that APK on the Android device."
+            echo "The GitHub artifact contains ${{ steps.package.outputs.apk_name }} and, for a Play build, the release-signed AAB."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish direct-download prerelease

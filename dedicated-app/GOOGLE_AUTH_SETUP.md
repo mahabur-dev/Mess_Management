@@ -59,6 +59,8 @@ Add these repository secrets so every test APK uses the same signing identity:
 - `ANDROID_KEYSTORE_PASSWORD`
 - `ANDROID_KEY_PASSWORD`
 - `GOOGLE_SERVICES_JSON_BASE64` (recommended) or `GOOGLE_SERVICES_JSON`
+- `PLAY_APP_SIGNING_CERT_SHA1` (required for `play-apk-and-aab`; copy the
+  app-signing certificate SHA-1 from Play Console, not the upload SHA-1)
 
 The workflow prints only the signing certificate SHA-1/SHA-256 in its summary.
 Add those fingerprints in Firebase, download the refreshed JSON, update the
@@ -72,5 +74,7 @@ Firebase JSON.
 
 Upload the generated signed AAB and enable Play App Signing. In Play Console,
 copy the app-signing certificate SHA-1 and SHA-256 into the same Firebase
-Android app. Download `google-services.json` again, update the GitHub secret,
-and rebuild. No application-code change is required.
+Android app, and store the SHA-1 in the `PLAY_APP_SIGNING_CERT_SHA1` GitHub
+secret. Download `google-services.json` again, update its GitHub secret, and
+rebuild. The Play workflow fails rather than publishing an AAB with Google
+sign-in missing or signed by an unregistered certificate.

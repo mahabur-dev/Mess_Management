@@ -6,17 +6,37 @@ const expectedPackage = 'com.mess.management'
 const expectedSha1 = String(process.env.EXPECTED_ANDROID_CERT_SHA1 || '')
   .replace(/[^a-fA-F0-9]/g, '')
   .toLowerCase()
+const expectedPlaySha1 = String(process.env.EXPECTED_PLAY_APP_SIGNING_CERT_SHA1 || '')
+  .replace(/[^a-fA-F0-9]/g, '')
+  .toLowerCase()
+const requirePlaySha1 = process.env.REQUIRE_PLAY_APP_SIGNING_SHA1 === 'true'
+
+function hasAndroidOAuthClient(clients, sha1) {
+  return clients.some((client) =>
+    client.oauth_client?.some(
+      (candidate) =>
+        candidate?.client_type === 1 &&
+        String(candidate?.android_info?.package_name || '') === expectedPackage &&
+        String(candidate?.android_info?.certificate_hash || '')
+          .replace(/[^a-fA-F0-9]/g, '')
+          .toLowerCase() === sha1,
+    ),
+  )
+}
 
 try {
   const config = JSON.parse(await readFile(configPath, 'utf8'))
-  const client = config.client?.find(
+  const clients = config.client?.filter(
     (candidate) =>
       candidate?.client_info?.android_client_info?.package_name === expectedPackage,
   )
-  if (!client) throw new Error(`No Firebase client matches ${expectedPackage}`)
+  if (!clients?.length) throw new Error(`No Firebase client matches ${expectedPackage}`)
 
-  const hasWebOAuthClient = client.oauth_client?.some(
-    (candidate) => candidate?.client_type === 3 && candidate?.client_id,
+  const hasWebOAuthClient = clients.some(
+    (client) =>
+      client.oauth_client?.some(
+        (candidate) => candidate?.client_type === 3 && candidate?.client_id,
+      ),
   )
   if (!hasWebOAuthClient) {
     throw new Error(
@@ -25,22 +45,27 @@ try {
   }
 
   if (expectedSha1) {
-    const hasMatchingAndroidClient = client.oauth_client?.some(
-      (candidate) =>
-        candidate?.client_type === 1 &&
-        String(candidate?.android_info?.package_name || '') === expectedPackage &&
-        String(candidate?.android_info?.certificate_hash || '')
-          .replace(/[^a-fA-F0-9]/g, '')
-          .toLowerCase() === expectedSha1,
-    )
-    if (!hasMatchingAndroidClient) {
+    if (!hasAndroidOAuthClient(clients, expectedSha1)) {
       throw new Error(
         'Firebase config does not contain an Android OAuth client for the APK signing SHA-1.',
       )
     }
   }
 
-  console.log(`PASS Firebase Google authentication config for ${expectedPackage}.`)
+  if (requirePlaySha1 && !expectedPlaySha1) {
+    throw new Error(
+      'PLAY_APP_SIGNING_CERT_SHA1 is required for a Play AAB build. Copy the app-signing SHA-1 from Play Console App integrity.',
+    )
+  }
+
+  if (expectedPlaySha1 && !hasAndroidOAuthClient(clients, expectedPlaySha1)) {
+    throw new Error(
+      'Firebase config does not contain an Android OAuth client for the Google Play app-signing SHA-1.',
+    )
+  }
+
+  const playSuffix = expectedPlaySha1 ? ' and Google Play app signing' : ''
+  console.log(`PASS Firebase Google authentication config for ${expectedPackage}${playSuffix}.`)
 } catch (error) {
   console.error(`FAIL ${error instanceof Error ? error.message : String(error)}`)
   process.exit(1)

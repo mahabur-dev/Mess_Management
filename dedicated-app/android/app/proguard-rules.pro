@@ -19,3 +19,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# @capacitor-firebase/authentication compiles optional Facebook support even
+# when only the Google provider is packaged (rgcfaIncludeFacebook=false).
+# These classes are never loaded by this app, so R8 can safely ignore them.
+-dontwarn com.facebook.CallbackManager$Factory
+-dontwarn com.facebook.CallbackManager
+-dontwarn com.facebook.FacebookCallback
+-dontwarn com.facebook.login.LoginManager
+-dontwarn com.facebook.login.widget.LoginButton

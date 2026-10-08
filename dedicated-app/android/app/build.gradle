@@ -1,10 +1,52 @@
+import java.security.KeyStore
+
 apply plugin: 'com.android.application'
 
 def releaseKeystorePath = System.getenv('MESSZEN_KEYSTORE_PATH')
 def releaseKeyAlias = System.getenv('MESSZEN_KEY_ALIAS')
 def releaseKeystorePassword = System.getenv('MESSZEN_KEYSTORE_PASSWORD')
 def releaseKeyPassword = System.getenv('MESSZEN_KEY_PASSWORD')
-def hasReleaseSigning = releaseKeystorePath && releaseKeyAlias && releaseKeystorePassword && releaseKeyPassword
+def releaseSigningValues = [releaseKeystorePath, releaseKeyAlias, releaseKeystorePassword, releaseKeyPassword]
+def hasAnyReleaseSigning = releaseSigningValues.any { it }
+def hasReleaseSigning = releaseSigningValues.every { it }
+def requestedReleaseBuild = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains('release')
+}
+
+if (hasAnyReleaseSigning && !hasReleaseSigning) {
+    throw new GradleException('Release signing is incomplete. Set MESSZEN_KEYSTORE_PATH, MESSZEN_KEY_ALIAS, MESSZEN_KEYSTORE_PASSWORD, and MESSZEN_KEY_PASSWORD.')
+}
+
+if (requestedReleaseBuild && !hasReleaseSigning) {
+    throw new GradleException('A release build requires a private upload keystore. Set the four MESSZEN release-signing environment variables; debug or unsigned Play bundles are not allowed.')
+}
+
+if (hasReleaseSigning) {
+    def releaseKeystore = file(releaseKeystorePath)
+    if (!releaseKeystore.isFile()) {
+        throw new GradleException("Release keystore does not exist: ${releaseKeystore}")
+    }
+
+    def keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
+    releaseKeystore.withInputStream { stream ->
+        keyStore.load(stream, releaseKeystorePassword.toCharArray())
+    }
+    def signingCertificate = keyStore.getCertificate(releaseKeyAlias)
+    if (signingCertificate == null) {
+        throw new GradleException("Release key alias '${releaseKeyAlias}' was not found in the configured keystore.")
+    }
+
+    def certificateOwner = signingCertificate.subjectX500Principal.name.toLowerCase()
+    if (releaseKeyAlias.equalsIgnoreCase('androiddebugkey') || certificateOwner.contains('cn=android debug')) {
+        throw new GradleException('The configured release key is an Android debug key. Create and configure a private Play upload key instead.')
+    }
+}
+
+def configuredVersionCode = System.getenv('MESSZEN_VERSION_CODE') ?: '1'
+if (!(configuredVersionCode ==~ /[1-9]\d*/)) {
+    throw new GradleException('MESSZEN_VERSION_CODE must be a positive integer.')
+}
+def configuredVersionName = System.getenv('MESSZEN_VERSION_NAME') ?: '1.0'
 
 android {
     namespace "com.mess.management"
@@ -13,8 +55,8 @@ android {
         applicationId "com.mess.management"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode configuredVersionCode.toInteger()
+        versionName configuredVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CalendarDays, CreditCard, Save } from 'lucide-react'
+import { CalendarDays, CreditCard, Save, Trash2 } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
 import { LoadingIndicator } from '@/components/loading-indicator'
 import { TopScreen } from '@/components/top-screen'
@@ -54,28 +54,34 @@ type ReviewFormState = {
 }
 
 function DepositActionRow({
-  backLabel,
   submitLabel,
   busyLabel,
   busy,
-  onBack,
   onSubmit,
+  deleteLabel,
+  deletingLabel,
+  deleting = false,
+  onDelete,
 }: {
-  backLabel: string
   submitLabel: string
   busyLabel: string
   busy: boolean
-  onBack: () => void
   onSubmit: () => void
+  deleteLabel?: string
+  deletingLabel?: string
+  deleting?: boolean
+  onDelete?: () => void
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <Button type="button" variant="secondary" className="w-full" onClick={onBack}>
-        <ArrowLeft size={17} aria-hidden="true" /> {backLabel}
-      </Button>
-      <Button type="button" className="w-full" busy={busy} busyLabel={busyLabel} onClick={onSubmit}>
+    <div className={`grid gap-3 ${onDelete ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      <Button type="button" className="w-full" busy={busy} busyLabel={busyLabel} disabled={deleting} onClick={onSubmit}>
         <Save size={17} aria-hidden="true" /> {submitLabel}
       </Button>
+      {onDelete ? (
+        <Button type="button" variant="danger" className="w-full" busy={deleting} busyLabel={deletingLabel} disabled={busy} onClick={onDelete}>
+          <Trash2 size={17} aria-hidden="true" /> {deleteLabel}
+        </Button>
+      ) : null}
     </div>
   )
 }
@@ -104,6 +110,7 @@ export default function EditPaymentPage() {
     note: '',
   })
   const [busy, setBusy] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const depositLabel = useMemo(() => (payment ? paymentStatusLabel(payment.status, locale) : t('deposit')), [locale, payment, t])
@@ -191,6 +198,20 @@ export default function EditPaymentPage() {
     }
   }
 
+  async function handleDelete() {
+    if (!isManager || !paymentId || deleting || !window.confirm(t('deleteDepositConfirm'))) return
+
+    clearNotice()
+    setDeleting(true)
+    try {
+      await api.deletePayment(paymentId)
+      router.replace('/payments')
+    } catch (error) {
+      showError(error, 'deleteDepositFailed')
+      setDeleting(false)
+    }
+  }
+
   return (
     <MobileShell>
       <TopScreen title={t('depositDetails')} subtitle={payment?.member?.name ?? depositLabel} backHref="/payments" />
@@ -243,7 +264,16 @@ export default function EditPaymentPage() {
             <TextAreaField label={t('note')} value={editForm.note} onChange={(note) => setEditForm((prev) => ({ ...prev, note }))} placeholder={t('notePlaceholder')} rows={3} />
 
             {!isManager ? <div className="rounded-2xl border border-[#bfe7e6] bg-[#edfafa] px-4 py-3 text-label font-semibold text-[#65838b]">{t('editedRequiresApproval')}</div> : null}
-            <DepositActionRow backLabel={t('back')} submitLabel={t('save')} busyLabel={t('saving')} busy={busy} onBack={() => router.push('/payments')} onSubmit={() => void handleUpdate()} />
+            <DepositActionRow
+              submitLabel={t('save')}
+              busyLabel={t('saving')}
+              busy={busy}
+              onSubmit={() => void handleUpdate()}
+              deleteLabel={isManager ? t('deleteDeposit') : undefined}
+              deletingLabel={isManager ? t('deletingDeposit') : undefined}
+              deleting={deleting}
+              onDelete={isManager ? () => void handleDelete() : undefined}
+            />
           </section>
         ) : null}
 
@@ -265,7 +295,7 @@ export default function EditPaymentPage() {
             rows={4}
           />
 
-          <DepositActionRow backLabel={t('back')} submitLabel={t('save')} busyLabel={t('saving')} busy={busy} onBack={() => router.push('/payments')} onSubmit={() => void handleReview()} />
+          <DepositActionRow submitLabel={t('save')} busyLabel={t('saving')} busy={busy} deleting={deleting} onSubmit={() => void handleReview()} />
         </section>
         ) : null}
       </div>

@@ -160,8 +160,8 @@ export class PaymentController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
-  @ApiOperation({ summary: 'Delete a payment (own or any if manager)' })
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @ApiOperation({ summary: 'Delete a payment (Manager/Admin)' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.paymentService.remove(
       id,

@@ -1604,8 +1604,21 @@ export class ExpenseService {
       select: {
         id: true,
         mess_id: true,
+        type: true,
+        category: true,
+        amount: true,
+        description: true,
+        created_by: true,
+        purchased_by: true,
         expense_date: true,
         billing_month: true,
+        payment_type: true,
+        used_by: true,
+        split_method: true,
+        status: true,
+        reviewed_by: true,
+        reviewed_at: true,
+        created_at: true,
         receipt_public_id: true,
         receipt_resource_type: true,
       },
@@ -1619,6 +1632,34 @@ export class ExpenseService {
 
     await this.runSerializableTransaction(async (tx) => {
       await tx.depositLedger.deleteMany({ where: { expense_id: id } });
+      await tx.auditLog.create({
+        data: {
+          mess_id: expense.mess_id,
+          actor_id: userId,
+          action: 'EXPENSE_DELETED',
+          entity_type: 'EXPENSE',
+          entity_id: expense.id,
+          diff: {
+            before: {
+              type: expense.type,
+              category: expense.category,
+              amount: expense.amount.toString(),
+              description: expense.description,
+              createdBy: expense.created_by,
+              purchasedBy: expense.purchased_by,
+              expenseDate: expense.expense_date.toISOString(),
+              billingMonth: expense.billing_month?.toISOString() ?? null,
+              paymentType: expense.payment_type,
+              usedBy: expense.used_by,
+              splitMethod: expense.split_method,
+              status: expense.status,
+              reviewedBy: expense.reviewed_by,
+              reviewedAt: expense.reviewed_at?.toISOString() ?? null,
+              createdAt: expense.created_at.toISOString(),
+            },
+          },
+        },
+      });
       await tx.expense.delete({ where: { id } });
     });
     if (expense.receipt_public_id) {

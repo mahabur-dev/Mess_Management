@@ -810,7 +810,7 @@
     "expenseNotFound": "Expense not found.",
     "missingExpenseContext": "Expense id or mess id is missing.",
     "deleteExpense": "Delete Expense",
-    "deleteExpenseConfirm": "Delete this expense permanently?",
+    "deleteExpenseConfirm": "Delete this expense? The deletion will be retained in the audit log.",
     "deleting": "Deleting...",
     "deleteExpenseFailed": "Failed to delete expense.",
     "approval": "Approval",
@@ -985,6 +985,10 @@
     "updateDepositApproved": "Deposit updated and approved.",
     "updateDepositSubmitted": "Deposit updated and sent for manager approval.",
     "updateDepositFailed": "Failed to update deposit.",
+    "deleteDeposit": "Delete Deposit",
+    "deleteDepositConfirm": "Delete this deposit? The deletion will be retained in the audit log.",
+    "deletingDeposit": "Deleting deposit...",
+    "deleteDepositFailed": "Failed to delete deposit.",
     "editedRequiresApproval": "Edited deposits require manager approval.",
     "reviewDeposit": "Review Deposit",
     "status": "Status",
@@ -1497,7 +1501,16 @@
     "choose": "Choose",
     "accountSettings": "Account settings",
     "profileSecurityDescription": "Profile details and security",
-    "openAccountSettings": "Open account settings"
+    "openAccountSettings": "Open account settings",
+    "dangerZone": "Danger zone",
+    "deleteAccount": "Delete account",
+    "deleteAccountDescription": "Remove your profile and personal data from Messzen.",
+    "deleteAccountQuestion": "Delete your account?",
+    "deleteAccountWarning": "Your login, profile, devices and personal-finance data will be removed. Shared financial records will remain anonymized for audit. A sole manager must assign another manager first.",
+    "keepAccount": "Keep account",
+    "confirmDeleteAccount": "Delete account",
+    "deletingAccount": "Deleting...",
+    "deleteAccountFailed": "Your account could not be deleted. Please try again."
   },
   "api": {
     "errors": {
@@ -1524,6 +1537,8 @@
       "otpExpired": "The verification code has expired. Request a new code.",
       "otpRequired": "Verify the code before continuing.",
       "oldPasswordIncorrect": "The current password is incorrect.",
+      "managerTransferRequired": "Assign another active manager before deleting this account.",
+      "accountAlreadyDeleted": "This account has already been deleted.",
       "aiUnavailable": "The AI service is temporarily unavailable. Please try again.",
       "audioUnsupported": "The audio recording is missing or its format is not supported.",
       "aiAmbiguous": "More information is needed to understand this command."

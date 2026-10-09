@@ -18,9 +18,12 @@ model User {
   firebase_uid     String? @unique @db.VarChar(128)
   password_hash    String  @db.Text
   avatar_url    String?    @db.Text
+  avatar_public_id String? @db.Text
+  nid_image_public_id String? @db.Text
   role          GlobalRole @default(MEMBER)
   is_active     Boolean    @default(true)
   is_verified   Boolean    @default(false)
+  deleted_at    DateTime?  @db.Timestamptz
   ai_free_commands_used Int @default(0)
   otp           String?    @db.VarChar(6)
   otp_expiry    DateTime?  @db.Timestamptz
@@ -79,5 +82,6 @@ model User {
   bazar_release_requests          BazarReleaseRequest[]          @relation("BazarReleaseRequester")
   bazar_release_requests_reviewed BazarReleaseRequest[]          @relation("BazarReleaseReviewer")
 
+  @@index([is_active, deleted_at])
   @@map("users")
 }

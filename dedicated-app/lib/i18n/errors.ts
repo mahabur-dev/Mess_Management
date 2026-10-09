@@ -44,6 +44,8 @@ const ERROR_KEYS: Record<string, string> = {
   AUTH_OTP_EXPIRED: 'errors.otpExpired',
   AUTH_OTP_VERIFICATION_REQUIRED: 'errors.otpRequired',
   AUTH_OLD_PASSWORD_INCORRECT: 'errors.oldPasswordIncorrect',
+  ACCOUNT_MANAGER_TRANSFER_REQUIRED: 'errors.managerTransferRequired',
+  ACCOUNT_ALREADY_DELETED: 'errors.accountAlreadyDeleted',
   RESOURCE_NOT_FOUND: 'errors.notFound',
   RESOURCE_CONFLICT: 'errors.conflict',
   RELATED_RESOURCE_NOT_FOUND: 'errors.notFound',

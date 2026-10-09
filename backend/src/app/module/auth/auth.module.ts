@@ -16,6 +16,6 @@ import { FirebaseAuthService } from './firebase-auth.service';
   ],
   controllers: [AuthController],
   providers: [AuthService, FirebaseAuthService],
-  exports: [JwtModule],
+  exports: [JwtModule, FirebaseAuthService],
 })
 export class AuthModule {}

@@ -347,6 +347,16 @@ class Api {
     })
   }
 
+  deleteAccount() {
+    return this.request<{
+      deletedAt: string
+      personalDataAnonymized: boolean
+      financialHistoryRetained: boolean
+    }>('/users/profile', {
+      method: 'DELETE',
+    })
+  }
+
   updatePreferredLocale(locale: 'en' | 'bn') {
     const data = new FormData()
     data.set('preferredLocale', locale)
@@ -953,6 +963,12 @@ class Api {
     return this.request(`/payments/${id}/review`, {
       method: 'PATCH',
       body: JSON.stringify(data),
+    })
+  }
+
+  deletePayment(id: string) {
+    return this.request(`/payments/${id}`, {
+      method: 'DELETE',
     })
   }
 

@@ -101,6 +101,14 @@ export class UserController {
     return { message: 'Profile updated successfully', data };
   }
 
+  @Delete('profile')
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
+  @ApiOperation({ summary: 'Delete and anonymize the current account' })
+  async deleteOwnAccount(@Req() req: Request) {
+    const data = await this.userService.deleteAccount(req.user!.id);
+    return { message: 'Account deleted successfully', data };
+  }
+
   // Admin: update user active status
   @Patch(':id/status')
   @UseGuards(AuthGuard('ADMIN'))
@@ -113,12 +121,12 @@ export class UserController {
     return { message: 'User status updated', data };
   }
 
-  // Admin: delete user
+  // Admin: delete and anonymize user
   @Delete(':id')
   @UseGuards(AuthGuard('ADMIN'))
-  @ApiOperation({ summary: '[ADMIN] Delete a user permanently' })
+  @ApiOperation({ summary: '[ADMIN] Delete and anonymize a user' })
   async remove(@Param('id') id: string) {
-    const data = await this.userService.remove(id);
+    const data = await this.userService.deleteAccount(id);
     return { message: 'User deleted successfully', data };
   }
 }

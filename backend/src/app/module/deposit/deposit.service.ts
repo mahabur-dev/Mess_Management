@@ -262,7 +262,30 @@ export class DepositService {
     if (!deposit) throw new HttpException('Deposit not found', 404);
     await this.verifyManagerAccess(deposit.mess_id, userId, role);
 
-    await this.prisma.deposit.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          mess_id: deposit.mess_id,
+          actor_id: userId,
+          action: 'DEPOSIT_DELETED',
+          entity_type: 'DEPOSIT',
+          entity_id: deposit.id,
+          diff: {
+            before: {
+              memberId: deposit.member_id,
+              amount: deposit.amount.toString(),
+              method: deposit.method,
+              note: deposit.note,
+              depositDate: deposit.deposit_date.toISOString(),
+              confirmedBy: deposit.confirmed_by,
+              confirmedAt: deposit.confirmed_at?.toISOString() ?? null,
+              createdAt: deposit.created_at.toISOString(),
+            },
+          },
+        },
+      });
+      await tx.deposit.delete({ where: { id } });
+    });
     const billingSync = await this.billReconciliation.reconcile(
       deposit.mess_id,
       deposit.deposit_date,

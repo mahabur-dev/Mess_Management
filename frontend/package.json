@@ -4,9 +4,9 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node api.js && next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node api.js && next start",
     "lint": "eslint .",
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:types": "tsc --noEmit",

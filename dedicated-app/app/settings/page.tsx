@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { AlertTriangle, ChevronRight, KeyRound, LoaderCircle, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { MobileShell } from '@/components/mobile-shell'
@@ -8,6 +8,7 @@ import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
 import { appHref } from '@/lib/routes'
 import { localizedErrorMessage, useLocale, useTranslations } from '@/lib/i18n'
+import { useDialogFocus } from '@/hooks/use-dialog-focus'
 import { useAuth } from '../providers'
 
 export default function SettingsPage() {
@@ -19,6 +20,17 @@ export default function SettingsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const deleteDialogRef = useRef<HTMLDivElement>(null)
+  const keepAccountRef = useRef<HTMLButtonElement>(null)
+
+  useDialogFocus({
+    open: deleteDialogOpen,
+    containerRef: deleteDialogRef,
+    initialFocusRef: keepAccountRef,
+    onClose: () => {
+      if (!deletingAccount) setDeleteDialogOpen(false)
+    },
+  })
 
   async function handleDeleteAccount() {
     if (deletingAccount) return
@@ -85,11 +97,13 @@ export default function SettingsPage() {
 
       {deleteDialogOpen ? (
         <div
+          ref={deleteDialogRef}
           className="fixed inset-0 z-[100] grid place-items-center bg-[#062b35]/45 p-4"
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="delete-account-title"
           aria-describedby="delete-account-description"
+          tabIndex={-1}
           onClick={(event) => {
             if (event.target === event.currentTarget && !deletingAccount) setDeleteDialogOpen(false)
           }}
@@ -113,6 +127,7 @@ export default function SettingsPage() {
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <button
+                ref={keepAccountRef}
                 type="button"
                 onClick={() => setDeleteDialogOpen(false)}
                 disabled={deletingAccount}

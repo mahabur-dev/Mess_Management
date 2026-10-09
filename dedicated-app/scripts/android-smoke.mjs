@@ -58,11 +58,16 @@ const config = await readFile(path.join(root, 'capacitor.config.ts'), 'utf8')
 if (!config.includes("appId: 'com.mess.management'") || !config.includes("webDir: 'out'")) {
   throw new Error('Capacitor appId/webDir contract is invalid.')
 }
+
+const androidBuild = await readFile(path.join(root, 'android', 'app', 'build.gradle'), 'utf8')
+if (!androidBuild.includes('minifyEnabled false') || !androidBuild.includes('shrinkResources false')) {
+  throw new Error('Android release shrinking must remain disabled until a release launch smoke test protects R8 changes.')
+}
 console.log(`PASS Capacitor sync smoke: ${nativeRoutes} static routes and bilingual manifests copied.`)
 
 const java = spawnSync('java', ['-version'], { encoding: 'utf8', shell: true })
 if (java.status === 0) {
-  const gradle = process.platform === 'win32' ? 'gradlew.bat' : './gradlew'
+  const gradle = process.platform === 'win32' ? '.\\gradlew.bat' : './gradlew'
   const result = spawnSync(gradle, ['assembleDebug'], { cwd: path.join(root, 'android'), stdio: 'inherit', shell: process.platform === 'win32' })
   if (result.status !== 0) process.exit(result.status ?? 1)
   console.log('PASS Android assembleDebug native smoke.')

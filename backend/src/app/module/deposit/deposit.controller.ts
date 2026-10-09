@@ -103,8 +103,8 @@ export class DepositController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('ADMIN', 'MANAGER', 'MEMBER'))
-  @ApiOperation({ summary: 'Delete a deposit' })
+  @UseGuards(AuthGuard('ADMIN', 'MANAGER'))
+  @ApiOperation({ summary: 'Delete a deposit (Manager/Admin)' })
   async remove(@Param('id') id: string, @Req() req: Request) {
     const data = await this.depositService.remove(
       id,

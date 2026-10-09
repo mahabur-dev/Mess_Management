@@ -65,4 +65,17 @@ export class FirebaseAuthService {
       throw new HttpException('Invalid Google authentication token', 401);
     }
   }
+
+  async deleteUser(uid: string): Promise<void> {
+    try {
+      await getAuth(this.getApp()).deleteUser(uid);
+    } catch (error) {
+      const code =
+        error && typeof error === 'object' && 'code' in error
+          ? String(error.code)
+          : '';
+      if (code === 'auth/user-not-found') return;
+      throw error;
+    }
+  }
 }

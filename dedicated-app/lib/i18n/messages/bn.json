@@ -810,7 +810,7 @@
     "expenseNotFound": "খরচটি পাওয়া যায়নি।",
     "missingExpenseContext": "খরচ বা মেসের আইডি পাওয়া যায়নি।",
     "deleteExpense": "খরচ মুছুন",
-    "deleteExpenseConfirm": "এই খরচটি স্থায়ীভাবে মুছে ফেলবেন?",
+    "deleteExpenseConfirm": "এই খরচটি মুছবেন? মুছে ফেলার তথ্য অডিট লগে রাখা হবে।",
     "deleting": "মোছা হচ্ছে...",
     "deleteExpenseFailed": "খরচ মুছতে ব্যর্থ হয়েছে।",
     "approval": "অনুমোদন",
@@ -985,6 +985,10 @@
     "updateDepositApproved": "ডিপোজিট আপডেট হয়ে অনুমোদিত হয়েছে।",
     "updateDepositSubmitted": "ডিপোজিট আপডেট করে ম্যানেজারের অনুমোদনের জন্য পাঠানো হয়েছে।",
     "updateDepositFailed": "ডিপোজিট আপডেট করা যায়নি।",
+    "deleteDeposit": "ডিপোজিট মুছুন",
+    "deleteDepositConfirm": "এই ডিপোজিটটি মুছবেন? মুছে ফেলার তথ্য অডিট লগে রাখা হবে।",
+    "deletingDeposit": "ডিপোজিট মোছা হচ্ছে...",
+    "deleteDepositFailed": "ডিপোজিট মুছতে ব্যর্থ হয়েছে।",
     "editedRequiresApproval": "সম্পাদিত ডিপোজিটের জন্য ম্যানেজারের অনুমোদন প্রয়োজন।",
     "reviewDeposit": "ডিপোজিট যাচাই",
     "status": "স্ট্যাটাস",
@@ -1497,7 +1501,16 @@
     "choose": "নির্বাচন",
     "accountSettings": "অ্যাকাউন্ট সেটিংস",
     "profileSecurityDescription": "প্রোফাইল তথ্য ও নিরাপত্তা",
-    "openAccountSettings": "অ্যাকাউন্ট সেটিংস খুলুন"
+    "openAccountSettings": "অ্যাকাউন্ট সেটিংস খুলুন",
+    "dangerZone": "ঝুঁকিপূর্ণ অংশ",
+    "deleteAccount": "অ্যাকাউন্ট মুছুন",
+    "deleteAccountDescription": "Messzen থেকে আপনার প্রোফাইল ও ব্যক্তিগত তথ্য সরিয়ে দিন।",
+    "deleteAccountQuestion": "আপনার অ্যাকাউন্ট মুছবেন?",
+    "deleteAccountWarning": "আপনার লগইন, প্রোফাইল, ডিভাইস ও ব্যক্তিগত অর্থের তথ্য মুছে যাবে। অডিটের জন্য যৌথ আর্থিক রেকর্ড নামবিহীনভাবে রাখা হবে। একমাত্র ম্যানেজার হলে আগে অন্য একজন ম্যানেজার নিয়োগ করতে হবে।",
+    "keepAccount": "অ্যাকাউন্ট রাখুন",
+    "confirmDeleteAccount": "অ্যাকাউন্ট মুছুন",
+    "deletingAccount": "মোছা হচ্ছে...",
+    "deleteAccountFailed": "আপনার অ্যাকাউন্ট মুছতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।"
   },
   "api": {
     "errors": {
@@ -1524,6 +1537,8 @@
       "otpExpired": "ভেরিফিকেশন কোডের মেয়াদ শেষ হয়েছে। নতুন কোড নিন।",
       "otpRequired": "চালিয়ে যাওয়ার আগে কোডটি যাচাই করুন।",
       "oldPasswordIncorrect": "বর্তমান পাসওয়ার্ড সঠিক নয়।",
+      "managerTransferRequired": "এই অ্যাকাউন্ট মোছার আগে অন্য একজন সক্রিয় ম্যানেজার নিয়োগ করুন।",
+      "accountAlreadyDeleted": "এই অ্যাকাউন্টটি ইতিমধ্যে মুছে ফেলা হয়েছে।",
       "aiUnavailable": "AI সেবা সাময়িকভাবে অনুপলব্ধ। আবার চেষ্টা করুন।",
       "audioUnsupported": "অডিও রেকর্ডিং পাওয়া যায়নি অথবা এর ফরম্যাট সমর্থিত নয়।",
       "aiAmbiguous": "কমান্ডটি বুঝতে আরও তথ্য প্রয়োজন।"

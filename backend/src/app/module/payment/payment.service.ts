@@ -495,32 +495,10 @@ export class PaymentService {
     if (!payment) throw new HttpException('Payment not found', 404);
 
     const isOwn = payment.member_id === userId;
-    const isOwnSubmission = payment.created_by === userId;
-    const isMember = role === 'MEMBER';
-    if (isMember) {
-      const canManage = await this.hasManagerAccess(
-        payment.mess_id,
-        userId,
-        role,
-      );
-      if (!canManage && !isOwnSubmission) {
-        throw new HttpException(
-          'Forbidden: Members can delete only deposits they submitted',
-          403,
-        );
-      }
-      if (!canManage && payment.status !== PaymentStatus.PENDING) {
-        throw new HttpException(
-          'Reviewed payments can only be deleted by a manager',
-          400,
-        );
-      }
-    } else {
-      await this.verifyManager(payment.mess_id, userId, role);
-    }
+    await this.verifyManager(payment.mess_id, userId, role);
 
     // If manager deletes someone else's payment, send email
-    if (!isMember && !isOwn && payment.member?.email) {
+    if (!isOwn && payment.member?.email) {
       try {
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fafcff; border-radius: 12px;">
@@ -559,7 +537,36 @@ export class PaymentService {
       payment.status === PaymentStatus.APPROVED
         ? await this.getPaymentRecalculateDate(payment)
         : null;
-    await this.prisma.payment.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          mess_id: payment.mess_id,
+          actor_id: userId,
+          action: 'PAYMENT_DELETED',
+          entity_type: 'PAYMENT',
+          entity_id: payment.id,
+          diff: {
+            before: {
+              memberId: payment.member_id,
+              createdBy: payment.created_by,
+              monthlyBillId: payment.monthly_bill_id,
+              amount: payment.amount.toString(),
+              method: payment.method,
+              status: payment.status,
+              categories: payment.categories,
+              transactionId: payment.transaction_id,
+              screenshotUrl: payment.screenshot_url,
+              note: payment.note,
+              approvedBy: payment.approved_by,
+              approvedAt: payment.approved_at?.toISOString() ?? null,
+              paymentDate: payment.payment_date?.toISOString() ?? null,
+              createdAt: payment.created_at.toISOString(),
+            },
+          },
+        },
+      });
+      await tx.payment.delete({ where: { id } });
+    });
     const billingSync = recalculateDate
       ? await this.billReconciliation.reconcile(
           payment.mess_id,

@@ -79,9 +79,12 @@ android {
             if (hasReleaseSigning) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Keep the Play build behavior aligned with the working debug build.
+            // R8/resource shrinking caused the signed APK and Play-delivered AAB
+            // to terminate during startup before the Capacitor WebView loaded.
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }

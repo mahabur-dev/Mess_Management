@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node api.js && next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node api.js && next start",
     "lint": "next lint",
     "check:typography": "node scripts/check-typography.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",

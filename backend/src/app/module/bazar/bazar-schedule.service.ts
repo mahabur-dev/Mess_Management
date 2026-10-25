@@ -18,6 +18,7 @@ import {
   ChangeBazarDateStatusDto,
   CreateBazarSwapDto,
   GenerateBazarScheduleDto,
+  MoveBazarDutyDto,
   ReleaseBazarSlotDto,
   ReviewBazarRequestDto,
   UpdateBazarDateCapacityDto,
@@ -706,10 +707,8 @@ export class BazarScheduleService {
     this.assertMutableSlot(context);
     if (context.assigned_member_id !== userId)
       throw new HttpException('You can only release your own bazar duty', 403);
+    this.assertDutyChangeNotice(context);
 
-    const automatic =
-      daysUntil(context.bazar_date.duty_date) >=
-      context.bazar_date.schedule.release_notice_days;
     let request;
     try {
       request = await this.prisma.$transaction(
@@ -728,47 +727,43 @@ export class BazarScheduleService {
               schedule_id: context.bazar_date.schedule_id,
               slot_id: slotId,
               requester_id: userId,
-              status: automatic
-                ? BazarRequestStatus.APPROVED
-                : BazarRequestStatus.PENDING,
+              status: BazarRequestStatus.APPROVED,
               reason: dto.reason,
-              auto_approved: automatic,
-              responded_at: automatic ? new Date() : null,
+              auto_approved: true,
+              responded_at: new Date(),
             },
             include: releaseInclude,
           });
-          if (automatic) {
-            const changed = await tx.bazarDutySlot.updateMany({
-              where: {
-                id: slotId,
-                assigned_member_id: userId,
-                status: BazarDutySlotStatus.ASSIGNED,
-              },
-              data: {
-                status: BazarDutySlotStatus.AVAILABLE,
-                assigned_member_id: null,
-                assigned_by: null,
-                assigned_at: null,
-                last_reason: dto.reason,
-              },
-            });
-            if (changed.count !== 1)
-              throw new HttpException(
-                'The duty assignment changed before it could be released',
-                409,
-              );
-          }
+          const changed = await tx.bazarDutySlot.updateMany({
+            where: {
+              id: slotId,
+              assigned_member_id: userId,
+              status: BazarDutySlotStatus.ASSIGNED,
+            },
+            data: {
+              status: BazarDutySlotStatus.AVAILABLE,
+              assigned_member_id: null,
+              assigned_by: null,
+              assigned_at: null,
+              last_reason: dto.reason,
+            },
+          });
+          if (changed.count !== 1)
+            throw new HttpException(
+              'The duty assignment changed before it could be released',
+              409,
+            );
           await this.audit(
             tx,
             context.bazar_date.schedule.mess_id,
             userId,
-            automatic ? 'BAZAR_DUTY_AUTO_RELEASED' : 'BAZAR_RELEASE_REQUESTED',
+            'BAZAR_DUTY_AUTO_RELEASED',
             'BazarReleaseRequest',
             created.id,
             {
               slotId,
               reason: dto.reason,
-              automatic,
+              automatic: true,
               releaseNoticeDays:
                 context.bazar_date.schedule.release_notice_days,
             },
@@ -784,27 +779,186 @@ export class BazarScheduleService {
     } catch (error) {
       this.rethrowConcurrency(
         error,
-        'A release request is already pending or the duty assignment changed',
+        'The duty assignment changed before it could be released',
       );
     }
     void this.notify(
       userId,
       context.bazar_date.schedule.mess_id,
       [mess.created_by],
-      automatic ? 'Bazar duty released' : 'Bazar release approval needed',
-      automatic
-        ? `${dateKey(context.bazar_date.duty_date)} duty was released with enough advance notice.`
-        : `A member requested release from ${dateKey(context.bazar_date.duty_date)}.`,
+      'Bazar duty released',
+      `${dateKey(context.bazar_date.duty_date)} duty was released with enough advance notice.`,
       {
-        source: automatic
-          ? 'BAZAR_DUTY_AUTO_RELEASED'
-          : 'BAZAR_RELEASE_REQUESTED',
+        source: 'BAZAR_DUTY_AUTO_RELEASED',
         requestId: request.id,
         slotId,
         dutyDate: dateKey(context.bazar_date.duty_date),
       },
     );
     return request;
+  }
+
+  async moveOwnDuty(
+    sourceSlotId: string,
+    userId: string,
+    role: string,
+    dto: MoveBazarDutyDto,
+  ) {
+    if (sourceSlotId === dto.targetSlotId) {
+      throw new HttpException('Select a different duty slot', 400);
+    }
+
+    const [sourceSlot, targetSlot] = await Promise.all([
+      this.getSlotContext(sourceSlotId),
+      this.getSlotContext(dto.targetSlotId),
+    ]);
+    const schedule = sourceSlot.bazar_date.schedule;
+    const mess = await this.assertMessAccess(schedule.mess_id, userId, role);
+    await this.assertEligibleMember(schedule, userId);
+    this.assertMoveSlots(sourceSlot, targetSlot, userId);
+
+    const fromDate = dateKey(sourceSlot.bazar_date.duty_date);
+    const toDate = dateKey(targetSlot.bazar_date.duty_date);
+
+    try {
+      const moved = await this.prisma.$transaction(
+        async (tx) => {
+          const [currentSource, currentTarget] = await Promise.all([
+            tx.bazarDutySlot.findUnique({
+              where: { id: sourceSlotId },
+              include: { bazar_date: { include: { schedule: true } } },
+            }),
+            tx.bazarDutySlot.findUnique({
+              where: { id: dto.targetSlotId },
+              include: { bazar_date: { include: { schedule: true } } },
+            }),
+          ]);
+          if (!currentSource || !currentTarget) {
+            throw new HttpException(
+              'A selected bazar duty no longer exists',
+              409,
+            );
+          }
+          this.assertMoveSlots(currentSource, currentTarget, userId);
+
+          const duplicateOnTargetDate = await tx.bazarDutySlot.findFirst({
+            where: {
+              bazar_date_id: currentTarget.bazar_date_id,
+              assigned_member_id: userId,
+              NOT: { id: currentTarget.id },
+            },
+          });
+          if (duplicateOnTargetDate) {
+            throw new HttpException(
+              'You already have a duty on the target bazar date',
+              409,
+            );
+          }
+
+          const released = await tx.bazarDutySlot.updateMany({
+            where: {
+              id: sourceSlotId,
+              status: BazarDutySlotStatus.ASSIGNED,
+              assigned_member_id: userId,
+            },
+            data: {
+              status: BazarDutySlotStatus.AVAILABLE,
+              assigned_member_id: null,
+              assigned_by: null,
+              assigned_at: null,
+              last_reason: dto.reason ?? null,
+            },
+          });
+          if (released.count !== 1) {
+            throw new HttpException(
+              'Your source duty assignment changed before it could be moved',
+              409,
+            );
+          }
+
+          const assigned = await tx.bazarDutySlot.updateMany({
+            where: {
+              id: dto.targetSlotId,
+              status: BazarDutySlotStatus.AVAILABLE,
+              assigned_member_id: null,
+            },
+            data: {
+              status: BazarDutySlotStatus.ASSIGNED,
+              assigned_member_id: userId,
+              assigned_by: userId,
+              assigned_at: new Date(),
+              last_reason: dto.reason ?? null,
+            },
+          });
+          if (assigned.count !== 1) {
+            throw new HttpException(
+              'The target duty slot was taken before your duty could be moved',
+              409,
+            );
+          }
+
+          await this.cancelPendingForSlot(tx, sourceSlotId, userId);
+          await this.cancelPendingForSlot(tx, dto.targetSlotId, userId);
+          await this.audit(
+            tx,
+            schedule.mess_id,
+            userId,
+            'BAZAR_DUTY_MOVED',
+            'BazarDutySlot',
+            sourceSlotId,
+            {
+              sourceSlotId,
+              targetSlotId: dto.targetSlotId,
+              fromDate,
+              toDate,
+              reason: dto.reason ?? null,
+            },
+          );
+
+          const [source, target] = await Promise.all([
+            tx.bazarDutySlot.findUnique({
+              where: { id: sourceSlotId },
+              include: {
+                bazar_date: true,
+                assigned_member: { select: memberSelect },
+              },
+            }),
+            tx.bazarDutySlot.findUnique({
+              where: { id: dto.targetSlotId },
+              include: {
+                bazar_date: true,
+                assigned_member: { select: memberSelect },
+              },
+            }),
+          ]);
+          return { source, target };
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+
+      if (mess.created_by !== userId) {
+        void this.notify(
+          userId,
+          schedule.mess_id,
+          [mess.created_by],
+          'Bazar duty moved',
+          `A member moved their bazar duty from ${fromDate} to ${toDate}.`,
+          {
+            source: 'BAZAR_DUTY_MOVED',
+            sourceSlotId,
+            targetSlotId: dto.targetSlotId,
+            fromDate,
+            toDate,
+          },
+        );
+      }
+      return moved;
+    } catch (error) {
+      this.rethrowConcurrency(
+        error,
+        'The duty could not be moved because an assignment changed',
+      );
+    }
   }
 
   async reviewRelease(
@@ -827,14 +981,9 @@ export class BazarScheduleService {
         'This release request has already been resolved',
         409,
       );
-    if (
-      dto.approve &&
-      dateKey(existing.slot.bazar_date.duty_date) < dhakaDateKey()
-    ) {
-      throw new HttpException(
-        'Past bazar duties are locked and cannot be released',
-        409,
-      );
+    if (dto.approve) {
+      this.assertMutableSlot(existing.slot);
+      this.assertDutyChangeNotice(existing.slot);
     }
 
     const status = dto.approve
@@ -913,6 +1062,8 @@ export class BazarScheduleService {
       throw new HttpException('Duties on the same date cannot be swapped', 400);
     this.assertMutableSlot(ownSlot);
     this.assertMutableSlot(targetSlot);
+    this.assertSwapNotice(ownSlot);
+    this.assertSwapNotice(targetSlot);
     if (ownSlot.assigned_member_id !== userId)
       throw new HttpException('You can only swap your own bazar duty', 403);
     if (
@@ -1055,10 +1206,13 @@ export class BazarScheduleService {
             );
           }
           if (
-            dateKey(requesterSlot.bazar_date.duty_date) < dhakaDateKey() ||
-            dateKey(targetSlot.bazar_date.duty_date) < dhakaDateKey()
+            daysUntil(requesterSlot.bazar_date.duty_date) < 1 ||
+            daysUntil(targetSlot.bazar_date.duty_date) < 1
           ) {
-            throw new HttpException('Past bazar duties cannot be swapped', 409);
+            throw new HttpException(
+              'Bazar duties can only be swapped at least one day in advance',
+              409,
+            );
           }
           const duplicateOnRequesterDate = await tx.bazarDutySlot.findFirst({
             where: {
@@ -1473,6 +1627,65 @@ export class BazarScheduleService {
     this.assertMutableDate(slot.bazar_date);
     if (slot.status === BazarDutySlotStatus.CLOSED) {
       throw new HttpException('This bazar duty slot is closed', 409);
+    }
+  }
+
+  private assertMoveSlots(
+    sourceSlot: Awaited<ReturnType<BazarScheduleService['getSlotContext']>>,
+    targetSlot: Awaited<ReturnType<BazarScheduleService['getSlotContext']>>,
+    userId: string,
+  ) {
+    if (
+      sourceSlot.bazar_date.schedule_id !== targetSlot.bazar_date.schedule_id
+    ) {
+      throw new HttpException(
+        'Both duties must belong to the same monthly schedule',
+        400,
+      );
+    }
+    if (sourceSlot.bazar_date_id === targetSlot.bazar_date_id) {
+      throw new HttpException(
+        'Move the duty to a slot on a different bazar date',
+        400,
+      );
+    }
+    this.assertMutableSlot(sourceSlot);
+    this.assertMutableSlot(targetSlot);
+    this.assertDutyChangeNotice(sourceSlot);
+    if (sourceSlot.assigned_member_id !== userId) {
+      throw new HttpException('You can only move your own bazar duty', 403);
+    }
+    if (
+      targetSlot.status !== BazarDutySlotStatus.AVAILABLE ||
+      targetSlot.assigned_member_id
+    ) {
+      throw new HttpException(
+        'The target bazar duty slot is not available',
+        409,
+      );
+    }
+  }
+
+  private assertDutyChangeNotice(
+    slot: Awaited<ReturnType<BazarScheduleService['getSlotContext']>>,
+  ) {
+    const noticeDays = slot.bazar_date.schedule.release_notice_days;
+    if (daysUntil(slot.bazar_date.duty_date) < noticeDays) {
+      throw new HttpException(
+        `Release or move is only allowed at least ${noticeDays} days before the duty date`,
+        409,
+      );
+    }
+  }
+
+  private assertSwapNotice(
+    slot: Awaited<ReturnType<BazarScheduleService['getSlotContext']>>,
+  ) {
+    if (daysUntil(slot.bazar_date.duty_date) < 1) {
+      throw new HttpException(
+        'Bazar duties can only be swapped at least one day in advance',
+        409,
+      );
     }
   }
 

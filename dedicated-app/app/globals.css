@@ -4453,11 +4453,13 @@ a {
   box-shadow: 0 2px 8px rgba(0, 119, 122, 0.045);
 }
 
-.home-metric-card__heading {
+.home-metric-card__copy {
   display: flex;
   min-width: 0;
-  align-items: center;
-  gap: 7px;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .home-metric-card__icon {
@@ -9280,6 +9282,13 @@ body,
   padding: 7px 1px;
 }
 
+.home-quick-actions-grid {
+  display: grid;
+  grid-auto-rows: 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .home-quick-actions-card .home-quick-action__icon {
   width: 52px;
   height: 52px;
@@ -9322,36 +9331,32 @@ body,
 
 .home-feature-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .phone-frame[data-appearance="default"] .home-feature-grid .home-metric-card {
   min-width: 0;
-  min-height: 56px;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 5px;
+  min-height: 72px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
   border: 1px solid var(--neutral-200);
   border-radius: 10px;
   background: #ffffff;
-  padding: 7px 9px;
+  padding: 10px 12px;
   box-shadow: 0 1px 3px rgba(18, 55, 72, 0.04);
 }
 
-.home-feature-grid .home-metric-card__heading {
-  gap: 6px;
-}
-
 .home-feature-grid .home-metric-card__icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
 }
 
 .home-feature-grid .home-metric-card__icon svg {
-  width: 13px;
-  height: 13px;
+  width: 17px;
+  height: 17px;
 }
 
 .home-feature-grid .home-metric-card__label {
@@ -9367,7 +9372,7 @@ body,
   margin-top: 0;
   font-size: var(--text-label);
   line-height: 1.2;
-  text-align: center;
+  text-align: left;
 }
 
 @media (max-width: 370px) {
@@ -9636,6 +9641,20 @@ body,
   box-shadow: 0 0 0 3px rgba(0, 141, 140, 0.08);
 }
 
+.phone-frame[data-appearance="default"] .expense-records-search .expense-records-search__input,
+.phone-frame[data-appearance="default"] .expense-records-search .expense-records-search__input:focus {
+  width: 100%;
+  min-height: 0;
+  height: auto;
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
 /* Compact home dashboard: a flat, information-dense layout that reuses the
    existing product colors, type scale, borders and interaction states. */
 .phone-frame[data-appearance="default"] .home-screen {
@@ -9672,7 +9691,32 @@ body,
 }
 
 .phone-frame[data-appearance="default"] .home-screen .home-quick-action > span:last-child {
+  min-height: 2.5em;
   line-height: 1.25;
+}
+
+.phone-frame[data-appearance="default"] .home-screen .home-quick-actions-grid .home-quick-action {
+  width: 100%;
+  min-height: 94px;
+  height: 100%;
+  gap: 7px;
+  border: 1px solid var(--neutral-200);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 11px 6px 9px;
+  box-shadow: var(--shadow-xs);
+}
+
+.phone-frame[data-appearance="default"] .home-screen .home-quick-actions-grid .home-quick-action__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--brand-50);
+}
+
+.phone-frame[data-appearance="default"] .home-screen .home-quick-actions-grid .home-quick-action:hover {
+  border-color: var(--brand-200);
+  background: var(--brand-50);
 }
 
 .phone-frame[data-appearance="default"] .home-screen .home-month-pill {
@@ -9705,6 +9749,19 @@ body,
 
 .phone-frame[data-appearance="default"] .home-screen .home-metric-card__value {
   margin-top: 0;
+}
+
+.phone-frame[data-appearance="default"] .home-screen .home-feature-grid .home-metric-card {
+  min-height: 72px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.phone-frame[data-appearance="default"] .home-screen .home-feature-grid .home-metric-card__icon {
+  width: 34px;
+  height: 34px;
 }
 
 /* Bazar scheduling keeps the shared mobile system's restrained, paper-like

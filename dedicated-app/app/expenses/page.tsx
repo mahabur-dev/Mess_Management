@@ -10,6 +10,7 @@ import {
   House,
   Landmark,
   Plus,
+  Search,
   SlidersHorizontal,
   UserRound,
   UsersRound,
@@ -146,6 +147,8 @@ function ExpenseRecordsSection({
   onStatusFilterChange,
   monthFilter,
   onMonthFilterChange,
+  search,
+  onSearchChange,
   title,
 }: {
   expenses: ExpenseListRecord[]
@@ -155,6 +158,8 @@ function ExpenseRecordsSection({
   onStatusFilterChange: (filter: ApprovalFilter) => void
   monthFilter: MonthFilter
   onMonthFilterChange: (filter: MonthFilter) => void
+  search: string
+  onSearchChange: (value: string) => void
   title: string
 }) {
   const { locale } = useLocale()
@@ -177,6 +182,19 @@ function ExpenseRecordsSection({
 
   return (
     <ExpenseSurface title={title} aside={<span className="text-caption font-semibold text-[#65838b]">{t('shownCount', { count: format.number(filtered.length) })}</span>}>
+      <label className="expense-records-search mb-2.5 flex h-12 items-center gap-2.5 rounded-[15px] border border-[#dce5ec] bg-white px-3 shadow-[0_8px_18px_rgba(18,55,72,0.03)] transition focus-within:border-[#008d8c] focus-within:ring-4 focus-within:ring-[#008d8c]/10">
+        <Search size={18} strokeWidth={2.2} className="shrink-0 text-[#008d8c]" aria-hidden="true" />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder={t('searchExpenses')}
+          aria-label={t('searchExpenses')}
+          autoComplete="off"
+          className="expense-records-search__input min-w-0 flex-1 text-label font-medium text-[#123748] placeholder:text-[#8a98ad]"
+        />
+      </label>
+
       <div className="mb-3 grid grid-cols-2 gap-2.5">
         <ExpenseFilterSelect
           label={t('approvalStatus')}
@@ -239,6 +257,16 @@ export default function ExpensesPage() {
   const [recordsLoading, setRecordsLoading] = useState(false)
   const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>('ALL')
   const [recordsMonthFilter, setRecordsMonthFilter] = useState<MonthFilter>(month)
+  const [expenseSearch, setExpenseSearch] = useState('')
+  const [debouncedExpenseSearch, setDebouncedExpenseSearch] = useState('')
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedExpenseSearch(expenseSearch.trim())
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [expenseSearch])
 
   useEffect(() => {
     if (!messId) return
@@ -269,7 +297,13 @@ export default function ExpensesPage() {
     setRecordsLoading(true)
 
     api
-      .getExpensesByMess(messId, { billingMonth: `${month}-01`, limit: 100, sortBy: 'expense_date', sortOrder: 'desc' })
+      .getExpensesByMess(messId, {
+        billingMonth: `${month}-01`,
+        search: debouncedExpenseSearch || undefined,
+        limit: 100,
+        sortBy: 'expense_date',
+        sortOrder: 'desc',
+      })
       .then((response) => {
         if (active) setExpenses(Array.isArray(response.data) ? (response.data as ExpenseListRecord[]) : [])
       })
@@ -285,7 +319,7 @@ export default function ExpensesPage() {
     return () => {
       active = false
     }
-  }, [messId, month])
+  }, [debouncedExpenseSearch, messId, month])
 
   useEffect(() => {
     // The manager page now opens directly on operational fund controls.
@@ -491,6 +525,8 @@ export default function ExpensesPage() {
             setRecordsMonthFilter(value)
             setMonth(value)
           }}
+          search={expenseSearch}
+          onSearchChange={setExpenseSearch}
           title={isManager ? t('expenseSubmissions') : t('allExpenses')}
         />
       </div>

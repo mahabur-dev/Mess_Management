@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  ArrowRightLeft,
   CalendarDays,
+  CalendarMinus,
+  CalendarSync,
   Check,
   ChevronRight,
   CircleAlert,
@@ -24,14 +27,15 @@ import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { useAutoDismiss } from '@/hooks/use-auto-dismiss'
 import { useDialogFocus } from '@/hooks/use-dialog-focus'
-import { api, type BazarDutySlot, type BazarFrequency, type BazarSchedule, type BazarScheduleRequest, type BazarScheduleSettings } from '@/lib/api'
+import { ApiError, api, type BazarDutySlot, type BazarFrequency, type BazarSchedule, type BazarScheduleDate, type BazarScheduleRequest, type BazarScheduleSettings } from '@/lib/api'
 import { canManageMess } from '@/lib/app-permissions'
 import { useLocale, useLocaleFormatters } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
 
 type TabId = 'schedule' | 'mine' | 'requests' | 'distribution'
-type SheetId = 'add-date' | 'assign' | null
+type SheetId = 'add-date' | 'assign' | 'duty-actions' | 'move' | 'release' | 'swap' | null
+type MoveTarget = { date: BazarScheduleDate; slot: BazarDutySlot }
 
 const weekdayOptions = [
   { value: 6, en: 'Sat', bn: 'শনি' },
@@ -48,6 +52,18 @@ function currentDhakaMonth() {
   const parts = formatter.formatToParts(new Date())
   const read = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value ?? 0)
   return { year: read('year'), month: read('month') }
+}
+
+function currentDhakaDateKey() {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Dhaka', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
+  const read = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? ''
+  return `${read('year')}-${read('month')}-${read('day')}`
+}
+
+function daysUntilDate(date: string) {
+  const target = Date.parse(`${date.slice(0, 10)}T00:00:00.000Z`)
+  const today = Date.parse(`${currentDhakaDateKey()}T00:00:00.000Z`)
+  return Math.floor((target - today) / 86_400_000)
 }
 
 function isoDay(date: string) {
@@ -82,6 +98,43 @@ function text(locale: 'en' | 'bn') {
     allAssigned: bn ? 'সব দায়িত্ব বরাদ্দ হয়েছে' : 'All duties are assigned',
     tapToAssign: bn ? 'বরাদ্দ দিতে একটি খালি দায়িত্ব বেছে নিন' : 'Select an available duty to assign it',
     claim: bn ? 'দায়িত্ব নিন' : 'Claim duty', assigning: bn ? 'বরাদ্দ হচ্ছে...' : 'Assigning...',
+    moveDuty: bn ? 'দায়িত্ব সরান' : 'Move duty', moving: bn ? 'সরানো হচ্ছে...' : 'Moving...',
+    moveDutyTitle: bn ? 'বাজারের দায়িত্ব সরান' : 'Move bazar duty',
+    moveDutyDescription: bn ? 'আপনার দায়িত্বটি একই মাসের অন্য একটি খালি তারিখে সরিয়ে নিন।' : 'Move your duty to an available date in the same month.',
+    chooseTargetDuty: bn ? 'নতুন খালি তারিখ বেছে নিন' : 'Choose a new available date',
+    dutySlot: bn ? 'দায়িত্ব' : 'Duty',
+    moveReason: bn ? 'কারণ (ঐচ্ছিক)' : 'Reason (optional)',
+    moveReasonPlaceholder: bn ? 'কেন দায়িত্বটি সরাতে চান?' : 'Why do you need to move this duty?',
+    saveMove: bn ? 'দায়িত্ব সরান' : 'Move duty',
+    noMoveTargets: bn ? 'সরানোর জন্য খালি তারিখ নেই' : 'No available date to move to',
+    moveSuccess: bn ? 'বাজারের দায়িত্ব সফলভাবে সরানো হয়েছে।' : 'Bazar duty moved successfully.',
+    moveConflict: bn ? 'নির্বাচিত দায়িত্বটি পরিবর্তিত হয়েছে। সময়সূচি রিফ্রেশ করে আবার চেষ্টা করুন।' : 'The selected duty changed. Refresh the schedule and try again.',
+    moveFailed: bn ? 'বাজারের দায়িত্ব সরানো যায়নি। আবার চেষ্টা করুন।' : 'The bazar duty could not be moved. Please try again.',
+    manageDuty: bn ? 'পরিচালনা' : 'Manage',
+    manageDutyTitle: bn ? 'দায়িত্ব পরিচালনা করুন' : 'Manage duty',
+    manageDutyDescription: bn ? 'এই দায়িত্ব সরান, ছেড়ে দিন অথবা অন্য সদস্যের সঙ্গে বদল করুন।' : 'Move, release, or swap this duty with another member.',
+    deadlinePassed: bn ? 'Release ও Move-এর সময়সীমা শেষ হয়েছে।' : 'The Release and Move deadline has passed.',
+    noticeDeadline: (days: number) => bn ? `Release ও Move দায়িত্বের অন্তত ${days} দিন আগে করতে হবে।` : `Release and Move must be completed at least ${days} days before the duty date.`,
+    swapDeadline: bn ? 'Swap উভয় দায়িত্বের অন্তত ১ দিন আগে করতে হবে।' : 'Swap must be completed at least one day before both duty dates.',
+    releaseDuty: bn ? 'দায়িত্ব ছেড়ে দিন' : 'Release duty',
+    releaseDutyTitle: bn ? 'বাজারের দায়িত্ব ছাড়ুন' : 'Release bazar duty',
+    releaseDutyDescription: bn ? 'দায়িত্বটি ছেড়ে দিলে তারিখটি অন্য সদস্যের জন্য খালি হয়ে যাবে।' : 'Releasing makes this duty available to another member.',
+    releaseReason: bn ? 'দায়িত্ব ছাড়ার কারণ' : 'Reason for release',
+    releaseReasonPlaceholder: bn ? 'কেন দায়িত্বটি ছাড়তে চান?' : 'Why do you need to release this duty?',
+    releasing: bn ? 'ছাড়া হচ্ছে...' : 'Releasing...',
+    releaseSuccess: bn ? 'বাজারের দায়িত্ব সফলভাবে ছাড়া হয়েছে।' : 'Bazar duty released successfully.',
+    releaseFailed: bn ? 'বাজারের দায়িত্ব ছাড়া যায়নি। সময়সীমা যাচাই করে আবার চেষ্টা করুন।' : 'The bazar duty could not be released. Check the deadline and try again.',
+    swapDuty: bn ? 'দায়িত্ব বদল করুন' : 'Swap duty',
+    swapDutyTitle: bn ? 'বাজারের দায়িত্ব বদল করুন' : 'Swap bazar duty',
+    swapDutyDescription: bn ? 'অন্য সদস্যের একটি দায়িত্ব বেছে নিয়ে swap request পাঠান।' : 'Choose another member’s duty and send a swap request.',
+    chooseSwapDuty: bn ? 'যে দায়িত্বের সঙ্গে বদল করবেন' : 'Choose a duty to swap with',
+    swapReason: bn ? 'কারণ (ঐচ্ছিক)' : 'Reason (optional)',
+    swapReasonPlaceholder: bn ? 'কেন দায়িত্ব বদল করতে চান?' : 'Why do you want to swap duties?',
+    sendSwap: bn ? 'Swap request পাঠান' : 'Send swap request',
+    sendingSwap: bn ? 'পাঠানো হচ্ছে...' : 'Sending...',
+    swapSuccess: bn ? 'বাজারের duty swap request পাঠানো হয়েছে।' : 'Bazar duty swap request sent.',
+    swapFailed: bn ? 'Swap request পাঠানো যায়নি। সময়সূচি রিফ্রেশ করে আবার চেষ্টা করুন।' : 'The swap request could not be sent. Refresh the schedule and try again.',
+    noSwapTargets: bn ? 'বদল করার মতো অন্য কোনো দায়িত্ব নেই' : 'No other duty is available to swap',
     assignDuty: bn ? 'বাজার দায়িত্ব বরাদ্দ' : 'Assign bazar duty',
     assignDescription: bn ? 'যোগ্য একজন সদস্য বেছে নিন। প্রয়োজনে একটি নোট যোগ করুন।' : 'Select an eligible member and add an optional manager note.',
     chooseMember: bn ? 'সদস্য নির্বাচন করুন' : 'Choose a member', managerNote: bn ? 'ম্যানেজার নোট (ঐচ্ছিক)' : 'Manager note (optional)',
@@ -149,6 +202,11 @@ export default function BazarSchedulePage() {
   const [newDateReason, setNewDateReason] = useState('')
   const [assigneeId, setAssigneeId] = useState('')
   const [assignReason, setAssignReason] = useState('')
+  const [moveTargetSlotId, setMoveTargetSlotId] = useState('')
+  const [moveReason, setMoveReason] = useState('')
+  const [releaseReason, setReleaseReason] = useState('')
+  const [swapTargetSlotId, setSwapTargetSlotId] = useState('')
+  const [swapReason, setSwapReason] = useState('')
 
   useAutoDismiss(notice?.tone === 'success' ? notice : null, () => setNotice(null))
 
@@ -188,6 +246,61 @@ export default function BazarSchedulePage() {
 
   const openSettings = () => router.push(appHref('/bazar-schedule/settings'))
   const openAssign = (slot: BazarDutySlot) => { setSelectedSlot(slot); setAssigneeId(''); setAssignReason(''); setSheet('assign') }
+  const openDutyActions = (slot: BazarDutySlot) => { setSelectedSlot(slot); setMoveTargetSlotId(''); setMoveReason(''); setReleaseReason(''); setSwapTargetSlotId(''); setSwapReason(''); setSheet('duty-actions') }
+  const moveTargets = useMemo(() => schedule && selectedSlot ? getMoveTargets(schedule, user?.id, selectedSlot) : [], [schedule, selectedSlot, user?.id])
+  const swapTargets = useMemo(() => schedule && selectedSlot ? getSwapTargets(schedule, user?.id, selectedSlot) : [], [schedule, selectedSlot, user?.id])
+  const dutyChangeAllowed = Boolean(schedule && selectedSlot && isDutyChangeAllowed(schedule, selectedSlot))
+  const moveDuty = async () => {
+    if (!selectedSlot || !moveTargetSlotId) return
+    const key = `move:${selectedSlot.id}`
+    setBusy(key); setNotice(null)
+    try {
+      await api.moveBazarDuty(selectedSlot.id, { targetSlotId: moveTargetSlotId, reason: moveReason.trim() || undefined })
+      setSheet(null)
+      setNotice({ tone: 'success', text: copy.moveSuccess })
+      await load()
+    } catch (actionError) {
+      setSheet(null)
+      setNotice({ tone: 'danger', text: actionError instanceof ApiError && actionError.status === 409 ? copy.moveConflict : copy.moveFailed })
+      await load()
+    } finally {
+      setBusy(null)
+    }
+  }
+  const releaseDuty = async () => {
+    if (!selectedSlot || !releaseReason.trim()) return
+    const key = `release:${selectedSlot.id}`
+    setBusy(key); setNotice(null)
+    try {
+      await api.releaseBazarDuty(selectedSlot.id, { reason: releaseReason.trim() })
+      setSheet(null)
+      setNotice({ tone: 'success', text: copy.releaseSuccess })
+      await load()
+    } catch {
+      setSheet(null)
+      setNotice({ tone: 'danger', text: copy.releaseFailed })
+      await load()
+    } finally {
+      setBusy(null)
+    }
+  }
+  const swapDuty = async () => {
+    if (!selectedSlot || !swapTargetSlotId) return
+    const key = `swap:${selectedSlot.id}`
+    setBusy(key); setNotice(null)
+    try {
+      await api.createBazarSwap({ requesterSlotId: selectedSlot.id, targetSlotId: swapTargetSlotId, reason: swapReason.trim() || undefined })
+      setSheet(null)
+      setNotice({ tone: 'success', text: copy.swapSuccess })
+      await load()
+    } catch {
+      setSheet(null)
+      setNotice({ tone: 'danger', text: copy.swapFailed })
+      await load()
+    } finally {
+      setBusy(null)
+    }
+  }
   const monthEnd = dateKey(year, month, new Date(year, month, 0).getDate())
 
   return (
@@ -209,7 +322,7 @@ export default function BazarSchedulePage() {
                   {([['schedule', copy.schedule], ['mine', copy.mine], ['requests', copy.requests], ['distribution', copy.distribution]] as Array<[TabId, string]>).map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={activeTab === id} data-active={activeTab === id} onClick={() => setActiveTab(id)}>{label}{id === 'requests' && requests.length ? ` (${requests.length})` : ''}</button>)}
                 </div>
                 {activeTab === 'schedule' ? <ScheduleCalendar schedule={schedule} currentUserId={user?.id} canManage={canManage} copy={copy} onSlot={openAssign} onClaim={(slot) => void withAction(slot.id, () => api.claimBazarDuty(slot.id), copy.assignmentSuccess)} busy={busy} /> : null}
-                {activeTab === 'mine' ? <MyDuties schedule={schedule} userId={user?.id} copy={copy} /> : null}
+                {activeTab === 'mine' ? <MyDuties schedule={schedule} userId={user?.id} copy={copy} busy={busy !== null} onManage={openDutyActions} /> : null}
                 {activeTab === 'requests' ? <Requests requests={requests} copy={copy} /> : null}
                 {activeTab === 'distribution' ? <Distribution schedule={schedule} copy={copy} /> : null}
               </>
@@ -221,6 +334,10 @@ export default function BazarSchedulePage() {
       </div>
       {sheet === 'add-date' && schedule ? <AddDateSheet copy={copy} date={newDate} capacity={newDateCapacity} reason={newDateReason} minDate={dateKey(year, month, 1)} maxDate={monthEnd} busy={busy === 'add-date'} onChangeDate={setNewDate} onChangeCapacity={setNewDateCapacity} onChangeReason={setNewDateReason} onClose={() => setSheet(null)} onSave={() => void withAction('add-date', () => api.addBazarScheduleDate(schedule.id, { date: newDate, requiredMembers: Math.max(1, Number(newDateCapacity) || 1), reason: newDateReason.trim() }), copy.addSuccess).then((ok) => { if (ok) setSheet(null) })} /> : null}
       {sheet === 'assign' && selectedSlot ? <AssignSheet copy={copy} members={members} memberId={assigneeId} reason={assignReason} busy={busy === selectedSlot.id} onChangeMember={setAssigneeId} onChangeReason={setAssignReason} onClose={() => setSheet(null)} onSave={() => void withAction(selectedSlot.id, () => api.assignBazarDuty(selectedSlot.id, { memberId: assigneeId, reason: assignReason.trim() || undefined }), copy.assignmentSuccess).then((ok) => { if (ok) setSheet(null) })} /> : null}
+      {sheet === 'duty-actions' && selectedSlot && schedule ? <DutyActionsSheet copy={copy} noticeDays={schedule.release_notice_days} canChange={dutyChangeAllowed} canMove={moveTargets.length > 0} canSwap={swapTargets.length > 0} onMove={() => setSheet('move')} onRelease={() => setSheet('release')} onSwap={() => setSheet('swap')} onClose={() => setSheet(null)} /> : null}
+      {sheet === 'move' && selectedSlot ? <MoveDutySheet copy={copy} targets={moveTargets} targetSlotId={moveTargetSlotId} reason={moveReason} busy={busy === `move:${selectedSlot.id}`} onChangeTarget={setMoveTargetSlotId} onChangeReason={setMoveReason} onClose={() => setSheet(null)} onSave={() => void moveDuty()} /> : null}
+      {sheet === 'release' && selectedSlot ? <ReleaseDutySheet copy={copy} reason={releaseReason} busy={busy === `release:${selectedSlot.id}`} onChangeReason={setReleaseReason} onClose={() => setSheet(null)} onSave={() => void releaseDuty()} /> : null}
+      {sheet === 'swap' && selectedSlot ? <SwapDutySheet copy={copy} targets={swapTargets} targetSlotId={swapTargetSlotId} reason={swapReason} busy={busy === `swap:${selectedSlot.id}`} onChangeTarget={setSwapTargetSlotId} onChangeReason={setSwapReason} onClose={() => setSheet(null)} onSave={() => void swapDuty()} /> : null}
     </MobileShell>
   )
 }
@@ -244,11 +361,51 @@ function ScheduleCalendar({ schedule, currentUserId, canManage, copy, onSlot, on
   return <section className="bazar-calendar-card"><div className="bazar-calendar-card__heading"><div><h2>{monthTitle}</h2><p>{copy.tapToAssign}</p></div><span>{copy.version} {schedule.version}</span></div><div className="bazar-calendar">{days.map((day) => { const date = dates.get(day); const slots = date?.slots ?? []; const available = slots.find((slot) => (slot.effectiveStatus ?? slot.status) === 'AVAILABLE'); const yours = slots.find((slot) => slot.assigned_member_id === currentUserId); const closed = !date || (date.effectiveStatus ?? date.status) !== 'OPEN'; const status = yours ? { compact: copy.calendarMine, full: copy.you } : available ? { compact: copy.calendarOpen, full: copy.available } : closed ? { compact: copy.calendarOff, full: copy.unavailable } : { compact: copy.calendarTaken, full: copy.assigned }; return <button key={day} type="button" aria-label={`${day}: ${status.full}`} disabled={!available || busy !== null} onClick={() => available && (canManage ? onSlot(available) : onClaim(available))} className="bazar-day" data-state={yours ? 'yours' : available ? 'available' : closed ? 'closed' : 'assigned'}><strong>{day}</strong><small>{status.compact}</small></button> })}</div><div className="bazar-legend"><span data-tone="yours"><i />{copy.you}</span><span data-tone="available"><i />{copy.available}</span><span data-tone="closed"><i />{copy.unavailable}</span></div></section>
 }
 
-function MyDuties({ schedule, userId, copy }: { schedule: BazarSchedule; userId?: string; copy: ReturnType<typeof text> }) {
+function getMoveTargets(schedule: BazarSchedule, userId: string | undefined, sourceSlot: BazarDutySlot): MoveTarget[] {
+  if (!userId || !isDutyChangeAllowed(schedule, sourceSlot)) return []
+  const occupiedDateIds = new Set(schedule.dates.filter((date) => date.slots.some((slot) => slot.assigned_member_id === userId)).map((date) => date.id))
+  return schedule.dates.flatMap((date) => {
+    const dateOpen = !date.isPast && (date.effectiveStatus ?? date.status) === 'OPEN'
+    if (!dateOpen || date.id === sourceSlot.bazar_date_id || occupiedDateIds.has(date.id)) return []
+    return date.slots.filter((slot) => (slot.effectiveStatus ?? slot.status) === 'AVAILABLE' && !slot.assigned_member_id).map((slot) => ({ date, slot }))
+  })
+}
+
+function isDutyMutable(schedule: BazarSchedule, slot: BazarDutySlot) {
+  const date = schedule.dates.find((candidate) => candidate.id === slot.bazar_date_id)
+  return Boolean(schedule.status === 'ACTIVE' && date && !date.isPast && (date.effectiveStatus ?? date.status) === 'OPEN')
+}
+
+function isDutyChangeAllowed(schedule: BazarSchedule, slot: BazarDutySlot) {
+  const date = schedule.dates.find((candidate) => candidate.id === slot.bazar_date_id)
+  return Boolean(isDutyMutable(schedule, slot) && date && daysUntilDate(date.duty_date) >= schedule.release_notice_days)
+}
+
+function isSwapAllowed(schedule: BazarSchedule, slot: BazarDutySlot) {
+  const date = schedule.dates.find((candidate) => candidate.id === slot.bazar_date_id)
+  return Boolean(isDutyMutable(schedule, slot) && date && daysUntilDate(date.duty_date) >= 1)
+}
+
+function getSwapTargets(schedule: BazarSchedule, userId: string | undefined, sourceSlot: BazarDutySlot): MoveTarget[] {
+  if (!userId || !isSwapAllowed(schedule, sourceSlot)) return []
+  const sourceDate = schedule.dates.find((date) => date.id === sourceSlot.bazar_date_id)
+  if (!sourceDate) return []
+  const requesterDateIds = new Set(schedule.dates.filter((date) => date.slots.some((slot) => slot.assigned_member_id === userId)).map((date) => date.id))
+  return schedule.dates.flatMap((date) => {
+    const dateOpen = !date.isPast && (date.effectiveStatus ?? date.status) === 'OPEN'
+    if (!dateOpen || daysUntilDate(date.duty_date) < 1 || date.id === sourceDate.id || requesterDateIds.has(date.id)) return []
+    return date.slots.filter((slot) => {
+      if ((slot.effectiveStatus ?? slot.status) !== 'ASSIGNED' || !slot.assigned_member_id || slot.assigned_member_id === userId) return false
+      return !sourceDate.slots.some((sourceDateSlot) => sourceDateSlot.id !== sourceSlot.id && sourceDateSlot.assigned_member_id === slot.assigned_member_id)
+    }).map((slot) => ({ date, slot }))
+  })
+}
+
+function MyDuties({ schedule, userId, copy, busy, onManage }: { schedule: BazarSchedule; userId?: string; copy: ReturnType<typeof text>; busy: boolean; onManage: (slot: BazarDutySlot) => void }) {
   const format = useLocaleFormatters()
   const duties = schedule.dates.flatMap((date) => date.slots.filter((slot) => slot.assigned_member_id === userId).map((slot) => ({ date, slot })))
   if (!duties.length) return <EmptyState title={copy.noDuties} description={copy.noDutiesDescription} />
-  return <section className="bazar-list-card">{duties.map(({ date, slot }) => <article key={slot.id}><span className="bazar-list-card__date">{format.date(new Date(date.duty_date), { day: 'numeric' })}</span><div><strong>{format.date(new Date(date.duty_date), { weekday: 'long', month: 'long', day: 'numeric' })}</strong><small>{copy.assigned}</small></div><Check className="text-[#008d8c]" size={18} /></article>)}</section>
+  return <section className="bazar-list-card">{duties.map(({ date, slot }) => <article key={slot.id}><div><strong>{format.date(new Date(date.duty_date), { weekday: 'long', month: 'long', day: 'numeric' })}</strong><small>{copy.assigned}</small></div><Button type="button" size="sm" variant="secondary" disabled={busy || !isDutyMutable(schedule, slot)} onClick={() => onManage(slot)}><Settings2 size={14} />{copy.manageDuty}</Button></article>)}</section>
 }
 
 function Distribution({ schedule, copy }: { schedule: BazarSchedule; copy: ReturnType<typeof text> }) {
@@ -340,6 +497,99 @@ function AssignSheet({ copy, members, memberId, reason, busy, onChangeMember, on
       <footer>
         <Button variant="secondary" onClick={onClose}>{copy.cancel}</Button>
         <Button disabled={!memberId} busy={busy} busyLabel={copy.assigning} onClick={onSave}><UserPlus size={16} /> {copy.saveAssignment}</Button>
+      </footer>
+    </Sheet>
+  )
+}
+
+function DutyActionsSheet({ copy, noticeDays, canChange, canMove, canSwap, onMove, onRelease, onSwap, onClose }: { copy: ReturnType<typeof text>; noticeDays: number; canChange: boolean; canMove: boolean; canSwap: boolean; onMove: () => void; onRelease: () => void; onSwap: () => void; onClose: () => void }) {
+  return (
+    <Sheet title={copy.manageDutyTitle} description={copy.manageDutyDescription} closeLabel={copy.close} onClose={onClose}>
+      <div className="bazar-sheet__body bazar-form">
+        <Button type="button" variant="secondary" className="w-full" disabled={!canChange || !canMove} title={!canMove ? copy.noMoveTargets : undefined} onClick={onMove}><CalendarSync size={16} />{copy.moveDuty}</Button>
+        <Button type="button" variant="secondary" className="w-full" disabled={!canSwap} title={!canSwap ? copy.noSwapTargets : undefined} onClick={onSwap}><ArrowRightLeft size={16} />{copy.swapDuty}</Button>
+        <Button type="button" variant="danger" className="w-full" disabled={!canChange} onClick={onRelease}><CalendarMinus size={16} />{copy.releaseDuty}</Button>
+        <div className="bazar-sheet-note"><ShieldCheck size={15} />{canChange ? copy.noticeDeadline(noticeDays) : copy.deadlinePassed}</div>
+        <div className="bazar-sheet-note"><ShieldCheck size={15} />{copy.swapDeadline}</div>
+      </div>
+      <footer><Button className="col-span-2" variant="secondary" onClick={onClose}>{copy.close}</Button></footer>
+    </Sheet>
+  )
+}
+
+function ReleaseDutySheet({ copy, reason, busy, onChangeReason, onClose, onSave }: { copy: ReturnType<typeof text>; reason: string; busy: boolean; onChangeReason: (value: string) => void; onClose: () => void; onSave: () => void }) {
+  return (
+    <Sheet title={copy.releaseDutyTitle} description={copy.releaseDutyDescription} closeLabel={copy.close} onClose={onClose}>
+      <div className="bazar-sheet__body bazar-form">
+        <label>
+          <span>{copy.releaseReason}</span>
+          <textarea maxLength={500} value={reason} onChange={(event) => onChangeReason(event.target.value)} placeholder={copy.releaseReasonPlaceholder} />
+        </label>
+      </div>
+      <footer>
+        <Button variant="secondary" onClick={onClose}>{copy.cancel}</Button>
+        <Button variant="danger" disabled={!reason.trim()} busy={busy} busyLabel={copy.releasing} onClick={onSave}><CalendarMinus size={16} />{copy.releaseDuty}</Button>
+      </footer>
+    </Sheet>
+  )
+}
+
+function SwapDutySheet({ copy, targets, targetSlotId, reason, busy, onChangeTarget, onChangeReason, onClose, onSave }: { copy: ReturnType<typeof text>; targets: MoveTarget[]; targetSlotId: string; reason: string; busy: boolean; onChangeTarget: (value: string) => void; onChangeReason: (value: string) => void; onClose: () => void; onSave: () => void }) {
+  const format = useLocaleFormatters()
+  const targetOptions = ['', ...targets.map(({ slot }) => slot.id)]
+  const targetLabel = (slotId: string) => {
+    const target = targets.find(({ slot }) => slot.id === slotId)
+    if (!target) return copy.chooseSwapDuty
+    const date = format.date(new Date(target.date.duty_date), { weekday: 'long', month: 'long', day: 'numeric' })
+    return `${target.slot.assigned_member?.name ?? '—'} · ${date}`
+  }
+
+  return (
+    <Sheet title={copy.swapDutyTitle} description={copy.swapDutyDescription} closeLabel={copy.close} onClose={onClose}>
+      <div className="bazar-sheet__body bazar-form">
+        <SelectField label={copy.chooseSwapDuty} value={targetSlotId} options={targetOptions} getLabel={targetLabel} icon={ArrowRightLeft} onChange={onChangeTarget} />
+        <label>
+          <span>{copy.swapReason}</span>
+          <textarea maxLength={500} value={reason} onChange={(event) => onChangeReason(event.target.value)} placeholder={copy.swapReasonPlaceholder} />
+        </label>
+      </div>
+      <footer>
+        <Button variant="secondary" onClick={onClose}>{copy.cancel}</Button>
+        <Button disabled={!targetSlotId} busy={busy} busyLabel={copy.sendingSwap} onClick={onSave}><ArrowRightLeft size={16} />{copy.sendSwap}</Button>
+      </footer>
+    </Sheet>
+  )
+}
+
+function MoveDutySheet({ copy, targets, targetSlotId, reason, busy, onChangeTarget, onChangeReason, onClose, onSave }: { copy: ReturnType<typeof text>; targets: MoveTarget[]; targetSlotId: string; reason: string; busy: boolean; onChangeTarget: (value: string) => void; onChangeReason: (value: string) => void; onClose: () => void; onSave: () => void }) {
+  const format = useLocaleFormatters()
+  const targetOptions = ['', ...targets.map(({ slot }) => slot.id)]
+  const targetLabel = (slotId: string) => {
+    const target = targets.find(({ slot }) => slot.id === slotId)
+    if (!target) return copy.chooseTargetDuty
+    const date = format.date(new Date(target.date.duty_date), { weekday: 'long', month: 'long', day: 'numeric' })
+    return target.date.slots.length > 1 ? `${date} · ${copy.dutySlot} ${target.slot.slot_number}` : date
+  }
+
+  return (
+    <Sheet title={copy.moveDutyTitle} description={copy.moveDutyDescription} closeLabel={copy.close} onClose={onClose}>
+      <div className="bazar-sheet__body bazar-form">
+        <SelectField
+          label={copy.chooseTargetDuty}
+          value={targetSlotId}
+          options={targetOptions}
+          getLabel={targetLabel}
+          icon={CalendarDays}
+          onChange={onChangeTarget}
+        />
+        <label>
+          <span>{copy.moveReason}</span>
+          <textarea maxLength={500} value={reason} onChange={(event) => onChangeReason(event.target.value)} placeholder={copy.moveReasonPlaceholder} />
+        </label>
+      </div>
+      <footer>
+        <Button variant="secondary" onClick={onClose}>{copy.cancel}</Button>
+        <Button disabled={!targetSlotId} busy={busy} busyLabel={copy.moving} onClick={onSave}><CalendarSync size={16} /> {copy.saveMove}</Button>
       </footer>
     </Sheet>
   )

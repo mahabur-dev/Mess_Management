@@ -22,6 +22,7 @@ import {
   ChangeBazarDateStatusDto,
   CreateBazarSwapDto,
   GenerateBazarScheduleDto,
+  MoveBazarDutyDto,
   ReleaseBazarSlotDto,
   ReviewBazarRequestDto,
   UpdateBazarDateCapacityDto,
@@ -209,8 +210,7 @@ export class BazarScheduleController {
 
   @Post('duty-slots/:slotId/release')
   @ApiOperation({
-    summary:
-      'Release own duty automatically or request manager approval based on deadline',
+    summary: 'Release own duty before the configured notice deadline',
   })
   async release(
     @Param('slotId') slotId: string,
@@ -229,6 +229,24 @@ export class BazarScheduleController {
         : 'Bazar duty release request submitted',
       data,
     };
+  }
+
+  @Post('duty-slots/:slotId/move')
+  @ApiOperation({
+    summary: 'Move own bazar duty to an available slot on another date',
+  })
+  async moveOwnDuty(
+    @Param('slotId') slotId: string,
+    @Req() req: Request,
+    @Body() dto: MoveBazarDutyDto,
+  ) {
+    const data = await this.scheduleService.moveOwnDuty(
+      slotId,
+      req.user!.id,
+      req.user!.role,
+      dto,
+    );
+    return { message: 'Bazar duty moved', data };
   }
 
   @Get('release-requests/mess/:messId')

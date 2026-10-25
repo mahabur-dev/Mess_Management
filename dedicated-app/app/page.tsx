@@ -7,13 +7,10 @@ import {
   CalendarDays,
   ChevronDown,
   CreditCard,
-  Landmark,
   MessageSquareWarning,
   ReceiptText,
   Shield,
   UtensilsCrossed,
-  Wallet2,
-  Coins,
 } from 'lucide-react'
 import { AppHeader, NotificationLink } from '@/components/app-header'
 import { AuthLanguageToggle } from '@/components/language-control'
@@ -195,15 +192,7 @@ export default function HomePage() {
   const cards = [
     { label: common('todayMeal'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('todayMeal') })} /> : number(summary?.todayTotalMeals), icon: UtensilsCrossed, color: '#4bbfc0' },
     { label: common('totalMeals'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalMeals') })} /> : number(summary?.totalMeals), icon: ReceiptText, color: '#0aa0a0' },
-    {
-      label: common('mealRate'),
-      value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('mealRate') })} /> : money(summary?.currentMealRate),
-      icon: Wallet2,
-      color: '#008d8c',
-    },
-    { label: common('foodExpenses'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('foodExpenses') })} /> : money(summary?.currentMonthTotalBazar), icon: CreditCard, color: '#00777a' },
-    { label: common('utilityExpenses'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('utilityExpenses') })} /> : money(summary?.extraExpenses), icon: Landmark, color: '#0aa0a0' },
-    { label: common('perMemberUtility'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('perMemberUtility') })} /> : money(summary?.perExtraExpenses), icon: Coins, color: '#0aa0a0' },
+    { label: common('totalExpenses'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalExpenses') })} /> : money(summary?.totalCost), icon: CreditCard, color: '#00777a' },
     { label: common('totalDeposit'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('totalDeposit') })} /> : money(summary?.totalDepositAmount), icon: ClipboardList, color: '#4bbfc0' },
     { label: common('dueAmount'), value: summaryLoading ? <LoadingIndicator size="sm" label={common('loadingMetric', { metric: common('dueAmount') })} /> : money(summary?.totalDue), icon: MessageSquareWarning, color: '#00777a' },
     {
@@ -251,7 +240,7 @@ export default function HomePage() {
           </HomeCard>
         ) : hasWorkspace ? (
           <HomeCard ariaLabel={common('quickActions')} className="home-quick-actions-card">
-            <div className="grid grid-cols-4 gap-x-1 gap-y-2">
+            <div className="home-quick-actions-grid">
               {quickActions.map(({ label, href, icon: Icon }) => (
                 <HomeQuickAction
                   key={label}
@@ -269,7 +258,7 @@ export default function HomePage() {
         {hasWorkspace ? (
           <>
             <HomeCard
-              title={common('quickFeatures')}
+              title={common('thisMonthOverview')}
               action={<HomeMonthPill month={month} onChange={setMonth} label={common('selectOverviewMonth')} monthLabel={monthLabel} />}
               className="home-quick-features-card"
             >

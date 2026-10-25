@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SubscriptionService } from './app/module/subscription/subscription.service';
+import { isSwaggerEnabled } from './app/config/swagger.policy';
 
 @Injectable()
 export class AppService {
@@ -13,8 +14,8 @@ export class AppService {
     return {
       name: 'Mess Management Backend API',
       status: 'ok',
-      swaggerUrl: `/api/docs`,
       version: '1.0.0',
+      ...(isSwaggerEnabled() ? { swaggerUrl: '/api/docs' } : {}),
     };
   }
 

@@ -149,16 +149,22 @@ test('manager, member and no-mess role matrix', () => {
   assert.equal(canAccessAppPath(manager, '/members'), true)
   assert.equal(canAccessAppPath(member, '/members'), false)
   assert.equal(canAccessAppPath(member, '/meals'), true)
+  assert.equal(canAccessAppPath(manager, '/notices'), true)
+  assert.equal(canAccessAppPath(member, '/notices'), false)
   assert.equal(canAccessAppPath(manager, '/meals/members/monthly'), true)
   assert.equal(canAccessAppPath(member, '/meals/members/monthly'), false)
   assert.equal(getAppBackFallback(manager, '/meals/members/monthly'), '/meals/members')
   assert.equal(canAccessAppPath(noMess, '/meals'), false)
   assert.deepEqual(getBottomTabs(noMess).map((item) => item.href), ['/', '/profile', '/settings', '/more'])
-  const expectedQuickActions = ['/meals', '/expenses', '/payments', '/bazar-schedule', '/quick-add', '/monthly-bill', '/meal-pattern', '/notices']
+  const expectedQuickActions = ['/meals', '/expenses', '/payments', '/bazar-schedule', '/quick-add', '/monthly-bill']
   assert.deepEqual(getHomeQuickActions(manager).map((item) => item.href), expectedQuickActions)
   assert.deepEqual(getHomeQuickActions(member).map((item) => item.href), expectedQuickActions)
   assert.equal(getMoreMenuGroups(manager).some((group) => group.items.some((item) => item.href === '/members')), true)
   assert.equal(getMoreMenuGroups(member).some((group) => group.items.some((item) => item.href === '/members')), false)
+  assert.equal(getMoreMenuGroups(manager).some((group) => group.items.some((item) => item.href === '/meal-pattern')), true)
+  assert.equal(getMoreMenuGroups(member).some((group) => group.items.some((item) => item.href === '/meal-pattern')), true)
+  assert.equal(getMoreMenuGroups(manager).some((group) => group.items.some((item) => item.href === '/notices')), true)
+  assert.equal(getMoreMenuGroups(member).some((group) => group.items.some((item) => item.href === '/notices')), false)
 })
 
 ;(async () => {

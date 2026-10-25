@@ -44,7 +44,8 @@ Weekdays use `0=Sunday` through `6=Saturday`. With `CUSTOM_DATES`, `customDays` 
 | POST | `/duty-slots/:slotId/claim` | Eligible member | Claim an available slot |
 | POST | `/duty-slots/:slotId/assign` | Manager | Assign/reassign, with limit-bypass warning |
 | POST | `/duty-slots/:slotId/unassign` | Manager | Immediately unassign with a reason |
-| POST | `/duty-slots/:slotId/release` | Assigned member | Auto-release or request approval |
+| POST | `/duty-slots/:slotId/release` | Assigned member | Release before the configured notice deadline |
+| POST | `/duty-slots/:slotId/move` | Assigned member | Atomically move own duty to an available slot on another date |
 | GET | `/release-requests/mess/:messId` | Mess user | Visible release requests |
 | PATCH | `/release-requests/:requestId/respond` | Manager | Approve/reject late release |
 | POST | `/swap-requests` | Assigned member | Request a direct two-date swap |
@@ -54,13 +55,23 @@ Weekdays use `0=Sunday` through `6=Saturday`. With `CUSTOM_DATES`, `customDays` 
 
 Request lists accept an optional `status=PENDING|APPROVED|REJECTED|CANCELLED` query.
 
+Move a duty by sending the destination slot ID. The source and destination must be on different dates in the same active monthly schedule.
+
+```json
+{
+  "targetSlotId": "00000000-0000-4000-8000-000000000002",
+  "reason": "I am unavailable on the original date"
+}
+```
+
 ## Important rules
 
 - Schedule generation is restricted to the current Dhaka calendar month.
 - Past dates are locked. Current-day swaps remain allowed.
 - Claims enforce the common monthly `dutyLimit`; manager assignment may bypass it and returns a warning.
 - If strict fairness is enabled, a member cannot move more than one duty ahead of the least-assigned eligible member.
-- Release with at least `releaseNoticeDays` notice is automatic. Later release remains assigned until manager approval.
-- Swap acceptance atomically exchanges the two assignees and does not need manager approval.
+- Release and move require at least `releaseNoticeDays` advance notice. Once that deadline passes, both actions are rejected.
+- Swap requests and acceptance require at least one day of advance notice for both duties. Acceptance atomically exchanges the two assignees and does not need manager approval.
+- Moving a duty is atomic, preserves the member's monthly duty count, and only accepts an available slot on another date.
 - Slot claiming and schedule generation use serializable transactions plus database uniqueness constraints.
 - Business mutations create audit-log records. Relevant requests and decisions create in-app and push notifications.

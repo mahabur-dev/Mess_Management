@@ -223,7 +223,10 @@ export class PersonalService {
         _sum: { amount: true },
       }),
       this.prisma.personalTransaction.findMany({
-        where: { user_id: userId },
+        where: {
+          user_id: userId,
+          date: { gte: range.start, lt: range.end },
+        },
         take: 10,
         orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
         select: this.transactionSelect,

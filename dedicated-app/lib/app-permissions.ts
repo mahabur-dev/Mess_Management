@@ -98,7 +98,7 @@ const protectedRoutes: AppRouteItem[] = [
   { href: '/edit-expense', label: 'Edit Expense', icon: ReceiptText, access: 'mess' },
   { href: '/deposits', label: 'Deposits', icon: Landmark, access: 'manager' },
   { href: '/edit-deposit', label: 'Edit Deposit', icon: Landmark, access: 'manager' },
-  { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
+  { href: '/notices', label: 'Notices', icon: Bell, access: 'manager' },
   { href: '/notifications', label: 'Notifications', icon: Bell, access: 'mess' },
   { href: '/meals/time', label: 'Set Meal Time', icon: UtensilsCrossed, access: 'manager' },
   { href: '/meals/members/monthly', label: 'Full Month Meals', icon: UtensilsCrossed, access: 'manager', exact: true },
@@ -141,8 +141,6 @@ export const managerQuickActions: AppRouteItem[] = [
   { href: '/bazar-schedule', label: 'Bazar Schedule', icon: CalendarClock, access: 'mess' },
   { href: '/quick-add', label: 'AI Assistant', icon: Bot, access: 'mess' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
-  { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
-  { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
 ]
 
 export const memberQuickActions: AppRouteItem[] = [
@@ -152,8 +150,6 @@ export const memberQuickActions: AppRouteItem[] = [
   { href: '/bazar-schedule', label: 'Bazar Schedule', icon: CalendarClock, access: 'mess' },
   { href: '/quick-add', label: 'AI Assistant', icon: Bot, access: 'mess' },
   { href: '/monthly-bill', label: 'Monthly Bill', icon: ClipboardList, access: 'mess' },
-  { href: '/meal-pattern', label: 'Meal Pattern', icon: CalendarClock, access: 'mess' },
-  { href: '/notices', label: 'Notices', icon: Bell, access: 'mess' },
 ]
 
 export function getHomeQuickActions(user: AuthUser | null | undefined) {
@@ -220,7 +216,7 @@ export function getMoreMenuGroups(user: AuthUser | null | undefined): MoreMenuGr
         { href: '/members', label: 'Members', description: 'Manage mess members', icon: Users, access: 'manager' },
         { href: '/meal-pattern', label: 'Meal Pattern', description: 'Review your meal calendar', icon: CalendarClock, access: 'mess' },
         { href: '/bazar-schedule', label: 'Bazar Schedule', description: 'Plan and manage monthly bazar duties', icon: CalendarClock, access: 'mess' },
-        { href: '/notices', label: 'Notices', description: 'Read and manage mess announcements', icon: Bell, access: 'mess' },
+        { href: '/notices', label: 'Notices', description: 'Read and manage mess announcements', icon: Bell, access: 'manager' },
         { href: '/personal', label: 'Personal', description: 'Income, expenses, savings and family budgets', icon: WalletCards, access: 'public' },
         { href: '/reports', label: 'Monthly Reports', description: 'Review finalized monthly accounts', icon: FileBarChart, access: 'mess' },
         { href: '/complaints', label: 'Complaints', description: 'Raise and follow up issues', icon: MessageSquareWarning, access: 'mess' },

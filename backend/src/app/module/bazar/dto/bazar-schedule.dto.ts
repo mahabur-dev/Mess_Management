@@ -157,6 +157,21 @@ export class ReleaseBazarSlotDto {
   reason: string;
 }
 
+export class MoveBazarDutyDto {
+  @ApiProperty({
+    format: 'uuid',
+    description: 'An available duty slot on another date in the same schedule',
+  })
+  @IsUUID()
+  targetSlotId: string;
+
+  @ApiPropertyOptional({ maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
 export class CreateBazarSwapDto {
   @ApiProperty({ format: 'uuid' })
   @IsUUID()

@@ -497,6 +497,19 @@ export class ExpenseFilterDto {
   @IsString()
   userName?: string;
 
+  @ApiPropertyOptional({
+    example: 'rice or John',
+    description:
+      'Search by creator, purchaser, shared member, expense item, description, category, utility type, or amount',
+  })
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() || undefined : value,
+  )
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
   @ApiPropertyOptional({ example: '2025-04-01' })
   @IsOptional()
   @IsDateString()

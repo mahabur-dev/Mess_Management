@@ -49,6 +49,7 @@ type AuthContextValue = {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 12_000
 
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter()
@@ -88,14 +89,34 @@ export function Providers({ children }: { children: ReactNode }) {
       return
     }
 
+    let active = true
+    const timeoutId = window.setTimeout(() => {
+      if (!active) return
+      active = false
+      clearSession()
+      setIsLoading(false)
+    }, AUTH_BOOTSTRAP_TIMEOUT_MS)
+
     setToken(saved)
     api
       .getProfile()
-      .then((res) => receiveUser(res.data))
-      .catch(() => {
-        clearSession()
+      .then((res) => {
+        if (active) receiveUser(res.data)
       })
-      .finally(() => setIsLoading(false))
+      .catch(() => {
+        if (active) clearSession()
+      })
+      .finally(() => {
+        if (!active) return
+        active = false
+        window.clearTimeout(timeoutId)
+        setIsLoading(false)
+      })
+
+    return () => {
+      active = false
+      window.clearTimeout(timeoutId)
+    }
   }, [clearSession, receiveUser])
 
   useEffect(() => {

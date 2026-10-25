@@ -2103,6 +2103,7 @@ export class ExpenseService {
 
   private buildWhere(query: ExpenseFilterDto): Prisma.ExpenseWhereInput {
     const where: Prisma.ExpenseWhereInput = {};
+    const searchClauses: Prisma.ExpenseWhereInput[] = [];
     if (query.messId) where.mess_id = query.messId;
     if (query.category) where.category = query.category;
     if (query.approvalStatus) {
@@ -2113,17 +2114,53 @@ export class ExpenseService {
       }[query.approvalStatus];
     }
     if (query.userName) {
-      where.OR = [
-        {
-          creator: { name: { contains: query.userName, mode: 'insensitive' } },
-        },
-        {
-          purchaser: {
-            name: { contains: query.userName, mode: 'insensitive' },
+      searchClauses.push({
+        OR: [
+          {
+            creator: {
+              name: { contains: query.userName, mode: 'insensitive' },
+            },
           },
-        },
-      ];
+          {
+            purchaser: {
+              name: { contains: query.userName, mode: 'insensitive' },
+            },
+          },
+        ],
+      });
     }
+    if (query.search) {
+      const search = query.search;
+      const normalizedEnumSearch = search
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, '_');
+      const category = Object.values(ExpenseCategory).find(
+        (value) => value === normalizedEnumSearch,
+      );
+      const utilityType = Object.values(UtilityType).find(
+        (value) => value === normalizedEnumSearch,
+      );
+      const numericAmount = Number(search.replace(/,/g, ''));
+
+      searchClauses.push({
+        OR: [
+          { creator: { name: { contains: search, mode: 'insensitive' } } },
+          { purchaser: { name: { contains: search, mode: 'insensitive' } } },
+          { shares: { some: { member_name: { contains: search, mode: 'insensitive' } } } },
+          { shares: { some: { member: { name: { contains: search, mode: 'insensitive' } } } } },
+          { items: { some: { item_name: { contains: search, mode: 'insensitive' } } } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { review_note: { contains: search, mode: 'insensitive' } },
+          ...(category ? [{ category }] : []),
+          ...(utilityType ? [{ utility_type: utilityType }] : []),
+          ...(Number.isFinite(numericAmount) && numericAmount >= 0
+            ? [{ amount: numericAmount }]
+            : []),
+        ],
+      });
+    }
+    if (searchClauses.length) where.AND = searchClauses;
     if (query.billingMonth) {
       where.billing_month = this.monthStart(query.billingMonth);
     }

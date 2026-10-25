@@ -7,6 +7,7 @@ import { LoadingIndicator } from '@/components/loading-indicator'
 import { MobileShell } from '@/components/mobile-shell'
 import { TopScreen } from '@/components/top-screen'
 import { api } from '@/lib/api'
+import { canManageMess } from '@/lib/app-permissions'
 import { localizedNotificationCopy, useLocale, useLocaleFormatters, useLocalizedNotice, useTranslations } from '@/lib/i18n'
 import { appHref } from '@/lib/routes'
 import { useAuth } from '../providers'
@@ -21,13 +22,13 @@ type NotificationItem = {
   reads?: Array<{ user_id: string; read_at?: string | null }>
 }
 
-function notificationRoute(item: NotificationItem) {
+function notificationRoute(item: NotificationItem, canManage: boolean) {
   const source = typeof item.metadata?.source === 'string' ? item.metadata.source : ''
   if (source === 'MEMBER_JOIN_REQUEST') return '/members'
   if (source === 'MEMBER_JOIN_APPROVED' || source === 'MEMBER_JOIN_REJECTED') return '/'
   if (source === 'EXPENSE' || source === 'EXPENSE_REVIEW') return '/expenses'
   if (source === 'PAYMENT' || source === 'PAYMENT_REVIEW') return '/payments'
-  if (source === 'NOTICE') return '/notices'
+  if (source === 'NOTICE') return canManage ? '/notices' : '/notifications'
   if (source === 'COMPLAINT') return '/complaints'
   if (source === 'MONTHLY_REPORT_READY' || source === 'MONTHLY_REPORT_FINALIZED') {
     const reportId = typeof item.metadata?.reportId === 'string' ? item.metadata.reportId : ''
@@ -76,7 +77,7 @@ export default function NotificationsPage() {
       void refreshUnreadNotifications()
     }
 
-    router.push(appHref(notificationRoute(item)))
+    router.push(appHref(notificationRoute(item, canManageMess(user))))
   }
 
   return (

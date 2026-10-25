@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import dotenv from 'dotenv';
 import { UtilsInterceptor } from './app/utils/utils.interceptor';
 import { GlobalExceptionFilter } from './app/middlewares/globalErrors.filter';
+import { isSwaggerEnabled } from './app/config/swagger.policy';
 import express from 'express';
 dotenv.config();
 
@@ -40,7 +41,9 @@ function isAllowedCorsOrigin(origin: string) {
 
   try {
     const url = new URL(origin);
-    const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(url.hostname);
+    const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(
+      url.hostname,
+    );
     const isLanIp = /^192\.168\.\d{1,3}\.\d{1,3}$/.test(url.hostname);
     const isCodespace = url.hostname.endsWith('.app.github.dev');
 
@@ -99,32 +102,37 @@ async function bootstrap() {
   const httpAdapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost));
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Mess Management API')
-    .setDescription('Mess Management API Documentation')
-    .setVersion('1.0')
-    .addTag('Mess Management')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Enter your JWT token',
-        in: 'header',
-      },
-      'access-token',
-    )
-    .build();
+  const swaggerEnabled = isSwaggerEnabled();
+  if (swaggerEnabled) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Mess Management API')
+      .setDescription('Mess Management API Documentation')
+      .setVersion('1.0')
+      .addTag('Mess Management')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'Authorization',
+          description: 'Enter your JWT token',
+          in: 'header',
+        },
+        'access-token',
+      )
+      .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: { persistAuthorization: true },
-  });
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: { persistAuthorization: true },
+    });
+  }
 
   await app.listen(PORT, HOST, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
-    console.log(`Swagger: http://localhost:${PORT}/api/docs`);
+    if (swaggerEnabled) {
+      console.log(`Swagger: http://localhost:${PORT}/api/docs`);
+    }
   });
 }
 bootstrap().catch(console.error);

@@ -137,6 +137,11 @@ export type BazarDutySlot = {
   assigned_member?: BazarDutyMember | null
 }
 
+export type MoveBazarDutyResult = {
+  source: BazarDutySlot | null
+  target: BazarDutySlot | null
+}
+
 export type BazarScheduleDate = {
   id: string
   duty_date: string
@@ -155,6 +160,7 @@ export type BazarSchedule = {
   status: 'ACTIVE' | 'FINISHED'
   default_members_per_date: number
   duty_limit: number
+  release_notice_days: number
   eligible_member_count: number
   recommended_duty_count: number
   dates: BazarScheduleDate[]
@@ -730,6 +736,27 @@ class Api {
 
   assignBazarDuty(slotId: string, data: { memberId: string; reason?: string }) {
     return this.request<BazarDutySlot>(`/bazar/duty-slots/${slotId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  moveBazarDuty(slotId: string, data: { targetSlotId: string; reason?: string }) {
+    return this.request<MoveBazarDutyResult>(`/bazar/duty-slots/${slotId}/move`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  releaseBazarDuty(slotId: string, data: { reason: string }) {
+    return this.request<BazarScheduleRequest>(`/bazar/duty-slots/${slotId}/release`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  createBazarSwap(data: { requesterSlotId: string; targetSlotId: string; reason?: string }) {
+    return this.request<BazarScheduleRequest>('/bazar/swap-requests', {
       method: 'POST',
       body: JSON.stringify(data),
     })

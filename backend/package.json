@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "node api.js && nest build",
+    "build": "nest build",
     "test:expense": "npm run build && node --test test/expense-accounting.test.js test/expense-calculator.test.js test/expense-item-calculator.test.js test/expense-approval-policy.test.js test/fund-balance-calculator.test.js test/billing-month-sequence.test.js test/deterministic-order.test.js",
     "test:payment": "npm run build && node --test test/payment-approval-policy.test.js",
     "test:meal": "npm run build && node --test test/meal-policy.test.js test/meal-bulk-policy.test.js test/meal-bulk-service.test.js test/meal-own-bulk-service.test.js",
@@ -20,7 +20,7 @@
     "test:api-contract": "npm run build && node --test test/api-message-contract.test.js",
     "test:auth": "npm run build && node --test test/auth-email-verification.test.js test/auth-registration.test.js test/google-auth-login.test.js test/send-mailer.test.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "node api.js && node scripts/start-nest.js start",
+    "start": "node scripts/start-nest.js start",
     "start:dev": "node scripts/start-nest.js start --watch",
     "start:debug": "node scripts/start-nest.js start --debug --watch",
     "start:prod": "node scripts/start-built.js",

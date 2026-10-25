@@ -309,6 +309,7 @@ export interface User {
   avatar_url?: string | null
   preferred_locale?: 'en' | 'bn' | null
   is_active?: boolean
+  is_verified?: boolean
   created_at?: string
   updated_at?: string
   memberships?: MessMembership[]
@@ -1034,6 +1035,16 @@ class ApiClient {
 
   getUsers(params?: QueryParams) {
     return this.requestAllPages<User>('/users', params)
+  }
+
+  deleteUser(id: string) {
+    return this.request<{
+      deletedAt: string
+      personalDataAnonymized: boolean
+      financialHistoryRetained: boolean
+    }>(`/users/${id}`, {
+      method: 'DELETE',
+    })
   }
 
   getMesses() {

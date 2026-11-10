@@ -10,4 +10,4 @@ export default defineConfig([
     rules: { 'react-hooks/set-state-in-effect': 'warn' },
   },
   globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'playwright-report/**', 'test-results/**']),
-])
+]);

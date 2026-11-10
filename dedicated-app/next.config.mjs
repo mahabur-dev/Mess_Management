@@ -32,4 +32,4 @@ export default function createNextConfig(phase) {
   }
 
   return nextConfig
-}
+};
